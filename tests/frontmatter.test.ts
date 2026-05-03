@@ -1,0 +1,54 @@
+import { describe, expect, it } from 'vitest'
+import { parseFrontmatter, serializeFrontmatter } from '@electron/lib/frontmatter'
+
+describe('parseFrontmatter', () => {
+  it('parses minimal frontmatter', () => {
+    const raw = `---
+title: 测试
+created: 2025-12-15T20:00:00+08:00
+review_count: 0
+difficulty: mid
+tags: [数学]
+---
+正文 hello`
+    const { frontmatter, body } = parseFrontmatter(raw)
+    expect(frontmatter.title).toBe('测试')
+    expect(frontmatter.review_count).toBe(0)
+    expect(frontmatter.tags).toEqual(['数学'])
+    expect(body.trim()).toBe('正文 hello')
+  })
+
+  it('fills sensible defaults for missing fields', () => {
+    const raw = `---
+title: x
+---
+y`
+    const { frontmatter } = parseFrontmatter(raw)
+    expect(frontmatter.review_count).toBe(0)
+    expect(frontmatter.difficulty).toBe('mid')
+    expect(frontmatter.tags).toEqual([])
+    expect(frontmatter.created).toMatch(/\d{4}-\d{2}-\d{2}/)
+  })
+})
+
+describe('serializeFrontmatter', () => {
+  it('round-trips a parsed file', () => {
+    const original = `---
+title: 拓扑学基础
+created: 2025-12-15T20:00:00+08:00
+last_studied: 2026-04-28T22:13:00+08:00
+review_count: 2
+difficulty: mid
+tags: [数学, 几何]
+---
+正文段落
+`
+    const { frontmatter, body } = parseFrontmatter(original)
+    const out = serializeFrontmatter(frontmatter, body)
+    const reparsed = parseFrontmatter(out)
+    expect(reparsed.frontmatter.title).toBe('拓扑学基础')
+    expect(reparsed.frontmatter.review_count).toBe(2)
+    expect(reparsed.frontmatter.tags).toEqual(['数学', '几何'])
+    expect(reparsed.body.trim()).toBe('正文段落')
+  })
+})
