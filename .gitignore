@@ -1,0 +1,7 @@
+node_modules/
+out/
+dist/
+.env
+~/.studyparlor/
+*.log
+.DS_Store
