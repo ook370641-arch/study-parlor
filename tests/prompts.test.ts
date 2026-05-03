@@ -61,7 +61,7 @@ describe('assemblePrompt', () => {
       profile,
       reviewFileBody: 'B'
     })
-    const iBase = sys.indexOf('LEARNER_BASE_PLACEHOLDER')
+    const iBase = sys.indexOf('苏格拉底式私教')
     const iReview = sys.indexOf('掌握度检测')
     const iDiff = sys.indexOf('降低探索深度')
     const iProfile = sys.indexOf('夜读者')
