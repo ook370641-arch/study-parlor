@@ -3,10 +3,12 @@ import { useStore } from '@/store'
 import { Cover } from '@/pages/Cover'
 import { Home } from '@/pages/Home'
 import { Toast } from '@/components/Toast'
+import { PreStudyModal } from '@/components/PreStudyModal'
 import { ipc } from '@/lib/ipc'
 
 export function App() {
   const page = useStore(s => s.currentPage)
+  const modal = useStore(s => s.modal)
   const init = useStore(s => s.init)
 
   useEffect(() => {
@@ -30,6 +32,7 @@ export function App() {
       {page === 'home'    && <Home />}
       {page === 'study'   && <div className="p-8">[Study 占位] (Task 20)</div>}
       {page === 'profile' && <div className="p-8">[Profile 占位] (Task 22)</div>}
+      {modal === 'preStudy' && <PreStudyModal />}
       <Toast />
     </div>
   )
