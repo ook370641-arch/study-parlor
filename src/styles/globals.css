@@ -2,4 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  ::selection { @apply bg-ember/40 text-parchment; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate/40 rounded; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate/70; }
+}
+
+@layer components {
+  .field-label  { @apply text-parchment/70 text-sm font-sans tracking-wide; }
+  .panel        { @apply bg-ink/70 border border-slate/40 rounded-md; }
+  .divider      { @apply border-t border-slate/30; }
+}
+
 html, body, #root { height: 100%; }
+body { @apply bg-ink text-parchment font-serif antialiased; }
