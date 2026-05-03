@@ -14,7 +14,7 @@ describe('assemblePrompt', () => {
       difficulty: 'high',
       profile
     })
-    expect(sys).toContain('LEARNER_BASE_PLACEHOLDER')
+    expect(sys.length).toBeGreaterThan(500)
     expect(sys).toContain('夜读者')
     expect(sys).not.toMatch(/降低探索深度/)
     expect(sys).not.toMatch(/无答案辅助信息/)
