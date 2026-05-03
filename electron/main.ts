@@ -1,8 +1,18 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
+import dotenv from 'dotenv'
+import { loadEnv } from './env'
+import { registerAllIpc } from './ipc'
 
-function createWindow() {
-  const win = new BrowserWindow({
+dotenv.config()
+
+let mainWindow: BrowserWindow | null = null
+
+async function createWindow() {
+  const cfg = loadEnv(process.env)
+  registerAllIpc(cfg, () => mainWindow)
+
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     backgroundColor: '#2a1f1a',
@@ -14,9 +24,9 @@ function createWindow() {
   })
 
   if (process.env.ELECTRON_RENDERER_URL) {
-    win.loadURL(process.env.ELECTRON_RENDERER_URL)
+    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    win.loadFile(path.join(__dirname, '../renderer/index.html'))
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
 }
 
