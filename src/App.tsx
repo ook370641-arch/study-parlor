@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { Cover } from '@/pages/Cover'
+import { Home } from '@/pages/Home'
 import { Toast } from '@/components/Toast'
 import { ipc } from '@/lib/ipc'
 
@@ -26,7 +27,7 @@ export function App() {
   return (
     <div className="h-full">
       {page === 'cover'   && <Cover />}
-      {page === 'home'    && <div className="p-8">[Home 占位] (Task 18 实现)</div>}
+      {page === 'home'    && <Home />}
       {page === 'study'   && <div className="p-8">[Study 占位] (Task 20)</div>}
       {page === 'profile' && <div className="p-8">[Profile 占位] (Task 22)</div>}
       <Toast />
