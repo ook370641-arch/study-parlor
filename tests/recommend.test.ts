@@ -51,12 +51,24 @@ describe('pickRecommendations', () => {
     expect(right).toBeNull()
   })
 
+  it('includes never-reviewed files in review candidates', () => {
+    const lib: FileMeta[] = [
+      f({ file_path: 'a.md', title: 'A', review_count: 0 })
+    ]
+    const { left, right } = pickRecommendations(lib, NOW)
+    // 唯一候选放 left
+    expect(left?.type).toBe('review')
+    expect(left?.file_path).toBe('a.md')
+    expect(right).toBeNull()
+  })
+
   it('excludes continue candidates whose last_studied > 3 days ago', () => {
     const lib: FileMeta[] = [
-      f({ file_path: 'a.md', last_studied: '2026-04-25T10:00:00+08:00' })
+      f({ file_path: 'a.md', last_studied: '2026-04-25T10:00:00+08:00', review_count: 3 })
     ]
-    const { left } = pickRecommendations(lib, NOW)
+    const { left, right } = pickRecommendations(lib, NOW)
     expect(left).toBeNull()
+    expect(right).toBeNull()
   })
 
   it('falls back to two continues when no review candidate exists', () => {

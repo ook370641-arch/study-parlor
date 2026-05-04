@@ -15,18 +15,28 @@ const DEFAULT: StateJson = {
   ui: { session_count: 0 }
 }
 
+let currentState: StateJson | null = null
+
+function loadState(): StateJson {
+  if (!currentState) {
+    currentState = safeReadJson(STATE_FILE, { fallback: DEFAULT })
+  }
+  return currentState
+}
+
 export function registerStateIpc() {
+  loadState()
+
   ipcMain.handle('state:get', async (): Promise<StateJson> => {
-    return safeReadJson(STATE_FILE, { fallback: DEFAULT })
+    return loadState()
   })
 
   ipcMain.handle('state:patch', async (_, patch: Partial<StateJson>) => {
-    const cur = safeReadJson(STATE_FILE, { fallback: DEFAULT })
-    const next = { ...cur, ...patch }
-    safeWriteJson(STATE_FILE, next)
+    currentState = { ...loadState(), ...patch }
+    safeWriteJson(STATE_FILE, currentState)
   })
 }
 
 export function getCurrentState(): StateJson {
-  return safeReadJson(STATE_FILE, { fallback: DEFAULT })
+  return loadState()
 }

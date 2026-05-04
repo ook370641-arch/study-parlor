@@ -14,9 +14,11 @@ export function pickRecommendations(
     .filter(f => f.last_studied && now.getTime() - new Date(f.last_studied).getTime() <= 3 * DAY)
     .sort((a, b) => new Date(b.last_studied!).getTime() - new Date(a.last_studied!).getTime())
 
+  const continuePaths = new Set(continues.map(f => f.file_path))
   const reviews = pool
+    .filter(f => !continuePaths.has(f.file_path))
     .filter(f => f.review_count < 3)
-    .filter(f => f.last_reviewed && now.getTime() - new Date(f.last_reviewed).getTime() >= 7 * DAY)
+    .filter(f => !f.last_reviewed || now.getTime() - new Date(f.last_reviewed).getTime() >= 7 * DAY)
     .sort((a, b) => {
       const aT = a.last_reviewed ? new Date(a.last_reviewed).getTime() : 0
       const bT = b.last_reviewed ? new Date(b.last_reviewed).getTime() : 0

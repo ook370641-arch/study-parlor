@@ -17,6 +17,7 @@ type Session = {
   streaming: boolean
   abortId: string                 // sessionId 给 IPC 用
   suggestEnd: boolean
+  reviewFileBody?: string         // review 模式下缓存文件 body,避免重复读取
 }
 
 type AppStore = {
@@ -25,6 +26,8 @@ type AppStore = {
   lastUsed: { difficulty: Difficulty; temperature: number }
   recommendation: { left: RecCard | null; right: RecCard | null }
   inspirations: NewTopic[]
+  inspirationsLoading: boolean
+  inspirationsError: boolean
 
   // 派生
   library: FileMeta[]
@@ -56,6 +59,8 @@ type AppStore = {
   showToast: (m: string) => void
   setRecommendation: (r: { left: RecCard | null; right: RecCard | null }) => void
   setInspirations: (t: NewTopic[]) => void
+  setInspirationsLoading: (v: boolean) => void
+  setInspirationsError: (v: boolean) => void
   patchProfile: (p: Partial<Profile>) => Promise<void>
   patchLastUsed: (l: Partial<{ difficulty: Difficulty; temperature: number }>) => Promise<void>
 }
@@ -65,6 +70,8 @@ export const useStore = create<AppStore>((set, get) => ({
   lastUsed: { difficulty: 'mid', temperature: 0.7 },
   recommendation: { left: null, right: null },
   inspirations: [],
+  inspirationsLoading: false,
+  inspirationsError: false,
   library: [],
   modelInvalid: false,
   session: null,
@@ -150,6 +157,8 @@ export const useStore = create<AppStore>((set, get) => ({
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
   setRecommendation: (r) => set({ recommendation: r }),
   setInspirations: (t) => set({ inspirations: t }),
+  setInspirationsLoading: (v) => set({ inspirationsLoading: v }),
+ setInspirationsError: (v) => set({ inspirationsError: v }),
 
   patchProfile: async (p) => {
     const next = { ...get().profile, ...p }
