@@ -1,12 +1,14 @@
 import matter from 'gray-matter'
 import type { Frontmatter } from '@shared/index'
 
-function extractTitleFromFilename(name: string): string {
-  return name
+function extractTitleFromFilename(name: string): string | undefined {
+  const title = name
     .replace(/\.md$/i, '')
-    .replace(/^(\d{4}\.?\d{1,2}\.?-?\d{0,2}-?)/, '')
+    .replace(/^(\d{4}[.\-]?\d{1,2}[.\-]?\d{0,2}[.\-]?)/, '')
+    .replace(/^[.\-_]+/, '')
     .replace(/-/g, ' ')
     .trim()
+  return title || undefined
 }
 
 export function parseFrontmatter(

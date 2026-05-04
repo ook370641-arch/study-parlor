@@ -29,6 +29,33 @@ y`
     expect(frontmatter.tags).toEqual([])
     expect(frontmatter.created).toMatch(/\d{4}-\d{2}-\d{2}/)
   })
+
+  it('falls back to filename-derived title when no frontmatter', () => {
+    const raw = '# hello\n\nworld'
+    const { frontmatter } = parseFrontmatter(raw, { filename: '20260424-hello-world.md' })
+    expect(frontmatter.title).toBe('hello world')
+  })
+
+  it('uses frontmatter title over filename when both present', () => {
+    const raw = `---
+title: 嵌入标题
+---
+正文`
+    const { frontmatter } = parseFrontmatter(raw, { filename: 'file-name.md' })
+    expect(frontmatter.title).toBe('嵌入标题')
+  })
+
+  it('handles dotted date prefix in filename', () => {
+    const raw = 'no frontmatter'
+    const { frontmatter } = parseFrontmatter(raw, { filename: '2026.04.24.hello-world.md' })
+    expect(frontmatter.title).toBe('hello world')
+  })
+
+  it('falls back to untitled when filename is only date prefix', () => {
+    const raw = 'no frontmatter'
+    const { frontmatter } = parseFrontmatter(raw, { filename: '2026-04-24.md' })
+    expect(frontmatter.title).toBe('untitled')
+  })
 })
 
 describe('serializeFrontmatter', () => {

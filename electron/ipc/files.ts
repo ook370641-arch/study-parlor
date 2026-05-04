@@ -30,7 +30,7 @@ export function registerFilesIpc(cfg: AppConfig) {
 
   ipcMain.handle('files:read', async (_, file_path: string) => {
     const raw = fs.readFileSync(file_path, 'utf8')
-    return parseFrontmatter(raw)
+    return parseFrontmatter(raw, { filename: path.basename(file_path) })
   })
 
   ipcMain.handle('files:writeProgress', async (_, args: {
