@@ -1,12 +1,25 @@
 import matter from 'gray-matter'
 import type { Frontmatter } from '@shared/index'
 
-export function parseFrontmatter(raw: string): { frontmatter: Frontmatter; body: string } {
+function extractTitleFromFilename(name: string): string {
+  return name
+    .replace(/\.md$/i, '')
+    .replace(/^(\d{4}\.?\d{1,2}\.?-?\d{0,2}-?)/, '')
+    .replace(/-/g, ' ')
+    .trim()
+}
+
+export function parseFrontmatter(
+  raw: string,
+  opts?: { filename?: string }
+): { frontmatter: Frontmatter; body: string } {
   const parsed = matter(raw)
   const data = parsed.data as Partial<Frontmatter>
 
   const frontmatter: Frontmatter = {
-    title:        data.title ?? 'untitled',
+    title:        data.title
+      ?? (opts?.filename ? extractTitleFromFilename(opts.filename) : undefined)
+      ?? 'untitled',
     created:      data.created ?? new Date().toISOString(),
     last_studied: data.last_studied,
     last_reviewed: data.last_reviewed,

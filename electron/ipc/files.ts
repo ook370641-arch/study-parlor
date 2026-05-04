@@ -9,14 +9,23 @@ import type { FileMeta, Frontmatter } from '@shared/index'
 export function registerFilesIpc(cfg: AppConfig) {
   ipcMain.handle('files:scan', async (): Promise<FileMeta[]> => {
     const root = cfg.libraryPath
-    if (!fs.existsSync(root)) return []
-    const files = fs.readdirSync(root).filter(n => n.endsWith('.md'))
-    return files.map(name => {
+    if (!fs.existsSync(root)) {
+      console.error(`[files:scan] library path does not exist: ${root}`)
+      return []
+    }
+    const files = fs.readdirSync(root).filter(n => n.toLowerCase().endsWith('.md'))
+    const results: FileMeta[] = []
+    for (const name of files) {
       const fp = path.join(root, name)
-      const raw = fs.readFileSync(fp, 'utf8')
-      const { frontmatter } = parseFrontmatter(raw)
-      return { ...frontmatter, file_path: fp }
-    })
+      try {
+        const raw = fs.readFileSync(fp, 'utf8')
+        const { frontmatter } = parseFrontmatter(raw, { filename: name })
+        results.push({ ...frontmatter, file_path: fp })
+      } catch (err) {
+        console.error(`[files:scan] failed to read ${fp}:`, err)
+      }
+    }
+    return results
   })
 
   ipcMain.handle('files:read', async (_, file_path: string) => {
@@ -50,5 +59,10 @@ export function registerFilesIpc(cfg: AppConfig) {
     const newFm = bumpReviewFrontmatter(frontmatter, now)
     const newBody = body.trimEnd() + buildReviewAppendix(now, args.summary)
     fs.writeFileSync(args.file_path, serializeFrontmatter(newFm, newBody), 'utf8')
+  })
+
+  ipcMain.handle('files:recoveryDump', async (_, args: { filename: string; content: string }) => {
+    const { dumpRecovery } = await import('../lib/recovery')
+    dumpRecovery(args.filename, args.content)
   })
 }
