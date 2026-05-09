@@ -1,11 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcApi } from '@shared/index'
+import type { IpcApi, UnsavedSession } from '@shared/index'
 
 const api: IpcApi = {
   scanLibrary: () => ipcRenderer.invoke('files:scan'),
   readMd: (p) => ipcRenderer.invoke('files:read', p),
   writeProgressMd: (a) => ipcRenderer.invoke('files:writeProgress', a),
-  appendReviewRecord: (a) => ipcRenderer.invoke('files:appendReview', a),
+  writeReviewReport: (a) => ipcRenderer.invoke('files:writeReviewReport', a),
+  readAnchorFile: (dirName) => ipcRenderer.invoke('files:readAnchor', dirName),
+  writeTranscript: (a) => ipcRenderer.invoke('files:writeTranscript', a),
+  readSessionFile: (a) => ipcRenderer.invoke('files:readSessionFile', a),
+  recoveryDump: (a) => ipcRenderer.invoke('files:recoveryDump', a),
 
   getState: () => ipcRenderer.invoke('state:get'),
   patchState: (p) => ipcRenderer.invoke('state:patch', p),
@@ -31,7 +35,14 @@ const api: IpcApi = {
     const handler = (_: unknown, sid: string, err: { code: string; message: string }) => cb(sid, err)
     ipcRenderer.on('llm:error', handler)
     return () => ipcRenderer.off('llm:error', handler)
-  }
+  },
+
+  bootFatal: () => ipcRenderer.invoke('boot:fatal'),
+
+  // Session persistence — stubs until main handlers implemented
+  loadSessions: async () => [],
+  saveSession: async (_s: UnsavedSession) => {},
+  deleteSession: async (_id: string) => {}
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -9,8 +9,11 @@ const ensure = (): IpcApi => {
 export const ipc = {
   get scanLibrary() { return ensure().scanLibrary },
   get readMd() { return ensure().readMd },
+  get readAnchorFile() { return ensure().readAnchorFile },
   get writeProgressMd() { return ensure().writeProgressMd },
-  get appendReviewRecord() { return ensure().appendReviewRecord },
+  get writeReviewReport() { return ensure().writeReviewReport },
+  get writeTranscript() { return ensure().writeTranscript },
+  get readSessionFile() { return ensure().readSessionFile },
   get getState() { return ensure().getState },
   get patchState() { return ensure().patchState },
   get llmProbe() { return ensure().llmProbe },
@@ -21,5 +24,10 @@ export const ipc = {
   get llmFinalizeReview() { return ensure().llmFinalizeReview },
   get onLlmChunk() { return ensure().onLlmChunk },
   get onLlmDone() { return ensure().onLlmDone },
-  get onLlmError() { return ensure().onLlmError }
+  get onLlmError() { return ensure().onLlmError },
+  get saveSession() { return ensure().saveSession },
+  get loadSessions() { return ensure().loadSessions },
+  get deleteSession() { return ensure().deleteSession },
+  get recoveryDump() { return ensure().recoveryDump },
+  get bootFatal() { return ensure().bootFatal }
 }
