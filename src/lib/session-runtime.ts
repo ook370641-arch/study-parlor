@@ -11,13 +11,15 @@ export function attachSessionListeners() {
     const s = useStore.getState().session
     if (!s || s.abortId !== sid) return
     useStore.getState().appendChunk(text)
-    // 自动保存
-    useStore.getState().saveCurrentSession().catch(() => {})
   })
   unsubDone = ipc.onLlmDone((sid) => {
     const s = useStore.getState().session
     if (!s || s.abortId !== sid) return
     useStore.getState().finishStreaming()
+    // 流完成后自动保存
+    useStore.getState().saveCurrentSession().catch((e) => {
+      console.error('[auto-save] failed:', e)
+    })
   })
   unsubError = ipc.onLlmError((sid, err) => {
     const s = useStore.getState().session

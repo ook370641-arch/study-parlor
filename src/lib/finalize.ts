@@ -9,9 +9,12 @@ export async function finalizeAndReturnHome() {
   // 若仍在 streaming,先 abort
   if (sess.streaming) await ipc.llmAbort(sess.abortId)
 
+  // snapshot history 防止 finalize 过程中被 SSE 流修改
+  const historySnapshot = [...sess.history]
+
   try {
     if (sess.mode === 'progress') {
-      const { title, body, progress_summary } = await ipc.llmFinalizeProgress(sess.history)
+      const { title, body, progress_summary } = await ipc.llmFinalizeProgress(historySnapshot)
 
       // 确定 session 编号
       const topicMeta = s.library.find(t => t.dirName === sess.dirName)
@@ -28,7 +31,7 @@ export async function finalizeAndReturnHome() {
 
       // 生成并写寓言
       try {
-        const fable = await ipc.llmGenerateFable({ history: sess.history, topic: title })
+        const fable = await ipc.llmGenerateFable({ history: historySnapshot, topic: title })
         await ipc.writeTranscript({
           dirName, sessionNumber,
           content: `# ${fable.title}\n\n${fable.body}`
@@ -38,7 +41,7 @@ export async function finalizeAndReturnHome() {
       }
 
       // 写原始对话
-      const transcriptContent = sess.history.map((m, i) => {
+      const transcriptContent = historySnapshot.map((m, i) => {
         const time = new Date(Date.now() - (sess.history.length - i) * 60000).toISOString()
         return `## ${time}\n**${m.role === 'user' ? '用户' : 'AI'}**：${m.content}\n\n---`
       }).join('\n')
@@ -58,7 +61,7 @@ export async function finalizeAndReturnHome() {
     } else if (sess.mode === 'review') {
       if (!sess.file_path) throw new Error('review session has no file_path')
       const { body: existingBody } = await ipc.readMd(sess.file_path)
-      const { summary, gaps } = await ipc.llmFinalizeReview({ history: sess.history, existingBody })
+      const { summary, gaps } = await ipc.llmFinalizeReview({ history: historySnapshot, existingBody })
 
       const topicMeta = s.library.find(t => t.dirName === sess.dirName)
       const reviewIndex = (topicMeta?.sessions.find(sm => sm.hasReview)?.sessionNumber ?? 0) + 1
@@ -81,7 +84,7 @@ export async function finalizeAndReturnHome() {
       topic: sess.topic,
       file_path: sess.file_path,
       dirName: sess.dirName,
-      history: sess.history,
+      history: historySnapshot,
       error: String(err?.message ?? err)
     }, null, 2)
     await ipc.recoveryDump({
