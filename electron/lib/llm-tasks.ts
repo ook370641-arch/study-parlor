@@ -83,3 +83,27 @@ export async function finalizeReview(
     return { summary: '(复习摘要生成失败,本次对话未自动总结)', gaps: [] }
   }
 }
+
+export async function generateFable(
+  cfg: AppConfig,
+  args: { history: Message[]; topic: string }
+): Promise<{ title: string; body: string }> {
+  const prompt = read('fable.md')
+    .replace('{{transcript}}', transcript(args.history))
+    .replace('{{topic}}', args.topic)
+
+  try {
+    const text = await chatNonStream(cfg, {
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7
+    })
+    const json = JSON.parse(text) as { title?: string; body?: string }
+    if (!json.title || !json.body) throw new Error('shape')
+    return { title: json.title, body: json.body }
+  } catch {
+    return {
+      title: `${args.topic} — 寓言`,
+      body: `> 寓言生成失败，以下为原始对话记录：\n\n${transcript(args.history)}`
+    }
+  }
+}

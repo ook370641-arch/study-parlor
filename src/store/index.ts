@@ -1,7 +1,8 @@
 // src/store/index.ts
 import { create } from 'zustand'
 import type {
-  Difficulty, FileMeta, Message, NewTopic, Profile, RecCard, StateJson, Mode
+  Difficulty, Message, NewTopic, Profile, StateJson, Mode,
+  TopicMeta, UnsavedSession
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 
@@ -10,44 +11,46 @@ type Page = 'cover' | 'home' | 'study' | 'profile'
 type Session = {
   mode: Mode
   topic: string
+  dirName?: string
   file_path?: string
   difficulty: Difficulty
   temperature: number
   history: Message[]
   streaming: boolean
-  abortId: string                 // sessionId 给 IPC 用
+  abortId: string
   suggestEnd: boolean
-  reviewFileBody?: string         // review 模式下缓存文件 body,避免重复读取
+  reviewFileBody?: string
 }
 
 type AppStore = {
   // 持久化
   profile: Profile
   lastUsed: { difficulty: Difficulty; temperature: number }
-  recommendation: { left: RecCard | null; right: RecCard | null }
   inspirations: NewTopic[]
   inspirationsLoading: boolean
   inspirationsError: boolean
+  session_count: number
 
   // 派生
-  library: FileMeta[]
+  library: TopicMeta[]
   modelInvalid: boolean
   modelInvalidReason?: string
+  unsavedSessions: UnsavedSession[]
 
   // 临时
   session: Session | null
   currentPage: Page
   modal: 'preStudy' | null
-  preStudyArgs: { mode: Mode; topic: string; file_path?: string } | null
+  preStudyArgs: { mode: Mode; topic: string; dirName?: string; file_path?: string } | null
   toast: { message: string; ts: number } | null
 
   // 操作
   init: () => Promise<void>
   goto: (p: Page) => void
-  openPreStudy: (a: { mode: Mode; topic: string; file_path?: string }) => void
+  openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
   closePreStudy: () => void
   startSession: (a: {
-    mode: Mode; topic: string; file_path?: string
+    mode: Mode; topic: string; dirName?: string; file_path?: string
     difficulty: Difficulty; temperature: number
   }) => void
   appendChunk: (text: string) => void
@@ -57,23 +60,26 @@ type AppStore = {
   endSession: () => void
   resetSession: () => void
   showToast: (m: string) => void
-  setRecommendation: (r: { left: RecCard | null; right: RecCard | null }) => void
   setInspirations: (t: NewTopic[]) => void
   setInspirationsLoading: (v: boolean) => void
   setInspirationsError: (v: boolean) => void
   patchProfile: (p: Partial<Profile>) => Promise<void>
   patchLastUsed: (l: Partial<{ difficulty: Difficulty; temperature: number }>) => Promise<void>
+  saveCurrentSession: () => Promise<void>
+  restoreSession: (session: UnsavedSession) => void
+  removeUnsavedSession: (id: string) => void
 }
 
 export const useStore = create<AppStore>((set, get) => ({
   profile: { name: '', profile_text: '', preferred_topics: [] },
   lastUsed: { difficulty: 'mid', temperature: 0.7 },
-  recommendation: { left: null, right: null },
   inspirations: [],
   inspirationsLoading: false,
   inspirationsError: false,
+  session_count: 0,
   library: [],
   modelInvalid: false,
+  unsavedSessions: [],
   session: null,
   currentPage: 'cover',
   modal: null,
@@ -81,16 +87,16 @@ export const useStore = create<AppStore>((set, get) => ({
   toast: null,
 
   init: async () => {
-    const [state, library] = await Promise.all([ipc.getState(), ipc.scanLibrary()])
+    const [state, library, unsaved] = await Promise.all([
+      ipc.getState(), ipc.scanLibrary(), ipc.loadSessions()
+    ])
     set({
       profile: state.profile,
       lastUsed: state.lastUsed,
-      recommendation: {
-        left:  state.recommendation_cache.left  ?? null,
-        right: state.recommendation_cache.right ?? null
-      },
       inspirations: state.suggested_new_topics?.topics ?? [],
-      library
+      session_count: state.ui?.session_count ?? 0,
+      library,
+      unsavedSessions: unsaved
     })
   },
 
@@ -100,9 +106,11 @@ export const useStore = create<AppStore>((set, get) => ({
 
   startSession: (a) => {
     const sid = crypto.randomUUID()
+    const nextCount = get().session_count + 1
     set({
+      session_count: nextCount,
       session: {
-        mode: a.mode, topic: a.topic, file_path: a.file_path,
+        mode: a.mode, topic: a.topic, dirName: a.dirName, file_path: a.file_path,
         difficulty: a.difficulty, temperature: a.temperature,
         history: [], streaming: false, abortId: sid, suggestEnd: false
       },
@@ -110,6 +118,7 @@ export const useStore = create<AppStore>((set, get) => ({
       preStudyArgs: null,
       currentPage: 'study'
     })
+    ipc.patchState({ ui: { session_count: nextCount } } as Partial<StateJson>)
   },
 
   appendChunk: (text) => set(s => {
@@ -155,7 +164,6 @@ export const useStore = create<AppStore>((set, get) => ({
 
   resetSession: () => set({ session: null, currentPage: 'home' }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
-  setRecommendation: (r) => set({ recommendation: r }),
   setInspirations: (t) => set({ inspirations: t }),
   setInspirationsLoading: (v) => set({ inspirationsLoading: v }),
  setInspirationsError: (v) => set({ inspirationsError: v }),
@@ -170,5 +178,46 @@ export const useStore = create<AppStore>((set, get) => ({
     const next = { ...get().lastUsed, ...l }
     set({ lastUsed: next })
     await ipc.patchState({ lastUsed: next } as Partial<StateJson>)
+  },
+
+  saveCurrentSession: async () => {
+    const s = get().session
+    if (!s) return
+    const unsaved: UnsavedSession = {
+      id: s.abortId,
+      mode: s.mode,
+      topic: s.topic,
+      dirName: s.dirName,
+      file_path: s.file_path,
+      difficulty: s.difficulty,
+      temperature: s.temperature,
+      history: s.history
+    }
+    await ipc.saveSession(unsaved)
+  },
+
+  restoreSession: (unsaved) => {
+    set({
+      session: {
+        mode: unsaved.mode,
+        topic: unsaved.topic,
+        dirName: unsaved.dirName,
+        file_path: unsaved.file_path,
+        difficulty: unsaved.difficulty,
+        temperature: unsaved.temperature,
+        history: unsaved.history,
+        streaming: false,
+        abortId: crypto.randomUUID(),
+        suggestEnd: false
+      },
+      currentPage: 'study'
+    })
+  },
+
+  removeUnsavedSession: (id) => {
+    set(s => ({
+      unsavedSessions: s.unsavedSessions.filter(us => us.id !== id)
+    }))
+    ipc.deleteSession(id)
   }
 }))
