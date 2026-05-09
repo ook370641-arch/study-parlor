@@ -2,143 +2,25 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
-import { parseFrontmatter } from '@electron/lib/frontmatter'
-import type { TopicMeta, SessionMeta } from '@shared/index'
+import { getSessionMeta, getTopicMeta } from '@electron/ipc/files'
+import type { TopicMeta } from '@shared/index'
 
-// Re-implement the helper functions here for testing (since they are not exported)
-// We copy the logic from electron/ipc/files.ts to test it independently
-
-function getSessionMeta(sessionDir: string): SessionMeta {
-  const files = fs.readdirSync(sessionDir, { withFileTypes: true })
-    .filter(d => d.isFile())
-    .map(d => d.name)
-
-  const dirName = path.basename(sessionDir)
-  const sessionMatch = dirName.match(/^s(\d+)$/)
-  const sessionNumber = sessionMatch ? parseInt(sessionMatch[1], 10) : 1
-
-  const hasReport = files.includes('学习报告.md')
-  const hasTranscript = files.includes('原始对话.md')
-  const hasReview = files.includes('复习报告.md')
-
-  const fableFiles = files.filter(n => /^寓言(\d+)?\.md$/.test(n))
-  const hasFable = fableFiles.length > 0
-  const fableCount = fableFiles.length
-
-  const hasImage = files.some(n => /^学习配图\.\w+$/.test(n))
-  const hasFableImage = files.some(n => /^寓言配图(-research)?\.\w+$/.test(n))
-
-  let date = ''
-
-  if (hasReport) {
-    try {
-      const reportPath = path.join(sessionDir, '学习报告.md')
-      const raw = fs.readFileSync(reportPath, 'utf8')
-      const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
-      const created = frontmatter.created
-      date = created instanceof Date ? created.toISOString() : String(created || '')
-    } catch (err) {
-      console.error(`[getSessionMeta] failed to parse frontmatter in ${sessionDir}:`, err)
-    }
-  }
-
-  return {
-    sessionNumber,
-    date,
-    hasReport,
-    hasTranscript,
-    hasReview,
-    hasFable,
-    fableCount,
-    hasImage,
-    hasFableImage,
-  }
-}
-
-function getTopicMeta(topicDir: string): TopicMeta | null {
-  const dirName = path.basename(topicDir)
-
-  const entries = fs.readdirSync(topicDir, { withFileTypes: true })
-
-  const sessionDirs = entries
-    .filter(d => d.isDirectory() && /^s\d+$/.test(d.name))
-    .map(d => d.name)
-    .sort((a, b) => {
-      const na = parseInt(a.slice(1), 10)
-      const nb = parseInt(b.slice(1), 10)
-      return na - nb
-    })
-
-  const allFiles = entries
-    .filter(d => d.isFile())
-    .map(d => d.name)
-
-  let sessions: SessionMeta[] = []
-
-  if (sessionDirs.length > 0) {
-    for (const sd of sessionDirs) {
-      try {
-        const sessionPath = path.join(topicDir, sd)
-        sessions.push(getSessionMeta(sessionPath))
-      } catch (err) {
-        console.error(`[getTopicMeta] failed to read session ${sd} in ${topicDir}:`, err)
-      }
-    }
-  } else if (allFiles.length > 0) {
-    // Pure image topic: no session dirs but has files
-    const hasImage = allFiles.some(n => /^学习配图\.\w+$/.test(n))
-    const hasFableImage = allFiles.some(n => /^寓言配图(-research)?\.\w+$/.test(n))
-    sessions = [{
-      sessionNumber: 1,
-      date: '',
-      hasReport: false,
-      hasTranscript: false,
-      hasReview: false,
-      hasFable: false,
-      fableCount: 0,
-      hasImage,
-      hasFableImage,
-    }]
-  } else {
-    // Empty topic directory — skip
-    return null
-  }
-
-  // Get title from the latest session's 学习报告.md
-  let title = dirName
-  const latestSession = sessions[sessions.length - 1]
-  if (latestSession?.hasReport) {
-    try {
-      const reportPath = path.join(topicDir, `s${latestSession.sessionNumber}`, '学习报告.md')
-      const raw = fs.readFileSync(reportPath, 'utf8')
-      const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
-      if (frontmatter.title) {
-        title = frontmatter.title
-      }
-    } catch (err) {
-      console.error(`[getTopicMeta] failed to read title from latest session in ${topicDir}:`, err)
-    }
-  }
-
-  // Calculate last_studied from the latest session
-  const lastSession = sessions[sessions.length - 1]
-  const last_studied = lastSession?.date || ''
-
-  let last_studied_days = 0
-  if (last_studied) {
-    const now = new Date()
-    const lastDate = new Date(last_studied)
-    last_studied_days = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
-  }
-
-  return {
-    dirName,
-    title,
-    sessionCount: sessions.length,
-    sessions,
-    last_studied,
-    last_studied_days,
-  }
+// Helper to write a valid frontmatter markdown file
+function writeReport(filePath: string, title: string, created: string, extraFrontmatter?: Record<string, unknown>) {
+  const extra = extraFrontmatter
+    ? Object.entries(extraFrontmatter).map(([k, v]) => `${k}: ${v}`).join('\n') + '\n'
+    : ''
+  const content = `---
+title: ${title}
+created: ${created}
+review_count: 0
+difficulty: mid
+tags: []
+type: progress
+${extra}---
+正文内容
+`
+  fs.writeFileSync(filePath, content, 'utf8')
 }
 
 function scanLibrary(root: string): TopicMeta[] {
@@ -170,21 +52,6 @@ function scanLibrary(root: string): TopicMeta[] {
   })
 
   return results
-}
-
-// Helper to write a valid frontmatter markdown file
-function writeReport(filePath: string, title: string, created: string) {
-  const content = `---
-title: ${title}
-created: ${created}
-review_count: 0
-difficulty: mid
-tags: []
-type: progress
----
-正文内容
-`
-  fs.writeFileSync(filePath, content, 'utf8')
 }
 
 describe('getSessionMeta', () => {
@@ -265,6 +132,31 @@ describe('getSessionMeta', () => {
 
     const meta = getSessionMeta(sessionDir)
     expect(meta.sessionNumber).toBe(42)
+  })
+
+  it('uses session_number from frontmatter when present', () => {
+    const sessionDir = path.join(tmpDir, 's1')
+    fs.mkdirSync(sessionDir, { recursive: true })
+
+    writeReport(
+      path.join(sessionDir, '学习报告.md'),
+      '重编号会话',
+      '2026-05-01T10:00:00+08:00',
+      { session_number: 5 }
+    )
+
+    const meta = getSessionMeta(sessionDir)
+    expect(meta.sessionNumber).toBe(5)
+  })
+
+  it('falls back to directory name when frontmatter session_number is missing', () => {
+    const sessionDir = path.join(tmpDir, 's7')
+    fs.mkdirSync(sessionDir, { recursive: true })
+
+    writeReport(path.join(sessionDir, '学习报告.md'), '无编号', '2026-05-01T10:00:00+08:00')
+
+    const meta = getSessionMeta(sessionDir)
+    expect(meta.sessionNumber).toBe(7)
   })
 })
 
@@ -378,6 +270,20 @@ describe('getTopicMeta', () => {
     const meta = getTopicMeta(topicDir)
     expect(meta!.sessions.map(s => s.sessionNumber)).toEqual([2, 10])
     expect(meta!.last_studied).toBe('2026-05-10T02:00:00.000Z') // from s10 (latest)
+  })
+
+  it('never returns negative last_studied_days for future dates', () => {
+    const topicDir = path.join(tmpDir, '未来主题')
+    fs.mkdirSync(topicDir, { recursive: true })
+
+    const s1 = path.join(topicDir, 's1')
+    fs.mkdirSync(s1, { recursive: true })
+    // Date far in the future
+    writeReport(path.join(s1, '学习报告.md'), '未来', '2030-01-01T10:00:00+08:00')
+
+    const meta = getTopicMeta(topicDir)
+    expect(meta).not.toBeNull()
+    expect(meta!.last_studied_days).toBe(0)
   })
 })
 

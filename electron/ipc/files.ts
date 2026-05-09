@@ -6,14 +6,14 @@ import { resolveTitleConflict, buildReviewAppendix, bumpReviewFrontmatter } from
 import type { AppConfig } from '../env'
 import type { FileMeta, Frontmatter, TopicMeta, SessionMeta } from '@shared/index'
 
-function getSessionMeta(sessionDir: string): SessionMeta {
+export function getSessionMeta(sessionDir: string): SessionMeta {
   const files = fs.readdirSync(sessionDir, { withFileTypes: true })
     .filter(d => d.isFile())
     .map(d => d.name)
 
   const dirName = path.basename(sessionDir)
   const sessionMatch = dirName.match(/^s(\d+)$/)
-  const sessionNumber = sessionMatch ? parseInt(sessionMatch[1], 10) : 1
+  let sessionNumber = sessionMatch ? parseInt(sessionMatch[1], 10) : 1
 
   const hasReport = files.includes('学习报告.md')
   const hasTranscript = files.includes('原始对话.md')
@@ -33,7 +33,11 @@ function getSessionMeta(sessionDir: string): SessionMeta {
       const reportPath = path.join(sessionDir, '学习报告.md')
       const raw = fs.readFileSync(reportPath, 'utf8')
       const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
-      date = frontmatter.created || ''
+      const created = frontmatter.created
+      date = created instanceof Date ? created.toISOString() : String(created || '')
+      if (frontmatter.session_number != null && frontmatter.session_number > 0) {
+        sessionNumber = frontmatter.session_number
+      }
     } catch (err) {
       console.error(`[getSessionMeta] failed to parse frontmatter in ${sessionDir}:`, err)
     }
@@ -52,7 +56,7 @@ function getSessionMeta(sessionDir: string): SessionMeta {
   }
 }
 
-function getTopicMeta(topicDir: string): TopicMeta | null {
+export function getTopicMeta(topicDir: string): TopicMeta | null {
   const dirName = path.basename(topicDir)
 
   const entries = fs.readdirSync(topicDir, { withFileTypes: true })
@@ -71,12 +75,15 @@ function getTopicMeta(topicDir: string): TopicMeta | null {
     .map(d => d.name)
 
   let sessions: SessionMeta[] = []
+  const sessionDirMap: Record<number, string> = {}
 
   if (sessionDirs.length > 0) {
     for (const sd of sessionDirs) {
       try {
         const sessionPath = path.join(topicDir, sd)
-        sessions.push(getSessionMeta(sessionPath))
+        const meta = getSessionMeta(sessionPath)
+        sessions.push(meta)
+        sessionDirMap[meta.sessionNumber] = sd
       } catch (err) {
         console.error(`[getTopicMeta] failed to read session ${sd} in ${topicDir}:`, err)
       }
@@ -106,7 +113,9 @@ function getTopicMeta(topicDir: string): TopicMeta | null {
   const latestSession = sessions[sessions.length - 1]
   if (latestSession?.hasReport) {
     try {
-      const reportPath = path.join(topicDir, `s${latestSession.sessionNumber}`, '学习报告.md')
+      // Use actual directory name, not frontmatter session_number, for path construction
+      const latestDirName = sessionDirMap[latestSession.sessionNumber] ?? `s${latestSession.sessionNumber}`
+      const reportPath = path.join(topicDir, latestDirName, '学习报告.md')
       const raw = fs.readFileSync(reportPath, 'utf8')
       const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
       if (frontmatter.title) {
@@ -125,7 +134,7 @@ function getTopicMeta(topicDir: string): TopicMeta | null {
   if (last_studied) {
     const now = new Date()
     const lastDate = new Date(last_studied)
-    last_studied_days = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
+    last_studied_days = Math.max(0, Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)))
   }
 
   return {
