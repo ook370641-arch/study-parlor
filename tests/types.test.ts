@@ -108,7 +108,6 @@ describe('type instantiation', () => {
       suggested_new_topics: null,
       ui: { session_count: 0 },
     }
-    expect(state).toBeDefined()
     // @ts-expect-error recommendation_cache should not exist
     expect(state.recommendation_cache).toBeUndefined()
   })
