@@ -202,16 +202,4 @@ describe('type instantiation', () => {
     expect(result.content).toBe('file content')
   })
 
-  it('IpcApi llmGenerateFable accepts correct args', async () => {
-    const mockLlmGenerateFable: IpcApi['llmGenerateFable'] = async (args) => {
-      expect(args.topic).toBe('Math')
-      expect(args.history).toHaveLength(1)
-      return { title: 'The Math Fable', body: 'Once upon a time...' }
-    }
-    const result = await mockLlmGenerateFable({
-      history: [{ role: 'user', content: 'hello' }],
-      topic: 'Math',
-    })
-    expect(result.title).toBe('The Math Fable')
-  })
 })

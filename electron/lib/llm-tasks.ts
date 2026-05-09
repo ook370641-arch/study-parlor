@@ -37,20 +37,21 @@ export async function generateInspirations(
 export async function finalizeProgress(
   cfg: AppConfig,
   history: Message[]
-): Promise<{ title: string; body: string }> {
+): Promise<{ title: string; body: string; progress_summary?: string }> {
   const prompt = read('archive-progress.md').replace('{{transcript}}', transcript(history))
   try {
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3
     })
-    const json = JSON.parse(text) as { title: string; body: string }
+    const json = JSON.parse(text) as { title: string; body: string; progress_summary?: string }
     if (!json.title || !json.body) throw new Error('shape')
     return json
   } catch {
     return {
       title: '未命名笔记',
-      body: '> LLM 归档失败,原始对话已保留为草稿:\n\n' + transcript(history)
+      body: '> LLM 归档失败,原始对话已保留为草稿:\n\n' + transcript(history),
+      progress_summary: ''
     }
   }
 }
@@ -58,7 +59,7 @@ export async function finalizeProgress(
 export async function finalizeReview(
   cfg: AppConfig,
   args: { history: Message[]; existingBody: string }
-): Promise<string> {
+): Promise<{ summary: string; gaps: string[] }> {
   const prompt = read('archive-review.md')
     .replace('{{existing_body}}', args.existingBody)
     .replace('{{transcript}}', transcript(args.history))
@@ -67,8 +68,18 @@ export async function finalizeReview(
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3
     })
-    return text.trim()
+    const trimmed = text.trim()
+    try {
+      const json = JSON.parse(trimmed) as { summary?: string; gaps?: string[] }
+      return {
+        summary: json.summary ?? trimmed,
+        gaps: Array.isArray(json.gaps) ? json.gaps : []
+      }
+    } catch {
+      // 非 JSON 响应：把原始文本作为 summary
+      return { summary: trimmed, gaps: [] }
+    }
   } catch {
-    return '(复习摘要生成失败,本次对话未自动总结)'
+    return { summary: '(复习摘要生成失败,本次对话未自动总结)', gaps: [] }
   }
 }
