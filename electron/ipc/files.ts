@@ -60,21 +60,30 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
   }
 }
 
-export function getTopicMeta(topicDir: string): TopicMeta | null {
-  const dirName = path.basename(topicDir)
+function validateDirName(dirName: string): void {
+  if (!dirName || dirName.includes('..') || dirName.includes('/') || dirName.includes('\\')) {
+    throw new Error('Invalid dirName')
+  }
+}
 
+function getSortedSessionDirs(topicDir: string): string[] {
   const entries = fs.readdirSync(topicDir, { withFileTypes: true })
-
-  const sessionDirs = entries
-    .filter(d => d.isDirectory() && /^s\d+$/.test(d.name))
-    .map(d => d.name)
+  return entries
+    .filter(e => e.isDirectory() && /^s\d+$/.test(e.name))
+    .map(e => e.name)
     .sort((a, b) => {
       const na = parseInt(a.slice(1), 10)
       const nb = parseInt(b.slice(1), 10)
       return na - nb
     })
+}
 
-  const allFiles = entries
+export function getTopicMeta(topicDir: string): TopicMeta | null {
+  const dirName = path.basename(topicDir)
+
+  const sessionDirs = getSortedSessionDirs(topicDir)
+
+  const allFiles = fs.readdirSync(topicDir, { withFileTypes: true })
     .filter(d => d.isFile())
     .map(d => d.name)
 
@@ -189,6 +198,7 @@ export function registerFilesIpc(cfg: AppConfig) {
     title: string; body: string; difficulty: 'high' | 'mid' | 'low'
     dirName: string; session_number: number; progress_summary?: string
   }) => {
+    validateDirName(args.dirName)
     const now = new Date()
     const topicDir = path.join(cfg.libraryPath, args.dirName)
     const sessionDir = path.join(topicDir, `s${args.session_number}`)
@@ -210,16 +220,9 @@ export function registerFilesIpc(cfg: AppConfig) {
   })
 
   ipcMain.handle('files:readAnchor', async (_, dirName: string) => {
+    validateDirName(dirName)
     const topicDir = path.join(cfg.libraryPath, dirName)
-    const entries = fs.readdirSync(topicDir, { withFileTypes: true })
-    const sessionDirs = entries
-      .filter(e => e.isDirectory() && /^s\d+$/.test(e.name))
-      .map(e => e.name)
-      .sort((a, b) => {
-        const na = parseInt(a.replace('s', ''), 10)
-        const nb = parseInt(b.replace('s', ''), 10)
-        return na - nb
-      })
+    const sessionDirs = getSortedSessionDirs(topicDir)
     if (sessionDirs.length === 0) {
       throw new Error(`No sessions found for topic: ${dirName}`)
     }
@@ -235,17 +238,10 @@ export function registerFilesIpc(cfg: AppConfig) {
   ipcMain.handle('files:writeReviewReport', async (_, args: {
     topic: string; dirName: string; summary: string; gaps: string; review_index: number
   }) => {
+    validateDirName(args.dirName)
     const now = new Date()
     const topicDir = path.join(cfg.libraryPath, args.dirName)
-    const entries = fs.readdirSync(topicDir, { withFileTypes: true })
-    const sessionDirs = entries
-      .filter(e => e.isDirectory() && /^s\d+$/.test(e.name))
-      .map(e => e.name)
-      .sort((a, b) => {
-        const na = parseInt(a.replace('s', ''), 10)
-        const nb = parseInt(b.replace('s', ''), 10)
-        return na - nb
-      })
+    const sessionDirs = getSortedSessionDirs(topicDir)
     if (sessionDirs.length === 0) {
       throw new Error(`No sessions found for topic: ${args.dirName}`)
     }
@@ -263,9 +259,22 @@ export function registerFilesIpc(cfg: AppConfig) {
     }
   })
 
+function getMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase()
+  const map: Record<string, string> = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp'
+  }
+  return map[ext] || 'application/octet-stream'
+}
+
   ipcMain.handle('files:writeTranscript', async (_, args: {
     dirName: string; sessionNumber: number; content: string
   }) => {
+    validateDirName(args.dirName)
     const topicDir = path.join(cfg.libraryPath, args.dirName)
     const sessionDir = path.join(topicDir, `s${args.sessionNumber}`)
     fs.mkdirSync(sessionDir, { recursive: true })
@@ -276,6 +285,7 @@ export function registerFilesIpc(cfg: AppConfig) {
   ipcMain.handle('files:readSessionFile', async (_, args: {
     dirName: string; sessionNumber: number; fileName: string
   }) => {
+    validateDirName(args.dirName)
     const filePath = path.join(cfg.libraryPath, args.dirName, `s${args.sessionNumber}`, args.fileName)
     const resolved = path.resolve(filePath)
     const rootResolved = path.resolve(cfg.libraryPath)
@@ -288,7 +298,7 @@ export function registerFilesIpc(cfg: AppConfig) {
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(resolved)
     if (isImage) {
       const buffer = fs.readFileSync(resolved)
-      return { content: buffer.toString('base64'), mimeType: 'image/png' }
+      return { content: buffer.toString('base64'), mimeType: getMimeType(resolved) }
     }
     const content = fs.readFileSync(resolved, 'utf8')
     return { content, mimeType: 'text/markdown' }

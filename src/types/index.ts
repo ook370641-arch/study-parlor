@@ -78,7 +78,6 @@ export type IpcApi = {
   scanLibrary: () => Promise<TopicMeta[]>
   readMd: (path: string) => Promise<{ frontmatter: Frontmatter; body: string }>
   writeProgressMd: (args: { title: string; body: string; difficulty: Difficulty; dirName: string; session_number: number; progress_summary?: string }) => Promise<{ file_path: string }>
-  appendReviewRecord: (args: { file_path: string; summary: string }) => Promise<void>
   recoveryDump: (args: { filename: string; content: string }) => Promise<void>
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
@@ -107,9 +106,6 @@ export type IpcApi = {
   // Session file operations
   writeTranscript: (args: { dirName: string; sessionNumber: number; content: string }) => Promise<void>
   readSessionFile: (args: { dirName: string; sessionNumber: number; fileName: string }) => Promise<{ content: string; mimeType?: string }>
-
-  // LLM fable generation
-  llmGenerateFable: (args: { history: Message[]; topic: string }) => Promise<{ title: string; body: string }>
 }
 
 declare global {
