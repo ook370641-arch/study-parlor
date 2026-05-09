@@ -12,11 +12,41 @@ export async function finalizeAndReturnHome() {
   try {
     if (sess.mode === 'progress') {
       const { title, body, progress_summary } = await ipc.llmFinalizeProgress(sess.history)
+
+      // 确定 session 编号
+      const topicMeta = s.library.find(t => t.dirName === sess.dirName)
+      const sessionNumber = sess.dirName && topicMeta
+        ? topicMeta.sessionCount + 1
+        : 1
+      const dirName = sess.dirName ?? title.toLowerCase().replace(/[^\w一-龥]/g, '-').replace(/-+/g, '-')
+
+      // 写学习报告
       await ipc.writeProgressMd({
         title, body, difficulty: sess.difficulty,
-        session_number: s.session_count,
-        progress_summary
+        dirName, session_number: sessionNumber, progress_summary
       })
+
+      // 生成并写寓言
+      try {
+        const fable = await ipc.llmGenerateFable({ history: sess.history, topic: title })
+        await ipc.writeTranscript({
+          dirName, sessionNumber,
+          content: `# ${fable.title}\n\n${fable.body}`
+        })
+      } catch (e) {
+        console.warn('[finalize] fable generation failed:', e)
+      }
+
+      // 写原始对话
+      const transcriptContent = sess.history.map((m, i) => {
+        const time = new Date(Date.now() - (sess.history.length - i) * 60000).toISOString()
+        return `## ${time}\n**${m.role === 'user' ? '用户' : 'AI'}**：${m.content}\n\n---`
+      }).join('\n')
+      await ipc.writeTranscript({
+        dirName, sessionNumber,
+        content: `# 原始对话\n\n${transcriptContent}`
+      })
+
       s.showToast(`《${title}》已归档`)
 
       // 清理未保存会话
@@ -30,14 +60,12 @@ export async function finalizeAndReturnHome() {
       const { body: existingBody } = await ipc.readMd(sess.file_path)
       const { summary, gaps } = await ipc.llmFinalizeReview({ history: sess.history, existingBody })
 
-      // 写独立复习报告到 复习/ 目录
       const topicMeta = s.library.find(t => t.dirName === sess.dirName)
-      const reviewIndex = (topicMeta?.review_count ?? 0) + 1
+      const reviewIndex = (topicMeta?.sessions.find(sm => sm.hasReview)?.sessionNumber ?? 0) + 1
       await ipc.writeReviewReport({
         topic: sess.topic,
         dirName: sess.dirName ?? sess.topic,
-        summary,
-        gaps,
+        summary, gaps,
         review_index: reviewIndex
       })
 

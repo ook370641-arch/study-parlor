@@ -11,6 +11,8 @@ export function attachSessionListeners() {
     const s = useStore.getState().session
     if (!s || s.abortId !== sid) return
     useStore.getState().appendChunk(text)
+    // 自动保存
+    useStore.getState().saveCurrentSession().catch(() => {})
   })
   unsubDone = ipc.onLlmDone((sid) => {
     const s = useStore.getState().session
@@ -31,11 +33,23 @@ export async function kickoffSession() {
 
   let history = s.session.history
   let reviewFileBody: string | undefined
+  let progressSummary: string | undefined
+
   if (s.session.mode === 'progress' && history.length === 0) {
     history = [{ role: 'user', content: `今夜想学:${s.session.topic}` }]
     useStore.setState(state => state.session
       ? { session: { ...state.session, history, streaming: true } }
       : state)
+
+    // 继续学习：读取锚点文件的 progress_summary
+    if (s.session.dirName) {
+      try {
+        const { frontmatter } = await ipc.readAnchorFile(s.session.dirName)
+        progressSummary = frontmatter.progress_summary
+      } catch (err) {
+        console.warn('[kickoff] failed to read anchor:', err)
+      }
+    }
   } else if (s.session.mode === 'review') {
     if (!s.session.file_path) throw new Error('review session needs file_path')
     const { body } = await ipc.readMd(s.session.file_path)
@@ -51,6 +65,7 @@ export async function kickoffSession() {
     difficulty: s.session.difficulty,
     profile: s.profile,
     reviewFileBody,
+    progressSummary,
     history,
     temperature: s.session.temperature
   })
@@ -64,6 +79,10 @@ export async function sendOrInterrupt(text: string) {
   } else {
     s.pushUserMessage(text)
   }
+
+  // 自动保存 session
+  await s.saveCurrentSession()
+
   // 触发新一轮
   useStore.setState(state => state.session
     ? { session: { ...state.session, streaming: true } }
