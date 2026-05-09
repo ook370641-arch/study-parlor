@@ -79,6 +79,7 @@ describe('getSessionMeta', () => {
     const meta = getSessionMeta(sessionDir)
     expect(meta.sessionNumber).toBe(1)
     expect(meta.date).toBe('2026-05-01T02:00:00.000Z')
+    expect(meta.title).toBe('群论基础')
     expect(meta.hasReport).toBe(true)
     expect(meta.hasTranscript).toBe(true)
     expect(meta.hasReview).toBe(true)
@@ -121,6 +122,7 @@ describe('getSessionMeta', () => {
     const meta = getSessionMeta(sessionDir)
     expect(meta.hasReport).toBe(false)
     expect(meta.date).toBe('')
+    expect(meta.title).toBeUndefined()
     expect(meta.sessionNumber).toBe(3)
   })
 
@@ -219,6 +221,30 @@ describe('getTopicMeta', () => {
     expect(meta!.sessions[0].hasReport).toBe(false)
     expect(meta!.sessions[0].hasImage).toBe(true)
     expect(meta!.sessions[0].hasFableImage).toBe(true)
+  })
+
+  it('reads session title from frontmatter', () => {
+    const sessionDir = path.join(tmpDir, 's1')
+    fs.mkdirSync(sessionDir, { recursive: true })
+
+    writeReport(path.join(sessionDir, '学习报告.md'), '自定义标题', '2026-05-01T10:00:00+08:00')
+
+    const meta = getSessionMeta(sessionDir)
+    expect(meta.title).toBe('自定义标题')
+  })
+
+  it('uses session title from getSessionMeta in topic meta', () => {
+    const topicDir = path.join(tmpDir, '主题名')
+    fs.mkdirSync(topicDir, { recursive: true })
+
+    const s1 = path.join(topicDir, 's1')
+    fs.mkdirSync(s1, { recursive: true })
+    writeReport(path.join(s1, '学习报告.md'), '会话标题', '2026-05-01T10:00:00+08:00')
+
+    const meta = getTopicMeta(topicDir)
+    expect(meta).not.toBeNull()
+    expect(meta!.title).toBe('会话标题')
+    expect(meta!.sessions[0].title).toBe('会话标题')
   })
 
   it('uses dirName as title when no 学习报告.md exists', () => {

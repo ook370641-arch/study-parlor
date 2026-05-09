@@ -26,6 +26,7 @@ export type FileMeta = Frontmatter & { file_path: string }
 export type SessionMeta = {
   sessionNumber: number
   date: string
+  title?: string
   hasReport: boolean
   hasTranscript: boolean
   hasReview: boolean

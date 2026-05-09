@@ -27,6 +27,7 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
   const hasFableImage = files.some(n => /^寓言配图(-research)?\.\w+$/.test(n))
 
   let date = ''
+  let title: string | undefined
 
   if (hasReport) {
     try {
@@ -38,6 +39,9 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
       if (frontmatter.session_number != null && frontmatter.session_number > 0) {
         sessionNumber = frontmatter.session_number
       }
+      if (frontmatter.title) {
+        title = frontmatter.title
+      }
     } catch (err) {
       console.error(`[getSessionMeta] failed to parse frontmatter in ${sessionDir}:`, err)
     }
@@ -46,6 +50,7 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
   return {
     sessionNumber,
     date,
+    title,
     hasReport,
     hasTranscript,
     hasReview,
@@ -108,22 +113,11 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
     return null
   }
 
-  // Get title from the latest session's 学习报告.md
+  // Get title from the latest session's frontmatter (already read by getSessionMeta)
   let title = dirName
   const latestSession = sessions[sessions.length - 1]
-  if (latestSession?.hasReport) {
-    try {
-      // Use actual directory name, not frontmatter session_number, for path construction
-      const latestDirName = sessionDirMap[latestSession.sessionNumber] ?? `s${latestSession.sessionNumber}`
-      const reportPath = path.join(topicDir, latestDirName, '学习报告.md')
-      const raw = fs.readFileSync(reportPath, 'utf8')
-      const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
-      if (frontmatter.title) {
-        title = frontmatter.title
-      }
-    } catch (err) {
-      console.error(`[getTopicMeta] failed to read title from latest session in ${topicDir}:`, err)
-    }
+  if (latestSession?.title) {
+    title = latestSession.title
   }
 
   // Calculate last_studied from the latest session
@@ -183,8 +177,13 @@ export function registerFilesIpc(cfg: AppConfig) {
   })
 
   ipcMain.handle('files:read', async (_, file_path: string) => {
-    const raw = fs.readFileSync(file_path, 'utf8')
-    return parseFrontmatter(raw, { filename: path.basename(file_path) })
+    const resolved = path.resolve(file_path)
+    const rootResolved = path.resolve(cfg.libraryPath)
+    if (!resolved.startsWith(rootResolved + path.sep) && resolved !== rootResolved) {
+      throw new Error('Access denied: file outside library path')
+    }
+    const raw = fs.readFileSync(resolved, 'utf8')
+    return parseFrontmatter(raw, { filename: path.basename(resolved) })
   })
 
   ipcMain.handle('files:writeProgress', async (_, args: {
