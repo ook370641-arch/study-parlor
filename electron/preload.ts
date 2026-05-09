@@ -40,10 +40,9 @@ const api: IpcApi = {
 
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
 
-  // Session persistence — stubs until main handlers implemented
-  loadSessions: async () => [],
-  saveSession: async (_s: UnsavedSession) => {},
-  deleteSession: async (_id: string) => {}
+  loadSessions: () => ipcRenderer.invoke('sessions:load'),
+  saveSession: (s) => ipcRenderer.invoke('sessions:save', s),
+  deleteSession: (id) => ipcRenderer.invoke('sessions:delete', id),
 }
 
 contextBridge.exposeInMainWorld('api', api)
