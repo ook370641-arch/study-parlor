@@ -47,7 +47,7 @@ export type TopicMeta = {
 
 export type RecCard = {
   type: 'continue' | 'review'
-  file_path: string
+  dirName: string
   title: string
 }
 

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { Button } from '@/components/Button'
 import { InspirationChip } from '@/components/InspirationChip'
-import { FileLibrary } from '@/components/FileLibrary'
+import { StudyLibrary } from '@/components/StudyLibrary'
 import { ipc } from '@/lib/ipc'
 
 export function Home() {
@@ -40,12 +40,13 @@ export function Home() {
   }
 
   useEffect(() => {
-    // 灵感(若缓存超 24h 或为空,异步刷新)
     const stale = inspirations.length === 0
     if (stale) {
       loadInspirations()
     }
   }, [library])
+
+  const firstUnsaved = unsavedSessions[0]
 
   return (
     <div className="h-full overflow-y-auto p-8 relative">
@@ -55,18 +56,50 @@ export function Home() {
         档案
       </Button>
 
-      <div className="max-w-5xl mx-auto pt-8">
-        <div className="text-center text-parchment/60 font-sans text-sm mb-12">
-          晚安,{profile.name}
-        </div>
+      <div className="text-center text-parchment/60 font-sans text-sm mb-8">
+        晚安,{profile.name}
+      </div>
 
-        <div className="grid grid-cols-3 gap-6">
-          <div className="flex flex-col gap-3">
-            <Button
-              onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
-              className="w-full text-lg py-4">
-              新学习
-            </Button>
+      <div className="flex gap-6 max-w-6xl mx-auto">
+        {/* 左侧：新学习模块 */}
+        <div className="w-[360px] shrink-0 flex flex-col gap-4">
+          {/* 恢复提示 */}
+          {firstUnsaved && (
+            <div className="panel p-4">
+              <div className="text-xs text-parchment/50 font-sans mb-2">未完成的会话</div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-parchment/70 font-serif truncate">
+                  {firstUnsaved.topic}
+                </span>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => restoreSession(firstUnsaved)}
+                    className="text-xs text-ember hover:text-parchment transition-colors font-sans"
+                  >
+                    继续
+                  </button>
+                  <button
+                    onClick={() => removeUnsavedSession(firstUnsaved.id)}
+                    className="text-xs text-parchment/30 hover:text-red-400 transition-colors font-sans"
+                  >
+                    丢弃
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 开始新学习 */}
+          <Button
+            onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
+            className="w-full text-lg py-4"
+          >
+            开始新学习
+          </Button>
+
+          {/* 推荐主题 */}
+          <div className="flex flex-col gap-2">
+            <div className="text-xs text-parchment/40 font-sans px-1">推荐主题</div>
 
             {inspirationsLoading && (
               <div className="text-sm text-parchment/50 font-sans text-center py-2">
@@ -78,7 +111,8 @@ export function Home() {
             {inspirationsError && (
               <button
                 onClick={loadInspirations}
-                className="text-sm text-parchment/50 font-sans text-center py-2 hover:text-ember transition-colors">
+                className="text-sm text-parchment/50 font-sans text-center py-2 hover:text-ember transition-colors"
+              >
                 灵感生成失败，点击重试
               </button>
             )}
@@ -86,37 +120,14 @@ export function Home() {
             {!inspirationsLoading && !inspirationsError && inspirations.map((t, i) => (
               <InspirationChip key={i} topic={t} />
             ))}
-
-            {unsavedSessions.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate/30">
-                <div className="text-xs text-parchment/50 font-sans mb-2">未完成的会话</div>
-                {unsavedSessions.map(s => (
-                  <div key={s.id} className="flex items-center justify-between gap-2 py-1">
-                    <button
-                      onClick={() => restoreSession(s)}
-                      className="text-sm text-parchment/70 hover:text-ember transition-colors font-serif truncate"
-                    >
-                      {s.topic}
-                      <span className="font-sans text-xs text-parchment/40 ml-2">
-                        {s.mode === 'progress' ? '学习中' : '复习中'}
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => removeUnsavedSession(s.id)}
-                      className="text-xs text-parchment/30 hover:text-red-400 transition-colors shrink-0"
-                    >
-                      清除
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="mt-16 divider"></div>
-        <div className="font-sans text-xs text-parchment/40 text-center mt-6 mb-2">— 学习库 —</div>
-        <FileLibrary />
+        {/* 右侧：学习库 */}
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-parchment/40 font-sans mb-3">学习库</div>
+          <StudyLibrary />
+        </div>
       </div>
     </div>
   )
