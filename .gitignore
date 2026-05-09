@@ -1,7 +1,20 @@
 node_modules/
 out/
 dist/
+release/
 .env
-~/.studyparlor/
 *.log
 .DS_Store
+Thumbs.db
+Pictures/
+
+# AI assistant tooling (large vendor dirs + nested .git repos)
+.claude/
+.codex/
+.superpowers/
+
+# Test / build caches
+coverage/
+test-results/
+.vite/
+*.tsbuildinfo

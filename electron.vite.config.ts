@@ -7,14 +7,18 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: path.resolve(__dirname, 'electron/main.ts'),
-        output: { entryFileNames: 'index.js' }
+        output: { entryFileNames: 'index.js' },
+        external: ['electron']
       },
       outDir: 'out/main'
     }
   },
   preload: {
     build: {
-      rollupOptions: { input: path.resolve(__dirname, 'electron/preload.ts') },
+      rollupOptions: {
+        input: path.resolve(__dirname, 'electron/preload.ts'),
+        output: { entryFileNames: 'index.js' }
+      },
       outDir: 'out/preload'
     }
   },

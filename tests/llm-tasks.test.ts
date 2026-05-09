@@ -43,11 +43,11 @@ describe('generateInspirations', () => {
 })
 
 describe('finalizeProgress', () => {
-  it('extracts title and body from JSON response', async () => {
+  it('extracts title, body and progress_summary from JSON response', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: '{"title":"拓扑入门","body":"# 笔记\\n核心..."}' } }]
+        choices: [{ message: { content: '{"title":"拓扑入门","body":"# 笔记\\n核心...","progress_summary":"已掌握拓扑基础概念"}' } }]
       })
     })) as any)
     const out = await finalizeProgress(cfg, [
@@ -56,6 +56,7 @@ describe('finalizeProgress', () => {
     ])
     expect(out.title).toBe('拓扑入门')
     expect(out.body).toMatch(/^# 笔记/)
+    expect(out.progress_summary).toBe('已掌握拓扑基础概念')
   })
 
   it('falls back to deterministic title on parse failure', async () => {
@@ -65,19 +66,34 @@ describe('finalizeProgress', () => {
     const out = await finalizeProgress(cfg, [{ role: 'user', content: '今夜想学:拓扑' }])
     expect(out.title).toBe('未命名笔记')
     expect(out.body).toContain('LLM 归档失败')
+    expect(out.progress_summary).toBe('')
   })
 })
 
 describe('finalizeReview', () => {
-  it('returns the raw text response trimmed', async () => {
+  it('returns summary and gaps from JSON response', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
-      json: async () => ({ choices: [{ message: { content: '\n本次复习暴露 σ 代数概念混淆。  ' } }] })
+      json: async () => ({ choices: [{ message: { content: '{"summary":"本次复习暴露 σ 代数概念混淆。","gaps":["σ 代数","测度论基础"]}' } }] })
     })) as any)
     const out = await finalizeReview(cfg, {
       history: [{ role: 'assistant', content: 'q' }],
       existingBody: 'note body'
     })
-    expect(out).toBe('本次复习暴露 σ 代数概念混淆。')
+    expect(out.summary).toBe('本次复习暴露 σ 代数概念混淆。')
+    expect(out.gaps).toEqual(['σ 代数', '测度论基础'])
+  })
+
+  it('returns empty gaps on non-JSON response', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '本次复习暴露 σ 代数概念混淆。' } }] })
+    })) as any)
+    const out = await finalizeReview(cfg, {
+      history: [{ role: 'assistant', content: 'q' }],
+      existingBody: 'note body'
+    })
+    expect(out.summary).toBe('本次复习暴露 σ 代数概念混淆。')
+    expect(out.gaps).toEqual([])
   })
 })

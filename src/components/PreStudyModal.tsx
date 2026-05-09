@@ -24,7 +24,7 @@ export function PreStudyModal() {
     setTemperature(lastUsed.temperature)
 
     // 焦点策略
-    if (args.file_path) {
+    if (args.dirName) {
       diffRef.current?.querySelector('button')?.focus?.()  // 推荐卡:无主题输入,聚焦难度
     } else if (args.topic) {
       diffRef.current?.querySelector('button')?.focus?.()  // 灵感 chip:主题已填,聚焦难度
@@ -42,14 +42,15 @@ export function PreStudyModal() {
 
   if (!args) return null
 
-  const showTopicInput = !args.file_path  // 推荐卡时不显示
+  const showTopicInput = !args.dirName  // 推荐卡/继续学习时不显示
 
   const onConfirm = async () => {
     const finalTopic = (showTopicInput ? topic : args.topic).trim()
     if (showTopicInput && !finalTopic) return
     await patchLastUsed({ difficulty, temperature })
     startSession({
-      mode: args.mode, topic: finalTopic, file_path: args.file_path,
+      mode: args.mode, topic: finalTopic, dirName: args.dirName,
+      file_path: args.file_path,
       difficulty, temperature
     })
   }

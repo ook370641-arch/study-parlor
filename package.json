@@ -8,7 +8,8 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "package": "electron-vite build && electron-builder --win --config electron-builder.yml"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
@@ -24,6 +25,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
     "electron": "^30.5.1",
+    "electron-builder": "^26.8.1",
     "electron-vite": "^2.3.0",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",

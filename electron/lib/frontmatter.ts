@@ -22,27 +22,32 @@ export function parseFrontmatter(
     title:        data.title
       ?? (opts?.filename ? extractTitleFromFilename(opts.filename) : undefined)
       ?? 'untitled',
+    session_number: typeof data.session_number === 'number' ? data.session_number : 0,
     created:      data.created ?? new Date().toISOString(),
     last_studied: data.last_studied,
     last_reviewed: data.last_reviewed,
     review_count: typeof data.review_count === 'number' ? data.review_count : 0,
     difficulty:   data.difficulty ?? 'mid',
-    tags:         Array.isArray(data.tags) ? data.tags : []
+    tags:         Array.isArray(data.tags) ? data.tags : [],
+    type:         data.type ?? 'progress',
+    progress_summary: data.progress_summary
   }
 
   return { frontmatter, body: parsed.content }
 }
 
 export function serializeFrontmatter(fm: Frontmatter, body: string): string {
-  // 保留可选字段为 undefined 时不写 key
   const data: Record<string, unknown> = {
     title: fm.title,
+    session_number: fm.session_number,
     created: fm.created,
     review_count: fm.review_count,
     difficulty: fm.difficulty,
-    tags: fm.tags
+    tags: fm.tags,
+    type: fm.type
   }
   if (fm.last_studied) data.last_studied = fm.last_studied
   if (fm.last_reviewed) data.last_reviewed = fm.last_reviewed
+  if (fm.progress_summary) data.progress_summary = fm.progress_summary
   return matter.stringify(body, data)
 }

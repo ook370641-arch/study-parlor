@@ -11,7 +11,7 @@ const cfg = {
 describe('probeModel', () => {
   beforeEach(() => { vi.restoreAllMocks() })
 
-  it('returns ok=true when model id is in the list', async () => {
+  it('returns ok=true on HTTP 200', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ({ data: [{ id: 'kimi-k2.6' }, { id: 'kimi-other' }] })
@@ -20,14 +20,24 @@ describe('probeModel', () => {
     expect(r.ok).toBe(true)
   })
 
-  it('returns ok=false with reason when model not in list', async () => {
+  it('returns ok=true even when configured model is missing from /v1/models list', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ({ data: [{ id: 'kimi-other' }] })
     })) as any)
     const r = await probeModel(cfg)
+    expect(r.ok).toBe(true)
+  })
+
+  it('returns ok=false with HTTP reason on non-2xx', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({})
+    })) as any)
+    const r = await probeModel(cfg)
     expect(r.ok).toBe(false)
-    expect(r.reason).toMatch(/not.*list|kimi-k2.6/i)
+    expect(r.reason).toMatch(/401/)
   })
 
   it('uses Bearer auth header', async () => {

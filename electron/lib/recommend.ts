@@ -1,22 +1,22 @@
-import type { FileMeta, RecCard } from '@shared/index'
+import type { TopicMeta, RecCard } from '@shared/index'
 
 const DAY = 86400_000
 
 export function pickRecommendations(
-  lib: FileMeta[],
+  lib: TopicMeta[],
   now: Date,
   opts: { exclude?: string[] } = {}
 ): { left: RecCard | null; right: RecCard | null } {
   const exclude = new Set(opts.exclude ?? [])
-  const pool = lib.filter(f => !exclude.has(f.file_path))
+  const pool = lib.filter(f => !exclude.has(f.dirName))
 
   const continues = pool
     .filter(f => f.last_studied && now.getTime() - new Date(f.last_studied).getTime() <= 3 * DAY)
     .sort((a, b) => new Date(b.last_studied!).getTime() - new Date(a.last_studied!).getTime())
 
-  const continuePaths = new Set(continues.map(f => f.file_path))
+  const continueDirs = new Set(continues.map(f => f.dirName))
   const reviews = pool
-    .filter(f => !continuePaths.has(f.file_path))
+    .filter(f => !continueDirs.has(f.dirName))
     .filter(f => f.review_count < 3)
     .filter(f => !f.last_reviewed || now.getTime() - new Date(f.last_reviewed).getTime() >= 7 * DAY)
     .sort((a, b) => {
@@ -25,12 +25,12 @@ export function pickRecommendations(
       return aT - bT
     })
 
-  const toCard = (f: FileMeta, type: 'continue' | 'review'): RecCard => ({
-    type, file_path: f.file_path, title: f.title
+  const toCard = (f: TopicMeta, type: 'continue' | 'review'): RecCard => ({
+    type, dirName: f.dirName, title: f.title
   })
 
   // 互补优先:左 continue 右 review
-  if (continues[0] && reviews[0] && continues[0].file_path !== reviews[0].file_path) {
+  if (continues[0] && reviews[0] && continues[0].dirName !== reviews[0].dirName) {
     return { left: toCard(continues[0], 'continue'), right: toCard(reviews[0], 'review') }
   }
 

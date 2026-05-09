@@ -1,0 +1,40 @@
+{
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/out/**": true,
+    "**/dist/**": true,
+    "**/release/**": true,
+    "**/.claude/**": true,
+    "**/.codex/**": true,
+    "**/.superpowers/**": true,
+    "**/.git/**": true,
+    "**/coverage/**": true,
+    "**/test-results/**": true,
+    "**/.vite/**": true,
+    "**/package-lock.json": true,
+    "**/*.log": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/out": true,
+    "**/dist": true,
+    "**/release": true,
+    "**/.claude": true,
+    "**/.codex": true,
+    "**/.superpowers": true,
+    "**/coverage": true,
+    "**/test-results": true,
+    "**/Pictures": true,
+    "**/package-lock.json": true,
+    "**/*.log": true
+  },
+  "files.exclude": {
+    "**/release": true
+  },
+  "git.autoRepositoryDetection": "openEditors",
+  "git.scanRepositories": [],
+  "typescript.tsserver.watchOptions": {
+    "watchFile": "useFsEventsOnParentDirectory",
+    "watchDirectory": "useFsEvents"
+  }
+}

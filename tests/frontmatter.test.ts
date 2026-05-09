@@ -27,7 +27,21 @@ y`
     expect(frontmatter.review_count).toBe(0)
     expect(frontmatter.difficulty).toBe('mid')
     expect(frontmatter.tags).toEqual([])
+    expect(frontmatter.session_number).toBe(0)
+    expect(frontmatter.type).toBe('progress')
     expect(frontmatter.created).toMatch(/\d{4}-\d{2}-\d{2}/)
+  })
+
+  it('parses type and progress_summary', () => {
+    const raw = `---
+title: x
+type: research
+progress_summary: 已掌握群论基础
+---
+body`
+    const { frontmatter } = parseFrontmatter(raw)
+    expect(frontmatter.type).toBe('research')
+    expect(frontmatter.progress_summary).toBe('已掌握群论基础')
   })
 
   it('falls back to filename-derived title when no frontmatter', () => {
@@ -62,6 +76,7 @@ describe('serializeFrontmatter', () => {
   it('round-trips a parsed file', () => {
     const original = `---
 title: 拓扑学基础
+session_number: 7
 created: 2025-12-15T20:00:00+08:00
 last_studied: 2026-04-28T22:13:00+08:00
 review_count: 2
@@ -74,6 +89,7 @@ tags: [数学, 几何]
     const out = serializeFrontmatter(frontmatter, body)
     const reparsed = parseFrontmatter(out)
     expect(reparsed.frontmatter.title).toBe('拓扑学基础')
+    expect(reparsed.frontmatter.session_number).toBe(7)
     expect(reparsed.frontmatter.review_count).toBe(2)
     expect(reparsed.frontmatter.tags).toEqual(['数学', '几何'])
     expect(reparsed.body.trim()).toBe('正文段落')

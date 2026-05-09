@@ -1,0 +1,14 @@
+appId: com.local.studyparlor
+productName: 学者夜话
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+extraMetadata:
+  main: out/main/index.js
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: 学者夜话-${version}-${arch}.${ext}

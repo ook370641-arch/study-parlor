@@ -1,0 +1,125 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## 项目概述
+
+学者夜话 (Study Parlor) —— 本地 Electron 学习助手，用 Kimi API 做苏格拉底式辅导。管理用户本地的 `.md` 学习笔记。
+
+- **技术栈**: Electron 30 + React 18 + TypeScript + Tailwind CSS + Zustand
+- **构建**: electron-vite (无独立 vite.config.ts)
+- **测试**: Vitest
+- **打包**: electron-builder (Windows nsis)
+
+## 常用命令
+
+```bash
+# 开发模式（需要保持终端运行）
+npm run dev
+
+# 构建生产版本
+npm run build
+
+# 打包 Windows 安装包 → release/ 目录
+npm run package
+
+# 运行所有测试
+npm run test
+
+# 测试监视模式
+npm run test:watch
+
+# 运行单个测试文件
+npx vitest run tests/prompts.test.ts
+```
+
+## 路径别名 (tsconfig)
+
+- `@/*` → `src/*`
+- `@shared/*` → `src/types/*`
+- `@electron/*` → `electron/*`
+
+## 架构总览
+
+### 进程隔离与通信
+
+三层结构：**主进程** (`electron/main.ts`) → **Preload** (`electron/preload.ts`) → **渲染进程** (`src/`)
+
+- 严格 `contextIsolation: true`, `nodeIntegration: false`
+- IPC API 定义在 `src/types/index.ts` 的 `IpcApi` 类型中
+- IPC 处理器按域拆分在 `electron/ipc/{files,llm,state}.ts`
+
+### LLM 层 (`electron/lib/`)
+
+`kimi.ts` 封装 Kimi Coding API (OpenAI 兼容端点)。**关键约束**：该 API 要求特定 User-Agent (`'claude-code/0.1.0'`)，否则返回 403。使用 undici Agent 做连接池 keep-alive。
+
+`prompts.ts` 负责系统 prompt 装配链，这是一个**顺序拼接**过程：
+
+1. `learner-base.md` (基座)
+2. `mode-review.md` (仅 review 模式，注入文件 body)
+3. `difficulty-mid.md` 或 `difficulty-low.md` (条件注入)
+4. 用户 profile 段
+
+`llm-tasks.ts` 封装非流式调用（灵感生成、归档 finalization）。
+
+### 会话生命周期 (`src/lib/`)
+
+渲染进程侧的会话驱动逻辑分散在两个文件中，需配合阅读：
+
+- **`session-runtime.ts`**: 注册 SSE 监听器 (`onLlmChunk`/`onLlmDone`/`onLlmError`)，管理 `sendOrInterrupt`（用户中途发消息时 abort 旧请求并立即发新请求）。会话历史截断策略：`history.slice(-MAX_PAIRS * 2)`，当前 `MAX_PAIRS = 30`。
+- **`finalize.ts`**: 结束会话时调用。`progress` 模式 → 调 LLM 提取标题+正文 → 写新 `.md`；`review` 模式 → 在原 `.md` 末尾追加复习记录段 + 更新 frontmatter。
+
+### 状态与持久化
+
+- **运行时状态**: Zustand 单 store (`src/store/index.ts`)
+- **持久化**: `~/.studyparlor/state.json` (profile / lastUsed / recommendation_cache / suggested_new_topics)
+- **学习库**: 用户指定的 `.md` 目录（通过 `.env` 的 `STUDY_LIBRARY_PATH`），应用只读/写，不锁定格式。frontmatter 用 gray-matter 解析，schema 见 `src/types/index.ts` 的 `Frontmatter`。
+
+### 文件系统 (`electron/ipc/files.ts`)
+
+- `files:scan` — 扫描 `STUDY_LIBRARY_PATH/*.md`，解析 frontmatter，返回 `FileMeta[]`
+- `files:writeProgress` — 写新 `.md`，自动处理重名（后缀加 `-HHMM`）
+- `files:appendReview` — 在原文件末尾追加复习记录段，更新 frontmatter 的 `review_count` 和 `last_reviewed`
+- `files:recoveryDump` — IO 失败时把会话内容暂存到 `~/.studyparlor/recovery/`
+
+### 推荐逻辑 (`electron/lib/recommend.ts`)
+
+（变动中）
+
+## 关键配置
+
+### `.env` 必需字段
+
+```
+KIMI_API_KEY=sk-kimi-...          # 不能是占位符，否则启动阻断
+KIMI_BASE_URL=https://api.kimi.com/coding/v1
+KIMI_MODEL=kimi-k2.6
+STUDY_LIBRARY_PATH=...            # 学习库根目录
+```
+
+`electron/env.ts` 加载并校验 `.env`。占位符白名单：`['sk-kimi-replace-me', 'sk-kimi-...', 'your-api-key']`。
+
+### 启动顺序
+
+`main.ts` bootstrap：加载 `.env` → 校验 `libraryPath` 存在 → `registerAllIpc()` → 探活模型 (`GET /v1/models`) → 创建窗口。
+
+**注意**：如果 `loadEnv()` 抛出（如 API key 是占位符），IPC 处理器不会被注册，应用会进入 fatal error 页面（`App.tsx` 中渲染配置错误指引）。
+
+## 视觉与 UI
+
+- 暗色主题，调色板：深褐 `#2a1f1a` / 米色 `#e8d5b7` / 暖橙 `#d97757`
+- Tailwind 自定义颜色在 `tailwind.config.ts` 中定义（`parchment`, `ember`, `wine`, `ink`, `slate` 等）
+- 页面路由：`cover` → `home` → (`study` | `profile`)，`preStudy` 是模态层
+
+## 测试
+
+测试文件在 `tests/` 目录，覆盖：
+
+- `env.test.ts` — `.env` 加载与校验
+- `frontmatter.test.ts` — gray-matter 解析与序列化
+- `prompts.test.ts` — 系统 prompt 装配链
+- `recommend.test.ts` — 推荐算法
+- `archive.test.ts` — 重名冲突、复习记录追加
+- `kimi.test.ts` — SSE chunk 解析
+- `llm-tasks.test.ts` — 灵感生成、归档提取
+- `safe-json.test.ts` — state.json 读写与备份

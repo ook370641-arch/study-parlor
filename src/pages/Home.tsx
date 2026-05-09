@@ -44,6 +44,7 @@ export function Home() {
     if (stale) {
       loadInspirations()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [library])
 
   const firstUnsaved = unsavedSessions[0]

@@ -1,16 +1,30 @@
 import type { AppConfig } from '../env'
 import type { Message } from '@shared/index'
 
+// 共享连接池：30s keep-alive，减少重复 TCP+TLS 握手
+let _agent: any = null
+function getAgent() {
+  if (!_agent) {
+    // undici is built into Node.js 18+; lazy-import to avoid bundling issues
+    const { Agent } = require('undici')
+    _agent = new Agent({
+      connect: { rejectUnauthorized: true },
+      keepAliveTimeout: 30000,
+      keepAliveMaxTimeout: 300000,
+    })
+  }
+  return _agent
+}
+
 export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?: string }> {
   const res = await fetch(`${cfg.baseUrl}/models`, {
-    headers: { Authorization: `Bearer ${cfg.apiKey}` }
-  })
+    headers: {
+      Authorization: `Bearer ${cfg.apiKey}`,
+      'User-Agent': 'claude-code/0.1.0'
+    },
+    dispatcher: getAgent()
+  } as any)
   if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` }
-  const data = await res.json() as { data?: { id: string }[] }
-  const ids = (data.data ?? []).map(m => m.id)
-  if (!ids.includes(cfg.model)) {
-    return { ok: false, reason: `${cfg.model} not in available list (${ids.length} models)` }
-  }
   return { ok: true }
 }
 
@@ -22,15 +36,17 @@ export async function chatNonStream(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${cfg.apiKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': 'claude-code/0.1.0'
     },
     body: JSON.stringify({
       model: cfg.model,
       stream: false,
       temperature: args.temperature,
       messages: args.messages
-    })
-  })
+    }),
+    dispatcher: getAgent()
+  } as any)
   if (!res.ok) throw new Error(`Kimi non-stream HTTP ${res.status}`)
   const json = await res.json() as { choices: { message: { content: string } }[] }
   return json.choices[0]?.message?.content ?? ''
@@ -64,7 +80,8 @@ export async function chatStream(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${cfg.apiKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': 'claude-code/0.1.0'
     },
     body: JSON.stringify({
       model: cfg.model,
@@ -72,9 +89,19 @@ export async function chatStream(
       temperature: args.temperature,
       messages: args.messages
     }),
-    signal: args.signal
-  })
-  if (!res.ok || !res.body) throw new Error(`Kimi stream HTTP ${res.status}`)
+    signal: args.signal,
+    dispatcher: getAgent()
+  } as any)
+  if (res.status === 429) {
+    const e: any = new Error('Rate limited')
+    e.code = 'RATE_LIMIT'
+    throw e
+  }
+  if (!res.ok || !res.body) {
+    const e: any = new Error(`HTTP ${res.status}`)
+    e.code = res.status === 401 ? 'UNAUTHORIZED' : 'STREAM_FAIL'
+    throw e
+  }
 
   const reader = res.body.getReader()
   const decoder = new TextDecoder()

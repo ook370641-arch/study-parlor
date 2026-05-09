@@ -11,10 +11,9 @@ type Props = {
 
 export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose }: Props) {
   const [content, setContent] = useState<string | null>(null)
+  const [mimeType, setMimeType] = useState<string>('text/markdown')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  const isImage = fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.gif')
 
   useEffect(() => {
     let cancelled = false
@@ -24,6 +23,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
       .then((res) => {
         if (cancelled) return
         setContent(res.content)
+        setMimeType(res.mimeType ?? 'text/markdown')
       })
       .catch((err) => {
         if (cancelled) return
@@ -69,15 +69,15 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
             </div>
           )}
 
-          {!loading && !error && isImage && content && (
+          {!loading && !error && mimeType.startsWith('image/') && content && (
             <img
-              src={`data:image/png;base64,${content}`}
+              src={`data:${mimeType};base64,${content}`}
               alt={title}
               className="max-w-full h-auto mx-auto"
             />
           )}
 
-          {!loading && !error && !isImage && content && (
+          {!loading && !error && !mimeType.startsWith('image/') && content && (
             <pre className="whitespace-pre-wrap text-sm text-parchment/80 font-sans leading-relaxed">
               {content}
             </pre>

@@ -11,7 +11,7 @@ export function Toast() {
   if (!toast) return null
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2
-                    panel text-parchment shadow-lg z-50 font-sans text-sm">
+                    panel text-parchment shadow-lg z-50 font-sans text-sm toast-enter">
       {toast.message}
     </div>
   )

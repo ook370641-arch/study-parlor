@@ -49,7 +49,7 @@ function SessionRow({
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="grid grid-cols-3 gap-1.5 shrink-0">
         {fileButtons.map((btn) => (
           <button
             key={btn.fileName}
@@ -63,7 +63,7 @@ function SessionRow({
                 title: `${btn.label.replace('\n', '')} · s${session.sessionNumber}`,
               })
             }
-            className={`px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border transition-colors ${
+            className={`px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border transition-colors min-h-[36px] flex items-center justify-center ${
               btn.disabled
                 ? 'opacity-30 cursor-not-allowed border-slate/20 text-parchment/40'
                 : 'border-slate/30 text-parchment/70 hover:border-ember'
@@ -83,14 +83,14 @@ function SessionRow({
                 title: `复习报告 · s${session.sessionNumber}`,
               })
             }
-            className="px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border border-ember bg-ember/10 text-ember/80 hover:bg-ember hover:text-ink transition-colors"
+            className="px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border border-ember bg-ember/10 text-ember/80 hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center"
           >
             {'复习\n报告'}
           </button>
         ) : (
           <button
             onClick={onReview}
-            className="px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border border-ember text-ember hover:bg-ember hover:text-ink transition-colors"
+            className="px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border border-ember text-ember hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center"
           >
             {'开始\n复习'}
           </button>
@@ -119,9 +119,9 @@ function TopicAccordion({
 
   return (
     <div className="border border-slate/30 rounded overflow-hidden">
-      <button
+      <div
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-ink/40 hover:bg-ink/60 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-4 py-3 bg-ink/40 hover:bg-ink/60 transition-colors cursor-pointer"
       >
         <span
           className={`text-parchment/50 text-xs transition-transform ${open ? 'rotate-90' : ''}`}
@@ -149,7 +149,7 @@ function TopicAccordion({
         >
           继续学习（第{topic.sessionCount + 1}次）
         </button>
-      </button>
+      </div>
 
       {open && (
         <div className="bg-ink/20">
