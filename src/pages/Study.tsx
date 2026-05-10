@@ -6,6 +6,8 @@ import { Button } from '@/components/Button'
 import { attachSessionListeners, kickoffSession, sendOrInterrupt } from '@/lib/session-runtime'
 import { finalizeAndReturnHome } from '@/lib/finalize'
 import { ipc } from '@/lib/ipc'
+import { ArchiveLoadingOverlay } from '@/components/ArchiveLoadingOverlay'
+import { ArchiveReportModal } from '@/components/ArchiveReportModal'
 
 export function Study() {
   const session = useStore(s => s.session)
@@ -48,6 +50,9 @@ export function Study() {
   }, [])
 
   const [streamError, setStreamError] = useState<{ code: string; message: string } | null>(null)
+  const [archiving, setArchiving] = useState(false)
+  const archiveResult = useStore(s => s.archiveResult)
+  const clearArchiveResult = useStore(s => s.clearArchiveResult)
   useEffect(() => {
     const off = ipc.onLlmError((sid, err) => {
       if (sid !== session?.abortId) return
@@ -63,11 +68,20 @@ export function Study() {
 
   // 显式归档:仅由"结束并归档"按钮触发(AI 建议结束时出现)
   const onEnd = async () => {
+    setArchiving(true)
     try {
       await finalizeAndReturnHome()
     } catch (err: any) {
       useStore.getState().showToast('归档失败:' + (err.message ?? err))
+      setArchiving(false)
     }
+    // finalizeAndReturnHome sets archiveResult on success;
+    // archiving state stays true until user dismisses the modal
+  }
+
+  const handleArchiveClose = () => {
+    clearArchiveResult()
+    useStore.getState().resetSession()
   }
 
   // streaming=true 但还没收到任何 assistant 内容 → 显示"正在思考..."
@@ -78,7 +92,19 @@ export function Study() {
     lastMsg.content.trim().length > 0
 
   return (
-    <div className="h-full flex flex-col">
+    <>
+      {/* Archive loading overlay */}
+      {archiving && !archiveResult && <ArchiveLoadingOverlay />}
+
+      {/* Archive report modal */}
+      {archiveResult && (
+        <ArchiveReportModal
+          result={archiveResult}
+          onClose={handleArchiveClose}
+        />
+      )}
+
+      <div className="h-full flex flex-col">
       <header className="flex justify-between items-center px-8 py-4 border-b border-slate/30">
         <button
           onClick={onBack}
@@ -147,5 +173,6 @@ export function Study() {
         <ChatInput onSend={onSend} />
       </div>
     </div>
+    </>
   )
 }

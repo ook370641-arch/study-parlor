@@ -99,7 +99,7 @@ export type IpcApi = {
   llmAbort: (sessionId: string) => Promise<void>
   llmInspirations: (args: { profile: Profile; existingTitles: string[] }) => Promise<NewTopic[]>
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; body: string; progress_summary?: string }>
-  llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string }>
+  llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[] }>
   llmGenerateFable: (args: { history: Message[]; topic: string }) => Promise<{ title: string; body: string }>
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
@@ -115,7 +115,7 @@ export type IpcApi = {
   readAnchorFile: (dirName: string) => Promise<{ frontmatter: Frontmatter; body: string }>
 
   // Review report writing (stub until main handler implemented)
-  writeReviewReport: (args: { topic: string; dirName: string; summary: string; gaps: string; review_index: number }) => Promise<void>
+  writeReviewReport: (args: { topic: string; dirName: string; summary: string; gaps: string[]; review_index: number }) => Promise<void>
 
   // Session file operations
   writeTranscript: (args: { dirName: string; sessionNumber: number; content: string }) => Promise<void>
