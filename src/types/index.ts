@@ -23,6 +23,14 @@ export type Frontmatter = {
 
 export type FileMeta = Frontmatter & { file_path: string }
 
+export type Group = {
+  id: string
+  name: string
+  color: string
+}
+
+export type GroupMapping = Record<string, string>  // dirName → groupId
+
 export type SessionMeta = {
   sessionNumber: number
   date: string
@@ -49,6 +57,7 @@ export type TopicMeta = {
   sessions: SessionMeta[]
   last_studied: string
   last_studied_days: number
+  groupId: string
 }
 
 export type RecCard = {
@@ -119,6 +128,13 @@ export type IpcApi = {
   // Session file operations
   writeTranscript: (args: { dirName: string; sessionNumber: number; content: string }) => Promise<void>
   readSessionFile: (args: { dirName: string; sessionNumber: number; fileName: string }) => Promise<{ content: string; mimeType?: string }>
+
+  // Group management
+  loadGroups: () => Promise<{ groups: Group[]; mapping: GroupMapping }>
+  updateGroupMapping: (mapping: GroupMapping) => Promise<void>
+  createGroup: (name: string, color: string) => Promise<Group>
+  renameGroup: (id: string, name: string) => Promise<void>
+  deleteGroup: (id: string, fallbackId: string) => Promise<void>
 }
 
 declare global {
