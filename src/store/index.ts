@@ -142,8 +142,13 @@ export const useStore = create<AppStore>((set, get) => ({
   finishStreaming: () => set(s => {
     if (!s.session) return s
     const lastMsg = s.session.history[s.session.history.length - 1]
+    // 宽容检测:支持全角/半角问号及可选空格,防止 LLM 输出格式微差导致漏检
+    const content = lastMsg?.content ?? ''
     const archivePending = lastMsg?.role === 'assistant' &&
-                           lastMsg.content.includes('需要存档吗?')
+                           /需要存档吗\s*[?？]/.test(content)
+    if (archivePending) {
+      console.log('[finishStreaming] archivePending=true, last 30 chars:', content.slice(-30))
+    }
     return { session: { ...s.session, streaming: false, archivePending } }
   }),
 

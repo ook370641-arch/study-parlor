@@ -154,6 +154,10 @@ export function Study() {
         )}
       </div>
 
+      {(() => {
+        console.log('[Study render] archivePending:', session.archivePending, 'streaming:', session.streaming)
+        return null
+      })()}
       {session.archivePending && !session.streaming && (
         <div className="px-8 max-w-4xl w-full mx-auto">
           <div className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
