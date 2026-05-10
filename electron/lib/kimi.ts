@@ -43,7 +43,8 @@ export async function chatNonStream(
       model: cfg.model,
       stream: false,
       temperature: args.temperature,
-      messages: args.messages
+      messages: args.messages,
+      thinking: { type: 'disabled' }
     }),
     dispatcher: getAgent()
   } as any)
@@ -87,7 +88,8 @@ export async function chatStream(
       model: cfg.model,
       stream: true,
       temperature: args.temperature,
-      messages: args.messages
+      messages: args.messages,
+      thinking: { type: 'disabled' }
     }),
     signal: args.signal,
     dispatcher: getAgent()
