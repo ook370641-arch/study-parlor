@@ -70,6 +70,13 @@ export type UnsavedSession = {
   history: Message[]
 }
 
+export type ArchiveResult = {
+  mode: Mode
+  topic: string
+  title: string
+  content: string  // progress: body; review: summary + gaps rendered
+}
+
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
 export type StateJson = {
