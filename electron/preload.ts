@@ -11,6 +11,12 @@ const api: IpcApi = {
   readSessionFile: (a) => ipcRenderer.invoke('files:readSessionFile', a),
   recoveryDump: (a) => ipcRenderer.invoke('files:recoveryDump', a),
 
+  loadGroups: () => ipcRenderer.invoke('groups:load'),
+  updateGroupMapping: (m) => ipcRenderer.invoke('groups:updateMapping', m),
+  createGroup: (name, color) => ipcRenderer.invoke('groups:create', name, color),
+  renameGroup: (id, name) => ipcRenderer.invoke('groups:rename', id, name),
+  deleteGroup: (id, fallbackId) => ipcRenderer.invoke('groups:delete', id, fallbackId),
+
   getState: () => ipcRenderer.invoke('state:get'),
   patchState: (p) => ipcRenderer.invoke('state:patch', p),
 

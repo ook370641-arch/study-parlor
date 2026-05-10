@@ -29,6 +29,11 @@ export const ipc = {
   get saveSession() { return ensure().saveSession },
   get loadSessions() { return ensure().loadSessions },
   get deleteSession() { return ensure().deleteSession },
+  get loadGroups() { return ensure().loadGroups },
+  get updateGroupMapping() { return ensure().updateGroupMapping },
+  get createGroup() { return ensure().createGroup },
+  get renameGroup() { return ensure().renameGroup },
+  get deleteGroup() { return ensure().deleteGroup },
   get recoveryDump() { return ensure().recoveryDump },
   get bootFatal() { return ensure().bootFatal }
 }
