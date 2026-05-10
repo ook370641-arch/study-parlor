@@ -130,10 +130,12 @@ function TopicAccordion({
         onClick={() => setOpen(!open)}
         onMouseDown={(e) => {
           if (e.button === 0 && onDragStart) {
+            e.preventDefault()
+            window.getSelection()?.removeAllRanges()
             onDragStart(topic, e.clientX, e.clientY)
           }
         }}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-ink/40 hover:bg-ink/60 transition-colors cursor-pointer"
+        className="w-full flex items-center gap-3 px-4 py-3 bg-ink/40 hover:bg-ink/60 transition-colors cursor-pointer select-none"
       >
         <div
           className="w-[3px] h-5 rounded-full shrink-0"
@@ -234,12 +236,22 @@ export function StudyLibrary() {
 
   // Global mouse events for drag
   useEffect(() => {
-    if (!dragState?.active) return
+    if (!dragState) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      setDragState((s) =>
-        s ? { ...s, currentX: e.clientX, currentY: e.clientY } : null
-      )
+      setDragState((s) => {
+        if (!s) return null
+        // Detect drag activation (> 6px movement)
+        if (!s.active) {
+          const dist = Math.hypot(e.clientX - s.startX, e.clientY - s.startY)
+          if (dist > 6) {
+            setGravityFieldOpen(true)
+            setDraggingTopic(s.topic)
+            return { ...s, currentX: e.clientX, currentY: e.clientY, active: true }
+          }
+        }
+        return { ...s, currentX: e.clientX, currentY: e.clientY }
+      })
     }
 
     const handleMouseUp = async (e: MouseEvent) => {
@@ -247,7 +259,7 @@ export function StudyLibrary() {
       setGravityFieldOpen(false)
       setDraggingTopic(null)
 
-      if (containerRef.current) {
+      if (dragState.active && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
         const relativeX = e.clientX - rect.left
         const relativeY = e.clientY - rect.top
@@ -285,7 +297,7 @@ export function StudyLibrary() {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [dragState?.active, groups, moveTopicToGroup, setGravityFieldOpen, setDraggingTopic])
+  }, [!!dragState, groups, moveTopicToGroup, setGravityFieldOpen, setDraggingTopic])
 
   const handleDragStart = useCallback(
     (topic: TopicMeta, startX: number, startY: number) => {
@@ -300,20 +312,6 @@ export function StudyLibrary() {
     },
     []
   )
-
-  // Detect drag after 6px movement
-  useEffect(() => {
-    if (!dragState || dragState.active) return
-    const dist = Math.hypot(
-      dragState.currentX - dragState.startX,
-      dragState.currentY - dragState.startY
-    )
-    if (dist > 6) {
-      setDragState((s) => (s ? { ...s, active: true } : null))
-      setGravityFieldOpen(true)
-      setDraggingTopic(dragState.topic)
-    }
-  }, [dragState, setGravityFieldOpen, setDraggingTopic])
 
   // Filter and sort topics
   const displayTopics = useMemo(() => {
