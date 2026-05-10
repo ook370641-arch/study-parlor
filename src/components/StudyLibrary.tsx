@@ -216,6 +216,8 @@ export function StudyLibrary() {
   } | null>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
+  const dragStateRef = useRef(dragState)
+  dragStateRef.current = dragState
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
 
   // ResizeObserver
@@ -255,11 +257,12 @@ export function StudyLibrary() {
     }
 
     const handleMouseUp = async (e: MouseEvent) => {
-      if (!dragState) return
+      const ds = dragStateRef.current
+      if (!ds) return
       setGravityFieldOpen(false)
       setDraggingTopic(null)
 
-      if (dragState.active && containerRef.current) {
+      if (ds.active && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
         const relativeX = e.clientX - rect.left
         const relativeY = e.clientY - rect.top
@@ -284,7 +287,7 @@ export function StudyLibrary() {
         })
 
         if (nearestGroupId && minDist < 72) {
-          await moveTopicToGroup(dragState.topic.dirName, nearestGroupId)
+          await moveTopicToGroup(ds.topic.dirName, nearestGroupId)
         }
       }
 
