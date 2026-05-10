@@ -169,7 +169,7 @@ describe('type instantiation', () => {
       topic: 'Math',
       dirName: 'math',
       summary: 'good progress',
-      gaps: 'needs practice',
+      gaps: ['needs practice'],
       review_index: 1,
     })
   })
