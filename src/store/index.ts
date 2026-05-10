@@ -130,8 +130,11 @@ export const useStore = create<AppStore>((set, get) => ({
     } else {
       history.push({ role: 'assistant', content: text })
     }
-    const suggestEnd = s.session.suggestEnd ||
-      (history[history.length - 1]?.content.includes('[[SUGGEST_END]]') ?? false)
+    // 非粘性:仅以"当前正在流的这条 assistant 消息"是否含「本轮归档」决定
+    // suggestEnd。这样 LLM 后续轮如果不再判定该结束,UI 提示也能撤回。
+    // token 是**可见**的协议字符 —— LLM 在判定本轮可结束时显式写在最末一行,
+    // ChatBubble 不再剥离它,用户能直接验证 LLM 是否真说了这 4 个字。
+    const suggestEnd = history[history.length - 1]?.content.includes('「本轮归档」') ?? false
     return { session: { ...s.session, history, streaming: true, suggestEnd } }
   }),
 
@@ -183,6 +186,9 @@ export const useStore = create<AppStore>((set, get) => ({
   saveCurrentSession: async () => {
     const s = get().session
     if (!s) return
+    // 空对话不写入 unsaved 队列:onBack 在用户一句话都没说时也会调本方法,
+    // 没有 history 的 stub 既不能恢复也不该污染首页"未完成的会话"提示。
+    if (s.history.length === 0) return
     const unsaved: UnsavedSession = {
       id: s.abortId,
       mode: s.mode,

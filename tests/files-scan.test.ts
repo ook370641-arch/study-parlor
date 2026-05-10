@@ -87,6 +87,13 @@ describe('getSessionMeta', () => {
     expect(meta.fableCount).toBe(1)
     expect(meta.hasImage).toBe(true)
     expect(meta.hasFableImage).toBe(true)
+    // Actual file names for UI click-through
+    expect(meta.reportFile).toBe('学习报告.md')
+    expect(meta.transcriptFile).toBe('原始对话.md')
+    expect(meta.reviewFile).toBe('复习报告.md')
+    expect(meta.fableFile).toBe('寓言.md')
+    expect(meta.imageFile).toBe('学习配图.png')
+    expect(meta.fableImageFile).toBe('寓言配图.jpg')
   })
 
   it('counts multiple fable files', () => {
@@ -190,7 +197,7 @@ describe('getTopicMeta', () => {
     const meta = getTopicMeta(topicDir)
     expect(meta).not.toBeNull()
     expect(meta!.dirName).toBe('群论')
-    expect(meta!.title).toBe('群论进阶') // from latest session
+    expect(meta!.title).toBe('群论') // 始终对齐 dirName,忽略 frontmatter title
     expect(meta!.sessionCount).toBe(2)
     expect(meta!.sessions.length).toBe(2)
     expect(meta!.last_studied).toBe('2026-05-05T02:00:00.000Z')
@@ -233,7 +240,7 @@ describe('getTopicMeta', () => {
     expect(meta.title).toBe('自定义标题')
   })
 
-  it('uses session title from getSessionMeta in topic meta', () => {
+  it('topic title always uses dirName regardless of frontmatter title', () => {
     const topicDir = path.join(tmpDir, '主题名')
     fs.mkdirSync(topicDir, { recursive: true })
 
@@ -243,8 +250,8 @@ describe('getTopicMeta', () => {
 
     const meta = getTopicMeta(topicDir)
     expect(meta).not.toBeNull()
-    expect(meta!.title).toBe('会话标题')
-    expect(meta!.sessions[0].title).toBe('会话标题')
+    expect(meta!.title).toBe('主题名')                   // topic.title = dirName
+    expect(meta!.sessions[0].title).toBe('会话标题')      // session.title 仍读 frontmatter
   })
 
   it('uses dirName as title when no 学习报告.md exists', () => {

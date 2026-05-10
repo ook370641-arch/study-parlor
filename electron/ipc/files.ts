@@ -14,16 +14,22 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
   const sessionMatch = dirName.match(/^s(\d+)$/)
   let sessionNumber = sessionMatch ? parseInt(sessionMatch[1], 10) : 1
 
-  const hasReport = files.includes('学习报告.md')
-  const hasTranscript = files.includes('原始对话.md')
-  const hasReview = files.includes('复习报告.md')
+  const reportFile = files.find(n => n === '学习报告.md')
+  const transcriptFile = files.find(n => n === '原始对话.md')
+  const reviewFile = files.find(n => n === '复习报告.md')
+  const hasReport = !!reportFile
+  const hasTranscript = !!transcriptFile
+  const hasReview = !!reviewFile
 
   const fableFiles = files.filter(n => /^寓言(\d+)?\.md$/.test(n))
   const hasFable = fableFiles.length > 0
   const fableCount = fableFiles.length
+  const fableFile = fableFiles[0]
 
-  const hasImage = files.some(n => /^学习配图\.\w+$/.test(n))
-  const hasFableImage = files.some(n => /^寓言配图(-research)?\.\w+$/.test(n))
+  const imageFile = files.find(n => /^学习配图\.\w+$/.test(n))
+  const fableImageFile = files.find(n => /^寓言配图(-research)?\.\w+$/.test(n))
+  const hasImage = !!imageFile
+  const hasFableImage = !!fableImageFile
 
   let date = ''
   let title: string | undefined
@@ -57,6 +63,12 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
     fableCount,
     hasImage,
     hasFableImage,
+    reportFile,
+    transcriptFile,
+    reviewFile,
+    fableFile,
+    imageFile,
+    fableImageFile,
   }
 }
 
@@ -121,12 +133,10 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
     return null
   }
 
-  // Get title from the latest session's frontmatter (already read by getSessionMeta)
-  let title = dirName
-  const latestSession = sessions[sessions.length - 1]
-  if (latestSession?.title) {
-    title = latestSession.title
-  }
+  // Title 始终用 dirName,与本地文件夹名对齐
+  // (frontmatter.title 仍由 getSessionMeta 读出,保留在 SessionMeta.title 中,
+  //  仅用于不希望污染 topic 标题的场合,比如某次具体 session 的元信息展示)
+  const title = dirName
 
   // Calculate last_studied from the latest session
   const lastSession = sessions[sessions.length - 1]
@@ -166,6 +176,13 @@ export function registerFilesIpc(cfg: AppConfig) {
       try {
         const meta = getTopicMeta(topicPath)
         if (meta) {
+          // Debug: log first session file names to verify field population
+          if (meta.sessions[0]) {
+            console.log(`[files:scan] ${td}/s${meta.sessions[0].sessionNumber} files:`, {
+              reportFile: meta.sessions[0].reportFile,
+              fableFile: meta.sessions[0].fableFile,
+            })
+          }
           results.push(meta)
         }
       } catch (err) {

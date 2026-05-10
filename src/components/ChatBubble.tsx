@@ -3,7 +3,9 @@ import type { Message } from '@shared/index'
 export function ChatBubble({ msg }: { msg: Message }) {
   if (msg.role === 'system') return null
   const isUser = msg.role === 'user'
-  const content = msg.content.replace('[[SUGGEST_END]]', '').trim()
+  // 「本轮归档」token 对用户**可见**:LLM 写出这 4 个字时直接展示给用户看,
+  // 让用户能验证 banner 触发的源头。前端只 trim,不剥。
+  const content = msg.content.trim()
   if (!content) return null
 
   return (

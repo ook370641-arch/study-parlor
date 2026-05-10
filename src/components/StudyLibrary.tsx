@@ -24,11 +24,11 @@ function SessionRow({
   const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
   const reviewed = session.hasReview
 
-  const fileButtons: { label: string; fileName: string; disabled: boolean }[] = [
-    { label: '学习\n报告', fileName: 'report.md', disabled: !session.hasReport },
-    { label: '原始\n对话', fileName: 'transcript.md', disabled: !session.hasTranscript },
-    { label: '寓言', fileName: 'fable.md', disabled: !session.hasFable },
-    { label: '图片', fileName: 'image.png', disabled: !session.hasImage && !session.hasFableImage },
+  const fileButtons: { label: string; fileName: string | undefined; disabled: boolean }[] = [
+    { label: '学习报告', fileName: session.reportFile, disabled: !session.hasReport || !session.reportFile },
+    { label: '原始对话', fileName: session.transcriptFile, disabled: !session.hasTranscript || !session.transcriptFile },
+    { label: '寓言', fileName: session.fableFile, disabled: !session.hasFable || !session.fableFile },
+    { label: '图片', fileName: session.imageFile || session.fableImageFile, disabled: (!session.hasImage && !session.hasFableImage) || (!session.imageFile && !session.fableImageFile) },
   ]
 
   return (
@@ -49,21 +49,21 @@ function SessionRow({
 
       <div className="flex-1" />
 
-      <div className="grid grid-cols-3 gap-1.5 shrink-0">
+      <div className="flex flex-row gap-1.5 shrink-0">
         {fileButtons.map((btn) => (
           <button
-            key={btn.fileName}
+            key={btn.label}
             disabled={btn.disabled}
             onClick={() =>
-              !btn.disabled &&
+              !btn.disabled && btn.fileName &&
               onViewFile({
                 dirName,
                 sessionNumber: session.sessionNumber,
                 fileName: btn.fileName,
-                title: `${btn.label.replace('\n', '')} · s${session.sessionNumber}`,
+                title: `${btn.label} · s${session.sessionNumber}`,
               })
             }
-            className={`px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border transition-colors min-h-[36px] flex items-center justify-center ${
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${
               btn.disabled
                 ? 'opacity-30 cursor-not-allowed border-slate/20 text-parchment/40'
                 : 'border-slate/30 text-parchment/70 hover:border-ember'
@@ -76,23 +76,24 @@ function SessionRow({
         {reviewed ? (
           <button
             onClick={() =>
+              session.reviewFile &&
               onViewFile({
                 dirName,
                 sessionNumber: session.sessionNumber,
-                fileName: 'review.md',
+                fileName: session.reviewFile,
                 title: `复习报告 · s${session.sessionNumber}`,
               })
             }
-            className="px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border border-ember bg-ember/10 text-ember/80 hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center"
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember bg-ember/10 text-ember/80 hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
-            {'复习\n报告'}
+            复习报告
           </button>
         ) : (
           <button
             onClick={onReview}
-            className="px-2 py-1 text-[10px] font-sans leading-tight whitespace-pre rounded border border-ember text-ember hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center"
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember text-ember hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
-            {'开始\n复习'}
+            开始复习
           </button>
         )}
       </div>
