@@ -2,7 +2,7 @@
 import { create } from 'zustand'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
-  TopicMeta, UnsavedSession, ArchiveResult
+  TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 
@@ -36,6 +36,13 @@ type AppStore = {
   modelInvalid: boolean
   modelInvalidReason?: string
   unsavedSessions: UnsavedSession[]
+
+  // 分组管理
+  groups: Group[]
+  groupMapping: GroupMapping
+  activeGroupId: string | null
+  gravityFieldOpen: boolean
+  draggingTopic: TopicMeta | null
 
   // 临时
   session: Session | null
@@ -71,6 +78,16 @@ type AppStore = {
   saveCurrentSession: () => Promise<void>
   restoreSession: (session: UnsavedSession) => void
   removeUnsavedSession: (id: string) => void
+
+  // 分组操作
+  loadGroups: () => Promise<void>
+  setActiveGroup: (id: string | null) => void
+  moveTopicToGroup: (dirName: string, groupId: string) => Promise<void>
+  createGroup: (name: string) => Promise<void>
+  renameGroup: (id: string, name: string) => Promise<void>
+  deleteGroup: (id: string) => Promise<void>
+  setGravityFieldOpen: (open: boolean) => void
+  setDraggingTopic: (topic: TopicMeta | null) => void
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -83,6 +100,11 @@ export const useStore = create<AppStore>((set, get) => ({
   library: [],
   modelInvalid: false,
   unsavedSessions: [],
+  groups: [],
+  groupMapping: {},
+  activeGroupId: null,
+  gravityFieldOpen: false,
+  draggingTopic: null,
   session: null,
   currentPage: 'cover',
   archiveResult: null,
@@ -91,8 +113,8 @@ export const useStore = create<AppStore>((set, get) => ({
   toast: null,
 
   init: async () => {
-    const [state, library, unsaved] = await Promise.all([
-      ipc.getState(), ipc.scanLibrary(), ipc.loadSessions()
+    const [state, library, unsaved, groupsData] = await Promise.all([
+      ipc.getState(), ipc.scanLibrary(), ipc.loadSessions(), ipc.loadGroups()
     ])
     set({
       profile: state.profile,
@@ -100,7 +122,9 @@ export const useStore = create<AppStore>((set, get) => ({
       inspirations: state.suggested_new_topics?.topics ?? [],
       session_count: state.ui?.session_count ?? 0,
       library,
-      unsavedSessions: unsaved
+      unsavedSessions: unsaved,
+      groups: groupsData.groups,
+      groupMapping: groupsData.mapping
     })
   },
 
@@ -244,5 +268,62 @@ export const useStore = create<AppStore>((set, get) => ({
       unsavedSessions: s.unsavedSessions.filter(us => us.id !== id)
     }))
     ipc.deleteSession(id)
-  }
+  },
+
+  loadGroups: async () => {
+    const data = await ipc.loadGroups()
+    set({ groups: data.groups, groupMapping: data.mapping })
+  },
+
+  setActiveGroup: (id) => set({ activeGroupId: id }),
+
+  moveTopicToGroup: async (dirName, groupId) => {
+    const mapping = { ...get().groupMapping, [dirName]: groupId }
+    await ipc.updateGroupMapping(mapping)
+    set({ groupMapping: mapping })
+    const library = await ipc.scanLibrary()
+    set({ library })
+  },
+
+  createGroup: async (name) => {
+    const color = generateGroupColor()
+    const group = await ipc.createGroup(name, color)
+    set(s => ({ groups: [...s.groups, group] }))
+  },
+
+  renameGroup: async (id, name) => {
+    await ipc.renameGroup(id, name)
+    set(s => ({
+      groups: s.groups.map(g => g.id === id ? { ...g, name } : g)
+    }))
+  },
+
+  deleteGroup: async (id) => {
+    await ipc.deleteGroup(id, 'default')
+    set(s => {
+      const mapping = { ...s.groupMapping }
+      for (const [dirName, gid] of Object.entries(mapping)) {
+        if (gid === id) mapping[dirName] = 'default'
+      }
+      return {
+        groups: s.groups.filter(g => g.id !== id),
+        groupMapping: mapping,
+        activeGroupId: s.activeGroupId === id ? null : s.activeGroupId
+      }
+    })
+    const library = await ipc.scanLibrary()
+    set({ library })
+  },
+
+  setGravityFieldOpen: (open) => set({ gravityFieldOpen: open }),
+
+  setDraggingTopic: (topic) => set({ draggingTopic: topic }),
 }))
+
+function generateGroupColor(): string {
+  const darkColors = [
+    '#8b5a2b', '#5a4632', '#4a6741', '#4a5568', '#6b4c3b',
+    '#4c5c6b', '#6b5b4c', '#5c4b6b', '#4b6b5c', '#6b4b5c'
+  ]
+  return darkColors[Math.floor(Math.random() * darkColors.length)]
+}
