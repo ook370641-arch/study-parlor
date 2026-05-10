@@ -11,9 +11,18 @@ function ensureDir(): void {
   }
 }
 
+function sessionFileName(topic: string): string {
+  return `${topic.replace(/[^\w一-龥]/g, '_')}.json`
+}
+
+export function getSessionPath(topic: string): string {
+  ensureDir()
+  return path.join(SESSIONS_DIR, sessionFileName(topic))
+}
+
 export function saveSession(session: UnsavedSession): void {
   ensureDir()
-  const fp = path.join(SESSIONS_DIR, `${session.id}.json`)
+  const fp = getSessionPath(session.topic)
   fs.writeFileSync(fp, JSON.stringify(session, null, 2), 'utf8')
 }
 
@@ -21,20 +30,49 @@ export function loadSessions(): UnsavedSession[] {
   ensureDir()
   if (!fs.existsSync(SESSIONS_DIR)) return []
 
+  const entries = fs.readdirSync(SESSIONS_DIR)
+    .filter(name => name.endsWith('.json'))
+    .map(name => ({
+      name,
+      mtime: fs.statSync(path.join(SESSIONS_DIR, name)).mtimeMs
+    }))
+    .sort((a, b) => b.mtime - a.mtime)
+
   const sessions: UnsavedSession[] = []
-  for (const name of fs.readdirSync(SESSIONS_DIR)) {
-    if (!name.endsWith('.json')) continue
+  for (const entry of entries) {
+    const fp = path.join(SESSIONS_DIR, entry.name)
     try {
-      const raw = fs.readFileSync(path.join(SESSIONS_DIR, name), 'utf8')
-      sessions.push(JSON.parse(raw))
+      const raw = fs.readFileSync(fp, 'utf8')
+      const session: UnsavedSession = JSON.parse(raw)
+
+      // 保守清理：跳过损坏文件和空 history 的 stub
+      if (!session.history || session.history.length === 0) {
+        fs.unlinkSync(fp)
+        continue
+      }
+
+      sessions.push(session)
     } catch (err) {
-      console.error('[session-persist] failed to load', name, err)
+      console.error('[session-persist] failed to load', entry.name, err)
     }
   }
-  return sessions.sort((a, b) => b.id.localeCompare(a.id))
+  return sessions
 }
 
 export function deleteSession(id: string): void {
-  const fp = path.join(SESSIONS_DIR, `${id}.json`)
-  if (fs.existsSync(fp)) fs.unlinkSync(fp)
+  if (!fs.existsSync(SESSIONS_DIR)) return
+  for (const name of fs.readdirSync(SESSIONS_DIR)) {
+    if (!name.endsWith('.json')) continue
+    const fp = path.join(SESSIONS_DIR, name)
+    try {
+      const raw = fs.readFileSync(fp, 'utf8')
+      const session: UnsavedSession = JSON.parse(raw)
+      if (session.id === id) {
+        fs.unlinkSync(fp)
+        return
+      }
+    } catch {
+      // ignore corrupted file
+    }
+  }
 }
