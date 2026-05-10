@@ -79,6 +79,22 @@ export async function kickoffSession() {
 export async function sendOrInterrupt(text: string) {
   const s = useStore.getState()
   if (!s.session) return
+
+  // 复习模式补水:从"未完成会话"恢复时 reviewFileBody 是 undefined
+  // (UnsavedSession 不持久化正文;kickoff 又只在 history.length===0 时触发)
+  // → 这里懒加载一次,否则 llm:start 收到 undefined 会让 assemblePrompt 抛错
+  if (s.session.mode === 'review' && !s.session.reviewFileBody && s.session.dirName) {
+    try {
+      const { body } = await ipc.readAnchorFile(s.session.dirName)
+      useStore.setState(state => state.session
+        ? { session: { ...state.session, reviewFileBody: body } }
+        : state)
+    } catch (err: any) {
+      useStore.getState().showToast('读取笔记失败:' + err.message)
+      return
+    }
+  }
+
   if (s.session.streaming) {
     await s.abortAndReplaceUser(text)
   } else {

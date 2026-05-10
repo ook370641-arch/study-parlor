@@ -25,14 +25,15 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     const ctl = new AbortController()
     sessions.set(args.sessionId, ctl)
 
-    const system = assemblePrompt({
-      mode: args.mode, difficulty: args.difficulty,
-      profile: args.profile, reviewFileBody: args.reviewFileBody,
-      progressSummary: args.progressSummary
-    })
-    const messages: Message[] = [{ role: 'system', content: system }, ...args.history]
-
     try {
+      // assemblePrompt 是同步且会抛(例如 review 模式缺 reviewFileBody)。必须进 try,
+      // 否则抛出后只在主进程终端 console.error,渲染层永远收不到 llm:error,UI 卡死。
+      const system = assemblePrompt({
+        mode: args.mode, difficulty: args.difficulty,
+        profile: args.profile, reviewFileBody: args.reviewFileBody,
+        progressSummary: args.progressSummary
+      })
+      const messages: Message[] = [{ role: 'system', content: system }, ...args.history]
       await chatStream(cfg, { messages, temperature: args.temperature, signal: ctl.signal },
         chunk => win.webContents.send('llm:chunk', args.sessionId, chunk))
       win.webContents.send('llm:done', args.sessionId)
