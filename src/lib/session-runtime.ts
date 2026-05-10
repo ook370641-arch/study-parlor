@@ -94,11 +94,12 @@ export async function sendOrInterrupt(text: string) {
     : state)
   const state = useStore.getState()
   const MAX_PAIRS = 30
-  // 回喂 LLM 前剥掉「本轮归档」:LLM 看到自己上一轮以该 token 收尾,会自我应和
-  // 在每轮都重复追加。token 对用户可见(ChatBubble 不剥),但对 LLM 不该可见。
+  // 回喂 LLM 前剥掉 "需要存档吗?":LLM 看到自己上一轮以该问句收尾,会
+  // 在后续每轮重复追问 → 自我应和。问句对用户可见(ChatBubble 不剥),但对
+  // LLM 不该可见 —— 让 LLM 每轮都基于"用户当前状态"独立判断是否该问。
   const history = state.session!.history.slice(-MAX_PAIRS * 2).map(m => ({
     ...m,
-    content: m.content.replace(/「本轮归档」/g, '').trimEnd()
+    content: m.content.replace(/需要存档吗\?/g, '').trimEnd()
   }))
 
   await ipc.llmStart({
