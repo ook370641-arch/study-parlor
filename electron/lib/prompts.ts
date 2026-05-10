@@ -29,6 +29,10 @@ export function assemblePrompt(args: AssembleArgs): string {
     parts.push(read('mode-review.md').replace('{{file_content}}', args.reviewFileBody))
   }
 
+  if (args.mode === 'progress') {
+    parts.push(read('mode-progress.md'))
+  }
+
   if (args.mode === 'progress' && args.progressSummary) {
     parts.push(`[学习进度摘要]\n你正在继续之前的学习。目前已掌握的内容摘要:\n${args.progressSummary}\n\n请自然地接续之前的进度推进。`)
   }

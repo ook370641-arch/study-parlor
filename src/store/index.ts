@@ -18,7 +18,7 @@ type Session = {
   history: Message[]
   streaming: boolean
   abortId: string
-  suggestEnd: boolean
+  archivePending: boolean   // LLM 是否问了 "需要存档吗?" 且尚未被用户处理(归档/dismiss)
   reviewFileBody?: string
 }
 
@@ -58,6 +58,7 @@ type AppStore = {
   pushUserMessage: (text: string) => void
   abortAndReplaceUser: (text: string) => Promise<void>
   endSession: () => void
+  dismissArchive: () => void   // 用户点【暂不归档】,清掉本次 ask
   resetSession: () => void
   showToast: (m: string) => void
   setInspirations: (t: NewTopic[]) => void
@@ -112,7 +113,7 @@ export const useStore = create<AppStore>((set, get) => ({
       session: {
         mode: a.mode, topic: a.topic, dirName: a.dirName, file_path: a.file_path,
         difficulty: a.difficulty, temperature: a.temperature,
-        history: [], streaming: false, abortId: sid, suggestEnd: false
+        history: [], streaming: false, abortId: sid, archivePending: false
       },
       modal: null,
       preStudyArgs: null,
@@ -125,14 +126,24 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!s.session) return s
     const history = [...s.session.history]
     const last = history[history.length - 1]
+    // 记录 append 之前的 assistant 消息内容(用于边沿检测)
+    const beforeContent = (last?.role === 'assistant') ? last.content : ''
+
     if (last?.role === 'assistant') {
       history[history.length - 1] = { ...last, content: last.content + text }
     } else {
       history.push({ role: 'assistant', content: text })
     }
-    const suggestEnd = s.session.suggestEnd ||
-      (history[history.length - 1]?.content.includes('[[SUGGEST_END]]') ?? false)
-    return { session: { ...s.session, history, streaming: true, suggestEnd } }
+
+    const afterContent = history[history.length - 1].content
+    const phrase = '需要存档吗?'
+    // 边沿检测:本次 append 让消息**从无到有**包含问句
+    const newAsk = !beforeContent.includes(phrase) && afterContent.includes(phrase)
+    // archivePending 是粘性的"有未处理的 ask",但**只在新 ask 边沿**才置位
+    // → 用户 dismiss 后,只有 LLM 真的再问一次才会重新置位(不会被同一句反复触发)
+    const archivePending = s.session.archivePending || newAsk
+
+    return { session: { ...s.session, history, streaming: true, archivePending } }
   }),
 
   finishStreaming: () => set(s => s.session
@@ -162,6 +173,10 @@ export const useStore = create<AppStore>((set, get) => ({
     // 占位,实际 finalize 流程由 Study 页触发
   },
 
+  dismissArchive: () => set(s =>
+    s.session ? { session: { ...s.session, archivePending: false } } : s
+  ),
+
   resetSession: () => set({ session: null, currentPage: 'home' }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
   setInspirations: (t) => set({ inspirations: t }),
@@ -183,6 +198,9 @@ export const useStore = create<AppStore>((set, get) => ({
   saveCurrentSession: async () => {
     const s = get().session
     if (!s) return
+    // 空对话不写入 unsaved 队列:onBack 在用户一句话都没说时也会调本方法,
+    // 没有 history 的 stub 既不能恢复也不该污染首页"未完成的会话"提示。
+    if (s.history.length === 0) return
     const unsaved: UnsavedSession = {
       id: s.abortId,
       mode: s.mode,
@@ -208,7 +226,7 @@ export const useStore = create<AppStore>((set, get) => ({
         history: unsaved.history,
         streaming: false,
         abortId: crypto.randomUUID(),
-        suggestEnd: false
+        archivePending: false
       },
       currentPage: 'study'
     })

@@ -53,8 +53,11 @@ export async function kickoffSession() {
       }
     }
   } else if (s.session.mode === 'review') {
-    if (!s.session.file_path) throw new Error('review session needs file_path')
-    const { body } = await ipc.readMd(s.session.file_path)
+    // 复习现取最新一次 session 的 学习报告.md(via readAnchorFile),
+    // 不再依赖 file_path —— StudyLibrary 复习入口本就没传 file_path,
+    // 之前的 `if (!file_path) throw` 会让 kickoff 直接挂掉。
+    if (!s.session.dirName) throw new Error('review session needs dirName')
+    const { body } = await ipc.readAnchorFile(s.session.dirName)
     reviewFileBody = body
     useStore.setState(state => state.session
       ? { session: { ...state.session, streaming: true, reviewFileBody: body } }
@@ -91,7 +94,13 @@ export async function sendOrInterrupt(text: string) {
     : state)
   const state = useStore.getState()
   const MAX_PAIRS = 30
-  const history = state.session!.history.slice(-MAX_PAIRS * 2)
+  // 回喂 LLM 前剥掉 "需要存档吗?":LLM 看到自己上一轮以该问句收尾,会
+  // 在后续每轮重复追问 → 自我应和。问句对用户可见(ChatBubble 不剥),但对
+  // LLM 不该可见 —— 让 LLM 每轮都基于"用户当前状态"独立判断是否该问。
+  const history = state.session!.history.slice(-MAX_PAIRS * 2).map(m => ({
+    ...m,
+    content: m.content.replace(/需要存档吗\?/g, '').trimEnd()
+  }))
 
   await ipc.llmStart({
     sessionId: state.session!.abortId,

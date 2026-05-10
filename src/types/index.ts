@@ -34,6 +34,12 @@ export type SessionMeta = {
   fableCount: number
   hasImage: boolean
   hasFableImage: boolean
+  reportFile?: string
+  transcriptFile?: string
+  reviewFile?: string
+  fableFile?: string
+  imageFile?: string
+  fableImageFile?: string
 }
 
 export type TopicMeta = {

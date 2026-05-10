@@ -59,8 +59,9 @@ export async function finalizeAndReturnHome() {
       const lib = await ipc.scanLibrary()
       useStore.setState({ library: lib })
     } else if (sess.mode === 'review') {
-      if (!sess.file_path) throw new Error('review session has no file_path')
-      const { body: existingBody } = await ipc.readMd(sess.file_path)
+      if (!sess.dirName) throw new Error('review session has no dirName')
+      // 与 kickoff 对齐:复习取最新 session 的学习报告作为 existingBody
+      const { body: existingBody } = await ipc.readAnchorFile(sess.dirName)
       const { summary, gaps } = await ipc.llmFinalizeReview({ history: historySnapshot, existingBody })
 
       const topicMeta = s.library.find(t => t.dirName === sess.dirName)
