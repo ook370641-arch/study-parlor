@@ -71,7 +71,7 @@ export function Study() {
   }
 
   // streaming=true 但还没收到任何 assistant 内容 → 显示"正在思考..."
-  // 注意:「本轮归档」token 现在对用户可见,所以含 token 也算"有内容"
+  // 注意:"需要存档吗?" 是自然语,对用户可见,trim 后非空就算"有内容"
   const lastMsg = session.history[session.history.length - 1]
   const assistantHasContent =
     lastMsg?.role === 'assistant' &&
@@ -128,12 +128,17 @@ export function Study() {
         )}
       </div>
 
-      {session.suggestEnd && !session.streaming && (
+      {session.archivePending && !session.streaming && (
         <div className="px-8 max-w-4xl w-full mx-auto">
           <div className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
                           text-sm font-sans text-parchment/80 flex justify-between items-center">
-            <span>AI 已标记「本轮归档」 — 是否将本轮存入学习库?</span>
-            <Button onClick={onEnd}>归档此次学习</Button>
+            <span>AI 询问是否归档此次学习</span>
+            <div className="flex gap-1.5 items-center">
+              <Button variant="ghost" onClick={() => useStore.getState().dismissArchive()}>
+                暂不归档
+              </Button>
+              <Button onClick={onEnd}>归档此次学习</Button>
+            </div>
           </div>
         </div>
       )}
