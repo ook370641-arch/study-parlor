@@ -91,7 +91,6 @@ export type IpcApi = {
   scanLibrary: () => Promise<TopicMeta[]>
   readMd: (path: string) => Promise<{ frontmatter: Frontmatter; body: string }>
   writeProgressMd: (args: { title: string; body: string; difficulty: Difficulty; dirName: string; session_number: number; progress_summary?: string }) => Promise<{ file_path: string }>
-  recoveryDump: (args: { filename: string; content: string }) => Promise<void>
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>

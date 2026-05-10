@@ -30,7 +30,7 @@ export function ArchiveReportModal({ result, onClose }: Props) {
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-6 py-4">
         <div
           className="font-serif text-sm leading-relaxed max-w-2xl mx-auto"
           style={{ color: 'rgba(232, 213, 183, 0.8)' }}
