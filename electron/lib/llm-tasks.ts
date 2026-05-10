@@ -4,7 +4,14 @@ import { chatNonStream } from './kimi'
 import type { AppConfig } from '../env'
 import type { Profile, NewTopic, Message } from '@shared/index'
 
-const PROMPTS_DIR = path.resolve(__dirname, '..', 'prompts')
+const PROMPTS_DIR = (() => {
+  // 与 electron/lib/prompts.ts 保持同一套 fallback:
+  // dev 模式下 electron-vite 不复制 .md 到 out/,所以 out/prompts/ 不存在
+  // → 回退到源代码目录 electron/prompts/。
+  const standard = path.resolve(__dirname, '..', 'prompts')
+  if (fs.existsSync(standard)) return standard
+  return path.resolve(__dirname, '..', '..', 'electron', 'prompts')
+})()
 const read = (n: string) => fs.readFileSync(path.join(PROMPTS_DIR, n), 'utf8')
 
 const transcript = (h: Message[]) =>
