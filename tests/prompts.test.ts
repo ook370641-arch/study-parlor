@@ -31,7 +31,7 @@ describe('assemblePrompt', () => {
     expect(sys).toMatch(/无答案辅助信息/)
   })
 
-  it('review mode injects file body and SUGGEST_END marker rule', () => {
+  it('review mode injects file body and 需要存档吗 trigger phrase', () => {
     const sys = assemblePrompt({
       mode: 'review',
       difficulty: 'mid',
@@ -40,7 +40,7 @@ describe('assemblePrompt', () => {
     })
     expect(sys).toMatch(/掌握度检测/)
     expect(sys).toContain('## 拓扑公理')
-    expect(sys).toMatch(/SUGGEST_END/)
+    expect(sys).toMatch(/需要存档吗\?/)
   })
 
   it('review mode with high difficulty omits mid/low suffix but keeps review block', () => {
