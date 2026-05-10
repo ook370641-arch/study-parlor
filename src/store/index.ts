@@ -2,7 +2,7 @@
 import { create } from 'zustand'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
-  TopicMeta, UnsavedSession
+  TopicMeta, UnsavedSession, ArchiveResult
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 
@@ -43,6 +43,7 @@ type AppStore = {
   modal: 'preStudy' | null
   preStudyArgs: { mode: Mode; topic: string; dirName?: string; file_path?: string } | null
   toast: { message: string; ts: number } | null
+  archiveResult: ArchiveResult | null
 
   // 操作
   init: () => Promise<void>
@@ -59,6 +60,7 @@ type AppStore = {
   abortAndReplaceUser: (text: string) => Promise<void>
   endSession: () => void
   dismissArchive: () => void   // 用户点【暂不归档】,清掉本次 ask
+  clearArchiveResult: () => void
   resetSession: () => void
   showToast: (m: string) => void
   setInspirations: (t: NewTopic[]) => void
@@ -83,6 +85,7 @@ export const useStore = create<AppStore>((set, get) => ({
   unsavedSessions: [],
   session: null,
   currentPage: 'cover',
+  archiveResult: null,
   modal: null,
   preStudyArgs: null,
   toast: null,
@@ -126,8 +129,6 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!s.session) return s
     const history = [...s.session.history]
     const last = history[history.length - 1]
-    // 记录 append 之前的 assistant 消息内容(用于边沿检测)
-    const beforeContent = (last?.role === 'assistant') ? last.content : ''
 
     if (last?.role === 'assistant') {
       history[history.length - 1] = { ...last, content: last.content + text }
@@ -135,20 +136,16 @@ export const useStore = create<AppStore>((set, get) => ({
       history.push({ role: 'assistant', content: text })
     }
 
-    const afterContent = history[history.length - 1].content
-    const phrase = '需要存档吗?'
-    // 边沿检测:本次 append 让消息**从无到有**包含问句
-    const newAsk = !beforeContent.includes(phrase) && afterContent.includes(phrase)
-    // archivePending 是粘性的"有未处理的 ask",但**只在新 ask 边沿**才置位
-    // → 用户 dismiss 后,只有 LLM 真的再问一次才会重新置位(不会被同一句反复触发)
-    const archivePending = s.session.archivePending || newAsk
-
-    return { session: { ...s.session, history, streaming: true, archivePending } }
+    return { session: { ...s.session, history, streaming: true } }
   }),
 
-  finishStreaming: () => set(s => s.session
-    ? { session: { ...s.session, streaming: false } }
-    : s),
+  finishStreaming: () => set(s => {
+    if (!s.session) return s
+    const lastMsg = s.session.history[s.session.history.length - 1]
+    const archivePending = lastMsg?.role === 'assistant' &&
+                           lastMsg.content.includes('需要存档吗?')
+    return { session: { ...s.session, streaming: false, archivePending } }
+  }),
 
   pushUserMessage: (text) => set(s => {
     if (!s.session) return s
@@ -176,6 +173,8 @@ export const useStore = create<AppStore>((set, get) => ({
   dismissArchive: () => set(s =>
     s.session ? { session: { ...s.session, archivePending: false } } : s
   ),
+
+  clearArchiveResult: () => set({ archiveResult: null }),
 
   resetSession: () => set({ session: null, currentPage: 'home' }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
@@ -212,6 +211,9 @@ export const useStore = create<AppStore>((set, get) => ({
       history: s.history
     }
     await ipc.saveSession(unsaved)
+    // 刷新 store 中的未保存会话列表，确保返回首页后立即可见
+    const refreshed = await ipc.loadSessions()
+    set({ unsavedSessions: refreshed })
   },
 
   restoreSession: (unsaved) => {
@@ -225,7 +227,7 @@ export const useStore = create<AppStore>((set, get) => ({
         temperature: unsaved.temperature,
         history: unsaved.history,
         streaming: false,
-        abortId: crypto.randomUUID(),
+        abortId: unsaved.id,
         archivePending: false
       },
       currentPage: 'study'
