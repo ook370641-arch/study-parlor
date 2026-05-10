@@ -12,6 +12,11 @@ export async function finalizeAndReturnHome() {
   // snapshot history 防止 finalize 过程中被 SSE 流修改
   const historySnapshot = [...sess.history]
 
+  // 清除 archivePending，避免 finalize 过程中 banner 闪烁
+  useStore.setState(state => state.session
+    ? { session: { ...state.session, archivePending: false } }
+    : state)
+
   try {
     if (sess.mode === 'progress') {
       const { title, body, progress_summary } = await ipc.llmFinalizeProgress(historySnapshot)
@@ -52,12 +57,16 @@ export async function finalizeAndReturnHome() {
 
       s.showToast(`《${title}》已归档`)
 
-      // 清理未保存会话
-      const unsaved = s.unsavedSessions.find(us => us.topic === sess.topic)
-      if (unsaved) s.removeUnsavedSession(unsaved.id)
-
       const lib = await ipc.scanLibrary()
-      useStore.setState({ library: lib })
+      useStore.setState({
+        library: lib,
+        archiveResult: {
+          mode: 'progress',
+          topic: sess.topic,
+          title,
+          content: body
+        }
+      })
     } else if (sess.mode === 'review') {
       if (!sess.dirName) throw new Error('review session has no dirName')
       // 与 kickoff 对齐:复习取最新 session 的学习报告作为 existingBody
@@ -76,25 +85,28 @@ export async function finalizeAndReturnHome() {
       s.showToast(`《${sess.topic}》复习报告已归档`)
 
       const lib = await ipc.scanLibrary()
-      useStore.setState({ library: lib })
+      // Build review report content from summary + gaps
+      const gapsText = gaps.length > 0
+        ? gaps.map((g, i) => `${i + 1}. ${g.trim()}`).join('\n')
+        : '（本次复习未发现明显知识缺口）'
+      const content = `## 复习摘要\n\n${summary.trim()}\n\n## 知识缺口\n\n${gapsText}`
+
+      useStore.setState({
+        library: lib,
+        archiveResult: {
+          mode: 'review',
+          topic: sess.topic,
+          title: sess.topic,
+          content
+        }
+      })
     }
+
+    // 归档成功：清理该 topic 的未保存会话
+    const unsaved = s.unsavedSessions.find(us => us.topic === sess.topic)
+    if (unsaved) s.removeUnsavedSession(unsaved.id)
   } catch (err: any) {
-    // 兜底:recovery dump
-    const dump = JSON.stringify({
-      mode: sess.mode,
-      topic: sess.topic,
-      file_path: sess.file_path,
-      dirName: sess.dirName,
-      history: historySnapshot,
-      error: String(err?.message ?? err)
-    }, null, 2)
-    await ipc.recoveryDump({
-      filename: `${sess.mode}-${sess.topic.replace(/[^\w一-龥]/g, '_')}.json`,
-      content: dump
-    })
-    s.showToast('归档失败,已写入 recovery 目录')
+    s.showToast('归档失败:' + (err?.message ?? err))
     throw err
   }
-
-  s.resetSession()
 }
