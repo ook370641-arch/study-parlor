@@ -66,7 +66,7 @@ Run: `grep -c "本轮归档\|SUGGEST_END" electron/prompts/mode-review.md`
 Expected: `0`
 
 Run: `grep -c "需要存档吗?" electron/prompts/mode-review.md`
-Expected: `2`(一处契约示例 + 一处提及"不要变形")
+Expected: `1`(canonical 触发短语只在第 13 行单独出现一次;"不要变形"行列的是 variants `要存档吗`/`想存档吗`/`可以存档吗`,都不匹配严格 6 字)
 
 ---
 
