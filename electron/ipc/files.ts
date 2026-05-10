@@ -3,7 +3,7 @@ import path from 'node:path'
 import { ipcMain } from 'electron'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import type { AppConfig } from '../env'
-import type { Frontmatter, TopicMeta, SessionMeta } from '@shared/index'
+import type { Frontmatter, TopicMeta, SessionMeta, Group, GroupMapping } from '@shared/index'
 
 export function getSessionMeta(sessionDir: string): SessionMeta {
   const files = fs.readdirSync(sessionDir, { withFileTypes: true })
@@ -70,6 +70,17 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
     imageFile,
     fableImageFile,
   }
+}
+
+function loadGroupFile(filePath: string): { version: number; groups: Group[]; mapping: GroupMapping } {
+  if (fs.existsSync(filePath)) {
+    try {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'))
+    } catch {
+      console.error('[groups] .study-groups.json corrupted, falling back to default')
+    }
+  }
+  return { version: 1, groups: [{ id: 'default', name: '默认', color: '#d97757' }], mapping: {} }
 }
 
 function validateDirName(dirName: string): void {
@@ -149,6 +160,11 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
     last_studied_days = Math.max(0, Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)))
   }
 
+  // Load group mapping
+  const groupFile = path.join(path.dirname(topicDir), '.study-groups.json')
+  const groupData = loadGroupFile(groupFile)
+  const groupId = groupData.mapping[dirName] || 'default'
+
   return {
     dirName,
     title,
@@ -156,6 +172,7 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
     sessions,
     last_studied,
     last_studied_days,
+    groupId,
   }
 }
 
@@ -324,5 +341,46 @@ function getMimeType(filePath: string): string {
   ipcMain.handle('files:recoveryDump', async (_, args: { filename: string; content: string }) => {
     const { dumpRecovery } = await import('../lib/recovery')
     dumpRecovery(args.filename, args.content)
+  })
+
+  // Group management IPC
+  ipcMain.handle('groups:load', async (): Promise<{ groups: Group[]; mapping: GroupMapping }> => {
+    const groupFile = path.join(cfg.libraryPath, '.study-groups.json')
+    return loadGroupFile(groupFile)
+  })
+
+  ipcMain.handle('groups:updateMapping', async (_, mapping: GroupMapping): Promise<void> => {
+    const groupFile = path.join(cfg.libraryPath, '.study-groups.json')
+    const data = loadGroupFile(groupFile)
+    data.mapping = mapping
+    fs.writeFileSync(groupFile, JSON.stringify(data, null, 2), 'utf8')
+  })
+
+  ipcMain.handle('groups:create', async (_, name: string, color: string): Promise<Group> => {
+    const groupFile = path.join(cfg.libraryPath, '.study-groups.json')
+    const data = loadGroupFile(groupFile)
+    const id = `group-${Date.now()}`
+    const group: Group = { id, name, color }
+    data.groups.push(group)
+    fs.writeFileSync(groupFile, JSON.stringify(data, null, 2), 'utf8')
+    return group
+  })
+
+  ipcMain.handle('groups:rename', async (_, id: string, name: string): Promise<void> => {
+    const groupFile = path.join(cfg.libraryPath, '.study-groups.json')
+    const data = loadGroupFile(groupFile)
+    const g = data.groups.find(g => g.id === id)
+    if (g) g.name = name
+    fs.writeFileSync(groupFile, JSON.stringify(data, null, 2), 'utf8')
+  })
+
+  ipcMain.handle('groups:delete', async (_, id: string, fallbackId: string): Promise<void> => {
+    const groupFile = path.join(cfg.libraryPath, '.study-groups.json')
+    const data = loadGroupFile(groupFile)
+    data.groups = data.groups.filter(g => g.id !== id)
+    for (const [dirName, gid] of Object.entries(data.mapping)) {
+      if (gid === id) data.mapping[dirName] = fallbackId
+    }
+    fs.writeFileSync(groupFile, JSON.stringify(data, null, 2), 'utf8')
   })
 }

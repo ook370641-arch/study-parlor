@@ -78,6 +78,7 @@ describe('type instantiation', () => {
       sessions: [session],
       last_studied: '2026-05-09',
       last_studied_days: 0,
+      groupId: 'default',
     }
     expect(topic.dirName).toBe('calculus')
     expect(topic.sessions).toHaveLength(1)
@@ -92,6 +93,7 @@ describe('type instantiation', () => {
       sessions: [],
       last_studied: '2026-05-01',
       last_studied_days: 8,
+      groupId: 'default',
     }
     expect(topic.sessions).toHaveLength(0)
   })
@@ -134,6 +136,7 @@ describe('type instantiation', () => {
           sessions: [session],
           last_studied: '2026-05-09',
           last_studied_days: 0,
+          groupId: 'default',
         },
       ]
     }
