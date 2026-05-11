@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useStore } from '@/store'
 import { Input } from '@/components/Input'
 import { Button } from '@/components/Button'
-import coverImg from '@/assets/cover-library.png'
+import { SurfaceBackground } from '@/components/SurfaceBackground'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 
 export function Cover() {
   const profile = useStore(s => s.profile)
@@ -19,16 +20,15 @@ export function Cover() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <img src={coverImg} alt="夜读图书馆"
-           className="absolute inset-0 w-full h-full object-cover" />
-
-      <div className="absolute inset-0 pointer-events-none
-                      bg-gradient-to-tr from-ink/85 via-ink/30 to-transparent" />
+      <SurfaceBackground surface="cover" />
 
       <div className="absolute inset-0 pointer-events-none
                       shadow-[inset_0_0_120px_rgba(0,0,0,0.55)]" />
 
-      <div className="absolute bottom-12 left-12 flex flex-col items-start gap-4 max-w-[380px]">
+      <SwapPaintingButton surface="cover" className="absolute top-4 right-4" />
+
+      <div className="absolute bottom-12 left-12 flex flex-col items-start gap-4 max-w-[380px] z-5"
+           style={{ textShadow: '0 1px 8px rgba(0,0,0,0.6)' }}>
         {profile.name ? (
           <>
             <div className="text-2xl">夜深了,{profile.name}。</div>
