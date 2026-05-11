@@ -78,6 +78,7 @@ type AppStore = {
   saveCurrentSession: () => Promise<void>
   restoreSession: (session: UnsavedSession) => void
   removeUnsavedSession: (id: string) => void
+  deleteArchivedSession: (dirName: string, sessionNumber: number) => Promise<void>
 
   // 分组操作
   loadGroups: () => Promise<void>
@@ -268,6 +269,12 @@ export const useStore = create<AppStore>((set, get) => ({
       unsavedSessions: s.unsavedSessions.filter(us => us.id !== id)
     }))
     ipc.deleteSession(id)
+  },
+
+  deleteArchivedSession: async (dirName: string, sessionNumber: number) => {
+    await ipc.deleteArchivedSession({ dirName, sessionNumber })
+    const library = await ipc.scanLibrary()
+    set({ library })
   },
 
   loadGroups: async () => {
