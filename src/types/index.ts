@@ -109,6 +109,11 @@ export type IpcApi = {
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; body: string; progress_summary?: string }>
   llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[] }>
   llmGenerateFable: (args: { history: Message[]; topic: string }) => Promise<{ title: string; body: string }>
+  llmGroupInspiration: (args: {
+    groupName: string
+    existingTopics: string[]
+    profile: Profile
+  }) => Promise<NewTopic>
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
@@ -135,6 +140,10 @@ export type IpcApi = {
   createGroup: (name: string, color: string) => Promise<Group>
   renameGroup: (id: string, name: string) => Promise<void>
   deleteGroup: (id: string, fallbackId: string) => Promise<void>
+  deleteArchivedSession: (args: {
+    dirName: string
+    sessionNumber: number
+  }) => Promise<void>
 }
 
 declare global {

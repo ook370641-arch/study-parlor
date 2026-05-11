@@ -383,4 +383,16 @@ function getMimeType(filePath: string): string {
     }
     fs.writeFileSync(groupFile, JSON.stringify(data, null, 2), 'utf8')
   })
+
+  ipcMain.handle('files:deleteArchivedSession', async (_, args: {
+    dirName: string
+    sessionNumber: number
+  }): Promise<void> => {
+    validateDirName(args.dirName)
+    const sessionDir = path.join(cfg.libraryPath, args.dirName, `s${args.sessionNumber}`)
+    if (!fs.existsSync(sessionDir)) {
+      throw new Error(`Session directory not found: ${sessionDir}`)
+    }
+    fs.rmSync(sessionDir, { recursive: true, force: true })
+  })
 }

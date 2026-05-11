@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import type { Group } from '@shared/index'
+import { ConfirmDialog } from './ConfirmDialog'
 
 interface GroupRibbonProps {
   groups: Group[]
@@ -23,6 +24,7 @@ export function GroupRibbon({
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<Group | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleCreate = useCallback(() => {
@@ -81,7 +83,7 @@ export function GroupRibbon({
               <button
                 onClick={() => onSelect(group.id)}
                 onContextMenu={(e) => handleContextMenu(e, group.id)}
-                className={`px-3 py-1 text-xs font-sans rounded-full transition-colors ${
+                className={`group inline-flex items-center gap-0.5 px-3 py-1 text-xs font-sans rounded-full transition-colors ${
                   activeGroupId === group.id
                     ? 'text-ink'
                     : 'border text-parchment/60 hover:text-parchment'
@@ -93,10 +95,22 @@ export function GroupRibbon({
                 }
               >
                 {group.name}
+                {group.id !== 'default' && (
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeleteTarget(group)
+                    }}
+                    className="opacity-0 group-hover:opacity-100 w-4 h-4 inline-flex items-center justify-center rounded text-[10px] text-wine/60 hover:text-wine hover:bg-wine/15 transition-all"
+                    title="删除分组"
+                  >
+                    ✕
+                  </span>
+                )}
               </button>
             )}
 
-            {/* Context menu */}
+            {/* Context menu: rename only */}
             {menuOpen === group.id && (
               <div
                 className="absolute top-full left-0 mt-1 z-10 bg-ink border border-slate/30 rounded shadow-lg py-1 min-w-[80px]"
@@ -111,15 +125,6 @@ export function GroupRibbon({
                   className="block w-full text-left px-3 py-1 text-xs text-parchment/70 hover:bg-parchment/10 font-sans"
                 >
                   重命名
-                </button>
-                <button
-                  onClick={() => {
-                    onDelete(group.id)
-                    setMenuOpen(null)
-                  }}
-                  className="block w-full text-left px-3 py-1 text-xs text-red-400 hover:bg-red-400/10 font-sans"
-                >
-                  删除
                 </button>
               </div>
             )}
@@ -156,6 +161,29 @@ export function GroupRibbon({
           </button>
         )}
       </div>
+
+      {deleteTarget && (
+        <ConfirmDialog
+          open={true}
+          title="解散分组"
+          icon="warning"
+          confirmLabel="确认解散"
+          confirmVariant="danger"
+          onConfirm={() => {
+            onDelete(deleteTarget.id)
+            setDeleteTarget(null)
+          }}
+          onCancel={() => setDeleteTarget(null)}
+        >
+          <>
+            即将解散分组 <strong style={{ color: '#e8d5b7' }}>「{deleteTarget.name}」</strong>。
+            <br /><br />
+            该分组下的主题将被移至<strong>默认分组</strong>，主题文件不会被删除。
+            <br /><br />
+            <span style={{ color: '#8a3a3a', fontWeight: 500 }}>此操作不可撤销。</span>
+          </>
+        </ConfirmDialog>
+      )}
     </div>
   )
 }

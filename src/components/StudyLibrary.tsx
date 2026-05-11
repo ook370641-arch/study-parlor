@@ -4,6 +4,7 @@ import type { SessionMeta, TopicMeta } from '@shared/index'
 import { SessionViewer } from './SessionViewer'
 import { GroupRibbon } from './GroupRibbon'
 import { GravityField } from './GravityField'
+import { ConfirmDialog } from './ConfirmDialog'
 
 type ViewerState = {
   dirName: string
@@ -16,12 +17,14 @@ function SessionRow({
   dirName,
   session,
   onViewFile,
-  onReview
+  onReview,
+  onDelete
 }: {
   dirName: string
   session: SessionMeta
   onViewFile: (v: ViewerState) => void
   onReview: () => void
+  onDelete?: (dirName: string, sessionNumber: number) => void
 }) {
   const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
   const reviewed = session.hasReview
@@ -98,6 +101,16 @@ function SessionRow({
             开始复习
           </button>
         )}
+
+        {onDelete && (
+          <button
+            onClick={() => onDelete(dirName, session.sessionNumber)}
+            className="w-[18px] h-[18px] flex items-center justify-center rounded text-wine/40 hover:text-wine hover:bg-wine/15 transition-all ml-1 shrink-0"
+            title="删除 session"
+          >
+            ✕
+          </button>
+        )}
       </div>
     </div>
   )
@@ -108,11 +121,13 @@ function TopicAccordion({
   onViewFile,
   groupColor,
   onDragStart,
+  onDeleteSession,
 }: {
   topic: TopicMeta
   onViewFile: (v: ViewerState) => void
   groupColor: string
   onDragStart?: (topic: TopicMeta, startX: number, startY: number) => void
+  onDeleteSession?: (dirName: string, sessionNumber: number) => void
 }) {
   const [open, setOpen] = useState(false)
   const openPreStudy = useStore((s) => s.openPreStudy)
@@ -184,6 +199,7 @@ function TopicAccordion({
                   dirName: topic.dirName,
                 })
               }
+              onDelete={onDeleteSession}
             />
           ))}
         </div>
@@ -214,6 +230,13 @@ export function StudyLibrary() {
     currentY: number
     active: boolean
   } | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    dirName: string
+    sessionNumber: number
+    topicName: string
+    files: string[]
+  } | null>(null)
+  const deleteArchivedSession = useStore((s) => s.deleteArchivedSession)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const dragStateRef = useRef(dragState)
@@ -316,6 +339,25 @@ export function StudyLibrary() {
     []
   )
 
+  const handleDeleteClick = useCallback((dirName: string, sessionNumber: number) => {
+    const topic = library.find((t) => t.dirName === dirName)
+    const session = topic?.sessions.find((s) => s.sessionNumber === sessionNumber)
+    if (!topic || !session) return
+
+    const files: string[] = []
+    if (session.hasReport) files.push('学习报告.md')
+    if (session.hasTranscript) files.push('原始对话.md')
+    if (session.hasFable) files.push(`寓言${session.fableCount > 1 ? '(×' + session.fableCount + ')' : ''}.md`)
+    if (session.hasImage || session.hasFableImage) files.push('配图')
+
+    setDeleteDialog({
+      dirName,
+      sessionNumber,
+      topicName: topic.title,
+      files
+    })
+  }, [library])
+
   // Filter and sort topics
   const displayTopics = useMemo(() => {
     let filtered = library
@@ -389,6 +431,7 @@ export function StudyLibrary() {
             onViewFile={setViewer}
             groupColor={groupColorMap.get(topic.groupId) || '#d97757'}
             onDragStart={handleDragStart}
+            onDeleteSession={handleDeleteClick}
           />
         ))}
       </div>
@@ -401,6 +444,36 @@ export function StudyLibrary() {
           title={viewer.title}
           onClose={() => setViewer(null)}
         />
+      )}
+
+      {deleteDialog && (
+        <ConfirmDialog
+          open={true}
+          title="删除 Session"
+          icon="trash"
+          confirmLabel="彻底删除"
+          confirmVariant="danger"
+          onConfirm={() => {
+            deleteArchivedSession(deleteDialog.dirName, deleteDialog.sessionNumber)
+            setDeleteDialog(null)
+          }}
+          onCancel={() => setDeleteDialog(null)}
+        >
+          <>
+            即将彻底删除 <strong style={{ color: '#e8d5b7' }}>{deleteDialog.topicName} / s{deleteDialog.sessionNumber}</strong>。
+            <br /><br />
+            {deleteDialog.files.length > 0 && (
+              <>
+                以下文件将被永久删除：<br />
+                <span style={{ color: 'rgba(232,213,183,0.5)' }}>
+                  {deleteDialog.files.join(' · ')}
+                </span>
+                <br /><br />
+              </>
+            )}
+            <span style={{ color: '#8a3a3a', fontWeight: 500 }}>此操作不可撤销。</span>
+          </>
+        </ConfirmDialog>
       )}
     </div>
   )

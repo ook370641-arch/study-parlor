@@ -16,6 +16,7 @@ const api: IpcApi = {
   createGroup: (name, color) => ipcRenderer.invoke('groups:create', name, color),
   renameGroup: (id, name) => ipcRenderer.invoke('groups:rename', id, name),
   deleteGroup: (id, fallbackId) => ipcRenderer.invoke('groups:delete', id, fallbackId),
+  deleteArchivedSession: (a) => ipcRenderer.invoke('files:deleteArchivedSession', a),
 
   getState: () => ipcRenderer.invoke('state:get'),
   patchState: (p) => ipcRenderer.invoke('state:patch', p),
@@ -27,6 +28,7 @@ const api: IpcApi = {
   llmFinalizeProgress: (h) => ipcRenderer.invoke('llm:finalizeProgress', h),
   llmFinalizeReview: (a) => ipcRenderer.invoke('llm:finalizeReview', a),
   llmGenerateFable: (a) => ipcRenderer.invoke('llm:generateFable', a),
+  llmGroupInspiration: (a) => ipcRenderer.invoke('llm:groupInspiration', a),
 
   onLlmChunk: (cb) => {
     const handler = (_: unknown, sid: string, text: string) => cb(sid, text)

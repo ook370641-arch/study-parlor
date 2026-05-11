@@ -19,6 +19,8 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -27,6 +29,7 @@
     "electron": "30.5.1",
     "electron-builder": "^26.8.1",
     "electron-vite": "^2.3.0",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4",
