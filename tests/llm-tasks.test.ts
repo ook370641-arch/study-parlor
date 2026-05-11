@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   generateInspirations,
+  generateGroupInspiration,
   finalizeProgress,
   finalizeReview
 } from '@electron/lib/llm-tasks'
@@ -67,6 +68,71 @@ describe('finalizeProgress', () => {
     expect(out.title).toBe('未命名笔记')
     expect(out.body).toContain('LLM 归档失败')
     expect(out.progress_summary).toBe('')
+  })
+})
+
+describe('generateGroupInspiration', () => {
+  it('parses valid JSON object', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"topic":"MCP协议","hook":"你已熟悉各类AI工具..."}' } }]
+      })
+    })) as any)
+    const out = await generateGroupInspiration(cfg, {
+      groupName: 'AI Tools',
+      existingTopics: ['Claude Code'],
+      profile
+    })
+    expect(out.topic).toBe('MCP协议')
+    expect(out.hook).toBe('你已熟悉各类AI工具...')
+  })
+
+  it('strips markdown code block before parsing', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '```json\n{"topic":"X","hook":"hx"}\n```' } }]
+      })
+    })) as any)
+    const out = await generateGroupInspiration(cfg, {
+      groupName: 'G',
+      existingTopics: ['A'],
+      profile
+    })
+    expect(out.topic).toBe('X')
+    expect(out.hook).toBe('hx')
+  })
+
+  it('returns fallback on parse failure', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'not json' } }] })
+    })) as any)
+    const out = await generateGroupInspiration(cfg, {
+      groupName: 'TestGroup',
+      existingTopics: [],
+      profile
+    })
+    expect(out.topic).toBe('TestGroup — 进阶探索')
+    expect(out.hook.length).toBeGreaterThan(0)
+  })
+
+  it('passes group data into prompt', async () => {
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '{"topic":"T","hook":"h"}' } }] })
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+    await generateGroupInspiration(cfg, {
+      groupName: 'Philosophy',
+      existingTopics: ['康德', '尼采'],
+      profile
+    })
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.messages[0].content).toContain('Philosophy')
+    expect(body.messages[0].content).toContain('康德')
+    expect(body.messages[0].content).toContain('尼采')
   })
 })
 

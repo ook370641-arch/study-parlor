@@ -130,10 +130,15 @@ export async function generateGroupInspiration(
     .replace('{{preferred_topics}}', args.profile.preferred_topics.join(' / '))
 
   try {
-    const text = await chatNonStream(cfg, {
+    let text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7
     })
+    // 清洗：去除 markdown 代码块标记和前后空白
+    text = text.trim()
+    if (text.startsWith('```')) {
+      text = text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    }
     const json = JSON.parse(text) as NewTopic
     if (!json.topic || !json.hook) throw new Error('shape')
     return json

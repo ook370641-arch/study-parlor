@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useStore } from '@/store'
 import type { Group, NewTopic } from '@shared/index'
 import { ipc } from '@/lib/ipc'
@@ -39,11 +39,12 @@ export function GroupRecCard({
   }, [group.name, existingTopics, profile, lastRefresh])
 
   // 首次加载
-  const [hasLoaded, setHasLoaded] = useState(false)
-  if (!hasLoaded && !loading && !recommendation && !error) {
-    setHasLoaded(true)
-    load()
-  }
+  useEffect(() => {
+    if (!recommendation && !error) {
+      load()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (loading && !recommendation) {
     return (
