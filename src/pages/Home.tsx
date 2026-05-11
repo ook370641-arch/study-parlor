@@ -1,16 +1,15 @@
 import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { Button } from '@/components/Button'
-// GroupRecCard will be used by consumers that pass group + existingTopics
+import { GroupRecCard } from '@/components/GroupRecCard'
 import { StudyLibrary } from '@/components/StudyLibrary'
 import { ipc } from '@/lib/ipc'
 
 export function Home() {
   const inspirations = useStore(s => s.inspirations)
-  const inspirationsLoading = useStore(s => s.inspirationsLoading)
-  const inspirationsError = useStore(s => s.inspirationsError)
   const profile = useStore(s => s.profile)
   const library = useStore(s => s.library)
+  const groups = useStore(s => s.groups)
   const unsavedSessions = useStore(s => s.unsavedSessions)
   const restoreSession = useStore(s => s.restoreSession)
   const removeUnsavedSession = useStore(s => s.removeUnsavedSession)
@@ -98,40 +97,26 @@ export function Home() {
             开始新学习
           </Button>
 
-          {/* 推荐主题 */}
+          {/* 从已知推未知 */}
           <div className="flex flex-col gap-2">
-            <div className="text-xs text-parchment/40 font-sans px-1">推荐主题</div>
+            <div className="text-xs text-parchment/40 font-sans px-1">从已知推未知</div>
 
-            {inspirationsLoading && (
-              <div className="text-sm text-parchment/50 font-sans text-center py-2">
-                <span className="inline-block w-4 h-4 border-2 border-parchment/30 border-t-ember rounded-full animate-spin mr-2 align-middle" />
-                正在构思...
-              </div>
-            )}
-
-            {inspirationsError && (
-              <button
-                onClick={loadInspirations}
-                className="text-sm text-parchment/50 font-sans text-center py-2 hover:text-ember transition-colors"
-              >
-                灵感生成失败，点击重试
-              </button>
-            )}
-
-            {!inspirationsLoading && !inspirationsError && inspirations.map((t, i) => (
-              <button
-                key={i}
-                onClick={() => openPreStudy({ mode: 'progress', topic: t.topic })}
-                className="block w-full text-left px-4 py-2
-                           bg-ink/40 border border-slate/30 rounded
-                           hover:border-ember/60 transition-colors group"
-              >
-                <div className="text-parchment/90">{t.topic}</div>
-                <div className="text-xs text-parchment/50 font-sans mt-1 group-hover:text-ember/70">
-                  {t.hook}
-                </div>
-              </button>
-            ))}
+            {groups.map((group) => {
+              const groupTopics = library
+                .filter((t) => t.groupId === group.id)
+                .map((t) => t.title)
+              if (groupTopics.length === 0) return null
+              return (
+                <GroupRecCard
+                  key={group.id}
+                  group={group}
+                  existingTopics={groupTopics}
+                  onClickTopic={(topic) =>
+                    openPreStudy({ mode: 'progress', topic })
+                  }
+                />
+              )
+            })}
           </div>
         </div>
 
