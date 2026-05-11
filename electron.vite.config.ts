@@ -1,6 +1,8 @@
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
+import { createRequire } from 'node:module'
+const paintingsPlugin = createRequire(import.meta.url)('./scripts/vite-paintings-plugin.cjs')
 
 export default defineConfig({
   main: {
@@ -28,7 +30,7 @@ export default defineConfig({
       rollupOptions: { input: 'index.html' },
       outDir: 'out/renderer'
     },
-    plugins: [react()],
+    plugins: [react(), paintingsPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),

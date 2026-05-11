@@ -7,6 +7,7 @@
     "dev": "node scripts/dev.js dev",
     "build": "node scripts/dev.js build",
     "preview": "node scripts/dev.js preview",
+    "pretest": "node scripts/build-manifest.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "package": "electron-vite build && electron-builder --win --config electron-builder.yml"
