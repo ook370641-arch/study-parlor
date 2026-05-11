@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { Button } from '@/components/Button'
-import { InspirationChip } from '@/components/InspirationChip'
+// GroupRecCard will be used by consumers that pass group + existingTopics
 import { StudyLibrary } from '@/components/StudyLibrary'
 import { ipc } from '@/lib/ipc'
 
@@ -119,7 +119,18 @@ export function Home() {
             )}
 
             {!inspirationsLoading && !inspirationsError && inspirations.map((t, i) => (
-              <InspirationChip key={i} topic={t} />
+              <button
+                key={i}
+                onClick={() => openPreStudy({ mode: 'progress', topic: t.topic })}
+                className="block w-full text-left px-4 py-2
+                           bg-ink/40 border border-slate/30 rounded
+                           hover:border-ember/60 transition-colors group"
+              >
+                <div className="text-parchment/90">{t.topic}</div>
+                <div className="text-xs text-parchment/50 font-sans mt-1 group-hover:text-ember/70">
+                  {t.hook}
+                </div>
+              </button>
             ))}
           </div>
         </div>
