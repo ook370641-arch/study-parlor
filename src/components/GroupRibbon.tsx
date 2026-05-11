@@ -83,7 +83,7 @@ export function GroupRibbon({
               <button
                 onClick={() => onSelect(group.id)}
                 onContextMenu={(e) => handleContextMenu(e, group.id)}
-                className={`px-3 py-1 text-xs font-sans rounded-full transition-colors ${
+                className={`group inline-flex items-center gap-0.5 px-3 py-1 text-xs font-sans rounded-full transition-colors ${
                   activeGroupId === group.id
                     ? 'text-ink'
                     : 'border text-parchment/60 hover:text-parchment'
@@ -95,10 +95,22 @@ export function GroupRibbon({
                 }
               >
                 {group.name}
+                {group.id !== 'default' && (
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeleteTarget(group)
+                    }}
+                    className="opacity-0 group-hover:opacity-100 w-4 h-4 inline-flex items-center justify-center rounded text-[10px] text-wine/60 hover:text-wine hover:bg-wine/15 transition-all"
+                    title="删除分组"
+                  >
+                    ✕
+                  </span>
+                )}
               </button>
             )}
 
-            {/* Context menu */}
+            {/* Context menu: rename only */}
             {menuOpen === group.id && (
               <div
                 className="absolute top-full left-0 mt-1 z-10 bg-ink border border-slate/30 rounded shadow-lg py-1 min-w-[80px]"
@@ -113,15 +125,6 @@ export function GroupRibbon({
                   className="block w-full text-left px-3 py-1 text-xs text-parchment/70 hover:bg-parchment/10 font-sans"
                 >
                   重命名
-                </button>
-                <button
-                  onClick={() => {
-                    setDeleteTarget(group)
-                    setMenuOpen(null)
-                  }}
-                  className="block w-full text-left px-3 py-1 text-xs text-red-400 hover:bg-red-400/10 font-sans"
-                >
-                  删除
                 </button>
               </div>
             )}
