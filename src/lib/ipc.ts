@@ -23,6 +23,7 @@ export const ipc = {
   get llmFinalizeProgress() { return ensure().llmFinalizeProgress },
   get llmFinalizeReview() { return ensure().llmFinalizeReview },
   get llmGenerateFable() { return ensure().llmGenerateFable },
+  get llmGroupInspiration() { return ensure().llmGroupInspiration },
   get onLlmChunk() { return ensure().onLlmChunk },
   get onLlmDone() { return ensure().onLlmDone },
   get onLlmError() { return ensure().onLlmError },
@@ -34,6 +35,7 @@ export const ipc = {
   get createGroup() { return ensure().createGroup },
   get renameGroup() { return ensure().renameGroup },
   get deleteGroup() { return ensure().deleteGroup },
+  get deleteArchivedSession() { return ensure().deleteArchivedSession },
   get recoveryDump() { return ensure().recoveryDump },
   get bootFatal() { return ensure().bootFatal }
 }
