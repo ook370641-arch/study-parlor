@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import type { Group } from '@shared/index'
+import { ConfirmDialog } from './ConfirmDialog'
 
 interface GroupRibbonProps {
   groups: Group[]
@@ -23,6 +24,7 @@ export function GroupRibbon({
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<Group | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleCreate = useCallback(() => {
@@ -114,7 +116,7 @@ export function GroupRibbon({
                 </button>
                 <button
                   onClick={() => {
-                    onDelete(group.id)
+                    setDeleteTarget(group)
                     setMenuOpen(null)
                   }}
                   className="block w-full text-left px-3 py-1 text-xs text-red-400 hover:bg-red-400/10 font-sans"
@@ -156,6 +158,29 @@ export function GroupRibbon({
           </button>
         )}
       </div>
+
+      {deleteTarget && (
+        <ConfirmDialog
+          open={true}
+          title="解散分组"
+          icon="warning"
+          confirmLabel="确认解散"
+          confirmVariant="danger"
+          onConfirm={() => {
+            onDelete(deleteTarget.id)
+            setDeleteTarget(null)
+          }}
+          onCancel={() => setDeleteTarget(null)}
+        >
+          <>
+            即将解散分组 <strong style={{ color: '#e8d5b7' }}>「{deleteTarget.name}」</strong>。
+            <br /><br />
+            该分组下的主题将被移至<strong>默认分组</strong>，主题文件不会被删除。
+            <br /><br />
+            <span style={{ color: '#8a3a3a', fontWeight: 500 }}>此操作不可撤销。</span>
+          </>
+        </ConfirmDialog>
+      )}
     </div>
   )
 }
