@@ -147,6 +147,15 @@ export type IpcApi = {
   }) => Promise<void>
 }
 
+export type Painting = {
+  id: string
+  painter: 'Mark Rothko' | 'Guy Billout'
+  title: string
+  year?: number
+  url: string
+  category?: string
+}
+
 declare global {
   interface Window {
     api: IpcApi
