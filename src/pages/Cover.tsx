@@ -27,7 +27,7 @@ export function Cover() {
 
       <SwapPaintingButton surface="cover" className="absolute top-4 right-4" />
 
-      <div className="absolute bottom-12 left-12 flex flex-col items-start gap-4 max-w-[380px] z-5"
+      <div className="absolute bottom-12 left-12 flex flex-col items-start gap-4 max-w-[380px] z-[5]"
            style={{ textShadow: '0 1px 8px rgba(0,0,0,0.6)' }}>
         {profile.name ? (
           <>
