@@ -48,15 +48,16 @@ export async function finalizeProgress(
 ): Promise<{ title: string; body: string; progress_summary?: string }> {
   const prompt = read('archive-progress.md').replace('{{transcript}}', transcript(history))
   try {
-    let text = await chatNonStream(cfg, {
+    const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3
     })
-    text = text.trim()
-    if (text.startsWith('```')) {
-      text = text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    const extracted = extractJsonObject(text)
+    if (!extracted) {
+      console.error('[finalizeProgress] failed to extract JSON from:', text.slice(0, 200))
+      throw new Error('JSON extraction failed')
     }
-    const json = JSON.parse(text) as { title: string; body: string; progress_summary?: string }
+    const json = JSON.parse(extracted) as { title: string; body: string; progress_summary?: string }
     if (!json.title || !json.body) throw new Error('shape')
     return json
   } catch {
@@ -145,8 +146,14 @@ function extractJsonObject(text: string): string | null {
     text = codeBlockMatch[1].trim()
   }
 
-  // 2. 从文本中找第一个平衡的花括号结构
-  const start = text.indexOf('{')
+  // 2. 从文本中找第一个 {" 作为 JSON 对象起始（跳过非 JSON 的花括号）
+  let start = -1
+  for (let i = 0; i < text.length - 1; i++) {
+    if (text[i] === '{' && text[i + 1] === '"') {
+      start = i
+      break
+    }
+  }
   if (start === -1) return null
 
   let depth = 0

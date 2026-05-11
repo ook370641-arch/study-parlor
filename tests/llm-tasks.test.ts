@@ -73,6 +73,19 @@ describe('finalizeProgress', () => {
     expect(out.progress_summary).toBe('S')
   })
 
+  it('extracts JSON surrounded by extra text', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '好的，这是归档内容：\n{"title":"前后文字","body":"# B","progress_summary":"S"}\n希望对您有帮助！' } }]
+      })
+    })) as any)
+    const out = await finalizeProgress(cfg, [{ role: 'user', content: '今夜想学:拓扑' }])
+    expect(out.title).toBe('前后文字')
+    expect(out.body).toBe('# B')
+    expect(out.progress_summary).toBe('S')
+  })
+
   it('falls back to deterministic title on parse failure', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true, json: async () => ({ choices: [{ message: { content: 'oops' } }] })
