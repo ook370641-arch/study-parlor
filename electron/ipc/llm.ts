@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import type { AppConfig } from '../env'
 import { probeModel, chatStream } from '../lib/kimi'
-import { generateInspirations, finalizeProgress, finalizeReview, generateFable } from '../lib/llm-tasks'
+import { generateInspirations, finalizeProgress, finalizeReview, generateFable, generateGroupInspiration } from '../lib/llm-tasks'
 import type { Message, Profile, Mode, Difficulty } from '@shared/index'
 import { assemblePrompt } from '../lib/prompts'
 
@@ -53,6 +53,12 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   ipcMain.handle('llm:inspirations', async (_, args: {
     profile: Profile; existingTitles: string[]
   }) => generateInspirations(cfg, args))
+
+  ipcMain.handle('llm:groupInspiration', async (_, args: {
+    groupName: string
+    existingTopics: string[]
+    profile: Profile
+  }) => generateGroupInspiration(cfg, args))
 
   ipcMain.handle('llm:finalizeProgress', async (_, history: Message[]) =>
     finalizeProgress(cfg, history))

@@ -114,3 +114,30 @@ export async function generateFable(
     }
   }
 }
+
+export async function generateGroupInspiration(
+  cfg: AppConfig,
+  args: {
+    groupName: string
+    existingTopics: string[]
+    profile: Profile
+  }
+): Promise<NewTopic> {
+  const prompt = read('group-inspiration.md')
+    .replace('{{group_name}}', args.groupName)
+    .replace('{{existing_topics}}', args.existingTopics.join(' / '))
+    .replace('{{profile_text}}', args.profile.profile_text)
+    .replace('{{preferred_topics}}', args.profile.preferred_topics.join(' / '))
+
+  try {
+    const text = await chatNonStream(cfg, {
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7
+    })
+    const json = JSON.parse(text) as NewTopic
+    if (!json.topic || !json.hook) throw new Error('shape')
+    return json
+  } catch {
+    return { topic: `${args.groupName} — 进阶探索`, hook: '你已深耕这片土壤，但边界之外，还有未被命名的疆域。' }
+  }
+}
