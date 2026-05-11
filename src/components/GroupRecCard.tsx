@@ -59,7 +59,7 @@ export function GroupRecCard({
 
   if (loading && !recommendation) {
     return (
-      <div className="bg-ink/40 border border-slate/30 rounded py-3 px-4">
+      <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded py-3 px-4">
         <div className="flex flex-col items-center gap-3 py-2">
           <StarOrbit starCount={4} radius={14} period={3000} showLines={true} />
           <span className="text-xs text-parchment/40 font-sans italic tracking-wide">
@@ -74,7 +74,7 @@ export function GroupRecCard({
     return (
       <button
         onClick={load}
-        className="block w-full text-left bg-ink/40 border border-slate/30 rounded py-3 px-4 hover:border-ember/40 transition-colors"
+        className="block w-full text-left bg-ink/70 backdrop-blur-md border border-slate/40 rounded py-3 px-4 hover:border-ember/50 transition-colors"
       >
         <div className="text-xs text-parchment/40 font-sans">
           这次联结很模糊，再试一次
@@ -87,7 +87,7 @@ export function GroupRecCard({
 
   return (
     <div
-      className="relative bg-ink/40 border border-slate/30 rounded overflow-hidden hover:border-ember/50 hover:bg-ink/60 transition-all cursor-pointer group"
+      className="relative bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden hover:border-ember/60 hover:bg-ink/80 transition-all cursor-pointer group"
       onClick={(e) => {
         const target = e.target as HTMLElement
         if (target.closest('[data-refresh]')) return

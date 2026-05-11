@@ -147,7 +147,7 @@ function TopicAccordion({
         : `${topic.last_studied_days}天前`
 
   return (
-    <div className="border border-slate/30 rounded overflow-hidden">
+    <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden">
       <div
         onClick={handleToggle}
         onMouseDown={(e) => {
@@ -157,7 +157,7 @@ function TopicAccordion({
             onDragStart(topic, e.clientX, e.clientY)
           }
         }}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-ink/40 hover:bg-ink/60 transition-colors cursor-pointer select-none"
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-ink/30 transition-colors cursor-pointer select-none"
       >
         <div
           className="w-[3px] h-5 rounded-full shrink-0"
@@ -191,7 +191,7 @@ function TopicAccordion({
         </button>
       </div>
 
-      <div className={`bg-ink/20 overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`bg-ink/30 overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
         {topic.sessions.map((s) => (
           <SessionRow
             key={s.sessionNumber}

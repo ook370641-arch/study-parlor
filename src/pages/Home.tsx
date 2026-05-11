@@ -4,6 +4,8 @@ import { Button } from '@/components/Button'
 import { GroupRecCard } from '@/components/GroupRecCard'
 import { StudyLibrary } from '@/components/StudyLibrary'
 import { ipc } from '@/lib/ipc'
+import { SurfaceBackground } from '@/components/SurfaceBackground'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 
 export function Home() {
   const inspirations = useStore(s => s.inspirations)
@@ -50,22 +52,24 @@ export function Home() {
 
   return (
     <div className="h-full overflow-y-auto p-8 relative">
+      <SurfaceBackground surface="home" />
+      <SwapPaintingButton surface="home" className="absolute top-4 right-20" />
       <Button variant="ghost"
         onClick={() => goto('profile')}
-        className="absolute top-4 right-4 font-sans text-sm">
+        className="absolute top-4 right-4 font-sans text-sm z-10">
         档案
       </Button>
 
-      <div className="text-center text-parchment/60 font-sans text-sm mb-8">
+      <div className="relative z-[5] text-center text-parchment/60 font-sans text-sm mb-8">
         晚安,{profile.name}
       </div>
 
-      <div className="flex gap-6 max-w-6xl mx-auto">
+      <div className="relative z-[5] flex gap-6 max-w-6xl mx-auto">
         {/* 左侧：新学习模块 */}
         <div className="w-[360px] shrink-0 flex flex-col gap-4">
           {/* 恢复提示 */}
           {firstUnsaved && (
-            <div className="panel p-4">
+            <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded-md p-4">
               <div className="text-xs text-parchment/50 font-sans mb-2">未完成的会话</div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm text-parchment/70 font-serif truncate">
