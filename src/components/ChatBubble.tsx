@@ -11,7 +11,7 @@ export function ChatBubble({ msg }: { msg: Message }) {
       <div className={`max-w-[70%] px-4 py-3 rounded-md whitespace-pre-wrap leading-relaxed
         ${isUser
           ? 'bg-ember/20 border border-ember/40'
-          : 'bg-ink/60 border border-slate/40'}`}>
+          : 'bg-ink/65 backdrop-blur-md border border-slate/40'}`}>
         {content}
       </div>
     </div>

@@ -9,6 +9,8 @@ import { ipc } from '@/lib/ipc'
 import { ArchiveLoadingOverlay } from '@/components/ArchiveLoadingOverlay'
 import { ArchiveReportModal } from '@/components/ArchiveReportModal'
 import { StarOrbit } from '@/components/StarOrbit'
+import { SurfaceBackground } from '@/components/SurfaceBackground'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 
 export function Study() {
   const session = useStore(s => s.session)
@@ -116,7 +118,8 @@ export function Study() {
         />
       )}
 
-      <div className={`h-full flex flex-col ${isExiting ? 'study-exit' : ''}`}>
+      <div className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''}`}>
+      <SurfaceBackground surface="study" />
       {isExiting && (
         <div className="fixed inset-0 z-40 pointer-events-none">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -132,7 +135,7 @@ export function Study() {
           ))}
         </div>
       )}
-      <header className="flex justify-between items-center px-8 py-4 border-b border-slate/30">
+      <header className="relative z-[5] flex justify-between items-center px-8 py-4 bg-ink/70 backdrop-blur-md border-b border-slate/40">
         <button
           onClick={onBack}
           aria-label="返回"
@@ -140,15 +143,18 @@ export function Study() {
           ←
         </button>
         <div className="font-serif">{session.topic}</div>
-        <div className="font-sans text-sm text-parchment/60">
-          {session.mode === 'progress' ? '推进' : '检测'} ·
-          {session.difficulty === 'high' ? '高' : session.difficulty === 'mid' ? '中' : '低'} ·
-          T={session.temperature}
+        <div className="flex items-center gap-3">
+          <SwapPaintingButton surface="study" />
+          <div className="font-sans text-sm text-parchment/60">
+            {session.mode === 'progress' ? '推进' : '检测'} ·
+            {session.difficulty === 'high' ? '高' : session.difficulty === 'mid' ? '中' : '低'} ·
+            T={session.temperature}
+          </div>
         </div>
       </header>
 
       {streamError && (
-        <div className="bg-wine/30 border border-wine px-4 py-2 text-sm font-sans">
+        <div className="relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans">
           <div className="flex justify-between items-center">
             <span>
               {streamError.code === 'UNAUTHORIZED'
@@ -165,7 +171,7 @@ export function Study() {
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto">
+      <div ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto">
         {session.history.map((m, i) => <ChatBubble key={i} msg={m} />)}
         {session.streaming && !assistantHasContent && (
           <div className="flex justify-start my-3">
@@ -186,7 +192,7 @@ export function Study() {
         return null
       })()}
       {session.archivePending && !session.streaming && (
-        <div className="px-8 max-w-4xl w-full mx-auto">
+        <div className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
           <div className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
                           text-sm font-sans text-parchment/80 flex justify-between items-center">
             <span>AI 询问是否归档此次学习</span>
@@ -200,8 +206,10 @@ export function Study() {
         </div>
       )}
 
-      <div className="px-8 py-4 border-t border-slate/30 max-w-4xl w-full mx-auto">
-        <ChatInput onSend={onSend} />
+      <div className="relative z-[5] bg-ink/70 backdrop-blur-md border-t border-slate/40">
+        <div className="px-8 py-4 max-w-4xl w-full mx-auto">
+          <ChatInput onSend={onSend} />
+        </div>
       </div>
     </div>
     </>
