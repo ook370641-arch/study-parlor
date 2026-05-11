@@ -5,6 +5,8 @@ import type {
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
+import { manifest, pickRandom } from '@/lib/paintings'
+import type { Painting } from '@shared/index'
 
 type Page = 'cover' | 'home' | 'study' | 'profile'
 
@@ -53,8 +55,17 @@ type AppStore = {
   archiveResult: ArchiveResult | null
   groupInspirations: Record<string, NewTopic>
 
+  // 画作背景
+  currentPaintings: {
+    cover: Painting | null
+    home: Painting | null
+    study: Painting | null
+  }
+
   // 操作
   init: () => Promise<void>
+  initPaintings: () => void
+  swapPainting: (surface: 'cover' | 'home' | 'study') => void
   goto: (p: Page) => void
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
   closePreStudy: () => void
@@ -116,6 +127,7 @@ export const useStore = create<AppStore>((set, get) => ({
   modal: null,
   preStudyArgs: null,
   toast: null,
+  currentPaintings: { cover: null, home: null, study: null },
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -132,6 +144,26 @@ export const useStore = create<AppStore>((set, get) => ({
       groups: groupsData.groups,
       groupMapping: groupsData.mapping
     })
+    get().initPaintings()
+  },
+
+  initPaintings: () => {
+    set({
+      currentPaintings: {
+        cover: pickRandom(manifest, null),
+        home: pickRandom(manifest, null),
+        study: pickRandom(manifest, null),
+      }
+    })
+  },
+
+  swapPainting: (surface) => {
+    const current = get().currentPaintings[surface]
+    const next = pickRandom(manifest, current?.id ?? null)
+    if (!next) return
+    set(state => ({
+      currentPaintings: { ...state.currentPaintings, [surface]: next }
+    }))
   },
 
   goto: (p) => set({ currentPage: p }),
