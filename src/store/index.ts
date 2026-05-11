@@ -51,6 +51,7 @@ type AppStore = {
   preStudyArgs: { mode: Mode; topic: string; dirName?: string; file_path?: string } | null
   toast: { message: string; ts: number } | null
   archiveResult: ArchiveResult | null
+  groupInspirations: Record<string, NewTopic>
 
   // 操作
   init: () => Promise<void>
@@ -89,6 +90,8 @@ type AppStore = {
   deleteGroup: (id: string) => Promise<void>
   setGravityFieldOpen: (open: boolean) => void
   setDraggingTopic: (topic: TopicMeta | null) => void
+  setGroupInspiration: (groupId: string, topic: NewTopic) => void
+  removeGroupInspiration: (groupId: string) => void
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -109,6 +112,7 @@ export const useStore = create<AppStore>((set, get) => ({
   session: null,
   currentPage: 'cover',
   archiveResult: null,
+  groupInspirations: {},
   modal: null,
   preStudyArgs: null,
   toast: null,
@@ -121,6 +125,7 @@ export const useStore = create<AppStore>((set, get) => ({
       profile: state.profile,
       lastUsed: state.lastUsed,
       inspirations: state.suggested_new_topics?.topics ?? [],
+      groupInspirations: state.groupInspirations ?? {},
       session_count: state.ui?.session_count ?? 0,
       library,
       unsavedSessions: unsaved,
@@ -325,6 +330,19 @@ export const useStore = create<AppStore>((set, get) => ({
   setGravityFieldOpen: (open) => set({ gravityFieldOpen: open }),
 
   setDraggingTopic: (topic) => set({ draggingTopic: topic }),
+
+  setGroupInspiration: (groupId, topic) => {
+    const next = { ...get().groupInspirations, [groupId]: topic }
+    set({ groupInspirations: next })
+    ipc.patchState({ groupInspirations: next } as Partial<StateJson>)
+  },
+
+  removeGroupInspiration: (groupId) => {
+    const next = { ...get().groupInspirations }
+    delete next[groupId]
+    set({ groupInspirations: next })
+    ipc.patchState({ groupInspirations: next } as Partial<StateJson>)
+  },
 }))
 
 function generateGroupColor(): string {

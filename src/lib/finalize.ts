@@ -19,7 +19,9 @@ export async function finalizeAndReturnHome() {
 
   try {
     if (sess.mode === 'progress') {
-      const { title, body, progress_summary } = await ipc.llmFinalizeProgress(historySnapshot)
+      const { title: llmTitle, body, progress_summary } = await ipc.llmFinalizeProgress(historySnapshot)
+      // 新主题优先使用用户输入的 topic 作为 title，LLM 提取的作为 fallback
+      const title = sess.topic || llmTitle
 
       // 确定 session 编号
       const topicMeta = s.library.find(t => t.dirName === sess.dirName)

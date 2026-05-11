@@ -104,13 +104,13 @@ export function Home() {
             {groups.map((group) => {
               const groupTopics = library
                 .filter((t) => t.groupId === group.id)
-                .map((t) => t.title)
+                .map((t) => ({ dirName: t.dirName, title: t.title }))
               if (groupTopics.length === 0) return null
               return (
                 <GroupRecCard
                   key={group.id}
                   group={group}
-                  existingTopics={groupTopics}
+                  topics={groupTopics}
                   onClickTopic={(topic) =>
                     openPreStudy({ mode: 'progress', topic })
                   }

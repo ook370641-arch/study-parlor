@@ -1,22 +1,27 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useStore } from '@/store'
-import type { Group, NewTopic } from '@shared/index'
+import type { Group } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 
 export function GroupRecCard({
   group,
-  existingTopics,
+  topics,
   onClickTopic
 }: {
   group: Group
-  existingTopics: string[]
+  topics: { dirName: string; title: string }[]
   onClickTopic: (topic: string) => void
 }) {
   const profile = useStore((s) => s.profile)
-  const [recommendation, setRecommendation] = useState<NewTopic | null>(null)
+  const cached = useStore((s) => s.groupInspirations[group.id])
+  const setGroupInspiration = useStore((s) => s.setGroupInspiration)
+  const removeGroupInspiration = useStore((s) => s.removeGroupInspiration)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(0)
+
+  const recommendation = cached ?? null
 
   const load = useCallback(async () => {
     const now = Date.now()
@@ -26,21 +31,26 @@ export function GroupRecCard({
     try {
       const result = await ipc.llmGroupInspiration({
         groupName: group.name,
-        existingTopics,
+        topics,
         profile
       })
-      setRecommendation(result)
+      setGroupInspiration(group.id, result)
       setLastRefresh(now)
     } catch {
       setError(true)
     } finally {
       setLoading(false)
     }
-  }, [group.name, existingTopics, profile, lastRefresh])
+  }, [group.id, group.name, topics, profile, lastRefresh, setGroupInspiration])
 
-  // 首次加载
+  const refresh = useCallback(() => {
+    removeGroupInspiration(group.id)
+    load()
+  }, [group.id, removeGroupInspiration, load])
+
+  // 首次加载：无缓存且无错误时才触发
   useEffect(() => {
-    if (!recommendation && !error) {
+    if (!cached && !error) {
       load()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,7 +86,6 @@ export function GroupRecCard({
     <div
       className="relative bg-ink/40 border border-slate/30 rounded overflow-hidden hover:border-ember/50 hover:bg-ink/60 transition-all cursor-pointer group"
       onClick={(e) => {
-        // 如果点击的是刷新按钮，不触发卡片点击
         const target = e.target as HTMLElement
         if (target.closest('[data-refresh]')) return
         onClickTopic(recommendation.topic)
@@ -97,7 +106,7 @@ export function GroupRecCard({
             data-refresh
             onClick={(e) => {
               e.stopPropagation()
-              load()
+              refresh()
             }}
             disabled={loading}
             className={`w-5 h-5 flex items-center justify-center rounded text-parchment/40 hover:text-ember hover:bg-ember/10 transition-all ${loading ? 'animate-spin' : ''}`}

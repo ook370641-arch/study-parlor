@@ -56,7 +56,7 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
 
   ipcMain.handle('llm:groupInspiration', async (_, args: {
     groupName: string
-    existingTopics: string[]
+    topics: { dirName: string; title: string }[]
     profile: Profile
   }) => generateGroupInspiration(cfg, args))
 

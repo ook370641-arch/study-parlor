@@ -93,6 +93,7 @@ export type StateJson = {
   profile: Profile
   lastUsed: { difficulty: Difficulty; temperature: Temperature }
   suggested_new_topics: { generated_at: string; topics: NewTopic[] } | null
+  groupInspirations: Record<string, NewTopic>
   ui: { session_count: number }
 }
 
@@ -111,7 +112,7 @@ export type IpcApi = {
   llmGenerateFable: (args: { history: Message[]; topic: string }) => Promise<{ title: string; body: string }>
   llmGroupInspiration: (args: {
     groupName: string
-    existingTopics: string[]
+    topics: { dirName: string; title: string }[]
     profile: Profile
   }) => Promise<NewTopic>
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void

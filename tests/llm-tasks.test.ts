@@ -60,6 +60,19 @@ describe('finalizeProgress', () => {
     expect(out.progress_summary).toBe('已掌握拓扑基础概念')
   })
 
+  it('strips markdown code block before parsing', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '```json\n{"title":"代码块标题","body":"# B","progress_summary":"S"}\n```' } }]
+      })
+    })) as any)
+    const out = await finalizeProgress(cfg, [{ role: 'user', content: '今夜想学:拓扑' }])
+    expect(out.title).toBe('代码块标题')
+    expect(out.body).toBe('# B')
+    expect(out.progress_summary).toBe('S')
+  })
+
   it('falls back to deterministic title on parse failure', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true, json: async () => ({ choices: [{ message: { content: 'oops' } }] })
@@ -81,7 +94,7 @@ describe('generateGroupInspiration', () => {
     })) as any)
     const out = await generateGroupInspiration(cfg, {
       groupName: 'AI Tools',
-      existingTopics: ['Claude Code'],
+      topics: [{ dirName: 'claude-code', title: 'Claude Code' }],
       profile
     })
     expect(out.topic).toBe('MCP协议')
@@ -97,25 +110,23 @@ describe('generateGroupInspiration', () => {
     })) as any)
     const out = await generateGroupInspiration(cfg, {
       groupName: 'G',
-      existingTopics: ['A'],
+      topics: [{ dirName: 'a', title: 'A' }],
       profile
     })
     expect(out.topic).toBe('X')
     expect(out.hook).toBe('hx')
   })
 
-  it('returns fallback on parse failure', async () => {
+  it('throws on parse failure instead of fallback', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ({ choices: [{ message: { content: 'not json' } }] })
     })) as any)
-    const out = await generateGroupInspiration(cfg, {
+    await expect(generateGroupInspiration(cfg, {
       groupName: 'TestGroup',
-      existingTopics: [],
+      topics: [],
       profile
-    })
-    expect(out.topic).toBe('TestGroup — 进阶探索')
-    expect(out.hook.length).toBeGreaterThan(0)
+    })).rejects.toThrow()
   })
 
   it('passes group data into prompt', async () => {
@@ -126,7 +137,7 @@ describe('generateGroupInspiration', () => {
     vi.stubGlobal('fetch', fetchSpy as any)
     await generateGroupInspiration(cfg, {
       groupName: 'Philosophy',
-      existingTopics: ['康德', '尼采'],
+      topics: [{ dirName: 'kant', title: '康德' }, { dirName: 'nietzsche', title: '尼采' }],
       profile
     })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)

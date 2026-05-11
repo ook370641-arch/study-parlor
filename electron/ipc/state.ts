@@ -11,6 +11,7 @@ const DEFAULT: StateJson = {
   profile: { name: '', profile_text: '', preferred_topics: [] },
   lastUsed: { difficulty: 'mid', temperature: 0.7 },
   suggested_new_topics: null,
+  groupInspirations: {},
   ui: { session_count: 0 }
 }
 

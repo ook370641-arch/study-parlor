@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { chatNonStream } from './kimi'
+import { parseFrontmatter } from './frontmatter'
 import type { AppConfig } from '../env'
 import type { Profile, NewTopic, Message } from '@shared/index'
 
@@ -47,10 +48,14 @@ export async function finalizeProgress(
 ): Promise<{ title: string; body: string; progress_summary?: string }> {
   const prompt = read('archive-progress.md').replace('{{transcript}}', transcript(history))
   try {
-    const text = await chatNonStream(cfg, {
+    let text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3
     })
+    text = text.trim()
+    if (text.startsWith('```')) {
+      text = text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    }
     const json = JSON.parse(text) as { title: string; body: string; progress_summary?: string }
     if (!json.title || !json.body) throw new Error('shape')
     return json
@@ -115,34 +120,73 @@ export async function generateFable(
   }
 }
 
+function getSortedSessionDirs(topicDir: string): string[] {
+  const entries = fs.readdirSync(topicDir, { withFileTypes: true })
+  return entries
+    .filter(e => e.isDirectory() && /^s\d+$/.test(e.name))
+    .map(e => e.name)
+    .sort((a, b) => {
+      const na = parseInt(a.slice(1), 10)
+      const nb = parseInt(b.slice(1), 10)
+      return na - nb
+    })
+}
+
+function readReportFrontmatter(libraryPath: string, dirName: string): { tags: string[]; progress_summary?: string } | null {
+  try {
+    const topicDir = path.join(libraryPath, dirName)
+    const sessionDirs = getSortedSessionDirs(topicDir)
+    if (sessionDirs.length === 0) return null
+    const latestDir = sessionDirs[sessionDirs.length - 1]
+    const reportPath = path.join(topicDir, latestDir, '学习报告.md')
+    if (!fs.existsSync(reportPath)) return null
+    const raw = fs.readFileSync(reportPath, 'utf8')
+    const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
+    return {
+      tags: frontmatter.tags ?? [],
+      progress_summary: frontmatter.progress_summary
+    }
+  } catch {
+    return null
+  }
+}
+
 export async function generateGroupInspiration(
   cfg: AppConfig,
   args: {
     groupName: string
-    existingTopics: string[]
+    topics: { dirName: string; title: string }[]
     profile: Profile
   }
 ): Promise<NewTopic> {
+  // 读取每个主题的学习报告 frontmatter
+  const summaries: string[] = []
+  for (const t of args.topics) {
+    const fm = readReportFrontmatter(cfg.libraryPath, t.dirName)
+    let line = `- ${t.title}`
+    if (fm) {
+      if (fm.tags.length > 0) line += ` [标签: ${fm.tags.join(', ')}]`
+      if (fm.progress_summary) line += ` — 进度: ${fm.progress_summary}`
+    }
+    summaries.push(line)
+  }
+
   const prompt = read('group-inspiration.md')
     .replace('{{group_name}}', args.groupName)
-    .replace('{{existing_topics}}', args.existingTopics.join(' / '))
+    .replace('{{topic_summaries}}', summaries.join('\n'))
     .replace('{{profile_text}}', args.profile.profile_text)
     .replace('{{preferred_topics}}', args.profile.preferred_topics.join(' / '))
 
-  try {
-    let text = await chatNonStream(cfg, {
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7
-    })
-    // 清洗：去除 markdown 代码块标记和前后空白
-    text = text.trim()
-    if (text.startsWith('```')) {
-      text = text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
-    }
-    const json = JSON.parse(text) as NewTopic
-    if (!json.topic || !json.hook) throw new Error('shape')
-    return json
-  } catch {
-    return { topic: `${args.groupName} — 进阶探索`, hook: '你已深耕这片土壤，但边界之外，还有未被命名的疆域。' }
+  let text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.7
+  })
+  // 清洗：去除 markdown 代码块标记和前后空白
+  text = text.trim()
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
   }
+  const json = JSON.parse(text) as NewTopic
+  if (!json.topic || !json.hook) throw new Error('shape')
+  return json
 }
