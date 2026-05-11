@@ -132,6 +132,60 @@ function getSortedSessionDirs(topicDir: string): string[] {
     })
 }
 
+/**
+ * 从 LLM 返回的任意文本中提取第一个 {...} JSON 对象。
+ * 处理前后文字、markdown 代码块、多余空格等噪音。
+ */
+function extractJsonObject(text: string): string | null {
+  text = text.trim()
+
+  // 1. 去除 markdown 代码块包装（```json ... ```）
+  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+  if (codeBlockMatch) {
+    text = codeBlockMatch[1].trim()
+  }
+
+  // 2. 从文本中找第一个平衡的花括号结构
+  const start = text.indexOf('{')
+  if (start === -1) return null
+
+  let depth = 0
+  let inString = false
+  let escape = false
+  let end = -1
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) {
+      escape = false
+      continue
+    }
+    if (ch === '\\' && inString) {
+      escape = true
+      continue
+    }
+    if (ch === '"' && !inString) {
+      inString = true
+      continue
+    }
+    if (ch === '"' && inString) {
+      inString = false
+      continue
+    }
+    if (!inString) {
+      if (ch === '{') depth++
+      if (ch === '}') depth--
+      if (depth === 0) {
+        end = i
+        break
+      }
+    }
+  }
+
+  if (end === -1) return null
+  return text.slice(start, end + 1)
+}
+
 function readReportFrontmatter(libraryPath: string, dirName: string): { tags: string[]; progress_summary?: string } | null {
   try {
     const topicDir = path.join(libraryPath, dirName)
@@ -142,9 +196,13 @@ function readReportFrontmatter(libraryPath: string, dirName: string): { tags: st
     if (!fs.existsSync(reportPath)) return null
     const raw = fs.readFileSync(reportPath, 'utf8')
     const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
+    // progress_summary 可能包含 YAML 多行换行符，替换为空格避免破坏 prompt
+    const ps = frontmatter.progress_summary
+      ? frontmatter.progress_summary.replace(/\s+/g, ' ').trim()
+      : undefined
     return {
       tags: frontmatter.tags ?? [],
-      progress_summary: frontmatter.progress_summary
+      progress_summary: ps
     }
   } catch {
     return null
@@ -181,12 +239,14 @@ export async function generateGroupInspiration(
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7
   })
-  // 清洗：去除 markdown 代码块标记和前后空白
-  text = text.trim()
-  if (text.startsWith('```')) {
-    text = text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+
+  // 激进 JSON 提取：从 LLM 返回的任意文本中找第一个 {...} 结构
+  const extracted = extractJsonObject(text)
+  if (!extracted) {
+    console.error('[generateGroupInspiration] failed to extract JSON from:', text.slice(0, 200))
+    throw new Error('JSON extraction failed')
   }
-  const json = JSON.parse(text) as NewTopic
+  const json = JSON.parse(extracted) as NewTopic
   if (!json.topic || !json.hook) throw new Error('shape')
   return json
 }

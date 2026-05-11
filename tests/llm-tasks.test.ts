@@ -117,6 +117,22 @@ describe('generateGroupInspiration', () => {
     expect(out.hook).toBe('hx')
   })
 
+  it('extracts JSON surrounded by extra text', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '好的，我为您推荐：\n{"topic":"嵌套JSON","hook":"带前后文字"}\n希望对您有帮助！' } }]
+      })
+    })) as any)
+    const out = await generateGroupInspiration(cfg, {
+      groupName: 'G',
+      topics: [{ dirName: 'a', title: 'A' }],
+      profile
+    })
+    expect(out.topic).toBe('嵌套JSON')
+    expect(out.hook).toBe('带前后文字')
+  })
+
   it('throws on parse failure instead of fallback', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
