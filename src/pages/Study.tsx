@@ -8,6 +8,7 @@ import { finalizeAndReturnHome } from '@/lib/finalize'
 import { ipc } from '@/lib/ipc'
 import { ArchiveLoadingOverlay } from '@/components/ArchiveLoadingOverlay'
 import { ArchiveReportModal } from '@/components/ArchiveReportModal'
+import { StarOrbit } from '@/components/StarOrbit'
 
 export function Study() {
   const session = useStore(s => s.session)
@@ -16,16 +17,20 @@ export function Study() {
   // 左上箭头 = 返回主页:中止流、保存为未完成会话、重置 session
   // 不触发归档,空对话/卡死状态也能安全退出
   const onBack = async () => {
+    if (isExiting) return
     const s = useStore.getState()
     const sess = s.session
     if (!sess) return
+    setIsExiting(true)
     try {
       if (sess.streaming) await ipc.llmAbort(sess.abortId)
       await s.saveCurrentSession()
     } catch (err) {
       console.error('[onBack] save before exit failed:', err)
     }
-    s.resetSession()
+    setTimeout(() => {
+      s.resetSession()
+    }, 700)
   }
 
   useEffect(() => {
@@ -41,9 +46,11 @@ export function Study() {
   }, [session?.history])
 
   // ESC = 返回(等同左上箭头)
+  const onBackRef = useRef(onBack)
+  onBackRef.current = onBack
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onBack()
+      if (e.key === 'Escape') onBackRef.current()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -51,6 +58,7 @@ export function Study() {
 
   const [streamError, setStreamError] = useState<{ code: string; message: string } | null>(null)
   const [archiving, setArchiving] = useState(false)
+  const [isExiting, setIsExiting] = useState(false)
   const archiveResult = useStore(s => s.archiveResult)
   const clearArchiveResult = useStore(s => s.clearArchiveResult)
   useEffect(() => {
@@ -80,8 +88,12 @@ export function Study() {
   }
 
   const handleArchiveClose = () => {
-    clearArchiveResult()
-    useStore.getState().resetSession()
+    if (isExiting) return
+    setIsExiting(true)
+    setTimeout(() => {
+      clearArchiveResult()
+      useStore.getState().resetSession()
+    }, 700)
   }
 
   // streaming=true 但还没收到任何 assistant 内容 → 显示"正在思考..."
@@ -104,7 +116,22 @@ export function Study() {
         />
       )}
 
-      <div className="h-full flex flex-col">
+      <div className={`h-full flex flex-col ${isExiting ? 'study-exit' : ''}`}>
+      {isExiting && (
+        <div className="fixed inset-0 z-40 pointer-events-none">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1.5 h-1.5 rounded-full bg-ember/60 star-fly-away"
+              style={{
+                left: `${20 + i * 15}%`,
+                bottom: '20%',
+                animationDelay: `${i * 50}ms`,
+              }}
+            />
+          ))}
+        </div>
+      )}
       <header className="flex justify-between items-center px-8 py-4 border-b border-slate/30">
         <button
           onClick={onBack}
@@ -143,8 +170,8 @@ export function Study() {
         {session.streaming && !assistantHasContent && (
           <div className="flex justify-start my-3">
             <div className="bg-ink/60 border border-slate/40 px-4 py-3 rounded-md
-                            text-parchment/50 font-sans text-sm flex items-center gap-2">
-              <span className="inline-block w-1.5 h-1.5 bg-ember/70 rounded-full animate-pulse" />
+                            text-parchment/50 font-sans text-sm flex items-center gap-3">
+              <StarOrbit starCount={3} radius={10} period={2000} />
               正在思考...
             </div>
           </div>

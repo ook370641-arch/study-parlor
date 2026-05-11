@@ -25,5 +25,60 @@
 }
 .toast-enter { animation: fadeInDown 200ms ease-out; }
 
+@keyframes toastExit {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, -8px); }
+}
+.toast-exit { animation: toastExit 200ms ease-in forwards; }
+
+@keyframes starOrbit {
+  from {
+    transform: rotate(0deg) translateX(var(--orbit-r)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(var(--orbit-r)) rotate(-360deg);
+  }
+}
+
+@keyframes starFlyAway {
+  0% { transform: translateY(0) scale(1); opacity: 0.8; }
+  100% { transform: translateY(-300px) scale(0); opacity: 0; }
+}
+
+.star-fly-away {
+  animation: starFlyAway 700ms ease-out forwards;
+}
+
+@keyframes studyExit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.study-exit {
+  animation: studyExit 700ms ease-out forwards;
+}
+
+@keyframes lightSweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.animate-lightSweep {
+  animation: lightSweep 0.6s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-lightSweep {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 html, body, #root { height: 100%; }
 body { @apply bg-ink text-parchment font-serif antialiased; }

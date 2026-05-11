@@ -59,7 +59,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
           {loading && (
             <div className="text-center text-parchment/50 font-sans text-sm py-8">
               <span className="inline-block w-4 h-4 border-2 border-parchment/30 border-t-ember rounded-full animate-spin mr-2 align-middle" />
-              加载中...
+              正在读取记忆…
             </div>
           )}
 

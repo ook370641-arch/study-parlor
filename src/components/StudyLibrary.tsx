@@ -5,6 +5,7 @@ import { SessionViewer } from './SessionViewer'
 import { GroupRibbon } from './GroupRibbon'
 import { GravityField } from './GravityField'
 import { ConfirmDialog } from './ConfirmDialog'
+import { ReviewFlash } from './ReviewFlash'
 
 type ViewerState = {
   dirName: string
@@ -23,7 +24,7 @@ function SessionRow({
   dirName: string
   session: SessionMeta
   onViewFile: (v: ViewerState) => void
-  onReview: () => void
+  onReview: (session: SessionMeta) => void
   onDelete?: (dirName: string, sessionNumber: number) => void
 }) {
   const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
@@ -95,7 +96,7 @@ function SessionRow({
           </button>
         ) : (
           <button
-            onClick={onReview}
+            onClick={() => onReview(session)}
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember text-ember hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
             开始复习
@@ -122,15 +123,21 @@ function TopicAccordion({
   groupColor,
   onDragStart,
   onDeleteSession,
+  onReviewSession,
 }: {
   topic: TopicMeta
   onViewFile: (v: ViewerState) => void
   groupColor: string
   onDragStart?: (topic: TopicMeta, startX: number, startY: number) => void
   onDeleteSession?: (dirName: string, sessionNumber: number) => void
+  onReviewSession?: (session: SessionMeta, topic: TopicMeta) => void
 }) {
   const [open, setOpen] = useState(false)
   const openPreStudy = useStore((s) => s.openPreStudy)
+
+  const handleToggle = () => {
+    setOpen(!open)
+  }
 
   const daysText =
     topic.last_studied_days === 0
@@ -142,7 +149,7 @@ function TopicAccordion({
   return (
     <div className="border border-slate/30 rounded overflow-hidden">
       <div
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         onMouseDown={(e) => {
           if (e.button === 0 && onDragStart) {
             e.preventDefault()
@@ -184,26 +191,20 @@ function TopicAccordion({
         </button>
       </div>
 
-      {open && (
-        <div className="bg-ink/20">
-          {topic.sessions.map((s) => (
-            <SessionRow
-              key={s.sessionNumber}
-              dirName={topic.dirName}
-              session={s}
-              onViewFile={onViewFile}
-              onReview={() =>
-                openPreStudy({
-                  mode: 'review',
-                  topic: topic.title,
-                  dirName: topic.dirName,
-                })
-              }
-              onDelete={onDeleteSession}
-            />
-          ))}
-        </div>
-      )}
+      <div className={`bg-ink/20 overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        {topic.sessions.map((s) => (
+          <SessionRow
+            key={s.sessionNumber}
+            dirName={topic.dirName}
+            session={s}
+            onViewFile={onViewFile}
+            onReview={(session) =>
+              onReviewSession?.(session, topic)
+            }
+            onDelete={onDeleteSession}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -237,6 +238,34 @@ export function StudyLibrary() {
     files: string[]
   } | null>(null)
   const deleteArchivedSession = useStore((s) => s.deleteArchivedSession)
+  const openPreStudy = useStore((s) => s.openPreStudy)
+
+  const [reviewFlash, setReviewFlash] = useState<null | {
+    title: string
+    date: string
+    topic: string
+    dirName: string
+  }>(null)
+
+  const handleReviewSession = useCallback((session: SessionMeta, topic: TopicMeta) => {
+    const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
+    setReviewFlash({
+      title: topic.title,
+      date: dateStr,
+      topic: topic.title,
+      dirName: topic.dirName,
+    })
+  }, [])
+
+  const enterReview = useCallback(() => {
+    if (!reviewFlash) return
+    openPreStudy({
+      mode: 'review',
+      topic: reviewFlash.topic,
+      dirName: reviewFlash.dirName,
+    })
+    setReviewFlash(null)
+  }, [reviewFlash, openPreStudy])
 
   const containerRef = useRef<HTMLDivElement>(null)
   const dragStateRef = useRef(dragState)
@@ -387,8 +416,28 @@ export function StudyLibrary() {
 
   if (library.length === 0) {
     return (
-      <div className="text-center text-parchment/40 font-sans text-sm py-8">
-        学习库为空
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="relative w-24 h-24 mb-6 group cursor-pointer"
+          onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
+        >
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-ember/20 group-hover:bg-ember/40 transition-opacity duration-500" />
+          <div className="absolute bottom-6 left-4 w-1 h-1 rounded-full bg-parchment/15 group-hover:bg-parchment/30 transition-opacity duration-500" />
+          <div className="absolute bottom-5 right-5 w-1 h-1 rounded-full bg-ember/15 group-hover:bg-ember/30 transition-opacity duration-500" />
+          <div className="absolute top-1/2 left-6 w-1 h-1 rounded-full bg-parchment/10 group-hover:bg-parchment/25 transition-opacity duration-500" />
+          <div className="absolute top-1/3 right-4 w-1 h-1 rounded-full bg-ember/10 group-hover:bg-ember/25 transition-opacity duration-500" />
+          <svg className="absolute inset-0" width="96" height="96">
+            <path d="M 48 20 Q 60 48 80 60" stroke="rgba(232,213,183,0.06)" strokeWidth="0.5" fill="none" />
+            <path d="M 48 20 Q 30 48 16 72" stroke="rgba(232,213,183,0.04)" strokeWidth="0.5" fill="none" />
+          </svg>
+        </div>
+        <p className="text-lg text-parchment/50 italic mb-2">你的星空还在等待</p>
+        <p className="text-sm text-parchment/30 mb-6">开始第一次学习，点亮第一颗星</p>
+        <button
+          onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
+          className="px-6 py-2 rounded-lg bg-ember/10 border border-ember/20 text-ember hover:bg-ember/20 transition-colors"
+        >
+          开始第一次学习
+        </button>
       </div>
     )
   }
@@ -432,6 +481,7 @@ export function StudyLibrary() {
             groupColor={groupColorMap.get(topic.groupId) || '#d97757'}
             onDragStart={handleDragStart}
             onDeleteSession={handleDeleteClick}
+            onReviewSession={handleReviewSession}
           />
         ))}
       </div>
@@ -443,6 +493,14 @@ export function StudyLibrary() {
           fileName={viewer.fileName}
           title={viewer.title}
           onClose={() => setViewer(null)}
+        />
+      )}
+
+      {reviewFlash && (
+        <ReviewFlash
+          title={reviewFlash.title}
+          date={reviewFlash.date}
+          onComplete={enterReview}
         />
       )}
 

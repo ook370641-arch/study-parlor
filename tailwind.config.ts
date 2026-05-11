@@ -15,7 +15,16 @@ export default {
       fontFamily: {
         serif: ['"Source Han Serif SC"', 'Georgia', 'serif'],
         sans:  ['"Source Han Sans SC"', 'system-ui', 'sans-serif']
-      }
+      },
+      animation: {
+        lightSweep: 'lightSweep 0.6s ease-out forwards',
+      },
+      keyframes: {
+        lightSweep: {
+          '0%': { transform: 'translateY(-100%)' },
+          '100%': { transform: 'translateY(100%)' },
+        },
+      },
     }
   },
   plugins: []

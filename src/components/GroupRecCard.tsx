@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useStore } from '@/store'
 import type { Group } from '@shared/index'
 import { ipc } from '@/lib/ipc'
+import { StarOrbit } from './StarOrbit'
 
 export function GroupRecCard({
   group,
@@ -59,9 +60,11 @@ export function GroupRecCard({
   if (loading && !recommendation) {
     return (
       <div className="bg-ink/40 border border-slate/30 rounded py-3 px-4">
-        <div className="text-xs text-parchment/40 font-sans text-center">
-          <span className="inline-block w-3 h-3 border-2 border-parchment/20 border-t-ember rounded-full animate-spin mr-2 align-middle" />
-          正在浮现……
+        <div className="flex flex-col items-center gap-3 py-2">
+          <StarOrbit starCount={4} radius={14} period={3000} showLines={true} />
+          <span className="text-xs text-parchment/40 font-sans italic tracking-wide">
+            正在浮现…
+          </span>
         </div>
       </div>
     )
@@ -91,11 +94,18 @@ export function GroupRecCard({
         onClickTopic(recommendation.topic)
       }}
     >
-      {/* 左侧色条 */}
+      {/* 左侧色条 - hover 时流光扫过 */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l transition-all group-hover:w-1"
+        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l overflow-hidden transition-all group-hover:w-1"
         style={{ backgroundColor: group.color }}
-      />
+      >
+        <div
+          className="absolute inset-0 opacity-0 group-hover:animate-lightSweep"
+          style={{
+            background: 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)',
+          }}
+        />
+      </div>
 
       <div className="pl-4 pr-3 py-2.5">
         <div className="flex items-center justify-between mb-1">
