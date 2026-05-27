@@ -1,0 +1,302 @@
+/* ===== Container ===== */
+.md-body {
+  max-width: 640px;
+  margin: 0 auto;
+  font-family: Georgia, "Noto Serif SC", "Source Han Serif SC", serif;
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(232, 213, 183, 0.78);
+}
+
+.md-fable {
+  max-width: 520px;
+}
+
+/* ===== Headings ===== */
+.md-body h1 {
+  font-family: "Courier New", "JetBrains Mono", monospace;
+  font-size: 18px;
+  color: #e8d5b7;
+  margin: 0 0 16px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(217, 119, 87, 0.3);
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.md-body h2 {
+  font-family: "Courier New", "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: #e8d5b7;
+  margin: 20px 0 8px 0;
+  font-weight: normal;
+  line-height: 1.4;
+}
+
+.md-body h3 {
+  font-family: "Courier New", "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: #d97757;
+  margin: 16px 0 6px 0;
+  font-weight: normal;
+}
+
+.md-body h4 {
+  font-family: "Courier New", "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: rgba(217, 119, 87, 0.8);
+  margin: 12px 0 4px 0;
+  font-weight: normal;
+}
+
+/* Section label above H2 */
+.md-section-label {
+  font-family: "Courier New", "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: rgba(217, 119, 87, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 2px;
+}
+
+/* ===== Paragraphs ===== */
+.md-body p {
+  margin: 8px 0;
+}
+
+/* ===== Lists ===== */
+.md-body ul, .md-body ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.md-body li {
+  margin: 4px 0;
+}
+
+.md-body li > p {
+  margin: 2px 0;
+}
+
+/* ===== Blockquote ===== */
+.md-body blockquote {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-left: 3px solid rgba(217, 119, 87, 0.5);
+  background: rgba(217, 119, 87, 0.05);
+  border-radius: 0 4px 4px 0;
+}
+
+.md-body blockquote p {
+  font-style: italic;
+  color: rgba(232, 213, 183, 0.6);
+  margin: 0;
+}
+
+.md-body blockquote p + p {
+  margin-top: 6px;
+}
+
+/* ===== Code ===== */
+.md-body code {
+  font-family: "Courier New", "JetBrains Mono", monospace;
+  font-size: 11px;
+  background: rgba(42, 31, 26, 0.8);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #d97757;
+}
+
+.md-body pre {
+  background: #15100d;
+  border: 1px solid rgba(148, 137, 121, 0.12);
+  border-radius: 4px;
+  padding: 12px;
+  margin: 10px 0;
+  overflow: auto;
+}
+
+.md-body pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ===== Table ===== */
+.md-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 12px;
+}
+
+.md-body thead {
+  background: rgba(217, 119, 87, 0.1);
+}
+
+.md-body th {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(217, 119, 87, 0.3);
+  color: #d97757;
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.md-body td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(148, 137, 121, 0.15);
+  color: rgba(232, 213, 183, 0.75);
+}
+
+.md-body tbody tr:nth-child(even) {
+  background: rgba(42, 31, 26, 0.3);
+}
+
+/* ===== Horizontal Rule (Diamond) ===== */
+.md-body hr {
+  border: none;
+  margin: 16px 0;
+  height: 1px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.md-body hr::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(148, 137, 121, 0.2);
+}
+
+.md-body hr::after {
+  content: '';
+  position: relative;
+  z-index: 1;
+  width: 5px;
+  height: 5px;
+  background: #d97757;
+  transform: rotate(45deg);
+  opacity: 0.6;
+}
+
+/* ===== Strong / Emphasis ===== */
+.md-body strong {
+  color: rgba(232, 213, 183, 0.95);
+  font-weight: 600;
+}
+
+.md-body em {
+  font-style: italic;
+  color: rgba(232, 213, 183, 0.7);
+}
+
+/* ===== Links ===== */
+.md-body a {
+  color: #d97757;
+  text-decoration: underline;
+  text-decoration-color: rgba(217, 119, 87, 0.4);
+}
+
+.md-body a:hover {
+  color: #e8a07a;
+}
+
+/* ===== Fable Type: Narrative Paragraphs ===== */
+.md-fable h1 {
+  font-family: Georgia, "Noto Serif SC", serif;
+  text-align: center;
+  border-bottom: none;
+  margin-bottom: 24px;
+}
+
+.md-fable h2 {
+  font-family: Georgia, "Noto Serif SC", serif;
+  text-align: center;
+  color: #d97757;
+}
+
+.md-fable p {
+  font-size: 14px;
+  line-height: 2.0;
+  text-indent: 2em;
+  margin: 14px 0;
+  color: rgba(232, 213, 183, 0.8);
+}
+
+.md-fable h1 + p,
+.md-fable h2 + p,
+.md-fable hr + p,
+.md-fable blockquote + p {
+  text-indent: 0;
+}
+
+.md-fable blockquote p {
+  font-size: 14px;
+  line-height: 2.0;
+  text-indent: 2em;
+  font-style: italic;
+  color: rgba(232, 213, 183, 0.65);
+}
+
+/* ===== Dialogue ===== */
+.md-dialogue-line {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+
+.md-dialogue-name {
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  color: #d97757;
+}
+
+.md-dialogue-user {
+  color: #d97757;
+}
+
+.md-dialogue-ai {
+  color: rgba(232, 213, 183, 0.7);
+}
+
+/* ===== Dialogue Type (raw conversation) ===== */
+.md-dialogue h2 {
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  color: rgba(148, 137, 121, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 16px 0 4px 0;
+  border: none;
+  padding: 0;
+}
+
+.md-dialogue p {
+  margin: 4px 0;
+}
+
+.md-dialogue strong {
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+}
+
+.md-dialogue hr {
+  margin: 8px 0;
+}
+
+.md-dialogue hr::after {
+  display: none;
+}
+
+.md-dialogue hr::before {
+  background: rgba(148, 137, 121, 0.1);
+}

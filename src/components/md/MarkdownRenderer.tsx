@@ -1,6 +1,7 @@
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import matter from 'gray-matter'
+import './markdown.css'
 import { detectDocType } from './fileType'
 import { reportComponents, fableComponents, dialogueComponents } from './components'
 import type { DocType } from './fileType'
