@@ -6,6 +6,8 @@ import './markdown.css'
 import { detectDocType } from './fileType'
 import { reportComponents, fableComponents, dialogueComponents } from './components'
 import { warmDarkTheme } from './shiki-theme'
+import { ReportHeader } from './ReportHeader'
+import { parseFrontmatter } from '@electron/lib/frontmatter'
 import type { DocType } from './fileType'
 
 interface Props {
@@ -33,13 +35,16 @@ function getRehypePlugins() {
 export function MarkdownRenderer({ content, fileName }: Props) {
   const docType = detectDocType(content, fileName)
 
-  // Strip frontmatter before rendering
+  // Parse frontmatter and strip it before rendering
   let body = content
+  let frontmatter = parseFrontmatter(content, { filename: fileName }).frontmatter
   try {
     const parsed = matter(content)
     body = parsed.content
-  } catch {
-    // keep original if parsing fails
+    frontmatter = parseFrontmatter(content, { filename: fileName }).frontmatter
+    console.log('[MD] frontmatter parsed, title:', frontmatter.title)
+  } catch (e) {
+    console.log('[MD] frontmatter parse failed, using raw content')
   }
 
   const components = docType === 'report' ? reportComponents
@@ -47,14 +52,17 @@ export function MarkdownRenderer({ content, fileName }: Props) {
     : dialogueComponents
 
   return (
-    <div className={`md-body ${getDocTypeClass(docType)}`}>
-      <Markdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={getRehypePlugins()}
-        components={components}
-      >
-        {body}
-      </Markdown>
+    <div className="md-container">
+      <ReportHeader frontmatter={frontmatter} />
+      <div className={`md-body ${getDocTypeClass(docType)}`}>
+        <Markdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={getRehypePlugins()}
+          components={components}
+        >
+          {body}
+        </Markdown>
+      </div>
     </div>
   )
 }

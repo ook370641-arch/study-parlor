@@ -1,3 +1,7 @@
+.md-container {
+  padding: 24px 0;
+}
+
 /* ===== Container ===== */
 .md-body {
   max-width: 640px;
