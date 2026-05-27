@@ -13,6 +13,7 @@ export const ipc = {
   get writeProgressMd() { return ensure().writeProgressMd },
   get writeReviewReport() { return ensure().writeReviewReport },
   get writeTranscript() { return ensure().writeTranscript },
+  get writeFable() { return ensure().writeFable },
   get readSessionFile() { return ensure().readSessionFile },
   get getState() { return ensure().getState },
   get patchState() { return ensure().patchState },

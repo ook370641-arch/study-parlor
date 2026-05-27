@@ -229,7 +229,7 @@ export function registerFilesIpc(cfg: AppConfig) {
   })
 
   ipcMain.handle('files:writeProgress', async (_, args: {
-    title: string; body: string; difficulty: 'high' | 'mid' | 'low'
+    title: string; description?: string; body: string; difficulty: 'high' | 'mid' | 'low'
     dirName: string; session_number: number; progress_summary?: string
   }) => {
     validateDirName(args.dirName)
@@ -238,18 +238,19 @@ export function registerFilesIpc(cfg: AppConfig) {
     const sessionDir = path.join(topicDir, `s${args.session_number}`)
     fs.mkdirSync(sessionDir, { recursive: true })
     const filePath = path.join(sessionDir, '学习报告.md')
-    const fm: Frontmatter = {
+    const fm = {
       title: args.title,
-      session_number: args.session_number,
+      description: args.description,
+      type: 'progress' as const,
       created: now.toISOString(),
+      tags: [] as string[],
+      session_number: args.session_number,
+      difficulty: args.difficulty,
+      progress_summary: args.progress_summary,
       last_studied: now.toISOString(),
       review_count: 0,
-      difficulty: args.difficulty,
-      tags: [],
-      type: 'progress',
-      progress_summary: args.progress_summary
     }
-    fs.writeFileSync(filePath, serializeFrontmatter(fm, args.body), 'utf8')
+    fs.writeFileSync(filePath, serializeFrontmatter('progress', fm, args.body), 'utf8')
     return { file_path: filePath }
   })
 
@@ -270,7 +271,7 @@ export function registerFilesIpc(cfg: AppConfig) {
   })
 
   ipcMain.handle('files:writeReviewReport', async (_, args: {
-    topic: string; dirName: string; summary: string; gaps: string; review_index: number
+    topic: string; dirName: string; summary: string; gaps: string[]; review_index: number
   }) => {
     validateDirName(args.dirName)
     const now = new Date()
@@ -282,14 +283,23 @@ export function registerFilesIpc(cfg: AppConfig) {
     const targetSession = sessionDirs[sessionDirs.length - 1]
     const sessionDir = path.join(topicDir, targetSession)
     const filePath = path.join(sessionDir, '复习报告.md')
-    const yyyy = now.getFullYear()
-    const mm = String(now.getMonth() + 1).padStart(2, '0')
-    const dd = String(now.getDate()).padStart(2, '0')
-    const content = `# ${args.topic} — 复习报告 ${args.review_index}\n\n**日期**: ${yyyy}-${mm}-${dd}\n\n## 复习摘要\n${args.summary.trim()}\n\n## 知识缺口\n${args.gaps.trim()}\n`
+    const gapsList = args.gaps.map((g, i) => `${i + 1}. ${g.trim()}`).join('\n')
+    const body = `## 复习摘要\n${args.summary.trim()}\n\n## 知识缺口\n${gapsList}\n`
     if (fs.existsSync(filePath)) {
-      fs.appendFileSync(filePath, '\n\n---\n\n' + content.replace(/^# .*\n/, `## 复习报告 ${args.review_index}\n`), 'utf8')
+      // Existing file: append body without frontmatter
+      fs.appendFileSync(filePath, '\n\n---\n\n' + body, 'utf8')
     } else {
-      fs.writeFileSync(filePath, content, 'utf8')
+      // New file: write with frontmatter
+      const fm = {
+        title: `${args.topic} — 复习报告 ${args.review_index}`,
+        type: 'review' as const,
+        created: now.toISOString(),
+        tags: [] as string[],
+        review_index: args.review_index,
+        last_reviewed: now.toISOString(),
+        source_title: args.topic,
+      }
+      fs.writeFileSync(filePath, serializeFrontmatter('review', fm, body), 'utf8')
     }
   })
 
@@ -309,11 +319,38 @@ function getMimeType(filePath: string): string {
     dirName: string; sessionNumber: number; content: string
   }) => {
     validateDirName(args.dirName)
+    const now = new Date()
     const topicDir = path.join(cfg.libraryPath, args.dirName)
     const sessionDir = path.join(topicDir, `s${args.sessionNumber}`)
     fs.mkdirSync(sessionDir, { recursive: true })
     const filePath = path.join(sessionDir, '原始对话.md')
-    fs.writeFileSync(filePath, args.content, 'utf8')
+    const fm = {
+      title: '原始对话',
+      type: 'transcript' as const,
+      created: now.toISOString(),
+      tags: [] as string[],
+      session_number: args.sessionNumber,
+    }
+    fs.writeFileSync(filePath, serializeFrontmatter('transcript', fm, args.content), 'utf8')
+  })
+
+  ipcMain.handle('files:writeFable', async (_, args: {
+    dirName: string; sessionNumber: number; title: string; body: string
+  }) => {
+    validateDirName(args.dirName)
+    const now = new Date()
+    const topicDir = path.join(cfg.libraryPath, args.dirName)
+    const sessionDir = path.join(topicDir, `s${args.sessionNumber}`)
+    fs.mkdirSync(sessionDir, { recursive: true })
+    const filePath = path.join(sessionDir, '寓言.md')
+    const fm = {
+      title: args.title,
+      type: 'fable' as const,
+      created: now.toISOString(),
+      tags: [] as string[],
+      source_topic: args.title,
+    }
+    fs.writeFileSync(filePath, serializeFrontmatter('fable', fm, args.body), 'utf8')
   })
 
   ipcMain.handle('files:readSessionFile', async (_, args: {

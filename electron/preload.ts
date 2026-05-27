@@ -8,6 +8,7 @@ const api: IpcApi = {
   writeReviewReport: (a) => ipcRenderer.invoke('files:writeReviewReport', a),
   readAnchorFile: (dirName) => ipcRenderer.invoke('files:readAnchor', dirName),
   writeTranscript: (a) => ipcRenderer.invoke('files:writeTranscript', a),
+  writeFable: (a) => ipcRenderer.invoke('files:writeFable', a),
   readSessionFile: (a) => ipcRenderer.invoke('files:readSessionFile', a),
   recoveryDump: (a) => ipcRenderer.invoke('files:recoveryDump', a),
 
