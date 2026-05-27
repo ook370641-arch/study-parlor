@@ -13,6 +13,9 @@ Pictures/
 .codex/
 .superpowers/
 
+# Worktrees
+.worktrees/
+
 # Test / build caches
 coverage/
 test-results/
