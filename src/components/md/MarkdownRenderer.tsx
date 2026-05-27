@@ -2,11 +2,9 @@ import React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import matter from 'gray-matter'
-import rehypeShiki from '@shikijs/rehype'
 import './markdown.css'
 import { detectDocType } from './fileType'
 import { reportComponents, fableComponents, dialogueComponents } from './components'
-import { warmDarkTheme } from './shiki-theme'
 import { ReportHeader } from './ReportHeader'
 import { parseFrontmatter } from '@electron/lib/frontmatter'
 import type { DocType } from './fileType'
@@ -22,15 +20,6 @@ function getDocTypeClass(docType: DocType): string {
     case 'report': return 'md-report'
     case 'fable': return 'md-fable'
     case 'dialogue': return 'md-dialogue'
-  }
-}
-
-function getRehypePlugins() {
-  try {
-    return [[rehypeShiki, { theme: warmDarkTheme }]]
-  } catch {
-    console.warn('[MarkdownRenderer] Shiki not available, using plain code blocks')
-    return []
   }
 }
 
@@ -113,7 +102,6 @@ export function MarkdownRenderer({ content, fileName }: Props) {
         <MdErrorBoundary>
           <Markdown
             remarkPlugins={[remarkGfm]}
-            rehypePlugins={getRehypePlugins()}
             components={components}
           >
             {body}
