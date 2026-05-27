@@ -195,8 +195,19 @@ function extractJsonObject(text: string): string | null {
     }
   }
 
-  if (end === -1) return null
-  return text.slice(start, end + 1)
+  if (end !== -1) return text.slice(start, end + 1)
+
+  // Fallback: 括号平衡失败时，尝试直接截取第一个 { 到最后一个 }
+  // 处理 LLM 在 JSON 前后加文字导致括号不匹配的情况
+  const fallback = text.slice(start).match(/\{[\s\S]*?\}(?=\s*$)/)
+  if (fallback) {
+    try {
+      JSON.parse(fallback[0])
+      return fallback[0]
+    } catch {}
+  }
+
+  return null
 }
 
 function readReportFrontmatter(libraryPath: string, dirName: string): { tags: string[]; progress_summary?: string } | null {
