@@ -174,6 +174,23 @@ describe('generateGroupInspiration', () => {
     expect(body.messages[0].content).toContain('康德')
     expect(body.messages[0].content).toContain('尼采')
   })
+
+  it('passes strategy to select prompt file', async () => {
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '{"topic":"T","hook":"h"}' } }] })
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+    await generateGroupInspiration(cfg, {
+      groupName: 'AI PM',
+      topics: [{ dirName: 'agent', title: 'Agent' }],
+      profile,
+      strategy: 'v3'
+    })
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    // The v3 prompt contains "缺口" which is not in v1 or v2
+    expect(body.messages[0].content).toContain('缺口')
+  })
 })
 
 describe('finalizeReview', () => {
