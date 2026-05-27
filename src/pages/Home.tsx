@@ -6,6 +6,7 @@ import { StudyLibrary } from '@/components/StudyLibrary'
 import { ipc } from '@/lib/ipc'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { StrategyToggle } from '@/components/StrategyToggle'
 
 export function Home() {
   const inspirations = useStore(s => s.inspirations)
@@ -103,7 +104,10 @@ export function Home() {
 
           {/* 从已知推未知 */}
           <div className="flex flex-col gap-2">
-            <div className="text-xs text-parchment/40 font-sans px-1">从已知推未知</div>
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs text-parchment/40 font-sans">从已知推未知</span>
+              <StrategyToggle />
+            </div>
 
             {groups.map((group) => {
               const groupTopics = library
