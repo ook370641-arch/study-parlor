@@ -12,7 +12,8 @@ const DEFAULT: StateJson = {
   lastUsed: { difficulty: 'mid', temperature: 0.7 },
   suggested_new_topics: null,
   groupInspirations: {},
-  ui: { session_count: 0 }
+  ui: { session_count: 0 },
+  inspirationStrategy: 'v2'
 }
 
 let currentState: StateJson | null = null
