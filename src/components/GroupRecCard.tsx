@@ -20,6 +20,7 @@ export function GroupRecCard({
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
   const [lastRefresh, setLastRefresh] = useState(0)
 
   const recommendation = cached ?? null
@@ -29,6 +30,7 @@ export function GroupRecCard({
     if (now - lastRefresh < 30000) return // 30s debounce
     setLoading(true)
     setError(false)
+    setErrorMsg('')
     try {
       const result = await ipc.llmGroupInspiration({
         groupName: group.name,
@@ -38,7 +40,10 @@ export function GroupRecCard({
       })
       setGroupInspiration(group.id, result)
       setLastRefresh(now)
-    } catch {
+    } catch (err: any) {
+      const msg = String(err?.message ?? err)
+      console.error('[GroupRecCard] load error:', msg)
+      setErrorMsg(msg)
       setError(true)
     } finally {
       setLoading(false)
@@ -76,9 +81,14 @@ export function GroupRecCard({
         onClick={load}
         className="block w-full text-left bg-ink/70 backdrop-blur-md border border-slate/40 rounded py-3 px-4 hover:border-ember/50 transition-colors"
       >
-        <div className="text-xs text-parchment/40 font-sans">
+        <div className="text-xs text-parchment/40 font-sans mb-1">
           这次联结很模糊，再试一次
         </div>
+        {errorMsg && (
+          <div className="text-[10px] text-red-400/70 font-sans break-words max-h-16 overflow-y-auto leading-relaxed">
+            {errorMsg}
+          </div>
+        )}
       </button>
     )
   }

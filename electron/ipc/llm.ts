@@ -59,7 +59,15 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     topics: { dirName: string; title: string }[]
     profile: Profile
     strategy?: 'v1' | 'v2' | 'v3'
-  }) => generateGroupInspiration(cfg, args))
+  }) => {
+    try {
+      return await generateGroupInspiration(cfg, args)
+    } catch (err: any) {
+      const message = String(err?.message ?? err)
+      console.error('[llm:groupInspiration] error:', message)
+      throw new Error(message)
+    }
+  })
 
   ipcMain.handle('llm:finalizeProgress', async (_, history: Message[]) =>
     finalizeProgress(cfg, history))

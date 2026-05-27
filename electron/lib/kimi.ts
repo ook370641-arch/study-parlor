@@ -50,7 +50,9 @@ export async function chatNonStream(
   } as any)
   if (!res.ok) throw new Error(`Kimi non-stream HTTP ${res.status}`)
   const json = await res.json() as { choices: { message: { content: string } }[] }
-  return json.choices[0]?.message?.content ?? ''
+  const content = json.choices[0]?.message?.content ?? ''
+  if (!content) throw new Error('Kimi returned empty content')
+  return content
 }
 
 export type SseEvent =

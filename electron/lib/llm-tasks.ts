@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 import { chatNonStream } from './kimi'
 import { parseFrontmatter } from './frontmatter'
 import type { AppConfig } from '../env'
@@ -146,12 +147,17 @@ function extractJsonObject(text: string): string | null {
     text = codeBlockMatch[1].trim()
   }
 
-  // 2. 从文本中找第一个 {" 作为 JSON 对象起始（跳过非 JSON 的花括号）
+  // 2. 从文本中找第一个 { 作为 JSON 对象起始，允许 { 和 " 之间有空格
   let start = -1
-  for (let i = 0; i < text.length - 1; i++) {
-    if (text[i] === '{' && text[i + 1] === '"') {
-      start = i
-      break
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '{') {
+      // 跳过空格检查后面是否有引号（JSON key 的开始）
+      let j = i + 1
+      while (j < text.length && text[j] === ' ') j++
+      if (j < text.length && text[j] === '"') {
+        start = i
+        break
+      }
     }
   }
   if (start === -1) return null
@@ -238,13 +244,14 @@ export async function generateGroupInspiration(
   }
 
   const strategyFile = args.strategy ? `group-inspiration-${args.strategy}.md` : 'group-inspiration-v2.md'
+
   const prompt = read(strategyFile)
     .replace('{{group_name}}', args.groupName)
     .replace('{{topic_summaries}}', summaries.join('\n'))
     .replace('{{profile_text}}', args.profile.profile_text)
     .replace('{{preferred_topics}}', args.profile.preferred_topics.join(' / '))
 
-  let text = await chatNonStream(cfg, {
+  const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7
   })
@@ -252,8 +259,12 @@ export async function generateGroupInspiration(
   // 激进 JSON 提取：从 LLM 返回的任意文本中找第一个 {...} 结构
   const extracted = extractJsonObject(text)
   if (!extracted) {
-    console.error('[generateGroupInspiration] failed to extract JSON from:', text.slice(0, 200))
-    throw new Error('JSON extraction failed')
+    // 将原始响应写入文件供诊断（终端日志在 dev 模式下不可靠）
+    const debugDir = path.join(os.homedir(), '.studyparlor', 'debug')
+    fs.mkdirSync(debugDir, { recursive: true })
+    const debugFile = path.join(debugDir, `group-inspiration-fail-${Date.now()}.txt`)
+    fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== LLM Response ===\n${text}`, 'utf8')
+    throw new Error(`JSON extraction failed. Debug written to: ${debugFile}`)
   }
   const json = JSON.parse(extracted) as NewTopic
   if (!json.topic || !json.hook) throw new Error('shape')
