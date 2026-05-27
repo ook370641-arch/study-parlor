@@ -19,7 +19,7 @@ export async function finalizeAndReturnHome() {
 
   try {
     if (sess.mode === 'progress') {
-      const { title: llmTitle, body, progress_summary } = await ipc.llmFinalizeProgress(historySnapshot)
+      const { title: llmTitle, description, body, progress_summary } = await ipc.llmFinalizeProgress(historySnapshot)
       // 新主题优先使用用户输入的 topic 作为 title，LLM 提取的作为 fallback
       const title = sess.topic || llmTitle
 
@@ -32,16 +32,16 @@ export async function finalizeAndReturnHome() {
 
       // 写学习报告
       await ipc.writeProgressMd({
-        title, body, difficulty: sess.difficulty,
+        title, description, body, difficulty: sess.difficulty,
         dirName, session_number: sessionNumber, progress_summary
       })
 
       // 生成并写寓言
       try {
         const fable = await ipc.llmGenerateFable({ history: historySnapshot, topic: title })
-        await ipc.writeTranscript({
+        await ipc.writeFable({
           dirName, sessionNumber,
-          content: `# ${fable.title}\n\n${fable.body}`
+          title: fable.title, body: fable.body
         })
       } catch (e) {
         console.warn('[finalize] fable generation failed:', e)
