@@ -14,9 +14,9 @@ export function GroupRecCard({
   onClickTopic: (topic: string) => void
 }) {
   const profile = useStore((s) => s.profile)
+  const inspirationStrategy = useStore((s) => s.inspirationStrategy)
   const cached = useStore((s) => s.groupInspirations[group.id])
   const setGroupInspiration = useStore((s) => s.setGroupInspiration)
-  const removeGroupInspiration = useStore((s) => s.removeGroupInspiration)
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
@@ -33,7 +33,8 @@ export function GroupRecCard({
       const result = await ipc.llmGroupInspiration({
         groupName: group.name,
         topics,
-        profile
+        profile,
+        strategy: inspirationStrategy
       })
       setGroupInspiration(group.id, result)
       setLastRefresh(now)
@@ -42,12 +43,11 @@ export function GroupRecCard({
     } finally {
       setLoading(false)
     }
-  }, [group.id, group.name, topics, profile, lastRefresh, setGroupInspiration])
+  }, [group.id, group.name, topics, profile, lastRefresh, setGroupInspiration, inspirationStrategy])
 
   const refresh = useCallback(() => {
-    removeGroupInspiration(group.id)
     load()
-  }, [group.id, removeGroupInspiration, load])
+  }, [load])
 
   // 首次加载：无缓存且无错误时才触发
   useEffect(() => {
@@ -107,7 +107,17 @@ export function GroupRecCard({
         />
       </div>
 
-      <div className="pl-4 pr-3 py-2.5">
+      <div className="pl-4 pr-3 py-2.5 relative">
+        {/* Loading overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
+            <StarOrbit starCount={4} radius={12} period={3000} showLines={true} />
+            <span className="text-[10px] text-parchment/50 font-sans italic tracking-wide">
+              正在浮现…
+            </span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-1">
           <span className="text-[11px] font-sans tracking-wide" style={{ color: group.color + 'cc' }}>
             {group.name}
