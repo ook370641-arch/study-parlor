@@ -25,9 +25,9 @@ export function GroupRecCard({
 
   const recommendation = cached ?? null
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (skipDebounce = false) => {
     const now = Date.now()
-    if (now - lastRefresh < 30000) return // 30s debounce
+    if (!skipDebounce && now - lastRefresh < 5000) return // 5s debounce for auto-load
     setLoading(true)
     setError(false)
     setErrorMsg('')
@@ -51,7 +51,7 @@ export function GroupRecCard({
   }, [group.id, group.name, topics, profile, lastRefresh, setGroupInspiration, inspirationStrategy])
 
   const refresh = useCallback(() => {
-    load()
+    load(true)
   }, [load])
 
   // 首次加载：无缓存且无错误时才触发
