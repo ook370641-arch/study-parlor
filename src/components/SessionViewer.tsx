@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ipc } from '@/lib/ipc'
+import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
 
 type Props = {
   dirName: string
@@ -78,9 +79,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
           )}
 
           {!loading && !error && !mimeType.startsWith('image/') && content && (
-            <pre className="whitespace-pre-wrap text-sm text-parchment/80 font-sans leading-relaxed">
-              {content}
-            </pre>
+            <MarkdownRenderer content={content} fileName={fileName} />
           )}
         </div>
       </div>
