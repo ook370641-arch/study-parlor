@@ -222,6 +222,7 @@ export async function generateGroupInspiration(
     groupName: string
     topics: { dirName: string; title: string }[]
     profile: Profile
+    strategy?: 'v1' | 'v2' | 'v3'
   }
 ): Promise<NewTopic> {
   // 读取每个主题的学习报告 frontmatter
@@ -236,7 +237,8 @@ export async function generateGroupInspiration(
     summaries.push(line)
   }
 
-  const prompt = read('group-inspiration.md')
+  const strategyFile = args.strategy ? `group-inspiration-${args.strategy}.md` : 'group-inspiration-v2.md'
+  const prompt = read(strategyFile)
     .replace('{{group_name}}', args.groupName)
     .replace('{{topic_summaries}}', summaries.join('\n'))
     .replace('{{profile_text}}', args.profile.profile_text)

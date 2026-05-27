@@ -58,6 +58,7 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     groupName: string
     topics: { dirName: string; title: string }[]
     profile: Profile
+    strategy?: 'v1' | 'v2' | 'v3'
   }) => generateGroupInspiration(cfg, args))
 
   ipcMain.handle('llm:finalizeProgress', async (_, history: Message[]) =>
