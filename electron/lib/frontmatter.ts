@@ -1,5 +1,17 @@
 import matter from 'gray-matter'
-import type { Frontmatter } from '@shared/index'
+import type { Frontmatter, DocType } from '@shared/index'
+
+// --- Core field order (all types) ---
+const CORE_FIELDS = ['title', 'description', 'type', 'created', 'tags'] as const
+
+// --- Extension field order per type ---
+const EXT_FIELDS: Record<DocType, string[]> = {
+  progress: ['session_number', 'difficulty', 'progress_summary', 'last_studied', 'review_count'],
+  review: ['review_index', 'last_reviewed', 'source_title'],
+  research: ['difficulty', 'summary'],
+  fable: ['source_topic'],
+  transcript: ['session_number'],
+}
 
 function extractTitleFromFilename(name: string): string | undefined {
   const title = name
@@ -11,43 +23,73 @@ function extractTitleFromFilename(name: string): string | undefined {
   return title || undefined
 }
 
+function inferDocTypeFromFilename(filename: string): DocType {
+  const lower = filename.toLowerCase()
+  if (lower.includes('学习报告')) return 'progress'
+  if (lower.includes('复习报告')) return 'review'
+  if (lower.includes('寓言')) return 'fable'
+  if (lower.includes('原始对话')) return 'transcript'
+  return 'progress'
+}
+
 export function parseFrontmatter(
   raw: string,
   opts?: { filename?: string }
 ): { frontmatter: Frontmatter; body: string } {
   const parsed = matter(raw)
-  const data = parsed.data as Partial<Frontmatter>
+  const data = parsed.data as Partial<Frontmatter> & Record<string, unknown>
+
+  const type: DocType = (data.type as DocType)
+    ?? inferDocTypeFromFilename(opts?.filename ?? '')
 
   const frontmatter: Frontmatter = {
-    title:        data.title
+    title: data.title
       ?? (opts?.filename ? extractTitleFromFilename(opts.filename) : undefined)
       ?? 'untitled',
-    session_number: typeof data.session_number === 'number' ? data.session_number : 0,
-    created:      data.created ?? new Date().toISOString(),
+    description: data.description,
+    created: data.created ?? new Date().toISOString(),
     last_studied: data.last_studied,
     last_reviewed: data.last_reviewed,
     review_count: typeof data.review_count === 'number' ? data.review_count : 0,
-    difficulty:   data.difficulty ?? 'mid',
-    tags:         Array.isArray(data.tags) ? data.tags : [],
-    type:         data.type ?? 'progress',
-    progress_summary: data.progress_summary
+    difficulty: (data.difficulty as 'high' | 'mid' | 'low') ?? 'mid',
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    session_number: typeof data.session_number === 'number' ? data.session_number : 0,
+    type,
+    progress_summary: data.progress_summary,
   }
 
   return { frontmatter, body: parsed.content }
 }
 
-export function serializeFrontmatter(fm: Frontmatter, body: string): string {
-  const data: Record<string, unknown> = {
-    title: fm.title,
-    session_number: fm.session_number,
-    created: fm.created,
-    review_count: fm.review_count,
-    difficulty: fm.difficulty,
-    tags: fm.tags,
-    type: fm.type
+export function serializeFrontmatter(
+  type: DocType,
+  data: Partial<Frontmatter> & Record<string, unknown>,
+  body: string
+): string {
+  const ordered: Record<string, unknown> = {}
+
+  // Core fields in fixed order
+  for (const key of CORE_FIELDS) {
+    if (data[key] !== undefined && data[key] !== null) {
+      ordered[key] = data[key]
+    }
   }
-  if (fm.last_studied) data.last_studied = fm.last_studied
-  if (fm.last_reviewed) data.last_reviewed = fm.last_reviewed
-  if (fm.progress_summary) data.progress_summary = fm.progress_summary
-  return matter.stringify(body, data)
+
+  // Extension fields in type-specific order
+  const ext = EXT_FIELDS[type] ?? []
+  for (const key of ext) {
+    if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+      ordered[key] = data[key]
+    }
+  }
+
+  // Any remaining fields not in core or ext (backward compat)
+  const known = new Set([...CORE_FIELDS, ...ext])
+  for (const [key, value] of Object.entries(data)) {
+    if (!known.has(key) && value !== undefined && value !== null && value !== '') {
+      ordered[key] = value
+    }
+  }
+
+  return matter.stringify(body, ordered)
 }

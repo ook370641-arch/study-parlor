@@ -44,6 +44,32 @@ body`
     expect(frontmatter.progress_summary).toBe('已掌握群论基础')
   })
 
+  it('parses description field', () => {
+    const raw = `---
+title: Agent
+description: Agent 规划方法的对比与实践
+type: progress
+---
+body`
+    const { frontmatter } = parseFrontmatter(raw)
+    expect(frontmatter.description).toBe('Agent 规划方法的对比与实践')
+  })
+
+  it('infers type from filename when missing', () => {
+    const raw = `---
+title: x
+---
+body`
+    const { frontmatter: p } = parseFrontmatter(raw, { filename: '学习报告.md' })
+    expect(p.type).toBe('progress')
+    const { frontmatter: r } = parseFrontmatter(raw, { filename: '复习报告.md' })
+    expect(r.type).toBe('review')
+    const { frontmatter: f } = parseFrontmatter(raw, { filename: '寓言.md' })
+    expect(f.type).toBe('fable')
+    const { frontmatter: t } = parseFrontmatter(raw, { filename: '原始对话.md' })
+    expect(t.type).toBe('transcript')
+  })
+
   it('falls back to filename-derived title when no frontmatter', () => {
     const raw = '# hello\n\nworld'
     const { frontmatter } = parseFrontmatter(raw, { filename: '20260424-hello-world.md' })
@@ -86,12 +112,67 @@ tags: [数学, 几何]
 正文段落
 `
     const { frontmatter, body } = parseFrontmatter(original)
-    const out = serializeFrontmatter(frontmatter, body)
+    const out = serializeFrontmatter(frontmatter.type ?? 'progress', frontmatter, body)
     const reparsed = parseFrontmatter(out)
     expect(reparsed.frontmatter.title).toBe('拓扑学基础')
     expect(reparsed.frontmatter.session_number).toBe(7)
     expect(reparsed.frontmatter.review_count).toBe(2)
     expect(reparsed.frontmatter.tags).toEqual(['数学', '几何'])
     expect(reparsed.body.trim()).toBe('正文段落')
+  })
+
+  it('writes core fields in fixed order for progress', () => {
+    const fm = {
+      title: 'Agent',
+      description: 'Agent 规划方法的对比',
+      type: 'progress' as const,
+      created: '2026-05-23T00:00:00.000Z',
+      tags: ['skill学习'],
+      session_number: 1,
+      difficulty: 'mid' as const,
+      progress_summary: '精读 ReAct',
+      review_count: 0,
+    }
+    const out = serializeFrontmatter('progress', fm, '# Body')
+    const lines = out.split('\n')
+    // title should appear before type, type before session_number
+    const titleIdx = lines.findIndex(l => l.startsWith('title:'))
+    const typeIdx = lines.findIndex(l => l.startsWith('type:'))
+    const sessionIdx = lines.findIndex(l => l.startsWith('session_number:'))
+    expect(titleIdx).toBeLessThan(typeIdx)
+    expect(typeIdx).toBeLessThan(sessionIdx)
+  })
+
+  it('writes review fields in correct order', () => {
+    const fm = {
+      title: 'Agent',
+      description: 'Agent 规划方法的对比',
+      type: 'review' as const,
+      created: '2026-05-27T00:00:00.000Z',
+      tags: ['skill学习'],
+      review_index: 1,
+      last_reviewed: '2026-05-27T00:00:00.000Z',
+      source_title: 'Agent',
+    }
+    const out = serializeFrontmatter('review', fm, '# Body')
+    expect(out).toContain('review_index: 1')
+    expect(out).toContain('last_reviewed:')
+    expect(out).toContain('source_title:')
+  })
+
+  it('skips undefined and empty values', () => {
+    const fm = {
+      title: 'Minimal',
+      type: 'progress' as const,
+      created: '2026-05-23T00:00:00.000Z',
+      tags: [],
+      session_number: 1,
+      difficulty: 'mid' as const,
+      review_count: 0,
+      // description, progress_summary intentionally omitted
+    }
+    const out = serializeFrontmatter('progress', fm, 'body')
+    expect(out).not.toContain('description:')
+    expect(out).not.toContain('progress_summary:')
   })
 })
