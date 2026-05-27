@@ -1,4 +1,5 @@
 import type { ArchiveResult } from '@shared/index'
+import { MarkdownRenderer } from './md/MarkdownRenderer'
 
 interface Props {
   result: ArchiveResult
@@ -7,6 +8,10 @@ interface Props {
 
 export function ArchiveReportModal({ result, onClose }: Props) {
   const isReview = result.mode === 'review'
+  const fileName = isReview ? '复习报告.md' : '学习报告.md'
+  // Reconstruct full content with synthetic frontmatter so MarkdownRenderer
+  // can render the ReportHeader and strip it consistently with SessionViewer.
+  const fullContent = `---\ntitle: "${result.title}"\ntype: ${result.mode}\n---\n\n${result.content}`
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col"
@@ -31,11 +36,9 @@ export function ArchiveReportModal({ result, onClose }: Props) {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
-        <div
-          className="font-serif text-sm leading-relaxed max-w-2xl mx-auto"
-          style={{ color: 'rgba(232, 213, 183, 0.8)' }}
-          dangerouslySetInnerHTML={{ __html: formatContent(result.content) }}
-        />
+        <div className="max-w-2xl mx-auto">
+          <MarkdownRenderer content={fullContent} fileName={fileName} />
+        </div>
       </div>
 
       {/* Footer */}
@@ -55,23 +58,4 @@ export function ArchiveReportModal({ result, onClose }: Props) {
       </div>
     </div>
   )
-}
-
-function formatContent(raw: string): string {
-  return raw
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/^### (.+)$/gm, '<h3 style="color:#d97757;margin:1rem 0 0.5rem;border-left:2px solid #d97757;padding-left:0.6rem;font-size:1rem;">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h3 style="color:#d97757;margin:1rem 0 0.5rem;border-left:2px solid #d97757;padding-left:0.6rem;font-size:1.05rem;">$1</h3>')
-    .replace(/^# (.+)$/gm, '<h2 style="color:#d97757;margin:1rem 0 0.5rem;font-size:1.1rem;">$1</h2>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#e8d5b7;">$1</strong>')
-    .replace(/^\* (.+)$/gm, '<li style="padding:0.2rem 0;padding-left:1.2rem;position:relative;list-style:none;"><span style="position:absolute;left:0;color:#8a3a3a;font-size:0.5rem;top:0.5rem;">◆</span>$1</li>')
-    .replace(/^- (.+)$/gm, '<li style="padding:0.2rem 0;padding-left:1.2rem;position:relative;list-style:none;"><span style="position:absolute;left:0;color:#8a3a3a;font-size:0.5rem;top:0.5rem;">◆</span>$1</li>')
-    .replace(/^\d+\. (.+)$/gm, '<li style="padding:0.2rem 0;padding-left:1.2rem;position:relative;list-style:none;"><span style="position:absolute;left:0;color:#8a3a3a;font-size:0.5rem;top:0.5rem;">◆</span>$1</li>')
-    .replace(/\n\n/g, '</p><p style="margin-bottom:0.6rem;">')
-    .replace(/^(.+)$/gm, '<p style="margin-bottom:0.6rem;">$1</p>')
-    .replace(/<p style="margin-bottom:0.6rem;"><h/g, '<h')
-    .replace(/<\/h3><\/p>/g, '</h3>')
-    .replace(/<p style="margin-bottom:0.6rem;"><li/g, '<li')
-    .replace(/<\/li><\/p>/g, '</li>')
 }
