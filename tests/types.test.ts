@@ -123,7 +123,9 @@ describe('type instantiation', () => {
       },
       lastUsed: { difficulty: 'mid', temperature: 0.7 },
       suggested_new_topics: null,
+      groupInspirations: {},
       ui: { session_count: 0 },
+      inspirationStrategy: 'v2',
     }
     // @ts-expect-error recommendation_cache should not exist
     expect(state.recommendation_cache).toBeUndefined()

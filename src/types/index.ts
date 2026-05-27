@@ -97,6 +97,7 @@ export type StateJson = {
   suggested_new_topics: { generated_at: string; topics: NewTopic[] } | null
   groupInspirations: Record<string, NewTopic>
   ui: { session_count: number }
+  inspirationStrategy: 'v1' | 'v2' | 'v3'
 }
 
 export type IpcApi = {
@@ -116,6 +117,7 @@ export type IpcApi = {
     groupName: string
     topics: { dirName: string; title: string }[]
     profile: Profile
+    strategy?: 'v1' | 'v2' | 'v3'
   }) => Promise<NewTopic>
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
