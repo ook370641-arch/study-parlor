@@ -54,6 +54,7 @@ type AppStore = {
   toast: { message: string; ts: number } | null
   archiveResult: ArchiveResult | null
   groupInspirations: Record<string, NewTopic>
+  inspirationStrategy: 'v1' | 'v2' | 'v3'
 
   // 画作背景
   currentPaintings: {
@@ -103,6 +104,7 @@ type AppStore = {
   setDraggingTopic: (topic: TopicMeta | null) => void
   setGroupInspiration: (groupId: string, topic: NewTopic) => void
   removeGroupInspiration: (groupId: string) => void
+  setInspirationStrategy: (s: 'v1' | 'v2' | 'v3') => void
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -124,6 +126,7 @@ export const useStore = create<AppStore>((set, get) => ({
   currentPage: 'cover',
   archiveResult: null,
   groupInspirations: {},
+  inspirationStrategy: 'v2',
   modal: null,
   preStudyArgs: null,
   toast: null,
@@ -138,6 +141,7 @@ export const useStore = create<AppStore>((set, get) => ({
       lastUsed: state.lastUsed,
       inspirations: state.suggested_new_topics?.topics ?? [],
       groupInspirations: state.groupInspirations ?? {},
+      inspirationStrategy: state.inspirationStrategy ?? 'v2',
       session_count: state.ui?.session_count ?? 0,
       library,
       unsavedSessions: unsaved,
@@ -374,6 +378,11 @@ export const useStore = create<AppStore>((set, get) => ({
     delete next[groupId]
     set({ groupInspirations: next })
     ipc.patchState({ groupInspirations: next } as Partial<StateJson>)
+  },
+
+  setInspirationStrategy: (strategy) => {
+    set({ inspirationStrategy: strategy })
+    ipc.patchState({ inspirationStrategy: strategy } as Partial<StateJson>)
   },
 }))
 
