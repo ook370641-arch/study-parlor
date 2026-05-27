@@ -32,6 +32,21 @@ describe('type instantiation', () => {
     expect(fm.progress_summary).toBe('learned calculus basics')
   })
 
+  it('Frontmatter accepts description and DocType', () => {
+    const fm: Frontmatter = {
+      title: 'Test',
+      description: 'A test description',
+      created: '2026-05-09T10:00:00Z',
+      review_count: 0,
+      difficulty: 'mid',
+      tags: ['math'],
+      type: 'progress',
+      session_number: 1,
+    }
+    expect(fm.description).toBe('A test description')
+    expect(fm.type).toBe('progress')
+  })
+
   it('Frontmatter works without new optional fields', () => {
     const fm: Frontmatter = {
       title: 'Minimal',
@@ -159,6 +174,35 @@ describe('type instantiation', () => {
       dirName: 'math',
       session_number: 2,
       progress_summary: 'summary',
+    })
+  })
+
+  it('IpcApi writeProgressMd accepts description', async () => {
+    const mockWrite: IpcApi['writeProgressMd'] = async (args) => {
+      expect(args.description).toBe('desc')
+      return { file_path: 'test.md' }
+    }
+    await mockWrite({
+      title: 'Report',
+      description: 'desc',
+      body: 'Body',
+      difficulty: 'mid',
+      dirName: 'math',
+      session_number: 1,
+    })
+  })
+
+  it('IpcApi writeFable accepts correct args', async () => {
+    const mockWrite: IpcApi['writeFable'] = async (args) => {
+      expect(args.dirName).toBe('math')
+      expect(args.sessionNumber).toBe(1)
+      expect(args.title).toBe('Fable Title')
+    }
+    await mockWrite({
+      dirName: 'math',
+      sessionNumber: 1,
+      title: 'Fable Title',
+      body: 'fable body',
     })
   })
 

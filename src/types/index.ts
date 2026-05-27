@@ -1,6 +1,7 @@
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = 0.3 | 0.7 | 1.0
+export type DocType = 'progress' | 'review' | 'research' | 'fable' | 'transcript'
 
 export type Profile = {
   name: string
@@ -10,6 +11,7 @@ export type Profile = {
 
 export type Frontmatter = {
   title: string
+  description?: string
   created: string
   last_studied?: string
   last_reviewed?: string
@@ -17,7 +19,7 @@ export type Frontmatter = {
   difficulty: Difficulty
   tags: string[]
   session_number?: number
-  type?: 'progress' | 'review' | 'research'
+  type?: DocType
   progress_summary?: string
 }
 
@@ -100,14 +102,14 @@ export type StateJson = {
 export type IpcApi = {
   scanLibrary: () => Promise<TopicMeta[]>
   readMd: (path: string) => Promise<{ frontmatter: Frontmatter; body: string }>
-  writeProgressMd: (args: { title: string; body: string; difficulty: Difficulty; dirName: string; session_number: number; progress_summary?: string }) => Promise<{ file_path: string }>
+  writeProgressMd: (args: { title: string; description?: string; body: string; difficulty: Difficulty; dirName: string; session_number: number; progress_summary?: string }) => Promise<{ file_path: string }>
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
   llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
   llmInspirations: (args: { profile: Profile; existingTitles: string[] }) => Promise<NewTopic[]>
-  llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; body: string; progress_summary?: string }>
+  llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; description?: string; body: string; progress_summary?: string }>
   llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[] }>
   llmGenerateFable: (args: { history: Message[]; topic: string }) => Promise<{ title: string; body: string }>
   llmGroupInspiration: (args: {
@@ -130,6 +132,7 @@ export type IpcApi = {
 
   // Review report writing (stub until main handler implemented)
   writeReviewReport: (args: { topic: string; dirName: string; summary: string; gaps: string[]; review_index: number }) => Promise<void>
+  writeFable: (args: { dirName: string; sessionNumber: number; title: string; body: string }) => Promise<void>
 
   // Session file operations
   writeTranscript: (args: { dirName: string; sessionNumber: number; content: string }) => Promise<void>
