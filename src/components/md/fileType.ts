@@ -1,0 +1,24 @@
+import matter from 'gray-matter'
+
+export type DocType = 'report' | 'fable' | 'dialogue'
+
+export function detectDocType(content: string, fileName: string): DocType {
+  // Priority 1: frontmatter type field
+  try {
+    const { data } = matter(content)
+    const type = data?.type
+    if (type === 'progress' || type === 'review') return 'report'
+    if (type === 'research') return 'fable'
+  } catch {
+    // ignore parse errors
+  }
+
+  // Priority 2: filename matching
+  const lower = fileName.toLowerCase()
+  if (lower.includes('学习报告') || lower.includes('复习报告')) return 'report'
+  if (lower.includes('寓言')) return 'fable'
+  if (lower.includes('原始对话')) return 'dialogue'
+
+  // Default: report for information density
+  return 'report'
+}
