@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import matter from 'gray-matter'
@@ -52,11 +52,20 @@ class MdErrorBoundary extends React.Component<
   }
 }
 
-export function MarkdownRenderer({ content, fileName }: Props) {
-  console.log('[MD] render called, fileName:', fileName, 'content length:', content?.length)
+/**
+ * Force-strip frontmatter using regex.
+ * Matches --- at start, any content, then --- followed by newline.
+ */
+function forceStripFrontmatter(raw: string): { body: string; stripped: boolean } {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/)
+  if (match && match[0]) {
+    return { body: raw.slice(match[0].length), stripped: true }
+  }
+  return { body: raw, stripped: false }
+}
 
-  const docType = detectDocType(content, fileName)
-  console.log('[MD] detected docType:', docType)
+export function MarkdownRenderer({ content, fileName }: Props) {
+  const [diag, setDiag] = useState<string>('')
 
   // Defensive: ensure content is a string
   const safeContent = typeof content === 'string' ? content : String(content ?? '')
@@ -71,23 +80,47 @@ export function MarkdownRenderer({ content, fileName }: Props) {
     tags: [],
   }
 
-  try {
-    const parsed = matter(safeContent)
-    body = parsed.content
-    console.log('[MD] matter parsed, body length:', body.length)
-  } catch (e) {
-    console.error('[MD] matter() parse failed:', e)
-    body = safeContent
-  }
-
+  // Structured frontmatter parsing (for ReportHeader)
   try {
     const parsedFm = parseFrontmatter(safeContent, { filename: fileName })
     frontmatter = parsedFm.frontmatter
-    console.log('[MD] parseFrontmatter ok, title:', frontmatter.title, 'type:', frontmatter.type)
   } catch (e) {
     console.error('[MD] parseFrontmatter failed:', e)
-    // Keep fallback frontmatter
   }
+
+  // Body extraction: always force-strip, matter() as extra
+  const forceResult = forceStripFrontmatter(safeContent)
+  if (forceResult.stripped) {
+    body = forceResult.body
+  }
+
+  // Also try matter() — if it gives a shorter body, use that
+  try {
+    const parsed = matter(safeContent)
+    if (parsed.content.length < body.length) {
+      body = parsed.content
+    }
+  } catch (e) {
+    console.error('[MD] matter() failed:', e)
+  }
+
+  // Diagnostic: check if body still contains frontmatter-like content
+  const stillHasFm = /^title\s*:/m.test(body) || /^type\s*:/m.test(body)
+  const docType = detectDocType(content, fileName)
+
+  useEffect(() => {
+    const lines = [
+      `file: ${fileName}`,
+      `docType: ${docType}`,
+      `content length: ${safeContent.length}`,
+      `body length: ${body.length}`,
+      `force stripped: ${forceResult.stripped}`,
+      `still has frontmatter: ${stillHasFm}`,
+      `body starts: ${JSON.stringify(body.slice(0, 60))}`,
+    ]
+    setDiag(lines.join(' | '))
+    console.log('[MD]', lines.join(' | '))
+  }, [safeContent, fileName])
 
   const components = docType === 'report' ? reportComponents
     : docType === 'fable' ? fableComponents
@@ -95,6 +128,21 @@ export function MarkdownRenderer({ content, fileName }: Props) {
 
   return (
     <div className="md-container">
+      {/* Dev diagnostic — remove before release */}
+      {stillHasFm && (
+        <div style={{
+          background: '#8a3a3a',
+          color: '#e8d5b7',
+          padding: '8px 12px',
+          fontSize: '11px',
+          fontFamily: 'monospace',
+          marginBottom: '8px',
+          borderRadius: '2px',
+        }}>
+          <strong>DIAGNOSTIC:</strong> {diag}
+        </div>
+      )}
+
       <MdErrorBoundary>
         <ReportHeader frontmatter={frontmatter} />
       </MdErrorBoundary>
