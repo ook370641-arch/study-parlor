@@ -274,7 +274,6 @@ export function StudyLibrary() {
     setReviewFlash(null)
   }, [reviewFlash, openPreStudy])
 
-  const containerRef = useRef<HTMLDivElement>(null)
   const dragStateRef = useRef(dragState)
   dragStateRef.current = dragState
 
@@ -448,7 +447,7 @@ export function StudyLibrary() {
       : null
 
   return (
-    <div ref={containerRef} className="relative flex flex-col flex-1 min-h-0">
+    <div className="relative flex flex-col flex-1 min-h-0">
       <GroupRibbon
         groups={groups}
         activeGroupId={activeGroupId}
