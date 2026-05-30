@@ -409,6 +409,21 @@ export function StudyLibrary() {
     })
   }, [library, activeGroupId, groups])
 
+  // Pagination
+  const PAGE_SIZE = 10
+  const [currentPage, setCurrentPage] = useState(0)
+
+  const totalPages = Math.ceil(displayTopics.length / PAGE_SIZE)
+
+  const paginatedTopics = useMemo(() => {
+    const start = currentPage * PAGE_SIZE
+    return displayTopics.slice(start, start + PAGE_SIZE)
+  }, [displayTopics, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [activeGroupId])
+
   // Group color lookup
   const groupColorMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -478,7 +493,7 @@ export function StudyLibrary() {
           />
         )}
 
-        {displayTopics.map((topic) => (
+        {paginatedTopics.map((topic) => (
           <TopicAccordion
             key={topic.dirName}
             topic={topic}
@@ -490,6 +505,36 @@ export function StudyLibrary() {
           />
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 py-2 border-t border-slate/10 mt-1">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="text-xs text-parchment/40 hover:text-parchment/70 disabled:opacity-20 disabled:cursor-default transition-colors px-2"
+          >
+            ←
+          </button>
+          <div className="flex items-center gap-2">
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  i === currentPage ? 'bg-ember' : 'bg-slate/30 hover:bg-slate/50'
+                }`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage >= totalPages - 1}
+            className="text-xs text-parchment/40 hover:text-parchment/70 disabled:opacity-20 disabled:cursor-default transition-colors px-2"
+          >
+            →
+          </button>
+        </div>
+      )}
 
       {viewer && (
         <SessionViewer
