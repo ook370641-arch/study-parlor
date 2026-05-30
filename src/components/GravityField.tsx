@@ -74,6 +74,8 @@ export function GravityField({
     })
   }, [topics, centers])
 
+  const maxDist = Math.max(window.innerWidth, window.innerHeight)
+
   if (!draggingTopic || !dragPosition) return null
 
   const dragX = dragPosition.x
@@ -81,14 +83,13 @@ export function GravityField({
 
   return (
     <div
-      className="fixed inset-0 z-50 pointer-events-none"
+      className="fixed inset-0 z-40 pointer-events-none"
       style={{ background: 'rgba(26, 21, 18, 0.92)' }}
     >
       {/* SVG magnetic lines */}
       <svg className="absolute inset-0 w-full h-full">
         {centers.map((center) => {
           const dist = Math.hypot(dragX - center.x, dragY - center.y)
-          const maxDist = Math.max(window.innerWidth, window.innerHeight)
           const opacity = Math.max(0.1, 1 - dist / maxDist) * 0.6
           return (
             <line
