@@ -6,8 +6,6 @@ interface GravityFieldProps {
   topics: TopicMeta[]
   draggingTopic: TopicMeta | null
   dragPosition: { x: number; y: number } | null
-  containerWidth: number
-  containerHeight: number
 }
 
 export function GravityField({
@@ -15,16 +13,14 @@ export function GravityField({
   topics,
   draggingTopic,
   dragPosition,
-  containerWidth,
-  containerHeight,
 }: GravityFieldProps) {
   const centers = useMemo(() => {
     const count = groups.length
     if (count === 0) return []
 
-    const cx = containerWidth / 2
-    const cy = containerHeight / 2
-    const radius = Math.min(containerWidth, containerHeight) * 0.3
+    const cx = window.innerWidth / 2
+    const cy = window.innerHeight / 2
+    const radius = Math.min(window.innerWidth, window.innerHeight) * 0.3
 
     return groups.map((group, i) => {
       const angle = (2 * Math.PI * i) / count - Math.PI / 2
@@ -34,7 +30,7 @@ export function GravityField({
         y: cy + radius * Math.sin(angle),
       }
     })
-  }, [groups, containerWidth, containerHeight])
+  }, [groups])
 
   // Position each topic around its group's gravity center
   const topicNodes = useMemo(() => {
@@ -54,7 +50,7 @@ export function GravityField({
       const center = centerMap.get(topic.groupId)
       if (!center) {
         // Fallback: random position if no center for this group
-        return { topic, x: containerWidth / 2, y: containerHeight / 2 }
+        return { topic, x: window.innerWidth / 2, y: window.innerHeight / 2 }
       }
 
       const count = groupTopicCounts.get(topic.groupId) || 1
@@ -76,7 +72,7 @@ export function GravityField({
         y: center.y + orbitRadius * Math.sin(angle),
       }
     })
-  }, [topics, centers, containerWidth, containerHeight])
+  }, [topics, centers])
 
   if (!draggingTopic || !dragPosition) return null
 
@@ -85,14 +81,14 @@ export function GravityField({
 
   return (
     <div
-      className="absolute inset-0 z-20 pointer-events-none"
-      style={{ background: 'rgba(26, 21, 18, 0.85)' }}
+      className="fixed inset-0 z-50 pointer-events-none"
+      style={{ background: 'rgba(26, 21, 18, 0.92)' }}
     >
       {/* SVG magnetic lines */}
       <svg className="absolute inset-0 w-full h-full">
         {centers.map((center) => {
           const dist = Math.hypot(dragX - center.x, dragY - center.y)
-          const maxDist = Math.max(containerWidth, containerHeight)
+          const maxDist = Math.max(window.innerWidth, window.innerHeight)
           const opacity = Math.max(0.1, 1 - dist / maxDist) * 0.6
           return (
             <line

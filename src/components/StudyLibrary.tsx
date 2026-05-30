@@ -277,23 +277,6 @@ export function StudyLibrary() {
   const containerRef = useRef<HTMLDivElement>(null)
   const dragStateRef = useRef(dragState)
   dragStateRef.current = dragState
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
-
-  // ResizeObserver
-  useEffect(() => {
-    if (!containerRef.current) return
-    const el = containerRef.current
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerSize({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        })
-      }
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
 
   // Global mouse events for drag
   useEffect(() => {
@@ -489,8 +472,6 @@ export function StudyLibrary() {
             topics={library}
             draggingTopic={dragState?.topic ?? null}
             dragPosition={dragPosition}
-            containerWidth={containerSize.width}
-            containerHeight={containerSize.height}
           />
         )}
 
