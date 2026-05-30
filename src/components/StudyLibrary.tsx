@@ -7,6 +7,8 @@ import { GravityField } from './GravityField'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ReviewFlash } from './ReviewFlash'
 
+const PAGE_SIZE = 10
+
 type ViewerState = {
   dirName: string
   sessionNumber: number
@@ -410,7 +412,6 @@ export function StudyLibrary() {
   }, [library, activeGroupId, groups])
 
   // Pagination
-  const PAGE_SIZE = 10
   const [currentPage, setCurrentPage] = useState(0)
 
   const totalPages = Math.ceil(displayTopics.length / PAGE_SIZE)
@@ -421,8 +422,8 @@ export function StudyLibrary() {
   }, [displayTopics, currentPage])
 
   useEffect(() => {
-    setCurrentPage(0)
-  }, [activeGroupId])
+    setCurrentPage((p) => Math.min(p, Math.max(0, totalPages - 1)))
+  }, [totalPages])
 
   // Group color lookup
   const groupColorMap = useMemo(() => {
@@ -511,24 +512,47 @@ export function StudyLibrary() {
           <button
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             disabled={currentPage === 0}
+            aria-label="上一页"
             className="text-xs text-parchment/40 hover:text-parchment/70 disabled:opacity-20 disabled:cursor-default transition-colors px-2"
           >
             ←
           </button>
           <div className="flex items-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentPage(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i === currentPage ? 'bg-ember' : 'bg-slate/30 hover:bg-slate/50'
-                }`}
-              />
-            ))}
+            {(() => {
+              const dots: JSX.Element[] = []
+              const maxVisible = 7
+              let start = 0
+              let end = totalPages - 1
+              if (totalPages > maxVisible) {
+                const half = Math.floor(maxVisible / 2)
+                if (currentPage <= half) {
+                  end = maxVisible - 1
+                } else if (currentPage >= totalPages - half - 1) {
+                  start = totalPages - maxVisible
+                } else {
+                  start = currentPage - half
+                  end = currentPage + half
+                }
+              }
+              for (let i = start; i <= end; i++) {
+                dots.push(
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i)}
+                    aria-label={`第 ${i + 1} 页`}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      i === currentPage ? 'bg-ember' : 'bg-slate/30 hover:bg-slate/50'
+                    }`}
+                  />
+                )
+              }
+              return dots
+            })()}
           </div>
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={currentPage >= totalPages - 1}
+            aria-label="下一页"
             className="text-xs text-parchment/40 hover:text-parchment/70 disabled:opacity-20 disabled:cursor-default transition-colors px-2"
           >
             →
