@@ -304,15 +304,11 @@ export function StudyLibrary() {
       setGravityFieldOpen(false)
       setDraggingTopic(null)
 
-      if (ds.active && containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        const relativeX = e.clientX - rect.left
-        const relativeY = e.clientY - rect.top
-
+      if (ds.active) {
         const count = groups.length
-        const cx = rect.width / 2
-        const cy = rect.height / 2
-        const radius = Math.min(rect.width, rect.height) * 0.3
+        const cx = window.innerWidth / 2
+        const cy = window.innerHeight / 2
+        const radius = Math.min(window.innerWidth, window.innerHeight) * 0.3
 
         let nearestGroupId: string | null = null
         let minDist = Infinity
@@ -321,7 +317,7 @@ export function StudyLibrary() {
           const angle = (2 * Math.PI * i) / count - Math.PI / 2
           const gx = cx + radius * Math.cos(angle)
           const gy = cy + radius * Math.sin(angle)
-          const dist = Math.hypot(relativeX - gx, relativeY - gy)
+          const dist = Math.hypot(e.clientX - gx, e.clientY - gy)
           if (dist < minDist) {
             minDist = dist
             nearestGroupId = group.id
@@ -447,11 +443,8 @@ export function StudyLibrary() {
   }
 
   const dragPosition =
-    dragState && containerRef.current
-      ? {
-          x: dragState.currentX - containerRef.current.getBoundingClientRect().left,
-          y: dragState.currentY - containerRef.current.getBoundingClientRect().top,
-        }
+    dragState
+      ? { x: dragState.currentX, y: dragState.currentY }
       : null
 
   return (
