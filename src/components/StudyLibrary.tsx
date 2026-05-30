@@ -157,6 +157,9 @@ function TopicAccordion({
             onDragStart(topic, e.clientX, e.clientY)
           }
         }}
+        role="button"
+        aria-expanded={open}
+        aria-controls="topic-content"
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-ink/30 transition-colors cursor-pointer select-none"
       >
         <div
@@ -191,8 +194,8 @@ function TopicAccordion({
         </button>
       </div>
 
-      <div className={`bg-ink/30 overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="max-h-[160px] overflow-y-auto">
+      <div id="topic-content" className={`bg-ink/30 overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="max-h-[160px] overflow-y-auto overflow-x-hidden" style={{ scrollbarColor: 'rgba(148,163,184,0.4) transparent', scrollbarWidth: 'thin' }}>
           {topic.sessions.map((s) => (
             <SessionRow
               key={s.sessionNumber}
