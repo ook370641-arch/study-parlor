@@ -472,7 +472,7 @@ export function StudyLibrary() {
       : null
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative flex flex-col flex-1 min-h-0">
       <GroupRibbon
         groups={groups}
         activeGroupId={activeGroupId}
@@ -482,7 +482,7 @@ export function StudyLibrary() {
         onDelete={deleteGroup}
       />
 
-      <div className="mt-3 flex flex-col gap-2 relative">
+      <div className="mt-3 flex flex-col gap-2 relative flex-1 min-h-0 overflow-y-auto">
         {gravityFieldOpen && (
           <GravityField
             groups={groups}

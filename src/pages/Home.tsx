@@ -129,7 +129,7 @@ export function Home() {
         </div>
 
         {/* 右侧：学习库 */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col">
           <div className="text-xs text-parchment/40 font-sans mb-3">学习库</div>
           <StudyLibrary />
         </div>
