@@ -191,19 +191,21 @@ function TopicAccordion({
         </button>
       </div>
 
-      <div className={`bg-ink/30 overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-        {topic.sessions.map((s) => (
-          <SessionRow
-            key={s.sessionNumber}
-            dirName={topic.dirName}
-            session={s}
-            onViewFile={onViewFile}
-            onReview={(session) =>
-              onReviewSession?.(session, topic)
-            }
-            onDelete={onDeleteSession}
-          />
-        ))}
+      <div className={`bg-ink/30 overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="max-h-[160px] overflow-y-auto">
+          {topic.sessions.map((s) => (
+            <SessionRow
+              key={s.sessionNumber}
+              dirName={topic.dirName}
+              session={s}
+              onViewFile={onViewFile}
+              onReview={(session) =>
+                onReviewSession?.(session, topic)
+              }
+              onDelete={onDeleteSession}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
