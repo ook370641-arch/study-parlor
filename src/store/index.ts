@@ -105,6 +105,10 @@ type AppStore = {
   setGroupInspiration: (groupId: string, topic: NewTopic) => void
   removeGroupInspiration: (groupId: string) => void
   setInspirationStrategy: (s: 'v1' | 'v2' | 'v3') => void
+  fableStyleTags: string[]
+  lastFableTags: string[]
+  setFableStyleTags: (tags: string[]) => void
+  setLastFableTags: (tags: string[]) => void
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -127,6 +131,8 @@ export const useStore = create<AppStore>((set, get) => ({
   archiveResult: null,
   groupInspirations: {},
   inspirationStrategy: 'v2',
+  fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
+  lastFableTags: [],
   modal: null,
   preStudyArgs: null,
   toast: null,
@@ -142,6 +148,8 @@ export const useStore = create<AppStore>((set, get) => ({
       inspirations: state.suggested_new_topics?.topics ?? [],
       groupInspirations: state.groupInspirations ?? {},
       inspirationStrategy: state.inspirationStrategy ?? 'v2',
+      fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
+      lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
       library,
       unsavedSessions: unsaved,
@@ -383,6 +391,14 @@ export const useStore = create<AppStore>((set, get) => ({
   setInspirationStrategy: (strategy) => {
     set({ inspirationStrategy: strategy })
     ipc.patchState({ inspirationStrategy: strategy } as Partial<StateJson>)
+  },
+  setFableStyleTags: (tags) => {
+    set({ fableStyleTags: tags })
+    ipc.patchState({ fableStyleTags: tags } as Partial<StateJson>)
+  },
+  setLastFableTags: (tags) => {
+    set({ lastFableTags: tags })
+    ipc.patchState({ lastFableTags: tags } as Partial<StateJson>)
   },
 }))
 
