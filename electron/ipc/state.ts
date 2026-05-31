@@ -13,7 +13,9 @@ const DEFAULT: StateJson = {
   suggested_new_topics: null,
   groupInspirations: {},
   ui: { session_count: 0 },
-  inspirationStrategy: 'v2'
+  inspirationStrategy: 'v2',
+  fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
+  lastFableTags: []
 }
 
 let currentState: StateJson | null = null

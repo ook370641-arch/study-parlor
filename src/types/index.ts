@@ -97,9 +97,9 @@ export type StateJson = {
   suggested_new_topics: { generated_at: string; topics: NewTopic[] } | null
   groupInspirations: Record<string, NewTopic>
   ui: { session_count: number }
+  inspirationStrategy: 'v1' | 'v2' | 'v3'
   fableStyleTags: string[]
   lastFableTags: string[]
-  inspirationStrategy: 'v1' | 'v2' | 'v3'
 }
 
 export type IpcApi = {
