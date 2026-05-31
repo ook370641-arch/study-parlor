@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Claude Code 记忆四层架构</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #1a1512;
+      color: #e8d5b7;
+      margin: 0;
+      padding: 32px 24px;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 {
+      text-align: center;
+      color: #d97757;
+      font-weight: 400;
+      margin-bottom: 4px;
+      font-size: 26px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #7a6a5a;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    /* 导航标签 */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #3a3028;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: #8a7a6a;
+      font-size: 14px;
+      transition: all 0.2s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: inherit;
+    }
+    .tab:hover { color: #c0b0a0; }
+    .tab.active {
+      color: #d97757;
+      border-bottom-color: #d97757;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* 卡片 */
+    .card {
+      background: #231a15;
+      border: 1px solid #332a24;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      margin: 0 0 14px 0;
+      font-size: 17px;
+      color: #d97757;
+      font-weight: 600;
+    }
+    .card h3 {
+      margin: 18px 0 10px 0;
+      font-size: 15px;
+      color: #c0a080;
+      font-weight: 600;
+    }
+    .card p { margin: 0 0 10px 0; color: #b0a090; }
+    .card p:last-child { margin-bottom: 0; }
+
+    /* 四层堆叠 */
+    .layer {
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 10px;
+      border-left: 4px solid;
+      position: relative;
+    }
+    .layer-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e8d5b7;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .layer-badge {
+      font-size: 11px;
+      padding: 1px 8px;
+      border-radius: 4px;
+      background: rgba(217,119,87,0.12);
+      color: #d97757;
+      font-weight: normal;
+    }
+    .layer-path {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      color: #8a7a6a;
+      margin-bottom: 8px;
+    }
+    .layer-desc { font-size: 13px; color: #b0a090; margin-bottom: 8px; }
+    .layer-status {
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .status-missing {
+      background: rgba(180,60,60,0.1);
+      color: #c06060;
+      border: 1px dashed rgba(180,60,60,0.3);
+    }
+    .status-present {
+      background: rgba(80,160,80,0.1);
+      color: #70b070;
+      border: 1px dashed rgba(80,160,80,0.3);
+    }
+    .status-optional {
+      background: rgba(200,160,80,0.1);
+      color: #c0a060;
+      border: 1px dashed rgba(200,160,80,0.3);
+    }
+
+    .layer-managed { border-color: #6a6058; background: rgba(106,96,88,0.08); }
+    .layer-user { border-color: #8a8078; background: rgba(138,128,120,0.08); }
+    .layer-project { border-color: #b09078; background: rgba(176,144,120,0.08); }
+    .layer-local { border-color: #d97757; background: rgba(217,119,87,0.08); }
+
+    .arrow-between {
+      text-align: center;
+      color: #5a4a3a;
+      font-size: 13px;
+      margin: -4px 0;
+      padding: 2px 0;
+    }
+
+    /* 存在条件表格 */
+    .cond-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+    .cond-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #2a2018;
+      color: #c0a080;
+      font-weight: 600;
+      border-bottom: 1px solid #3a3028;
+    }
+    .cond-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #2a2018;
+      color: #b0a090;
+      vertical-align: top;
+    }
+    .cond-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* 流程图 */
+    .flow-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 16px 0;
+    }
+    .flow-node {
+      background: #2a2018;
+      border: 1px solid #3a3028;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      text-align: center;
+      min-width: 100px;
+    }
+    .flow-node strong { color: #e8d5b7; display: block; margin-bottom: 2px; }
+    .flow-node small { color: #7a6a5a; }
+    .flow-node.hl { border-color: #d97757; }
+    .flow-arrow { color: #5a4a3a; font-size: 16px; }
+
+    /* 提示词展示 */
+    .prompt-block {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-top: 14px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #a0a0a0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .prompt-block .comment { color: #6a8a5a; }
+    .prompt-block .highlight { color: #d97757; }
+    .prompt-block .string { color: #8ab4c0; }
+    .prompt-block .keyword { color: #c090d0; }
+
+    /* 对比表 */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .compare-table th {
+      text-align: left;
+      padding: 12px;
+      background: #2a2018;
+      color: #c0a080;
+      border-bottom: 2px solid #3a3028;
+    }
+    .compare-table td {
+      padding: 12px;
+      border-bottom: 1px solid #2a2018;
+      color: #b0a090;
+    }
+    .compare-table .layer2 { color: #57a0d9; }
+    .compare-table .layer3 { color: #a0d060; }
+    .compare-table .layer4 { color: #d97757; }
+
+    .note {
+      background: rgba(217,119,87,0.06);
+      border-left: 3px solid #d97757;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-size: 13px;
+      color: #b0a090;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 768px) {
+      .two-col { grid-template-columns: 1fr; }
+      body { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Claude Code 记忆四层架构</h1>
+    <p class="subtitle">从静态指令到自动提取，从跨会话持久化到单会话压缩，再到上下文压缩的双路径决策</p>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('overview', this)">总览</button>
+      <button class="tab" onclick="switchTab('layer1', this)">Layer 1: CLAUDE.md 四层</button>
+      <button class="tab" onclick="switchTab('layer2', this)">Layer 2: Auto Memory</button>
+      <button class="tab" onclick="switchTab('layer3', this)">Layer 3: Session Memory</button>
+      <button class="tab" onclick="switchTab('layer4', this)">Layer 4: Compact</button>
+      <button class="tab" onclick="switchTab('prompts', this)">提示词原文</button>
+    </div>
+
+    <!-- 总览 -->
+    <div id="overview" class="tab-content active">
+      <div class="card">
+        <h2>三层架构全景</h2>
+        <p>Claude Code 的记忆不是"一个东西"，而是<strong>三个独立机制</strong>的分层协作：</p>
+
+        <div class="two-col">
+          <div>
+            <div style="background: rgba(176,144,120,0.1); border: 1px solid #6a5548; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+              <div style="font-weight: 600; color: #d97757; margin-bottom: 8px;">Layer 1: 静态指令（CLAUDE.md）</div>
+              <div style="font-size: 13px; color: #b0a090;">
+                你<strong>手动编写</strong>的规则文件，分 4 级优先级。<br>
+                作用：告诉 Claude "应该怎么做"。<br>
+                生命周期：永久，除非你手动删。
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="background: rgba(87,160,217,0.1); border: 1px solid #3a6a8a; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+              <div style="font-weight: 600; color: #57a0d9; margin-bottom: 8px;">Layer 2: Auto Memory（自动记忆）</div>
+              <div style="font-size: 13px; color: #b0a090;">
+                <strong>后台子 agent</strong>自动从对话中提取。<br>
+                作用：记住"你是谁、你喜欢什么"。<br>
+                生命周期：跨会话持久化，存为 .md 文件。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: rgba(160,208,96,0.08); border: 1px solid #4a6a2a; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+          <div style="font-weight: 600; color: #a0d060; margin-bottom: 8px;">Layer 3: Session Memory（会话记忆）</div>
+          <div style="font-size: 13px; color: #b0a090;">
+            <strong>后台子 agent</strong>在对话进行中定期更新。<br>
+            作用：本次对话太长时，把被压缩掉的历史替换成摘要，模型还能知道之前聊了什么。<br>
+            生命周期：单会话临时文件，会话结束即失效。
+          </div>
+        </div>
+
+        <div style="background: rgba(217,119,87,0.08); border: 1px solid #6a3a2a; border-radius: 8px; padding: 16px;">
+          <div style="font-weight: 600; color: #d97757; margin-bottom: 8px;">Layer 4: Compact（上下文压缩）</div>
+          <div style="font-size: 13px; color: #b0a090;">
+            <strong>两条路径</strong>的压缩决策树：Session Memory 快速路径（本地文件读取）vs Traditional 传统路径（LLM 实时生成 9-section 摘要）。<br>
+            作用：当用户手动输入 <code>/compact</code> 或 token 超过阈值自动触发时，精简上下文，让对话能继续。<br>
+            生命周期：即时执行，替换历史消息为摘要 + 重建附件。
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>对比速查表</h2>
+        <table class="compare-table">
+          <tr>
+            <th>维度</th>
+            <th>Layer 1: CLAUDE.md</th>
+            <th class="layer2">Layer 2: Auto Memory</th>
+            <th class="layer3">Layer 3: Session Memory</th>
+            <th class="layer4">Layer 4: Compact</th>
+          </tr>
+          <tr>
+            <td><strong>谁写的</strong></td>
+            <td>你（手动）</td>
+            <td class="layer2">后台子 agent（自动）</td>
+            <td class="layer3">后台子 agent（自动）</td>
+            <td class="layer4">Session Memory 预写 / LLM 实时生成</td>
+          </tr>
+          <tr>
+            <td><strong>什么时候触发</strong></td>
+            <td>启动时读取文件</td>
+            <td class="layer2">每轮对话结束后</td>
+            <td class="layer3">对话进行中，按 token 阈值</td>
+            <td class="layer4">手动 /compact 或 token 超阈值自动触发</td>
+          </tr>
+          <tr>
+            <td><strong>存在多久</strong></td>
+            <td>永久（文件）</td>
+            <td class="layer2">跨会话持久（文件）</td>
+            <td class="layer3">单会话（临时文件）</td>
+            <td class="layer4">即时替换上下文，不单独存储</td>
+          </tr>
+          <tr>
+            <td><strong>存储位置</strong></td>
+            <td>项目目录 / ~/.claude/</td>
+            <td class="layer2"><code>~/.claude/projects/*/memory/</code></td>
+            <td class="layer3"><code>~/.claude/projects/*/{sessionId}/session-memory/</code></td>
+            <td class="layer4">直接注入上下文（messages 数组）</td>
+          </tr>
+          <tr>
+            <td><strong>用途</strong></td>
+            <td>规范行为偏好</td>
+            <td class="layer2">记住用户画像、反馈、项目状态</td>
+            <td class="layer3">上下文压缩摘要</td>
+            <td class="layer4">精简历史消息，释放 token 窗口让对话继续</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Layer 1 -->
+    <div id="layer1" class="tab-content">
+      <div class="card">
+        <h2>CLAUDE.md 四层优先级系统</h2>        <p>这 4 层不是"4 个文件"，而是<strong>4 个搜索路径</strong>。Claude Code 启动时会按顺序查找，把找到的文件内容拼进系统提示词。</p>
+
+        <div class="note">
+          <strong>核心法则：</strong>加载顺序是 Managed → User → Project → Local，但<strong>后加载的在 prompt 中排在更后面</strong>。LLM 对越靠后的内容注意力越高。所以<strong> Local > Project > User > Managed</strong>。
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="layer layer-managed">
+          <div class="layer-name">Managed<span class="layer-badge">最低优先级</span></div>
+          <div class="layer-path">/etc/claude-code/CLAUDE.md + /etc/claude-code/rules/*.md</div>
+          <div class="layer-desc"><strong>作用：</strong>企业 IT 管理员统一管控所有员工的 Claude Code 行为。比如"统一使用 TypeScript"、"禁止自动提交"。</div>
+          <div class="layer-status status-missing">你的电脑：❌ 不存在</div>
+        </div>
+
+        <div class="arrow-between">↓ 后加载，优先级更高</div>
+
+        <div class="layer layer-user">
+          <div class="layer-name">User<span class="layer-badge">个人全局</span></div>
+          <div class="layer-path">~/.claude/CLAUDE.md + ~/.claude/rules/*.md</div>
+          <div class="layer-desc"><strong>作用：</strong>你个人的全局偏好，跨所有项目生效。比如你"喜欢简洁回答"、"是 AI PM 只看注释"。</div>
+          <div class="layer-status status-present">你的电脑：✅ ~/.claude/CLAUDE.md 存在（你的个人全局指令）</div>
+        </div>
+
+        <div class="arrow-between">↓ 后加载，优先级更高</div>
+
+        <div class="layer layer-project">
+          <div class="layer-name">Project<span class="layer-badge">项目级</span></div>
+          <div class="layer-path">项目根目录/CLAUDE.md, .claude/CLAUDE.md, .claude/rules/*.md</div>
+          <div class="layer-desc"><strong>作用：</strong>团队协作规范，签入代码库共享。从当前目录向上遍历到根目录查找，越靠近当前目录优先级越高。</div>
+          <div class="layer-status status-present">你的电脑：✅ Study tutor/CLAUDE.md 存在（项目级指令）</div>
+        </div>
+
+        <div class="arrow-between">↓ 后加载，优先级更高</div>
+
+        <div class="layer layer-local">
+          <div class="layer-name">Local<span class="layer-badge">最高优先级</span></div>
+          <div class="layer-path">项目根目录/CLAUDE.local.md</div>
+          <div class="layer-desc"><strong>作用：</strong>你的私人项目偏好，不入 git。比如"在这个项目里用中文注释"。</div>
+          <div class="layer-status status-missing">你的电脑：❌ 不存在（你没建）</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>存在条件总结</h2>
+        <table class="cond-table">
+          <tr>
+            <th>层级</th>
+            <th>何时<strong>不存在</strong></th>
+            <th>何时<strong>存在</strong></th>
+            <th>存在了怎么发挥作用</th>
+          </tr>
+          <tr>
+            <td><strong>Managed</strong></td>
+            <td>个人电脑默认没有。除非企业 IT 手动配置。</td>
+            <td>企业 IT 在员工电脑 `/etc/claude-code/` 下放 CLAUDE.md</td>
+            <td>强制继承给所有用户，优先级最低。可以被上层覆盖。</td>
+          </tr>
+          <tr>
+            <td><strong>User</strong></td>
+            <td>你从没写过 `~/.claude/CLAUDE.md`</td>
+            <td>你在 `~/.claude/` 下创建了 CLAUDE.md</td>
+            <td>跨所有项目生效，优先级高于 Managed。</td>
+          </tr>
+          <tr>
+            <td><strong>Project</strong></td>
+            <td>项目目录下没有 CLAUDE.md 或 .claude/ 目录</td>
+            <td>项目根目录有 CLAUDE.md 或 .claude/rules/*.md</td>
+            <td>团队协作共享，签入 git。越靠近当前目录优先级越高。</td>
+          </tr>
+          <tr>
+            <td><strong>Local</strong></td>
+            <td>默认不存在。需要手动创建。</td>
+            <td>你在项目根目录创建了 `CLAUDE.local.md`</td>
+            <td>私人项目偏好，不入 git。优先级最高，"覆盖"所有上层冲突指令。</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>关于 .claude/rules/*.md：</strong>这是 Project 级别的扩展——你可以在项目里建 `.claude/rules/coding-style.md`、`.claude/rules/security.md` 等多个文件，Claude Code 会全部读取。相当于把一个大 CLAUDE.md 拆成多个主题文件。<br><br>
+        <strong>你的当前情况：</strong>Study tutor 项目里有 `.claude/` 目录，但里面没有 `rules/` 子目录，也没有 `CLAUDE.md`。你的 Project 级指令来自项目根目录的 `CLAUDE.md`。
+      </div>
+    </div>
+
+    <!-- Layer 2 -->
+    <div id="layer2" class="tab-content">
+      <div class="card">
+        <h2>Auto Memory（自动记忆）</h2>
+        <p>不是主 agent 直接写文件，而是通过一个<strong>后台 fork 的子 agent</strong>，在<strong>每轮完整对话结束后</strong>自动从近期消息中提取值得记住的信息。</p>
+
+        <div class="flow-row">
+          <div class="flow-node hl">
+            <strong>主 Agent</strong>
+            <small>与用户对话</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <strong>对话结束</strong>
+            <small>handleStopHooks</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node" style="border-color: #57a0d9;">
+            <strong>Fork 子 Agent</strong>
+            <small>runForkedAgent</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <strong>读取现有记忆</strong>
+            <small>scanMemoryFiles</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <strong>提取 + 写入</strong>
+            <small>FileWriteTool</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>关键设计</h2>
+        <h3>1. 互斥机制（Mutual Exclusion）</h3>
+        <p>如果主 agent 自己在对话中用了 Write/Edit 工具写了 memory 文件（比如用户说"记住我是 AI PM"），后台提取 agent 检测到后会<strong>直接跳过</strong>。两者是"互斥"关系——主 agent 写过了，后台就不用再写。</p>
+
+        <h3>2. 四类型分类系统</h3>
+        <p>提取 agent 把记忆分为 4 种类型，每种有明确的保存时机和使用方式：</p>
+        <ul style="color: #b0a090; font-size: 13px; margin: 0; padding-left: 20px;">
+          <li><strong>user</strong> — 用户角色、目标、知识水平（如"用户是 AI PM，零代码基础"）</li>
+          <li><strong>feedback</strong> — 用户对 Claude 的反馈（如"不要总结，我看得懂 diff"）</li>
+          <li><strong>project</strong> — 项目进展、截止日期、背景（如"移动团队周四切 release"）</li>
+          <li><strong>reference</strong> — 外部系统指针（如"bug 在 Linear INGEST 项目里追踪"）</li>
+        </ul>
+
+        <h3>3. 写入两步走</h3>
+        <p><strong>Step 1：</strong>写独立的 .md 文件（如 <code>user_role.md</code>），带 frontmatter（name/description/type）。<br>
+        <strong>Step 2：</strong>在 <code>MEMORY.md</code> 索引里加一行指针：<code>- [Title](file.md) — 一句话描述</code>。</p>
+
+        <h3>4. 本地路径（你的 Study tutor 项目）</h3>
+        <div style="font-family: monospace; font-size: 12px; color: #8a7a6a; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px;">
+          ~/.claude/projects/c--Users-86468-Desktop-Study-tutor/memory/<br>
+          ├── MEMORY.md（索引文件）<br>
+          ├── user_role.md（用户角色记忆）<br>
+          └── feedback_explicit_approval.md（反馈记忆）
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer 3 -->
+    <div id="layer3" class="tab-content">
+      <div class="card">
+        <h2>Session Memory（会话记忆）</h2>
+        <p>这也是通过<strong>后台 fork 子 agent</strong>运行的，但目的完全不同：它不是"记住你下次来还能用"，而是"<strong>本次对话太长时，把被压缩掉的内容替换成摘要</strong>"。</p>
+
+        <div class="flow-row">
+          <div class="flow-node hl">
+            <strong>主 Agent</strong>
+            <small>与用户对话</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <strong>达到阈值</strong>
+            <small>token > 10000<br>或 tool calls > N</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node" style="border-color: #a0d060;">
+            <strong>Fork 子 Agent</strong>
+            <small>post-sampling hook</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <strong>读取当前笔记</strong>
+            <small>summary.md</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <strong>Edit 更新</strong>
+            <small>FileEditTool</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>关键设计</h2>
+
+        <h3>1. 触发条件（阈值控制）</h3>
+        <p>不是每轮都触发，而是满足以下条件时才触发：</p>
+        <ul style="color: #b0a090; font-size: 13px; margin: 0; padding-left: 20px;">
+          <li><strong>初始化阈值</strong>：对话 token 超过 ~10000 时，第一次创建 session memory</li>
+          <li><strong>更新阈值</strong>：之后每增加 ~5000 token，或每 N 个 tool call，更新一次</li>
+          <li><strong>安全条件</strong>：最后一轮 assistant 没有 tool call 时才提取（避免中断工具链）</li>
+        </ul>
+
+        <h3>2. 文件结构（9 个固定章节）</h3>
+        <p>Session Memory 是一个 <code>summary.md</code>，有固定的 9 个章节：</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Session Title</strong> — 会话标题</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Current State</strong> — 当前在做什么</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Task specification</strong> — 用户要做什么</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Files and Functions</strong> — 重要文件</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Workflow</strong> — 常用命令</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Errors & Corrections</strong> — 错误和修复</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Codebase Documentation</strong> — 系统组件</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Learnings</strong> — 经验教训</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Key results</strong> — 关键输出</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong># Worklog</strong> — 工作记录</div>
+        </div>
+
+        <h3>3. 为什么你在本地找不到它？</h3>
+        <p>Session Memory 的存储路径是：</p>
+        <div style="font-family: monospace; font-size: 12px; color: #8a7a6a; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px;">
+          ~/.claude/projects/{项目名}/{sessionId}/session-memory/summary.md
+        </div>
+        <p>它在 <strong>会话子目录</strong>里，不是 <code>memory/</code> 目录。而且：</p>
+        <ul style="color: #b0a090; font-size: 13px; margin: 0; padding-left: 20px;">
+          <li>它被设计为<strong>临时文件</strong>，会话结束后就失去意义</li>
+          <li>它用于<strong>上下文压缩</strong>——当对话太长装不下时，用 session summary 替代被丢弃的历史消息</li>
+          <li>它<strong>不跨会话</strong>——下次开新会话，会创建新的 session memory</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Layer 4 -->
+    <div id="layer4" class="tab-content">
+      <div class="card">
+        <h2>Compact（上下文压缩）</h2>
+        <p>当对话历史太长、token 窗口接近满载时，Claude Code 会<strong>把旧消息压缩成摘要，腾出空间让对话继续</strong>。<code>/compact</code> 命令和自动 compact 共用同一套<strong>双路径决策树</strong>——不是每次都走 LLM，而是先尝试一条本地快速路径。</p>
+
+        <div class="flow-row">
+          <div class="flow-node hl">
+            <strong>触发</strong>
+            <small>/compact 或 token 超阈值</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node" style="border-color: #d97757;">
+            <strong>Path A</strong>
+            <small>Session Memory<br>本地文件读取</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">
+            <strong>成功？</strong>
+            <small>快速返回摘要</small>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node" style="border-color: #c06060;">
+            <strong>Path B</strong>
+            <small>Traditional<br>LLM 实时生成</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>关键设计</h2>
+
+        <h3>1. 双路径决策树</h3>
+        <p>每次 compact 先走 Path A，失败才走 Path B。两条路径的核心差异：</p>
+        <ul style="color: #b0a090; font-size: 13px; margin: 0 0 14px 0; padding-left: 20px;">
+          <li><strong>Path A — Session Memory Compaction</strong>：读取预维护的 <code>summary.md</code>，本地做数组切片，无 API 调用。条件：无自定义 compact 指令 + GrowthBook 双开关（<code>tengu_session_memory</code> + <code>tengu_sm_compact</code>）均开启（默认均 <code>false</code>）。</li>
+          <li><strong>Path B — Traditional Compaction</strong>：先执行 microcompact 清理旧工具结果，再 <code>runForkedAgent(maxTurns: 1)</code> 让 LLM 生成 9-section 结构化摘要，失败则 fallback 到流式 API。</li>
+        </ul>
+        <div class="note">
+          <strong>这就是为什么你的 /compact 总是很慢：</strong>Path A 的两个 GrowthBook 开关默认都是 <code>false</code>，所以绝大多数用户走的都是 Path B——LLM 要通读整个对话历史，按时间顺序逐条分析，再写一份包含 9 个章节的详细摘要。这份"作业"的量级，和让 LLM 写一篇技术综述差不多。
+        </div>
+
+        <h3>2. Microcompact 预处理</h3>
+        <p>在把消息送给 LLM 摘要之前，先做一次"轻量清理"，减少 token 负担：</p>
+        <ul style="color: #b0a090; font-size: 13px; margin: 0 0 14px 0; padding-left: 20px;">
+          <li><strong>Time-Based Microcompact</strong>：如果距离最后一条 assistant 消息的时间超过阈值，把旧的 tool result content 替换成 <code>[Old tool result content cleared]</code>，保留最近 N 个可压缩的工具结果</li>
+          <li><strong>Cached Microcompact</strong>：不修改本地消息，通过 <code>cache_reference + cache_edits</code> 在 API 层标记哪些工具结果可以被忽略，由服务端处理</li>
+          <li><strong>可压缩工具白名单</strong>：FileRead、Bash/PowerShell、Grep、Glob、WebSearch、WebFetch、FileEdit、FileWrite 等"读取类"工具结果可以被清理；用户消息、assistant 回复、tool_use 指令不会被碰</li>
+        </ul>
+
+        <h3>3. 9-Section 摘要结构</h3>
+        <p>Path B 的 LLM 被强制要求先写一个 <code>&lt;analysis&gt;</code> 草稿块（最终被 strip），再输出 <code>&lt;summary&gt;</code> 正式摘要。摘要必须包含 9 个固定章节：</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong>1. Primary Request</strong> — 用户的所有显式请求和意图</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong>2. Key Technical Concepts</strong> — 所有重要技术概念</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong>3. Files and Code</strong> — 文件、代码片段、函数签名</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong>4. Errors and Fixes</strong> — 错误和修复方法</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong>5. Problem Solving</strong> — 已解决问题和持续排查</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong>6. All User Messages</strong> — 所有非工具结果的用户消息</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong>7. Pending Tasks</strong> — 明确的待办任务</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090;"><strong>8. Current Work</strong> — summary 前正在做什么</div>
+          <div style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; color: #b0a090; grid-column: span 2;"><strong>9. Optional Next Step</strong> — 下一步该做什么，必须包含对话中的直接引用（verbatim）以防任务漂移</div>
+        </div>
+
+        <h3>4. Post-Compact 附件重建</h3>
+        <p>压缩完成后，被丢弃的不只是旧消息——还有各种附件也需要重新注入上下文，否则模型会"失忆"：</p>
+        <ul style="color: #b0a090; font-size: 13px; margin: 0; padding-left: 20px;">
+          <li><strong>最近访问的文件</strong>：最多 5 个文件，总预算 50K tokens，单个文件上限 5K tokens</li>
+          <li><strong>Skills</strong>：总预算 25K tokens，单个 skill 上限 5K tokens（保留文件顶部通常最关键）</li>
+          <li><strong>Plan Mode 附件</strong>：当前 plan 文件路径和内容</li>
+          <li><strong>Deferred Tool Delta</strong>：待处理的工具变更通知</li>
+          <li><strong>Session Start Hooks</strong>：会话启动时的系统级上下文</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 提示词 -->
+    <div id="prompts" class="tab-content">
+      <div class="card">
+        <h2>Layer 2: Auto Memory 提取提示词（核心片段）</h2>        <p style="font-size: 13px; color: #8a7a6a;"><code>src/services/extractMemories/prompts.ts</code> — 155 行</p>
+
+        <div class="prompt-block"><span class="comment"># 子 agent 开场白</span>
+You are now acting as the memory extraction subagent. Analyze the most recent
+~{newMessageCount} messages above and use them to update your persistent
+memory systems.
+
+Available tools: FileRead, Grep, Glob, read-only Bash (ls/find/cat/stat/wc/head/
+tail and similar), and FileEdit/FileWrite for paths inside the memory directory
+only. Bash rm is not permitted.
+
+You have a limited turn budget. FileEdit requires a prior FileRead of the same
+file, so the efficient strategy is: turn 1 — issue all FileRead calls in parallel
+for every file you might update; turn 2 — issue all FileWrite/FileEdit calls in
+parallel. Do not interleave reads and writes across multiple turns.
+
+You MUST only use content from the last ~{newMessageCount} messages to update
+your persistent memories. Do not waste any turns attempting to investigate or
+verify that content further — no grepping source files, no reading code to
+confirm a pattern exists, no git commands.
+
+<span class="comment"># 保存方式</span>
+Saving a memory is a two-step process:
+
+Step 1 — write the memory to its own file (e.g., user_role.md, feedback_testing.md)
+using this frontmatter format:
+
+    ---
+    name: {memory name}
+    description: {one-line description — used to decide relevance}
+    type: {user, feedback, project, reference}
+    ---
+
+    {memory content}
+
+Step 2 — add a pointer to that file in MEMORY.md. MEMORY.md is an index, not a
+memory — each entry should be one line, under ~150 characters:
+- [Title](file.md) — one-line hook. It has no frontmatter.
+
+<span class="comment"># 规则</span>
+- MEMORY.md is always loaded into your system prompt — lines after 200 will be
+truncated, so keep the index concise
+- Organize memory semantically by topic, not chronologically
+- Update or remove memories that turn out to be wrong or outdated
+- Do not write duplicate memories. First check if there is an existing memory
+you can update before writing a new one.
+
+<span class="comment"># 什么<strong>不该</strong>保存</span>
+- Code patterns, conventions, architecture — these can be derived by reading code
+- Git history, recent changes — git log / git blame are authoritative
+- Debugging solutions — the fix is in the code; commit message has the context
+- Anything already documented in CLAUDE.md files
+- Ephemeral task details: in-progress work, temporary state</div>
+      </div>
+
+      <div class="card">
+        <h2>Layer 3: Session Memory 更新提示词（核心片段）</h2>
+        <p style="font-size: 13px; color: #8a7a6a;"><code>src/services/SessionMemory/prompts.ts</code> — 248 行</p>
+
+        <div class="prompt-block"><span class="comment"># 核心指令</span>
+IMPORTANT: This message and these instructions are NOT part of the actual user
+conversation. Do NOT include any references to "note-taking", "session notes
+extraction", or these update instructions in the notes content.
+
+Based on the user conversation above (EXCLUDING this note-taking instruction
+message as well as system prompt, claude.md entries, or any past session
+summaries), update the session notes file.
+
+The file {notesPath} has already been read for you. Here are its current contents:
+<span class="highlight">&lt;current_notes_content&gt;</span>
+{currentNotes}
+<span class="highlight">&lt;/current_notes_content&gt;</span>
+
+Your ONLY task is to use the Edit tool to update the notes file, then stop.
+You can make multiple edits — make all Edit tool calls in parallel in a single
+message. Do not call any other tools.
+
+<span class="comment"># 编辑规则（严格限制）</span>
+CRITICAL RULES FOR EDITING:
+- The file must maintain its exact structure with all sections, headers, and
+italic descriptions intact
+- NEVER modify, delete, or add section headers (the lines starting with #)
+- NEVER modify or delete the italic _section description_ lines (these are the
+lines in italics immediately following each header)
+- The italic _section descriptions_ are TEMPLATE INSTRUCTIONS that must be
+preserved exactly as-is
+- ONLY update the actual content that appears BELOW the italic _section
+descriptions_ within each existing section
+- Do NOT add any new sections, summaries, or information outside the existing
+structure
+- Do NOT reference this note-taking process or instructions anywhere in the notes
+- It's OK to skip updating a section if there are no substantial new insights
+- Write DETAILED, INFO-DENSE content — include specifics like file paths,
+function names, error messages, exact commands
+- For "Key results", include the complete, exact output the user requested
+- Do not include information that's already in the CLAUDE.md files
+- Keep each section under ~2000 tokens — if approaching limit, condense by
+cycling out less important details
+- IMPORTANT: Always update "Current State" to reflect the most recent work
+- Focus on actionable, specific information that would help someone understand
+or recreate the work</div>
+      </div>
+
+      <div class="card">
+        <h2>Layer 2: 四类型详细定义（from memoryTypes.ts）</h2>
+        <p style="font-size: 13px; color: #8a7a6a;"><code>src/memdir/memoryTypes.ts</code> — 272 行（节选核心定义）</p>
+
+        <div class="prompt-block"><span class="keyword">user</span> — 用户的角色、目标、职责和知识
+  When to save: 当你了解到用户的角色、偏好、职责或知识时
+  How to use: 根据用户画像调整你的行为
+  Example: user 说"我是数据科学家，在研究日志"
+           → [saves user memory: user is a data scientist, focused on logging]
+
+<span class="keyword">feedback</span> — 用户对 Claude 的反馈（正反面都要记）
+  When to save: 用户纠正你（"不要那样"）或确认某种做法有效（"就是这样"）
+  How to use: 让这些记忆指导你的行为，用户不需要重复说
+  Body: 规则本身 + Why:（原因）+ How to apply:（何时生效）
+  Example: user 说"不要 mock 数据库，上次 prod 迁移挂了"
+           → [saves feedback: integration tests must hit real DB, not mocks.
+               Why: mock passed but prod migration failed]
+
+<span class="keyword">project</span> — 项目进展、目标、事件
+  When to save: 当你知道谁在做什么、为什么、截止时间时
+  How to use: 更好地理解请求背后的背景和动机
+  Body: 事实/决定 + Why: + How to apply:
+  Example: user 说"周四后冻结非关键合并，移动团队要切 release"
+           → [saves project: merge freeze begins 2026-03-05 for mobile release]
+
+<span class="keyword">reference</span> — 外部系统指针
+  When to save: 当你知道外部系统的资源位置时
+  How to use: 当用户引用外部系统或信息可能在外部系统时
+  Example: user 说"bug 在 Linear 的 INGEST 项目里追踪"
+           → [saves reference: pipeline bugs tracked in Linear "INGEST"]
+
+<span class="comment"># 信任记忆的校验规则</span>
+Before recommending from memory:
+- 如果记忆提到了某个文件路径：先检查文件是否存在
+- 如果记忆提到了某个函数或标志：先 grep 确认
+- 如果用户要基于你的推荐采取行动：先验证
+"The memory says X exists" is not the same as "X exists now."
+
+Memory records can become stale. Trust what you observe now, and update or
+remove stale memory rather than acting on it.</div>
+      </div>
+
+      <div class="card">
+        <h2>Layer 4: Compact 摘要提示词（核心片段）</h2>
+        <p style="font-size: 13px; color: #8a7a6a;"><code>src/services/compact/prompt.ts</code> — 375 行</p>
+
+        <div class="prompt-block"><span class="comment"># 强制文本输出前缀（防止模型误调用工具）</span>
+<span class="highlight">CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.</span>
+
+- Do NOT use Read, Bash, Grep, Glob, Edit, Write, or ANY other tool.
+- You already have all the context you need in the conversation above.
+- Tool calls will be REJECTED and will waste your only turn — you will fail.
+- Your entire response must be plain text: an &lt;analysis&gt; block
+  followed by a &lt;summary&gt; block.
+
+<span class="comment"># 核心任务指令</span>
+Your task is to create a detailed summary of the conversation so far,
+paying close attention to the user's explicit requests and your
+previous actions. This summary should be thorough in capturing
+technical details, code patterns, and architectural decisions.
+
+<span class="comment"># &lt;analysis&gt; 草稿区要求（最终会被 strip）</span>
+Before providing your final summary, wrap your analysis in
+&lt;analysis&gt; tags to organize your thoughts:
+
+1. Chronologically analyze each message and section:
+   - The user's explicit requests and intents
+   - Your approach to addressing them
+   - Key decisions, technical concepts, code patterns
+   - Specific details: file names, full code snippets,
+     function signatures, file edits
+   - Errors encountered and how you fixed them
+   - Specific user feedback (especially corrections)
+2. Double-check for technical accuracy and completeness.
+
+<span class="comment"># 9 个必须包含的 section</span>
+Your summary should include the following sections:
+
+1. Primary Request and Intent
+2. Key Technical Concepts
+3. Files and Code Sections
+4. Errors and fixes
+5. Problem Solving
+6. All user messages
+7. Pending Tasks
+8. Current Work
+9. Optional Next Step
+
+<span class="comment"># 输出格式示例（强制 XML 标签结构）</span>
+&lt;example&gt;
+&lt;analysis&gt;
+[Thought process ensuring all points are covered]
+&lt;/analysis&gt;
+
+&lt;summary&gt;
+1. Primary Request and Intent:
+   [Detailed description]
+2. Key Technical Concepts:
+   - [Concept 1]
+3. Files and Code Sections:
+   - [File Name]
+     - [Why important]
+     - [Code snippet]
+...
+9. Optional Next Step:
+   [Next step with verbatim quotes]
+&lt;/summary&gt;
+&lt;/example&gt;
+
+<span class="comment"># formatCompactSummary() 的后续处理</span>
+- Strip &lt;analysis&gt;...&lt;/analysis&gt;（草稿区无信息价值）
+- Replace &lt;summary&gt;...&lt;/summary&gt; with "Summary:\n{content}"
+- 清理多余空行
+- 最终注入上下文作为 system message</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>

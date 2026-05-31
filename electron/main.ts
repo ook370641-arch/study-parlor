@@ -53,13 +53,31 @@ async function bootstrap() {
 }
 
 async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWindow) {
+  // 诊断日志：记录 boot sequence 开始
+  console.log('[main:boot] runBootSequence started')
+
+  // 等待 renderer 页面加载完成，确保 IPC 监听器已注册
+  if (win.webContents.isLoading()) {
+    console.log('[main:boot] waiting for renderer to finish loading...')
+    await new Promise<void>(resolve => {
+      win.webContents.once('did-finish-load', () => {
+        console.log('[main:boot] renderer loaded')
+        resolve()
+      })
+    })
+  } else {
+    console.log('[main:boot] renderer already loaded')
+  }
+
   const sendProgress = (stage: string, progress: number) => {
+    console.log(`[main:boot] sending progress: ${stage} ${progress}%`)
     if (!win.isDestroyed()) {
       win.webContents.send('boot:progress', stage, progress)
     }
   }
 
   const sendComplete = () => {
+    console.log('[main:boot] sending complete')
     if (!win.isDestroyed()) {
       win.webContents.send('boot:complete')
     }
@@ -82,7 +100,6 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   sendProgress('扫描学习库', 50)
 
   // Stage 3: 扫描学习库已在渲染进程 init() 中做，这里只发送进度信号
-  // 实际文件扫描由 App.tsx 调用 init() 时触发
   sendProgress('初始化状态', 75)
 
   // Stage 4: 完成

@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学者夜话 · 文案评审原型</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+  :root {
+    --ink: #2a1f1a;
+    --ink-light: #3a2f2a;
+    --parchment: #e8d5b7;
+    --parchment-dim: rgba(232,213,183,0.6);
+    --parchment-faint: rgba(232,213,183,0.3);
+    --ember: #d97757;
+    --ember-dim: rgba(217,119,87,0.4);
+    --slate: #3a5a6a;
+    --slate-dim: rgba(58,90,106,0.4);
+    --wine: #8a3a3a;
+    --wine-dim: rgba(138,58,58,0.3);
+    --gold: #c9a96e;
+    --green: #5a8a5a;
+    --green-dim: rgba(90,138,90,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', system-ui, sans-serif;
+    background: #1a120f;
+    color: var(--parchment);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ===== Top Bar ===== */
+  .top-bar {
+    height: 48px;
+    background: var(--ink);
+    border-bottom: 1px solid var(--slate-dim);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+  }
+  .top-bar h1 {
+    font-family: 'Noto Serif SC', Georgia, serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+  }
+  .legend {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--parchment-faint);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .progress { font-size: 12px; color: var(--parchment-dim); }
+  .progress span { font-weight: 600; }
+  .progress .done { color: var(--green); }
+  .progress .rethink { color: var(--gold); }
+  .top-bar .actions { display: flex; gap: 10px; }
+  .top-bar button {
+    padding: 5px 14px;
+    font-size: 12px;
+    border: 1px solid var(--slate-dim);
+    background: transparent;
+    color: var(--parchment-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .top-bar button:hover { border-color: var(--ember); color: var(--parchment); }
+  .top-bar button.primary {
+    background: var(--ember); color: var(--ink); border-color: var(--ember); font-weight: 500;
+  }
+  .top-bar button.primary:hover { background: #e08a6a; }
+
+  /* ===== Main Layout ===== */
+  .main { display: flex; height: calc(100vh - 48px); }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: 240px;
+    background: var(--ink);
+    border-right: 1px solid var(--slate-dim);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .sidebar-section {
+    padding: 12px 16px 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--parchment-faint);
+    font-weight: 500;
+  }
+  .nav-item {
+    padding: 10px 16px 10px 24px;
+    font-size: 13px;
+    color: var(--parchment-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: rgba(58,90,106,0.15); color: var(--parchment); }
+  .nav-item.active {
+    background: rgba(217,119,87,0.1);
+    color: var(--parchment);
+    border-left-color: var(--ember);
+  }
+  .nav-item .counts {
+    margin-left: auto;
+    font-size: 10px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .nav-item .counts .d { color: var(--green); }
+  .nav-item .counts .r { color: var(--gold); }
+  .nav-item .counts .t { color: var(--parchment-faint); }
+  .nav-item .badge-done {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--green);
+  }
+
+  /* ===== Preview Pane ===== */
+  .preview-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .scene-label {
+    padding: 12px 24px;
+    background: rgba(42,31,26,0.8);
+    border-bottom: 1px solid var(--slate-dim);
+    font-size: 12px;
+    color: var(--parchment-dim);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .scene-label .file { font-family: monospace; font-size: 11px; color: var(--parchment-faint); }
+  .scene-container { flex: 1; overflow: auto; padding: 24px; display: flex; align-items: flex-start; justify-content: center; }
+
+  /* ===== Rewritable Text ===== */
+  .rw-text {
+    display: inline;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+    padding: 0 3px;
+    margin: 0 -3px;
+    border-radius: 2px;
+  }
+  .rw-text:hover { background: rgba(217,119,87,0.12); }
+  .rw-text::after {
+    content: '';
+    position: absolute;
+    top: 1px; right: -3px;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    transition: opacity 0.15s;
+  }
+
+  /* States */
+  .rw-text { border-bottom: 1px dashed var(--ember-dim); }
+  .rw-text::after { background: var(--ember); opacity: 0; }
+  .rw-text:hover::after { opacity: 1; }
+
+  .rw-text.is-done { border-bottom: 1px solid var(--green-dim); }
+  .rw-text.is-done::after { background: var(--green); opacity: 1; }
+
+  .rw-text.is-rethink { border-bottom: 1px dashed var(--gold); }
+  .rw-text.is-rethink::after { background: var(--gold); opacity: 1; }
+
+  /* ===== Picker Overlay ===== */
+  .picker-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(20,15,12,0.7);
+    display: none; align-items: center; justify-content: center;
+  }
+  .picker-overlay.active { display: flex; }
+  .picker-panel {
+    width: 720px; max-width: 92vw; max-height: 85vh;
+    background: var(--ink);
+    border: 1px solid var(--slate-dim);
+    border-radius: 4px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .picker-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--slate-dim);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .picker-header h3 { font-family: 'Noto Serif SC', serif; font-size: 15px; font-weight: 600; }
+  .picker-header .orig { font-size: 12px; color: var(--parchment-faint); margin-top: 4px; }
+  .picker-header .close { font-size: 22px; color: var(--parchment-faint); cursor: pointer; padding: 4px; line-height: 1; }
+  .picker-header .close:hover { color: var(--parchment); }
+  .picker-body { overflow-y: auto; }
+  .picker-section-label {
+    padding: 10px 20px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--parchment-faint);
+    background: rgba(0,0,0,0.2);
+  }
+  .picker-option {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(58,90,106,0.15);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .picker-option:hover { background: rgba(58,90,106,0.1); }
+  .picker-option.selected {
+    background: rgba(90,138,90,0.08);
+    border-left: 3px solid var(--green);
+    padding-left: 17px;
+  }
+  .picker-option.selected-rethink {
+    background: rgba(201,169,110,0.08);
+    border-left: 3px solid var(--gold);
+    padding-left: 17px;
+  }
+  .picker-option .tier-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border: 1px solid;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .tier-light { border-color: var(--gold); color: var(--gold); }
+  .tier-medium { border-color: var(--ember); color: var(--ember); }
+  .tier-heavy { border-color: #c45c3e; color: #c45c3e; }
+  .tier-original { border-color: var(--parchment-faint); color: var(--parchment-faint); }
+  .tier-rethink { border-color: var(--gold); color: var(--gold); }
+  .picker-option .text {
+    font-size: 14px;
+    line-height: 1.7;
+    font-family: 'Noto Serif SC', serif;
+    color: var(--parchment);
+  }
+  .picker-option .text .highlight { color: var(--ember); font-weight: 600; }
+  .picker-option .note {
+    font-size: 11px;
+    color: var(--parchment-faint);
+    margin-top: 4px;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .picker-rethink {
+    padding: 16px 20px;
+    border-top: 1px solid var(--slate-dim);
+    background: rgba(201,169,110,0.05);
+  }
+  .picker-rethink button {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px dashed var(--gold);
+    color: var(--gold);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .picker-rethink button:hover {
+    background: rgba(201,169,110,0.1);
+    border-style: solid;
+  }
+  .picker-rethink button.selected {
+    background: rgba(201,169,110,0.15);
+    border-style: solid;
+    border-color: var(--gold);
+  }
+  .picker-rethink .hint {
+    font-size: 11px;
+    color: var(--parchment-faint);
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* ===== Export Panel ===== */
+  .export-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(20,15,12,0.8);
+    display: none; align-items: center; justify-content: center;
+  }
+  .export-overlay.active { display: flex; }
+  .export-panel {
+    width: 700px; max-width: 92vw; max-height: 85vh;
+    background: var(--ink);
+    border: 1px solid var(--slate-dim);
+    border-radius: 4px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .export-body { overflow-y: auto; padding: 20px; }
+  .export-body textarea {
+    width: 100%; height: 320px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--slate-dim);
+    border-radius: 4px;
+    padding: 12px;
+    color: var(--parchment);
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    resize: none;
+  }
+  .export-stats {
+    display: flex;
+    gap: 20px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--slate-dim);
+    font-size: 12px;
+  }
+  .export-stats .stat { display: flex; align-items: center; gap: 6px; }
+  .export-stats .stat .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ===== Scene CSS ===== */
+  .scene-frame {
+    background: var(--ink);
+    border: 1px solid var(--slate-dim);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .btn-primary {
+    background: var(--ember);
+    color: var(--ink);
+    border: none;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 2px;
+    font-family: inherit;
+    display: inline-block;
+    width: fit-content;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--parchment-dim);
+    border: 1px solid var(--slate-dim);
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    font-family: inherit;
+  }
+
+  /* Cover */
+  .scene-cover {
+    width: 520px; height: 320px;
+    position: relative;
+    background: linear-gradient(135deg, #2a1f1a 0%, #1a120f 60%, #2a1f1a 100%);
+  }
+  .scene-cover .vignette {
+    position: absolute; inset: 0;
+    box-shadow: inset 0 0 120px rgba(0,0,0,0.55);
+    pointer-events: none;
+  }
+  .scene-cover .content {
+    position: absolute;
+    bottom: 32px; left: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+  }
+  .scene-cover .greeting {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 22px;
+    color: var(--parchment);
+  }
+  .scene-cover .hint { font-size: 13px; color: var(--parchment-faint); }
+  .scene-cover input {
+    background: rgba(42,31,26,0.6);
+    border: 1px solid var(--slate-dim);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: var(--parchment);
+    font-size: 14px;
+    width: 220px;
+    font-family: inherit;
+  }
+
+  /* Home */
+  .scene-home {
+    width: 720px; height: 420px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--ink);
+  }
+  .scene-home .top-right { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
+  .scene-home .greeting { text-align: center; font-size: 12px; color: var(--parchment-faint); margin-bottom: 16px; }
+  .scene-home .columns { display: flex; gap: 16px; flex: 1; min-height: 0; }
+  .scene-home .col-left { width: 240px; display: flex; flex-direction: column; gap: 10px; }
+  .scene-home .unsaved-box {
+    background: rgba(42,31,26,0.7);
+    border: 1px solid rgba(58,90,106,0.3);
+    border-radius: 4px;
+    padding: 10px;
+  }
+  .scene-home .unsaved-box .label { font-size: 10px; color: var(--parchment-faint); margin-bottom: 6px; }
+  .scene-home .unsaved-box .actions { display: flex; gap: 8px; font-size: 11px; }
+  .scene-home .unsaved-box .actions a { color: var(--ember); text-decoration: none; }
+  .scene-home .unsaved-box .actions a.muted { color: var(--parchment-faint); }
+  .scene-home .rec-header { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
+  .scene-home .rec-header span { font-size: 10px; color: var(--parchment-faint); }
+  .scene-home .rec-card {
+    background: rgba(42,31,26,0.5);
+    border: 1px solid rgba(58,90,106,0.2);
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 12px;
+  }
+  .scene-home .col-right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .scene-home .col-right .label { font-size: 10px; color: var(--parchment-faint); margin-bottom: 8px; }
+  .scene-home .topic-item {
+    background: rgba(42,31,26,0.7);
+    border: 1px solid rgba(58,90,106,0.2);
+    border-radius: 4px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .scene-home .topic-item .bar { width: 3px; height: 16px; background: var(--ember); border-radius: 2px; flex-shrink: 0; }
+  .scene-home .topic-item .title { font-family: 'Noto Serif SC', serif; font-size: 13px; flex: 1; }
+  .scene-home .topic-item .meta { font-size: 10px; color: var(--parchment-faint); flex-shrink: 0; }
+
+  /* PreStudy Modal */
+  .scene-prestudy {
+    width: 400px;
+    padding: 28px;
+    background: var(--ink);
+    border: 1px solid rgba(58,90,106,0.4);
+    border-radius: 4px;
+  }
+  .scene-prestudy .mode-label { font-size: 11px; color: var(--parchment-faint); margin-bottom: 20px; }
+  .scene-prestudy .field { margin-bottom: 16px; }
+  .scene-prestudy .field-label { font-size: 12px; color: var(--parchment-dim); margin-bottom: 6px; }
+  .scene-prestudy input {
+    width: 100%;
+    background: rgba(42,31,26,0.4);
+    border: 1px solid var(--slate-dim);
+    border-radius: 4px;
+    padding: 8px 10px;
+    color: var(--parchment);
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .scene-prestudy .opts { display: flex; gap: 8px; }
+  .scene-prestudy .opt-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+    border: 1px solid var(--slate-dim);
+    background: transparent;
+    color: var(--parchment-dim);
+    border-radius: 4px;
+    cursor: default;
+    font-family: inherit;
+  }
+  .scene-prestudy .opt-btn.active {
+    background: var(--ember);
+    color: var(--ink);
+    border-color: var(--ember);
+  }
+  .scene-prestudy .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+  /* Study */
+  .scene-study {
+    width: 640px; height: 400px;
+    display: flex;
+    flex-direction: column;
+    background: var(--ink);
+  }
+  .scene-study header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: rgba(42,31,26,0.7);
+    border-bottom: 1px solid rgba(58,90,106,0.3);
+  }
+  .scene-study .back-btn { font-size: 20px; color: var(--parchment-dim); cursor: default; }
+  .scene-study .topic-title { font-family: 'Noto Serif SC', serif; font-size: 14px; }
+  .scene-study .meta { font-size: 12px; color: var(--parchment-dim); }
+  .scene-study .chat-area { flex: 1; padding: 16px 20px; overflow-y: auto; }
+  .scene-study .chat-bubble {
+    background: rgba(42,31,26,0.6);
+    border: 1px solid rgba(58,90,106,0.3);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    max-width: 80%;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .scene-study .chat-bubble.ai { margin-right: auto; }
+  .scene-study .chat-bubble.user { margin-left: auto; border-color: rgba(217,119,87,0.2); }
+  .scene-study .thinking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--parchment-faint);
+  }
+  .scene-study .archive-bar {
+    padding: 8px 20px;
+    background: rgba(217,119,87,0.08);
+    border-top: 1px solid rgba(217,119,87,0.15);
+    border-bottom: 1px solid rgba(217,119,87,0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+  .scene-study .input-area {
+    padding: 10px 20px;
+    background: rgba(42,31,26,0.7);
+    border-top: 1px solid rgba(58,90,106,0.3);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .scene-study .input-area textarea {
+    flex: 1;
+    background: rgba(42,31,26,0.6);
+    border: 1px solid rgba(58,90,106,0.3);
+    border-radius: 4px;
+    padding: 8px 10px;
+    color: var(--parchment);
+    font-size: 13px;
+    resize: none;
+    height: 44px;
+    font-family: inherit;
+  }
+
+  /* Library Empty */
+  .scene-lib-empty {
+    width: 480px; height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--ink);
+  }
+  .scene-lib-empty .stars { width: 64px; height: 64px; position: relative; margin-bottom: 16px; }
+  .scene-lib-empty .stars::before {
+    content: '';
+    position: absolute;
+    top: 30%; left: 50%;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(217,119,87,0.2);
+    transform: translateX(-50%);
+  }
+  .scene-lib-empty .stars::after {
+    content: '';
+    position: absolute;
+    bottom: 30%; left: 30%;
+    width: 2px; height: 2px;
+    border-radius: 50%;
+    background: rgba(232,213,183,0.15);
+  }
+
+  /* Library Populated */
+  .scene-lib-pop {
+    width: 520px; height: 360px;
+    padding: 12px;
+    background: var(--ink);
+    display: flex;
+    flex-direction: column;
+  }
+  .scene-lib-pop .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .scene-lib-pop .tab {
+    padding: 4px 10px;
+    font-size: 11px;
+    border: 1px solid var(--slate-dim);
+    border-radius: 3px;
+    color: var(--parchment-dim);
+    font-family: inherit;
+    background: transparent;
+    cursor: default;
+  }
+  .scene-lib-pop .tab.active {
+    background: rgba(217,119,87,0.15);
+    border-color: var(--ember-dim);
+    color: var(--parchment);
+  }
+  .scene-lib-pop .topic-row {
+    background: rgba(42,31,26,0.7);
+    border: 1px solid rgba(58,90,106,0.2);
+    border-radius: 4px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .scene-lib-pop .topic-row .bar { width: 3px; height: 16px; background: var(--ember); border-radius: 2px; flex-shrink: 0; }
+  .scene-lib-pop .topic-row .title { font-family: 'Noto Serif SC', serif; font-size: 13px; flex: 1; }
+  .scene-lib-pop .topic-row .meta { font-size: 10px; color: var(--parchment-faint); flex-shrink: 0; }
+  .scene-lib-pop .session-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(58,90,106,0.1);
+    font-size: 11px;
+  }
+  .scene-lib-pop .session-row .badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: inherit;
+    border: none;
+    cursor: default;
+  }
+  .scene-lib-pop .session-row .badge.reviewed { background: rgba(217,119,87,0.1); color: var(--ember); }
+  .scene-lib-pop .session-row .badge.unreviewed { background: var(--ink); color: var(--parchment-faint); }
+  .scene-lib-pop .file-btn {
+    padding: 3px 7px;
+    font-size: 9px;
+    border: 1px solid rgba(58,90,106,0.3);
+    background: transparent;
+    color: var(--parchment-dim);
+    border-radius: 2px;
+    font-family: inherit;
+    cursor: default;
+  }
+  .scene-lib-pop .file-btn.emphasis {
+    border-color: var(--ember-dim);
+    color: var(--ember);
+    background: rgba(217,119,87,0.08);
+  }
+  .scene-lib-pop .page-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    font-size: 11px;
+    color: var(--parchment-faint);
+  }
+
+  /* Archive Loading */
+  .scene-arch-load {
+    width: 400px; height: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: rgba(42,31,26,0.95);
+  }
+  .scene-arch-load .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid rgba(232,213,183,0.13);
+    border-top-color: var(--ember);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .scene-arch-load .title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    letter-spacing: 0.15em;
+  }
+  .scene-arch-load .desc { font-size: 12px; color: var(--parchment-faint); }
+  .scene-arch-load .bar { width: 180px; height: 2px; background: rgba(232,213,183,0.1); overflow: hidden; }
+  .scene-arch-load .bar-fill { width: 60%; height: 100%; background: var(--ember); animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  /* Archive Report */
+  .scene-arch-report {
+    width: 480px; height: 320px;
+    display: flex;
+    flex-direction: column;
+    background: #1a120f;
+  }
+  .scene-arch-report .r-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(232,213,183,0.1);
+  }
+  .scene-arch-report .r-header .title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 15px;
+  }
+  .scene-arch-report .r-header .close { font-size: 20px; color: var(--parchment-faint); cursor: default; }
+  .scene-arch-report .r-body {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .scene-arch-report .r-body h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 15px;
+    margin: 16px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(58,90,106,0.2);
+  }
+  .scene-arch-report .r-body h2:first-child { margin-top: 0; }
+  .scene-arch-report .r-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(232,213,183,0.1);
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Confirm Dialog */
+  .scene-confirm {
+    width: 340px;
+    padding: 24px;
+    background: var(--ink);
+    border: 1px solid rgba(58,90,106,0.4);
+    border-radius: 6px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .scene-confirm .icon { font-size: 22px; color: var(--wine); margin-bottom: 10px; }
+  .scene-confirm h3 { font-family: 'Noto Serif SC', serif; font-size: 16px; margin-bottom: 10px; }
+  .scene-confirm .body { font-size: 12px; line-height: 1.7; color: var(--parchment-dim); margin-bottom: 20px; }
+  .scene-confirm .actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .btn-danger {
+    background: var(--wine);
+    color: var(--parchment);
+    border: none;
+    padding: 6px 16px;
+    font-size: 12px;
+    border-radius: 2px;
+    cursor: default;
+    font-family: inherit;
+    box-shadow: 2px 2px 0 0 #6a2a2a;
+  }
+
+  /* Profile */
+  .scene-profile {
+    width: 440px;
+    padding: 28px;
+    background: var(--ink);
+  }
+  .scene-profile .p-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .scene-profile .p-header h2 { font-family: 'Noto Serif SC', serif; font-size: 20px; }
+  .scene-profile .panel {
+    background: rgba(42,31,26,0.5);
+    border: 1px solid rgba(58,90,106,0.2);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .scene-profile .field-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .scene-profile .field-row .label { color: var(--parchment-faint); min-width: 80px; font-size: 12px; }
+  .scene-profile .field { margin-bottom: 14px; }
+  .scene-profile .field .label { font-size: 12px; color: var(--parchment-dim); margin-bottom: 5px; }
+  .scene-profile .field input,
+  .scene-profile .field textarea {
+    width: 100%;
+    background: rgba(42,31,26,0.4);
+    border: 1px solid rgba(58,90,106,0.3);
+    border-radius: 4px;
+    padding: 8px 10px;
+    color: var(--parchment);
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .scene-profile .opts-row { display: flex; gap: 8px; margin-bottom: 14px; }
+
+  /* Review Flash */
+  .scene-review {
+    width: 360px; height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(42,31,26,0.6);
+  }
+  .scene-review .star {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 10px rgba(217,119,87,0.4);
+    margin-bottom: 16px;
+  }
+  .scene-review .title { font-family: 'Noto Serif SC', serif; font-size: 16px; font-style: italic; margin-bottom: 6px; }
+  .scene-review .sub { font-size: 12px; color: var(--parchment-faint); }
+
+  /* Report Sections */
+  .scene-report {
+    width: 480px;
+    padding: 24px;
+    background: var(--ink);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .scene-report h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    margin: 20px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(58,90,106,0.2);
+  }
+  .scene-report h2:first-child { margin-top: 0; }
+  .scene-report .badge-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .scene-report .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-family: inherit;
+  }
+  .scene-report .badge.type { background: rgba(217,119,87,0.1); color: var(--ember); border: 1px solid var(--ember-dim); }
+  .scene-report .badge.diff { background: rgba(58,90,106,0.2); color: var(--parchment-dim); border: 1px solid var(--slate-dim); }
+  .scene-report .meta-line { font-size: 11px; color: var(--parchment-faint); margin-bottom: 12px; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(58,90,106,0.3); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <h1>学者夜话 · 文案评审</h1>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:var(--ember)"></span> 待选择</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> 已定稿</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--gold)"></span> 再想想</div>
+  </div>
+  <div class="progress">
+    <span class="done" id="prog-done">0</span> 已定稿 /
+    <span class="rethink" id="prog-rethink">0</span> 再想想 /
+    <span id="prog-total">0</span> 总计
+  </div>
+  <div class="actions">
+    <button onclick="resetAll()">全部重置</button>
+    <button class="primary" onclick="showExport()">导出方案</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="preview-pane">
+    <div class="scene-label" id="scene-label">
+      <span>选择一个场景开始评审</span>
+      <span class="file"></span>
+    </div>
+    <div class="scene-container" id="scene-container">
+      <div style="color:var(--parchment-faint);font-size:14px;text-align:center;padding:60px 20px;">
+        从左侧导航选择一个界面场景<br>
+        点击橙色虚线标记的文字，选择方案或标记"再想想"
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Picker Overlay -->
+<div class="picker-overlay" id="picker">
+  <div class="picker-panel">
+    <div class="picker-header">
+      <div>
+        <h3>选择文案方案</h3>
+        <div class="orig">原文字：<span id="picker-orig"></span></div>
+      </div>
+      <div class="close" onclick="closePicker()">&times;</div>
+    </div>
+    <div class="picker-body" id="picker-body"></div>
+    <div class="picker-rethink" id="picker-rethink"></div>
+  </div>
+</div>
+
+<!-- Export Overlay -->
+<div class="export-overlay" id="export-overlay">
+  <div class="export-panel">
+    <div class="picker-header">
+      <div>
+        <h3>导出方案</h3>
+        <div class="orig">JSON 格式，包含已定稿 + 待重新生成</div>
+      </div>
+      <div class="close" onclick="closeExport()">&times;</div>
+    </div>
+    <div class="export-stats" id="export-stats"></div>
+    <div class="export-body">
+      <textarea id="export-text" readonly></textarea>
+      <div style="margin-top:12px;display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn-ghost" onclick="copyExport()">复制到剪贴板</button>
+        <button class="btn-primary" onclick="downloadExport()">下载 JSON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== DATA ====================
+const DATA = {
+  cover: {
+    label: '封面',
+    file: 'Cover.tsx',
+    items: [
+      { key: 'cover_greeting', orig: '夜深了,', light: '夜已深，', medium: '夜已深——<span class="highlight">你醒着</span>', heavy: '天黑了。<span class="highlight">你还没睡。为什么？</span>', ctx: '问候语' },
+      { key: 'cover_start', orig: '开始学习', light: '点亮灯火', medium: '点燃什么', heavy: '点火吧。不知道会烧出什么。', ctx: '主按钮' },
+      { key: 'cover_name_hint', orig: '第一次到来,告诉我你的名字', light: '初来乍到，留一个名字', medium: '第一次来？留个名字吧，这里会记住你', heavy: '第一次来？没关系，这里不问来历。留个名字，好让黑暗认得你。', ctx: '新用户提示' },
+      { key: 'cover_enter', orig: '进入夜话', light: '入座', medium: '入座，灯留着', heavy: '坐。灯是你的，夜也是。', ctx: '确认按钮' },
+    ]
+  },
+  home: {
+    label: '主页',
+    file: 'Home.tsx',
+    items: [
+      { key: 'home_profile', orig: '档案', light: '名册', medium: '你是谁', heavy: '你觉得自己是谁？', ctx: '右上角按钮' },
+      { key: 'home_greeting', orig: '晚安,', light: '夜色好，', medium: '又见面了，', heavy: '又见面了。你还带着上次的疑问吗？', ctx: '顶部问候' },
+      { key: 'home_unsaved_title', orig: '未完成的会话', light: '未竟之谈', medium: '话到嘴边，还没说完', heavy: '有些话——没说出口的——还悬在半空', ctx: '恢复提示标题' },
+      { key: 'home_resume', orig: '继续', light: '续上', medium: '续上那句', heavy: '那句没说完的，捡起来', ctx: '恢复链接' },
+      { key: 'home_discard', orig: '丢弃', light: '放下', medium: '让它散去', heavy: '让它烂掉。有些开始就是为了放弃。', ctx: '丢弃链接' },
+      { key: 'home_start', orig: '开始新学习', light: '开一卷新问', medium: '今夜，想追问什么？', heavy: '你确定准备好了？好。那开始吧。', ctx: '主按钮' },
+      { key: 'home_rec_title', orig: '从已知推未知', light: '由旧知探新域', medium: '从你走过的路上，长出新的岔道', heavy: '你以为是终点的地方——其实是个岔路口', ctx: '推荐区块标题' },
+      { key: 'home_library', orig: '学习库', light: '藏书阁', medium: '你走过的路', heavy: '你走过的路。有些你已经忘了。', ctx: '右侧标题' },
+    ]
+  },
+  prestudy: {
+    label: '预学习弹窗',
+    file: 'PreStudyModal.tsx',
+    items: [
+      { key: 'ps_mode_progress', orig: '推进 · 苏格拉底式探索', light: '探问 · 循着光走进迷雾', medium: '探问 · <span class="highlight">你不知道你知道什么</span>', heavy: '探问 · <span class="highlight">"我知道我一无所知"——那你呢？</span>', ctx: '推进模式说明' },
+      { key: 'ps_mode_review', orig: '检测 · 掌握度复习', light: '回望 · 检视旧足迹', medium: '回望 · <span class="highlight">你以为你懂了，真的吗？</span>', heavy: '回望 · <span class="highlight">你以为你懂了。你真的懂了吗？</span>', ctx: '检测模式说明' },
+      { key: 'ps_topic_label', orig: '今夜想学', light: '今夜探问', medium: '今夜，什么在叩门？', heavy: '今夜，是什么在挠你的门？', ctx: '输入标签' },
+      { key: 'ps_topic_placeholder', orig: '主题或一个问题', light: '一个名字，或一个疑问', medium: '一个名字，或一句没法对别人说的话', heavy: '一个名字。或一句你不敢对任何人说的话。', ctx: '占位符' },
+      { key: 'ps_diff_label', orig: '难度', light: '锋刃', medium: '这道谜语的锋刃', heavy: '这道谜语准备割你多深？', ctx: '难度标签' },
+      { key: 'ps_diff_high', orig: '高', light: '利', medium: '割手', heavy: '见血', ctx: '难度选项' },
+      { key: 'ps_diff_mid', orig: '中', light: '钝', medium: '刚好', heavy: '见骨', ctx: '难度选项' },
+      { key: 'ps_diff_low', orig: '低', light: '温', medium: '温柔', heavy: '挠痒', ctx: '难度选项' },
+      { key: 'ps_temp_label', orig: '温度', light: '性情', medium: '陪你的人有多话痨', heavy: '你身边的人——多话？沉默？还是疯疯癫癫？', ctx: '温度标签' },
+      { key: 'ps_cancel', orig: '取消', light: '作罢', medium: '算了，灯还亮着', heavy: '怕了？灯还亮着，随时可以改变主意。', ctx: '取消按钮' },
+      { key: 'ps_start', orig: '开始', light: '启程', medium: '好，开始', heavy: '好。没有回头路了。', ctx: '开始按钮' },
+    ]
+  },
+  study: {
+    label: '学习页',
+    file: 'Study.tsx',
+    items: [
+      { key: 'st_back', orig: '返回', light: '回座', medium: '回座', heavy: '回座。椅子还暖着。', ctx: '返回按钮' },
+      { key: 'st_mode_progress', orig: '推进', light: '探问中', medium: '正在探问', heavy: '正在往黑里走', ctx: '模式指示器' },
+      { key: 'st_mode_review', orig: '检测', light: '回望中', medium: '正在回望', heavy: '正在回头看脚印', ctx: '模式指示器' },
+      { key: 'st_diff_high', orig: '高', light: '利', medium: '割手', heavy: '见血', ctx: '难度指示' },
+      { key: 'st_diff_mid', orig: '中', light: '钝', medium: '刚好', heavy: '见骨', ctx: '难度指示' },
+      { key: 'st_diff_low', orig: '低', light: '温', medium: '温柔', heavy: '挠痒', ctx: '难度指示' },
+      { key: 'st_temp_label', orig: 'T=', light: '性情=', medium: '性情=', heavy: '性情=', ctx: '温度标签' },
+      { key: 'st_retry', orig: '重试', light: '再来', medium: '再来一次', heavy: '再来。失败是肥料。', ctx: '重试按钮' },
+      { key: 'st_close', orig: '关闭', light: '收起', medium: '先不管了', heavy: '假装没看见。它不会自己消失。', ctx: '关闭按钮' },
+      { key: 'st_thinking', orig: '正在思考...', light: '沉吟中…', medium: '对方在整理思绪…', heavy: '对方在黑暗中整理思绪。等一等。你也该整理一下自己的。', ctx: '加载状态' },
+      { key: 'st_archive_ask', orig: 'AI 询问是否归档此次学习', light: '是否将此次探问封存？', medium: '要把这次顿悟封入琥珀吗？', heavy: '这次顿悟——要封入琥珀吗？还是让它随风散去？', ctx: '归档通知' },
+      { key: 'st_archive_no', orig: '暂不归档', light: '先不封存', medium: '先让它飘着', heavy: '让它飘着。有些记忆就该是液态的。', ctx: '暂不按钮' },
+      { key: 'st_archive_yes', orig: '归档此次学习', light: '封存记忆', medium: '封入琥珀', heavy: '封入琥珀。代价是：它从此不再生长。', ctx: '归档按钮' },
+    ]
+  },
+  'library-empty': {
+    label: '学习库 · 空状态',
+    file: 'StudyLibrary.tsx',
+    items: [
+      { key: 'lib_empty_title', orig: '你的星空还在等待', light: '星空尚空', medium: '星空是空的——但空也是一种形状', heavy: '星空是空的。但空——也是一种形状。你准备赋予它什么形状？', ctx: '空状态标题' },
+      { key: 'lib_empty_desc', orig: '开始第一次学习，点亮第一颗星', light: '点第一盏灯，开启第一次探问', medium: '点一盏灯。你不知道第一缕光会照出什么。', heavy: '点一盏灯。你不知道会照出什么——也许是宝藏，也许是镜子里的自己。', ctx: '空状态描述' },
+      { key: 'lib_empty_btn', orig: '开始第一次学习', light: '初探', medium: '第一次探问', heavy: '迈出第一步。路会在脚下形成。', ctx: '空状态按钮' },
+    ]
+  },
+  'library-pop': {
+    label: '学习库 · 有内容',
+    file: 'StudyLibrary.tsx',
+    items: [
+      { key: 'lib_tab_all', orig: '全部', light: '所有星群', medium: '全部星群', heavy: '全部星群——有些亮着，有些已经死了但光还在路上', ctx: '筛选标签' },
+      { key: 'lib_count_suffix', orig: '个 session', light: '章', medium: '章探问', heavy: '次探问——有些你甚至不记得问过', ctx: '计数后缀' },
+      { key: 'lib_session_prefix', orig: 's', light: '章', medium: '章', heavy: '章', ctx: 'session前缀' },
+      { key: 'lib_reviewed', orig: '✓ 已复习', light: '✓ 已回望', medium: '✓ 回望过', heavy: '✓ 回望过——但你确定记住了？', ctx: '状态徽章' },
+      { key: 'lib_unreviewed', orig: '✕ 未复习', light: '✕ 未回望', medium: '✕ 还没回望', heavy: '✕ 还没回望——它在等你，还是你在逃避它？', ctx: '状态徽章' },
+      { key: 'lib_report_btn', orig: '学习报告', light: '探问录', medium: '探问录', heavy: '探问录——你曾以为重要的', ctx: '文件按钮' },
+      { key: 'lib_fable_btn', orig: '寓言', light: '隐喻', medium: '隐喻', heavy: '隐喻——故事在说谎，但谎里有真', ctx: '文件按钮' },
+      { key: 'lib_image_btn', orig: '图片', light: '画', medium: '画', heavy: '画——一千个字的替代品', ctx: '文件按钮' },
+      { key: 'lib_review_report', orig: '复习报告', light: '回望录', medium: '回望录', heavy: '回望录——你变了，还是它变了？', ctx: '复习报告按钮' },
+      { key: 'lib_start_review', orig: '开始复习', light: '温故', medium: '温故知新', heavy: '温故。知新是副产品，不是目的。', ctx: '开始复习按钮' },
+      { key: 'lib_continue', orig: '继续学习（第', light: '续探（第', medium: '续写这一章（第', heavy: '续写这一章（第', ctx: '继续按钮前缀' },
+      { key: 'lib_continue_suffix', orig: '次）', light: '巡）', medium: '巡）', heavy: '巡）——你真的走完了吗？', ctx: '继续按钮后缀' },
+      { key: 'lib_delete_tooltip', orig: '删除 session', light: '抹去此章', medium: '抹去这一章', heavy: '抹去这一章。连同那个版本的自己。', ctx: '删除tooltip' },
+      { key: 'lib_prev_page', orig: '上一页', light: '往前', medium: '往前翻', heavy: '往回翻', ctx: '分页' },
+      { key: 'lib_next_page', orig: '下一页', light: '往后', medium: '往后翻', heavy: '往前翻', ctx: '分页' },
+      { key: 'lib_page_label', orig: '第 ', light: '第 ', medium: '第 ', heavy: '第 ', ctx: '分页标签前缀' },
+      { key: 'lib_page_suffix', orig: ' 页', light: ' 卷', medium: ' 卷', heavy: ' 卷', ctx: '分页标签后缀' },
+      { key: 'lib_del_title', orig: '删除 Session', light: '抹去此章', medium: '抹去这一章', heavy: '抹去这一章。连同它的重量、它的错误、它的偶然正确。', ctx: '对话框标题' },
+      { key: 'lib_del_confirm', orig: '彻底删除', light: '永诀', medium: '彻底抹去', heavy: '彻底抹去。像从未发生过。', ctx: '确认按钮' },
+      { key: 'lib_del_body', orig: '即将彻底删除 ', light: '此章将归于虚无…', medium: '这一章将归于虚无。连同它的重量一起。', heavy: '这一章将归于虚无。连同那个在写它时——比现在更天真、更勇敢、更愚蠢——的你。', ctx: '对话框正文' },
+      { key: 'lib_del_files', orig: '以下文件将被永久删除', light: '连带这些痕迹也将消散', medium: '这些痕迹也将消散——像从未存在过', heavy: '这些痕迹也将消散。但有些消散，比存在更真实。', ctx: '文件列表说明' },
+      { key: 'lib_del_warning', orig: '此操作不可撤销', light: '时间无法倒流', medium: '时间是一条单行道', heavy: '时间是一条单行道。没有后悔药。没有存档点。', ctx: '警告' },
+    ]
+  },
+  'archive-loading': {
+    label: '归档加载',
+    file: 'ArchiveLoadingOverlay.tsx',
+    items: [
+      { key: 'al_title', orig: '正在凝结记忆…', light: '正在封存…', medium: '正在把散落的碎片压入琥珀…', heavy: '正在把散落的碎片压入琥珀……有些碎片会挣扎。', ctx: '加载标题' },
+      { key: 'al_desc', orig: 'AI 正在整理此次学习的笔记', light: '正在将散落的思绪编入卷册', medium: '有人在替你整理这一夜的碎片。等一等。', heavy: '有人在替你整理这一夜的碎片。等一等。你也该问问自己——哪些碎片其实不该被保存？', ctx: '加载描述' },
+    ]
+  },
+  'archive-report': {
+    label: '归档报告',
+    file: 'ArchiveReportModal.tsx',
+    items: [
+      { key: 'ar_close', orig: '关闭', light: '收起', medium: '合上书', heavy: '合上书。但书里的字还在你脑子里。', ctx: '关闭按钮' },
+      { key: 'ar_doc_progress', orig: '学习报告', light: '探问录', medium: '探问录', heavy: '探问录——你曾以为重要的', ctx: '文档类型' },
+      { key: 'ar_doc_review', orig: '复习报告', light: '回望录', medium: '回望录', heavy: '回望录——你变了，还是它变了？', ctx: '文档类型' },
+      { key: 'ar_end_btn', orig: '本次学习结束', light: '此章已毕', medium: '这一章写完了。但它还在你身上。', heavy: '这一章写完了。但它还在你身上——以你不知道的方式。', ctx: '底部按钮' },
+    ]
+  },
+  'confirm-dialog': {
+    label: '确认对话框',
+    file: 'ConfirmDialog.tsx',
+    items: [
+      { key: 'cd_cancel', orig: '取消', light: '作罢', medium: '算了', heavy: '算了。有些决定，不做也是一种决定。', ctx: '普通取消' },
+      { key: 'cd_rethink', orig: '再想想', light: '且慢', medium: '等等，再想想', heavy: '等等。你的心在跳。听一听。', ctx: '危险取消' },
+    ]
+  },
+  profile: {
+    label: '档案页',
+    file: 'Profile.tsx',
+    items: [
+      { key: 'pf_title', orig: '个人档案', light: '学者像', medium: '你的侧影', heavy: '你是谁？——别急着回答，答案会变。', ctx: '页面标题' },
+      { key: 'pf_back', orig: '返回', light: '回座', medium: '回座', heavy: '回座。椅子还暖着。', ctx: '返回按钮' },
+      { key: 'pf_name', orig: '姓名', light: '名', medium: '怎么称呼你', heavy: '他们怎么称呼你？——或者，你怎么称呼自己？', ctx: '姓名标签' },
+      { key: 'pf_portrait', orig: '画像', light: '侧影', medium: '你觉得自己是谁', heavy: '你觉得自己长什么样？——不是镜子里的。', ctx: '画像标签' },
+      { key: 'pf_empty', orig: '(空)', light: '(空白)', medium: '(还没写)', heavy: '(一片空白——有时候空白比满更诚实)', ctx: '空值' },
+      { key: 'pf_topics', orig: '偏好领域', light: '涉猎之域', medium: '你常走的路', heavy: '你总在哪些地方徘徊？', ctx: '偏好领域标签' },
+      { key: 'pf_difficulty', orig: '默认难度', light: '惯常锋刃', medium: '惯常的锋刃', heavy: '你习惯被割多深？', ctx: '难度标签' },
+      { key: 'pf_temperature', orig: '默认温度', light: '惯常性情', medium: '惯常的性情', heavy: '你身边的声音——多吵？', ctx: '温度标签' },
+      { key: 'pf_edit', orig: '编辑', light: '修像', medium: '改一改', heavy: '重写。你现在不是那时候的你了。', ctx: '编辑按钮' },
+      { key: 'pf_edit_title', orig: '编辑档案', light: '修绘学者像', medium: '重绘你的轮廓', heavy: '重绘你的轮廓。旧的线条不用擦。', ctx: '编辑页标题' },
+      { key: 'pf_portrait_hint', orig: '画像(自由文本)', light: '侧影（任意描述）', medium: '侧影（随便写，不会评判你）', heavy: '侧影（随便写。不会评判你。这里没有人。）', ctx: '画像输入标签' },
+      { key: 'pf_topics_hint', orig: '偏好领域(用 、 或 , 分隔)', light: '涉猎之域（顿号或逗号分隔）', medium: '常走的路（顿号或逗号隔开）', heavy: '常走的路（顿号或逗号隔开——路本来就没有标点）', ctx: '领域输入标签' },
+      { key: 'pf_save', orig: '保存', light: '落印', medium: '落印', heavy: '落印。从此你就是这个人了——直到你改。', ctx: '保存按钮' },
+      { key: 'pf_cancel', orig: '取消', light: '作罢', medium: '算了', heavy: '算了。现在的你也挺好。', ctx: '取消按钮' },
+    ]
+  },
+  'review-flash': {
+    label: '复习闪动',
+    file: 'ReviewFlash.tsx',
+    items: [
+      { key: 'rf_title', orig: '重温这颗星', light: '再望这颗星', medium: '再望一眼这颗星——它还亮着吗？', heavy: '再望一眼这颗星——它还亮着吗？还是只是你以为它还亮着？', ctx: '闪动标题' },
+    ]
+  },
+  'report-sections': {
+    label: '报告区块标题',
+    file: 'md/components.tsx',
+    items: [
+      { key: 'rs_concept', orig: '核心概念', light: '枢纽概念', medium: '枢纽——一切绕它转', heavy: '枢纽——一切绕它转。但你真的知道它在哪吗？', ctx: '报告区块' },
+      { key: 'rs_record', orig: '学习记录', light: '探问轨迹', medium: '来时的路', heavy: '来时的路——有些脚印是你自己的，有些是别人替你踩的', ctx: '报告区块' },
+      { key: 'rs_points', orig: '学习要点', light: '所得碎片', medium: '捡到的碎片', heavy: '捡到的碎片——有些闪闪发光，有些是玻璃', ctx: '报告区块' },
+      { key: 'rs_gaps', orig: '认知缺口', light: '盲区图谱', medium: '光还没照到的地方', heavy: '光还没照到的地方——也是你最害怕看的地方', ctx: '报告区块' },
+      { key: 'rs_test', orig: '掌握检验', light: '试金石', medium: '试金石——你真的懂了吗？', heavy: '试金石——你真的懂了，还是只懂了"懂"的感觉？', ctx: '报告区块' },
+      { key: 'rs_future', orig: '未来发展建议', light: '前路微光', medium: '前面的路，有点微光', heavy: '前面的路，有点微光——但微光也可能是陷阱', ctx: '报告区块' },
+      { key: 'rs_insight', orig: '洞见', light: '顿悟', medium: '突然看清楚的瞬间', heavy: '突然看清楚的瞬间——但看清楚之后，你还能假装没看过吗？', ctx: '报告区块' },
+      { key: 'rs_code', orig: '代码示例', light: '符咒实例', medium: '符咒的写法', heavy: '符咒的写法——写错了会爆炸，写对了也不保证安全', ctx: '报告区块' },
+      { key: 'rs_diagnosis', orig: '诊断阶段', light: '探查阶段', medium: '先看清伤口', heavy: '先看清伤口。有些伤口在表面，有些在骨头里。', ctx: '报告区块' },
+      { key: 'rs_learning', orig: '学习阶段', light: '跋涉阶段', medium: '然后一步一步走', heavy: '然后一步一步走。没有捷径。有捷径也是陷阱。', ctx: '报告区块' },
+      { key: 'rs_symptom', orig: '症状描述', light: '征象素描', medium: '你感觉到了什么', heavy: '你感觉到了什么？——感觉也会说谎。', ctx: '报告区块' },
+      { key: 'rs_mechanism', orig: '关键机制', light: '核心机关', medium: '齿轮是怎么咬合的', heavy: '齿轮是怎么咬合的——但齿轮不知道自己在转', ctx: '报告区块' },
+      { key: 'rs_contradiction', orig: '矛盾点', light: '裂隙', medium: '这里说不通——但说不通很重要', heavy: '这里说不通——但说不通的地方，往往藏着真东西', ctx: '报告区块' },
+      { key: 'rs_effective', orig: '有效元素', light: '有效质料', medium: '真正起作用的东西', heavy: '真正起作用的东西——往往不是你以为起作用的那个', ctx: '报告区块' },
+      { key: 'rs_pending', orig: '待判断的问题', light: '悬而未决', medium: '还悬在半空的', heavy: '还悬在半空的——有些问题，没有答案就是答案', ctx: '报告区块' },
+      { key: 'rs_end', orig: '结束', light: '收束', medium: '先到这里', heavy: '先到这里。不是终点，只是歇脚。', ctx: '报告区块' },
+      { key: 'rs_fable', orig: '这个寓言真正讲的概念', light: '隐喻之下', medium: '故事的背面藏着什么', heavy: '故事的背面藏着什么？——故事不说谎，但讲故事的人会。', ctx: '报告区块' },
+      { key: 'rs_user', orig: '用户', light: '问者', medium: '问的人', heavy: '问的人——也是正在迷路的人', ctx: '对话角色' },
+    ]
+  },
+  'report-header': {
+    label: '报告头部',
+    file: 'md/ReportHeader.tsx',
+    items: [
+      { key: 'rh_type_progress', orig: '学习报告', light: '探问录', medium: '探问录', heavy: '探问录', ctx: '类型徽章' },
+      { key: 'rh_type_review', orig: '复习报告', light: '回望录', medium: '回望录', heavy: '回望录', ctx: '类型徽章' },
+      { key: 'rh_type_research', orig: '研究报告', light: '研思录', medium: '研思录', heavy: '研思录', ctx: '类型徽章' },
+      { key: 'rh_type_fable', orig: '寓言', light: '隐喻', medium: '隐喻', heavy: '隐喻', ctx: '类型徽章' },
+      { key: 'rh_type_raw', orig: '原始对话', light: '原声', medium: '原声', heavy: '原声', ctx: '类型徽章' },
+      { key: 'rh_diff_high', orig: '高难度', light: '利刃', medium: '会割伤', heavy: '会流血', ctx: '难度徽章' },
+      { key: 'rh_diff_mid', orig: '中等难度', light: '钝刃', medium: '刚好', heavy: '会疼', ctx: '难度徽章' },
+      { key: 'rh_diff_low', orig: '入门', light: '温刃', medium: '很温柔', heavy: '只是痒', ctx: '难度徽章' },
+      { key: 'rh_session', orig: 'Session #', light: '第 # 章', medium: '第 # 章', heavy: '第 # 章——这一章的你，和上一章不一样', ctx: '元数据' },
+      { key: 'rh_review_count', orig: '第 x 次复习', light: '第 x 次回望', medium: '第 x 次回望', heavy: '第 x 次回望——每次回望，看到的都是不同的东西', ctx: '元数据' },
+      { key: 'rh_source', orig: '来源主题', light: '缘起', medium: '从哪条路来的', heavy: '从哪条路来的——路不是直的，是绕的', ctx: '来源标签' },
+    ]
+  },
+  chatinput: {
+    label: '聊天输入',
+    file: 'ChatInput.tsx',
+    items: [
+      { key: 'ci_placeholder', orig: 'Enter 发送 / Shift+Enter 换行', light: 'Enter 掷出 / Shift+Enter 另起一行', medium: 'Enter 掷出这句话 / Shift+Enter 另起一行', heavy: 'Enter 把这句话掷出去 / Shift+Enter 喘口气，另起一行', ctx: '占位符' },
+      { key: 'ci_send', orig: '发送', light: '掷出', medium: '掷出', heavy: '掷出去。说出去的话，泼出去的水。', ctx: '发送按钮' },
+    ]
+  },
+  misc: {
+    label: '杂项',
+    file: 'Various',
+    items: [
+      { key: 'misc_swap', orig: '换一幅画', light: '换一幅', medium: '换一幅', heavy: '换一幅。墙上挂太久的画，会变成墙的一部分。', ctx: '换画按钮' },
+      { key: 'misc_topic_prefix', orig: '今夜想学:', light: '今夜探问：', medium: '今夜探问的是：', heavy: '今夜，什么在挠你的门？说出来，或者让它继续挠。', ctx: '消息前缀' },
+      { key: 'misc_raw_header', orig: '# 原始对话', light: '# 原声记录', medium: '# 原声记录', heavy: '# 原声——这些话，当时说的时候不知道自己在说什么', ctx: '归档内容头' },
+      { key: 'misc_toast_archived', orig: '》已归档', light: '》已封存', medium: '》已封存', heavy: '》已封存。它不再生长了。但你可以再打开它。', ctx: '归档Toast' },
+      { key: 'misc_review_fallback', orig: '（本次复习未发现明显知识缺口）', light: '（此次回望，未见明显盲区）', medium: '（此次回望，未见明显盲区——也许盲区盲到连自己都没发现）', heavy: '（此次回望，未见明显盲区——但这本身可能就是最大的盲区。你不知道你不知道。）', ctx: '复习回退' },
+    ]
+  }
+};
+
+// ==================== STATE ====================
+// selections: { key: 'light' | 'medium' | 'heavy' | 'original' }
+// rethinks: Set<string>
+let selections = {};
+let rethinks = new Set();
+let currentScene = null;
+
+// Load from localStorage
+const savedSel = localStorage.getItem('text-review-selections-v2');
+const savedRethink = localStorage.getItem('text-review-rethinks-v2');
+if (savedSel) { try { selections = JSON.parse(savedSel); } catch(e) {} }
+if (savedRethink) { try { rethinks = new Set(JSON.parse(savedRethink)); } catch(e) {} }
+
+function saveState() {
+  localStorage.setItem('text-review-selections-v2', JSON.stringify(selections));
+  localStorage.setItem('text-review-rethinks-v2', JSON.stringify([...rethinks]));
+  updateProgress();
+}
+
+function getItem(key) {
+  for (const sceneId in DATA) {
+    const item = DATA[sceneId].items.find(i => i.key === key);
+    if (item) return item;
+  }
+  return null;
+}
+
+function getText(key, tier) {
+  const item = getItem(key);
+  if (!item) return '';
+  if (tier === 'light') return item.light;
+  if (tier === 'medium') return item.medium;
+  if (tier === 'heavy') return item.heavy;
+  return item.orig;
+}
+
+function getState(key) {
+  if (rethinks.has(key)) return 'rethink';
+  if (selections[key]) return 'done';
+  return 'none';
+}
+
+function R(key, tag = 'span') {
+  const item = getItem(key);
+  if (!item) return '';
+  const state = getState(key);
+  const tier = selections[key];
+  const text = state === 'done' ? getText(key, tier) : (state === 'rethink' ? item.orig + ' ✦' : item.orig);
+  const cls = state === 'done' ? 'rw-text is-done' : (state === 'rethink' ? 'rw-text is-rethink' : 'rw-text');
+  return `<${tag} class="${cls}" data-key="${key}" onclick="openPicker('${key}')">${text}</${tag}>`;
+}
+
+// ==================== RENDER SCENES ====================
+const RENDERS = {
+  cover() {
+    return `
+      <div class="scene-frame scene-cover">
+        <div class="vignette"></div>
+        <div class="content">
+          <div class="greeting">${R('cover_greeting')}学者。</div>
+          <button class="btn-primary">${R('cover_start')}</button>
+        </div>
+      </div>
+      <div style="margin-top:16px;color:var(--parchment-faint);font-size:12px;text-align:center;">
+        点击高亮文字选择方案，或标记"再想想"
+      </div>
+    `;
+  },
+
+  cover_new() {
+    return `
+      <div class="scene-frame scene-cover">
+        <div class="vignette"></div>
+        <div class="content">
+          <div class="hint">${R('cover_name_hint')}</div>
+          <input type="text" placeholder="..." />
+          <button class="btn-primary">${R('cover_enter')}</button>
+        </div>
+      </div>
+      <div style="margin-top:16px;color:var(--parchment-faint);font-size:12px;text-align:center;">
+        新用户状态的封面
+      </div>
+    `;
+  },
+
+  home() {
+    return `
+      <div class="scene-frame scene-home">
+        <div class="top-right">
+          <button class="btn-ghost">${R('home_profile')}</button>
+        </div>
+        <div class="greeting">${R('home_greeting')}学者</div>
+        <div class="columns">
+          <div class="col-left">
+            <div class="unsaved-box">
+              <div class="label">${R('home_unsaved_title')}</div>
+              <div style="font-size:12px;margin-bottom:6px;">关于递归的认知缺口</div>
+              <div class="actions">
+                <a href="#">${R('home_resume')}</a>
+                <a href="#" class="muted">${R('home_discard')}</a>
+              </div>
+            </div>
+            <button class="btn-primary" style="width:100%;padding:14px;font-size:15px;">${R('home_start')}</button>
+            <div class="rec-header">
+              <span>${R('home_rec_title')}</span>
+              <span style="font-size:10px;color:var(--parchment-faint);">切换</span>
+            </div>
+            <div class="rec-card">
+              <div style="font-size:11px;color:var(--parchment-faint);margin-bottom:6px;">从"波兰尼"出发</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <span style="padding:3px 8px;border:1px solid var(--slate-dim);border-radius:3px;font-size:11px;">隐性知识 vs 显性知识</span>
+                <span style="padding:3px 8px;border:1px solid var(--slate-dim);border-radius:3px;font-size:11px;">认知学徒制</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-right">
+            <div class="label">${R('home_library')}</div>
+            <div class="topic-item">
+              <div class="bar"></div>
+              <span class="title">递归与认知科学</span>
+              <span class="meta">3 个 session · 2 天前</span>
+            </div>
+            <div class="topic-item">
+              <div class="bar" style="background:#8a7a6a;"></div>
+              <span class="title">波兰尼的默会知识</span>
+              <span class="meta">2 个 session · 5 天前</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  prestudy() {
+    return `
+      <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
+        <div class="scene-frame scene-prestudy">
+          <div class="mode-label">${R('ps_mode_progress')}</div>
+          <div class="field">
+            <div class="field-label">${R('ps_topic_label')}</div>
+            <input type="text" placeholder="${getItem('ps_topic_placeholder').orig}" />
+          </div>
+          <div class="field">
+            <div class="field-label">${R('ps_diff_label')}</div>
+            <div class="opts">
+              <button class="opt-btn active">${R('ps_diff_high')}</button>
+              <button class="opt-btn">${R('ps_diff_mid')}</button>
+              <button class="opt-btn">${R('ps_diff_low')}</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">${R('ps_temp_label')}</div>
+            <div class="opts">
+              <button class="opt-btn">0.3</button>
+              <button class="opt-btn active">0.7</button>
+              <button class="opt-btn">1.0</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost">${R('ps_cancel')}</button>
+            <button class="btn-primary">${R('ps_start')}</button>
+          </div>
+        </div>
+        <div class="scene-frame scene-prestudy">
+          <div class="mode-label">${R('ps_mode_review')}</div>
+          <div style="font-size:16px;font-family:'Noto Serif SC',serif;margin-bottom:16px;">递归与认知科学</div>
+          <div class="field">
+            <div class="field-label">${R('ps_diff_label')}</div>
+            <div class="opts">
+              <button class="opt-btn">${R('ps_diff_high')}</button>
+              <button class="opt-btn active">${R('ps_diff_mid')}</button>
+              <button class="opt-btn">${R('ps_diff_low')}</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost">${R('ps_cancel')}</button>
+            <button class="btn-primary">${R('ps_start')}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  study() {
+    return `
+      <div class="scene-frame scene-study">
+        <header>
+          <span class="back-btn">&larr;</span>
+          <span class="topic-title">递归与认知科学</span>
+          <span class="meta">${R('st_mode_progress')} &middot; ${R('st_diff_high')} &middot; ${R('st_temp_label')}0.7</span>
+        </header>
+        <div class="chat-area">
+          <div class="chat-bubble user">我想理解递归为什么对人类认知这么困难</div>
+          <div class="chat-bubble ai">
+            这是个好问题。在深入之前，我想先了解——当你听到"递归"这个词时，你脑子里首先出现的是什么？
+          </div>
+          <div class="chat-bubble user">函数调用自己？俄罗斯套娃？</div>
+          <div class="thinking">
+            <div class="spinner" style="width:14px;height:14px;border-width:1.5px;"></div>
+            ${R('st_thinking')}
+          </div>
+        </div>
+        <div class="archive-bar">
+          <span>${R('st_archive_ask')}</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-ghost">${R('st_archive_no')}</button>
+            <button class="btn-primary">${R('st_archive_yes')}</button>
+          </div>
+        </div>
+        <div class="input-area">
+          <textarea placeholder="${getItem('ci_placeholder').orig}"></textarea>
+          <button class="btn-primary">${R('ci_send')}</button>
+        </div>
+      </div>
+    `;
+  },
+
+  'library-empty'() {
+    return `
+      <div class="scene-frame scene-lib-empty">
+        <div class="stars"></div>
+        <p style="font-size:18px;color:var(--parchment-dim);font-style:italic;margin-bottom:8px;font-family:'Noto Serif SC',serif;">${R('lib_empty_title')}</p>
+        <p style="font-size:13px;color:var(--parchment-faint);margin-bottom:20px;">${R('lib_empty_desc')}</p>
+        <button class="btn-primary" style="background:rgba(217,119,87,0.1);border:1px solid rgba(217,119,87,0.2);color:var(--ember);">${R('lib_empty_btn')}</button>
+      </div>
+    `;
+  },
+
+  'library-pop'() {
+    return `
+      <div class="scene-frame scene-lib-pop">
+        <div class="tabs">
+          <button class="tab active">${R('lib_tab_all')}</button>
+          <button class="tab">认知科学</button>
+          <button class="tab">编程</button>
+        </div>
+        <div class="topic-row">
+          <div class="bar"></div>
+          <span class="title">递归与认知科学</span>
+          <span class="meta">3 ${R('lib_count_suffix')} &middot; 2 天前</span>
+        </div>
+        <div style="padding-left:16px;margin-bottom:8px;">
+          <div class="session-row">
+            <span style="color:var(--parchment-faint);">${R('lib_session_prefix')}1</span>
+            <span style="color:var(--parchment-faint);">2026.05.28</span>
+            <span class="badge reviewed">${R('lib_reviewed')}</span>
+            <div style="flex:1;"></div>
+            <button class="file-btn">${R('lib_report_btn')}</button>
+            <button class="file-btn">${R('lib_fable_btn')}</button>
+            <button class="file-btn emphasis">${R('lib_review_report')}</button>
+            <button style="width:16px;text-align:center;color:var(--wine);font-size:11px;background:transparent;border:none;">&times;</button>
+          </div>
+          <div class="session-row">
+            <span style="color:var(--parchment-faint);">${R('lib_session_prefix')}2</span>
+            <span style="color:var(--parchment-faint);">2026.05.29</span>
+            <span class="badge unreviewed">${R('lib_unreviewed')}</span>
+            <div style="flex:1;"></div>
+            <button class="file-btn">${R('lib_report_btn')}</button>
+            <button class="file-btn emphasis">${R('lib_start_review')}</button>
+            <button style="width:16px;text-align:center;color:var(--wine);font-size:11px;background:transparent;border:none;">&times;</button>
+          </div>
+        </div>
+        <div class="topic-row">
+          <div class="bar" style="background:#8a7a6a;"></div>
+          <span class="title">波兰尼的默会知识</span>
+          <span class="meta">2 ${R('lib_count_suffix')} &middot; 5 天前</span>
+        </div>
+        <div class="page-bar">
+          <span>&larr;</span>
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ember);"></span>
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--slate-dim);"></span>
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--slate-dim);"></span>
+          <span>&rarr;</span>
+        </div>
+      </div>
+    `;
+  },
+
+  'archive-loading'() {
+    return `
+      <div class="scene-frame scene-arch-load">
+        <div class="spinner"></div>
+        <div class="title">${R('al_title')}</div>
+        <div class="desc">${R('al_desc')}</div>
+        <div class="bar"><div class="bar-fill"></div></div>
+      </div>
+    `;
+  },
+
+  'archive-report'() {
+    return `
+      <div class="scene-frame scene-arch-report">
+        <div class="r-header">
+          <div class="title">《递归与认知科学》&mdash; ${R('ar_doc_progress')}</div>
+          <span class="close">&times;</span>
+        </div>
+        <div class="r-body">
+          <div class="badge-row">
+            <span class="badge type">${R('rh_type_progress')}</span>
+            <span class="badge diff">${R('rh_diff_high')}</span>
+          </div>
+          <div class="meta-line">${R('rh_session')}1 &middot; 2026.05.28</div>
+          <h2>${R('rs_concept')}</h2>
+          <p>递归是一种自我调用的结构，它在数学、语言学和计算机科学中都有核心地位。人类理解递归的能力与工作记忆的层级处理密切相关。</p>
+          <h2>${R('rs_gaps')}</h2>
+          <p>用户将递归类比为"俄罗斯套娃"，这是一种空间隐喻，但递归的时间维度（调用栈的展开与收缩）尚未被触及。</p>
+          <h2>${R('rs_test')}</h2>
+          <p>如果让你向一个从未学过编程的人解释递归，你会选择哪个类比？为什么？</p>
+        </div>
+        <div class="r-footer">
+          <button class="btn-primary">${R('ar_end_btn')}</button>
+        </div>
+      </div>
+    `;
+  },
+
+  'confirm-dialog'() {
+    return `
+      <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
+        <div class="scene-frame scene-confirm">
+          <div class="icon">&#x1F5D1;</div>
+          <h3>${R('lib_del_title')}</h3>
+          <div class="body">
+            ${R('lib_del_body')}<strong style="color:var(--parchment);">递归与认知科学 / s1</strong>。<br><br>
+            ${R('lib_del_files')}：<br>
+            <span style="color:var(--parchment-faint);">探问录.md &middot; 原声记录.md</span><br><br>
+            <span style="color:var(--wine);font-weight:500;">${R('lib_del_warning')}</span>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost">${R('cd_rethink')}</button>
+            <button class="btn-danger">${R('lib_del_confirm')}</button>
+          </div>
+        </div>
+        <div class="scene-frame scene-confirm">
+          <div class="icon">&#x26A0;</div>
+          <h3>放弃未保存的会话</h3>
+          <div class="body">
+            即将放弃关于"递归的认知缺口"的未保存会话。<br><br>
+            <span style="color:var(--wine);font-weight:500;">${R('lib_del_warning')}</span>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost">${R('cd_cancel')}</button>
+            <button class="btn-primary">确认放弃</button>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  profile() {
+    return `
+      <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
+        <div class="scene-frame scene-profile">
+          <div class="p-header">
+            <h2>${R('pf_title')}</h2>
+            <button class="btn-ghost">${R('pf_back')}</button>
+          </div>
+          <div class="panel">
+            <div class="field-row"><span class="label">${R('pf_name')}</span>学者</div>
+            <div class="field-row"><span class="label">${R('pf_portrait')}</span>${R('pf_empty')}</div>
+            <div class="field-row"><span class="label">${R('pf_topics')}</span>认知科学 &middot; 编程 &middot; 哲学</div>
+            <div class="field-row"><span class="label">${R('pf_difficulty')}</span>high</div>
+            <div class="field-row"><span class="label">${R('pf_temperature')}</span>0.7</div>
+          </div>
+          <button class="btn-primary">${R('pf_edit')}</button>
+        </div>
+        <div class="scene-frame scene-profile">
+          <h2 style="font-family:'Noto Serif SC',serif;font-size:20px;margin-bottom:20px;">${R('pf_edit_title')}</h2>
+          <div class="field">
+            <div class="label">${R('pf_name')}</div>
+            <input type="text" value="学者" />
+          </div>
+          <div class="field">
+            <div class="label">${R('pf_portrait_hint')}</div>
+            <textarea rows="3"></textarea>
+          </div>
+          <div class="field">
+            <div class="label">${R('pf_topics_hint')}</div>
+            <input type="text" value="认知科学、编程、哲学" />
+          </div>
+          <div class="field">
+            <div class="label">${R('pf_difficulty')}</div>
+            <div class="opts-row">
+              <button class="opt-btn active">high</button>
+              <button class="opt-btn">mid</button>
+              <button class="opt-btn">low</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="label">${R('pf_temperature')}</div>
+            <div class="opts-row">
+              <button class="opt-btn">0.3</button>
+              <button class="opt-btn active">0.7</button>
+              <button class="opt-btn">1.0</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn-primary">${R('pf_save')}</button>
+            <button class="btn-ghost">${R('pf_cancel')}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  'review-flash'() {
+    return `
+      <div class="scene-frame scene-review">
+        <div class="star"></div>
+        <div class="title">${R('rf_title')}</div>
+        <div class="sub">递归与认知科学 &middot; 2026.05.28</div>
+      </div>
+    `;
+  },
+
+  'report-sections'() {
+    const sections = [
+      'rs_concept', 'rs_record', 'rs_points', 'rs_gaps', 'rs_test',
+      'rs_future', 'rs_insight', 'rs_code', 'rs_diagnosis', 'rs_learning',
+      'rs_symptom', 'rs_mechanism', 'rs_contradiction', 'rs_effective',
+      'rs_pending', 'rs_end', 'rs_fable', 'rs_user'
+    ];
+    return `
+      <div class="scene-frame scene-report">
+        <div class="badge-row">
+          <span class="badge type">${R('rh_type_progress')}</span>
+          <span class="badge diff">${R('rh_diff_high')}</span>
+        </div>
+        <div class="meta-line">${R('rh_session')}1 &middot; 2026.05.28 &middot; ${R('rh_source')}：递归与认知科学</div>
+        ${sections.map(k => `<h2>${R(k)}</h2><p style="color:var(--parchment-dim);font-size:12px;">（区块内容预览）</p>`).join('')}
+      </div>
+    `;
+  },
+
+  'report-header'() {
+    return `
+      <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+        <div class="scene-frame" style="padding:24px;width:200px;">
+          <div style="font-size:12px;color:var(--parchment-faint);margin-bottom:12px;">类型徽章</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <span class="badge type">${R('rh_type_progress')}</span>
+            <span class="badge type">${R('rh_type_review')}</span>
+            <span class="badge type">${R('rh_type_research')}</span>
+            <span class="badge type">${R('rh_type_fable')}</span>
+            <span class="badge type">${R('rh_type_raw')}</span>
+          </div>
+        </div>
+        <div class="scene-frame" style="padding:24px;width:200px;">
+          <div style="font-size:12px;color:var(--parchment-faint);margin-bottom:12px;">难度徽章</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <span class="badge diff">${R('rh_diff_high')}</span>
+            <span class="badge diff">${R('rh_diff_mid')}</span>
+            <span class="badge diff">${R('rh_diff_low')}</span>
+          </div>
+        </div>
+        <div class="scene-frame" style="padding:24px;width:280px;">
+          <div style="font-size:12px;color:var(--parchment-faint);margin-bottom:12px;">元数据</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+            <div>${R('rh_session')}1</div>
+            <div>${R('rh_review_count').replace('x', '2')}</div>
+            <div>${R('rh_source')}：递归与认知科学</div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  chatinput() {
+    return `
+      <div class="scene-frame" style="padding:20px;width:500px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;">
+          <textarea style="flex:1;background:rgba(42,31,26,0.6);border:1px solid rgba(58,90,106,0.3);border-radius:4px;padding:8px 10px;color:var(--parchment);font-size:13px;resize:none;height:44px;font-family:inherit;" placeholder="${getItem('ci_placeholder').orig}"></textarea>
+          <button class="btn-primary">${R('ci_send')}</button>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--parchment-faint);">
+          占位符：${R('ci_placeholder')}
+        </div>
+      </div>
+    `;
+  },
+
+  misc() {
+    return `
+      <div class="scene-frame" style="padding:24px;width:480px;">
+        <div style="display:flex;flex-direction:column;gap:14px;font-size:13px;">
+          <div><span style="color:var(--parchment-faint);min-width:100px;display:inline-block;">换画按钮</span>${R('misc_swap')}</div>
+          <div><span style="color:var(--parchment-faint);min-width:100px;display:inline-block;">消息前缀</span>${R('misc_topic_prefix')}</div>
+          <div><span style="color:var(--parchment-faint);min-width:100px;display:inline-block;">归档头</span>${R('misc_raw_header')}</div>
+          <div><span style="color:var(--parchment-faint);min-width:100px;display:inline-block;">归档提示</span>《递归与认知科学》${R('misc_toast_archived')}</div>
+          <div><span style="color:var(--parchment-faint);min-width:100px;display:inline-block;">复习回退</span>${R('misc_review_fallback')}</div>
+        </div>
+      </div>
+    `;
+  }
+};
+
+// ==================== NAVIGATION ====================
+const SCENE_ORDER = [
+  'cover', 'home', 'prestudy', 'study',
+  'library-empty', 'library-pop',
+  'archive-loading', 'archive-report', 'confirm-dialog',
+  'profile', 'review-flash',
+  'report-header', 'report-sections',
+  'chatinput', 'misc'
+];
+
+function sceneStats(sceneId) {
+  const items = DATA[sceneId].items;
+  let done = 0, rethink = 0;
+  for (const i of items) {
+    if (rethinks.has(i.key)) rethink++;
+    else if (selections[i.key]) done++;
+  }
+  return { done, rethink, total: items.length };
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebar');
+  let html = '<div class="sidebar-section">界面场景</div>';
+  for (const id of SCENE_ORDER) {
+    const scene = DATA[id];
+    if (!scene) continue;
+    const s = sceneStats(id);
+    const allDone = s.done === s.total;
+    const active = currentScene === id ? 'active' : '';
+    html += `
+      <div class="nav-item ${active}" onclick="switchScene('${id}')">
+        ${scene.label}
+        ${allDone
+          ? '<span class="badge-done">&#10003;</span>'
+          : `<span class="counts"><span class="d">${s.done}</span><span class="t">/</span><span class="r">${s.rethink}</span><span class="t">/${s.total}</span></span>`
+        }
+      </div>
+    `;
+  }
+  el.innerHTML = html;
+}
+
+function switchScene(id) {
+  currentScene = id;
+  const scene = DATA[id];
+  document.getElementById('scene-label').innerHTML = `
+    <span>${scene.label}</span>
+    <span class="file">${scene.file}</span>
+  `;
+  document.getElementById('scene-container').innerHTML = RENDERS[id]();
+  renderSidebar();
+}
+
+// ==================== PICKER ====================
+let currentPickerKey = null;
+
+function openPicker(key) {
+  const item = getItem(key);
+  if (!item) return;
+  currentPickerKey = key;
+  const picker = document.getElementById('picker');
+  document.getElementById('picker-orig').textContent = item.orig;
+
+  const state = getState(key);
+
+  const tiers = [
+    { id: 'light', tag: '轻量', tagClass: 'tier-light', text: item.light },
+    { id: 'medium', tag: '中量', tagClass: 'tier-medium', text: item.medium },
+    { id: 'heavy', tag: '重量', tagClass: 'tier-heavy', text: item.heavy },
+  ];
+
+  let html = '<div class="picker-section-label">选择一套方案</div>';
+  for (const t of tiers) {
+    const selected = state === 'done' && selections[key] === t.id ? 'selected' : '';
+    html += `
+      <div class="picker-option ${selected}" onclick="selectTier('${key}', '${t.id}')">
+        <span class="tier-tag ${t.tagClass}">${t.tag}</span>
+        <div class="text">${t.text}</div>
+      </div>
+    `;
+  }
+
+  const origSelected = state === 'none' ? 'selected' : '';
+  html += `
+    <div class="picker-option ${origSelected}" onclick="selectTier('${key}', 'original')">
+      <span class="tier-tag tier-original">原样</span>
+      <div class="text" style="color:var(--parchment-faint);">${item.orig}</div>
+    </div>
+  `;
+
+  document.getElementById('picker-body').innerHTML = html;
+
+  // Rethink section
+  const isRethink = state === 'rethink';
+  document.getElementById('picker-rethink').innerHTML = `
+    <button class="${isRethink ? 'selected' : ''}" onclick="toggleRethink('${key}')">
+      ${isRethink ? '✦ 已标记"再想想"' : '✦ 再想想 — 这个文案需要重新生成'}
+    </button>
+    <div class="hint">
+      ${isRethink
+        ? '已标记。请在聊天中告诉我你的修改意见，我会批量重新生成。'
+        : '点击标记后，在聊天中告诉我这个文案的问题或方向，我会重新生成。'
+      }
+    </div>
+  `;
+
+  picker.classList.add('active');
+}
+
+function closePicker() {
+  document.getElementById('picker').classList.remove('active');
+  currentPickerKey = null;
+}
+
+function selectTier(key, tier) {
+  rethinks.delete(key);
+  if (tier === 'original') {
+    delete selections[key];
+  } else {
+    selections[key] = tier;
+  }
+  saveState();
+  closePicker();
+  if (currentScene) {
+    document.getElementById('scene-container').innerHTML = RENDERS[currentScene]();
+  }
+  renderSidebar();
+}
+
+function toggleRethink(key) {
+  if (rethinks.has(key)) {
+    rethinks.delete(key);
+  } else {
+    rethinks.add(key);
+    delete selections[key];
+  }
+  saveState();
+  closePicker();
+  if (currentScene) {
+    document.getElementById('scene-container').innerHTML = RENDERS[currentScene]();
+  }
+  renderSidebar();
+}
+
+// ==================== PROGRESS ====================
+function updateProgress() {
+  let total = 0, done = 0, rethink = 0;
+  for (const id in DATA) {
+    for (const item of DATA[id].items) {
+      total++;
+      if (rethinks.has(item.key)) rethink++;
+      else if (selections[item.key]) done++;
+    }
+  }
+  document.getElementById('prog-done').textContent = done;
+  document.getElementById('prog-rethink').textContent = rethink;
+  document.getElementById('prog-total').textContent = total;
+}
+
+function resetAll() {
+  if (!confirm('确定要清空所有已选方案和"再想想"标记吗？')) return;
+  selections = {};
+  rethinks = new Set();
+  saveState();
+  if (currentScene) {
+    document.getElementById('scene-container').innerHTML = RENDERS[currentScene]();
+  }
+  renderSidebar();
+}
+
+// ==================== EXPORT ====================
+function showExport() {
+  const finalized = [];
+  const rethinkList = [];
+
+  for (const sceneId in DATA) {
+    for (const item of DATA[sceneId].items) {
+      if (rethinks.has(item.key)) {
+        rethinkList.push({
+          key: item.key,
+          original: item.orig,
+          currentLight: item.light,
+          currentMedium: item.medium,
+          currentHeavy: item.heavy,
+          file: DATA[sceneId].file,
+          context: item.ctx
+        });
+      } else if (selections[item.key]) {
+        finalized.push({
+          key: item.key,
+          original: item.orig,
+          selected: selections[item.key],
+          text: getText(item.key, selections[item.key]),
+          file: DATA[sceneId].file,
+          context: item.ctx
+        });
+      }
+    }
+  }
+
+  const result = { finalized, rethink: rethinkList };
+  const json = JSON.stringify(result, null, 2);
+  document.getElementById('export-text').value = json;
+
+  document.getElementById('export-stats').innerHTML = `
+    <div class="stat"><span class="dot" style="background:var(--green)"></span> 已定稿 ${finalized.length}</div>
+    <div class="stat"><span class="dot" style="background:var(--gold)"></span> 待重新生成 ${rethinkList.length}</div>
+    <div class="stat"><span class="dot" style="background:var(--parchment-faint)"></span> 未处理 ${result.finalized.length + result.rethink.length}</div>
+  `;
+
+  document.getElementById('export-overlay').classList.add('active');
+}
+
+function closeExport() {
+  document.getElementById('export-overlay').classList.remove('active');
+}
+
+function copyExport() {
+  const el = document.getElementById('export-text');
+  el.select();
+  document.execCommand('copy');
+  alert('已复制到剪贴板');
+}
+
+function downloadExport() {
+  const json = document.getElementById('export-text').value;
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'text-rewrite-plan.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ==================== KEYBOARD ====================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closePicker();
+    closeExport();
+  }
+});
+
+// ==================== INIT ====================
+renderSidebar();
+updateProgress();
+switchScene('cover');
+</script>
+</body>
+</html>
