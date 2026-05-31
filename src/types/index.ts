@@ -119,6 +119,10 @@ export type IpcApi = {
     profile: Profile
     strategy?: 'v1' | 'v2' | 'v3'
   }) => Promise<NewTopic>
+  llmGenerateFableFromReport: (args: {
+    reportBody: string
+    topic: string
+  }) => Promise<{ title: string; body: string }>
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void

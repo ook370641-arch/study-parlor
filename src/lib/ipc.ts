@@ -25,6 +25,7 @@ export const ipc = {
   get llmFinalizeReview() { return ensure().llmFinalizeReview },
   get llmGenerateFable() { return ensure().llmGenerateFable },
   get llmGroupInspiration() { return ensure().llmGroupInspiration },
+  get llmGenerateFableFromReport() { return ensure().llmGenerateFableFromReport },
   get onLlmChunk() { return ensure().onLlmChunk },
   get onLlmDone() { return ensure().onLlmDone },
   get onLlmError() { return ensure().onLlmError },

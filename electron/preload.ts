@@ -30,6 +30,7 @@ const api: IpcApi = {
   llmFinalizeReview: (a) => ipcRenderer.invoke('llm:finalizeReview', a),
   llmGenerateFable: (a) => ipcRenderer.invoke('llm:generateFable', a),
   llmGroupInspiration: (a) => ipcRenderer.invoke('llm:groupInspiration', a),
+  llmGenerateFableFromReport: (a) => ipcRenderer.invoke('llm:generateFableFromReport', a),
 
   onLlmChunk: (cb) => {
     const handler = (_: unknown, sid: string, text: string) => cb(sid, text)
