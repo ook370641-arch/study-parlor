@@ -22,7 +22,7 @@ export function SurfaceBackground({ surface }: Props) {
   if (!painting || !currentUrl) return null
 
   return (
-    <div className="absolute inset-0 z-0 pointer-events-none">
+    <div className="fixed inset-0 z-0 pointer-events-none">
       {prevUrl && (
         <img
           src={prevUrl}
