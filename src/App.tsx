@@ -6,6 +6,7 @@ import { Study } from '@/pages/Study'
 import { Profile } from '@/pages/Profile'
 import { Toast } from '@/components/Toast'
 import { PreStudyModal } from '@/components/PreStudyModal'
+import { LoadingScreen } from '@/components/LoadingScreen'
 import { ipc } from '@/lib/ipc'
 
 export function App() {
@@ -13,28 +14,42 @@ export function App() {
   const modal = useStore(s => s.modal)
   const init = useStore(s => s.init)
   const [fatal, setFatal] = useState<string | null>(null)
+  const [isBooting, setIsBooting] = useState(true)
 
   useEffect(() => {
     ipc.bootFatal().then(f => {
-      if (f) { setFatal(f); return }
-      init().catch(err => {
-        console.error('init failed', err)
-        useStore.getState().showToast('初始化失败:' + err.message)
-      })
-
-      // 探活模型
-      ipc.llmProbe().then(r => {
-        if (!r.ok) {
-          const reason = r.reason ?? '未知'
-          const msg = reason.includes('401')
-            ? 'API Key 无效，请检查 .env 中的 KIMI_API_KEY'
-            : '模型不可用:' + reason
-          useStore.setState({ modelInvalid: true, modelInvalidReason: reason })
-          useStore.getState().showToast(msg)
-        }
-      }).catch(() => { /* 网络失败,推迟到首次调用 */ })
+      if (f) {
+        setFatal(f)
+        setIsBooting(false)
+        return
+      }
+      // LoadingScreen 显示期间，boot sequence 在后台运行
+      // boot:complete 事件会触发 LoadingScreen 的 onComplete
     })
   }, [])
+
+  const handleBootComplete = async () => {
+    // LoadingScreen 淡出后，初始化 store
+    try {
+      await init()
+    } catch (err: any) {
+      console.error('init failed', err)
+      useStore.getState().showToast('初始化失败:' + err.message)
+    }
+    // 探活模型结果
+    ipc.llmProbe().then(r => {
+      if (!r.ok) {
+        const reason = r.reason ?? '未知'
+        const msg = reason.includes('401')
+          ? 'API Key 无效，请检查 .env 中的 KIMI_API_KEY'
+          : '模型不可用:' + reason
+        useStore.setState({ modelInvalid: true, modelInvalidReason: reason })
+        useStore.getState().showToast(msg)
+      }
+    }).catch(() => { /* 网络失败,推迟到首次调用 */ })
+
+    setIsBooting(false)
+  }
 
   if (fatal) {
     const isKeyError = fatal.includes('KIMI_API_KEY')
@@ -62,10 +77,15 @@ export function App() {
 
   return (
     <div className="h-full">
-      {page === 'cover'   && <Cover />}
-      {page === 'home'    && <Home />}
-      {page === 'study'   && <Study />}
-      {page === 'profile' && <Profile />}
+      {isBooting && <LoadingScreen onComplete={handleBootComplete} />}
+      {!isBooting && (
+        <>
+          {page === 'cover' && <Cover />}
+          {page === 'home' && <Home />}
+          {page === 'study' && <Study />}
+          {page === 'profile' && <Profile />}
+        </>
+      )}
       {modal === 'preStudy' && <PreStudyModal />}
       <Toast />
     </div>
