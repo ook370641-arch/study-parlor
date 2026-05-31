@@ -50,6 +50,17 @@ const api: IpcApi = {
 
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
 
+  onBootProgress: (cb: (stage: string, progress: number) => void) => {
+    const handler = (_: unknown, stage: string, progress: number) => cb(stage, progress)
+    ipcRenderer.on('boot:progress', handler)
+    return () => ipcRenderer.off('boot:progress', handler)
+  },
+  onBootComplete: (cb: () => void) => {
+    const handler = () => cb()
+    ipcRenderer.on('boot:complete', handler)
+    return () => ipcRenderer.off('boot:complete', handler)
+  },
+
   loadSessions: () => ipcRenderer.invoke('sessions:load'),
   saveSession: (s) => ipcRenderer.invoke('sessions:save', s),
   deleteSession: (id) => ipcRenderer.invoke('sessions:delete', id),
