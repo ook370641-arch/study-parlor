@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import matter from 'gray-matter'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import type { SessionMeta, TopicMeta } from '@shared/index'
@@ -10,6 +9,11 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { ReviewFlash } from './ReviewFlash'
 
 const PAGE_SIZE = 9
+
+function stripFrontmatter(content: string): string {
+  const match = content.match(/^---\n[\s\S]*?\n---\n?/)
+  return match ? content.slice(match[0].length) : content
+}
 
 type ViewerState = {
   dirName: string
@@ -434,10 +438,10 @@ export function StudyLibrary() {
 
     try {
       const { content } = await ipc.readSessionFile({ dirName, sessionNumber, fileName: session.reportFile })
-      const parsed = matter(content)
-      const topic = parsed.data.title || session.title || dirName
+      const reportBody = stripFrontmatter(content)
+      const topic = session.title || dirName
 
-      const fable = await ipc.llmGenerateFableFromReport({ reportBody: parsed.content, topic })
+      const fable = await ipc.llmGenerateFableFromReport({ reportBody, topic })
       await ipc.writeFable({ dirName, sessionNumber, title: fable.title, body: fable.body })
 
       const lib = await ipc.scanLibrary()
