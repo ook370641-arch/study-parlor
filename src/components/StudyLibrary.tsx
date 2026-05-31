@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import matter from 'gray-matter'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import type { SessionMeta, TopicMeta } from '@shared/index'
@@ -307,6 +308,8 @@ export function StudyLibrary() {
   }>(null)
 
   const [generatingFables, setGeneratingFables] = useState<Set<string>>(new Set())
+  const generatingFablesRef = useRef(generatingFables)
+  generatingFablesRef.current = generatingFables
 
   const handleReviewSession = useCallback((session: SessionMeta, topic: TopicMeta) => {
     const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
@@ -411,7 +414,7 @@ export function StudyLibrary() {
     const key = `${dirName}-s${sessionNumber}`
 
     // 如果正在生成中，点击表示取消
-    if (generatingFables.has(key)) {
+    if (generatingFablesRef.current.has(key)) {
       setGeneratingFables(prev => {
         const next = new Set(prev)
         next.delete(key)
@@ -420,19 +423,18 @@ export function StudyLibrary() {
       return
     }
 
+    const topicMeta = library.find(t => t.dirName === dirName)
+    const session = topicMeta?.sessions.find(s => s.sessionNumber === sessionNumber)
+    if (!session?.reportFile) {
+      useStore.getState().showToast('学习报告不存在，无法唤醒寓言')
+      return
+    }
+
     setGeneratingFables(prev => new Set(prev).add(key))
 
     try {
-      const topicMeta = library.find(t => t.dirName === dirName)
-      const session = topicMeta?.sessions.find(s => s.sessionNumber === sessionNumber)
-      if (!session?.reportFile) {
-        useStore.getState().showToast('学习报告不存在，无法唤醒寓言')
-        return
-      }
-
       const { content } = await ipc.readSessionFile({ dirName, sessionNumber, fileName: session.reportFile })
-      const matter = await import('gray-matter')
-      const parsed = matter.default(content)
+      const parsed = matter(content)
       const topic = parsed.data.title || session.title || dirName
 
       const fable = await ipc.llmGenerateFableFromReport({ reportBody: parsed.content, topic })
@@ -450,7 +452,7 @@ export function StudyLibrary() {
         return next
       })
     }
-  }, [library, generatingFables])
+  }, [library])
 
   const handleDeleteClick = useCallback((dirName: string, sessionNumber: number) => {
     const topic = library.find((t) => t.dirName === dirName)
