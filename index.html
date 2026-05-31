@@ -3,8 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <title>学者夜话</title>
+    <link rel="stylesheet" href="/loading.css" />
   </head>
   <body class="bg-ink text-parchment font-serif">
+    <!-- Loading Splash: React 挂载前显示，挂载后由 main.tsx 移除 -->
+    <div id="loading-splash">
+      <div class="ink-drop"></div>
+      <div class="emerging-label">EMERGING</div>
+      <div class="stage-label">初始化中...</div>
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <div class="vignette"></div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

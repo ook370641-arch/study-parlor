@@ -51,20 +51,12 @@ const api: IpcApi = {
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
 
   onBootProgress: (cb: (stage: string, progress: number) => void) => {
-    console.log('[preload] onBootProgress registered')
-    const handler = (_: unknown, stage: string, progress: number) => {
-      console.log(`[preload] boot:progress received: ${stage} ${progress}`)
-      cb(stage, progress)
-    }
+    const handler = (_: unknown, stage: string, progress: number) => cb(stage, progress)
     ipcRenderer.on('boot:progress', handler)
     return () => ipcRenderer.off('boot:progress', handler)
   },
   onBootComplete: (cb: () => void) => {
-    console.log('[preload] onBootComplete registered')
-    const handler = () => {
-      console.log('[preload] boot:complete received')
-      cb()
-    }
+    const handler = () => cb()
     ipcRenderer.on('boot:complete', handler)
     return () => ipcRenderer.off('boot:complete', handler)
   },

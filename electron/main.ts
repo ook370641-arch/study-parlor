@@ -53,43 +53,46 @@ async function bootstrap() {
 }
 
 async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWindow) {
-  // 诊断日志：记录 boot sequence 开始
-  console.log('[main:boot] runBootSequence started')
-
   // 等待 renderer 页面加载完成，确保 IPC 监听器已注册
   if (win.webContents.isLoading()) {
-    console.log('[main:boot] waiting for renderer to finish loading...')
     await new Promise<void>(resolve => {
-      win.webContents.once('did-finish-load', () => {
-        console.log('[main:boot] renderer loaded')
-        resolve()
-      })
+      win.webContents.once('did-finish-load', resolve)
     })
-  } else {
-    console.log('[main:boot] renderer already loaded')
   }
 
-  const sendProgress = (stage: string, progress: number) => {
-    console.log(`[main:boot] sending progress: ${stage} ${progress}%`)
+  const send = (stage: string, progress: number) => {
     if (!win.isDestroyed()) {
       win.webContents.send('boot:progress', stage, progress)
     }
   }
 
   const sendComplete = () => {
-    console.log('[main:boot] sending complete')
     if (!win.isDestroyed()) {
       win.webContents.send('boot:complete')
     }
   }
 
-  // Stage 1: 注册 IPC 处理器
-  registerAllIpc(cfg, () => mainWindow)
-  sendProgress('注册服务', 15)
+  // 平滑动画推送进度：在 [duration] 毫秒内从 [from] 推进到 [to]
+  const animate = async (stage: string, from: number, to: number, duration: number) => {
+    const start = Date.now()
+    while (true) {
+      const elapsed = Date.now() - start
+      const t = Math.min(1, elapsed / duration)
+      // ease-out cubic
+      const ease = 1 - Math.pow(1 - t, 3)
+      send(stage, Math.round(from + (to - from) * ease))
+      if (t >= 1) break
+      await new Promise(r => setTimeout(r, 50)) // 每 50ms 更新一次
+    }
+  }
 
-  // Stage 2: 探活模型（网络请求，最耗时）
+  // ===== 阶段 1: 注册 IPC =====
+  registerAllIpc(cfg, () => mainWindow)
+  await animate('注册服务', 0, 15, 300)
+
+  // ===== 阶段 2: 探活模型（网络请求，最耗时）=====
+  const probeStart = Date.now()
   try {
-    sendProgress('探活模型', 25)
     const probeResult = await probeModel(cfg)
     if (!probeResult.ok) {
       console.warn('[bootstrap] model probe failed:', probeResult.reason)
@@ -97,16 +100,19 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   } catch (err) {
     console.warn('[bootstrap] model probe error:', err)
   }
-  sendProgress('扫描学习库', 50)
+  const probeElapsed = Date.now() - probeStart
+  // 探活期间进度从 15% 平滑推进到 50%
+  await animate('探活模型', 15, 50, Math.max(400, probeElapsed))
 
-  // Stage 3: 扫描学习库已在渲染进程 init() 中做，这里只发送进度信号
-  sendProgress('初始化状态', 75)
+  // ===== 阶段 3: 扫描学习库 =====
+  await animate('扫描学习库', 50, 75, 500)
 
-  // Stage 4: 完成
-  setTimeout(() => {
-    sendProgress('就绪', 100)
-    sendComplete()
-  }, 300)
+  // ===== 阶段 4: 初始化状态 =====
+  await animate('初始化状态', 75, 95, 400)
+
+  // ===== 阶段 5: 就绪 =====
+  await animate('就绪', 95, 100, 300)
+  sendComplete()
 }
 
 app.whenReady().then(bootstrap)

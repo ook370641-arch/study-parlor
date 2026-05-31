@@ -2,6 +2,7 @@ import type { Message } from '@shared/index'
 
 export function ChatBubble({ msg }: { msg: Message }) {
   if (msg.role === 'system') return null
+  if (msg.role === 'user') return null
   const isUser = msg.role === 'user'
   const content = msg.content.trim()
   if (!content) return null

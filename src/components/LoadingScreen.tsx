@@ -44,15 +44,12 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
   onCompleteRef.current = onComplete
 
   useEffect(() => {
-    console.log('[LoadingScreen] mounting, registering listeners')
     // 使用 window.api 直接调用，避免依赖 ipc 模块（store 尚未初始化）
     const unsubProgress = window.api.onBootProgress((s, p) => {
-      console.log(`[LoadingScreen] progress: ${s} ${p}`)
       setStage(s)
       setProgress(p)
     })
     const unsubComplete = window.api.onBootComplete(() => {
-      console.log('[LoadingScreen] complete received')
       setProgress(100)
       setStage('就绪')
       setExiting(true)
