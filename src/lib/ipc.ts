@@ -39,5 +39,7 @@ export const ipc = {
   get deleteGroup() { return ensure().deleteGroup },
   get deleteArchivedSession() { return ensure().deleteArchivedSession },
   get recoveryDump() { return ensure().recoveryDump },
-  get bootFatal() { return ensure().bootFatal }
+  get bootFatal() { return ensure().bootFatal },
+  get onBootProgress() { return ensure().onBootProgress },
+  get onBootComplete() { return ensure().onBootComplete }
 }
