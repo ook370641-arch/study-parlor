@@ -14,21 +14,21 @@ const NEURAL_CONNECTIONS = [
   [5, 7], [7, 8], [8, 4], [0, 6], [6, 1], [2, 7], [3, 8],
 ]
 
-// 5 个墨斑 blob 的配置
+// 5 个墨斑 blob 的配置（threshold 延后，让节点先出现）
 const INK_BLOBS = [
-  { w: 100, h: 70, dx: 4, dy: -4, rotate: 25, blur: 5, threshold: 25 },
-  { w: 80, h: 60, dx: -8, dy: 4, rotate: -30, blur: 6, threshold: 35 },
-  { w: 70, h: 80, dx: -2, dy: -8, rotate: 10, blur: 7, threshold: 45 },
-  { w: 90, h: 50, dx: 8, dy: 8, rotate: -15, blur: 5, threshold: 55 },
+  { w: 100, h: 70, dx: 4, dy: -4, rotate: 25, blur: 5, threshold: 35 },
+  { w: 80, h: 60, dx: -8, dy: 4, rotate: -30, blur: 6, threshold: 42 },
+  { w: 70, h: 80, dx: -2, dy: -8, rotate: 10, blur: 7, threshold: 50 },
+  { w: 90, h: 50, dx: 8, dy: 8, rotate: -15, blur: 5, threshold: 58 },
   { w: 60, h: 90, dx: -6, dy: 0, rotate: 40, blur: 8, threshold: 65 },
 ]
 
-// 4 层涟漪环
+// 4 层涟漪环（threshold 提前）
 const RINGS = [
-  { size: 60, threshold: 15 },
-  { size: 110, threshold: 30 },
-  { size: 160, threshold: 45 },
-  { size: 220, threshold: 60 },
+  { size: 60, threshold: 10 },
+  { size: 110, threshold: 20 },
+  { size: 160, threshold: 30 },
+  { size: 220, threshold: 40 },
 ]
 
 interface LoadingScreenProps {
@@ -67,7 +67,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
   if (!visible) return null
 
   // 计算各视觉元素的激活状态
-  const inkCenterSize = 20 + Math.min(1, progress / 20) * 40 // 20px -> 60px
+  const inkCenterSize = 20 + Math.min(1, progress / 15) * 40 // 20px -> 60px
   const bgWarmth = progress > 10 ? Math.min(0.3, ((progress - 10) / 40) * 0.3) : 0
 
   return (
@@ -116,7 +116,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
               height: ring.size * ringProgress,
               transform: 'translate(-50%, -50%)',
               borderRadius: '50%',
-              border: `1px solid rgba(100,60,30,${ringProgress * 0.3})`,
+              border: `1.5px solid rgba(100,60,30,${ringProgress * 0.3})`,
               opacity: ringProgress * 0.4,
               transition: 'all 0.5s ease-out',
             }}
@@ -153,10 +153,10 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
       {/* ===== 神经节点 ===== */}
       {NEURAL_NODES.map((node, i) => {
-        const threshold = 50 + (i / NEURAL_NODES.length) * 35
+        const threshold = 20 + (i / NEURAL_NODES.length) * 40
         const active = progress > threshold
         const nodeProgress = active
-          ? Math.min(1, (progress - threshold) / 20)
+          ? Math.min(1, (progress - threshold) / 25)
           : 0
         const size = 2 + (i % 3) * 1.2
         return (
@@ -170,7 +170,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
               height: size,
               borderRadius: '50%',
               background: `rgba(217,119,87,${nodeProgress * 0.4})`,
-              boxShadow: `0 0 6px rgba(217,119,87,${nodeProgress * 0.2})`,
+              boxShadow: `0 0 8px rgba(217,119,87,${nodeProgress * 0.25})`,
               transform: 'translate(-50%, -50%)',
               transition: 'all 0.6s ease-out',
             }}
@@ -180,10 +180,10 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
       {/* ===== 连接线 ===== */}
       {NEURAL_CONNECTIONS.map((conn, i) => {
-        const threshold = 60 + (i / NEURAL_CONNECTIONS.length) * 30
+        const threshold = 50 + (i / NEURAL_CONNECTIONS.length) * 35
         const active = progress > threshold
         const lineProgress = active
-          ? Math.min(0.6, ((progress - threshold) / 20) * 0.6)
+          ? Math.min(0.6, ((progress - threshold) / 25) * 0.6)
           : 0
         const n1 = NEURAL_NODES[conn[0]]
         const n2 = NEURAL_NODES[conn[1]]
@@ -199,7 +199,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
               left: `${n1.x}%`,
               top: `${n1.y}%`,
               width: `${len}%`,
-              height: 1,
+              height: 1.5,
               transformOrigin: 'left center',
               transform: `rotate(${angle}deg)`,
               background: `linear-gradient(90deg, rgba(217,119,87,0), rgba(217,119,87,${lineProgress * 0.3}), rgba(217,119,87,0))`,
@@ -249,7 +249,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
       {/* ===== 进度条 ===== */}
       <div
         className="absolute"
-        style={{ bottom: 0, left: 0, right: 0, height: 2, background: 'rgba(232,213,183,0.05)' }}
+        style={{ bottom: 0, left: 0, right: 0, height: 3, background: 'rgba(232,213,183,0.05)' }}
       >
         <div
           style={{
