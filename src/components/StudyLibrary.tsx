@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useStore } from '@/store'
+import { ipc } from '@/lib/ipc'
 import type { SessionMeta, TopicMeta } from '@shared/index'
 import { SessionViewer } from './SessionViewer'
 import { GroupRibbon } from './GroupRibbon'
@@ -21,13 +22,17 @@ function SessionRow({
   session,
   onViewFile,
   onReview,
-  onDelete
+  onDelete,
+  generatingFables,
+  onGenerateFable,
 }: {
   dirName: string
   session: SessionMeta
   onViewFile: (v: ViewerState) => void
   onReview: (session: SessionMeta) => void
   onDelete?: (dirName: string, sessionNumber: number) => void
+  generatingFables: Set<string>
+  onGenerateFable: (dirName: string, sessionNumber: number) => void
 }) {
   const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
   const reviewed = session.hasReview
@@ -35,9 +40,11 @@ function SessionRow({
   const fileButtons: { label: string; fileName: string | undefined; disabled: boolean }[] = [
     { label: '学习报告', fileName: session.reportFile, disabled: !session.hasReport || !session.reportFile },
     { label: '原始对话', fileName: session.transcriptFile, disabled: !session.hasTranscript || !session.transcriptFile },
-    { label: '寓言', fileName: session.fableFile, disabled: !session.hasFable || !session.fableFile },
     { label: '图片', fileName: session.imageFile || session.fableImageFile, disabled: (!session.hasImage && !session.hasFableImage) || (!session.imageFile && !session.fableImageFile) },
   ]
+
+  const fableKey = `${dirName}-s${session.sessionNumber}`
+  const isGeneratingFable = generatingFables.has(fableKey)
 
   return (
     <div className="flex items-center gap-3 py-2 px-3 border-b border-slate/20 last:border-b-0">
@@ -80,6 +87,45 @@ function SessionRow({
             {btn.label}
           </button>
         ))}
+
+        {/* 寓言按钮 */}
+        {isGeneratingFable ? (
+          <button
+            onClick={() => onGenerateFable(dirName, session.sessionNumber)}
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:bg-ember/20 transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            <span className="inline-block animate-spin mr-1">⟳</span>正在书写...
+          </button>
+        ) : session.hasFable ? (
+          <button
+            onClick={() =>
+              session.fableFile &&
+              onViewFile({
+                dirName,
+                sessionNumber: session.sessionNumber,
+                fileName: session.fableFile,
+                title: `寓言 · s${session.sessionNumber}`,
+              })
+            }
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            寓言
+          </button>
+        ) : session.hasReport ? (
+          <button
+            onClick={() => onGenerateFable(dirName, session.sessionNumber)}
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:border-ember hover:bg-ember/20 hover:text-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            ✨ 唤醒寓言
+          </button>
+        ) : (
+          <button
+            disabled
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            寓言
+          </button>
+        )}
 
         {reviewed ? (
           <button
@@ -126,6 +172,8 @@ function TopicAccordion({
   onDragStart,
   onDeleteSession,
   onReviewSession,
+  generatingFables,
+  onGenerateFable,
 }: {
   topic: TopicMeta
   onViewFile: (v: ViewerState) => void
@@ -133,6 +181,8 @@ function TopicAccordion({
   onDragStart?: (topic: TopicMeta, startX: number, startY: number) => void
   onDeleteSession?: (dirName: string, sessionNumber: number) => void
   onReviewSession?: (session: SessionMeta, topic: TopicMeta) => void
+  generatingFables: Set<string>
+  onGenerateFable: (dirName: string, sessionNumber: number) => void
 }) {
   const [open, setOpen] = useState(false)
   const openPreStudy = useStore((s) => s.openPreStudy)
@@ -149,7 +199,7 @@ function TopicAccordion({
         : `${topic.last_studied_days}天前`
 
   return (
-    <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden">
+    <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden shrink-0">
       <div
         onClick={handleToggle}
         onMouseDown={(e) => {
@@ -208,6 +258,8 @@ function TopicAccordion({
                 onReviewSession?.(session, topic)
               }
               onDelete={onDeleteSession}
+              generatingFables={generatingFables}
+              onGenerateFable={onGenerateFable}
             />
           ))}
         </div>
@@ -253,6 +305,8 @@ export function StudyLibrary() {
     topic: string
     dirName: string
   }>(null)
+
+  const [generatingFables, setGeneratingFables] = useState<Set<string>>(new Set())
 
   const handleReviewSession = useCallback((session: SessionMeta, topic: TopicMeta) => {
     const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
@@ -352,6 +406,51 @@ export function StudyLibrary() {
     },
     []
   )
+
+  const handleGenerateFable = useCallback(async (dirName: string, sessionNumber: number) => {
+    const key = `${dirName}-s${sessionNumber}`
+
+    // 如果正在生成中，点击表示取消
+    if (generatingFables.has(key)) {
+      setGeneratingFables(prev => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+      return
+    }
+
+    setGeneratingFables(prev => new Set(prev).add(key))
+
+    try {
+      const topicMeta = library.find(t => t.dirName === dirName)
+      const session = topicMeta?.sessions.find(s => s.sessionNumber === sessionNumber)
+      if (!session?.reportFile) {
+        useStore.getState().showToast('学习报告不存在，无法唤醒寓言')
+        return
+      }
+
+      const { content } = await ipc.readSessionFile({ dirName, sessionNumber, fileName: session.reportFile })
+      const matter = await import('gray-matter')
+      const parsed = matter.default(content)
+      const topic = parsed.data.title || session.title || dirName
+
+      const fable = await ipc.llmGenerateFableFromReport({ reportBody: parsed.content, topic })
+      await ipc.writeFable({ dirName, sessionNumber, title: fable.title, body: fable.body })
+
+      const lib = await ipc.scanLibrary()
+      useStore.setState({ library: lib })
+      useStore.getState().showToast(`寓言「${fable.title}」已唤醒`)
+    } catch (err: any) {
+      useStore.getState().showToast('寓言书写失败：' + (err?.message ?? err))
+    } finally {
+      setGeneratingFables(prev => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    }
+  }, [library, generatingFables])
 
   const handleDeleteClick = useCallback((dirName: string, sessionNumber: number) => {
     const topic = library.find((t) => t.dirName === dirName)
@@ -529,6 +628,8 @@ export function StudyLibrary() {
             onDragStart={handleDragStart}
             onDeleteSession={handleDeleteClick}
             onReviewSession={handleReviewSession}
+            generatingFables={generatingFables}
+            onGenerateFable={handleGenerateFable}
           />
         ))}
       </div>
