@@ -124,11 +124,16 @@ export async function generateFable(
 
 export async function generateFableFromReport(
   cfg: AppConfig,
-  args: { reportBody: string; topic: string }
+  args: { reportBody: string; topic: string; userPrompt?: string }
 ): Promise<{ title: string; body: string }> {
+  const userPromptSection = args.userPrompt
+    ? `请根据以下用户偏好调整寓言的风格和呈现方式：\n${args.userPrompt}`
+    : ''
+
   const prompt = read('fable-from-report.md')
     .replace('{{reportBody}}', args.reportBody)
     .replace('{{topic}}', args.topic)
+    .replace('{{userPrompt}}', userPromptSection)
 
   try {
     const text = await chatNonStream(cfg, {

@@ -81,6 +81,6 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   }) => generateFable(cfg, args))
 
   ipcMain.handle('llm:generateFableFromReport', async (_, args: {
-    reportBody: string; topic: string
+    reportBody: string; topic: string; userPrompt?: string
   }) => generateFableFromReport(cfg, args))
 }
