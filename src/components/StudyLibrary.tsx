@@ -7,6 +7,7 @@ import { GroupRibbon } from './GroupRibbon'
 import { GravityField } from './GravityField'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ReviewFlash } from './ReviewFlash'
+import { FableStyleDialog } from './FableStyleDialog'
 
 const PAGE_SIZE = 9
 
@@ -44,7 +45,6 @@ function SessionRow({
 
   const fileButtons: { label: string; fileName: string | undefined; disabled: boolean }[] = [
     { label: '学习报告', fileName: session.reportFile, disabled: !session.hasReport || !session.reportFile },
-    { label: '原始对话', fileName: session.transcriptFile, disabled: !session.hasTranscript || !session.transcriptFile },
     { label: '图片', fileName: session.imageFile || session.fableImageFile, disabled: (!session.hasImage && !session.hasFableImage) || (!session.imageFile && !session.fableImageFile) },
   ]
 
@@ -285,6 +285,9 @@ export function StudyLibrary() {
   const deleteGroup = useStore((s) => s.deleteGroup)
   const setGravityFieldOpen = useStore((s) => s.setGravityFieldOpen)
   const setDraggingTopic = useStore((s) => s.setDraggingTopic)
+  const fableStyleTags = useStore((s) => s.fableStyleTags)
+  const lastFableTags = useStore((s) => s.lastFableTags)
+  const setLastFableTags = useStore((s) => s.setLastFableTags)
 
   const [viewer, setViewer] = useState<ViewerState>(null)
   const [dragState, setDragState] = useState<{
@@ -314,6 +317,9 @@ export function StudyLibrary() {
   const [generatingFables, setGeneratingFables] = useState<Set<string>>(new Set())
   const generatingFablesRef = useRef(generatingFables)
   generatingFablesRef.current = generatingFables
+
+  const [styleDialogOpen, setStyleDialogOpen] = useState(false)
+  const [pendingFable, setPendingFable] = useState<{ dirName: string; sessionNumber: number } | null>(null)
 
   const handleReviewSession = useCallback((session: SessionMeta, topic: TopicMeta) => {
     const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
@@ -414,7 +420,7 @@ export function StudyLibrary() {
     []
   )
 
-  const handleGenerateFable = useCallback(async (dirName: string, sessionNumber: number) => {
+  const handleGenerateFableClick = useCallback((dirName: string, sessionNumber: number) => {
     const key = `${dirName}-s${sessionNumber}`
 
     // 如果正在生成中，点击表示取消
@@ -434,14 +440,47 @@ export function StudyLibrary() {
       return
     }
 
+    setPendingFable({ dirName, sessionNumber })
+    setStyleDialogOpen(true)
+  }, [library])
+
+  const handleStyleConfirm = useCallback(async (selectedTags: string[], description: string) => {
+    if (!pendingFable) return
+    const { dirName, sessionNumber } = pendingFable
+    const key = `${dirName}-s${sessionNumber}`
+
+    // 保存上次选中的标签
+    setLastFableTags(selectedTags)
+
+    // 构建 userPrompt
+    const tagsText = selectedTags.join('、')
+    const desc = description.trim()
+    let userPrompt = ''
+    if (tagsText && desc) {
+      userPrompt = `风格：${tagsText}。${desc}`
+    } else if (tagsText) {
+      userPrompt = `风格：${tagsText}`
+    } else if (desc) {
+      userPrompt = desc
+    }
+
+    setStyleDialogOpen(false)
+    setPendingFable(null)
     setGeneratingFables(prev => new Set(prev).add(key))
 
     try {
+      const topicMeta = library.find(t => t.dirName === dirName)
+      const session = topicMeta?.sessions.find(s => s.sessionNumber === sessionNumber)
+      if (!session?.reportFile) {
+        useStore.getState().showToast('学习报告不存在，无法唤醒寓言')
+        return
+      }
+
       const { content } = await ipc.readSessionFile({ dirName, sessionNumber, fileName: session.reportFile })
       const reportBody = stripFrontmatter(content)
       const topic = session.title || dirName
 
-      const fable = await ipc.llmGenerateFableFromReport({ reportBody, topic })
+      const fable = await ipc.llmGenerateFableFromReport({ reportBody, topic, userPrompt: userPrompt || undefined })
       await ipc.writeFable({ dirName, sessionNumber, title: fable.title, body: fable.body })
 
       const lib = await ipc.scanLibrary()
@@ -456,7 +495,7 @@ export function StudyLibrary() {
         return next
       })
     }
-  }, [library])
+  }, [library, pendingFable, setLastFableTags])
 
   const handleDeleteClick = useCallback((dirName: string, sessionNumber: number) => {
     const topic = library.find((t) => t.dirName === dirName)
@@ -465,7 +504,6 @@ export function StudyLibrary() {
 
     const files: string[] = []
     if (session.hasReport) files.push('学习报告.md')
-    if (session.hasTranscript) files.push('原始对话.md')
     if (session.hasFable) files.push(`寓言${session.fableCount > 1 ? '(×' + session.fableCount + ')' : ''}.md`)
     if (session.hasImage || session.hasFableImage) files.push('配图')
 
@@ -635,7 +673,7 @@ export function StudyLibrary() {
             onDeleteSession={handleDeleteClick}
             onReviewSession={handleReviewSession}
             generatingFables={generatingFables}
-            onGenerateFable={handleGenerateFable}
+            onGenerateFable={handleGenerateFableClick}
           />
         ))}
       </div>
@@ -687,6 +725,17 @@ export function StudyLibrary() {
           </>
         </ConfirmDialog>
       )}
+
+      <FableStyleDialog
+        open={styleDialogOpen}
+        tags={fableStyleTags}
+        defaultSelected={lastFableTags}
+        onClose={() => {
+          setStyleDialogOpen(false)
+          setPendingFable(null)
+        }}
+        onConfirm={handleStyleConfirm}
+      />
     </div>
   )
 }
