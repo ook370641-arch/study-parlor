@@ -127,6 +127,8 @@ export type IpcApi = {
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
   bootFatal: () => Promise<string | null>
+  onBootProgress: (cb: (stage: string, progress: number) => void) => () => void
+  onBootComplete: (cb: () => void) => () => void
 
   // Session persistence (stubs until main handlers implemented)
   loadSessions: () => Promise<UnsavedSession[]>
