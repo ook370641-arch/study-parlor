@@ -3,7 +3,8 @@ import {
   generateInspirations,
   generateGroupInspiration,
   finalizeProgress,
-  finalizeReview
+  finalizeReview,
+  generateFableFromReport
 } from '@electron/lib/llm-tasks'
 
 const cfg = { apiKey: 'k', baseUrl: 'https://x', model: 'm', libraryPath: '/' }
@@ -218,5 +219,66 @@ describe('finalizeReview', () => {
     })
     expect(out.summary).toBe('本次复习暴露 σ 代数概念混淆。')
     expect(out.gaps).toEqual([])
+  })
+})
+
+describe('generateFableFromReport', () => {
+  it('parses valid JSON response with title and body', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"title":"熵增的旅人","body":"从前有一个旅人...\\n\\n---\\n\\n这个故事中的旅人代表了系统中能量的流动..."}' } }]
+      })
+    })) as any)
+    const out = await generateFableFromReport(cfg, {
+      reportBody: '# 学习报告\n\n今天我们学习了熵增原理...',
+      topic: '熵增原理'
+    })
+    expect(out.title).toBe('熵增的旅人')
+    expect(out.body).toContain('从前有一个旅人')
+    expect(out.body).toContain('这个故事中的旅人')
+  })
+
+  it('strips markdown code block before parsing', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '```json\n{"title":"代码块标题","body":"# B"}\n```' } }]
+      })
+    })) as any)
+    const out = await generateFableFromReport(cfg, {
+      reportBody: 'report',
+      topic: 'topic'
+    })
+    expect(out.title).toBe('代码块标题')
+    expect(out.body).toBe('# B')
+  })
+
+  it('falls back to deterministic title on parse failure', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'oops' } }] })
+    })) as any)
+    const out = await generateFableFromReport(cfg, {
+      reportBody: 'report body',
+      topic: '测试主题'
+    })
+    expect(out.title).toBe('测试主题 — 寓言')
+    expect(out.body).toContain('report body')
+  })
+
+  it('passes reportBody and topic into prompt', async () => {
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '{"title":"T","body":"B"}' } }] })
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+    await generateFableFromReport(cfg, {
+      reportBody: '这是学习报告的内容',
+      topic: '贝叶斯推断'
+    })
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.messages[0].content).toContain('这是学习报告的内容')
+    expect(body.messages[0].content).toContain('贝叶斯推断')
   })
 })

@@ -122,6 +122,32 @@ export async function generateFable(
   }
 }
 
+export async function generateFableFromReport(
+  cfg: AppConfig,
+  args: { reportBody: string; topic: string }
+): Promise<{ title: string; body: string }> {
+  const prompt = read('fable-from-report.md')
+    .replace('{{reportBody}}', args.reportBody)
+    .replace('{{topic}}', args.topic)
+
+  try {
+    const text = await chatNonStream(cfg, {
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7
+    })
+    const extracted = extractJsonObject(text)
+    if (!extracted) throw new Error('JSON extraction failed')
+    const json = JSON.parse(extracted) as { title?: string; body?: string }
+    if (!json.title || !json.body) throw new Error('shape')
+    return { title: json.title, body: json.body }
+  } catch {
+    return {
+      title: `${args.topic} — 寓言`,
+      body: `> 寓言生成失败，以下为原始学习报告：\n\n${args.reportBody}`
+    }
+  }
+}
+
 function getSortedSessionDirs(topicDir: string): string[] {
   const entries = fs.readdirSync(topicDir, { withFileTypes: true })
   return entries

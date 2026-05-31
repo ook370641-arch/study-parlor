@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import type { AppConfig } from '../env'
 import { probeModel, chatStream } from '../lib/kimi'
-import { generateInspirations, finalizeProgress, finalizeReview, generateFable, generateGroupInspiration } from '../lib/llm-tasks'
+import { generateInspirations, finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport } from '../lib/llm-tasks'
 import type { Message, Profile, Mode, Difficulty } from '@shared/index'
 import { assemblePrompt } from '../lib/prompts'
 
@@ -79,4 +79,8 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   ipcMain.handle('llm:generateFable', async (_, args: {
     history: Message[]; topic: string
   }) => generateFable(cfg, args))
+
+  ipcMain.handle('llm:generateFableFromReport', async (_, args: {
+    reportBody: string; topic: string
+  }) => generateFableFromReport(cfg, args))
 }
