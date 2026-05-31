@@ -7,7 +7,7 @@ import { GravityField } from './GravityField'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ReviewFlash } from './ReviewFlash'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 9
 
 type ViewerState = {
   dirName: string
@@ -457,31 +457,8 @@ export function StudyLibrary() {
         onDelete={deleteGroup}
       />
 
-      <div className="mt-3 flex flex-col gap-2 relative flex-1 min-h-0 overflow-y-auto">
-        {gravityFieldOpen && (
-          <GravityField
-            groups={groups}
-            topics={library}
-            draggingTopic={dragState?.topic ?? null}
-            dragPosition={dragPosition}
-          />
-        )}
-
-        {paginatedTopics.map((topic) => (
-          <TopicAccordion
-            key={topic.dirName}
-            topic={topic}
-            onViewFile={setViewer}
-            groupColor={groupColorMap.get(topic.groupId) || '#d97757'}
-            onDragStart={handleDragStart}
-            onDeleteSession={handleDeleteClick}
-            onReviewSession={handleReviewSession}
-          />
-        ))}
-      </div>
-
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 py-2 border-t border-slate/10 mt-1">
+        <div className="flex items-center justify-center gap-3 py-2 border-b border-slate/10">
           <button
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             disabled={currentPage === 0}
@@ -532,6 +509,29 @@ export function StudyLibrary() {
           </button>
         </div>
       )}
+
+      <div className="flex flex-col gap-2 relative flex-1 min-h-0 overflow-y-auto">
+        {gravityFieldOpen && (
+          <GravityField
+            groups={groups}
+            topics={library}
+            draggingTopic={dragState?.topic ?? null}
+            dragPosition={dragPosition}
+          />
+        )}
+
+        {paginatedTopics.map((topic) => (
+          <TopicAccordion
+            key={topic.dirName}
+            topic={topic}
+            onViewFile={setViewer}
+            groupColor={groupColorMap.get(topic.groupId) || '#d97757'}
+            onDragStart={handleDragStart}
+            onDeleteSession={handleDeleteClick}
+            onReviewSession={handleReviewSession}
+          />
+        ))}
+      </div>
 
       {viewer && (
         <SessionViewer

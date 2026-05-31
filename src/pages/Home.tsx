@@ -52,7 +52,7 @@ export function Home() {
   const firstUnsaved = unsavedSessions[0]
 
   return (
-    <div className="h-full overflow-y-auto p-8 relative">
+    <div className="h-full p-8 relative">
       <SurfaceBackground surface="home" />
       <SwapPaintingButton surface="home" className="absolute top-4 right-20" />
       <Button variant="ghost"
