@@ -65,9 +65,9 @@ export function Home() {
         晚安,{profile.name}
       </div>
 
-      <div className="relative z-[5] flex gap-6 max-w-6xl mx-auto">
+      <div className="relative z-[5] flex gap-6 max-w-6xl mx-auto h-full">
         {/* 左侧：新学习模块 */}
-        <div className="w-[360px] shrink-0 flex flex-col gap-4">
+        <div className="w-[360px] shrink-0 flex flex-col gap-4 h-full overflow-y-auto">
           {/* 恢复提示 */}
           {firstUnsaved && (
             <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded-md p-4">
@@ -129,7 +129,7 @@ export function Home() {
         </div>
 
         {/* 右侧：学习库 */}
-        <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
           <div className="text-xs text-parchment/40 font-sans mb-3">学习库</div>
           <StudyLibrary />
         </div>
