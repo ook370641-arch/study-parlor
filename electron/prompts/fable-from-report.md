@@ -15,6 +15,10 @@
 
 {{reportBody}}
 
+# 用户风格偏好
+
+{{userPrompt}}
+
 # 输出格式
 
 {

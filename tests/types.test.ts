@@ -125,6 +125,8 @@ describe('type instantiation', () => {
       suggested_new_topics: null,
       groupInspirations: {},
       ui: { session_count: 0 },
+      fableStyleTags: [],
+      lastFableTags: [],
       inspirationStrategy: 'v2',
     }
     // @ts-expect-error recommendation_cache should not exist

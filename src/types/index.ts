@@ -97,6 +97,8 @@ export type StateJson = {
   suggested_new_topics: { generated_at: string; topics: NewTopic[] } | null
   groupInspirations: Record<string, NewTopic>
   ui: { session_count: number }
+  fableStyleTags: string[]
+  lastFableTags: string[]
   inspirationStrategy: 'v1' | 'v2' | 'v3'
 }
 
@@ -122,6 +124,7 @@ export type IpcApi = {
   llmGenerateFableFromReport: (args: {
     reportBody: string
     topic: string
+    userPrompt?: string
   }) => Promise<{ title: string; body: string }>
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
