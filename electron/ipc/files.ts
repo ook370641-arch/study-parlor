@@ -416,12 +416,13 @@ function getMimeType(filePath: string): string {
       throw new Error(`File not found: ${resolved}`)
     }
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(resolved)
+    const isMermaid = resolved.endsWith('.mmd')
     if (isImage) {
       const buffer = fs.readFileSync(resolved)
       return { content: buffer.toString('base64'), mimeType: getMimeType(resolved) }
     }
     const content = fs.readFileSync(resolved, 'utf8')
-    return { content, mimeType: 'text/markdown' }
+    return { content, mimeType: isMermaid ? 'text/plain' : 'text/markdown' }
   })
 
   ipcMain.handle('files:recoveryDump', async (_, args: { filename: string; content: string }) => {
