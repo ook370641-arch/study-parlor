@@ -2,6 +2,9 @@ import { ipcMain, BrowserWindow } from 'electron'
 import type { AppConfig } from '../env'
 import { probeModel, chatStream } from '../lib/kimi'
 import { generateInspirations, finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport, generateContinueSuggestions } from '../lib/llm-tasks'
+import { generateDiagram } from '../lib/diagram'
+import fs from 'fs'
+import path from 'path'
 import type { Message, Profile, Mode, Difficulty } from '@shared/index'
 import { assemblePrompt } from '../lib/prompts'
 
@@ -98,6 +101,23 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
       const message = String(err?.message ?? err)
       console.error('[llm:generateContinueSuggestions] error:', message)
       throw new Error(message)
+    }
+  })
+
+  ipcMain.handle('llm:generateDiagram', async (_, args: {
+    dirName: string
+    sessionNumber: number
+    reportBody: string
+  }) => {
+    try {
+      const mermaid = await generateDiagram(cfg, args.reportBody)
+      if (mermaid) {
+        const sessionDir = path.join(cfg.libraryPath, args.dirName, `s${args.sessionNumber}`)
+        const diagramPath = path.join(sessionDir, '学习图表.mmd')
+        fs.writeFileSync(diagramPath, mermaid, 'utf8')
+      }
+    } catch (err: any) {
+      console.error('[llm:generateDiagram] error:', err?.message ?? err)
     }
   })
 }
