@@ -87,6 +87,20 @@ describe('finalizeProgress', () => {
     expect(out.progress_summary).toBe('S')
   })
 
+  it('extracts formatted JSON with newlines and indentation', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{\n  "title": "格式化标题",\n  "description": "副标题",\n  "body": "# 笔记\\n核心...",\n  "progress_summary": "已掌握"\n}' } }]
+      })
+    })) as any)
+    const out = await finalizeProgress(cfg, [{ role: 'user', content: '今夜想学:拓扑' }])
+    expect(out.title).toBe('格式化标题')
+    expect(out.description).toBe('副标题')
+    expect(out.body).toBe('# 笔记\n核心...')
+    expect(out.progress_summary).toBe('已掌握')
+  })
+
   it('falls back to deterministic title on parse failure', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true, json: async () => ({ choices: [{ message: { content: 'oops' } }] })

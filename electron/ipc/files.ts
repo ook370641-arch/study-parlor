@@ -2,8 +2,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { ipcMain } from 'electron'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
+import { generateContinueSuggestions, readTopicReportSummaries } from '../lib/llm-tasks'
+import { patchState } from './state'
 import type { AppConfig } from '../env'
-import type { Frontmatter, TopicMeta, SessionMeta, Group, GroupMapping } from '@shared/index'
+import type { Frontmatter, TopicMeta, SessionMeta, Group, GroupMapping, TopicContinueCache } from '@shared/index'
 
 export function getSessionMeta(sessionDir: string): SessionMeta {
   const files = fs.readdirSync(sessionDir, { withFileTypes: true })
@@ -89,7 +91,7 @@ function validateDirName(dirName: string): void {
   }
 }
 
-function getSortedSessionDirs(topicDir: string): string[] {
+export function getSortedSessionDirs(topicDir: string): string[] {
   const entries = fs.readdirSync(topicDir, { withFileTypes: true })
   return entries
     .filter(e => e.isDirectory() && /^s\d+$/.test(e.name))
@@ -177,6 +179,43 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
 }
 
 export function registerFilesIpc(cfg: AppConfig) {
+  async function updateContinueSuggestions(dirName: string) {
+    try {
+      const summaries = readTopicReportSummaries(cfg.libraryPath, dirName)
+      if (summaries.length === 0) {
+        // 没有报告，删除缓存
+        const { getCurrentState } = await import('./state')
+        const current = getCurrentState()
+        const next = { ...current.topicContinueSuggestions }
+        delete next[dirName]
+        patchState({ topicContinueSuggestions: next })
+        return
+      }
+
+      const suggestions = await generateContinueSuggestions(cfg, {
+        topic: dirName,
+        dirName
+      })
+
+      const cache: TopicContinueCache = {
+        generatedAt: new Date().toISOString(),
+        suggestions: suggestions.length > 0 ? suggestions : []
+      }
+
+      const { getCurrentState } = await import('./state')
+      const current = getCurrentState()
+      patchState({
+        topicContinueSuggestions: {
+          ...current.topicContinueSuggestions,
+          [dirName]: cache
+        }
+      })
+    } catch (err) {
+      console.error(`[updateContinueSuggestions] failed for ${dirName}:`, err)
+      // 静默失败，保留旧缓存
+    }
+  }
+
   ipcMain.handle('files:scan', async (): Promise<TopicMeta[]> => {
     const root = cfg.libraryPath
     if (!fs.existsSync(root)) {
@@ -193,13 +232,6 @@ export function registerFilesIpc(cfg: AppConfig) {
       try {
         const meta = getTopicMeta(topicPath)
         if (meta) {
-          // Debug: log first session file names to verify field population
-          if (meta.sessions[0]) {
-            console.log(`[files:scan] ${td}/s${meta.sessions[0].sessionNumber} files:`, {
-              reportFile: meta.sessions[0].reportFile,
-              fableFile: meta.sessions[0].fableFile,
-            })
-          }
           results.push(meta)
         }
       } catch (err) {
@@ -251,6 +283,10 @@ export function registerFilesIpc(cfg: AppConfig) {
       review_count: 0,
     }
     fs.writeFileSync(filePath, serializeFrontmatter('progress', fm, args.body), 'utf8')
+
+    // 异步更新续谈推荐（不阻塞返回）
+    updateContinueSuggestions(args.dirName).catch(console.error)
+
     return { file_path: filePath }
   })
 
@@ -272,6 +308,7 @@ export function registerFilesIpc(cfg: AppConfig) {
 
   ipcMain.handle('files:writeReviewReport', async (_, args: {
     topic: string; dirName: string; summary: string; gaps: string[]; review_index: number
+    mastery_checklist?: string[]; future_advice?: string[]
   }) => {
     validateDirName(args.dirName)
     const now = new Date()
@@ -284,7 +321,19 @@ export function registerFilesIpc(cfg: AppConfig) {
     const sessionDir = path.join(topicDir, targetSession)
     const filePath = path.join(sessionDir, '复习报告.md')
     const gapsList = args.gaps.map((g, i) => `${i + 1}. ${g.trim()}`).join('\n')
-    const body = `## 复习摘要\n${args.summary.trim()}\n\n## 知识缺口\n${gapsList}\n`
+    const checklist = args.mastery_checklist && args.mastery_checklist.length > 0
+      ? args.mastery_checklist.map(c => `- [ ] ${c.trim()}`).join('\n')
+      : ''
+    const advice = args.future_advice && args.future_advice.length > 0
+      ? args.future_advice.map((a, i) => `${i + 1}. ${a.trim()}`).join('\n')
+      : ''
+    const sections = [
+      `## 复习摘要\n${args.summary.trim()}`,
+      args.gaps.length > 0 ? `## 知识缺口\n${gapsList}` : '',
+      checklist ? `## 掌握检验\n${checklist}` : '',
+      advice ? `## 未来发展建议\n${advice}` : ''
+    ].filter(Boolean)
+    const body = sections.join('\n\n') + '\n'
     if (fs.existsSync(filePath)) {
       // Existing file: append body without frontmatter
       fs.appendFileSync(filePath, '\n\n---\n\n' + body, 'utf8')
@@ -431,5 +480,8 @@ function getMimeType(filePath: string): string {
       throw new Error(`Session directory not found: ${sessionDir}`)
     }
     fs.rmSync(sessionDir, { recursive: true, force: true })
+
+    // 异步更新续谈推荐（不阻塞返回）
+    updateContinueSuggestions(args.dirName).catch(console.error)
   })
 }

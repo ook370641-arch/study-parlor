@@ -12,7 +12,7 @@ describe('Heading with section labels', () => {
     render(
       <Markdown components={reportComponents}>{'## 核心概念\n\n内容'}</Markdown>
     )
-    expect(screen.getByText('CONCEPT')).toBeInTheDocument()
+    expect(screen.getByText('概念')).toBeInTheDocument()
     expect(screen.getByText('核心概念')).toBeInTheDocument()
   })
 
@@ -20,7 +20,7 @@ describe('Heading with section labels', () => {
     render(
       <Markdown components={reportComponents}>{'## 学习要点\n\n内容'}</Markdown>
     )
-    expect(screen.getByText('KEY POINTS')).toBeInTheDocument()
+    expect(screen.getByText('要点')).toBeInTheDocument()
   })
 
   it('does not render label for unknown H2 titles', () => {

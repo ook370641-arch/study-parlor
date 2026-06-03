@@ -15,7 +15,8 @@ const DEFAULT: StateJson = {
   ui: { session_count: 0 },
   inspirationStrategy: 'v2',
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
-  lastFableTags: []
+  lastFableTags: [],
+  topicContinueSuggestions: {}
 }
 
 let currentState: StateJson | null = null
@@ -42,4 +43,9 @@ export function registerStateIpc() {
 
 export function getCurrentState(): StateJson {
   return loadState()
+}
+
+export function patchState(patch: Partial<StateJson>): void {
+  currentState = { ...loadState(), ...patch }
+  safeWriteJson(STATE_FILE, currentState)
 }

@@ -1300,9 +1300,9 @@ const RENDERS = {
           <div class="field">
             <div class="field-label">${R('ps_temp_label')}</div>
             <div class="opts">
-              <button class="opt-btn">0.3</button>
-              <button class="opt-btn active">0.7</button>
-              <button class="opt-btn">1.0</button>
+              <button class="opt-btn">${R('temp_0.3')}</button>
+              <button class="opt-btn active">${R('temp_0.7')}</button>
+              <button class="opt-btn">${R('temp_1.0')}</button>
             </div>
           </div>
           <div class="actions">
@@ -1336,7 +1336,7 @@ const RENDERS = {
         <header>
           <span class="back-btn">&larr;</span>
           <span class="topic-title">递归与认知科学</span>
-          <span class="meta">${R('st_mode_progress')} &middot; ${R('st_diff_high')} &middot; ${R('st_temp_label')}0.7</span>
+          <span class="meta">${R('st_mode_progress')} &middot; ${R('st_diff_high')} &middot; ${R('st_temp_label')}${R('temp_0.7')}</span>
         </header>
         <div class="chat-area">
           <div class="chat-bubble user">我想理解递归为什么对人类认知这么困难</div>
@@ -1505,11 +1505,11 @@ const RENDERS = {
             <button class="btn-ghost">${R('pf_back')}</button>
           </div>
           <div class="panel">
-            <div class="field-row"><span class="label">${R('pf_name')}</span>学者</div>
+            <div class="field-row"><span class="label">${R('pf_name')}</span>${R('greeting_suffix')}</div>
             <div class="field-row"><span class="label">${R('pf_portrait')}</span>${R('pf_empty')}</div>
             <div class="field-row"><span class="label">${R('pf_topics')}</span>认知科学 &middot; 编程 &middot; 哲学</div>
             <div class="field-row"><span class="label">${R('pf_difficulty')}</span>high</div>
-            <div class="field-row"><span class="label">${R('pf_temperature')}</span>0.7</div>
+            <div class="field-row"><span class="label">${R('pf_temperature')}</span>${R('temp_0.7')}</div>
           </div>
           <button class="btn-primary">${R('pf_edit')}</button>
         </div>
@@ -1517,7 +1517,7 @@ const RENDERS = {
           <h2 style="font-family:'Noto Serif SC',serif;font-size:20px;margin-bottom:20px;">${R('pf_edit_title')}</h2>
           <div class="field">
             <div class="label">${R('pf_name')}</div>
-            <input type="text" value="学者" />
+            <input type="text" value="${getItem('greeting_suffix').orig}" />
           </div>
           <div class="field">
             <div class="label">${R('pf_portrait_hint')}</div>
@@ -1538,9 +1538,9 @@ const RENDERS = {
           <div class="field">
             <div class="label">${R('pf_temperature')}</div>
             <div class="opts-row">
-              <button class="opt-btn">0.3</button>
-              <button class="opt-btn active">0.7</button>
-              <button class="opt-btn">1.0</button>
+              <button class="opt-btn">${R('temp_0.3')}</button>
+              <button class="opt-btn active">${R('temp_0.7')}</button>
+              <button class="opt-btn">${R('temp_1.0')}</button>
             </div>
           </div>
           <div style="display:flex;gap:10px;margin-top:16px;">

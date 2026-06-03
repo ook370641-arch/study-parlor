@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import matter from 'gray-matter'
@@ -65,8 +65,6 @@ function forceStripFrontmatter(raw: string): { body: string; stripped: boolean }
 }
 
 export function MarkdownRenderer({ content, fileName }: Props) {
-  const [diag, setDiag] = useState<string>('')
-
   // Defensive: ensure content is a string
   const safeContent = typeof content === 'string' ? content : String(content ?? '')
 
@@ -104,23 +102,7 @@ export function MarkdownRenderer({ content, fileName }: Props) {
     console.error('[MD] matter() failed:', e)
   }
 
-  // Diagnostic: check if body still contains frontmatter-like content
-  const stillHasFm = /^title\s*:/m.test(body) || /^type\s*:/m.test(body)
   const docType = detectDocType(content, fileName)
-
-  useEffect(() => {
-    const lines = [
-      `file: ${fileName}`,
-      `docType: ${docType}`,
-      `content length: ${safeContent.length}`,
-      `body length: ${body.length}`,
-      `force stripped: ${forceResult.stripped}`,
-      `still has frontmatter: ${stillHasFm}`,
-      `body starts: ${JSON.stringify(body.slice(0, 60))}`,
-    ]
-    setDiag(lines.join(' | '))
-    console.log('[MD]', lines.join(' | '))
-  }, [safeContent, fileName])
 
   const components = docType === 'report' ? reportComponents
     : docType === 'fable' ? fableComponents
@@ -128,21 +110,6 @@ export function MarkdownRenderer({ content, fileName }: Props) {
 
   return (
     <div className="md-container">
-      {/* Dev diagnostic — remove before release */}
-      {stillHasFm && (
-        <div style={{
-          background: '#8a3a3a',
-          color: '#e8d5b7',
-          padding: '8px 12px',
-          fontSize: '11px',
-          fontFamily: 'monospace',
-          marginBottom: '8px',
-          borderRadius: '2px',
-        }}>
-          <strong>DIAGNOSTIC:</strong> {diag}
-        </div>
-      )}
-
       <MdErrorBoundary>
         <ReportHeader frontmatter={frontmatter} />
       </MdErrorBoundary>

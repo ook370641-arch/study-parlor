@@ -41,7 +41,7 @@ describe('ConfirmDialog', () => {
     expect(screen.getByText('Test Title')).toBeTruthy()
     expect(screen.getByText('Body text')).toBeTruthy()
     expect(screen.getByText('Delete')).toBeTruthy()
-    expect(screen.getByText('再想想')).toBeTruthy()
+    expect(screen.getByText('你还没有准备好')).toBeTruthy()
   })
 
   it('calls onCancel when cancel clicked', () => {
@@ -59,7 +59,7 @@ describe('ConfirmDialog', () => {
         Body
       </ConfirmDialog>
     )
-    fireEvent.click(screen.getByText('再想想'))
+    fireEvent.click(screen.getByText('你还没有准备好'))
     expect(onCancel).toHaveBeenCalled()
   })
 })

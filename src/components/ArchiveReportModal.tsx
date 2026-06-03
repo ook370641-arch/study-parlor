@@ -21,22 +21,22 @@ export function ArchiveReportModal({ result, onClose }: Props) {
            style={{ borderColor: 'rgba(232, 213, 183, 0.13)' }}>
         <div>
           <div className="font-serif text-lg tracking-wide" style={{ color: '#e8d5b7' }}>
-            《{result.title}》— {isReview ? '复习报告' : '学习报告'}
+            《{result.title}》— {isReview ? '续卷' : '新卷'}
           </div>
         </div>
         <button
           onClick={onClose}
           className="text-2xl leading-none transition-colors hover:opacity-100"
           style={{ color: 'rgba(232, 213, 183, 0.4)' }}
-          aria-label="关闭"
+          aria-label="合上"
         >
           ×
         </button>
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        <div className="max-w-2xl mx-auto">
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="max-w-4xl mx-auto">
           <MarkdownRenderer content={fullContent} fileName={fileName} />
         </div>
       </div>
@@ -53,7 +53,7 @@ export function ArchiveReportModal({ result, onClose }: Props) {
             borderRadius: '2px'
           }}
         >
-          本次学习结束
+          结案
         </button>
       </div>
     </div>

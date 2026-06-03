@@ -1,8 +1,8 @@
 import { Frontmatter, DocType } from '@shared/index'
 
 const TYPE_LABELS: Record<DocType, string> = {
-  progress: '学习报告',
-  review: '复习报告',
+  progress: '学习卷宗',
+  review: '复检记录',
   research: '研究报告',
   fable: '寓言',
   transcript: '原始对话',
@@ -17,9 +17,9 @@ const TYPE_BADGE_STYLES: Record<DocType, string> = {
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {
-  high: '高难度',
-  mid: '中等难度',
-  low: '入门',
+  high: '追至墙角',
+  mid: '互相试探',
+  low: '先暖暖场',
 }
 
 function formatDate(iso: string): string {
@@ -36,12 +36,12 @@ function buildMetadata(frontmatter: Frontmatter): string | null {
 
   if (type === 'progress' || type === 'transcript') {
     const sn = frontmatter.session_number ?? 1
-    parts.push(`Session #${sn}`)
+    parts.push(`档案编号 ${sn}`)
   }
 
   if (type === 'review') {
     const rc = frontmatter.review_count ?? 1
-    parts.push(`第 ${rc} 次复习`)
+    parts.push(`第${rc}次被取出翻阅`)
   }
 
   const date = frontmatter.last_reviewed ?? frontmatter.last_studied ?? frontmatter.created
@@ -69,9 +69,11 @@ export function ReportHeader({ frontmatter }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Type badge */}
-          <span className={`inline-block px-2.5 py-0.5 text-xs font-medium rounded-full ${TYPE_BADGE_STYLES[type]}`}>
-            {TYPE_LABELS[type]}
-          </span>
+          {type !== 'transcript' && (
+            <span className={`inline-block px-2.5 py-0.5 text-xs font-medium rounded-full ${TYPE_BADGE_STYLES[type]}`}>
+              {TYPE_LABELS[type]}
+            </span>
+          )}
 
           {/* Difficulty badge */}
           {showDifficulty && (

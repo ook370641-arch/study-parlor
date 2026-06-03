@@ -23,8 +23,6 @@ export type Frontmatter = {
   progress_summary?: string
 }
 
-export type FileMeta = Frontmatter & { file_path: string }
-
 export type Group = {
   id: string
   name: string
@@ -70,6 +68,16 @@ export type RecCard = {
 
 export type NewTopic = { topic: string; hook: string }
 
+export type ContinueTopicSuggestion = {
+  title: string
+  reason: string
+}
+
+export type TopicContinueCache = {
+  generatedAt: string
+  suggestions: ContinueTopicSuggestion[]
+}
+
 export type UnsavedSession = {
   id: string
   mode: Mode
@@ -79,6 +87,8 @@ export type UnsavedSession = {
   difficulty: Difficulty
   temperature: number
   history: Message[]
+  userRequirement?: string
+  selectedTopic?: string
 }
 
 export type ArchiveResult = {
@@ -100,6 +110,7 @@ export type StateJson = {
   inspirationStrategy: 'v1' | 'v2' | 'v3'
   fableStyleTags: string[]
   lastFableTags: string[]
+  topicContinueSuggestions: Record<string, TopicContinueCache>
 }
 
 export type IpcApi = {
@@ -109,11 +120,11 @@ export type IpcApi = {
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
-  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number }) => Promise<void>
+  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
   llmInspirations: (args: { profile: Profile; existingTitles: string[] }) => Promise<NewTopic[]>
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; description?: string; body: string; progress_summary?: string }>
-  llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[] }>
+  llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[]; mastery_assessment?: string; mastery_checklist?: string[]; future_advice?: string[] }>
   llmGenerateFable: (args: { history: Message[]; topic: string }) => Promise<{ title: string; body: string }>
   llmGroupInspiration: (args: {
     groupName: string
@@ -126,6 +137,10 @@ export type IpcApi = {
     topic: string
     userPrompt?: string
   }) => Promise<{ title: string; body: string }>
+  llmGenerateContinueSuggestions: (args: {
+    topic: string
+    dirName: string
+  }) => Promise<ContinueTopicSuggestion[]>
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
@@ -142,7 +157,7 @@ export type IpcApi = {
   readAnchorFile: (dirName: string) => Promise<{ frontmatter: Frontmatter; body: string }>
 
   // Review report writing (stub until main handler implemented)
-  writeReviewReport: (args: { topic: string; dirName: string; summary: string; gaps: string[]; review_index: number }) => Promise<void>
+  writeReviewReport: (args: { topic: string; dirName: string; summary: string; gaps: string[]; review_index: number; mastery_checklist?: string[]; future_advice?: string[] }) => Promise<void>
   writeFable: (args: { dirName: string; sessionNumber: number; title: string; body: string }) => Promise<void>
 
   // Session file operations
@@ -159,6 +174,9 @@ export type IpcApi = {
     dirName: string
     sessionNumber: number
   }) => Promise<void>
+
+  // Recovery dump
+  recoveryDump: (args: { filename: string; content: string }) => Promise<void>
 }
 
 export type Painting = {

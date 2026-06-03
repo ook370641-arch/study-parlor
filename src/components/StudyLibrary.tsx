@@ -44,7 +44,7 @@ function SessionRow({
   const reviewed = session.hasReview
 
   const fileButtons: { label: string; fileName: string | undefined; disabled: boolean }[] = [
-    { label: '学习报告', fileName: session.reportFile, disabled: !session.hasReport || !session.reportFile },
+    { label: '谈话记录', fileName: session.reportFile, disabled: !session.hasReport || !session.reportFile },
     { label: '图片', fileName: session.imageFile || session.fableImageFile, disabled: (!session.hasImage && !session.hasFableImage) || (!session.imageFile && !session.fableImageFile) },
   ]
 
@@ -55,7 +55,7 @@ function SessionRow({
     <div className="flex items-center gap-3 py-2 px-3 border-b border-slate/20 last:border-b-0">
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-xs text-parchment/50 font-sans">
-          s{session.sessionNumber}
+          第{session.sessionNumber}
         </span>
         <span className="text-xs text-parchment/40 font-sans">{dateStr}</span>
         <span className={`text-[10px] px-1.5 py-0.5 rounded font-sans ${
@@ -63,7 +63,7 @@ function SessionRow({
             ? 'text-ember bg-ember/10'
             : 'text-parchment/40 bg-ink'
         }`}>
-          {reviewed ? '✓ 已复习' : '✕ 未复习'}
+          {reviewed ? '✓ 已复检' : '✕ 未复检'}
         </span>
       </div>
 
@@ -80,7 +80,7 @@ function SessionRow({
                 dirName,
                 sessionNumber: session.sessionNumber,
                 fileName: btn.fileName,
-                title: `${btn.label} · s${session.sessionNumber}`,
+                title: `${btn.label} · 第${session.sessionNumber}`,
               })
             }
             className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${
@@ -109,7 +109,7 @@ function SessionRow({
                 dirName,
                 sessionNumber: session.sessionNumber,
                 fileName: session.fableFile,
-                title: `寓言 · s${session.sessionNumber}`,
+                title: `寓言 · 第${session.sessionNumber}`,
               })
             }
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
@@ -140,19 +140,19 @@ function SessionRow({
                 dirName,
                 sessionNumber: session.sessionNumber,
                 fileName: session.reviewFile,
-                title: `复习报告 · s${session.sessionNumber}`,
+                title: `复检记录 · 第${session.sessionNumber}`,
               })
             }
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember bg-ember/10 text-ember/80 hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
-            复习报告
+            复检记录
           </button>
         ) : (
           <button
             onClick={() => onReview(session)}
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember text-ember hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
-            开始复习
+            复习
           </button>
         )}
 
@@ -160,7 +160,7 @@ function SessionRow({
           <button
             onClick={() => onDelete(dirName, session.sessionNumber)}
             className="w-[18px] h-[18px] flex items-center justify-center rounded text-wine/40 hover:text-wine hover:bg-wine/15 transition-all ml-1 shrink-0"
-            title="删除 session"
+            title="注销此份"
           >
             ✕
           </button>
@@ -230,7 +230,7 @@ function TopicAccordion({
         </span>
         <span className="font-serif text-parchment/90 truncate">{topic.title}</span>
         <span className="text-xs text-parchment/40 font-sans shrink-0">
-          {topic.sessionCount} 个 session
+          <strong>{topic.sessionCount}</strong> 份记录
         </span>
         <span className="text-xs text-parchment/30 font-sans shrink-0">{daysText}</span>
 
@@ -247,7 +247,7 @@ function TopicAccordion({
           }}
           className="text-[10px] font-sans px-2 py-1 rounded border border-slate/30 text-parchment/60 hover:border-ember hover:text-ember transition-colors shrink-0"
         >
-          继续学习（第{topic.sessionCount + 1}次）
+          续谈（第{topic.sessionCount + 1}次）
         </button>
       </div>
 
@@ -436,7 +436,7 @@ export function StudyLibrary() {
     const topicMeta = library.find(t => t.dirName === dirName)
     const session = topicMeta?.sessions.find(s => s.sessionNumber === sessionNumber)
     if (!session?.reportFile) {
-      useStore.getState().showToast('学习报告不存在，无法唤醒寓言')
+      useStore.getState().showToast('谈话记录不存在，无法唤醒寓言')
       return
     }
 
@@ -472,7 +472,7 @@ export function StudyLibrary() {
       const topicMeta = library.find(t => t.dirName === dirName)
       const session = topicMeta?.sessions.find(s => s.sessionNumber === sessionNumber)
       if (!session?.reportFile) {
-        useStore.getState().showToast('学习报告不存在，无法唤醒寓言')
+        useStore.getState().showToast('谈话记录不存在，无法唤醒寓言')
         return
       }
 
@@ -572,13 +572,13 @@ export function StudyLibrary() {
             <path d="M 48 20 Q 30 48 16 72" stroke="rgba(232,213,183,0.04)" strokeWidth="0.5" fill="none" />
           </svg>
         </div>
-        <p className="text-lg text-parchment/50 italic mb-2">你的星空还在等待</p>
-        <p className="text-sm text-parchment/30 mb-6">开始第一次学习，点亮第一颗星</p>
+        <p className="text-lg text-parchment/50 italic mb-2">档案室还空着。但空也是一种档案。</p>
+        <p className="text-sm text-parchment/30 mb-6">开第一份卷宗。你不知道会记录什么——也许是证词，也许是供词。</p>
         <button
           onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
           className="px-6 py-2 rounded-lg bg-ember/10 border border-ember/20 text-ember hover:bg-ember/20 transition-colors"
         >
-          开始第一次学习
+          开第一份卷宗
         </button>
       </div>
     )
@@ -601,16 +601,16 @@ export function StudyLibrary() {
       />
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 py-2 border-b border-slate/10">
+        <div className="flex items-center justify-center gap-4 py-2.5 border-b border-slate/10">
           <button
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             disabled={currentPage === 0}
-            aria-label="上一页"
-            className="text-xs text-parchment/40 hover:text-parchment/70 disabled:opacity-20 disabled:cursor-default transition-colors px-2"
+            aria-label="前一屉"
+            className="text-lg font-bold text-parchment/50 hover:text-parchment/90 disabled:opacity-20 disabled:cursor-default transition-colors px-3 py-1"
           >
             ←
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {(() => {
               const dots: JSX.Element[] = []
               const maxVisible = 7
@@ -632,9 +632,11 @@ export function StudyLibrary() {
                   <button
                     key={i}
                     onClick={() => setCurrentPage(i)}
-                    aria-label={`第 ${i + 1} 页`}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      i === currentPage ? 'bg-ember' : 'bg-slate/30 hover:bg-slate/50'
+                    aria-label={`第${i + 1}屉`}
+                    className={`rounded-full transition-colors ${
+                      i === currentPage
+                        ? 'w-3.5 h-3.5 bg-ember'
+                        : 'w-2.5 h-2.5 bg-slate/40 hover:bg-slate/60'
                     }`}
                   />
                 )
@@ -645,8 +647,8 @@ export function StudyLibrary() {
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={currentPage >= totalPages - 1}
-            aria-label="下一页"
-            className="text-xs text-parchment/40 hover:text-parchment/70 disabled:opacity-20 disabled:cursor-default transition-colors px-2"
+            aria-label="后一屉"
+            className="text-lg font-bold text-parchment/50 hover:text-parchment/90 disabled:opacity-20 disabled:cursor-default transition-colors px-3 py-1"
           >
             →
           </button>
@@ -699,9 +701,9 @@ export function StudyLibrary() {
       {deleteDialog && (
         <ConfirmDialog
           open={true}
-          title="删除 Session"
+          title="注销谈话记录"
           icon="trash"
-          confirmLabel="彻底删除"
+          confirmLabel="确认注销"
           confirmVariant="danger"
           onConfirm={() => {
             deleteArchivedSession(deleteDialog.dirName, deleteDialog.sessionNumber)
@@ -710,18 +712,18 @@ export function StudyLibrary() {
           onCancel={() => setDeleteDialog(null)}
         >
           <>
-            即将彻底删除 <strong style={{ color: '#e8d5b7' }}>{deleteDialog.topicName} / s{deleteDialog.sessionNumber}</strong>。
+            即将注销此份记录 <strong style={{ color: '#e8d5b7' }}>{deleteDialog.topicName} / 第{deleteDialog.sessionNumber}</strong>。
             <br /><br />
             {deleteDialog.files.length > 0 && (
               <>
-                以下文件将被永久删除：<br />
+                以下附件将一并销毁：<br />
                 <span style={{ color: 'rgba(232,213,183,0.5)' }}>
                   {deleteDialog.files.join(' · ')}
                 </span>
                 <br /><br />
               </>
             )}
-            <span style={{ color: '#8a3a3a', fontWeight: 500 }}>此操作不可撤销。</span>
+            <span style={{ color: '#8a3a3a', fontWeight: 500 }}>不可撤销。没有副本。没有备份。</span>
           </>
         </ConfirmDialog>
       )}

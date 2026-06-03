@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import type { Difficulty } from '@shared/index'
+import { getTemperatureLabel } from '@/lib/temperature-label'
 
 export function PreStudyModal() {
   const args = useStore(s => s.preStudyArgs)
@@ -60,7 +61,7 @@ export function PreStudyModal() {
          onClick={closePreStudy}>
       <div className="panel w-[480px] p-8 space-y-6" onClick={e => e.stopPropagation()}>
         <div className="font-sans text-xs text-parchment/50">
-          {args.mode === 'progress' ? '推进 · 苏格拉底式探索' : '检测 · 掌握度复习'}
+          {args.mode === 'progress' ? '探索新知' : '复习检测'}
         </div>
 
         {showTopicInput ? (
@@ -76,7 +77,7 @@ export function PreStudyModal() {
         )}
 
         <div ref={diffRef}>
-          <div className="field-label mb-2">难度</div>
+          <div className="field-label mb-2">审讯强度</div>
           <div className="flex gap-2">
             {(['high', 'mid', 'low'] as Difficulty[]).map(d => (
               <button key={d}
@@ -85,14 +86,14 @@ export function PreStudyModal() {
                   ${difficulty === d
                     ? 'bg-ember text-ink border-ember'
                     : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
-                {d === 'high' ? '高' : d === 'mid' ? '中' : '低'}
+                {d === 'high' ? '追至墙角' : d === 'mid' ? '互相试探' : '先暖暖场'}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <div className="field-label mb-2">温度</div>
+          <div className="field-label mb-2">腔调</div>
           <div className="flex gap-2">
             {[0.3, 0.7, 1.0].map(t => (
               <button key={t}
@@ -101,14 +102,14 @@ export function PreStudyModal() {
                   ${temperature === t
                     ? 'bg-ember text-ink border-ember'
                     : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
-                {t.toFixed(1)}
+                {getTemperatureLabel(t)}
               </button>
             ))}
           </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button variant="ghost" onClick={closePreStudy}>取消</Button>
+          <Button variant="ghost" onClick={closePreStudy}>撤回</Button>
           <Button onClick={onConfirm}>开始</Button>
         </div>
       </div>

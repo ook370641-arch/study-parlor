@@ -58,11 +58,11 @@ export function Home() {
       <Button variant="ghost"
         onClick={() => goto('profile')}
         className="absolute top-4 right-4 font-sans text-sm z-10">
-        档案
+        卷宗
       </Button>
 
       <div className="relative z-[5] text-center text-parchment/60 font-sans text-sm mb-8">
-        晚安,{profile.name}
+        晚安，{profile.name}
       </div>
 
       <div className="relative z-[5] flex gap-6 max-w-6xl mx-auto h-full">
@@ -71,7 +71,7 @@ export function Home() {
           {/* 恢复提示 */}
           {firstUnsaved && (
             <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded-md p-4">
-              <div className="text-xs text-parchment/50 font-sans mb-2">未完成的会话</div>
+              <div className="text-xs text-parchment/50 font-sans mb-2">中断的笔录</div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm text-parchment/70 font-serif truncate">
                   {firstUnsaved.topic}
@@ -87,7 +87,7 @@ export function Home() {
                     onClick={() => removeUnsavedSession(firstUnsaved.id)}
                     className="text-xs text-parchment/30 hover:text-red-400 transition-colors font-sans"
                   >
-                    丢弃
+                    焚毁
                   </button>
                 </div>
               </div>
@@ -99,13 +99,13 @@ export function Home() {
             onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
             className="w-full text-lg py-4"
           >
-            开始新学习
+            新的小径
           </Button>
 
           {/* 从已知推未知 */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-xs text-parchment/40 font-sans">从已知推未知</span>
+              <span className="text-xs text-parchment/40 font-sans">推开下一扇门</span>
               <StrategyToggle />
             </div>
 

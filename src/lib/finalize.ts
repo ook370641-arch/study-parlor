@@ -71,9 +71,17 @@ export async function finalizeAndReturnHome() {
       })
     } else if (sess.mode === 'review') {
       if (!sess.dirName) throw new Error('review session has no dirName')
-      // 与 kickoff 对齐:复习取最新 session 的学习报告作为 existingBody
-      const { body: existingBody } = await ipc.readAnchorFile(sess.dirName)
-      const { summary, gaps } = await ipc.llmFinalizeReview({ history: historySnapshot, existingBody })
+      // 与 kickoff 对齐:复习取最新 session 的学习报告
+      const { frontmatter, body: existingBody } = await ipc.readAnchorFile(sess.dirName)
+      // 把 frontmatter 中的关键上下文拼进笔记正文，让 LLM 复习归档时看到完整图景
+      const enrichedBody = [
+        frontmatter.description ? `主题描述: ${frontmatter.description}` : '',
+        frontmatter.progress_summary ? `上次学习进度: ${frontmatter.progress_summary}` : '',
+        frontmatter.tags?.length ? `标签: ${frontmatter.tags.join(', ')}` : '',
+        frontmatter.difficulty ? `难度: ${frontmatter.difficulty}` : '',
+        '---\n笔记正文:\n' + existingBody
+      ].filter(Boolean).join('\n\n')
+      const { summary, gaps, mastery_assessment, mastery_checklist, future_advice } = await ipc.llmFinalizeReview({ history: historySnapshot, existingBody: enrichedBody })
 
       const topicMeta = s.library.find(t => t.dirName === sess.dirName)
       const reviewIndex = (topicMeta?.sessions.find(sm => sm.hasReview)?.sessionNumber ?? 0) + 1
@@ -81,17 +89,36 @@ export async function finalizeAndReturnHome() {
         topic: sess.topic,
         dirName: sess.dirName ?? sess.topic,
         summary, gaps,
-        review_index: reviewIndex
+        review_index: reviewIndex,
+        mastery_checklist,
+        future_advice
       })
 
       s.showToast(`《${sess.topic}》复习报告已归档`)
 
       const lib = await ipc.scanLibrary()
-      // Build review report content from summary + gaps
+      // Build review report content for modal display
+      const masteryBadge = mastery_assessment
+        ? `掌握度：${mastery_assessment === 'high' ? '扎实' : mastery_assessment === 'mid' ? '中等' : '需补强'}`
+        : ''
       const gapsText = gaps.length > 0
         ? gaps.map((g, i) => `${i + 1}. ${g.trim()}`).join('\n')
         : '（本次复习未发现明显知识缺口）'
-      const content = `## 复习摘要\n\n${summary.trim()}\n\n## 知识缺口\n\n${gapsText}`
+      const checklistText = mastery_checklist && mastery_checklist.length > 0
+        ? mastery_checklist.map(c => `- [ ] ${c.trim()}`).join('\n')
+        : ''
+      const adviceText = future_advice && future_advice.length > 0
+        ? future_advice.map((a, i) => `${i + 1}. ${a.trim()}`).join('\n')
+        : ''
+      const content = [
+        masteryBadge,
+        '## 复习摘要',
+        '',
+        summary.trim(),
+        gaps.length > 0 ? '\n## 知识缺口\n\n' + gapsText : '',
+        checklistText ? '\n## 掌握检验\n\n' + checklistText : '',
+        adviceText ? '\n## 未来发展建议\n\n' + adviceText : ''
+      ].filter(Boolean).join('\n')
 
       useStore.setState({
         library: lib,

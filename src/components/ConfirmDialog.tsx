@@ -77,7 +77,7 @@ export function ConfirmDialog({
               e.currentTarget.style.color = 'rgba(232,213,183,0.7)'
             }}
           >
-            {confirmVariant === 'danger' ? '再想想' : '取消'}
+            {confirmVariant === 'danger' ? '你还没有准备好' : '维持现状'}
           </button>
           <button
             onClick={onConfirm}

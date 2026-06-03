@@ -10,11 +10,11 @@ export function ArchiveLoadingOverlay() {
       />
 
       <div className="font-serif text-lg tracking-widest" style={{ color: '#e8d5b7' }}>
-        正在凝结记忆…
+        归档中
       </div>
 
       <div className="font-sans text-sm" style={{ color: 'rgba(232, 213, 183, 0.4)' }}>
-        AI 正在整理此次学习的笔记
+        纸页在暗中自行归类
       </div>
 
       <div className="w-52 h-0.5 overflow-hidden" style={{ backgroundColor: 'rgba(232, 213, 183, 0.13)' }}>

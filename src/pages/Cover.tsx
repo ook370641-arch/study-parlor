@@ -31,8 +31,8 @@ export function Cover() {
            style={{ textShadow: '0 1px 8px rgba(0,0,0,0.6)' }}>
         {profile.name ? (
           <>
-            <div className="text-2xl">夜深了,{profile.name}。</div>
-            <Button onClick={() => goto('home')}>开始学习</Button>
+            <div className="text-2xl">迷路了吗，{profile.name}</div>
+            <Button onClick={() => goto('home')}>点亮灯火</Button>
           </>
         ) : (
           <>

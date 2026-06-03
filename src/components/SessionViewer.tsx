@@ -43,7 +43,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="w-[800px] max-w-[90vw] max-h-[80vh] flex flex-col bg-ink border border-slate/40 rounded-md overflow-hidden">
+      <div className="w-[1200px] max-w-[96vw] max-h-[92vh] flex flex-col bg-ink border border-slate/40 rounded-md overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate/30 shrink-0">
           <span className="font-serif text-parchment/90 truncate">{title}</span>
@@ -56,7 +56,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-auto p-4 min-h-0">
+        <div className="flex-1 overflow-auto p-8 min-h-0">
           {loading && (
             <div className="text-center text-parchment/50 font-sans text-sm py-8">
               <span className="inline-block w-4 h-4 border-2 border-parchment/30 border-t-ember rounded-full animate-spin mr-2 align-middle" />

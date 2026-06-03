@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import type { AppConfig } from '../env'
 import { probeModel, chatStream } from '../lib/kimi'
-import { generateInspirations, finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport } from '../lib/llm-tasks'
+import { generateInspirations, finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport, generateContinueSuggestions } from '../lib/llm-tasks'
 import type { Message, Profile, Mode, Difficulty } from '@shared/index'
 import { assemblePrompt } from '../lib/prompts'
 
@@ -19,6 +19,8 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     progressSummary?: string
     history: Message[]
     temperature: number
+    selectedTopic?: string
+    userRequirement?: string
   }) => {
     const win = getMainWindow()
     if (!win) return
@@ -31,7 +33,9 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
       const system = assemblePrompt({
         mode: args.mode, difficulty: args.difficulty,
         profile: args.profile, reviewFileBody: args.reviewFileBody,
-        progressSummary: args.progressSummary
+        progressSummary: args.progressSummary,
+        selectedTopic: args.selectedTopic,
+        userRequirement: args.userRequirement
       })
       const messages: Message[] = [{ role: 'system', content: system }, ...args.history]
       await chatStream(cfg, { messages, temperature: args.temperature, signal: ctl.signal },
@@ -83,4 +87,17 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   ipcMain.handle('llm:generateFableFromReport', async (_, args: {
     reportBody: string; topic: string; userPrompt?: string
   }) => generateFableFromReport(cfg, args))
+
+  ipcMain.handle('llm:generateContinueSuggestions', async (_, args: {
+    topic: string
+    dirName: string
+  }) => {
+    try {
+      return await generateContinueSuggestions(cfg, args)
+    } catch (err: any) {
+      const message = String(err?.message ?? err)
+      console.error('[llm:generateContinueSuggestions] error:', message)
+      throw new Error(message)
+    }
+  })
 }

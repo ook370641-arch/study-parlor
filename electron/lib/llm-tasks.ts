@@ -3,8 +3,9 @@ import path from 'node:path'
 import os from 'node:os'
 import { chatNonStream } from './kimi'
 import { parseFrontmatter } from './frontmatter'
+import { getSortedSessionDirs } from '../ipc/files'
 import type { AppConfig } from '../env'
-import type { Profile, NewTopic, Message } from '@shared/index'
+import type { Profile, NewTopic, Message, ContinueTopicSuggestion } from '@shared/index'
 
 const PROMPTS_DIR = (() => {
   // 与 electron/lib/prompts.ts 保持同一套 fallback:
@@ -46,7 +47,7 @@ export async function generateInspirations(
 export async function finalizeProgress(
   cfg: AppConfig,
   history: Message[]
-): Promise<{ title: string; body: string; progress_summary?: string }> {
+): Promise<{ title: string; description?: string; body: string; progress_summary?: string }> {
   const prompt = read('archive-progress.md').replace('{{transcript}}', transcript(history))
   try {
     const text = await chatNonStream(cfg, {
@@ -58,7 +59,7 @@ export async function finalizeProgress(
       console.error('[finalizeProgress] failed to extract JSON from:', text.slice(0, 200))
       throw new Error('JSON extraction failed')
     }
-    const json = JSON.parse(extracted) as { title: string; body: string; progress_summary?: string }
+    const json = JSON.parse(extracted) as { title: string; description?: string; body: string; progress_summary?: string }
     if (!json.title || !json.body) throw new Error('shape')
     return json
   } catch {
@@ -73,7 +74,7 @@ export async function finalizeProgress(
 export async function finalizeReview(
   cfg: AppConfig,
   args: { history: Message[]; existingBody: string }
-): Promise<{ summary: string; gaps: string[] }> {
+): Promise<{ summary: string; gaps: string[]; mastery_assessment?: string; mastery_checklist?: string[]; future_advice?: string[] }> {
   const prompt = read('archive-review.md')
     .replace('{{existing_body}}', args.existingBody)
     .replace('{{transcript}}', transcript(args.history))
@@ -84,10 +85,19 @@ export async function finalizeReview(
     })
     const trimmed = text.trim()
     try {
-      const json = JSON.parse(trimmed) as { summary?: string; gaps?: string[] }
+      const json = JSON.parse(trimmed) as {
+        summary?: string
+        gaps?: string[]
+        mastery_assessment?: string
+        mastery_checklist?: string[]
+        future_advice?: string[]
+      }
       return {
         summary: json.summary ?? trimmed,
-        gaps: Array.isArray(json.gaps) ? json.gaps : []
+        gaps: Array.isArray(json.gaps) ? json.gaps : [],
+        mastery_assessment: json.mastery_assessment,
+        mastery_checklist: Array.isArray(json.mastery_checklist) ? json.mastery_checklist : [],
+        future_advice: Array.isArray(json.future_advice) ? json.future_advice : []
       }
     } catch {
       // 非 JSON 响应：把原始文本作为 summary
@@ -153,16 +163,58 @@ export async function generateFableFromReport(
   }
 }
 
-function getSortedSessionDirs(topicDir: string): string[] {
-  const entries = fs.readdirSync(topicDir, { withFileTypes: true })
-  return entries
-    .filter(e => e.isDirectory() && /^s\d+$/.test(e.name))
-    .map(e => e.name)
-    .sort((a, b) => {
-      const na = parseInt(a.slice(1), 10)
-      const nb = parseInt(b.slice(1), 10)
-      return na - nb
+export async function generateContinueSuggestions(
+  cfg: AppConfig,
+  args: { topic: string; dirName: string }
+): Promise<ContinueTopicSuggestion[]> {
+  const reportSummaries = readTopicReportSummaries(cfg.libraryPath, args.dirName)
+
+  const prompt = read('continue-suggestions.md')
+    .replace('{{topic}}', args.topic)
+    .replace('{{reportSummaries}}', reportSummaries.map((s, i) => `第${i + 1}次学习：\n${s}`).join('\n\n'))
+
+  try {
+    const text = await chatNonStream(cfg, {
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7
     })
+    const json = JSON.parse(text) as ContinueTopicSuggestion[]
+    if (!Array.isArray(json)) return []
+    return json.filter(item => item.title && item.reason).slice(0, 3)
+  } catch {
+    return []
+  }
+}
+
+export function readTopicReportSummaries(
+  libraryPath: string,
+  dirName: string
+): string[] {
+  try {
+    const topicDir = path.join(libraryPath, dirName)
+    const sessionDirs = getSortedSessionDirs(topicDir)
+    const summaries: string[] = []
+
+    for (const sd of sessionDirs) {
+      const reportPath = path.join(topicDir, sd, '学习报告.md')
+      if (!fs.existsSync(reportPath)) continue
+      try {
+        const raw = fs.readFileSync(reportPath, 'utf8')
+        const { frontmatter, body } = parseFrontmatter(raw, { filename: '学习报告.md' })
+        // 优先用 progress_summary，没有则取 body 前 300 字
+        const summary = frontmatter.progress_summary
+          ? frontmatter.progress_summary.replace(/\s+/g, ' ').trim()
+          : body.trim().slice(0, 300)
+        summaries.push(summary)
+      } catch {
+        // 单份报告解析失败，跳过
+      }
+    }
+
+    return summaries
+  } catch {
+    return []
+  }
 }
 
 /**
@@ -178,13 +230,13 @@ function extractJsonObject(text: string): string | null {
     text = codeBlockMatch[1].trim()
   }
 
-  // 2. 从文本中找第一个 { 作为 JSON 对象起始，允许 { 和 " 之间有空格
+  // 2. 从文本中找第一个 { 作为 JSON 对象起始，允许 { 和 " 之间有空白
   let start = -1
   for (let i = 0; i < text.length; i++) {
     if (text[i] === '{') {
-      // 跳过空格检查后面是否有引号（JSON key 的开始）
+      // 跳过所有空白字符检查后面是否有引号（JSON key 的开始）
       let j = i + 1
-      while (j < text.length && text[j] === ' ') j++
+      while (j < text.length && /\s/.test(text[j])) j++
       if (j < text.length && text[j] === '"') {
         start = i
         break

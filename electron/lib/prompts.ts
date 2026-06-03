@@ -18,11 +18,25 @@ export type AssembleArgs = {
   profile: Profile
   reviewFileBody?: string
   progressSummary?: string
+  selectedTopic?: string
+  userRequirement?: string
 }
 
 export function assemblePrompt(args: AssembleArgs): string {
   const parts: string[] = []
   parts.push(read('learner-base.md'))
+
+  // 插入本次学习方向
+  const directionParts: string[] = []
+  if (args.selectedTopic) {
+    directionParts.push(`聚焦主题：${args.selectedTopic}`)
+  }
+  if (args.userRequirement) {
+    directionParts.push(`学习者额外要求：${args.userRequirement}`)
+  }
+  if (directionParts.length > 0) {
+    parts.push(`【本次学习方向】\n${directionParts.join('\n')}`)
+  }
 
   if (args.mode === 'review') {
     if (!args.reviewFileBody) throw new Error('reviewFileBody required when mode=review')

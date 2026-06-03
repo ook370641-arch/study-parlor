@@ -15,7 +15,6 @@ export function attachSessionListeners() {
   })
   unsubDone = ipc.onLlmDone((sid) => {
     const s = useStore.getState().session
-    console.log('[onLlmDone] sid:', sid, 'session?.abortId:', s?.abortId, 'match:', s?.abortId === sid)
     if (!s || s.abortId !== sid) return
     useStore.getState().finishStreaming()
     // 流完成后自动保存
@@ -25,7 +24,6 @@ export function attachSessionListeners() {
   })
   unsubError = ipc.onLlmError((sid, err) => {
     const s = useStore.getState().session
-    console.log('[onLlmError] sid:', sid, 'err:', err.code, err.message)
     if (!s || s.abortId !== sid) return
     useStore.getState().finishStreaming()
     useStore.getState().showToast('流式失败:' + err.message)

@@ -2,23 +2,23 @@ import type { Components } from 'react-markdown'
 
 // ===== Section label mapping =====
 const sectionLabelMap: Record<string, string> = {
-  '核心概念': 'CONCEPT',
-  '学习记录': 'LOG',
-  '学习要点': 'KEY POINTS',
-  '认知缺口': 'GAPS',
-  '掌握检验': 'CHECK',
-  '未来发展建议': 'NEXT',
-  '洞见': 'INSIGHT',
-  '代码示例': 'CODE',
-  '诊断阶段': 'DIAGNOSIS',
-  '学习阶段': 'STUDY',
-  '症状描述': 'SYMPTOM',
-  '关键机制': 'MECHANISM',
-  '矛盾点': 'PARADOX',
-  '有效元素': 'EFFECTIVE',
-  '待判断的问题': 'PENDING',
-  '结束': 'END',
-  '这个寓言真正讲的概念': 'CONCEPT',
+  '核心概念': '概念',
+  '学习记录': '记录',
+  '学习要点': '要点',
+  '认知缺口': '缺口',
+  '掌握检验': '检验',
+  '未来发展建议': '下一步',
+  '洞见': '一闪',
+  '代码示例': '代码',
+  '诊断阶段': '诊察',
+  '学习阶段': '研习',
+  '症状描述': '症状',
+  '关键机制': '机制',
+  '矛盾点': '矛盾',
+  '有效元素': '有效',
+  '待判断的问题': '待定',
+  '结束': '止',
+  '这个寓言真正讲的概念': '所指',
 }
 
 function extractText(node: React.ReactNode): string {
@@ -86,7 +86,7 @@ function DialogueParagraph({ children }: { children: React.ReactNode }) {
   const text = extractText(children)
   const match = text.match(/^(.+?)：(.+)$/)
   if (match) {
-    const isUser = match[1].includes('用户')
+    const isUser = match[1].includes('你')
     return (
       <p className="md-dialogue-line">
         <span className={`md-dialogue-name ${isUser ? 'md-dialogue-user' : 'md-dialogue-ai'}`}>
@@ -124,7 +124,5 @@ export const fableComponents: Components = {
 
 export const dialogueComponents: Components = {
   ...baseComponents,
-  h2: ({ children }) => <h2>{children}</h2>,
   p: ({ children }) => <DialogueParagraph>{children}</DialogueParagraph>,
-  hr: () => <hr />,
 }

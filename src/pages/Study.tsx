@@ -5,6 +5,7 @@ import { ChatInput } from '@/components/ChatInput'
 import { Button } from '@/components/Button'
 import { attachSessionListeners, kickoffSession, sendOrInterrupt } from '@/lib/session-runtime'
 import { finalizeAndReturnHome } from '@/lib/finalize'
+import { getTemperatureLabel } from '@/lib/temperature-label'
 import { ipc } from '@/lib/ipc'
 import { ArchiveLoadingOverlay } from '@/components/ArchiveLoadingOverlay'
 import { ArchiveReportModal } from '@/components/ArchiveReportModal'
@@ -42,10 +43,12 @@ export function Study() {
     }
   }, [session?.abortId])
 
-  // 自动滚到底
+  // 自动滚到底；流式输出期间禁用平滑滚动，避免多个并行动画叠加导致抖动
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [session?.history])
+    if (!scrollRef.current) return
+    const el = scrollRef.current
+    el.scrollTo({ top: el.scrollHeight, behavior: session?.streaming ? 'auto' : 'smooth' })
+  }, [session?.history, session?.streaming])
 
   // ESC = 返回(等同左上箭头)
   const onBackRef = useRef(onBack)
@@ -138,7 +141,7 @@ export function Study() {
       <header className="relative z-[5] flex justify-between items-center px-8 py-4 bg-ink/70 backdrop-blur-md border-b border-slate/40">
         <button
           onClick={onBack}
-          aria-label="返回"
+          aria-label="退席"
           className="text-2xl leading-none text-parchment/70 hover:text-parchment transition-colors px-2 py-1">
           ←
         </button>
@@ -146,9 +149,9 @@ export function Study() {
         <div className="flex items-center gap-3">
           <SwapPaintingButton surface="study" />
           <div className="font-sans text-sm text-parchment/60">
-            {session.mode === 'progress' ? '推进' : '检测'} ·
-            {session.difficulty === 'high' ? '高' : session.difficulty === 'mid' ? '中' : '低'} ·
-            T={session.temperature}
+            {session.mode === 'progress' ? '探索新知' : '复习检测'} ·
+            {session.difficulty === 'high' ? '追至墙角' : session.difficulty === 'mid' ? '互相试探' : '先暖暖场'} ·
+            腔调={getTemperatureLabel(session.temperature)}
           </div>
         </div>
       </header>
@@ -163,9 +166,9 @@ export function Study() {
             </span>
             <div className="flex gap-2">
               {streamError.code !== 'UNAUTHORIZED' && (
-                <Button variant="ghost" onClick={() => { setStreamError(null); sendOrInterrupt('继续') }}>重试</Button>
+                <Button variant="ghost" onClick={() => { setStreamError(null); sendOrInterrupt('继续') }}>重递</Button>
               )}
-              <Button variant="ghost" onClick={() => setStreamError(null)}>关闭</Button>
+              <Button variant="ghost" onClick={() => setStreamError(null)}>合上</Button>
             </div>
           </div>
         </div>
@@ -178,7 +181,7 @@ export function Study() {
             <div className="bg-ink/60 border border-slate/40 px-4 py-3 rounded-md
                             text-parchment/50 font-sans text-sm flex items-center gap-3">
               <StarOrbit starCount={3} radius={10} period={2000} />
-              正在思考...
+              整理中…
             </div>
           </div>
         )}
@@ -187,20 +190,16 @@ export function Study() {
         )}
       </div>
 
-      {(() => {
-        console.log('[Study render] archivePending:', session.archivePending, 'streaming:', session.streaming)
-        return null
-      })()}
       {session.archivePending && !session.streaming && (
         <div className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
           <div className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
                           text-sm font-sans text-parchment/80 flex justify-between items-center">
-            <span>AI 询问是否归档此次学习</span>
+            <span>是否封存？一旦归档，就不再更改。</span>
             <div className="flex gap-1.5 items-center">
               <Button variant="ghost" onClick={() => useStore.getState().dismissArchive()}>
-                暂不归档
+                暂不封存
               </Button>
-              <Button onClick={onEnd}>归档此次学习</Button>
+              <Button onClick={onEnd}>封存。它从此成为档案。</Button>
             </div>
           </div>
         </div>

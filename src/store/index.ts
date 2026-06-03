@@ -78,7 +78,6 @@ type AppStore = {
   finishStreaming: () => void
   pushUserMessage: (text: string) => void
   abortAndReplaceUser: (text: string) => Promise<void>
-  endSession: () => void
   dismissArchive: () => void   // 用户点【暂不归档】,清掉本次 ask
   clearArchiveResult: () => void
   resetSession: () => void
@@ -220,9 +219,6 @@ export const useStore = create<AppStore>((set, get) => ({
     const content = lastMsg?.content ?? ''
     const archivePending = lastMsg?.role === 'assistant' &&
                            /需要存档吗\s*[?？]/.test(content)
-    if (archivePending) {
-      console.log('[finishStreaming] archivePending=true, last 30 chars:', content.slice(-30))
-    }
     return { session: { ...s.session, streaming: false, archivePending } }
   }),
 
@@ -243,10 +239,6 @@ export const useStore = create<AppStore>((set, get) => ({
           streaming: false,
           history: [...state.session.history, { role: 'user', content: text }] } }
       : state)
-  },
-
-  endSession: () => {
-    // 占位,实际 finalize 流程由 Study 页触发
   },
 
   dismissArchive: () => set(s =>
