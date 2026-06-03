@@ -40,13 +40,13 @@ export type SessionMeta = {
   hasReview: boolean
   hasFable: boolean
   fableCount: number
-  hasImage: boolean
+  hasDiagram: boolean
   hasFableImage: boolean
   reportFile?: string
   transcriptFile?: string
   reviewFile?: string
   fableFile?: string
-  imageFile?: string
+  diagramFile?: string
   fableImageFile?: string
 }
 
@@ -141,6 +141,11 @@ export type IpcApi = {
     topic: string
     dirName: string
   }) => Promise<ContinueTopicSuggestion[]>
+  llmGenerateDiagram: (args: {
+    dirName: string
+    sessionNumber: number
+    reportBody: string
+  }) => Promise<void>
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void

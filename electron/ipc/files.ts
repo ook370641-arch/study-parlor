@@ -28,9 +28,9 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
   const fableCount = fableFiles.length
   const fableFile = fableFiles[0]
 
-  const imageFile = files.find(n => /^学习配图\.\w+$/.test(n))
+  const diagramFile = files.find(n => /^学习配图\.\w+$/.test(n))
   const fableImageFile = files.find(n => /^寓言配图(-research)?\.\w+$/.test(n))
-  const hasImage = !!imageFile
+  const hasDiagram = !!diagramFile
   const hasFableImage = !!fableImageFile
 
   let date = ''
@@ -63,13 +63,13 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
     hasReview,
     hasFable,
     fableCount,
-    hasImage,
+    hasDiagram,
     hasFableImage,
     reportFile,
     transcriptFile,
     reviewFile,
     fableFile,
-    imageFile,
+    diagramFile,
     fableImageFile,
   }
 }
@@ -128,7 +128,7 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
     }
   } else if (allFiles.length > 0) {
     // Pure image topic: no session dirs but has files
-    const hasImage = allFiles.some(n => /^学习配图\.\w+$/.test(n))
+    const hasDiagram = allFiles.some(n => /^学习配图\.\w+$/.test(n))
     const hasFableImage = allFiles.some(n => /^寓言配图(-research)?\.\w+$/.test(n))
     sessions = [{
       sessionNumber: 1,
@@ -138,7 +138,7 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
       hasReview: false,
       hasFable: false,
       fableCount: 0,
-      hasImage,
+      hasDiagram,
       hasFableImage,
     }]
   } else {

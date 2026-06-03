@@ -45,7 +45,7 @@ function SessionRow({
 
   const fileButtons: { label: string; fileName: string | undefined; disabled: boolean }[] = [
     { label: '谈话记录', fileName: session.reportFile, disabled: !session.hasReport || !session.reportFile },
-    { label: '图片', fileName: session.imageFile || session.fableImageFile, disabled: (!session.hasImage && !session.hasFableImage) || (!session.imageFile && !session.fableImageFile) },
+    { label: '图片', fileName: session.diagramFile || session.fableImageFile, disabled: (!session.hasDiagram && !session.hasFableImage) || (!session.diagramFile && !session.fableImageFile) },
   ]
 
   const fableKey = `${dirName}-s${session.sessionNumber}`
@@ -505,7 +505,7 @@ export function StudyLibrary() {
     const files: string[] = []
     if (session.hasReport) files.push('学习报告.md')
     if (session.hasFable) files.push(`寓言${session.fableCount > 1 ? '(×' + session.fableCount + ')' : ''}.md`)
-    if (session.hasImage || session.hasFableImage) files.push('配图')
+    if (session.hasDiagram || session.hasFableImage) files.push('配图')
 
     setDeleteDialog({
       dirName,

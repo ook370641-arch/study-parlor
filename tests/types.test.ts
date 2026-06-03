@@ -67,7 +67,7 @@ describe('type instantiation', () => {
       hasReview: false,
       hasFable: true,
       fableCount: 1,
-      hasImage: false,
+      hasDiagram: false,
       hasFableImage: false,
     }
     expect(s.sessionNumber).toBe(1)
@@ -83,7 +83,7 @@ describe('type instantiation', () => {
       hasReview: false,
       hasFable: false,
       fableCount: 0,
-      hasImage: false,
+      hasDiagram: false,
       hasFableImage: false,
     }
     const topic: TopicMeta = {
@@ -128,6 +128,7 @@ describe('type instantiation', () => {
       fableStyleTags: [],
       lastFableTags: [],
       inspirationStrategy: 'v2',
+      topicContinueSuggestions: {},
     }
     // @ts-expect-error recommendation_cache should not exist
     expect(state.recommendation_cache).toBeUndefined()
@@ -144,7 +145,7 @@ describe('type instantiation', () => {
         hasReview: false,
         hasFable: false,
         fableCount: 0,
-        hasImage: false,
+        hasDiagram: false,
         hasFableImage: false,
       }
       return [

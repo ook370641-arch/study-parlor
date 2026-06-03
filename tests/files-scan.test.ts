@@ -85,14 +85,14 @@ describe('getSessionMeta', () => {
     expect(meta.hasReview).toBe(true)
     expect(meta.hasFable).toBe(true)
     expect(meta.fableCount).toBe(1)
-    expect(meta.hasImage).toBe(true)
+    expect(meta.hasDiagram).toBe(true)
     expect(meta.hasFableImage).toBe(true)
     // Actual file names for UI click-through
     expect(meta.reportFile).toBe('学习报告.md')
     expect(meta.transcriptFile).toBe('原始对话.md')
     expect(meta.reviewFile).toBe('复习报告.md')
     expect(meta.fableFile).toBe('寓言.md')
-    expect(meta.imageFile).toBe('学习配图.png')
+    expect(meta.diagramFile).toBe('学习配图.png')
     expect(meta.fableImageFile).toBe('寓言配图.jpg')
   })
 
@@ -226,7 +226,7 @@ describe('getTopicMeta', () => {
     expect(meta!.title).toBe('Agent')
     expect(meta!.sessionCount).toBe(1)
     expect(meta!.sessions[0].hasReport).toBe(false)
-    expect(meta!.sessions[0].hasImage).toBe(true)
+    expect(meta!.sessions[0].hasDiagram).toBe(true)
     expect(meta!.sessions[0].hasFableImage).toBe(true)
   })
 
