@@ -45,7 +45,7 @@ function SessionRow({
 
   const fileButtons: { label: string; fileName: string | undefined; disabled: boolean }[] = [
     { label: '谈话记录', fileName: session.reportFile, disabled: !session.hasReport || !session.reportFile },
-    { label: '图片', fileName: session.diagramFile || session.fableImageFile, disabled: (!session.hasDiagram && !session.hasFableImage) || (!session.diagramFile && !session.fableImageFile) },
+    { label: '图表', fileName: session.diagramFile, disabled: !session.hasDiagram || !session.diagramFile },
   ]
 
   const fableKey = `${dirName}-s${session.sessionNumber}`
@@ -92,6 +92,33 @@ function SessionRow({
             {btn.label}
           </button>
         ))}
+
+        {/* 图表补生成按钮 */}
+        {session.hasReport && !session.hasDiagram && (
+          <button
+            onClick={async () => {
+              try {
+                const report = await ipc.readSessionFile({
+                  dirName,
+                  sessionNumber: session.sessionNumber,
+                  fileName: session.reportFile!
+                })
+                await ipc.llmGenerateDiagram({
+                  dirName,
+                  sessionNumber: session.sessionNumber,
+                  reportBody: report.content
+                })
+                const lib = await ipc.scanLibrary()
+                useStore.setState({ library: lib })
+              } catch (e) {
+                console.error('[StudyLibrary] generate diagram failed:', e)
+              }
+            }}
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            📊 生成图表
+          </button>
+        )}
 
         {/* 寓言按钮 */}
         {isGeneratingFable ? (
@@ -505,7 +532,8 @@ export function StudyLibrary() {
     const files: string[] = []
     if (session.hasReport) files.push('学习报告.md')
     if (session.hasFable) files.push(`寓言${session.fableCount > 1 ? '(×' + session.fableCount + ')' : ''}.md`)
-    if (session.hasDiagram || session.hasFableImage) files.push('配图')
+    if (session.hasDiagram) files.push('学习图表.mmd')
+    if (session.hasFableImage) files.push('寓言配图')
 
     setDeleteDialog({
       dirName,
