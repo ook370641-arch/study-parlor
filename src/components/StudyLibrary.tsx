@@ -31,6 +31,7 @@ function SessionRow({
   onDelete,
   generatingFables,
   onGenerateFable,
+  isPending,
 }: {
   dirName: string
   session: SessionMeta
@@ -39,31 +40,33 @@ function SessionRow({
   onDelete?: (dirName: string, sessionNumber: number) => void
   generatingFables: Set<string>
   onGenerateFable: (dirName: string, sessionNumber: number) => void
+  isPending?: boolean
 }) {
   const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
   const reviewed = session.hasReview
 
   const fileButtons: { label: string; fileName: string | undefined; disabled: boolean }[] = [
     { label: '谈话记录', fileName: session.reportFile, disabled: !session.hasReport || !session.reportFile },
-    { label: '图表', fileName: session.diagramFile, disabled: !session.hasDiagram || !session.diagramFile },
   ]
 
   const fableKey = `${dirName}-s${session.sessionNumber}`
   const isGeneratingFable = generatingFables.has(fableKey)
 
   return (
-    <div className="flex items-center gap-3 py-2 px-3 border-b border-slate/20 last:border-b-0">
+    <div className={`flex items-center gap-3 py-2 px-3 border-b border-slate/20 last:border-b-0 ${isPending ? 'opacity-60' : ''}`}>
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-xs text-parchment/50 font-sans">
           第{session.sessionNumber}
         </span>
         <span className="text-xs text-parchment/40 font-sans">{dateStr}</span>
         <span className={`text-[10px] px-1.5 py-0.5 rounded font-sans ${
-          reviewed
-            ? 'text-ember bg-ember/10'
-            : 'text-parchment/40 bg-ink'
+          isPending
+            ? 'text-parchment/50 bg-ink'
+            : reviewed
+              ? 'text-ember bg-ember/10'
+              : 'text-parchment/40 bg-ink'
         }`}>
-          {reviewed ? '✓ 已复检' : '✕ 未复检'}
+          {isPending ? '⟳ 归档中' : reviewed ? '✓ 已复检' : '✕ 未复检'}
         </span>
       </div>
 
@@ -73,7 +76,7 @@ function SessionRow({
         {fileButtons.map((btn) => (
           <button
             key={btn.label}
-            disabled={btn.disabled}
+            disabled={btn.disabled || isPending}
             onClick={() =>
               !btn.disabled && btn.fileName &&
               onViewFile({
@@ -84,17 +87,33 @@ function SessionRow({
               })
             }
             className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${
-              btn.disabled
+              btn.disabled || isPending
                 ? 'opacity-30 cursor-not-allowed border-slate/20 text-parchment/40'
                 : 'border-slate/30 text-parchment/70 hover:border-ember'
             }`}
           >
-            {btn.label}
+            {isPending && btn.label === '谈话记录' ? (
+              <><span className="inline-block animate-spin mr-1">⟳</span>整理中</>
+            ) : btn.label}
           </button>
         ))}
 
-        {/* 图表补生成按钮 */}
-        {session.hasReport && !session.hasDiagram && (
+        {/* 图表按钮：有图表则查看，有报告无图表则生成，否则占位 */}
+        {session.hasDiagram && session.diagramFile ? (
+          <button
+            onClick={() =>
+              onViewFile({
+                dirName,
+                sessionNumber: session.sessionNumber,
+                fileName: session.diagramFile!,
+                title: `图表 · 第${session.sessionNumber}`,
+              })
+            }
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            图表
+          </button>
+        ) : !isPending && session.hasReport && session.reportFile ? (
           <button
             onClick={async () => {
               try {
@@ -118,10 +137,24 @@ function SessionRow({
           >
             📊 生成图表
           </button>
+        ) : (
+          <button
+            disabled
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            图表
+          </button>
         )}
 
         {/* 寓言按钮 */}
-        {isGeneratingFable ? (
+        {isPending ? (
+          <button
+            disabled
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            寓言
+          </button>
+        ) : isGeneratingFable ? (
           <button
             onClick={() => onGenerateFable(dirName, session.sessionNumber)}
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:bg-ember/20 transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
@@ -159,7 +192,14 @@ function SessionRow({
           </button>
         )}
 
-        {reviewed ? (
+        {isPending ? (
+          <button
+            disabled
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            复习
+          </button>
+        ) : reviewed ? (
           <button
             onClick={() =>
               session.reviewFile &&
@@ -206,6 +246,7 @@ function TopicAccordion({
   onReviewSession,
   generatingFables,
   onGenerateFable,
+  pendingSessionNumbers,
 }: {
   topic: TopicMeta
   onViewFile: (v: ViewerState) => void
@@ -215,6 +256,7 @@ function TopicAccordion({
   onReviewSession?: (session: SessionMeta, topic: TopicMeta) => void
   generatingFables: Set<string>
   onGenerateFable: (dirName: string, sessionNumber: number) => void
+  pendingSessionNumbers?: Set<number>
 }) {
   const [open, setOpen] = useState(false)
   const openPreStudy = useStore((s) => s.openPreStudy)
@@ -292,6 +334,7 @@ function TopicAccordion({
               onDelete={onDeleteSession}
               generatingFables={generatingFables}
               onGenerateFable={onGenerateFable}
+              isPending={pendingSessionNumbers?.has(s.sessionNumber)}
             />
           ))}
         </div>
@@ -302,6 +345,7 @@ function TopicAccordion({
 
 export function StudyLibrary() {
   const library = useStore((s) => s.library)
+  const pendingArchives = useStore((s) => s.pendingArchives)
   const groups = useStore((s) => s.groups)
   const activeGroupId = useStore((s) => s.activeGroupId)
   const gravityFieldOpen = useStore((s) => s.gravityFieldOpen)
@@ -543,11 +587,66 @@ export function StudyLibrary() {
     })
   }, [library])
 
+  // 将后台归档中的占位合并到 library，让用户回到主页后立即可见"归档中"主题
+  const mergedLibrary = useMemo(() => {
+    const result: TopicMeta[] = library.map(t => ({ ...t, sessions: [...t.sessions] }))
+    for (const p of pendingArchives) {
+      const existing = result.find(t => t.dirName === p.dirName)
+      if (existing) {
+        existing.sessions.push({
+          sessionNumber: p.sessionNumber,
+          date: p.date,
+          hasReport: false,
+          hasTranscript: false,
+          hasReview: false,
+          hasFable: false,
+          fableCount: 0,
+          hasDiagram: false,
+          hasFableImage: false
+        })
+        existing.sessionCount = existing.sessions.length
+        existing.last_studied = p.date
+        existing.last_studied_days = 0
+      } else {
+        result.push({
+          dirName: p.dirName,
+          title: p.topic,
+          sessionCount: 1,
+          sessions: [{
+            sessionNumber: p.sessionNumber,
+            date: p.date,
+            hasReport: false,
+            hasTranscript: false,
+            hasReview: false,
+            hasFable: false,
+            fableCount: 0,
+            hasDiagram: false,
+            hasFableImage: false
+          }],
+          last_studied: p.date,
+          last_studied_days: 0,
+          groupId: 'default'
+        })
+      }
+    }
+    return result
+  }, [library, pendingArchives])
+
+  // 构建 pending session 查找映射: dirName -> Set<sessionNumber>
+  const pendingSessionMap = useMemo(() => {
+    const map = new Map<string, Set<number>>()
+    for (const p of pendingArchives) {
+      if (!map.has(p.dirName)) map.set(p.dirName, new Set())
+      map.get(p.dirName)!.add(p.sessionNumber)
+    }
+    return map
+  }, [pendingArchives])
+
   // Filter and sort topics
   const displayTopics = useMemo(() => {
-    let filtered = library
+    let filtered = mergedLibrary
     if (activeGroupId) {
-      filtered = library.filter((t) => t.groupId === activeGroupId)
+      filtered = mergedLibrary.filter((t) => t.groupId === activeGroupId)
     }
     const groupIndexMap = new Map(groups.map((g, i) => [g.id, i]))
     return [...filtered].sort((a, b) => {
@@ -558,7 +657,7 @@ export function StudyLibrary() {
         new Date(b.last_studied).getTime() - new Date(a.last_studied).getTime()
       )
     })
-  }, [library, activeGroupId, groups])
+  }, [mergedLibrary, activeGroupId, groups])
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(0)
@@ -584,7 +683,7 @@ export function StudyLibrary() {
     return map
   }, [groups])
 
-  if (library.length === 0) {
+  if (mergedLibrary.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="relative w-24 h-24 mb-6 group cursor-pointer"
@@ -704,6 +803,7 @@ export function StudyLibrary() {
             onReviewSession={handleReviewSession}
             generatingFables={generatingFables}
             onGenerateFable={handleGenerateFableClick}
+            pendingSessionNumbers={pendingSessionMap.get(topic.dirName)}
           />
         ))}
       </div>
