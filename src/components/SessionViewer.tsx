@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ipc } from '@/lib/ipc'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
+import { MermaidRenderer } from '@/components/MermaidRenderer'
 
 type Props = {
   dirName: string
@@ -70,7 +71,11 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
             </div>
           )}
 
-          {!loading && !error && mimeType.startsWith('image/') && content && (
+          {!loading && !error && fileName.endsWith('.mmd') && content && (
+            <MermaidRenderer source={content} />
+          )}
+
+          {!loading && !error && !fileName.endsWith('.mmd') && mimeType.startsWith('image/') && content && (
             <img
               src={`data:${mimeType};base64,${content}`}
               alt={title}
@@ -78,7 +83,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
             />
           )}
 
-          {!loading && !error && !mimeType.startsWith('image/') && content && (
+          {!loading && !error && !fileName.endsWith('.mmd') && !mimeType.startsWith('image/') && content && (
             <MarkdownRenderer content={content} fileName={fileName} />
           )}
         </div>
