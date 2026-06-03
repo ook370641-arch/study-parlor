@@ -28,7 +28,7 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
   const fableCount = fableFiles.length
   const fableFile = fableFiles[0]
 
-  const diagramFile = files.find(n => /^学习配图\.\w+$/.test(n))
+  const diagramFile = files.find(n => n === '学习图表.mmd')
   const fableImageFile = files.find(n => /^寓言配图(-research)?\.\w+$/.test(n))
   const hasDiagram = !!diagramFile
   const hasFableImage = !!fableImageFile
