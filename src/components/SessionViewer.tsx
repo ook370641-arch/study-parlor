@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ipc } from '@/lib/ipc'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
-import { MermaidRenderer } from '@/components/MermaidRenderer'
+import { SVGRenderer } from '@/components/SVGRenderer'
 
 type Props = {
   dirName: string
@@ -71,8 +71,8 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
             </div>
           )}
 
-          {!loading && !error && fileName.endsWith('.mmd') && content && (
-            <MermaidRenderer source={content} />
+          {!loading && !error && fileName.endsWith('.svg') && content && (
+            <SVGRenderer source={content} />
           )}
 
           {!loading && !error && !fileName.endsWith('.mmd') && mimeType.startsWith('image/') && content && (

@@ -17,7 +17,7 @@ interface DiagramResult {
   chartType: string
   title: string
   rationale: string
-  mermaid: string
+  svg: string
 }
 
 export async function generateDiagram(
@@ -48,10 +48,10 @@ export async function generateDiagram(
     if (!extracted) return undefined
 
     const json = JSON.parse(extracted) as Partial<DiagramResult>
-    if (typeof json.mermaid !== 'string' || !json.mermaid.trim()) {
+    if (typeof json.svg !== 'string' || !json.svg.trim()) {
       return undefined
     }
-    return json.mermaid.trim()
+    return json.svg.trim()
   } catch {
     return undefined
   }

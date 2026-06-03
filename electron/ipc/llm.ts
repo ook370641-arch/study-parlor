@@ -113,7 +113,7 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
       const mermaid = await generateDiagram(cfg, args.reportBody)
       if (mermaid) {
         const sessionDir = path.join(cfg.libraryPath, args.dirName, `s${args.sessionNumber}`)
-        const diagramPath = path.join(sessionDir, '学习图表.mmd')
+        const diagramPath = path.join(sessionDir, '学习图表.svg')
         fs.writeFileSync(diagramPath, mermaid, 'utf8')
       }
     } catch (err: any) {

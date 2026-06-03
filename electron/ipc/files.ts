@@ -28,7 +28,7 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
   const fableCount = fableFiles.length
   const fableFile = fableFiles[0]
 
-  const diagramFile = files.find(n => n === '学习图表.mmd')
+  const diagramFile = files.find(n => n === '学习图表.svg')
   const fableImageFile = files.find(n => /^寓言配图(-research)?\.\w+$/.test(n))
   const hasDiagram = !!diagramFile
   const hasFableImage = !!fableImageFile
@@ -416,13 +416,13 @@ function getMimeType(filePath: string): string {
       throw new Error(`File not found: ${resolved}`)
     }
     const isImage = /\.(png|jpe?g|gif|webp)$/i.test(resolved)
-    const isMermaid = resolved.endsWith('.mmd')
+    const isSvg = resolved.endsWith('.svg')
     if (isImage) {
       const buffer = fs.readFileSync(resolved)
       return { content: buffer.toString('base64'), mimeType: getMimeType(resolved) }
     }
     const content = fs.readFileSync(resolved, 'utf8')
-    return { content, mimeType: isMermaid ? 'text/plain' : 'text/markdown' }
+    return { content, mimeType: isSvg ? 'image/svg+xml' : 'text/markdown' }
   })
 
   ipcMain.handle('files:recoveryDump', async (_, args: { filename: string; content: string }) => {

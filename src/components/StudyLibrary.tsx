@@ -31,6 +31,8 @@ function SessionRow({
   onDelete,
   generatingFables,
   onGenerateFable,
+  generatingDiagrams,
+  onGenerateDiagram,
   isPending,
 }: {
   dirName: string
@@ -40,6 +42,8 @@ function SessionRow({
   onDelete?: (dirName: string, sessionNumber: number) => void
   generatingFables: Set<string>
   onGenerateFable: (dirName: string, sessionNumber: number) => void
+  generatingDiagrams: Set<string>
+  onGenerateDiagram: (dirName: string, sessionNumber: number) => void
   isPending?: boolean
 }) {
   const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
@@ -51,6 +55,8 @@ function SessionRow({
 
   const fableKey = `${dirName}-s${session.sessionNumber}`
   const isGeneratingFable = generatingFables.has(fableKey)
+  const diagramKey = `${dirName}-s${session.sessionNumber}`
+  const isGeneratingDiagram = generatingDiagrams.has(diagramKey)
 
   return (
     <div className={`flex items-center gap-3 py-2 px-3 border-b border-slate/20 last:border-b-0 ${isPending ? 'opacity-60' : ''}`}>
@@ -98,8 +104,15 @@ function SessionRow({
           </button>
         ))}
 
-        {/* 图表按钮：有图表则查看，有报告无图表则生成，否则占位 */}
-        {session.hasDiagram && session.diagramFile ? (
+        {/* 图表按钮 */}
+        {isGeneratingDiagram ? (
+          <button
+            disabled
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+          >
+            <span className="inline-block animate-spin mr-1">⟳</span>生成中...
+          </button>
+        ) : session.hasDiagram && session.diagramFile ? (
           <button
             onClick={() =>
               onViewFile({
@@ -115,24 +128,7 @@ function SessionRow({
           </button>
         ) : !isPending && session.hasReport && session.reportFile ? (
           <button
-            onClick={async () => {
-              try {
-                const report = await ipc.readSessionFile({
-                  dirName,
-                  sessionNumber: session.sessionNumber,
-                  fileName: session.reportFile!
-                })
-                await ipc.llmGenerateDiagram({
-                  dirName,
-                  sessionNumber: session.sessionNumber,
-                  reportBody: report.content
-                })
-                const lib = await ipc.scanLibrary()
-                useStore.setState({ library: lib })
-              } catch (e) {
-                console.error('[StudyLibrary] generate diagram failed:', e)
-              }
-            }}
+            onClick={() => onGenerateDiagram(dirName, session.sessionNumber)}
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
             📊 生成图表
@@ -246,6 +242,8 @@ function TopicAccordion({
   onReviewSession,
   generatingFables,
   onGenerateFable,
+  generatingDiagrams,
+  onGenerateDiagram,
   pendingSessionNumbers,
 }: {
   topic: TopicMeta
@@ -256,6 +254,8 @@ function TopicAccordion({
   onReviewSession?: (session: SessionMeta, topic: TopicMeta) => void
   generatingFables: Set<string>
   onGenerateFable: (dirName: string, sessionNumber: number) => void
+  generatingDiagrams: Set<string>
+  onGenerateDiagram: (dirName: string, sessionNumber: number) => void
   pendingSessionNumbers?: Set<number>
 }) {
   const [open, setOpen] = useState(false)
@@ -334,6 +334,8 @@ function TopicAccordion({
               onDelete={onDeleteSession}
               generatingFables={generatingFables}
               onGenerateFable={onGenerateFable}
+              generatingDiagrams={generatingDiagrams}
+              onGenerateDiagram={onGenerateDiagram}
               isPending={pendingSessionNumbers?.has(s.sessionNumber)}
             />
           ))}
@@ -388,6 +390,10 @@ export function StudyLibrary() {
   const [generatingFables, setGeneratingFables] = useState<Set<string>>(new Set())
   const generatingFablesRef = useRef(generatingFables)
   generatingFablesRef.current = generatingFables
+
+  const [generatingDiagrams, setGeneratingDiagrams] = useState<Set<string>>(new Set())
+  const generatingDiagramsRef = useRef(generatingDiagrams)
+  generatingDiagramsRef.current = generatingDiagrams
 
   const [styleDialogOpen, setStyleDialogOpen] = useState(false)
   const [pendingFable, setPendingFable] = useState<{ dirName: string; sessionNumber: number } | null>(null)
@@ -491,6 +497,45 @@ export function StudyLibrary() {
     []
   )
 
+  const handleGenerateDiagramClick = useCallback(async (dirName: string, sessionNumber: number) => {
+    const key = `${dirName}-s${sessionNumber}`
+
+    if (generatingDiagramsRef.current.has(key)) return
+
+    const topicMeta = library.find(t => t.dirName === dirName)
+    const session = topicMeta?.sessions.find(s => s.sessionNumber === sessionNumber)
+    if (!session?.reportFile) {
+      useStore.getState().showToast('谈话记录不存在，无法生成图表')
+      return
+    }
+
+    setGeneratingDiagrams(prev => new Set(prev).add(key))
+
+    try {
+      const report = await ipc.readSessionFile({
+        dirName,
+        sessionNumber,
+        fileName: session.reportFile
+      })
+      await ipc.llmGenerateDiagram({
+        dirName,
+        sessionNumber,
+        reportBody: report.content
+      })
+      const lib = await ipc.scanLibrary()
+      useStore.setState({ library: lib })
+    } catch (e) {
+      console.error('[StudyLibrary] generate diagram failed:', e)
+      useStore.getState().showToast('图表生成失败')
+    } finally {
+      setGeneratingDiagrams(prev => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    }
+  }, [library])
+
   const handleGenerateFableClick = useCallback((dirName: string, sessionNumber: number) => {
     const key = `${dirName}-s${sessionNumber}`
 
@@ -576,7 +621,7 @@ export function StudyLibrary() {
     const files: string[] = []
     if (session.hasReport) files.push('学习报告.md')
     if (session.hasFable) files.push(`寓言${session.fableCount > 1 ? '(×' + session.fableCount + ')' : ''}.md`)
-    if (session.hasDiagram) files.push('学习图表.mmd')
+    if (session.hasDiagram) files.push('学习图表.svg')
     if (session.hasFableImage) files.push('寓言配图')
 
     setDeleteDialog({
@@ -803,6 +848,8 @@ export function StudyLibrary() {
             onReviewSession={handleReviewSession}
             generatingFables={generatingFables}
             onGenerateFable={handleGenerateFableClick}
+            generatingDiagrams={generatingDiagrams}
+            onGenerateDiagram={handleGenerateDiagramClick}
             pendingSessionNumbers={pendingSessionMap.get(topic.dirName)}
           />
         ))}
