@@ -75,7 +75,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
             <SVGRenderer source={content} />
           )}
 
-          {!loading && !error && !fileName.endsWith('.mmd') && mimeType.startsWith('image/') && content && (
+          {!loading && !error && !fileName.endsWith('.svg') && mimeType.startsWith('image/') && content && (
             <img
               src={`data:${mimeType};base64,${content}`}
               alt={title}
@@ -83,7 +83,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
             />
           )}
 
-          {!loading && !error && !fileName.endsWith('.mmd') && !mimeType.startsWith('image/') && content && (
+          {!loading && !error && !fileName.endsWith('.svg') && !mimeType.startsWith('image/') && content && (
             <MarkdownRenderer content={content} fileName={fileName} />
           )}
         </div>
