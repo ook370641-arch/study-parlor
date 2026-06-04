@@ -39,7 +39,8 @@ export function Profile() {
         <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
 
         <div className="absolute top-10 left-6 right-6 z-10">
-          <div className="bg-ink/72 backdrop-blur-md border border-slate/30 rounded-xl p-6">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-ink/72 backdrop-blur-md border border-slate/30 rounded-xl p-6">
             <div className="flex justify-between items-center pb-3 mb-4 border-b border-slate/25">
               <h2 className="text-2xl font-serif font-semibold">你</h2>
               <button
@@ -81,16 +82,18 @@ export function Profile() {
           </div>
         </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   return (
     <div className="fixed inset-0">
       <SurfaceBackground surface="home" />
       <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
 
-      <div className="absolute top-10 left-6 right-6 bottom-5 z-10 flex flex-col">
-        <div className="bg-ink/78 backdrop-blur-md border border-slate/30 rounded-xl p-5 flex flex-col gap-3 overflow-y-auto flex-1">
+      <div className="absolute top-10 left-6 right-6 bottom-5 z-10">
+        <div className="max-w-3xl mx-auto h-full flex flex-col">
+          <div className="bg-ink/78 backdrop-blur-md border border-slate/30 rounded-xl p-5 flex flex-col gap-3 overflow-y-auto flex-1">
           <h2 className="text-xl font-serif font-semibold pb-2 mb-1 border-b border-slate/20">改写</h2>
 
           <div>
@@ -158,5 +161,6 @@ export function Profile() {
         </div>
       </div>
     </div>
-  )
+  </div>
+)
 }
