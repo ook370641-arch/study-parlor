@@ -21,4 +21,3 @@ coverage/
 test-results/
 .vite/
 *.tsbuildinfo
-src/assets/painting-manifest.json

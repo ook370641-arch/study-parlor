@@ -53,22 +53,81 @@ export function App() {
 
   if (fatal) {
     const isKeyError = fatal.includes('KIMI_API_KEY')
-    return (
-      <div className="h-full flex items-center justify-center p-8">
-        <div className="panel p-8 max-w-lg space-y-4">
-          <h2 className="text-xl text-wine">配置错误</h2>
-          <pre className="text-sm whitespace-pre-wrap font-sans text-parchment/70">{fatal}</pre>
+    const isLibraryError = fatal.includes('STUDY_LIBRARY_PATH') || fatal.includes('学习库')
 
+    return (
+      <div className="h-full flex items-center justify-center p-8 bg-ink">
+        <div className="panel p-10 max-w-md w-full space-y-6">
+          {/* 装饰图标 */}
+          <div className="flex justify-center">
+            <div className="w-12 h-12 rounded-full border border-ember/40 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+          </div>
+
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-semibold text-parchment">启动失败</h2>
+            <p className="text-sm text-parchment/60">请检查以下配置后重启应用</p>
+          </div>
+
+          <div className="divider" />
+
+          {/* 错误描述 */}
+          <div className="bg-wine/10 border border-wine/30 rounded-md px-4 py-3">
+            <p className="text-sm text-parchment/80 whitespace-pre-wrap">{fatal}</p>
+          </div>
+
+          {/* 引导步骤 */}
           {isKeyError && (
-            <div className="space-y-2 text-sm text-parchment/70">
-              <p>1. 打开项目根目录的 <code className="bg-ink px-1 rounded">.env</code> 文件</p>
-              <p>2. 前往 https://platform.moonshot.cn/ 获取真实 API Key</p>
-              <p>3. 替换占位符后，<strong className="text-parchment">重启应用</strong>（Ctrl+C 后重新 npm run dev）</p>
+            <div className="space-y-3 text-sm text-parchment/70">
+              <div className="flex gap-3">
+                <span className="text-ember font-medium shrink-0">1</span>
+                <p>打开项目根目录的 <code className="bg-ink px-1.5 py-0.5 rounded text-parchment/90 border border-slate/30">.env</code> 文件</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-ember font-medium shrink-0">2</span>
+                <p>前往 <span className="text-parchment/90">platform.moonshot.cn</span> 获取真实 API Key</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-ember font-medium shrink-0">3</span>
+                <p>替换占位符后，<strong className="text-parchment">重启应用</strong></p>
+              </div>
             </div>
           )}
 
-          <div className="text-xs text-parchment/50">
-            检查 .env 是否存在且包含 KIMI_API_KEY 与 STUDY_LIBRARY_PATH。
+          {isLibraryError && (
+            <div className="space-y-3 text-sm text-parchment/70">
+              <div className="flex gap-3">
+                <span className="text-ember font-medium shrink-0">1</span>
+                <p>打开项目根目录的 <code className="bg-ink px-1.5 py-0.5 rounded text-parchment/90 border border-slate/30">.env</code> 文件</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-ember font-medium shrink-0">2</span>
+                <p>确认 <code className="bg-ink px-1.5 py-0.5 rounded text-parchment/90 border border-slate/30">STUDY_LIBRARY_PATH</code> 指向的目录存在</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-ember font-medium shrink-0">3</span>
+                <p>若目录不存在，先创建该目录，或修改为有效的路径</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-ember font-medium shrink-0">4</span>
+                <p>保存后<strong className="text-parchment">重启应用</strong></p>
+              </div>
+            </div>
+          )}
+
+          {!isKeyError && !isLibraryError && (
+            <div className="text-sm text-parchment/70">
+              检查 .env 文件是否存在，并确认其中包含 KIMI_API_KEY 与 STUDY_LIBRARY_PATH。
+            </div>
+          )}
+
+          <div className="text-xs text-parchment/40 text-center">
+            修改配置后，请按 Ctrl+C 终止进程，然后重新运行 npm run dev
           </div>
         </div>
       </div>
