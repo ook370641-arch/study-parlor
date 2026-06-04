@@ -9,9 +9,11 @@ type Props = {
   fileName: string
   title: string
   onClose: () => void
+  onRegenerateFable?: () => void
 }
 
-export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose }: Props) {
+export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose, onRegenerateFable }: Props) {
+  const isFable = fileName === '寓言.md'
   const [content, setContent] = useState<string | null>(null)
   const [mimeType, setMimeType] = useState<string>('text/markdown')
   const [loading, setLoading] = useState(true)
@@ -48,12 +50,23 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate/30 shrink-0">
           <span className="font-serif text-parchment/90 truncate">{title}</span>
-          <button
-            onClick={onClose}
-            className="text-parchment/50 hover:text-parchment transition-colors text-lg leading-none px-2"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-1">
+            {isFable && onRegenerateFable && (
+              <button
+                onClick={onRegenerateFable}
+                title="重新生成寓言"
+                className="text-parchment/40 hover:text-ember transition-colors text-sm leading-none px-2 py-1"
+              >
+                ↻
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-parchment/50 hover:text-parchment transition-colors text-lg leading-none px-2"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* Body */}

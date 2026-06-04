@@ -21,6 +21,7 @@ type ViewerState = {
   sessionNumber: number
   fileName: string
   title: string
+  version: number
 } | null
 
 function SessionRow({
@@ -90,6 +91,7 @@ function SessionRow({
                 sessionNumber: session.sessionNumber,
                 fileName: btn.fileName,
                 title: `${btn.label} · 第${session.sessionNumber}`,
+                version: 0,
               })
             }
             className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${
@@ -120,6 +122,7 @@ function SessionRow({
                 sessionNumber: session.sessionNumber,
                 fileName: session.diagramFile!,
                 title: `图表 · 第${session.sessionNumber}`,
+                version: 0,
               })
             }
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
@@ -166,6 +169,7 @@ function SessionRow({
                 sessionNumber: session.sessionNumber,
                 fileName: session.fableFile,
                 title: `寓言 · 第${session.sessionNumber}`,
+                version: 0,
               })
             }
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
@@ -204,6 +208,7 @@ function SessionRow({
                 sessionNumber: session.sessionNumber,
                 fileName: session.reviewFile,
                 title: `复检记录 · 第${session.sessionNumber}`,
+                version: 0,
               })
             }
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember bg-ember/10 text-ember/80 hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
@@ -602,6 +607,14 @@ export function StudyLibrary() {
       const lib = await ipc.scanLibrary()
       useStore.setState({ library: lib })
       useStore.getState().showToast(`寓言「${fable.title}」已唤醒`)
+
+      // 如果用户正在查看这则寓言，强制重新加载以显示新内容
+      setViewer(prev => {
+        if (prev && prev.dirName === dirName && prev.sessionNumber === sessionNumber && prev.fileName === '寓言.md') {
+          return { ...prev, version: prev.version + 1 }
+        }
+        return prev
+      })
     } catch (err: any) {
       useStore.getState().showToast('寓言书写失败：' + (err?.message ?? err))
     } finally {
@@ -857,11 +870,20 @@ export function StudyLibrary() {
 
       {viewer && (
         <SessionViewer
+          key={viewer.version}
           dirName={viewer.dirName}
           sessionNumber={viewer.sessionNumber}
           fileName={viewer.fileName}
           title={viewer.title}
           onClose={() => setViewer(null)}
+          onRegenerateFable={
+            viewer.fileName === '寓言.md'
+              ? () => {
+                  setPendingFable({ dirName: viewer.dirName, sessionNumber: viewer.sessionNumber })
+                  setStyleDialogOpen(true)
+                }
+              : undefined
+          }
         />
       )}
 
