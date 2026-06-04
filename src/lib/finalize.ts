@@ -17,6 +17,11 @@ export async function finalizeAndReturnHome() {
     ? { session: { ...state.session, archivePending: false } }
     : state)
 
+  // 预计算 pending archive 的 key，用于成功或失败时统一清理
+  const pendingDirName = sess.dirName ?? sess.topic.toLowerCase().replace(/[^\w一-龥]/g, '-').replace(/-+/g, '-')
+  const pendingTopicMeta = s.library.find(t => t.dirName === sess.dirName)
+  const pendingSessionNumber = sess.dirName && pendingTopicMeta ? pendingTopicMeta.sessionCount + 1 : 1
+
   try {
     if (sess.mode === 'progress') {
       const { title: llmTitle, description, body, progress_summary } = await ipc.llmFinalizeProgress(historySnapshot)
@@ -118,7 +123,12 @@ export async function finalizeAndReturnHome() {
         ? gaps.map((g, i) => `${i + 1}. ${g.trim()}`).join('\n')
         : '（本次复习未发现明显知识缺口）'
       const checklistText = mastery_checklist && mastery_checklist.length > 0
-        ? mastery_checklist.map(c => `- [ ] ${c.trim()}`).join('\n')
+        ? mastery_checklist.map(c => {
+            const trimmed = c.trim()
+            if (trimmed.startsWith('已掌握')) return `- [x] ${trimmed.replace(/^已掌握[：:]\s*/, '')}`
+            if (trimmed.startsWith('未掌握')) return `- [ ] ${trimmed.replace(/^未掌握[：:]\s*/, '')}`
+            return `- [ ] ${trimmed}`
+          }).join('\n')
         : ''
       const adviceText = future_advice && future_advice.length > 0
         ? future_advice.map((a, i) => `${i + 1}. ${a.trim()}`).join('\n')
@@ -144,10 +154,13 @@ export async function finalizeAndReturnHome() {
       })
     }
 
-    // 归档成功：清理该 topic 的未保存会话
+    // 归档成功：清理占位和未保存会话
+    s.removePendingArchive(pendingDirName, pendingSessionNumber)
     const unsaved = s.unsavedSessions.find(us => us.topic === sess.topic)
     if (unsaved) s.removeUnsavedSession(unsaved.id)
   } catch (err: any) {
+    // 归档失败：清理占位，避免残留
+    s.removePendingArchive(pendingDirName, pendingSessionNumber)
     s.showToast('归档失败:' + (err?.message ?? err))
     throw err
   }

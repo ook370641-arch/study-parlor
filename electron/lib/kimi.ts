@@ -43,6 +43,7 @@ export async function chatNonStream(
       model: cfg.model,
       stream: false,
       temperature: args.temperature,
+      max_tokens: 16384,
       messages: args.messages,
       thinking: { type: 'disabled' }
     }),

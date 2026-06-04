@@ -51,6 +51,7 @@ export function assemblePrompt(args: AssembleArgs): string {
     parts.push(`[学习进度摘要]\n你正在继续之前的学习。目前已掌握的内容摘要:\n${args.progressSummary}\n\n请自然地接续之前的进度推进。`)
   }
 
+  if (args.difficulty === 'high') parts.push(read('difficulty-high.md'))
   if (args.difficulty === 'mid') parts.push(read('difficulty-mid.md'))
   if (args.difficulty === 'low') parts.push(read('difficulty-low.md'))
 

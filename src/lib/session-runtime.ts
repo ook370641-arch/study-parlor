@@ -73,7 +73,9 @@ export async function kickoffSession() {
     reviewFileBody,
     progressSummary,
     history,
-    temperature: s.session.temperature
+    temperature: s.session.temperature,
+    selectedTopic: s.session.selectedTopic,
+    userRequirement: s.session.userRequirement
   })
 }
 
@@ -125,7 +127,9 @@ export async function sendOrInterrupt(text: string) {
       profile: state.profile,
       reviewFileBody: state.session!.reviewFileBody,
       history,
-      temperature: state.session!.temperature
+      temperature: state.session!.temperature,
+      selectedTopic: state.session!.selectedTopic,
+      userRequirement: state.session!.userRequirement
     })
   } finally {
     isSending = false

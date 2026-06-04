@@ -37,7 +37,9 @@ export async function generateInspirations(
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7
     })
-    const json = JSON.parse(text) as NewTopic[]
+    const extracted = extractJsonArray(text)
+    if (!extracted) throw new Error('JSON extraction failed')
+    const json = JSON.parse(extracted) as NewTopic[]
     return Array.isArray(json) ? json.slice(0, 2) : []
   } catch {
     return []
@@ -54,14 +56,18 @@ export async function finalizeProgress(
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3
     })
-    const extracted = extractJsonObject(text)
-    if (!extracted) {
-      console.error('[finalizeProgress] failed to extract JSON from:', text.slice(0, 200))
-      throw new Error('JSON extraction failed')
+    const title = extractXmlTag(text, 'title')
+    const body = extractXmlTag(text, 'body')
+    if (!title || !body) {
+      console.error(`[finalizeProgress] XML extraction failed. Response length=${text.length}`)
+      throw new Error('XML extraction failed')
     }
-    const json = JSON.parse(extracted) as { title: string; description?: string; body: string; progress_summary?: string }
-    if (!json.title || !json.body) throw new Error('shape')
-    return json
+    return {
+      title,
+      description: extractXmlTag(text, 'description') || undefined,
+      body,
+      progress_summary: extractXmlTag(text, 'progress_summary') || undefined,
+    }
   } catch {
     return {
       title: '未命名笔记',
@@ -83,25 +89,17 @@ export async function finalizeReview(
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3
     })
-    const trimmed = text.trim()
-    try {
-      const json = JSON.parse(trimmed) as {
-        summary?: string
-        gaps?: string[]
-        mastery_assessment?: string
-        mastery_checklist?: string[]
-        future_advice?: string[]
-      }
-      return {
-        summary: json.summary ?? trimmed,
-        gaps: Array.isArray(json.gaps) ? json.gaps : [],
-        mastery_assessment: json.mastery_assessment,
-        mastery_checklist: Array.isArray(json.mastery_checklist) ? json.mastery_checklist : [],
-        future_advice: Array.isArray(json.future_advice) ? json.future_advice : []
-      }
-    } catch {
-      // 非 JSON 响应：把原始文本作为 summary
-      return { summary: trimmed, gaps: [] }
+    const summary = extractXmlTag(text, 'summary')
+    if (!summary) {
+      // 非 XML 响应：把原始文本作为 summary
+      return { summary: text.trim(), gaps: [] }
+    }
+    return {
+      summary,
+      gaps: extractXmlTags(text, 'gap'),
+      mastery_assessment: extractXmlTag(text, 'mastery_assessment') || undefined,
+      mastery_checklist: extractXmlTags(text, 'checklist'),
+      future_advice: extractXmlTags(text, 'advice'),
     }
   } catch {
     return { summary: '(复习摘要生成失败,本次对话未自动总结)', gaps: [] }
@@ -114,6 +112,8 @@ export async function generateFable(
 ): Promise<{ title: string; body: string }> {
   const prompt = read('fable.md')
     .replace('{{transcript}}', transcript(args.history))
+    .replace('{{reportBody}}', '【未提供】')
+    .replace('{{userPrompt}}', '【未提供】')
     .replace('{{topic}}', args.topic)
 
   try {
@@ -121,7 +121,9 @@ export async function generateFable(
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7
     })
-    const json = JSON.parse(text) as { title?: string; body?: string }
+    const extracted = extractJsonObject(text)
+    if (!extracted) throw new Error('JSON extraction failed')
+    const json = JSON.parse(extracted) as { title?: string; body?: string }
     if (!json.title || !json.body) throw new Error('shape')
     return { title: json.title, body: json.body }
   } catch {
@@ -136,14 +138,11 @@ export async function generateFableFromReport(
   cfg: AppConfig,
   args: { reportBody: string; topic: string; userPrompt?: string }
 ): Promise<{ title: string; body: string }> {
-  const userPromptSection = args.userPrompt
-    ? `请根据以下用户偏好调整寓言的风格和呈现方式：\n${args.userPrompt}`
-    : ''
-
-  const prompt = read('fable-from-report.md')
+  const prompt = read('fable.md')
+    .replace('{{transcript}}', '【未提供】')
     .replace('{{reportBody}}', args.reportBody)
+    .replace('{{userPrompt}}', args.userPrompt || '【未提供】')
     .replace('{{topic}}', args.topic)
-    .replace('{{userPrompt}}', userPromptSection)
 
   try {
     const text = await chatNonStream(cfg, {
@@ -169,7 +168,7 @@ export async function generateContinueSuggestions(
 ): Promise<ContinueTopicSuggestion[]> {
   const reportSummaries = readTopicReportSummaries(cfg.libraryPath, args.dirName)
 
-  const prompt = read('continue-suggestions.md')
+  const prompt = read('continue-suggestions_prompt_v2.md')
     .replace('{{topic}}', args.topic)
     .replace('{{reportSummaries}}', reportSummaries.map((s, i) => `第${i + 1}次学习：\n${s}`).join('\n\n'))
 
@@ -178,9 +177,11 @@ export async function generateContinueSuggestions(
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7
     })
-    const json = JSON.parse(text) as ContinueTopicSuggestion[]
+    const extracted = extractJsonArray(text)
+    if (!extracted) throw new Error('JSON extraction failed')
+    const json = JSON.parse(extracted) as ContinueTopicSuggestion[]
     if (!Array.isArray(json)) return []
-    return json.filter(item => item.title && item.reason).slice(0, 3)
+    return json.filter(item => item.title).slice(0, 3)
   } catch {
     return []
   }
@@ -215,6 +216,29 @@ export function readTopicReportSummaries(
   } catch {
     return []
   }
+}
+
+/**
+ * 从文本中提取第一个指定 XML 标签的内容。
+ * 支持多行内容、标签前后空白。
+ */
+function extractXmlTag(text: string, tag: string): string | null {
+  const re = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`)
+  const m = text.match(re)
+  return m ? m[1].trim() : null
+}
+
+/**
+ * 从文本中提取所有同名 XML 标签的内容，返回数组。
+ */
+function extractXmlTags(text: string, tag: string): string[] {
+  const re = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'g')
+  const out: string[] = []
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) {
+    out.push(m[1].trim())
+  }
+  return out
 }
 
 /**
@@ -283,6 +307,67 @@ function extractJsonObject(text: string): string | null {
   // Fallback: 括号平衡失败时，尝试直接截取第一个 { 到最后一个 }
   // 处理 LLM 在 JSON 前后加文字导致括号不匹配的情况
   const fallback = text.slice(start).match(/\{[\s\S]*?\}(?=\s*$)/)
+  if (fallback) {
+    try {
+      JSON.parse(fallback[0])
+      return fallback[0]
+    } catch {}
+  }
+
+  return null
+}
+
+/**
+ * 从 LLM 返回的任意文本中提取第一个 [...] JSON 数组。
+ * 处理前后文字、markdown 代码块、多余空格等噪音。
+ */
+function extractJsonArray(text: string): string | null {
+  text = text.trim()
+
+  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+  if (codeBlockMatch) {
+    text = codeBlockMatch[1].trim()
+  }
+
+  const start = text.indexOf('[')
+  if (start === -1) return null
+
+  let depth = 0
+  let inString = false
+  let escape = false
+  let end = -1
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) {
+      escape = false
+      continue
+    }
+    if (ch === '\\' && inString) {
+      escape = true
+      continue
+    }
+    if (ch === '"' && !inString) {
+      inString = true
+      continue
+    }
+    if (ch === '"' && inString) {
+      inString = false
+      continue
+    }
+    if (!inString) {
+      if (ch === '[') depth++
+      if (ch === ']') depth--
+      if (depth === 0) {
+        end = i
+        break
+      }
+    }
+  }
+
+  if (end !== -1) return text.slice(start, end + 1)
+
+  const fallback = text.slice(start).match(/\[[\s\S]*?\](?=\s*$)/)
   if (fallback) {
     try {
       JSON.parse(fallback[0])

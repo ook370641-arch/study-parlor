@@ -1,16 +1,28 @@
-import { useEffect, useRef } from 'react'
+import { useMemo } from 'react'
 
 type Props = {
   source: string
 }
 
 export function SVGRenderer({ source }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!containerRef.current || !source) return
-    containerRef.current.innerHTML = source
+  const dataUrl = useMemo(() => {
+    if (!source) return ''
+    // Escape XML special chars for data URL
+    const escaped = source
+      .replace(/%/g, '%25')
+      .replace(/&/g, '%26')
+      .replace(/#/g, '%23')
+    return `data:image/svg+xml,${escaped}`
   }, [source])
 
-  return <div ref={containerRef} className="svg-diagram flex justify-center" />
+  if (!dataUrl) return null
+
+  return (
+    <img
+      src={dataUrl}
+      alt="知识图谱"
+      className="max-w-full h-auto"
+      style={{ maxHeight: '70vh' }}
+    />
+  )
 }

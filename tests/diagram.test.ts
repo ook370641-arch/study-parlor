@@ -28,24 +28,24 @@ describe('generateDiagram', () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: '{"chartType":"flow","title":"测试","rationale":"理由","mermaid":"flowchart TD\\nA[开始] --> B[结束]"}' } }]
+        choices: [{ message: { content: '{"chartType":"flow","title":"测试","rationale":"理由","svg":"<svg><text>flowchart</text></svg>"}' } }]
       })
     })) as any)
 
     const out = await generateDiagram(cfg, 'a'.repeat(100))
-    expect(out).toBe('flowchart TD\nA[开始] --> B[结束]')
+    expect(out).toBe('<svg><text>flowchart</text></svg>')
   })
 
   it('strips markdown code block before parsing', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: '```json\n{"chartType":"mindmap","title":"代码块","rationale":"r","mermaid":"mindmap\\n  root"}\n```' } }]
+        choices: [{ message: { content: '```json\n{"chartType":"mindmap","title":"代码块","rationale":"r","svg":"<svg><text>mindmap</text></svg>"}\n```' } }]
       })
     })) as any)
 
     const out = await generateDiagram(cfg, 'a'.repeat(100))
-    expect(out).toBe('mindmap\n  root')
+    expect(out).toBe('<svg><text>mindmap</text></svg>')
   })
 
   it('returns undefined when response lacks mermaid field', async () => {

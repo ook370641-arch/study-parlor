@@ -16,6 +16,19 @@ import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 export function Study() {
   const session = useStore(s => s.session)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const userScrolledUpRef = useRef(false)
+
+  // 监听滚动，检测用户是否主动向上翻看历史消息
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+      userScrolledUpRef.current = distanceFromBottom > 80
+    }
+    el.addEventListener('scroll', onScroll)
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
 
   // 左上箭头 = 返回主页:中止流、保存为未完成会话、重置 session
   // 不触发归档,空对话/卡死状态也能安全退出
@@ -43,11 +56,13 @@ export function Study() {
     }
   }, [session?.abortId])
 
-  // 自动滚到底；流式输出期间禁用平滑滚动，避免多个并行动画叠加导致抖动
+  // 自动滚到底；只在用户未主动向上翻看历史时才滚动，避免干扰阅读
   useEffect(() => {
     if (!scrollRef.current) return
     const el = scrollRef.current
-    el.scrollTo({ top: el.scrollHeight, behavior: session?.streaming ? 'auto' : 'smooth' })
+    if (!userScrolledUpRef.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: session?.streaming ? 'auto' : 'smooth' })
+    }
   }, [session?.history, session?.streaming])
 
   // ESC = 返回(等同左上箭头)
@@ -80,16 +95,45 @@ export function Study() {
     useStore.getState().showToast('发送失败:' + err.message))
 
   // 显式归档:仅由"结束并归档"按钮触发(AI 建议结束时出现)
-  const onEnd = async () => {
+  // 归档在后台运行,用户可通过 overlay 上的返回按钮回到主页
+  const onEnd = () => {
+    const s = useStore.getState()
+    const sess = s.session
+    if (!sess) return
+
+    // 立即从未保存会话中移除,避免返回主页后出现在"中断的笔录"
+    const unsaved = s.unsavedSessions.find(us => us.topic === sess.topic)
+    if (unsaved) s.removeUnsavedSession(unsaved.id)
+
+    // 计算占位信息并加入 pendingArchives,让主页学习库立即显示"归档中"
+    const topicMeta = s.library.find(t => t.dirName === sess.dirName)
+    const sessionNumber = sess.dirName && topicMeta
+      ? topicMeta.sessionCount + 1
+      : 1
+    const dirName = sess.dirName ?? sess.topic.toLowerCase().replace(/[^\w一-龥]/g, '-').replace(/-+/g, '-')
+    s.addPendingArchive({
+      dirName,
+      topic: sess.topic,
+      sessionNumber,
+      mode: sess.mode,
+      date: new Date().toISOString()
+    })
+
     setArchiving(true)
-    try {
-      await finalizeAndReturnHome()
-    } catch (err: any) {
+    finalizeAndReturnHome().catch((err: any) => {
       useStore.getState().showToast('归档失败:' + (err.message ?? err))
       setArchiving(false)
-    }
-    // finalizeAndReturnHome sets archiveResult on success;
-    // archiving state stays true until user dismisses the modal
+    })
+  }
+
+  // 归档中点击返回:直接回主页,不中断后台归档进程
+  const onArchiveBack = () => {
+    if (isExiting) return
+    setIsExiting(true)
+    setTimeout(() => {
+      clearArchiveResult()
+      useStore.getState().resetSession()
+    }, 700)
   }
 
   const handleArchiveClose = () => {
@@ -111,7 +155,7 @@ export function Study() {
   return (
     <>
       {/* Archive loading overlay */}
-      {archiving && !archiveResult && <ArchiveLoadingOverlay />}
+      {archiving && !archiveResult && <ArchiveLoadingOverlay onBack={onArchiveBack} />}
 
       {/* Archive report modal */}
       {archiveResult && (

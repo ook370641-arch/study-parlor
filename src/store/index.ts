@@ -2,7 +2,8 @@
 import { create } from 'zustand'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
-  TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping
+  TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
+  TopicContinueCache
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
@@ -22,6 +23,8 @@ type Session = {
   abortId: string
   archivePending: boolean   // LLM 是否问了 "需要存档吗?" 且尚未被用户处理(归档/dismiss)
   reviewFileBody?: string
+  userRequirement?: string
+  selectedTopic?: string
 }
 
 type AppStore = {
@@ -55,6 +58,16 @@ type AppStore = {
   archiveResult: ArchiveResult | null
   groupInspirations: Record<string, NewTopic>
   inspirationStrategy: 'v1' | 'v2' | 'v3'
+  topicContinueSuggestions: Record<string, TopicContinueCache>
+
+  // 后台归档占位
+  pendingArchives: Array<{
+    dirName: string
+    topic: string
+    sessionNumber: number
+    mode: Mode
+    date: string
+  }>
 
   // 画作背景
   currentPaintings: {
@@ -73,6 +86,8 @@ type AppStore = {
   startSession: (a: {
     mode: Mode; topic: string; dirName?: string; file_path?: string
     difficulty: Difficulty; temperature: number
+    userRequirement?: string
+    selectedTopic?: string
   }) => void
   appendChunk: (text: string) => void
   finishStreaming: () => void
@@ -108,6 +123,15 @@ type AppStore = {
   lastFableTags: string[]
   setFableStyleTags: (tags: string[]) => void
   setLastFableTags: (tags: string[]) => void
+
+  addPendingArchive: (pending: {
+    dirName: string
+    topic: string
+    sessionNumber: number
+    mode: Mode
+    date: string
+  }) => void
+  removePendingArchive: (dirName: string, sessionNumber: number) => void
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -130,6 +154,8 @@ export const useStore = create<AppStore>((set, get) => ({
   archiveResult: null,
   groupInspirations: {},
   inspirationStrategy: 'v2',
+  topicContinueSuggestions: {},
+  pendingArchives: [],
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
   lastFableTags: [],
   modal: null,
@@ -147,6 +173,7 @@ export const useStore = create<AppStore>((set, get) => ({
       inspirations: state.suggested_new_topics?.topics ?? [],
       groupInspirations: state.groupInspirations ?? {},
       inspirationStrategy: state.inspirationStrategy ?? 'v2',
+      topicContinueSuggestions: state.topicContinueSuggestions ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -189,7 +216,9 @@ export const useStore = create<AppStore>((set, get) => ({
       session: {
         mode: a.mode, topic: a.topic, dirName: a.dirName, file_path: a.file_path,
         difficulty: a.difficulty, temperature: a.temperature,
-        history: [], streaming: false, abortId: sid, archivePending: false
+        history: [], streaming: false, abortId: sid, archivePending: false,
+        userRequirement: a.userRequirement,
+        selectedTopic: a.selectedTopic
       },
       modal: null,
       preStudyArgs: null,
@@ -279,7 +308,9 @@ export const useStore = create<AppStore>((set, get) => ({
       file_path: s.file_path,
       difficulty: s.difficulty,
       temperature: s.temperature,
-      history: s.history
+      history: s.history,
+      userRequirement: s.userRequirement,
+      selectedTopic: s.selectedTopic
     }
     await ipc.saveSession(unsaved)
     // 刷新 store 中的未保存会话列表，确保返回首页后立即可见
@@ -299,7 +330,9 @@ export const useStore = create<AppStore>((set, get) => ({
         history: unsaved.history,
         streaming: false,
         abortId: unsaved.id,
-        archivePending: false
+        archivePending: false,
+        userRequirement: unsaved.userRequirement,
+        selectedTopic: unsaved.selectedTopic
       },
       currentPage: 'study'
     })
@@ -392,6 +425,16 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ lastFableTags: tags })
     ipc.patchState({ lastFableTags: tags } as Partial<StateJson>)
   },
+
+  addPendingArchive: (pending) => set(s => ({
+    pendingArchives: [...s.pendingArchives, pending]
+  })),
+
+  removePendingArchive: (dirName, sessionNumber) => set(s => ({
+    pendingArchives: s.pendingArchives.filter(
+      p => !(p.dirName === dirName && p.sessionNumber === sessionNumber)
+    )
+  })),
 }))
 
 function generateGroupColor(): string {

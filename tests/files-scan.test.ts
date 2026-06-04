@@ -73,7 +73,7 @@ describe('getSessionMeta', () => {
     fs.writeFileSync(path.join(sessionDir, '原始对话.md'), '对话内容', 'utf8')
     fs.writeFileSync(path.join(sessionDir, '复习报告.md'), '复习内容', 'utf8')
     fs.writeFileSync(path.join(sessionDir, '寓言.md'), '寓言内容', 'utf8')
-    fs.writeFileSync(path.join(sessionDir, '学习配图.png'), 'png', 'utf8')
+    fs.writeFileSync(path.join(sessionDir, '学习图表.svg'), '<svg></svg>', 'utf8')
     fs.writeFileSync(path.join(sessionDir, '寓言配图.jpg'), 'jpg', 'utf8')
 
     const meta = getSessionMeta(sessionDir)
@@ -92,7 +92,7 @@ describe('getSessionMeta', () => {
     expect(meta.transcriptFile).toBe('原始对话.md')
     expect(meta.reviewFile).toBe('复习报告.md')
     expect(meta.fableFile).toBe('寓言.md')
-    expect(meta.diagramFile).toBe('学习配图.png')
+    expect(meta.diagramFile).toBe('学习图表.svg')
     expect(meta.fableImageFile).toBe('寓言配图.jpg')
   })
 

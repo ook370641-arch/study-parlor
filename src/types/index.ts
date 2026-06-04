@@ -70,7 +70,9 @@ export type NewTopic = { topic: string; hook: string }
 
 export type ContinueTopicSuggestion = {
   title: string
-  reason: string
+  context: string
+  rationale: string
+  benefit: string
 }
 
 export type TopicContinueCache = {
