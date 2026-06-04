@@ -90,7 +90,7 @@ export function App() {
               </div>
               <div className="flex gap-3">
                 <span className="text-ember font-medium shrink-0">2</span>
-                <p>前往 <span className="text-parchment/90">platform.moonshot.cn</span> 获取真实 API Key</p>
+                <p>前往你使用的 API 服务商（如 Moonshot、OpenAI、DeepSeek 等）获取真实 API Key</p>
               </div>
               <div className="flex gap-3">
                 <span className="text-ember font-medium shrink-0">3</span>
