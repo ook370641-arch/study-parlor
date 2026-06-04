@@ -85,58 +85,77 @@ export function Profile() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-8 space-y-4">
-      <h2 className="text-2xl font-serif">改写</h2>
+    <div className="fixed inset-0">
+      <SurfaceBackground surface="home" />
+      <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
 
-      <div>
-        <div className="field-label mb-1">代号</div>
-        <Input value={name} onChange={e => setName(e.target.value)} className="w-full" />
-      </div>
+      <div className="absolute top-10 left-6 right-6 bottom-5 z-10 flex flex-col">
+        <div className="bg-ink/78 backdrop-blur-md border border-slate/30 rounded-xl p-5 flex flex-col gap-3 overflow-y-auto flex-1">
+          <h2 className="text-xl font-serif font-semibold pb-2 mb-1 border-b border-slate/20">改写</h2>
 
-      <div>
-        <div className="field-label mb-1">你是谁</div>
-        <textarea rows={4}
-          value={text} onChange={e => setText(e.target.value)}
-          className="w-full bg-ink/40 border border-slate/40 rounded p-3
-                     text-parchment focus:outline-none focus:border-ember font-serif" />
-      </div>
+          <div>
+            <div className="text-[11px] text-parchment/60 font-sans mb-1">代号</div>
+            <Input value={name} onChange={e => setName(e.target.value)} className="w-full" />
+          </div>
 
-      <div>
-        <div className="field-label mb-1">领域</div>
-        <Input value={topics} onChange={e => setTopics(e.target.value)} className="w-full" />
-      </div>
+          <div>
+            <div className="text-[11px] text-parchment/60 font-sans mb-1">你是谁</div>
+            <textarea
+              rows={4}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              className="w-full bg-ink/50 border border-slate/40 rounded-md p-3 text-parchment focus:outline-none focus:border-ember/60 font-serif resize-y min-h-[80px]"
+            />
+          </div>
 
-      <div>
-        <div className="field-label mb-1">审讯强度</div>
-        <div className="flex gap-2">
-          {(['high', 'mid', 'low'] as const).map(d => (
-            <button key={d}
-              onClick={() => setDifficulty(d)}
-              className={`px-4 py-1.5 rounded font-sans text-sm border
-                ${difficulty === d ? 'bg-ember text-ink border-ember' : 'border-slate/40'}`}>
-              {d === 'high' ? '追至墙角' : d === 'mid' ? '互相试探' : '先暖暖场'}
-            </button>
-          ))}
+          <div>
+            <div className="text-[11px] text-parchment/60 font-sans mb-1">领域</div>
+            <Input value={topics} onChange={e => setTopics(e.target.value)} className="w-full" />
+          </div>
+
+          <div>
+            <div className="text-[11px] text-parchment/60 font-sans mb-1">审讯强度</div>
+            <div className="flex gap-2 flex-wrap">
+              {(['high', 'mid', 'low'] as const).map(d => (
+                <button
+                  key={d}
+                  onClick={() => setDifficulty(d)}
+                  className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
+                    difficulty === d
+                      ? 'bg-ember text-ink border-ember'
+                      : 'bg-transparent text-parchment/70 border-slate/40 hover:border-slate/60'
+                  }`}
+                >
+                  {d === 'high' ? '追至墙角' : d === 'mid' ? '互相试探' : '先暖暖场'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] text-parchment/60 font-sans mb-1">腔调</div>
+            <div className="flex gap-2 flex-wrap">
+              {[0.3, 0.7, 1.0].map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTemperature(t)}
+                  className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
+                    temperature === t
+                      ? 'bg-ember text-ink border-ember'
+                      : 'bg-transparent text-parchment/70 border-slate/40 hover:border-slate/60'
+                  }`}
+                >
+                  {getTemperatureLabel(t)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2 mt-auto">
+            <Button onClick={onSave}>落印</Button>
+            <Button variant="ghost" onClick={() => setEditing(false)}>作废</Button>
+          </div>
         </div>
-      </div>
-
-      <div>
-        <div className="field-label mb-1">腔调</div>
-        <div className="flex gap-2">
-          {[0.3, 0.7, 1.0].map(t => (
-            <button key={t}
-              onClick={() => setTemperature(t)}
-              className={`px-4 py-1.5 rounded font-sans text-sm border
-                ${temperature === t ? 'bg-ember text-ink border-ember' : 'border-slate/40'}`}>
-              {getTemperatureLabel(t)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex gap-3 pt-4">
-        <Button onClick={onSave}>落印</Button>
-        <Button variant="ghost" onClick={() => setEditing(false)}>作废</Button>
       </div>
     </div>
   )
