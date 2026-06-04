@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useStore } from '@/store'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
+import { SurfaceBackground } from '@/components/SurfaceBackground'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { getTemperatureLabel } from '@/lib/temperature-label'
 
 export function Profile() {
@@ -32,19 +34,52 @@ export function Profile() {
 
   if (!editing) {
     return (
-      <div className="max-w-2xl mx-auto p-8 space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-serif">你</h2>
-          <Button variant="ghost" onClick={() => goto('home')}>退出</Button>
+      <div className="fixed inset-0">
+        <SurfaceBackground surface="home" />
+        <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
+
+        <div className="absolute top-10 left-6 right-6 z-10">
+          <div className="bg-ink/72 backdrop-blur-md border border-slate/30 rounded-xl p-6">
+            <div className="flex justify-between items-center pb-3 mb-4 border-b border-slate/25">
+              <h2 className="text-2xl font-serif font-semibold">你</h2>
+              <button
+                onClick={() => goto('home')}
+                className="text-parchment/70 hover:text-parchment text-sm bg-transparent border-none cursor-pointer font-sans"
+              >
+                退出
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-7 gap-y-3.5">
+              <div>
+                <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">代号</div>
+                <div className="text-xl font-semibold text-ember">{profile.name}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">领域</div>
+                <div className="text-sm text-parchment">{profile.preferred_topics.join(' · ') || '未填'}</div>
+              </div>
+              <div className="col-span-2">
+                <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">侧写</div>
+                <div className="text-sm text-parchment leading-relaxed">{profile.profile_text || '未填'}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">审讯强度</div>
+                <div className="text-sm text-parchment">
+                  {lastUsed.difficulty === 'high' ? '追至墙角' : lastUsed.difficulty === 'mid' ? '互相试探' : '先暖暖场'}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">腔调</div>
+                <div className="text-sm text-parchment">{getTemperatureLabel(lastUsed.temperature)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center mt-5">
+            <Button onClick={() => setEditing(true)}>改写</Button>
+          </div>
         </div>
-        <div className="panel p-6 space-y-4">
-          <div><span className="field-label">代号:</span>{profile.name}</div>
-          <div><span className="field-label">侧写:</span>{profile.profile_text || '未填'}</div>
-          <div><span className="field-label">领域:</span>{profile.preferred_topics.join(' · ') || '未填'}</div>
-          <div><span className="field-label">审讯强度:</span>{lastUsed.difficulty === 'high' ? '追至墙角' : lastUsed.difficulty === 'mid' ? '互相试探' : '先暖暖场'}</div>
-          <div><span className="field-label">腔调:</span>{getTemperatureLabel(lastUsed.temperature)}</div>
-        </div>
-        <Button onClick={() => setEditing(true)}>改写</Button>
       </div>
     )
   }
