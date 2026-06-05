@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import dragDemoImg from '@/assets/group-guide-drag-demo.png'
+import strategyDemoImg from '@/assets/group-guide-strategy-demo.png'
 
 interface GuidePopoverProps {
   open: boolean
@@ -19,6 +20,16 @@ const GUIDE_ITEMS = [
   },
   {
     text: '左侧新主题推荐会根据你的分组智能推荐，点击策略标签（v1/v2/v3）可切换推荐模式',
+    extra: (
+      <div className="mt-2">
+        <img
+          src={strategyDemoImg}
+          alt="推荐策略切换示意图"
+          className="w-full rounded-md opacity-80"
+          draggable={false}
+        />
+      </div>
+    ),
   },
   {
     text: '长按主题卡片并拖动，可将其移入其他分组',

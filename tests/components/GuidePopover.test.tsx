@@ -60,6 +60,20 @@ describe('GuidePopover', () => {
     expect(screen.getByText('5')).toBeTruthy()
   })
 
+  it('renders strategy demo image for recommendation item', () => {
+    render(
+      <GuidePopover
+        open={true}
+        anchorRef={anchorRef}
+        onClose={vi.fn()}
+      />
+    )
+    const img = screen.getByAltText('推荐策略切换示意图') as HTMLImageElement
+    expect(img).toBeTruthy()
+    expect(img.src).toContain('group-guide-strategy-demo.png')
+    expect(img.draggable).toBe(false)
+  })
+
   it('renders drag demo image for last item', () => {
     render(
       <GuidePopover
