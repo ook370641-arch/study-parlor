@@ -11,6 +11,7 @@ const ICONS = {
   benefit: '\u{1F3AF}',
 } as const
 import { getDifficultyLabel } from '@/lib/difficulty-label'
+import { filterAndSortTopics } from '@/lib/filter-topics'
 import { ipc } from '@/lib/ipc'
 
 type SuggestionCardProps = {
@@ -103,6 +104,11 @@ export function PreStudyModal() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [suggestionError, setSuggestionError] = useState(false)
 
+  const [topicSource, setTopicSource] = useState<'new' | 'existing'>('new')
+  const [selectedDirName, setSelectedDirName] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [customTopic, setCustomTopic] = useState('')
+
   const topicRef = useRef<HTMLInputElement>(null)
   const diffRef = useRef<HTMLDivElement>(null)
 
@@ -122,6 +128,10 @@ export function PreStudyModal() {
     setSuggestions([])
     setLoadingSuggestions(false)
     setSuggestionError(false)
+    setTopicSource('new')
+    setSelectedDirName(null)
+    setSearchQuery('')
+    setCustomTopic('')
 
     if (isContinue && args.dirName) {
       const cacheKey = args.dirName
@@ -195,8 +205,27 @@ export function PreStudyModal() {
   if (!args) return null
 
   const onConfirm = async () => {
-    const finalTopic = (showTopicInput ? topic : args.topic).trim()
-    if (showTopicInput && !finalTopic) return
+    let finalTopic: string
+    let finalDirName: string | undefined
+
+    if (!showTopicInput) {
+      // Continue scenario: use args directly
+      finalTopic = args.topic.trim()
+      finalDirName = args.dirName
+    } else if (topicSource === 'existing') {
+      // Existing topic + custom sub-topic
+      if (!selectedDirName) return
+      const selectedTopicMeta = library.find(t => t.dirName === selectedDirName)
+      if (!selectedTopicMeta) return
+      if (!customTopic.trim()) return
+      finalTopic = `${selectedTopicMeta.title} — ${customTopic.trim()}`
+      finalDirName = selectedDirName
+    } else {
+      // New topic
+      finalTopic = topic.trim()
+      if (!finalTopic) return
+      finalDirName = undefined
+    }
 
     const selectedTopic = isContinue && suggestions[selectedSuggestionIndex]
       ? suggestions[selectedSuggestionIndex].title
@@ -206,7 +235,7 @@ export function PreStudyModal() {
     startSession({
       mode: args.mode,
       topic: finalTopic,
-      dirName: args.dirName,
+      dirName: finalDirName,
       file_path: args.file_path,
       difficulty,
       temperature,
@@ -220,20 +249,109 @@ export function PreStudyModal() {
          onClick={closePreStudy}>
       <div className="panel w-[480px] p-8 space-y-6 max-h-[90vh] overflow-y-auto"
            onClick={e => e.stopPropagation()}>
-        {/* Header label */}
-        <div className="font-sans text-xs text-parchment/50">
-          {args.mode === 'progress' ? '探索新知' : '复习检测'}
-        </div>
+        {/* Header: topic source toggle (only for progress mode without dirName) */}
+        {args.mode === 'progress' && !args.dirName && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setTopicSource('new')
+                setSelectedDirName(null)
+                setSearchQuery('')
+                setCustomTopic('')
+              }}
+              className={`flex-1 py-2 rounded font-sans text-sm border transition-colors
+                ${topicSource === 'new'
+                  ? 'bg-ember text-ink border-ember'
+                  : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}
+            >
+              全新主题
+            </button>
+            <button
+              onClick={() => {
+                setTopicSource('existing')
+                setTopic('')
+                setSelectedDirName(null)
+                setSearchQuery('')
+                setCustomTopic('')
+              }}
+              className={`flex-1 py-2 rounded font-sans text-sm border transition-colors
+                ${topicSource === 'existing'
+                  ? 'bg-ember text-ink border-ember'
+                  : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}
+            >
+              已有主题
+            </button>
+          </div>
+        )}
+        {!(args.mode === 'progress' && !args.dirName) && (
+          <div className="font-sans text-xs text-parchment/50">
+            {args.mode === 'progress' ? '探索新知' : '复习检测'}
+          </div>
+        )}
 
         {/* Topic area */}
         {showTopicInput ? (
-          <div>
-            <div className="field-label mb-2">今夜想学</div>
-            <Input ref={topicRef} value={topic}
-                   onChange={e => setTopic(e.target.value)}
-                   placeholder="主题或一个问题"
-                   className="w-full" />
-          </div>
+          topicSource === 'existing' ? (
+            <div className="space-y-3">
+              {/* Search existing topics */}
+              <div>
+                <div className="field-label mb-2">选择已有主题</div>
+                <Input
+                  value={searchQuery}
+                  onChange={e => {
+                    setSearchQuery(e.target.value)
+                    setSelectedDirName(null)
+                  }}
+                  placeholder="搜索主题..."
+                  className="w-full"
+                />
+              </div>
+              {/* Topic list */}
+              <div className="max-h-40 overflow-y-auto space-y-1 border border-slate/20 rounded-lg p-2">
+                {filterAndSortTopics(library, searchQuery).length === 0 ? (
+                  <div className="text-sm text-parchment/40 italic px-2 py-1">
+                    {library.length === 0 ? '档案室还空着，先创建一个新主题吧' : '未找到匹配的主题'}
+                  </div>
+                ) : (
+                  filterAndSortTopics(library, searchQuery).map(t => (
+                    <button
+                      key={t.dirName}
+                      onClick={() => setSelectedDirName(t.dirName)}
+                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors
+                        ${selectedDirName === t.dirName
+                          ? 'bg-ember/10 text-parchment border border-ember/30'
+                          : 'text-parchment/70 hover:bg-slate/10 border border-transparent'}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{t.title}</span>
+                        <span className="text-xs text-parchment/40">
+                          {t.sessionCount} 次会话 · {t.last_studied_days} 天前
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+              {/* Custom sub-topic input */}
+              <div>
+                <div className="field-label mb-2">细分方向</div>
+                <Input
+                  value={customTopic}
+                  onChange={e => setCustomTopic(e.target.value)}
+                  placeholder="想深入探讨的具体方向..."
+                  className="w-full"
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="field-label mb-2">今夜想学</div>
+              <Input ref={topicRef} value={topic}
+                     onChange={e => setTopic(e.target.value)}
+                     placeholder="主题或一个问题"
+                     className="w-full" />
+            </div>
+          )
         ) : (
           <div className="text-xl text-parchment">{args.topic}</div>
         )}
