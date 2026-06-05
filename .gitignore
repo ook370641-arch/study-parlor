@@ -10,6 +10,7 @@ Pictures/
 
 # AI assistant tooling (large vendor dirs + nested .git repos)
 .claude/
+!.claude/skills/
 .codex/
 .superpowers/
 
