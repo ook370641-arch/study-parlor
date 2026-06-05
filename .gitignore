@@ -7,6 +7,8 @@ release/
 .DS_Store
 Thumbs.db
 Pictures/
+*.bak
+painting-analysis-raw.json
 
 # AI assistant tooling (large vendor dirs + nested .git repos)
 .claude/

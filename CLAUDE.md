@@ -82,9 +82,11 @@ npx vitest run tests/prompts.test.ts
 - `files:appendReview` — 在原文件末尾追加复习记录段，更新 frontmatter 的 `review_count` 和 `last_reviewed`
 - `files:recoveryDump` — IO 失败时把会话内容暂存到 `~/.studyparlor/recovery/`
 
-### 推荐逻辑 (`electron/lib/recommend.ts`)
+### 推荐逻辑 (`electron/lib/llm-tasks.ts`)
 
-（变动中）
+- `generateInspirations` — 根据用户 profile 生成新主题推荐
+- `generateContinueSuggestions` — 根据主题历史生成续谈推荐
+- `generateGroupInspiration` — 根据分组内主题生成分组灵感
 
 ## 关键配置
 
@@ -101,9 +103,9 @@ STUDY_LIBRARY_PATH=...            # 学习库根目录
 
 ### 启动顺序
 
-`main.ts` bootstrap：加载 `.env` → 校验 `libraryPath` 存在 → `registerAllIpc()` → 探活模型 (`GET /v1/models`) → 创建窗口。
+`main.ts` bootstrap：加载 `.env` → 若配置缺失则进入 setup wizard → 创建窗口 → `registerAllIpc()` → 探活模型 → 扫描学习库 → 初始化状态。
 
-**注意**：如果 `loadEnv()` 抛出（如 API key 是占位符），IPC 处理器不会被注册，应用会进入 fatal error 页面（`App.tsx` 中渲染配置错误指引）。
+**注意**：如果 `loadEnv()` 抛出（如 API key 是占位符），应用进入首次配置向导而非 fatal error。配置完成后通过 `setup:writeConfig` IPC 触发正常启动序列。
 
 ## 视觉与 UI
 

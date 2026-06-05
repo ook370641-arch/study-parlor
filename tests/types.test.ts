@@ -68,7 +68,6 @@ describe('type instantiation', () => {
       hasFable: true,
       fableCount: 1,
       hasDiagram: false,
-      hasFableImage: false,
     }
     expect(s.sessionNumber).toBe(1)
     expect(s.fableCount).toBe(1)
@@ -84,7 +83,6 @@ describe('type instantiation', () => {
       hasFable: false,
       fableCount: 0,
       hasDiagram: false,
-      hasFableImage: false,
     }
     const topic: TopicMeta = {
       dirName: 'calculus',

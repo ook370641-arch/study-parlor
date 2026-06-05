@@ -3,7 +3,6 @@ import { Frontmatter, DocType } from '@shared/index'
 const TYPE_LABELS: Record<DocType, string> = {
   progress: '学习卷宗',
   review: '复检记录',
-  research: '研究报告',
   fable: '寓言',
   transcript: '原始对话',
 }
@@ -11,7 +10,6 @@ const TYPE_LABELS: Record<DocType, string> = {
 const TYPE_BADGE_STYLES: Record<DocType, string> = {
   progress: 'bg-ember text-ink',
   review: 'bg-wine text-parchment',
-  research: 'bg-slate text-parchment',
   fable: 'bg-ink border border-ember/60 text-parchment',
   transcript: 'bg-ink/60 text-parchment/60',
 }
@@ -59,8 +57,8 @@ interface Props {
 export function ReportHeader({ frontmatter }: Props) {
   const type = frontmatter.type ?? 'progress'
   const metadata = buildMetadata(frontmatter)
-  const showDifficulty = type === 'progress' || type === 'research'
-  const showSummary = (type === 'progress' || type === 'research') && frontmatter.progress_summary
+  const showDifficulty = type === 'progress'
+  const showSummary = type === 'progress' && frontmatter.progress_summary
   const showSourceTopic = type === 'fable'
 
   return (

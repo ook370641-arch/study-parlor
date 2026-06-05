@@ -1,0 +1,275 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+// Mock ipc before importing store
+vi.mock('@/lib/ipc', () => ({
+  ipc: {
+    patchState: vi.fn(),
+    saveSession: vi.fn(),
+    loadSessions: vi.fn(),
+    llmAbort: vi.fn()
+  }
+}))
+
+vi.mock('@/lib/paintings', () => ({
+  manifest: [{ id: 'test', painter: 'Test', title: 'Test', url: '/test.jpg' }],
+  pickRandom: vi.fn((manifest: unknown[]) => manifest[0] ?? null)
+}))
+
+import { useStore } from '@/store'
+import { ipc } from '@/lib/ipc'
+
+describe('store core operations', () => {
+  beforeEach(() => {
+    useStore.setState(useStore.getState(), true) // reset not available, manually reset key fields
+    useStore.setState({
+      session: null,
+      session_count: 0,
+      archiveResult: null,
+      unsavedSessions: [],
+      currentPage: 'cover'
+    })
+    vi.restoreAllMocks()
+  })
+
+  describe('startSession', () => {
+    it('creates a session with correct initial state', () => {
+      useStore.getState().startSession({
+        mode: 'progress',
+        topic: 'TypeScript',
+        difficulty: 'mid',
+        temperature: 0.7
+      })
+
+      const s = useStore.getState().session
+      expect(s).not.toBeNull()
+      expect(s!.mode).toBe('progress')
+      expect(s!.topic).toBe('TypeScript')
+      expect(s!.difficulty).toBe('mid')
+      expect(s!.temperature).toBe(0.7)
+      expect(s!.history).toEqual([])
+      expect(s!.streaming).toBe(false)
+      expect(s!.archivePending).toBe(false)
+      expect(s!.abortId).toBeTruthy()
+    })
+
+    it('increments session_count', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      expect(useStore.getState().session_count).toBe(1)
+    })
+
+    it('switches to study page', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      expect(useStore.getState().currentPage).toBe('study')
+    })
+  })
+
+  describe('appendChunk', () => {
+    it('creates new assistant message when history is empty', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('Hello')
+
+      const h = useStore.getState().session!.history
+      expect(h).toHaveLength(1)
+      expect(h[0]).toEqual({ role: 'assistant', content: 'Hello' })
+    })
+
+    it('appends to existing assistant message', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('Hello')
+      useStore.getState().appendChunk(' world')
+
+      const h = useStore.getState().session!.history
+      expect(h).toHaveLength(1)
+      expect(h[0].content).toBe('Hello world')
+    })
+
+    it('creates new assistant message after user message', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('Hello')
+      useStore.getState().pushUserMessage('question')
+      useStore.getState().appendChunk('Answer')
+
+      const h = useStore.getState().session!.history
+      expect(h).toHaveLength(3)
+      expect(h[2]).toEqual({ role: 'assistant', content: 'Answer' })
+    })
+
+    it('does nothing when session is null', () => {
+      useStore.setState({ session: null })
+      useStore.getState().appendChunk('test') // should not throw
+      expect(useStore.getState().session).toBeNull()
+    })
+  })
+
+  describe('pushUserMessage', () => {
+    it('adds user message to history', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().pushUserMessage('My question')
+
+      const h = useStore.getState().session!.history
+      expect(h).toHaveLength(1)
+      expect(h[0]).toEqual({ role: 'user', content: 'My question' })
+    })
+
+    it('does nothing when session is null', () => {
+      useStore.setState({ session: null })
+      useStore.getState().pushUserMessage('test')
+      expect(useStore.getState().session).toBeNull()
+    })
+  })
+
+  describe('finishStreaming', () => {
+    it('sets streaming=false', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('Done')
+      useStore.getState().finishStreaming()
+
+      expect(useStore.getState().session!.streaming).toBe(false)
+    })
+
+    it('sets archivePending=true when assistant asks 需要存档吗', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('需要存档吗？')
+      useStore.getState().finishStreaming()
+
+      expect(useStore.getState().session!.archivePending).toBe(true)
+    })
+
+    it('sets archivePending=true with half-width question mark', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('需要存档吗?')
+      useStore.getState().finishStreaming()
+
+      expect(useStore.getState().session!.archivePending).toBe(true)
+    })
+
+    it('sets archivePending=true with space before question mark', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('需要存档吗 ？')
+      useStore.getState().finishStreaming()
+
+      expect(useStore.getState().session!.archivePending).toBe(true)
+    })
+
+    it('does not set archivePending for normal text', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('Here is your answer')
+      useStore.getState().finishStreaming()
+
+      expect(useStore.getState().session!.archivePending).toBe(false)
+    })
+  })
+
+  describe('saveCurrentSession', () => {
+    it('does not save when history is empty', async () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      await useStore.getState().saveCurrentSession()
+
+      expect(ipc.saveSession).not.toHaveBeenCalled()
+    })
+
+    it('saves session with history', async () => {
+      vi.mocked(ipc.loadSessions).mockResolvedValue([])
+
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().pushUserMessage('Hello')
+      await useStore.getState().saveCurrentSession()
+
+      expect(ipc.saveSession).toHaveBeenCalledOnce()
+      const saved = vi.mocked(ipc.saveSession).mock.calls[0][0]
+      expect(saved.mode).toBe('progress')
+      expect(saved.topic).toBe('A')
+      expect(saved.history).toHaveLength(1)
+    })
+  })
+
+  describe('abortAndReplaceUser', () => {
+    it('calls llmAbort when streaming', async () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      // Simulate streaming state by appending a chunk
+      useStore.getState().appendChunk('partial')
+
+      await useStore.getState().abortAndReplaceUser('new message')
+
+      expect(ipc.llmAbort).toHaveBeenCalledOnce()
+      const h = useStore.getState().session!.history
+      expect(h[h.length - 1]).toEqual({ role: 'user', content: 'new message' })
+    })
+
+    it('adds user message even when not streaming', async () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+
+      await useStore.getState().abortAndReplaceUser('new message')
+
+      expect(ipc.llmAbort).not.toHaveBeenCalled()
+      const h = useStore.getState().session!.history
+      expect(h[h.length - 1]).toEqual({ role: 'user', content: 'new message' })
+    })
+  })
+
+  describe('dismissArchive', () => {
+    it('clears archivePending flag', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
+      })
+      useStore.getState().appendChunk('需要存档吗？')
+      useStore.getState().finishStreaming()
+      expect(useStore.getState().session!.archivePending).toBe(true)
+
+      useStore.getState().dismissArchive()
+      expect(useStore.getState().session!.archivePending).toBe(false)
+    })
+  })
+
+  describe('restoreSession', () => {
+    it('restores from unsaved session', () => {
+      useStore.getState().restoreSession({
+        id: 'test-id',
+        mode: 'progress',
+        topic: 'Restored',
+        difficulty: 'high',
+        temperature: 0.5,
+        history: [{ role: 'user', content: 'hi' }]
+      } as any)
+
+      const s = useStore.getState().session
+      expect(s).not.toBeNull()
+      expect(s!.topic).toBe('Restored')
+      expect(s!.difficulty).toBe('high')
+      expect(s!.history).toHaveLength(1)
+      expect(s!.streaming).toBe(false)
+      expect(s!.archivePending).toBe(false)
+      expect(useStore.getState().currentPage).toBe('study')
+    })
+  })
+})

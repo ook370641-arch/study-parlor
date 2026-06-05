@@ -19,5 +19,5 @@
       "@electron/*": ["electron/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*"]
 }

@@ -86,14 +86,12 @@ describe('getSessionMeta', () => {
     expect(meta.hasFable).toBe(true)
     expect(meta.fableCount).toBe(1)
     expect(meta.hasDiagram).toBe(true)
-    expect(meta.hasFableImage).toBe(true)
     // Actual file names for UI click-through
     expect(meta.reportFile).toBe('学习报告.md')
     expect(meta.transcriptFile).toBe('原始对话.md')
     expect(meta.reviewFile).toBe('复习报告.md')
     expect(meta.fableFile).toBe('寓言.md')
     expect(meta.diagramFile).toBe('学习图表.svg')
-    expect(meta.fableImageFile).toBe('寓言配图.jpg')
   })
 
   it('counts multiple fable files', () => {
@@ -108,16 +106,6 @@ describe('getSessionMeta', () => {
     const meta = getSessionMeta(sessionDir)
     expect(meta.hasFable).toBe(true)
     expect(meta.fableCount).toBe(3)
-  })
-
-  it('detects fable-research image variant', () => {
-    const sessionDir = path.join(tmpDir, 's1')
-    fs.mkdirSync(sessionDir, { recursive: true })
-
-    fs.writeFileSync(path.join(sessionDir, '寓言配图-research.png'), 'img', 'utf8')
-
-    const meta = getSessionMeta(sessionDir)
-    expect(meta.hasFableImage).toBe(true)
   })
 
   it('returns empty date when no 学习报告.md', () => {
@@ -218,8 +206,6 @@ describe('getTopicMeta', () => {
     fs.mkdirSync(topicDir, { recursive: true })
 
     fs.writeFileSync(path.join(topicDir, '学习配图.png'), 'img', 'utf8')
-    fs.writeFileSync(path.join(topicDir, '寓言配图-research.jpg'), 'img', 'utf8')
-
     const meta = getTopicMeta(topicDir)
     expect(meta).not.toBeNull()
     expect(meta!.dirName).toBe('Agent')
@@ -227,7 +213,6 @@ describe('getTopicMeta', () => {
     expect(meta!.sessionCount).toBe(1)
     expect(meta!.sessions[0].hasReport).toBe(false)
     expect(meta!.sessions[0].hasDiagram).toBe(true)
-    expect(meta!.sessions[0].hasFableImage).toBe(true)
   })
 
   it('reads session title from frontmatter', () => {

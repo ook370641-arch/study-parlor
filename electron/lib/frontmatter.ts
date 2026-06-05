@@ -8,7 +8,6 @@ const CORE_FIELDS = ['title', 'description', 'type', 'created', 'tags'] as const
 const EXT_FIELDS: Record<DocType, string[]> = {
   progress: ['session_number', 'difficulty', 'progress_summary', 'last_studied', 'review_count'],
   review: ['review_index', 'last_reviewed', 'source_title'],
-  research: ['difficulty', 'summary'],
   fable: ['source_topic'],
   transcript: ['session_number'],
 }

@@ -635,7 +635,6 @@ export function StudyLibrary() {
     if (session.hasReport) files.push('学习报告.md')
     if (session.hasFable) files.push(`寓言${session.fableCount > 1 ? '(×' + session.fableCount + ')' : ''}.md`)
     if (session.hasDiagram) files.push('学习图表.svg')
-    if (session.hasFableImage) files.push('寓言配图')
 
     setDeleteDialog({
       dirName,
@@ -660,7 +659,6 @@ export function StudyLibrary() {
           hasFable: false,
           fableCount: 0,
           hasDiagram: false,
-          hasFableImage: false
         })
         existing.sessionCount = existing.sessions.length
         existing.last_studied = p.date
@@ -679,7 +677,6 @@ export function StudyLibrary() {
             hasFable: false,
             fableCount: 0,
             hasDiagram: false,
-            hasFableImage: false
           }],
           last_studied: p.date,
           last_studied_days: 0,

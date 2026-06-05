@@ -1,11 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { generateContinueSuggestions, readTopicReportSummaries } from '../lib/llm-tasks'
 import { patchState } from './state'
 import type { AppConfig } from '../env'
-import type { Frontmatter, TopicMeta, SessionMeta, Group, GroupMapping, TopicContinueCache } from '@shared/index'
+import type { TopicMeta, SessionMeta, Group, GroupMapping, TopicContinueCache } from '@shared/index'
 
 export function getSessionMeta(sessionDir: string): SessionMeta {
   const files = fs.readdirSync(sessionDir, { withFileTypes: true })
@@ -29,9 +29,7 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
   const fableFile = fableFiles[0]
 
   const diagramFile = files.find(n => n === '学习图表.svg')
-  const fableImageFile = files.find(n => /^寓言配图(-research)?\.\w+$/.test(n))
   const hasDiagram = !!diagramFile
-  const hasFableImage = !!fableImageFile
 
   let date = ''
   let title: string | undefined
@@ -41,7 +39,7 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
       const reportPath = path.join(sessionDir, '学习报告.md')
       const raw = fs.readFileSync(reportPath, 'utf8')
       const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
-      const created = frontmatter.created
+      const created = frontmatter.created as string | Date
       date = created instanceof Date ? created.toISOString() : String(created || '')
       if (frontmatter.session_number != null && frontmatter.session_number > 0) {
         sessionNumber = frontmatter.session_number
@@ -64,13 +62,11 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
     hasFable,
     fableCount,
     hasDiagram,
-    hasFableImage,
     reportFile,
     transcriptFile,
     reviewFile,
     fableFile,
     diagramFile,
-    fableImageFile,
   }
 }
 
@@ -132,7 +128,6 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
   } else if (allFiles.length > 0) {
     // Pure image topic: no session dirs but has files
     const hasDiagram = allFiles.some(n => /^学习配图\.\w+$/.test(n))
-    const hasFableImage = allFiles.some(n => /^寓言配图(-research)?\.\w+$/.test(n))
     sessions = [{
       sessionNumber: 1,
       date: '',
@@ -142,7 +137,6 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
       hasFable: false,
       fableCount: 0,
       hasDiagram,
-      hasFableImage,
     }]
   } else {
     // Empty topic directory — skip
@@ -537,7 +531,10 @@ function getMimeType(filePath: string): string {
   })
 
   ipcMain.handle('files:getExtensionInfo', async () => {
-    const picturesDir = path.join(process.cwd(), 'Pictures')
+    const basePath = app.isPackaged
+      ? path.dirname(app.getPath('exe'))
+      : app.getAppPath()
+    const picturesDir = path.join(basePath, 'Pictures')
     const indexPath = path.join(picturesDir, 'index.json')
     let paintingCount = 0
     try {

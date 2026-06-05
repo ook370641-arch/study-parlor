@@ -12,11 +12,6 @@ describe('detectDocType', () => {
     expect(detectDocType(content, 'whatever.md')).toBe('report')
   })
 
-  it('detects fable from frontmatter type=research', () => {
-    const content = '---\ntype: research\n---\n# Hello'
-    expect(detectDocType(content, 'whatever.md')).toBe('fable')
-  })
-
   it('falls back to filename for 学习报告', () => {
     expect(detectDocType('# Hello', '学习报告.md')).toBe('report')
   })

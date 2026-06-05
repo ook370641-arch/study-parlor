@@ -3,11 +3,17 @@
     "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "out"
+    "outDir": "out",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@shared/*": ["src/types/*"],
+      "@electron/*": ["electron/*"]
+    }
   },
-  "include": ["electron/**/*", "tests/**/*", "*.config.ts"]
+  "include": ["electron/**/*"]
 }

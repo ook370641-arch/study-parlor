@@ -78,7 +78,7 @@ export function GroupRecCard({
   if (error) {
     return (
       <button
-        onClick={load}
+        onClick={() => load()}
         className="block w-full text-left bg-ink/70 backdrop-blur-md border border-slate/40 rounded py-3 px-4 hover:border-ember/50 transition-colors"
       >
         <div className="text-xs text-parchment/40 font-sans mb-1">
