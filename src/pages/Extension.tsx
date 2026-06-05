@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
@@ -7,9 +7,22 @@ import { ipc } from '@/lib/ipc'
 export function Extension() {
   const goto = useStore(s => s.goto)
   const [info, setInfo] = useState<{ libraryPath: string; paintingCount: number } | null>(null)
+  const [progress, setProgress] = useState(0)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     ipc.getExtensionInfo().then(setInfo).catch(() => setInfo({ libraryPath: '未知', paintingCount: 0 }))
+  }, [])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const max = el.scrollHeight - el.clientHeight
+      setProgress(max > 0 ? el.scrollTop / max : 0)
+    }
+    el.addEventListener('scroll', onScroll)
+    return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
   return (
@@ -17,10 +30,10 @@ export function Extension() {
       <SurfaceBackground surface="home" />
       <SwapPaintingButton surface="home" className="absolute top-4 right-36 z-10" />
 
-      <div className="absolute top-10 left-6 right-6 z-10">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-ink/72 backdrop-blur-md border border-slate/30 rounded-xl p-6">
-            <div className="flex justify-between items-center pb-3 mb-4 border-b border-slate/25">
+      <div className="absolute top-10 left-6 right-6 bottom-5 z-10">
+        <div className="max-w-3xl mx-auto h-full">
+          <div className="bg-ink/72 backdrop-blur-md border border-slate/30 rounded-xl flex flex-col h-full overflow-hidden">
+            <div className="flex justify-between items-center px-6 pt-5 pb-3 border-b border-slate/25 shrink-0">
               <h2 className="text-2xl font-serif font-semibold">扩展</h2>
               <button
                 onClick={() => goto('home')}
@@ -29,6 +42,13 @@ export function Extension() {
                 返回夜话
               </button>
             </div>
+            <div className="h-0.5 bg-slate/10 shrink-0">
+              <div
+                className="h-full bg-ember/60 transition-[width] duration-150"
+                style={{ width: `${progress * 100}%` }}
+              />
+            </div>
+            <div ref={scrollRef} className="overflow-y-auto flex-1 px-6 py-4">
 
             {/* Card 1: Library */}
             <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
@@ -140,6 +160,7 @@ export function Extension() {
                   删除配图：从 Pictures/ 移除图片文件，同时从 index.json 删除对应条目，重启生效。
                 </p>
               </div>
+            </div>
             </div>
           </div>
         </div>
