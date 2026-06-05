@@ -13,5 +13,21 @@ export default defineConfig({
       '@electron': path.resolve(__dirname, 'electron'),
       '@shared': path.resolve(__dirname, 'src/types')
     }
-  }
+  },
+  plugins: [
+    {
+      name: 'mock-static-assets',
+      enforce: 'pre',
+      resolveId(id) {
+        if (/\.(png|jpe?g|gif|svg|webp)$/i.test(id)) {
+          return id
+        }
+      },
+      load(id) {
+        if (/\.(png|jpe?g|gif|svg|webp)$/i.test(id)) {
+          return 'export default "' + id + '"'
+        }
+      }
+    }
+  ]
 })
