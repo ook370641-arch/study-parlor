@@ -4,6 +4,7 @@ import { Cover } from '@/pages/Cover'
 import { Home } from '@/pages/Home'
 import { Study } from '@/pages/Study'
 import { Profile } from '@/pages/Profile'
+import { Extension } from '@/pages/Extension'
 import { Toast } from '@/components/Toast'
 import { PreStudyModal } from '@/components/PreStudyModal'
 import { LoadingScreen } from '@/components/LoadingScreen'
@@ -127,7 +128,9 @@ export function App() {
           )}
 
           <div className="text-xs text-parchment/40 text-center">
-            修改配置后，请按 Ctrl+C 终止进程，然后重新运行 npm run dev
+            {import.meta.env.DEV
+              ? '修改配置后，请按 Ctrl+C 终止进程，然后重新运行 npm run dev'
+              : '修改配置后，请关闭应用并重新启动'}
           </div>
         </div>
       </div>
@@ -143,6 +146,7 @@ export function App() {
           {page === 'home' && <Home />}
           {page === 'study' && <Study />}
           {page === 'profile' && <Profile />}
+          {page === 'extension' && <Extension />}
         </>
       )}
       {modal === 'preStudy' && <PreStudyModal />}
