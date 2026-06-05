@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import type { Group } from '@shared/index'
 import { ConfirmDialog } from './ConfirmDialog'
+import { GuidePopover } from './GuidePopover'
 
 interface GroupRibbonProps {
   groups: Group[]
@@ -25,6 +26,8 @@ export function GroupRibbon({
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Group | null>(null)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const guideBtnRef = useRef<HTMLButtonElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleCreate = useCallback(() => {
@@ -160,6 +163,15 @@ export function GroupRibbon({
             +
           </button>
         )}
+
+        {/* Help button */}
+        <button
+          ref={guideBtnRef}
+          onClick={() => setGuideOpen((v) => !v)}
+          className="shrink-0 px-2.5 py-1 text-[11px] font-serif italic rounded-full border border-parchment/15 text-parchment/30 hover:border-parchment/30 hover:text-parchment/50 transition-colors"
+        >
+          i
+        </button>
       </div>
 
       {deleteTarget && (
@@ -184,6 +196,12 @@ export function GroupRibbon({
           </>
         </ConfirmDialog>
       )}
+
+      <GuidePopover
+        open={guideOpen}
+        anchorRef={guideBtnRef}
+        onClose={() => setGuideOpen(false)}
+      />
     </div>
   )
 }
