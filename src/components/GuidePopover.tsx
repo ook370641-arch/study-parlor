@@ -117,8 +117,8 @@ export function GuidePopover({ open, anchorRef, onClose }: GuidePopoverProps) {
       role="dialog"
       aria-modal="true"
       aria-label="分组使用指南"
-      className="fixed z-50 w-[320px] bg-[#1e1612] border border-parchment/20 rounded-xl shadow-xl p-4"
-      style={{ left: 0, top: 0 }}
+      className="fixed z-50 w-[320px] max-h-[60vh] bg-[#1e1612] border border-parchment/20 rounded-xl shadow-xl p-4 overflow-y-auto"
+      style={{ left: 0, top: 0, scrollbarWidth: 'thin', scrollbarColor: '#d97757 transparent' }}
     >
       <div className="text-sm font-semibold text-parchment mb-3">
         分组使用指南
