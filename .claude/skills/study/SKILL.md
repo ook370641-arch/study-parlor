@@ -11,21 +11,59 @@ description: >
 
 # /study — 苏格拉底式私教
 
-## 环境配置读取
+## 首次使用配置
 
-每次触发 `/study` 时，首先尝试自动读取学习库路径：
+**每次触发 `/study` 时，先检查是否已完成路径配置：**
 
-1. 查找当前工作目录下（或上级目录）的 `.env` 文件
-2. 提取 `STUDY_LIBRARY_PATH` 的值
-3. 如果成功，使用该值作为学习库根目录
-4. 如果失败（文件不存在或字段缺失），提示用户：
-   > "未能自动读取学习库路径。请在 SKILL.md 中将 `YOUR_LIBRARY_PATH` 替换为你的实际路径。"
+读取本 SKILL.md 文件内容，检查是否包含 `YOUR_LIBRARY_PATH`：
 
-**手动配置备用**：如果自动读取失败，在 SKILL.md 的"保存配置"部分将 `YOUR_LIBRARY_PATH` 替换为你的实际学习库目录路径。
+- **如果已替换为实际路径**（如 `C:/Users/.../学习库`）：跳过本步骤，直接使用该路径
+- **如果仍是 `YOUR_LIBRARY_PATH`**：执行以下配置流程
+
+### 配置流程
+
+1. **询问应用位置**
+
+   > "首次使用 /study，需要配置学习库路径。请提供 Study Parlor 项目在本地的根目录路径（包含 `.env` 文件的目录），例如：`C:/Users/你的名字/Desktop/Study tutor`
+
+2. **读取 `.env` 并提取路径**
+
+   使用用户提供的目录，拼接 `.env` 路径并读取：
+   ```bash
+   cat "{用户提供的目录}/.env" | grep STUDY_LIBRARY_PATH
+   ```
+
+   - 如果读取成功，提取 `STUDY_LIBRARY_PATH` 的值（去掉等号左边，取右边）
+   - 如果读取失败，提示用户检查路径是否正确，并重新询问
+
+3. **写入配置到本 skill**
+
+   提取到路径后，用以下命令把本 SKILL.md 中所有 `YOUR_LIBRARY_PATH` 替换为实际路径（ skill 自修改，一次配置永久生效）：
+
+   **Windows (PowerShell):**
+   ```powershell
+   $skillPath = "{本 skill 的 SKILL.md 完整路径}"
+   $content = Get-Content $skillPath -Raw
+   $content = $content -replace 'YOUR_LIBRARY_PATH', '{提取到的实际路径}'
+   Set-Content $skillPath $content -NoNewline
+   ```
+
+   **macOS / Linux:**
+   ```bash
+   sed -i 's|YOUR_LIBRARY_PATH|{提取到的实际路径}|g' "{本 skill 的 SKILL.md 完整路径}"
+   ```
+
+   > **注意**：替换后 SKILL.md 中所有 `YOUR_LIBRARY_PATH` 都会变成实际路径，包括保存配置、扫描学习库、创建目录、写入文件等所有位置。
+
+4. **确认配置完成**
+
+   > "学习库路径已配置为 `{实际路径}`，下次使用 /study 无需再配置。"
+
+---
 
 ## 保存配置
 
-- **学习库根目录**：`YOUR_LIBRARY_PATH`（自动从 `.env` 读取，失败则手动替换）
+- **学习库根目录**：`YOUR_LIBRARY_PATH`（首次使用时会通过上述配置流程自动替换为实际路径）
 - **文件命名**：固定为 `学习报告.md`，放在对应主题的 session 目录下
 - **Session 编号**：新主题从 `s1` 开始；已有主题取最大 session 编号 + 1
 - **保存时机**：学习完成后主动询问，用户同意才保存
