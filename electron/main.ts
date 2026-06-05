@@ -18,7 +18,7 @@ async function bootstrap() {
   try {
     cfg = loadEnv(process.env)
     if (!fs.existsSync(cfg.libraryPath)) {
-      throw new Error(`STUDY_LIBRARY_PATH 不存在:${cfg.libraryPath}`)
+      fs.mkdirSync(cfg.libraryPath, { recursive: true })
     }
   } catch (err: any) {
     fatalError = String(err?.message ?? err)

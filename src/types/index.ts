@@ -1,6 +1,6 @@
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
-export type Temperature = 0.3 | 0.7 | 1.0
+export type Temperature = number
 export type DocType = 'progress' | 'review' | 'research' | 'fable' | 'transcript'
 
 export type Profile = {
@@ -77,6 +77,7 @@ export type ContinueTopicSuggestion = {
 
 export type TopicContinueCache = {
   generatedAt: string
+  sessionCount: number
   suggestions: ContinueTopicSuggestion[]
 }
 

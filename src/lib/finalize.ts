@@ -18,7 +18,7 @@ export async function finalizeAndReturnHome() {
     : state)
 
   // 预计算 pending archive 的 key，用于成功或失败时统一清理
-  const pendingDirName = sess.dirName ?? sess.topic.toLowerCase().replace(/[^\w一-龥]/g, '-').replace(/-+/g, '-')
+  const pendingDirName = sess.dirName ?? sess.topic.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '-').replace(/-+/g, '-')
   const pendingTopicMeta = s.library.find(t => t.dirName === sess.dirName)
   const pendingSessionNumber = sess.dirName && pendingTopicMeta ? pendingTopicMeta.sessionCount + 1 : 1
 
@@ -33,7 +33,7 @@ export async function finalizeAndReturnHome() {
       const sessionNumber = sess.dirName && topicMeta
         ? topicMeta.sessionCount + 1
         : 1
-      const dirName = sess.dirName ?? title.toLowerCase().replace(/[^\w一-龥]/g, '-').replace(/-+/g, '-')
+      const dirName = sess.dirName ?? title.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '-').replace(/-+/g, '-')
 
       // 写学习报告
       await ipc.writeProgressMd({
@@ -102,7 +102,8 @@ export async function finalizeAndReturnHome() {
       const { summary, gaps, mastery_assessment, mastery_checklist, future_advice } = await ipc.llmFinalizeReview({ history: historySnapshot, existingBody: enrichedBody })
 
       const topicMeta = s.library.find(t => t.dirName === sess.dirName)
-      const reviewIndex = (topicMeta?.sessions.find(sm => sm.hasReview)?.sessionNumber ?? 0) + 1
+      const lastReviewedSession = [...(topicMeta?.sessions ?? [])].reverse().find(sm => sm.hasReview)
+      const reviewIndex = (lastReviewedSession?.sessionNumber ?? 0) + 1
       await ipc.writeReviewReport({
         topic: sess.topic,
         dirName: sess.dirName ?? sess.topic,

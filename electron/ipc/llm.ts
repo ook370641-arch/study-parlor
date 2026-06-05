@@ -111,10 +111,12 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   }) => {
     try {
       const mermaid = await generateDiagram(cfg, args.reportBody)
-      if (mermaid) {
+      if (mermaid && mermaid.trim().startsWith('<svg')) {
         const sessionDir = path.join(cfg.libraryPath, args.dirName, `s${args.sessionNumber}`)
         const diagramPath = path.join(sessionDir, '学习图表.svg')
         fs.writeFileSync(diagramPath, mermaid, 'utf8')
+      } else if (mermaid) {
+        console.warn('[llm:generateDiagram] generated content is not valid SVG, skipping save')
       }
     } catch (err: any) {
       console.error('[llm:generateDiagram] error:', err?.message ?? err)

@@ -45,6 +45,7 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
   useEffect(() => {
     // 使用 window.api 直接调用，避免依赖 ipc 模块（store 尚未初始化）
+    if (!window.api) return
     const unsubProgress = window.api.onBootProgress((s, p) => {
       setStage(s)
       setProgress(p)

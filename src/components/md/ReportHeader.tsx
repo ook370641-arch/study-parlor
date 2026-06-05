@@ -17,9 +17,9 @@ const TYPE_BADGE_STYLES: Record<DocType, string> = {
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {
-  high: '追至墙角',
-  mid: '互相试探',
-  low: '先暖暖场',
+  high: '强',
+  mid: '中',
+  low: '弱',
 }
 
 function formatDate(iso: string): string {

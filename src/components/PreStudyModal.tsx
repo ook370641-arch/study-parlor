@@ -4,6 +4,13 @@ import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import type { ContinueTopicSuggestion, Difficulty } from '@shared/index'
 import { getTemperatureLabel } from '@/lib/temperature-label'
+
+const ICONS = {
+  context: '\u{1F50D}',
+  rationale: '\u{27A1}',
+  benefit: '\u{1F3AF}',
+} as const
+import { getDifficultyLabel } from '@/lib/difficulty-label'
 import { ipc } from '@/lib/ipc'
 
 type SuggestionCardProps = {
@@ -42,9 +49,24 @@ function SuggestionCard({ suggestion, selected, onSelect }: SuggestionCardProps)
         {suggestion.title}
       </div>
       <div className={`text-xs leading-relaxed space-y-1 ${selected ? 'text-parchment/70' : 'text-parchment/50'}`}>
-        {suggestion.context && <p>{suggestion.context}</p>}
-        {suggestion.rationale && <p>{suggestion.rationale}</p>}
-        {suggestion.benefit && <p>{suggestion.benefit}</p>}
+        {suggestion.context && (
+          <div className="flex gap-1.5">
+            <span className={`text-xs shrink-0 mt-0.5 ${selected ? '' : 'opacity-40'}`}>{ICONS.context}</span>
+            <p>{suggestion.context}</p>
+          </div>
+        )}
+        {suggestion.rationale && (
+          <div className="flex gap-1.5">
+            <span className={`text-xs shrink-0 mt-0.5 ${selected ? '' : 'opacity-40'}`}>{ICONS.rationale}</span>
+            <p>{suggestion.rationale}</p>
+          </div>
+        )}
+        {suggestion.benefit && (
+          <div className="flex gap-1.5">
+            <span className={`text-xs shrink-0 mt-0.5 ${selected ? '' : 'opacity-40'}`}>{ICONS.benefit}</span>
+            <p>{suggestion.benefit}</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -70,6 +92,7 @@ export function PreStudyModal() {
   const startSession = useStore(s => s.startSession)
   const patchLastUsed = useStore(s => s.patchLastUsed)
   const topicContinueSuggestions = useStore(s => s.topicContinueSuggestions)
+  const library = useStore(s => s.library)
 
   const [topic, setTopic] = useState(args?.topic ?? '')
   const [difficulty, setDifficulty] = useState<Difficulty>(lastUsed.difficulty)
@@ -103,26 +126,33 @@ export function PreStudyModal() {
     if (isContinue && args.dirName) {
       const cacheKey = args.dirName
       const cache = topicContinueSuggestions[cacheKey]
-      if (cache && cache.suggestions.length > 0) {
+      const topicMeta = library.find(t => t.dirName === cacheKey)
+
+      const hasValidCache = cache &&
+        cache.suggestions.length > 0 &&
+        cache.sessionCount !== undefined &&
+        topicMeta !== undefined &&
+        cache.sessionCount === topicMeta.sessionCount
+
+      if (hasValidCache) {
         setSuggestions(cache.suggestions)
       } else {
         setLoadingSuggestions(true)
         ipc.llmGenerateContinueSuggestions({ topic: args.topic, dirName: args.dirName })
           .then(result => {
             setSuggestions(result)
-            // Persist to frontend store so it's available on next open
+            const sessionCount = topicMeta?.sessionCount ?? 0
             useStore.setState(state => ({
               topicContinueSuggestions: {
                 ...state.topicContinueSuggestions,
-                [cacheKey]: { generatedAt: new Date().toISOString(), suggestions: result }
+                [cacheKey]: { generatedAt: new Date().toISOString(), sessionCount, suggestions: result }
               }
             }))
-            // Also persist to backend state.json
             const currentCache = useStore.getState().topicContinueSuggestions
             ipc.patchState({
               topicContinueSuggestions: {
                 ...currentCache,
-                [cacheKey]: { generatedAt: new Date().toISOString(), suggestions: result }
+                [cacheKey]: { generatedAt: new Date().toISOString(), sessionCount, suggestions: result }
               }
             })
           })
@@ -264,7 +294,7 @@ export function PreStudyModal() {
                   ${difficulty === d
                     ? 'bg-ember text-ink border-ember'
                     : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
-                {d === 'high' ? '追至墙角' : d === 'mid' ? '互相试探' : '先暖暖场'}
+                {getDifficultyLabel(d)}
               </button>
             ))}
           </div>

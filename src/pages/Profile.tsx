@@ -5,6 +5,7 @@ import { Input } from '@/components/Input'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { getTemperatureLabel } from '@/lib/temperature-label'
+import { getDifficultyLabel } from '@/lib/difficulty-label'
 
 export function Profile() {
   const profile = useStore(s => s.profile)
@@ -67,7 +68,7 @@ export function Profile() {
               <div>
                 <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">审讯强度</div>
                 <div className="text-sm text-parchment">
-                  {lastUsed.difficulty === 'high' ? '追至墙角' : lastUsed.difficulty === 'mid' ? '互相试探' : '先暖暖场'}
+                  {getDifficultyLabel(lastUsed.difficulty)}
                 </div>
               </div>
               <div>
@@ -129,7 +130,7 @@ export function Profile() {
                       : 'bg-transparent text-parchment/70 border-slate/40 hover:border-slate/60'
                   }`}
                 >
-                  {d === 'high' ? '追至墙角' : d === 'mid' ? '互相试探' : '先暖暖场'}
+                  {getDifficultyLabel(d)}
                 </button>
               ))}
             </div>

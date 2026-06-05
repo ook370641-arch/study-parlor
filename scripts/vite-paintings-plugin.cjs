@@ -4,51 +4,44 @@ const path = require('node:path')
 
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 const PICTURES_DIR = path.join(PROJECT_ROOT, 'Pictures')
+const INDEX_JSON = path.join(PICTURES_DIR, 'index.json')
 const MANIFEST_OUT = path.join(PROJECT_ROOT, 'src/assets/painting-manifest.json')
 const OUTPUT_PAINTINGS_DIR = path.join(PROJECT_ROOT, 'out/renderer/paintings')
 
-const PAINTERS = [
-  { name: 'Mark Rothko', dir: 'Mark Rothko', prefix: 'rothko' },
-  { name: 'Guy Billout', dir: 'Guy Billout', prefix: 'billout' },
-]
-
-const SUBDIR_CATEGORIES = new Set([
-  'fine-art', 'early-figurative', 'surrealist', 'transitional',
-])
-
 function buildManifest() {
+  if (!fs.existsSync(INDEX_JSON)) {
+    console.warn(`[paintings] index.json not found: ${INDEX_JSON}`)
+    return []
+  }
+
+  let items
+  try {
+    items = JSON.parse(fs.readFileSync(INDEX_JSON, 'utf-8'))
+  } catch (err) {
+    console.warn(`[paintings] failed to parse ${INDEX_JSON}: ${err.message}`)
+    return []
+  }
+
   const all = []
-  for (const p of PAINTERS) {
-    const indexPath = path.join(PICTURES_DIR, p.dir, 'index.json')
-    if (!fs.existsSync(indexPath)) continue
-    let items
-    try {
-      items = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
-    } catch (err) {
-      console.warn(`[paintings] failed to parse ${indexPath}: ${err.message}`)
+  for (const item of items) {
+    if (!item.file) continue
+
+    const absPath = path.join(PICTURES_DIR, item.file)
+    if (!fs.existsSync(absPath)) {
+      console.warn(`[paintings] file not found, skipping: ${item.file}`)
       continue
     }
-    for (const item of items) {
-      if (!item.file) continue
-      const subDir = item.category && SUBDIR_CATEGORIES.has(item.category)
-        ? item.category + '/'
-        : ''
-      const relSegments = [p.dir, ...(subDir ? [subDir.replace(/\/$/, '')] : []), item.file]
-      const absPath = path.join(PICTURES_DIR, ...relSegments)
-      if (!fs.existsSync(absPath)) continue
-      const slug = item.slug || item.file
-      const yearMatch = slug.match(/\b(19|20)\d{2}\b/)
-      const year = yearMatch ? parseInt(yearMatch[0]) : undefined
-      const url = 'paintings/' + relSegments.map(encodeURIComponent).join('/')
-      all.push({
-        id: `${p.prefix}-${item.n}`,
-        painter: p.name,
-        title: item.title,
-        ...(year ? { year } : {}),
-        url,
-        ...(item.category ? { category: item.category } : {}),
-      })
+
+    const url = 'paintings/' + encodeURIComponent(item.file)
+    const entry = {
+      id: item.id,
+      painter: item.painter,
+      title: item.title,
+      url,
+      ...(item.year ? { year: item.year } : {}),
+      ...(item.category ? { category: item.category } : {}),
     }
+    all.push(entry)
   }
   return all
 }

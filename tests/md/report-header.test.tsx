@@ -34,7 +34,7 @@ describe('ReportHeader', () => {
     render(<ReportHeader frontmatter={fm} />)
 
     expect(screen.getByText('学习卷宗')).toBeInTheDocument()
-    expect(screen.getByText('追至墙角')).toBeInTheDocument()
+    expect(screen.getByText('强')).toBeInTheDocument()
     expect(screen.getByText('Agent')).toBeInTheDocument()
     expect(screen.getByText('A study on autonomous agents')).toBeInTheDocument()
     expect(screen.getByText('AI')).toBeInTheDocument()
@@ -55,7 +55,7 @@ describe('ReportHeader', () => {
     render(<ReportHeader frontmatter={fm} />)
 
     expect(screen.getByText('复检记录')).toBeInTheDocument()
-    expect(screen.queryByText('互相试探')).not.toBeInTheDocument()
+    expect(screen.queryByText('中')).not.toBeInTheDocument()
     expect(screen.getByText('第1次被取出翻阅 · 2026.05.27')).toBeInTheDocument()
   })
 
@@ -110,7 +110,7 @@ describe('ReportHeader', () => {
     render(<ReportHeader frontmatter={fm} />)
 
     expect(screen.queryByText('原始对话')).not.toBeInTheDocument()
-    expect(screen.queryByText('互相试探')).not.toBeInTheDocument()
+    expect(screen.queryByText('中')).not.toBeInTheDocument()
     expect(screen.getByText('档案编号 1 · 2026.05.23')).toBeInTheDocument()
   })
 })

@@ -34,8 +34,17 @@ export function Home() {
         generated_at: new Date().toISOString(),
         topics: t
       }})
-    }).catch(() => {
+    }).catch((err) => {
       setInspError(true)
+      console.error('[Home] loadInspirations failed:', err)
+      const msg = String(err?.message ?? err)
+      if (msg.includes('401') || msg.includes('UNAUTHORIZED')) {
+        useStore.getState().showToast('API Key 无效，请检查配置')
+      } else if (msg.includes('TIMEOUT') || msg.includes('timeout')) {
+        useStore.getState().showToast('网络超时，请检查网络连接')
+      } else {
+        useStore.getState().showToast('灵感加载失败，请稍后重试')
+      }
     }).finally(() => {
       setInspLoading(false)
     })

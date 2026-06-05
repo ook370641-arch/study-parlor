@@ -36,8 +36,7 @@ export function registerStateIpc() {
   })
 
   ipcMain.handle('state:patch', async (_, patch: Partial<StateJson>) => {
-    currentState = { ...loadState(), ...patch }
-    safeWriteJson(STATE_FILE, currentState)
+    patchState(patch)
   })
 }
 
@@ -46,6 +45,32 @@ export function getCurrentState(): StateJson {
 }
 
 export function patchState(patch: Partial<StateJson>): void {
-  currentState = { ...loadState(), ...patch }
+  let merged = { ...loadState(), ...patch }
+
+  // 深度合并 ui 字段，防止后续 patch 覆盖已有字段
+  if (patch.ui) {
+    merged = { ...merged, ui: { ...loadState().ui, ...patch.ui } }
+  }
+
+  // LRU: 限制 topicContinueSuggestions 条目数
+  if ('topicContinueSuggestions' in patch) {
+    const MAX_CACHE = 20
+    const suggestions = merged.topicContinueSuggestions
+    const keys = Object.keys(suggestions)
+    if (keys.length > MAX_CACHE) {
+      const sorted = keys
+        .map(k => ({ key: k, generatedAt: suggestions[k].generatedAt }))
+        .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+      const toKeep = new Set(sorted.slice(0, MAX_CACHE).map(x => x.key))
+      merged = {
+        ...merged,
+        topicContinueSuggestions: Object.fromEntries(
+          keys.filter(k => toKeep.has(k)).map(k => [k, suggestions[k]])
+        )
+      }
+    }
+  }
+
+  currentState = merged
   safeWriteJson(STATE_FILE, currentState)
 }

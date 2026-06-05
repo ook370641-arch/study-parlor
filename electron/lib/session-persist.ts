@@ -11,18 +11,19 @@ function ensureDir(): void {
   }
 }
 
-function sessionFileName(topic: string): string {
-  return `${topic.replace(/[^\w一-龥]/g, '_')}.json`
+export function sessionFileName(session: { topic: string; id: string }): string {
+  const sanitized = session.topic.replace(/[^\w一-龥]/g, '_')
+  return `${sanitized}_${session.id.slice(0, 8)}.json`
 }
 
-export function getSessionPath(topic: string): string {
+export function getSessionPath(session: UnsavedSession): string {
   ensureDir()
-  return path.join(SESSIONS_DIR, sessionFileName(topic))
+  return path.join(SESSIONS_DIR, sessionFileName(session))
 }
 
 export function saveSession(session: UnsavedSession): void {
   ensureDir()
-  const fp = getSessionPath(session.topic)
+  const fp = getSessionPath(session)
   fs.writeFileSync(fp, JSON.stringify(session, null, 2), 'utf8')
 }
 

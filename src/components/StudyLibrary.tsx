@@ -711,6 +711,9 @@ export function StudyLibrary() {
       const ai = groupIndexMap.get(a.groupId) ?? Infinity
       const bi = groupIndexMap.get(b.groupId) ?? Infinity
       if (ai !== bi) return ai - bi
+      if (!a.last_studied && !b.last_studied) return 0
+      if (!a.last_studied) return 1
+      if (!b.last_studied) return -1
       return (
         new Date(b.last_studied).getTime() - new Date(a.last_studied).getTime()
       )

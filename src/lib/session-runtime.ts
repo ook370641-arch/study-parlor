@@ -65,18 +65,26 @@ export async function kickoffSession() {
       : state)
   }
 
-  await ipc.llmStart({
-    sessionId: s.session.abortId,
-    mode: s.session.mode,
-    difficulty: s.session.difficulty,
-    profile: s.profile,
-    reviewFileBody,
-    progressSummary,
-    history,
-    temperature: s.session.temperature,
-    selectedTopic: s.session.selectedTopic,
-    userRequirement: s.session.userRequirement
-  })
+  try {
+    await ipc.llmStart({
+      sessionId: s.session.abortId,
+      mode: s.session.mode,
+      difficulty: s.session.difficulty,
+      profile: s.profile,
+      reviewFileBody,
+      progressSummary,
+      history,
+      temperature: s.session.temperature,
+      selectedTopic: s.session.selectedTopic,
+      userRequirement: s.session.userRequirement
+    })
+  } catch (err: any) {
+    useStore.setState(state => state.session
+      ? { session: { ...state.session, streaming: false } }
+      : state)
+    useStore.getState().showToast('启动失败:' + (err?.message ?? err))
+    throw err
+  }
 }
 
 export async function sendOrInterrupt(text: string) {

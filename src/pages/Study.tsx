@@ -6,6 +6,7 @@ import { Button } from '@/components/Button'
 import { attachSessionListeners, kickoffSession, sendOrInterrupt } from '@/lib/session-runtime'
 import { finalizeAndReturnHome } from '@/lib/finalize'
 import { getTemperatureLabel } from '@/lib/temperature-label'
+import { getDifficultyLabel } from '@/lib/difficulty-label'
 import { ipc } from '@/lib/ipc'
 import { ArchiveLoadingOverlay } from '@/components/ArchiveLoadingOverlay'
 import { ArchiveReportModal } from '@/components/ArchiveReportModal'
@@ -194,7 +195,7 @@ export function Study() {
           <SwapPaintingButton surface="study" />
           <div className="font-sans text-sm text-parchment/60">
             {session.mode === 'progress' ? '探索新知' : '复习检测'} ·
-            {session.difficulty === 'high' ? '追至墙角' : session.difficulty === 'mid' ? '互相试探' : '先暖暖场'} ·
+            {getDifficultyLabel(session.difficulty)} ·
             腔调={getTemperatureLabel(session.temperature)}
           </div>
         </div>

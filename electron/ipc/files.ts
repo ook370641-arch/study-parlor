@@ -179,7 +179,13 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
 }
 
 export function registerFilesIpc(cfg: AppConfig) {
-  async function updateContinueSuggestions(dirName: string) {
+  // Promise 队列：串行化 updateContinueSuggestions 调用，避免并发覆盖
+  let _suggestionQueue: Promise<void> = Promise.resolve()
+  function enqueueSuggestion(task: () => Promise<void>): void {
+    _suggestionQueue = _suggestionQueue.then(task).catch(() => {})
+  }
+
+  async function updateContinueSuggestions(dirName: string, topic?: string) {
     try {
       const summaries = readTopicReportSummaries(cfg.libraryPath, dirName)
       if (summaries.length === 0) {
@@ -192,13 +198,41 @@ export function registerFilesIpc(cfg: AppConfig) {
         return
       }
 
+      // 如果没有传入 topic，尝试从最新报告 frontmatter 读取
+      let resolvedTopic = topic
+      if (!resolvedTopic) {
+        const topicDir = path.join(cfg.libraryPath, dirName)
+        const sessionDirs = getSortedSessionDirs(topicDir)
+        if (sessionDirs.length > 0) {
+          const latestReport = path.join(topicDir, sessionDirs[sessionDirs.length - 1], '学习报告.md')
+          if (fs.existsSync(latestReport)) {
+            try {
+              const raw = fs.readFileSync(latestReport, 'utf8')
+              const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })
+              if (frontmatter.title) {
+                resolvedTopic = frontmatter.title
+              }
+            } catch {}
+          }
+        }
+      }
+      if (!resolvedTopic) {
+        resolvedTopic = dirName
+      }
+
       const suggestions = await generateContinueSuggestions(cfg, {
-        topic: dirName,
+        topic: resolvedTopic,
         dirName
       })
 
+      // 计算当前会话数
+      const topicDir = path.join(cfg.libraryPath, dirName)
+      const sessionDirs = getSortedSessionDirs(topicDir)
+      const sessionCount = sessionDirs.length
+
       const cache: TopicContinueCache = {
         generatedAt: new Date().toISOString(),
+        sessionCount,
         suggestions: suggestions.length > 0 ? suggestions : []
       }
 
@@ -270,6 +304,9 @@ export function registerFilesIpc(cfg: AppConfig) {
     const sessionDir = path.join(topicDir, `s${args.session_number}`)
     fs.mkdirSync(sessionDir, { recursive: true })
     const filePath = path.join(sessionDir, '学习报告.md')
+    if (fs.existsSync(filePath)) {
+      throw new Error(`学习报告已存在: ${filePath}`)
+    }
     const fm = {
       title: args.title,
       description: args.description,
@@ -285,7 +322,7 @@ export function registerFilesIpc(cfg: AppConfig) {
     fs.writeFileSync(filePath, serializeFrontmatter('progress', fm, args.body), 'utf8')
 
     // 异步更新续谈推荐（不阻塞返回）
-    updateContinueSuggestions(args.dirName).catch(console.error)
+    enqueueSuggestion(() => updateContinueSuggestions(args.dirName, args.title))
 
     return { file_path: filePath }
   })
@@ -483,6 +520,6 @@ function getMimeType(filePath: string): string {
     fs.rmSync(sessionDir, { recursive: true, force: true })
 
     // 异步更新续谈推荐（不阻塞返回）
-    updateContinueSuggestions(args.dirName).catch(console.error)
+    enqueueSuggestion(() => updateContinueSuggestions(args.dirName))
   })
 }
