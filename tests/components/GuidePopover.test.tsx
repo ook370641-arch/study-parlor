@@ -38,8 +38,10 @@ describe('GuidePopover', () => {
       />
     )
     expect(screen.getByText('分组使用指南')).toBeTruthy()
-    expect(screen.getByText('新创建的默认保存到「默认」分组中')).toBeTruthy()
-    expect(screen.getByText('新建分组可包含多个主题，左侧推荐会根据你的分组智能推荐学习主题')).toBeTruthy()
+    expect(screen.getByText(/分组用来管理主题/)).toBeTruthy()
+    expect(screen.getByText(/新创建的主题学习默认保存/)).toBeTruthy()
+    expect(screen.getByText(/每个分组可包含多个主题/)).toBeTruthy()
+    expect(screen.getByText(/左侧新主题推荐/)).toBeTruthy()
     expect(screen.getByText('长按主题卡片并拖动，可将其移入其他分组')).toBeTruthy()
   })
 
@@ -54,9 +56,11 @@ describe('GuidePopover', () => {
     expect(screen.getByText('1')).toBeTruthy()
     expect(screen.getByText('2')).toBeTruthy()
     expect(screen.getByText('3')).toBeTruthy()
+    expect(screen.getByText('4')).toBeTruthy()
+    expect(screen.getByText('5')).toBeTruthy()
   })
 
-  it('renders drag demo image for third item', () => {
+  it('renders drag demo image for last item', () => {
     render(
       <GuidePopover
         open={true}
