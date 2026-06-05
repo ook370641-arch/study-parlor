@@ -61,9 +61,9 @@ export function Extension() {
                   <li>把项目 <code className="bg-ink px-1 rounded">.claude/skills/</code> 下的 <code className="bg-ink px-1 rounded">study/</code> 和 <code className="bg-ink px-1 rounded">fable/</code> 复制到你的 Claude Code skills 目录</li>
                   <li>在 agent 聊天里用 <code className="bg-ink px-1 rounded">/study</code> 或 <code className="bg-ink px-1 rounded">/fable</code> 触发</li>
                 </ol>
-                <div className="bg-ink/40 border-l-2 border-green-600/50 pl-3 py-2 text-xs text-parchment/50">
-                  🔑 skill 会自动读取应用配置的学习库路径<br />
-                  你不需要手动修改 skill 里的路径。skill 运行时会自动从项目 <code className="bg-ink px-1 rounded">.env</code> 中读取 <code className="bg-ink px-1 rounded">STUDY_LIBRARY_PATH</code> 的值作为报告保存目录。若读取失败，skill 会提示你手动配置。
+                <div className="bg-ink/40 border-l-2 border-green-600/50 pl-3 py-2 text-xs text-parchment/50 space-y-1">
+                  <p>🔑 首次使用时，skill 会询问你的 Study Parlor 项目位置，读取 <code className="bg-ink px-1 rounded">.env</code> 中的 <code className="bg-ink px-1 rounded">STUDY_LIBRARY_PATH</code> 并永久保存到 skill 文件中。下次使用无需再配置。</p>
+                  <p className="text-ember/70">⚠️ 请确保 skill 配置的学习库路径与上方"学习库"中显示的路径一致，否则生成的报告将不会在学习库中显示。</p>
                 </div>
               </div>
             </div>
