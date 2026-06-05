@@ -217,10 +217,8 @@ export function PreStudyModal() {
       if (!selectedDirName) return
       const selectedTopicMeta = library.find(t => t.dirName === selectedDirName)
       if (!selectedTopicMeta) return
-      const subTopic = customTopic.trim()
-      finalTopic = subTopic
-        ? `${selectedTopicMeta.title} — ${subTopic}`
-        : selectedTopicMeta.title
+      if (!customTopic.trim()) return
+      finalTopic = `${selectedTopicMeta.title} — ${customTopic.trim()}`
       finalDirName = selectedDirName
     } else {
       // New topic
@@ -312,7 +310,7 @@ export function PreStudyModal() {
               <div className="max-h-40 overflow-y-auto space-y-1 border border-slate/20 rounded-lg p-2">
                 {filterAndSortTopics(library, searchQuery).length === 0 ? (
                   <div className="text-sm text-parchment/40 italic px-2 py-1">
-                    未找到匹配主题
+                    {library.length === 0 ? '档案室还空着，先创建一个新主题吧' : '未找到匹配的主题'}
                   </div>
                 ) : (
                   filterAndSortTopics(library, searchQuery).map(t => (
@@ -338,7 +336,6 @@ export function PreStudyModal() {
               <div>
                 <div className="field-label mb-2">细分方向</div>
                 <Input
-                  ref={topicRef}
                   value={customTopic}
                   onChange={e => setCustomTopic(e.target.value)}
                   placeholder="想深入探讨的具体方向..."
