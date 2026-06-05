@@ -20,6 +20,10 @@ async function bootstrap() {
     if (!fs.existsSync(cfg.libraryPath)) {
       fs.mkdirSync(cfg.libraryPath, { recursive: true })
     }
+    // 验证目录可写，避免后续归档时才发现权限不足
+    const testFile = path.join(cfg.libraryPath, '.write-test')
+    fs.writeFileSync(testFile, '')
+    fs.unlinkSync(testFile)
   } catch (err: any) {
     fatalError = String(err?.message ?? err)
   }
@@ -117,6 +121,7 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
 
 app.whenReady().then(bootstrap)
 app.on('window-all-closed', () => {
+  mainWindow = null
   if (process.platform !== 'darwin') app.quit()
 })
 app.on('activate', () => {

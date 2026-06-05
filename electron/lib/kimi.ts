@@ -128,21 +128,34 @@ export async function chatStream(
     let buffer = ''
 
     while (true) {
-      const { done, value } = await Promise.race([
-        reader.read(),
-        new Promise<never>((_, reject) => {
-          const t = setTimeout(() => {
-            reader.cancel().catch(() => {})
-            const err = new Error(`SSE idle timeout after ${TIMEOUT_MS}ms`)
-            ;(err as any).code = 'TIMEOUT'
-            reject(err)
-          }, TIMEOUT_MS)
-          // 如果 reader.read() 先完成，这个 Promise 会被丢弃，
-          // 但 setTimeout 还在。需要用 args.signal 来提前清理。
-          const cleanup = () => clearTimeout(t)
-          args.signal.addEventListener('abort', cleanup, { once: true })
-        })
-      ])
+      let timeoutId: ReturnType<typeof setTimeout> | null = null
+      let removeAbortListener: (() => void) | null = null
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reader.cancel().catch(() => {})
+          const err = new Error(`SSE idle timeout after ${TIMEOUT_MS}ms`)
+          ;(err as any).code = 'TIMEOUT'
+          reject(err)
+        }, TIMEOUT_MS)
+        const cleanup = () => { if (timeoutId) { clearTimeout(timeoutId); timeoutId = null } }
+        args.signal.addEventListener('abort', cleanup, { once: true })
+        removeAbortListener = () => args.signal.removeEventListener('abort', cleanup)
+      })
+
+      let done: boolean
+      let value: Uint8Array | undefined
+      try {
+        const result = await Promise.race([
+          reader.read(),
+          timeoutPromise
+        ])
+        done = result.done
+        value = result.value
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId)
+        if (removeAbortListener) removeAbortListener()
+      }
       if (done) break
       buffer += decoder.decode(value, { stream: true })
 

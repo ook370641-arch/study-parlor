@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { saveSession, loadSessions, deleteSession } from '../lib/session-persist'
+import type { UnsavedSession } from '@shared/index'
 
 export function registerSessionsIpc() {
   ipcMain.handle('sessions:load', async () => {

@@ -16,7 +16,7 @@ export function loadEnv(env: Record<string, string | undefined>): AppConfig {
   if (!libraryPath) throw new Error('Missing STUDY_LIBRARY_PATH in .env')
 
   let baseUrl = (env.KIMI_BASE_URL?.trim()) || 'https://api.kimi.com/coding/v1'
-  baseUrl = baseUrl.replace(/\/$/, '')
+  baseUrl = baseUrl.replace(/\/+$/, '')
   if (!baseUrl.endsWith('/v1')) baseUrl += '/v1'
 
   return {

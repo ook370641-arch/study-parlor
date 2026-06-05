@@ -120,25 +120,33 @@ export async function sendOrInterrupt(text: string) {
     await s.saveCurrentSession()
 
     // 触发新一轮
-    useStore.setState(state => state.session
-      ? { session: { ...state.session, streaming: true } }
-      : state)
+    useStore.setState(st => st.session
+      ? { session: { ...st.session, streaming: true } }
+      : st)
     const state = useStore.getState()
     const MAX_PAIRS = 30
     const history = state.session!.history
       .slice(-MAX_PAIRS * 2)
 
-    await ipc.llmStart({
-      sessionId: state.session!.abortId,
-      mode: state.session!.mode,
-      difficulty: state.session!.difficulty,
-      profile: state.profile,
-      reviewFileBody: state.session!.reviewFileBody,
-      history,
-      temperature: state.session!.temperature,
-      selectedTopic: state.session!.selectedTopic,
-      userRequirement: state.session!.userRequirement
-    })
+    try {
+      await ipc.llmStart({
+        sessionId: state.session!.abortId,
+        mode: state.session!.mode,
+        difficulty: state.session!.difficulty,
+        profile: state.profile,
+        reviewFileBody: state.session!.reviewFileBody,
+        history,
+        temperature: state.session!.temperature,
+        selectedTopic: state.session!.selectedTopic,
+        userRequirement: state.session!.userRequirement
+      })
+    } catch (err: any) {
+      useStore.setState(st => st.session
+        ? { session: { ...st.session, streaming: false } }
+        : st)
+      useStore.getState().showToast('请求失败:' + (err?.message ?? err))
+      throw err
+    }
   } finally {
     isSending = false
   }

@@ -30,6 +30,11 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     const ctl = new AbortController()
     sessions.set(args.sessionId, ctl)
 
+    const send = (channel: string, ...payload: unknown[]) => {
+      if (win.isDestroyed()) return
+      win.webContents.send(channel, ...payload)
+    }
+
     try {
       // assemblePrompt 是同步且会抛(例如 review 模式缺 reviewFileBody)。必须进 try,
       // 否则抛出后只在主进程终端 console.error,渲染层永远收不到 llm:error,UI 卡死。
@@ -42,11 +47,11 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
       })
       const messages: Message[] = [{ role: 'system', content: system }, ...args.history]
       await chatStream(cfg, { messages, temperature: args.temperature, signal: ctl.signal },
-        chunk => win.webContents.send('llm:chunk', args.sessionId, chunk))
-      win.webContents.send('llm:done', args.sessionId)
+        chunk => send('llm:chunk', args.sessionId, chunk))
+      send('llm:done', args.sessionId)
     } catch (err: any) {
       if (err?.name === 'AbortError') return
-      win.webContents.send('llm:error', args.sessionId, {
+      send('llm:error', args.sessionId, {
         code: err?.code ?? 'STREAM_FAIL', message: String(err?.message ?? err)
       })
     } finally { sessions.delete(args.sessionId) }

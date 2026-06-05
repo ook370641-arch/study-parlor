@@ -7,6 +7,7 @@ import { attachSessionListeners, kickoffSession, sendOrInterrupt } from '@/lib/s
 import { finalizeAndReturnHome } from '@/lib/finalize'
 import { getTemperatureLabel } from '@/lib/temperature-label'
 import { getDifficultyLabel } from '@/lib/difficulty-label'
+import { sanitizeDirName } from '@/lib/sanitize-dir-name'
 import { ipc } from '@/lib/ipc'
 import { ArchiveLoadingOverlay } from '@/components/ArchiveLoadingOverlay'
 import { ArchiveReportModal } from '@/components/ArchiveReportModal'
@@ -111,7 +112,7 @@ export function Study() {
     const sessionNumber = sess.dirName && topicMeta
       ? topicMeta.sessionCount + 1
       : 1
-    const dirName = sess.dirName ?? sess.topic.toLowerCase().replace(/[^\w一-龥]/g, '-').replace(/-+/g, '-')
+    const dirName = sess.dirName ?? sanitizeDirName(sess.topic)
     s.addPendingArchive({
       dirName,
       topic: sess.topic,

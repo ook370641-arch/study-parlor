@@ -1,5 +1,6 @@
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
+import { sanitizeDirName } from '@/lib/sanitize-dir-name'
 
 export async function finalizeAndReturnHome() {
   const s = useStore.getState()
@@ -18,7 +19,7 @@ export async function finalizeAndReturnHome() {
     : state)
 
   // 预计算 pending archive 的 key，用于成功或失败时统一清理
-  const pendingDirName = sess.dirName ?? sess.topic.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '-').replace(/-+/g, '-')
+  const pendingDirName = sess.dirName ?? sanitizeDirName(sess.topic)
   const pendingTopicMeta = s.library.find(t => t.dirName === sess.dirName)
   const pendingSessionNumber = sess.dirName && pendingTopicMeta ? pendingTopicMeta.sessionCount + 1 : 1
 
@@ -33,7 +34,7 @@ export async function finalizeAndReturnHome() {
       const sessionNumber = sess.dirName && topicMeta
         ? topicMeta.sessionCount + 1
         : 1
-      const dirName = sess.dirName ?? title.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '-').replace(/-+/g, '-')
+      const dirName = sess.dirName ?? sanitizeDirName(title)
 
       // 写学习报告
       await ipc.writeProgressMd({

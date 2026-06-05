@@ -38,7 +38,10 @@ No cloud. No lock-in. Just your thoughts, organized.
 
 3. Configure environment variables:
    ```bash
+   # macOS / Linux
    cp .env.example .env
+   # Windows
+   copy .env.example .env
    # Edit .env and fill in your Kimi API key and study library path
    ```
 
@@ -133,7 +136,10 @@ npm run package      # Build Windows installer → release/
 
 3. 配置环境变量：
    ```bash
+   # macOS / Linux
    cp .env.example .env
+   # Windows
+   copy .env.example .env
    # 编辑 .env，填入你的 Kimi API Key 和学习库路径
    ```
 

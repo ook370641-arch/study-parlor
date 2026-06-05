@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { GuidePopover } from '../../src/components/GuidePopover'
-import { useRef } from 'react'
 
 describe('GuidePopover', () => {
   let anchorRef: React.RefObject<HTMLButtonElement | null>
 
   beforeEach(() => {
     cleanup()
-    anchorRef = { current: document.createElement('button') }
-    document.body.appendChild(anchorRef.current)
+    const btn = document.createElement('button')
+    anchorRef = { current: btn }
+    document.body.appendChild(btn)
   })
 
   afterEach(() => {
