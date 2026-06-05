@@ -4,8 +4,8 @@
   "private": true,
   "main": "out/main/index.js",
   "scripts": {
-    "dev": "node scripts/dev.js dev",
-    "build": "node scripts/dev.js build",
+    "dev": "node scripts/pre-check.js && node scripts/dev.js dev",
+    "build": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && node scripts/dev.js build",
     "preview": "node scripts/dev.js preview",
     "pretest": "node scripts/build-manifest.cjs",
     "test": "vitest run",

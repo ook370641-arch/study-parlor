@@ -1,34 +1,54 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import dotenv from 'dotenv'
 import { loadEnv } from './env'
 import { registerAllIpc } from './ipc'
-import { probeModel } from './lib/kimi'
+import { probeModel, probeModelWithCredentials } from './lib/kimi'
+import { patchState } from './ipc/state'
 
 dotenv.config()
+
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err)
+})
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason)
+})
 
 let mainWindow: BrowserWindow | null = null
 let fatalError: string | null = null
 
-async function bootstrap() {
-  let cfg: ReturnType<typeof loadEnv>
+function writeEnvFile(config: { apiKey: string; baseUrl: string; model: string; libraryPath: string }) {
+  const lines = [
+    `KIMI_API_KEY=${config.apiKey}`,
+    `KIMI_BASE_URL=${config.baseUrl}`,
+    `KIMI_MODEL=${config.model}`,
+    `STUDY_LIBRARY_PATH=${config.libraryPath}`,
+  ]
+  const envPath = path.join(process.cwd(), '.env')
+  fs.writeFileSync(envPath, lines.join('\n') + '\n', 'utf-8')
+}
 
-  // Step 1: 加载配置（同步，必须成功才能继续）
+async function bootstrap() {
+  let cfg: ReturnType<typeof loadEnv> | undefined
+  let needsSetup = false
+
+  // Step 1: 加载配置
   try {
     cfg = loadEnv(process.env)
     if (!fs.existsSync(cfg.libraryPath)) {
       fs.mkdirSync(cfg.libraryPath, { recursive: true })
     }
-    // 验证目录可写，避免后续归档时才发现权限不足
     const testFile = path.join(cfg.libraryPath, '.write-test')
     fs.writeFileSync(testFile, '')
     fs.unlinkSync(testFile)
   } catch (err: any) {
-    fatalError = String(err?.message ?? err)
+    // 配置缺失 → 进入向导，不是 fatal
+    needsSetup = true
   }
 
-  // Step 2: 立即创建窗口（用户不再看纯色）
+  // Step 2: 创建窗口（无论配置结果如何）
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -47,13 +67,90 @@ async function bootstrap() {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
 
-  // Step 3: 如果配置加载失败，fatal error 会由 App.tsx 处理
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
+        ]
+      }
+    })
+  })
+
+  // Step 3: IPC handlers
   ipcMain.handle('boot:fatal', () => fatalError)
+  ipcMain.handle('boot:needsSetup', () => needsSetup)
+
+  ipcMain.handle('setup:selectDirectory', async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return { canceled: true, path: null }
+    }
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: '选择学习库目录'
+    })
+    if (result.canceled || result.filePaths.length === 0) {
+      return { canceled: true, path: null }
+    }
+    return { canceled: false, path: result.filePaths[0] }
+  })
+
+  ipcMain.handle('setup:probeKey', async (_, args) => {
+    const { apiKey, baseUrl, model } = args
+    const result = await probeModelWithCredentials({
+      apiKey,
+      baseUrl: baseUrl || 'https://api.kimi.com/coding/v1',
+      model: model || 'kimi-k2.6'
+    })
+    return result
+  })
+
+  ipcMain.handle('setup:writeConfig', async (_, args) => {
+    const { apiKey, baseUrl, model, libraryPath, name, profile_text, preferred_topics } = args
+
+    // 1. Write .env
+    writeEnvFile({ apiKey, baseUrl, model, libraryPath })
+
+    // 2. Ensure directory exists and is writable
+    fs.mkdirSync(libraryPath, { recursive: true })
+    const testFile = path.join(libraryPath, '.write-test')
+    fs.writeFileSync(testFile, '')
+    fs.unlinkSync(testFile)
+
+    // 3. Inject into process.env
+    process.env.KIMI_API_KEY = apiKey
+    process.env.KIMI_BASE_URL = baseUrl
+    process.env.KIMI_MODEL = model
+    process.env.STUDY_LIBRARY_PATH = libraryPath
+
+    // 4. Reload config
+    const newCfg = loadEnv(process.env)
+
+    // 5. Update profile in state
+    patchState({
+      profile: {
+        name,
+        profile_text: profile_text || '',
+        preferred_topics: preferred_topics || []
+      }
+    })
+
+    // 6. Notify renderer
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('setup:done')
+    }
+
+    // 7. Start normal boot sequence (registers IPC handlers internally)
+    runBootSequence(newCfg, mainWindow!)
+  })
 
   if (fatalError) return
 
-  // Step 4: 后台并行初始化 + 推送进度
-  runBootSequence(cfg!, mainWindow)
+  if (!needsSetup) {
+    runBootSequence(cfg!, mainWindow)
+  }
+  // needsSetup: wait for setup:writeConfig to trigger boot
 }
 
 async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWindow) {

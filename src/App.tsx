@@ -8,6 +8,7 @@ import { Extension } from '@/pages/Extension'
 import { Toast } from '@/components/Toast'
 import { PreStudyModal } from '@/components/PreStudyModal'
 import { LoadingScreen } from '@/components/LoadingScreen'
+import { SetupWizard } from '@/components/SetupWizard'
 import { ipc } from '@/lib/ipc'
 
 export function App() {
@@ -15,12 +16,18 @@ export function App() {
   const modal = useStore(s => s.modal)
   const init = useStore(s => s.init)
   const [fatal, setFatal] = useState<string | null>(null)
+  const [needsSetup, setNeedsSetup] = useState(false)
   const [isBooting, setIsBooting] = useState(true)
 
   useEffect(() => {
-    ipc.bootFatal().then(f => {
+    Promise.all([ipc.bootFatal(), ipc.bootNeedsSetup()]).then(([f, ns]) => {
       if (f) {
         setFatal(f)
+        setIsBooting(false)
+        return
+      }
+      if (ns) {
+        setNeedsSetup(true)
         setIsBooting(false)
         return
       }
@@ -28,6 +35,11 @@ export function App() {
       // boot:complete 事件会触发 LoadingScreen 的 onComplete
     })
   }, [])
+
+  const handleSetupDone = () => {
+    setNeedsSetup(false)
+    setIsBooting(true)
+  }
 
   const handleBootComplete = async () => {
     // LoadingScreen 淡出后，初始化 store
@@ -135,6 +147,10 @@ export function App() {
         </div>
       </div>
     )
+  }
+
+  if (needsSetup) {
+    return <SetupWizard onDone={handleSetupDone} />
   }
 
   return (

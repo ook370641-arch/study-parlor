@@ -1,7 +1,7 @@
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = number
-export type DocType = 'progress' | 'review' | 'research' | 'fable' | 'transcript'
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript'
 
 export type Profile = {
   name: string
@@ -41,13 +41,11 @@ export type SessionMeta = {
   hasFable: boolean
   fableCount: number
   hasDiagram: boolean
-  hasFableImage: boolean
   reportFile?: string
   transcriptFile?: string
   reviewFile?: string
   fableFile?: string
   diagramFile?: string
-  fableImageFile?: string
 }
 
 export type TopicMeta = {
@@ -188,6 +186,21 @@ export type IpcApi = {
 
   // Extension info
   getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>
+
+  // Setup wizard
+  bootNeedsSetup: () => Promise<boolean>
+  setupSelectDirectory: () => Promise<{ canceled: boolean; path: string | null }>
+  setupProbeKey: (args: { apiKey: string; baseUrl?: string; model?: string }) => Promise<{ ok: boolean; reason?: string }>
+  setupWriteConfig: (args: {
+    apiKey: string
+    baseUrl: string
+    model: string
+    libraryPath: string
+    name: string
+    profile_text?: string
+    preferred_topics?: string[]
+  }) => Promise<void>
+  onSetupDone: (cb: () => void) => () => void
 }
 
 export type Painting = {

@@ -16,16 +16,22 @@ function getAgent() {
   return _agent
 }
 
-export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?: string }> {
-  const res = await fetch(`${cfg.baseUrl}/models`, {
+export async function probeModelWithCredentials(
+  creds: { apiKey: string; baseUrl: string; model: string }
+): Promise<{ ok: boolean; reason?: string }> {
+  const res = await fetch(`${creds.baseUrl}/models`, {
     headers: {
-      Authorization: `Bearer ${cfg.apiKey}`,
+      Authorization: `Bearer ${creds.apiKey}`,
       'User-Agent': 'claude-code/0.1.0'
     },
     dispatcher: getAgent()
   } as any)
   if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` }
   return { ok: true }
+}
+
+export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?: string }> {
+  return probeModelWithCredentials(cfg)
 }
 
 export async function chatNonStream(
@@ -131,7 +137,7 @@ export async function chatStream(
       let timeoutId: ReturnType<typeof setTimeout> | null = null
       let removeAbortListener: (() => void) | null = null
 
-      const timeoutPromise = new Promise<never>((_, reject) => {
+      const timeoutPromise = new Promise((_resolve: (_: never) => void, reject) => {
         timeoutId = setTimeout(() => {
           reader.cancel().catch(() => {})
           const err = new Error(`SSE idle timeout after ${TIMEOUT_MS}ms`)
@@ -149,12 +155,13 @@ export async function chatStream(
         const result = await Promise.race([
           reader.read(),
           timeoutPromise
-        ])
+        ]) as ReadableStreamReadResult<Uint8Array>
         done = result.done
         value = result.value
       } finally {
         if (timeoutId) clearTimeout(timeoutId)
-        if (removeAbortListener) removeAbortListener()
+        const cleanup = removeAbortListener as unknown as (() => void) | null
+        if (cleanup) cleanup()
       }
       if (done) break
       buffer += decoder.decode(value, { stream: true })

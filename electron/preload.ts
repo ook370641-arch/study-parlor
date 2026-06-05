@@ -53,6 +53,21 @@ const api: IpcApi = {
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
   getExtensionInfo: () => ipcRenderer.invoke('files:getExtensionInfo'),
 
+  // Setup wizard
+  bootNeedsSetup: () =>
+    ipcRenderer.invoke('boot:needsSetup') as Promise<boolean>,
+  setupSelectDirectory: () =>
+    ipcRenderer.invoke('setup:selectDirectory') as Promise<{ canceled: boolean; path: string | null }>,
+  setupProbeKey: (args) =>
+    ipcRenderer.invoke('setup:probeKey', args),
+  setupWriteConfig: (args) =>
+    ipcRenderer.invoke('setup:writeConfig', args),
+  onSetupDone: (cb) => {
+    const handler = () => cb()
+    ipcRenderer.on('setup:done', handler)
+    return () => ipcRenderer.off('setup:done', handler)
+  },
+
   onBootProgress: (cb: (stage: string, progress: number) => void) => {
     const handler = (_: unknown, stage: string, progress: number) => cb(stage, progress)
     ipcRenderer.on('boot:progress', handler)
