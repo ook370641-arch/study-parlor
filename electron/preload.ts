@@ -51,6 +51,7 @@ const api: IpcApi = {
   },
 
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
+  getExtensionInfo: () => ipcRenderer.invoke('files:getExtensionInfo'),
 
   onBootProgress: (cb: (stage: string, progress: number) => void) => {
     const handler = (_: unknown, stage: string, progress: number) => cb(stage, progress)

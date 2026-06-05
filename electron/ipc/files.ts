@@ -75,14 +75,17 @@ export function getSessionMeta(sessionDir: string): SessionMeta {
 }
 
 function loadGroupFile(filePath: string): { version: number; groups: Group[]; mapping: GroupMapping } {
+  const fallback = { version: 1, groups: [{ id: 'default', name: '默认', color: '#d97757' }], mapping: {} }
   if (fs.existsSync(filePath)) {
     try {
-      return JSON.parse(fs.readFileSync(filePath, 'utf8'))
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+      if (data && Array.isArray(data.groups)) return data
+      console.error('[groups] .study-groups.json has invalid structure, falling back to default')
     } catch {
       console.error('[groups] .study-groups.json corrupted, falling back to default')
     }
   }
-  return { version: 1, groups: [{ id: 'default', name: '默认', color: '#d97757' }], mapping: {} }
+  return fallback
 }
 
 function validateDirName(dirName: string): void {
@@ -159,7 +162,9 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
   if (last_studied) {
     const now = new Date()
     const lastDate = new Date(last_studied)
-    last_studied_days = Math.max(0, Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)))
+    if (!isNaN(lastDate.getTime())) {
+      last_studied_days = Math.max(0, Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)))
+    }
   }
 
   // Load group mapping
@@ -372,8 +377,16 @@ export function registerFilesIpc(cfg: AppConfig) {
     ].filter(Boolean)
     const body = sections.join('\n\n') + '\n'
     if (fs.existsSync(filePath)) {
-      // Existing file: append body without frontmatter
-      fs.appendFileSync(filePath, '\n\n---\n\n' + body, 'utf8')
+      // Existing file: read → update frontmatter → rewrite
+      const existing = fs.readFileSync(filePath, 'utf8')
+      const { frontmatter, body: existingBody } = parseFrontmatter(existing, { filename: '复习报告.md' })
+      const updatedFm = {
+        ...frontmatter,
+        review_index: args.review_index,
+        last_reviewed: now.toISOString(),
+      }
+      const combinedBody = existingBody + '\n\n---\n\n' + body
+      fs.writeFileSync(filePath, serializeFrontmatter('review', updatedFm, combinedBody), 'utf8')
     } else {
       // New file: write with frontmatter
       const fm = {
@@ -521,5 +534,22 @@ function getMimeType(filePath: string): string {
 
     // 异步更新续谈推荐（不阻塞返回）
     enqueueSuggestion(() => updateContinueSuggestions(args.dirName))
+  })
+
+  ipcMain.handle('files:getExtensionInfo', async () => {
+    const picturesDir = path.join(process.cwd(), 'Pictures')
+    const indexPath = path.join(picturesDir, 'index.json')
+    let paintingCount = 0
+    try {
+      const raw = fs.readFileSync(indexPath, 'utf8')
+      const arr = JSON.parse(raw)
+      if (Array.isArray(arr)) paintingCount = arr.length
+    } catch {
+      // Pictures/index.json may not exist; default to 0
+    }
+    return {
+      libraryPath: cfg.libraryPath,
+      paintingCount
+    }
   })
 }

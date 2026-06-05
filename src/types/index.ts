@@ -185,6 +185,9 @@ export type IpcApi = {
 
   // Recovery dump
   recoveryDump: (args: { filename: string; content: string }) => Promise<void>
+
+  // Extension info
+  getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>
 }
 
 export type Painting = {

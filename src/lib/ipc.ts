@@ -43,5 +43,6 @@ export const ipc = {
   get recoveryDump() { return ensure().recoveryDump },
   get bootFatal() { return ensure().bootFatal },
   get onBootProgress() { return ensure().onBootProgress },
-  get onBootComplete() { return ensure().onBootComplete }
+  get onBootComplete() { return ensure().onBootComplete },
+  get getExtensionInfo() { return ensure().getExtensionInfo }
 }
