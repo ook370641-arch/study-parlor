@@ -9,7 +9,7 @@ import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
 
-type Page = 'cover' | 'home' | 'study' | 'profile'
+type Page = 'cover' | 'home' | 'study' | 'profile' | 'extension'
 
 type Session = {
   mode: Mode
