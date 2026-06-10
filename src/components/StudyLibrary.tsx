@@ -744,27 +744,8 @@ export function StudyLibrary() {
   if (mergedLibrary.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="relative w-24 h-24 mb-6 group cursor-pointer"
-          onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
-        >
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-ember/20 group-hover:bg-ember/40 transition-opacity duration-500" />
-          <div className="absolute bottom-6 left-4 w-1 h-1 rounded-full bg-parchment/15 group-hover:bg-parchment/30 transition-opacity duration-500" />
-          <div className="absolute bottom-5 right-5 w-1 h-1 rounded-full bg-ember/15 group-hover:bg-ember/30 transition-opacity duration-500" />
-          <div className="absolute top-1/2 left-6 w-1 h-1 rounded-full bg-parchment/10 group-hover:bg-parchment/25 transition-opacity duration-500" />
-          <div className="absolute top-1/3 right-4 w-1 h-1 rounded-full bg-ember/10 group-hover:bg-ember/25 transition-opacity duration-500" />
-          <svg className="absolute inset-0" width="96" height="96">
-            <path d="M 48 20 Q 60 48 80 60" stroke="rgba(232,213,183,0.06)" strokeWidth="0.5" fill="none" />
-            <path d="M 48 20 Q 30 48 16 72" stroke="rgba(232,213,183,0.04)" strokeWidth="0.5" fill="none" />
-          </svg>
-        </div>
-        <p className="text-lg text-parchment/50 italic mb-2">档案室还空着。但空也是一种档案。</p>
-        <p className="text-sm text-parchment/30 mb-6">开第一份卷宗。你不知道会记录什么——也许是证词，也许是供词。</p>
-        <button
-          onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
-          className="px-6 py-2 rounded-lg bg-ember/10 border border-ember/20 text-ember hover:bg-ember/20 transition-colors"
-        >
-          开第一份卷宗
-        </button>
+        <p className="text-lg text-parchment/50 italic">档案室还空着。但空也是一种档案。</p>
+        <p className="text-sm text-parchment/30 mt-2">点击上方 <strong className="text-parchment/60">新的小径</strong> 开始学习</p>
       </div>
     )
   }

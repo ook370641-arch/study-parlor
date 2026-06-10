@@ -23,7 +23,8 @@ let currentState: StateJson | null = null
 
 function loadState(): StateJson {
   if (!currentState) {
-    currentState = safeReadJson(STATE_FILE, { fallback: DEFAULT })
+    const raw = safeReadJson(STATE_FILE, { fallback: DEFAULT })
+    currentState = { ...DEFAULT, ...raw }
   }
   return currentState
 }

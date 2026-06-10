@@ -169,7 +169,7 @@ export const useStore = create<AppStore>((set, get) => ({
     ])
     set({
       profile: state.profile,
-      lastUsed: state.lastUsed,
+      lastUsed: state.lastUsed ?? { difficulty: 'mid', temperature: 0.7 },
       inspirations: state.suggested_new_topics?.topics ?? [],
       groupInspirations: state.groupInspirations ?? {},
       inspirationStrategy: state.inspirationStrategy ?? 'v2',
