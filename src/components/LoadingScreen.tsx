@@ -59,6 +59,8 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
         onCompleteRef.current?.()
       }, 700)
     })
+    // Signal main process that we're ready to receive boot events
+    window.api.bootStart()
     return () => {
       unsubProgress()
       unsubComplete()

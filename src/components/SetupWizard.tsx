@@ -5,9 +5,7 @@ type WizardStep = 1 | 2 | 3 | 4
 
 const DEFAULT_BASE_URL = 'https://api.kimi.com/coding/v1'
 const DEFAULT_MODEL = 'kimi-k2.6'
-const DEFAULT_LIBRARY_PATH = `${process.platform === 'win32'
-  ? `${process.env.USERPROFILE || 'C:/Users/User'}`
-  : process.env.HOME || '~'}/Documents/studyparlor-library`
+const DEFAULT_LIBRARY_PATH = 'C:/Users/User/Documents/studyparlor-library'
 
 type Props = {
   onDone: () => void

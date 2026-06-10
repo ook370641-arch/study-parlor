@@ -68,6 +68,8 @@ const api: IpcApi = {
     return () => ipcRenderer.off('setup:done', handler)
   },
 
+  bootStart: () => ipcRenderer.invoke('boot:start'),
+
   onBootProgress: (cb: (stage: string, progress: number) => void) => {
     const handler = (_: unknown, stage: string, progress: number) => cb(stage, progress)
     ipcRenderer.on('boot:progress', handler)

@@ -18,6 +18,7 @@ process.on('unhandledRejection', (reason) => {
 
 let mainWindow: BrowserWindow | null = null
 let fatalError: string | null = null
+let pendingBootCfg: ReturnType<typeof loadEnv> | null = null
 
 function writeEnvFile(config: { apiKey: string; baseUrl: string; model: string; libraryPath: string }) {
   const lines = [
@@ -67,12 +68,15 @@ async function bootstrap() {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
 
+  const isDev = !!process.env.ELECTRON_RENDERER_URL
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
+          isDev
+            ? "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
+            : "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
         ]
       }
     })
@@ -109,6 +113,11 @@ async function bootstrap() {
   ipcMain.handle('setup:writeConfig', async (_, args) => {
     const { apiKey, baseUrl, model, libraryPath, name, profile_text, preferred_topics } = args
 
+    // Mark setup as done BEFORE writing .env, because Vite dev server watches
+    // .env and triggers a full-reload of the renderer — the reloaded page will
+    // query boot:needsSetup immediately, so it must already be false.
+    needsSetup = false
+
     // 1. Write .env
     writeEnvFile({ apiKey, baseUrl, model, libraryPath })
 
@@ -136,19 +145,27 @@ async function bootstrap() {
       }
     })
 
-    // 6. Notify renderer
+    // 6. Store config for when renderer requests boot
+    pendingBootCfg = newCfg
+
+    // 7. Notify renderer setup is done (triggers page transition to LoadingScreen)
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('setup:done')
     }
-
-    // 7. Start normal boot sequence (registers IPC handlers internally)
-    runBootSequence(newCfg, mainWindow!)
   })
 
   if (fatalError) return
 
+  // Renderer calls this when LoadingScreen mounts and is ready to receive events
+  ipcMain.handle('boot:start', async () => {
+    const cfg = pendingBootCfg
+    if (!cfg || !mainWindow || mainWindow.isDestroyed()) return
+    pendingBootCfg = null
+    await runBootSequence(cfg, mainWindow)
+  })
+
   if (!needsSetup) {
-    runBootSequence(cfg!, mainWindow)
+    pendingBootCfg = cfg!
   }
   // needsSetup: wait for setup:writeConfig to trigger boot
 }

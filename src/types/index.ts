@@ -151,6 +151,7 @@ export type IpcApi = {
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
   bootFatal: () => Promise<string | null>
+  bootStart: () => Promise<void>
   onBootProgress: (cb: (stage: string, progress: number) => void) => () => void
   onBootComplete: (cb: () => void) => () => void
 
