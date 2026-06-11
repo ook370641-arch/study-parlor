@@ -3,9 +3,15 @@ import path from 'node:path'
 import type { Difficulty, Mode, Profile } from '@shared/index'
 
 const PROMPTS_DIR = (() => {
-  const standard = path.resolve(__dirname, '..', 'prompts')
-  if (fs.existsSync(standard)) return standard
-  return path.resolve(__dirname, '..', '..', 'electron', 'prompts')
+  const candidates = [
+    path.resolve(__dirname, '..', 'prompts'),                          // dev/vite: out/prompts (if ever copied)
+    path.resolve(__dirname, '..', '..', 'electron', 'prompts'),        // dev: project-root/electron/prompts
+                                                                         // packaged: app.asar/electron/prompts
+  ]
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c
+  }
+  throw new Error(`prompts directory not found. Tried: ${candidates.join(', ')}`)
 })()
 
 function read(name: string): string {

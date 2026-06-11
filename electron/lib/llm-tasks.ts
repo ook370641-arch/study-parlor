@@ -9,12 +9,15 @@ import type { AppConfig } from '../env'
 import type { Profile, NewTopic, Message, ContinueTopicSuggestion } from '@shared/index'
 
 const PROMPTS_DIR = (() => {
-  // 与 electron/lib/prompts.ts 保持同一套 fallback:
-  // dev 模式下 electron-vite 不复制 .md 到 out/,所以 out/prompts/ 不存在
-  // → 回退到源代码目录 electron/prompts/。
-  const standard = path.resolve(__dirname, '..', 'prompts')
-  if (fs.existsSync(standard)) return standard
-  return path.resolve(__dirname, '..', '..', 'electron', 'prompts')
+  const candidates = [
+    path.resolve(__dirname, '..', 'prompts'),                          // dev/vite: out/prompts (if ever copied)
+    path.resolve(__dirname, '..', '..', 'electron', 'prompts'),        // dev: project-root/electron/prompts
+                                                                         // packaged: app.asar/electron/prompts
+  ]
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c
+  }
+  throw new Error(`prompts directory not found. Tried: ${candidates.join(', ')}`)
 })()
 const read = (n: string) => {
   const p = path.join(PROMPTS_DIR, n)

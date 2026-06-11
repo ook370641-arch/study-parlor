@@ -5,9 +5,15 @@ import { extractJsonObject } from './extract-json'
 import type { AppConfig } from '../env'
 
 const PROMPTS_DIR = (() => {
-  const standard = path.resolve(__dirname, '..', 'prompts')
-  if (fs.existsSync(standard)) return standard
-  return path.resolve(__dirname, '..', '..', 'electron', 'prompts')
+  const candidates = [
+    path.resolve(__dirname, '..', 'prompts'),                          // dev/vite: out/prompts (if ever copied)
+    path.resolve(__dirname, '..', '..', 'electron', 'prompts'),        // dev: project-root/electron/prompts
+                                                                         // packaged: app.asar/electron/prompts
+  ]
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c
+  }
+  throw new Error(`prompts directory not found. Tried: ${candidates.join(', ')}`)
 })()
 
 function readPrompt(n: string): string {

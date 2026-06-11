@@ -5,6 +5,7 @@ directories:
 files:
   - out/**/*
   - package.json
+  - electron/prompts
 extraMetadata:
   main: out/main/index.js
 win:

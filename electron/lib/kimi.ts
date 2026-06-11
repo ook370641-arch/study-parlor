@@ -1,21 +1,6 @@
 import type { AppConfig } from '../env'
 import type { Message } from '@shared/index'
 
-// 共享连接池：30s keep-alive，减少重复 TCP+TLS 握手
-let _agent: any = null
-function getAgent() {
-  if (!_agent) {
-    // undici is built into Node.js 18+; lazy-import to avoid bundling issues
-    const { Agent } = require('undici')
-    _agent = new Agent({
-      connect: { rejectUnauthorized: true },
-      keepAliveTimeout: 30000,
-      keepAliveMaxTimeout: 300000,
-    })
-  }
-  return _agent
-}
-
 export async function probeModelWithCredentials(
   creds: { apiKey: string; baseUrl: string; model: string }
 ): Promise<{ ok: boolean; reason?: string }> {
@@ -23,8 +8,7 @@ export async function probeModelWithCredentials(
     headers: {
       Authorization: `Bearer ${creds.apiKey}`,
       'User-Agent': 'claude-code/0.1.0'
-    },
-    dispatcher: getAgent()
+    }
   } as any)
   if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` }
   return { ok: true }
@@ -52,8 +36,7 @@ export async function chatNonStream(
       max_tokens: 16384,
       messages: args.messages,
       thinking: { type: 'disabled' }
-    }),
-    dispatcher: getAgent()
+    })
   } as any)
   if (!res.ok) throw new Error(`Kimi non-stream HTTP ${res.status}`)
   const json = await res.json() as { choices: { message: { content: string } }[] }
@@ -113,8 +96,7 @@ export async function chatStream(
         messages: args.messages,
         thinking: { type: 'disabled' }
       }),
-      signal: internalCtl.signal,
-      dispatcher: getAgent()
+      signal: internalCtl.signal
     } as any)
     if (res.status === 429) {
       const e: any = new Error('Rate limited')
