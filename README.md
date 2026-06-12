@@ -4,6 +4,21 @@
 >
 > 基于 Kimi AI 的本地 Electron 学习助手，为你的个人 Markdown 学习库提供苏格拉底式辅导。
 
+## ⬇️ Download / 下载安装
+
+**👉 [点击这里下载最新版本](https://github.com/ook370641-arch/study-parlor/releases/latest)**
+
+| 平台 / Platform | 文件 | 安装方式 |
+|---|---|---|
+| Windows | `学者夜话-x.x.x-x64.exe` | 双击运行，按提示安装 |
+| macOS | `学者夜话-x.x.x-arm64.dmg`（Apple Silicon）<br>`学者夜话-x.x.x-x64.dmg`（Intel） | 双击打开 dmg，将应用拖入 Applications 文件夹 |
+
+> **macOS 用户注意**：首次打开可能提示"无法验证开发者"，请右键点击应用 → 选择"打开" → 确认即可。
+
+安装后首次启动会引导你配置 Kimi API Key 和学习库路径，按提示操作即可。
+
+---
+
 ## English
 
 ### Why Study Parlor

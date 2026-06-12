@@ -13,6 +13,11 @@ win:
     - target: nsis
       arch: [x64]
   artifactName: 学者夜话-${version}-${arch}.${ext}
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  artifactName: 学者夜话-${version}-${arch}.${ext}
 publish:
   provider: github
   releaseType: release
