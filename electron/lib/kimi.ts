@@ -38,7 +38,11 @@ export async function chatNonStream(
       thinking: { type: 'disabled' }
     })
   } as any)
-  if (!res.ok) throw new Error(`Kimi non-stream HTTP ${res.status}`)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.error('[kimi] chatNonStream HTTP error:', res.status, body.slice(0, 500))
+    throw new Error(`Kimi non-stream HTTP ${res.status}: ${body.slice(0, 200)}`)
+  }
   const json = await res.json() as { choices: { message: { content: string } }[] }
   const content = json.choices[0]?.message?.content ?? ''
   if (!content) throw new Error('Kimi returned empty content')
@@ -104,7 +108,9 @@ export async function chatStream(
       throw e
     }
     if (!res.ok || !res.body) {
-      const e: any = new Error(`HTTP ${res.status}`)
+      const body = await res.text().catch(() => '')
+      console.error('[kimi] chatStream HTTP error:', res.status, body.slice(0, 500))
+      const e: any = new Error(`HTTP ${res.status}: ${body.slice(0, 200)}`)
       e.code = res.status === 401 ? 'UNAUTHORIZED' : 'STREAM_FAIL'
       throw e
     }
