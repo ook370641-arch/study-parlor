@@ -5,6 +5,7 @@ import { Home } from '@/pages/Home'
 import { Study } from '@/pages/Study'
 import { Profile } from '@/pages/Profile'
 import { Extension } from '@/pages/Extension'
+import { Settings } from '@/pages/Settings'
 import { Toast } from '@/components/Toast'
 import { PreStudyModal } from '@/components/PreStudyModal'
 import { LoadingScreen } from '@/components/LoadingScreen'
@@ -163,6 +164,7 @@ export function App() {
           {page === 'study' && <Study />}
           {page === 'profile' && <Profile />}
           {page === 'extension' && <Extension />}
+          {page === 'settings' && <Settings />}
         </>
       )}
       {modal === 'preStudy' && <PreStudyModal />}
