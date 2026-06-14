@@ -10,7 +10,6 @@ const DEFAULT_BASE_URL = 'https://api.kimi.com/coding/v1'
 const DEFAULT_MODEL = 'kimi-k2.6'
 
 type VerifyStatus =
-  | { kind: 'idle'; message: '从未验证' }
   | { kind: 'loading'; message: '验证中...' }
   | { kind: 'success'; message: string }
   | { kind: 'error'; message: string }
@@ -26,7 +25,7 @@ export function Settings() {
   const [libraryPath, setLibraryPath] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>({ kind: 'idle', message: '从未验证' })
+  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -50,7 +49,7 @@ export function Settings() {
     setModel(initialConfig.model)
     setLibraryPath(initialConfig.libraryPath)
     setError(null)
-    setVerifyStatus({ kind: 'idle', message: '从未验证' })
+    setVerifyStatus(null)
   }
 
   const handleSelectDirectory = async () => {
@@ -190,13 +189,15 @@ export function Settings() {
                   <Button onClick={handleVerify} disabled={!canVerify}>
                     验证连接
                   </Button>
-                  <span className={`text-xs ${
-                    verifyStatus.kind === 'error' ? 'text-wine' :
-                    verifyStatus.kind === 'success' ? 'text-green-400' :
-                    'text-parchment/40'
-                  }`}>
-                    {verifyStatus.message}
-                  </span>
+                  {verifyStatus && (
+                    <span className={`text-xs ${
+                      verifyStatus.kind === 'error' ? 'text-wine' :
+                      verifyStatus.kind === 'success' ? 'text-ember' :
+                      'text-parchment/40'
+                    }`}>
+                      {verifyStatus.message}
+                    </span>
+                  )}
                 </div>
               </div>
 
