@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import dotenv from 'dotenv'
-import { loadEnv } from './env'
+import { loadEnv, saveEnv } from './env'
 import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
 import { patchState } from './ipc/state'
@@ -19,17 +19,6 @@ process.on('unhandledRejection', (reason) => {
 let mainWindow: BrowserWindow | null = null
 let fatalError: string | null = null
 let pendingBootCfg: ReturnType<typeof loadEnv> | null = null
-
-function writeEnvFile(config: { apiKey: string; baseUrl: string; model: string; libraryPath: string }) {
-  const lines = [
-    `KIMI_API_KEY=${config.apiKey}`,
-    `KIMI_BASE_URL=${config.baseUrl}`,
-    `KIMI_MODEL=${config.model}`,
-    `STUDY_LIBRARY_PATH=${config.libraryPath}`,
-  ]
-  const envPath = path.join(process.cwd(), '.env')
-  fs.writeFileSync(envPath, lines.join('\n') + '\n', 'utf-8')
-}
 
 async function bootstrap() {
   let cfg: ReturnType<typeof loadEnv> | undefined
@@ -119,7 +108,7 @@ async function bootstrap() {
     needsSetup = false
 
     // 1. Write .env
-    writeEnvFile({ apiKey, baseUrl, model, libraryPath })
+    saveEnv({ apiKey, baseUrl, model, libraryPath })
 
     // 2. Ensure directory exists and is writable
     fs.mkdirSync(libraryPath, { recursive: true })
