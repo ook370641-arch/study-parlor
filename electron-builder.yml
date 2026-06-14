@@ -18,6 +18,14 @@ mac:
     - target: dmg
       arch: [x64, arm64]
   artifactName: 学者夜话-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: 学者夜话
+  uninstallDisplayName: 学者夜话
+  artifactName: study-parlor-setup-${version}-${arch}.${ext}
 publish:
   provider: github
   releaseType: release

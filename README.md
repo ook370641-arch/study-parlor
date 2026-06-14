@@ -10,7 +10,7 @@
 
 | 平台 / Platform | 文件 | 安装方式 |
 |---|---|---|
-| Windows | `学者夜话-x.x.x-x64.exe` | 双击运行，按提示安装 |
+| Windows | `study-parlor-setup-x.x.x-x64.exe` | 双击运行，选择安装目录，自动生成桌面快捷方式 |
 | macOS | `学者夜话-x.x.x-arm64.dmg`（Apple Silicon）<br>`学者夜话-x.x.x-x64.dmg`（Intel） | 双击打开 dmg，将应用拖入 Applications 文件夹 |
 
 > **macOS 用户注意**：首次打开可能提示"无法验证开发者"，请右键点击应用 → 选择"打开" → 确认即可。
