@@ -63,7 +63,12 @@ export function Home() {
   return (
     <div className="h-full p-8 relative">
       <SurfaceBackground surface="home" />
-      <SwapPaintingButton surface="home" className="absolute top-4 right-36 z-10" />
+      <SwapPaintingButton surface="home" className="absolute top-4 right-52 z-10" />
+      <Button variant="ghost"
+        onClick={() => goto('settings')}
+        className="absolute top-4 right-36 font-sans text-sm z-10">
+        设置
+      </Button>
       <Button variant="ghost"
         onClick={() => goto('profile')}
         className="absolute top-4 right-20 font-sans text-sm z-10">
