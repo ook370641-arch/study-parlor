@@ -8,6 +8,7 @@ export type AppConfig = {
   libraryPath: string
 }
 
+const DEFAULT_BASE_URL = 'https://api.kimi.com/coding/v1'
 const DEFAULT_MODEL = 'kimi-k2.6'
 
 function normalizeBaseUrl(url: string): string {
@@ -40,7 +41,7 @@ export function loadEnv(env: Record<string, string | undefined>): AppConfig {
   const libraryPath = env.STUDY_LIBRARY_PATH?.trim()
   if (!libraryPath) throw new Error('Missing STUDY_LIBRARY_PATH in .env')
 
-  const baseUrl = normalizeBaseUrl(env.KIMI_BASE_URL?.trim() || 'https://api.kimi.com/coding/v1')
+  const baseUrl = normalizeBaseUrl(env.KIMI_BASE_URL?.trim() || DEFAULT_BASE_URL)
 
   return {
     apiKey,
@@ -56,7 +57,7 @@ function getEnvPath(): string {
 
 export function saveEnv(config: AppConfig): void {
   const model = sanitizeModel(config.model.trim() || DEFAULT_MODEL)
-  const baseUrl = normalizeBaseUrl(config.baseUrl.trim() || 'https://api.kimi.com/coding/v1')
+  const baseUrl = normalizeBaseUrl(config.baseUrl.trim() || DEFAULT_BASE_URL)
 
   const envPath = getEnvPath()
   let content = ''
