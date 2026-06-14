@@ -46,6 +46,10 @@ export const ipc = {
   get onBootComplete() { return ensure().onBootComplete },
   get getExtensionInfo() { return ensure().getExtensionInfo },
 
+  // Config
+  get getConfig() { return ensure().getConfig },
+  get writeConfig() { return ensure().writeConfig },
+
   // Setup wizard
   get bootNeedsSetup() { return ensure().bootNeedsSetup },
   get setupSelectDirectory() { return ensure().setupSelectDirectory },
