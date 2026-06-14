@@ -1,3 +1,5 @@
+import type { AppConfig } from '@electron/env'
+
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = number
@@ -187,6 +189,10 @@ export type IpcApi = {
 
   // Extension info
   getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>
+
+  // Config
+  getConfig: () => Promise<AppConfig>
+  writeConfig: (config: AppConfig) => Promise<void>
 
   // Setup wizard
   bootNeedsSetup: () => Promise<boolean>

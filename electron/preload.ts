@@ -53,6 +53,10 @@ const api: IpcApi = {
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
   getExtensionInfo: () => ipcRenderer.invoke('files:getExtensionInfo'),
 
+  // Config
+  getConfig: () => ipcRenderer.invoke('config:get'),
+  writeConfig: (config) => ipcRenderer.invoke('config:write', config),
+
   // Setup wizard
   bootNeedsSetup: () =>
     ipcRenderer.invoke('boot:needsSetup') as Promise<boolean>,
