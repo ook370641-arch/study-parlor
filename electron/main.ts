@@ -20,7 +20,22 @@ let mainWindow: BrowserWindow | null = null
 let fatalError: string | null = null
 let pendingBootCfg: ReturnType<typeof loadEnv> | null = null
 
+function verifyPackagedResources(): string | null {
+  if (process.env.ELECTRON_RENDERER_URL) return null
+  const required = [
+    path.join(__dirname, '../preload/index.js'),
+    path.join(__dirname, '../renderer/index.html')
+  ]
+  for (const file of required) {
+    if (!fs.existsSync(file)) {
+      return `打包资源缺失: ${file}`
+    }
+  }
+  return null
+}
+
 async function bootstrap() {
+  console.log('[bootstrap] start')
   let cfg: ReturnType<typeof loadEnv> | undefined
   let needsSetup = false
 
@@ -33,9 +48,18 @@ async function bootstrap() {
     const testFile = path.join(cfg.libraryPath, '.write-test')
     fs.writeFileSync(testFile, '')
     fs.unlinkSync(testFile)
+    console.log('[bootstrap] env loaded, library:', cfg.libraryPath)
   } catch (err: any) {
     // 配置缺失 → 进入向导，不是 fatal
+    console.log('[bootstrap] setup required:', err.message)
     needsSetup = true
+  }
+
+  // Step 1.5: 打包后资源路径校验（仅生产模式）
+  const resourceError = verifyPackagedResources()
+  if (resourceError) {
+    fatalError = resourceError
+    console.error('[bootstrap] resource check failed:', resourceError)
   }
 
   // Step 2: 创建窗口（无论配置结果如何）
@@ -50,6 +74,7 @@ async function bootstrap() {
     }
   })
   mainWindow.maximize()
+  console.log('[bootstrap] window created')
 
   if (process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -150,7 +175,9 @@ async function bootstrap() {
     const cfg = pendingBootCfg
     if (!cfg || !mainWindow || mainWindow.isDestroyed()) return
     pendingBootCfg = null
+    console.log('[bootstrap] boot sequence start')
     await runBootSequence(cfg, mainWindow)
+    console.log('[bootstrap] boot sequence complete')
   })
 
   if (!needsSetup) {
@@ -194,10 +221,12 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   }
 
   // ===== 阶段 1: 注册 IPC =====
+  console.log('[bootstrap] stage: register IPC')
   registerAllIpc(cfg, () => mainWindow)
   await animate('注册服务', 0, 15, 300)
 
   // ===== 阶段 2: 探活模型（网络请求，最耗时）=====
+  console.log('[bootstrap] stage: probe model')
   const probeStart = Date.now()
   try {
     const probeResult = await probeModel(cfg)
@@ -212,14 +241,18 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   await animate('探活模型', 15, 50, Math.max(400, probeElapsed))
 
   // ===== 阶段 3: 扫描学习库 =====
+  console.log('[bootstrap] stage: scan library')
   await animate('扫描学习库', 50, 75, 500)
 
   // ===== 阶段 4: 初始化状态 =====
+  console.log('[bootstrap] stage: init state')
   await animate('初始化状态', 75, 95, 400)
 
   // ===== 阶段 5: 就绪 =====
+  console.log('[bootstrap] stage: ready')
   await animate('就绪', 95, 100, 300)
   sendComplete()
+  console.log('[bootstrap] ready')
 }
 
 app.whenReady().then(bootstrap)

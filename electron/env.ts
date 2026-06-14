@@ -34,12 +34,17 @@ function sanitizeModel(model: string): string {
 export function loadEnv(env: Record<string, string | undefined>): AppConfig {
   const apiKey = env.KIMI_API_KEY?.trim()
   const PLACEHOLDERS = ['sk-kimi-replace-me', 'sk-kimi-...', 'your-api-key']
-  if (!apiKey || PLACEHOLDERS.includes(apiKey)) {
-    throw new Error('KIMI_API_KEY 未配置或仍是占位符。请编辑 .env 文件，将其替换为你的真实 API Key。')
+  if (!apiKey) {
+    throw new Error('KIMI_API_KEY 未配置。请在 .env 文件中设置 KIMI_API_KEY。')
+  }
+  if (PLACEHOLDERS.includes(apiKey)) {
+    throw new Error('KIMI_API_KEY 仍是占位符。请编辑 .env 文件，将其替换为你的真实 API Key。')
   }
 
   const libraryPath = env.STUDY_LIBRARY_PATH?.trim()
-  if (!libraryPath) throw new Error('Missing STUDY_LIBRARY_PATH in .env')
+  if (!libraryPath) {
+    throw new Error('STUDY_LIBRARY_PATH 未配置。请在 .env 文件中设置学习库目录路径。')
+  }
 
   const baseUrl = normalizeBaseUrl(env.KIMI_BASE_URL?.trim() || DEFAULT_BASE_URL)
 
