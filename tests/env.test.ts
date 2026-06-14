@@ -1,4 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { loadEnv, saveEnv } from '@electron/env'
 
 describe('loadEnv', () => {
@@ -53,10 +56,6 @@ describe('loadEnv', () => {
     ).toThrow(/STUDY_LIBRARY_PATH/)
   })
 })
-
-import fs from 'node:fs'
-import os from 'node:os'
-import path from 'node:path'
 
 describe('saveEnv', () => {
   let tmpDir: string
@@ -126,5 +125,21 @@ describe('saveEnv', () => {
     })
     const content = fs.readFileSync(envPath, 'utf-8')
     expect(content).toContain('KIMI_MODEL=kimi-k2.6')
+  })
+
+  it('normalizes baseUrl so loadEnv round-trip is consistent', () => {
+    saveEnv({
+      apiKey: 'sk-kimi-x',
+      baseUrl: 'https://api.kimi.com/coding',
+      model: 'kimi-k2.6',
+      libraryPath: 'C:/foo'
+    })
+    const cfg = loadEnv({
+      KIMI_API_KEY: 'sk-kimi-x',
+      KIMI_BASE_URL: 'https://api.kimi.com/coding',
+      KIMI_MODEL: 'kimi-k2.6',
+      STUDY_LIBRARY_PATH: 'C:/foo'
+    })
+    expect(cfg.baseUrl).toBe('https://api.kimi.com/coding/v1')
   })
 })

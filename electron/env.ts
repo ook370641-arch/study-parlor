@@ -1,3 +1,6 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 export type AppConfig = {
   apiKey: string
   baseUrl: string
@@ -5,9 +8,17 @@ export type AppConfig = {
   libraryPath: string
 }
 
+const DEFAULT_MODEL = 'kimi-k2.6'
+
+function normalizeBaseUrl(url: string): string {
+  let normalized = url.replace(/\/+$/, '')
+  if (!normalized.endsWith('/v1')) normalized += '/v1'
+  return normalized
+}
+
 function sanitizeModel(model: string): string {
   // Strip actual ANSI escape sequences (e.g. \x1b[1m) if somehow present
-  const noAnsi = model.replace(/\[[0-9;]*m/g, '')
+  const noAnsi = model.replace(/\x1b\[[0-9;]*m/g, '')
   const cleaned = noAnsi.trim()
   // Reject bracket artifacts like [1m] and control characters that commonly
   // get copied from terminal output into .env
@@ -29,28 +40,23 @@ export function loadEnv(env: Record<string, string | undefined>): AppConfig {
   const libraryPath = env.STUDY_LIBRARY_PATH?.trim()
   if (!libraryPath) throw new Error('Missing STUDY_LIBRARY_PATH in .env')
 
-  let baseUrl = (env.KIMI_BASE_URL?.trim()) || 'https://api.kimi.com/coding/v1'
-  baseUrl = baseUrl.replace(/\/+$/, '')
-  if (!baseUrl.endsWith('/v1')) baseUrl += '/v1'
+  const baseUrl = normalizeBaseUrl(env.KIMI_BASE_URL?.trim() || 'https://api.kimi.com/coding/v1')
 
   return {
     apiKey,
     baseUrl,
-    model: sanitizeModel(env.KIMI_MODEL?.trim() || 'kimi-k2.6'),
+    model: sanitizeModel(env.KIMI_MODEL?.trim() || DEFAULT_MODEL),
     libraryPath
   }
 }
-
-import fs from 'node:fs'
-import path from 'node:path'
 
 function getEnvPath(): string {
   return path.join(process.cwd(), '.env')
 }
 
 export function saveEnv(config: AppConfig): void {
-  const model = sanitizeModel(config.model.trim() || 'kimi-k2.6')
-  const baseUrl = config.baseUrl.trim() || 'https://api.kimi.com/coding/v1'
+  const model = sanitizeModel(config.model.trim() || DEFAULT_MODEL)
+  const baseUrl = normalizeBaseUrl(config.baseUrl.trim() || 'https://api.kimi.com/coding/v1')
 
   const envPath = getEnvPath()
   let content = ''
