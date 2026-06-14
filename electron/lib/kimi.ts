@@ -18,6 +18,13 @@ export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?
   return probeModelWithCredentials(cfg)
 }
 
+function resolveTemperature(model: string, temperature: number): number {
+  // Kimi k2.x / kimi-for-coding 在 thinking disabled 模式下只允许 temperature=0.6
+  // thinking 模式下只允许 1.0；本项目当前统一 disabled thinking，因此强制 0.6
+  if (model.startsWith('kimi-')) return 0.6
+  return temperature
+}
+
 export async function chatNonStream(
   cfg: AppConfig,
   args: { messages: Message[]; temperature: number }
@@ -32,7 +39,7 @@ export async function chatNonStream(
     body: JSON.stringify({
       model: cfg.model,
       stream: false,
-      temperature: args.temperature,
+      temperature: resolveTemperature(cfg.model, args.temperature),
       max_tokens: 16384,
       messages: args.messages,
       thinking: { type: 'disabled' }
@@ -96,7 +103,7 @@ export async function chatStream(
       body: JSON.stringify({
         model: cfg.model,
         stream: true,
-        temperature: args.temperature,
+        temperature: resolveTemperature(cfg.model, args.temperature),
         messages: args.messages,
         thinking: { type: 'disabled' }
       }),

@@ -68,7 +68,23 @@ describe('chatNonStream', () => {
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.stream).toBe(false)
     expect(body.model).toBe('kimi-k2.6')
-    expect(body.temperature).toBe(0.3)
+    expect(body.temperature).toBe(0.6)
+  })
+
+  it('keeps temperature for non-kimi models', async () => {
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'hi' } }] })
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+
+    await chatNonStream({ ...cfg, model: 'deepseek-chat' }, {
+      messages: [{ role: 'user', content: 'q' }],
+      temperature: 0.7
+    })
+
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.temperature).toBe(0.7)
   })
 })
 
