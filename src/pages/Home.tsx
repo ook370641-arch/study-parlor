@@ -1,62 +1,20 @@
-import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { Button } from '@/components/Button'
 import { GroupRecCard } from '@/components/GroupRecCard'
 import { StudyLibrary } from '@/components/StudyLibrary'
-import { ipc } from '@/lib/ipc'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { StrategyToggle } from '@/components/StrategyToggle'
 
 export function Home() {
-  const inspirations = useStore(s => s.inspirations)
   const profile = useStore(s => s.profile)
   const library = useStore(s => s.library)
   const groups = useStore(s => s.groups)
   const unsavedSessions = useStore(s => s.unsavedSessions)
   const restoreSession = useStore(s => s.restoreSession)
   const removeUnsavedSession = useStore(s => s.removeUnsavedSession)
-  const setInsp = useStore(s => s.setInspirations)
-  const setInspLoading = useStore(s => s.setInspirationsLoading)
-  const setInspError = useStore(s => s.setInspirationsError)
   const goto = useStore(s => s.goto)
   const openPreStudy = useStore(s => s.openPreStudy)
-
-  const loadInspirations = () => {
-    setInspLoading(true)
-    setInspError(false)
-    ipc.llmInspirations({
-      profile,
-      existingTitles: library.map(f => f.title)
-    }).then(t => {
-      setInsp(t)
-      ipc.patchState({ suggested_new_topics: {
-        generated_at: new Date().toISOString(),
-        topics: t
-      }})
-    }).catch((err) => {
-      setInspError(true)
-      console.error('[Home] loadInspirations failed:', err)
-      const msg = String(err?.message ?? err)
-      if (msg.includes('401') || msg.includes('UNAUTHORIZED')) {
-        useStore.getState().showToast('API Key 无效，请检查配置')
-      } else if (msg.includes('TIMEOUT') || msg.includes('timeout')) {
-        useStore.getState().showToast('网络超时，请检查网络连接')
-      } else {
-        useStore.getState().showToast('灵感加载失败，请稍后重试')
-      }
-    }).finally(() => {
-      setInspLoading(false)
-    })
-  }
-
-  useEffect(() => {
-    const stale = inspirations.length === 0
-    if (stale) {
-      loadInspirations()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [library])
 
   const firstUnsaved = unsavedSessions[0]
 

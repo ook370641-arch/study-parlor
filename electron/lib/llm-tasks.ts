@@ -32,31 +32,6 @@ const transcript = (h: Message[]) =>
     .map(m => `${m.role === 'user' ? '学者' : 'AI'}:${m.content}`)
     .join('\n\n')
 
-export async function generateInspirations(
-  cfg: AppConfig,
-  args: { profile: Profile; existingTitles: string[] }
-): Promise<NewTopic[]> {
-  const prompt = read('inspiration.md')
-    .replace('{{name}}', args.profile.name)
-    .replace('{{profile_text}}', args.profile.profile_text)
-    .replace('{{preferred_topics}}', args.profile.preferred_topics.join(' / '))
-    .replace('{{existing_titles}}', args.existingTitles.join(' / '))
-
-  const text = await chatNonStream(cfg, {
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7
-  })
-
-  try {
-    const extracted = extractJsonArray(text)
-    if (!extracted) throw new Error('JSON extraction failed')
-    const json = JSON.parse(extracted) as NewTopic[]
-    return Array.isArray(json) ? json.slice(0, 2) : []
-  } catch {
-    return []
-  }
-}
-
 export async function finalizeProgress(
   cfg: AppConfig,
   history: Message[]
@@ -65,7 +40,8 @@ export async function finalizeProgress(
   try {
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3
+      temperature: 0.3,
+      thinking: { type: 'enabled', reasoning_effort: 'max' }
     })
     const title = extractXmlTag(text, 'title')
     const body = extractXmlTag(text, 'body')
@@ -98,7 +74,8 @@ export async function finalizeReview(
   try {
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3
+      temperature: 0.3,
+      thinking: { type: 'enabled', reasoning_effort: 'max' }
     })
     const summary = extractXmlTag(text, 'summary')
     if (!summary) {
@@ -130,7 +107,8 @@ export async function generateFable(
   try {
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7
+      temperature: 0.7,
+      thinking: { type: 'enabled', reasoning_effort: 'max' }
     })
     const extracted = extractJsonObject(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -158,7 +136,8 @@ export async function generateFableFromReport(
   try {
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7
+      temperature: 0.7,
+      thinking: { type: 'enabled', reasoning_effort: 'max' }
     })
     const extracted = extractJsonObject(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -186,7 +165,8 @@ export async function generateContinueSuggestions(
   try {
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7
+      temperature: 0.7,
+      thinking: { type: 'enabled', reasoning_effort: 'max' }
     })
     const extracted = extractJsonArray(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -283,7 +263,8 @@ export async function generateGroupInspiration(
 
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7
+    temperature: 0.7,
+    thinking: { type: 'enabled', reasoning_effort: 'max' }
   })
 
   // 激进 JSON 提取：从 LLM 返回的任意文本中找第一个 {...} 结构

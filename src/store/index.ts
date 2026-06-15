@@ -31,9 +31,6 @@ type AppStore = {
   // 持久化
   profile: Profile
   lastUsed: { difficulty: Difficulty; temperature: number }
-  inspirations: NewTopic[]
-  inspirationsLoading: boolean
-  inspirationsError: boolean
   session_count: number
 
   // 派生
@@ -97,9 +94,6 @@ type AppStore = {
   clearArchiveResult: () => void
   resetSession: () => void
   showToast: (m: string) => void
-  setInspirations: (t: NewTopic[]) => void
-  setInspirationsLoading: (v: boolean) => void
-  setInspirationsError: (v: boolean) => void
   patchProfile: (p: Partial<Profile>) => Promise<void>
   patchLastUsed: (l: Partial<{ difficulty: Difficulty; temperature: number }>) => Promise<void>
   saveCurrentSession: () => Promise<void>
@@ -137,9 +131,6 @@ type AppStore = {
 export const useStore = create<AppStore>((set, get) => ({
   profile: { name: '', profile_text: '', preferred_topics: [] },
   lastUsed: { difficulty: 'mid', temperature: 0.7 },
-  inspirations: [],
-  inspirationsLoading: false,
-  inspirationsError: false,
   session_count: 0,
   library: [],
   modelInvalid: false,
@@ -170,7 +161,6 @@ export const useStore = create<AppStore>((set, get) => ({
     set({
       profile: state.profile,
       lastUsed: state.lastUsed ?? { difficulty: 'mid', temperature: 0.7 },
-      inspirations: state.suggested_new_topics?.topics ?? [],
       groupInspirations: state.groupInspirations ?? {},
       inspirationStrategy: state.inspirationStrategy ?? 'v2',
       topicContinueSuggestions: state.topicContinueSuggestions ?? {},
@@ -278,9 +268,6 @@ export const useStore = create<AppStore>((set, get) => ({
 
   resetSession: () => set({ session: null, currentPage: 'home' }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
-  setInspirations: (t) => set({ inspirations: t }),
-  setInspirationsLoading: (v) => set({ inspirationsLoading: v }),
- setInspirationsError: (v) => set({ inspirationsError: v }),
 
   patchProfile: async (p) => {
     const next = { ...get().profile, ...p }

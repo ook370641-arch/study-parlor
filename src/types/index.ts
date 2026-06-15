@@ -107,7 +107,6 @@ export type StateJson = {
   version: 1
   profile: Profile
   lastUsed: { difficulty: Difficulty; temperature: Temperature }
-  suggested_new_topics: { generated_at: string; topics: NewTopic[] } | null
   groupInspirations: Record<string, NewTopic>
   ui: { session_count: number }
   inspirationStrategy: 'v1' | 'v2' | 'v3'
@@ -125,7 +124,6 @@ export type IpcApi = {
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
   llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
-  llmInspirations: (args: { profile: Profile; existingTitles: string[] }) => Promise<NewTopic[]>
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; description?: string; body: string; progress_summary?: string }>
   llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[]; mastery_assessment?: string; mastery_checklist?: string[]; future_advice?: string[] }>
   llmGenerateFable: (args: { history: Message[]; topic: string }) => Promise<{ title: string; body: string }>

@@ -20,7 +20,6 @@ export const ipc = {
   get llmProbe() { return ensure().llmProbe },
   get llmStart() { return ensure().llmStart },
   get llmAbort() { return ensure().llmAbort },
-  get llmInspirations() { return ensure().llmInspirations },
   get llmFinalizeProgress() { return ensure().llmFinalizeProgress },
   get llmFinalizeReview() { return ensure().llmFinalizeReview },
   get llmGenerateFable() { return ensure().llmGenerateFable },

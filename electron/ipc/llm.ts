@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import type { AppConfig } from '../env'
 import { probeModel, chatStream } from '../lib/kimi'
-import { generateInspirations, finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport, generateContinueSuggestions } from '../lib/llm-tasks'
+import { finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport, generateContinueSuggestions } from '../lib/llm-tasks'
 import { generateDiagram } from '../lib/diagram'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -61,10 +61,6 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     sessions.get(sessionId)?.abort()
     sessions.delete(sessionId)
   })
-
-  ipcMain.handle('llm:inspirations', async (_, args: {
-    profile: Profile; existingTitles: string[]
-  }) => generateInspirations(cfg, args))
 
   ipcMain.handle('llm:groupInspiration', async (_, args: {
     groupName: string

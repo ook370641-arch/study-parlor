@@ -18,16 +18,59 @@ export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?
   return probeModelWithCredentials(cfg)
 }
 
-function resolveTemperature(model: string, temperature: number): number {
-  // Kimi k2.x / kimi-for-coding 在 thinking disabled 模式下只允许 temperature=0.6
-  // thinking 模式下只允许 1.0；本项目当前统一 disabled thinking，因此强制 0.6
-  if (model.startsWith('kimi-')) return 0.6
-  return temperature
+export type ThinkingConfig =
+  | { type: 'enabled'; reasoning_effort?: 'high' | 'max' }
+  | { type: 'disabled' }
+
+function isKimiModel(model: string): boolean {
+  return model.toLowerCase().startsWith('kimi-')
+}
+
+function isDeepSeekModel(model: string): boolean {
+  return model.toLowerCase().startsWith('deepseek-')
+}
+
+function buildChatBody(
+  cfg: AppConfig,
+  args: {
+    messages: Message[]
+    temperature: number
+    stream: boolean
+    maxTokens?: number
+    thinking?: ThinkingConfig
+  }
+): Record<string, any> {
+  const body: Record<string, any> = {
+    model: cfg.model,
+    stream: args.stream,
+    messages: args.messages,
+  }
+
+  if (isKimiModel(cfg.model)) {
+    // Kimi k2.x / kimi-for-coding 在 thinking disabled 模式下只允许 temperature=0.6
+    body.temperature = 0.6
+    body.thinking = { type: 'disabled' }
+  } else if (isDeepSeekModel(cfg.model)) {
+    const thinking = args.thinking ?? { type: 'disabled' }
+    body.thinking = { type: thinking.type }
+    if (thinking.type === 'enabled') {
+      body.reasoning_effort = thinking.reasoning_effort ?? 'high'
+    }
+    body.temperature = args.temperature
+  } else {
+    body.temperature = args.temperature
+  }
+
+  if (args.maxTokens) {
+    body.max_tokens = args.maxTokens
+  }
+
+  return body
 }
 
 export async function chatNonStream(
   cfg: AppConfig,
-  args: { messages: Message[]; temperature: number }
+  args: { messages: Message[]; temperature: number; thinking?: ThinkingConfig }
 ): Promise<string> {
   const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
     method: 'POST',
@@ -36,14 +79,13 @@ export async function chatNonStream(
       'Content-Type': 'application/json',
       'User-Agent': 'claude-code/0.1.0'
     },
-    body: JSON.stringify({
-      model: cfg.model,
-      stream: false,
-      temperature: resolveTemperature(cfg.model, args.temperature),
-      max_tokens: 16384,
+    body: JSON.stringify(buildChatBody(cfg, {
       messages: args.messages,
-      thinking: { type: 'disabled' }
-    })
+      temperature: args.temperature,
+      stream: false,
+      maxTokens: 16384,
+      thinking: args.thinking,
+    })),
   } as any)
   if (!res.ok) {
     const body = await res.text().catch(() => '')
@@ -77,7 +119,7 @@ export function parseSseChunk(line: string): SseEvent {
 
 export async function chatStream(
   cfg: AppConfig,
-  args: { messages: Message[]; temperature: number; signal: AbortSignal },
+  args: { messages: Message[]; temperature: number; signal: AbortSignal; thinking?: ThinkingConfig },
   onChunk: (text: string) => void
 ): Promise<void> {
   const TIMEOUT_MS = 120_000
@@ -100,13 +142,12 @@ export async function chatStream(
         'Content-Type': 'application/json',
         'User-Agent': 'claude-code/0.1.0'
       },
-      body: JSON.stringify({
-        model: cfg.model,
-        stream: true,
-        temperature: resolveTemperature(cfg.model, args.temperature),
+      body: JSON.stringify(buildChatBody(cfg, {
         messages: args.messages,
-        thinking: { type: 'disabled' }
-      }),
+        temperature: args.temperature,
+        stream: true,
+        thinking: args.thinking ?? { type: 'disabled' },
+      })),
       signal: internalCtl.signal
     } as any)
     if (res.status === 429) {

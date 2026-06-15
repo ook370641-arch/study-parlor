@@ -48,7 +48,8 @@ export async function generateDiagram(
   try {
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: promptText }],
-      temperature: 0.3
+      temperature: 0.3,
+      thinking: { type: 'enabled', reasoning_effort: 'max' }
     })
 
     const extracted = extractJsonObject(text)

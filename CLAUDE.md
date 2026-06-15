@@ -72,7 +72,7 @@ npx vitest run tests/prompts.test.ts
 ### 状态与持久化
 
 - **运行时状态**: Zustand 单 store (`src/store/index.ts`)
-- **持久化**: `~/.studyparlor/state.json` (profile / lastUsed / recommendation_cache / suggested_new_topics)
+- **持久化**: `~/.studyparlor/state.json` (profile / lastUsed / groupInspirations / topicContinueSuggestions)
 - **学习库**: 用户指定的 `.md` 目录（通过 `.env` 的 `STUDY_LIBRARY_PATH`），应用只读/写，不锁定格式。frontmatter 用 gray-matter 解析，schema 见 `src/types/index.ts` 的 `Frontmatter`。
 
 ### 文件系统 (`electron/ipc/files.ts`)
@@ -84,7 +84,6 @@ npx vitest run tests/prompts.test.ts
 
 ### 推荐逻辑 (`electron/lib/llm-tasks.ts`)
 
-- `generateInspirations` — 根据用户 profile 生成新主题推荐
 - `generateContinueSuggestions` — 根据主题历史生成续谈推荐
 - `generateGroupInspiration` — 根据分组内主题生成分组灵感
 

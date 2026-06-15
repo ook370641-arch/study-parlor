@@ -25,7 +25,6 @@ const api: IpcApi = {
   llmProbe: () => ipcRenderer.invoke('llm:probe'),
   llmStart: (a) => ipcRenderer.invoke('llm:start', a),
   llmAbort: (s) => ipcRenderer.invoke('llm:abort', s),
-  llmInspirations: (a) => ipcRenderer.invoke('llm:inspirations', a),
   llmFinalizeProgress: (h) => ipcRenderer.invoke('llm:finalizeProgress', h),
   llmFinalizeReview: (a) => ipcRenderer.invoke('llm:finalizeReview', a),
   llmGenerateFable: (a) => ipcRenderer.invoke('llm:generateFable', a),

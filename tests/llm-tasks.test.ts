@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import {
-  generateInspirations,
   generateGroupInspiration,
   finalizeProgress,
   finalizeReview,
@@ -11,40 +10,6 @@ import {
 
 const cfg = { apiKey: 'k', baseUrl: 'https://x', model: 'm', libraryPath: '/' }
 const profile = { name: '张三', profile_text: 'p', preferred_topics: ['a', 'b'] }
-
-describe('generateInspirations', () => {
-  it('parses valid JSON array', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      ok: true,
-      json: async () => ({
-        choices: [{ message: { content: '[{"topic":"X","hook":"hx"},{"topic":"Y","hook":"hy"}]' } }]
-      })
-    })) as any)
-    const out = await generateInspirations(cfg, { profile, existingTitles: ['a.md'] })
-    expect(out).toHaveLength(2)
-    expect(out[0].topic).toBe('X')
-  })
-
-  it('returns empty array on parse failure (graceful)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: 'not json at all' } }] })
-    })) as any)
-    const out = await generateInspirations(cfg, { profile, existingTitles: [] })
-    expect(out).toEqual([])
-  })
-
-  it('passes existingTitles into prompt', async () => {
-    const fetchSpy = vi.fn(async () => ({
-      ok: true, json: async () => ({ choices: [{ message: { content: '[]' } }] })
-    }))
-    vi.stubGlobal('fetch', fetchSpy as any)
-    await generateInspirations(cfg, { profile, existingTitles: ['拓扑学基础', '贝叶斯入门'] })
-    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
-    expect(body.messages[0].content).toContain('拓扑学基础')
-    expect(body.messages[0].content).toContain('贝叶斯入门')
-  })
-})
 
 describe('finalizeProgress', () => {
   it('extracts title, body and progress_summary from XML response', async () => {
@@ -194,6 +159,22 @@ describe('generateGroupInspiration', () => {
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     // The v3 prompt contains "缺口" which is not in v1 or v2
     expect(body.messages[0].content).toContain('缺口')
+  })
+
+  it('enables DeepSeek thinking with max effort', async () => {
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '{"topic":"T","hook":"h"}' } }] })
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+    await generateGroupInspiration({ ...cfg, model: 'deepseek-v4-pro' }, {
+      groupName: 'AI PM',
+      topics: [{ dirName: 'agent', title: 'Agent' }],
+      profile
+    })
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.thinking).toEqual({ type: 'enabled' })
+    expect(body.reasoning_effort).toBe('max')
   })
 })
 
@@ -378,6 +359,27 @@ describe('generateContinueSuggestions', () => {
     expect(out).toHaveLength(2)
     expect(out[0].title).toBe('有效项')
     expect(out[1].title).toBe('另一有效项')
+
+    summariesSpy.mockRestore()
+  })
+
+  it('enables DeepSeek thinking with max effort', async () => {
+    const mod = await import('@electron/lib/llm-tasks')
+    const summariesSpy = vi.spyOn(mod, 'readTopicReportSummaries')
+      .mockReturnValue(['已掌握拓扑基础概念'])
+
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '[]' } }]
+      })
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+
+    await generateContinueSuggestions({ ...cfg, model: 'deepseek-v4-pro' }, { topic: '拓扑学', dirName: '拓扑学' })
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.thinking).toEqual({ type: 'enabled' })
+    expect(body.reasoning_effort).toBe('max')
 
     summariesSpy.mockRestore()
   })
