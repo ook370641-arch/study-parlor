@@ -1,13 +1,23 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'node:path'
+import os from 'node:os'
 import fs from 'node:fs'
 import dotenv from 'dotenv'
-import { loadEnv, saveEnv } from './env'
+import { loadEnv, saveEnv, setConfigDir, getEnvPath } from './env'
 import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
 import { patchState } from './ipc/state'
 
-dotenv.config()
+// In packaged builds cwd is not writable for our config — macOS launches the
+// .app with cwd=/ (read-only system volume → EROFS), Windows uses the install
+// dir (may be Program Files → EPERM, and wiped on uninstall/update). Store
+// .env alongside state.json under the user's home dir instead. Dev keeps cwd.
+// Must run before dotenv.config() so it reads from the right place.
+if (app.isPackaged) {
+  setConfigDir(path.join(os.homedir(), '.studyparlor'))
+}
+
+dotenv.config({ path: getEnvPath() })
 
 process.on('uncaughtException', (err) => {
   console.error('[uncaughtException]', err)

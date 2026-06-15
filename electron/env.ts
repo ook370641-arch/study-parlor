@@ -56,8 +56,18 @@ export function loadEnv(env: Record<string, string | undefined>): AppConfig {
   }
 }
 
-function getEnvPath(): string {
-  return path.join(process.cwd(), '.env')
+// Directory holding .env. Defaults to cwd (dev mode, and tests which never
+// override it). The main process overrides this in packaged builds — see
+// setConfigDir — because cwd there is read-only (macOS launches .app with
+// cwd=/) or the install dir (Windows), neither of which we may write to.
+let configDir: string | null = null
+
+export function setConfigDir(dir: string | null): void {
+  configDir = dir
+}
+
+export function getEnvPath(): string {
+  return path.join(configDir ?? process.cwd(), '.env')
 }
 
 export function saveEnv(config: AppConfig): void {
@@ -65,6 +75,7 @@ export function saveEnv(config: AppConfig): void {
   const baseUrl = normalizeBaseUrl(config.baseUrl.trim() || DEFAULT_BASE_URL)
 
   const envPath = getEnvPath()
+  fs.mkdirSync(path.dirname(envPath), { recursive: true })
   let content = ''
   if (fs.existsSync(envPath)) {
     content = fs.readFileSync(envPath, 'utf-8')

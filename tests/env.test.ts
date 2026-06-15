@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { loadEnv, saveEnv } from '@electron/env'
+import { loadEnv, saveEnv, setConfigDir, getEnvPath } from '@electron/env'
 
 describe('loadEnv', () => {
   it('throws when KIMI_API_KEY is missing', () => {
@@ -141,5 +141,50 @@ describe('saveEnv', () => {
       STUDY_LIBRARY_PATH: 'C:/foo'
     })
     expect(cfg.baseUrl).toBe('https://api.kimi.com/coding/v1')
+  })
+})
+
+describe('config dir resolution', () => {
+  let cwdDir: string
+  let homeDir: string
+  const originalCwd = process.cwd()
+
+  beforeEach(() => {
+    // realpathSync resolves macOS's /tmp → /private/tmp symlink so the paths
+    // match what process.cwd() returns after chdir.
+    cwdDir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'sp-cwd-')))
+    homeDir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'sp-home-')))
+    process.chdir(cwdDir)
+  })
+
+  afterEach(() => {
+    setConfigDir(null)
+    process.chdir(originalCwd)
+    fs.rmSync(cwdDir, { recursive: true, force: true })
+    fs.rmSync(homeDir, { recursive: true, force: true })
+  })
+
+  it('defaults to cwd when no config dir is set (dev mode)', () => {
+    expect(getEnvPath()).toBe(path.join(cwdDir, '.env'))
+  })
+
+  it('uses the configured dir when set (packaged mode)', () => {
+    setConfigDir(homeDir)
+    expect(getEnvPath()).toBe(path.join(homeDir, '.env'))
+  })
+
+  it('saveEnv writes to the configured dir, creating it if absent', () => {
+    const nested = path.join(homeDir, '.studyparlor')
+    setConfigDir(nested)
+    saveEnv({
+      apiKey: 'sk-kimi-x',
+      baseUrl: 'https://api.kimi.com/coding/v1',
+      model: 'kimi-k2.6',
+      libraryPath: 'C:/foo'
+    })
+    const content = fs.readFileSync(path.join(nested, '.env'), 'utf-8')
+    expect(content).toContain('KIMI_API_KEY=sk-kimi-x')
+    // and not in cwd
+    expect(fs.existsSync(path.join(cwdDir, '.env'))).toBe(false)
   })
 })
