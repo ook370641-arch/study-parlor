@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学者夜话 · 完整原文文字图卡片（3:4）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #2a1f1a;
+      --ink-deep: #1a120f;
+      --parchment: #e8d5b7;
+      --parchment-dim: #a09080;
+      --ember: #d97757;
+      --slate: #3a5a6a;
+      --wine: #8a3a3a;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #0f0a08;
+      color: var(--parchment);
+      line-height: 1.62;
+      padding-bottom: 60px;
+    }
+
+    /* 控制面板 */
+    .controls {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(26, 18, 15, 0.95);
+      border-bottom: 1px solid var(--ember);
+      padding: 14px 22px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .controls h1 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--parchment);
+      margin-right: auto;
+    }
+
+    .controls button {
+      background: var(--ember);
+      color: var(--ink-deep);
+      border: none;
+      padding: 7px 16px;
+      border-radius: 2px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .controls button:hover {
+      opacity: 0.85;
+    }
+
+    .controls .hint {
+      font-size: 11px;
+      color: var(--parchment-dim);
+      width: 100%;
+      text-align: center;
+      margin-top: 3px;
+    }
+
+    /* 卡片容器 */
+    .cards-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      padding-top: 100px;
+    }
+
+    .card {
+      width: 1080px;
+      height: 1440px;
+      background: var(--ink);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 65px 80px 50px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    /* 暗角遮罩 */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at center, transparent 0%, rgba(15, 10, 8, 0.35) 70%, rgba(15, 10, 8, 0.8) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* 顶部装饰线 */
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 52px;
+      left: 80px;
+      right: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--ember), transparent);
+      opacity: 0.55;
+      z-index: 2;
+    }
+
+    .card-content {
+      position: relative;
+      z-index: 3;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .card-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* 卡片编号 */
+    .card-number {
+      position: absolute;
+      top: 60px;
+      right: 80px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 14px;
+      color: var(--ember);
+      letter-spacing: 0.15em;
+      z-index: 3;
+    }
+
+    /* 大标题 */
+    .main-title {
+      font-family: 'Noto Serif SC', 'Source Han Serif SC', 'SimSun', serif;
+      font-size: 54px;
+      font-weight: 900;
+      color: var(--parchment);
+      line-height: 1.28;
+      margin-bottom: 42px;
+      letter-spacing: 0.02em;
+    }
+
+    .main-title .accent {
+      color: var(--ember);
+    }
+
+    /* 二级标题 */
+    h2 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--parchment);
+      margin-top: 42px;
+      margin-bottom: 22px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(217, 119, 87, 0.28);
+    }
+
+    h2:first-child {
+      margin-top: 0;
+    }
+
+    /* 三级标题 */
+    h3 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 34px;
+      font-weight: 600;
+      color: var(--ember);
+      margin-top: 32px;
+      margin-bottom: 16px;
+    }
+
+    /* 正文段落 */
+    p {
+      font-size: 30px;
+      line-height: 1.68;
+      color: var(--parchment);
+      margin-bottom: 18px;
+      text-align: justify;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* 强调 */
+    .highlight {
+      color: var(--ember);
+      font-weight: 500;
+    }
+
+    /* 底部装饰 */
+    .card-footer {
+      position: relative;
+      margin-top: 28px;
+      padding-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-size: 18px;
+      color: var(--parchment-dim);
+      letter-spacing: 0.08em;
+      z-index: 3;
+    }
+
+    .card-footer .brand {
+      font-family: 'Noto Serif SC', serif;
+      color: var(--parchment);
+      font-weight: 600;
+    }
+
+    .card-footer .line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--ember), transparent);
+      opacity: 0.35;
+    }
+
+    /* 打印/截图优化 */
+    @media print {
+      .controls {
+        display: none !important;
+      }
+      .cards-wrapper {
+        padding-top: 0;
+        gap: 0;
+      }
+      .card {
+        page-break-after: always;
+        box-shadow: none;
+      }
+    }
+
+    body.clean .controls {
+      display: none;
+    }
+    body.clean .cards-wrapper {
+      padding-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls" id="controls">
+    <h1>学者夜话 · 完整原文文字图卡片（3:4 比例，共 3 张）</h1>
+    <button onclick="toggleClean()">隐藏面板 / 显示面板</button>
+    <button onclick="window.print()">打印 / 导出 PDF</button>
+    <div class="hint">比例 3:4（1080×1440），适配小红书文字图。完整保留原文，仅删除「正文」二字。</div>
+  </div>
+
+  <script>
+    function toggleClean() {
+      document.body.classList.toggle('clean');
+    }
+  </script>
+
+  <div class="cards-wrapper">
+
+    <!-- 卡片 1：标题 + 正文 + 一次对话 -->
+    <div class="card">
+      <div class="card-number">01 / 03</div>
+      <div class="card-content">
+        <div class="main-title">
+          哲学本硕，开源了一款<span class="accent">极乐迪斯科风格</span>的 AI 深夜书房
+        </div>
+
+        <p>AI 已经成了我最常用的学习帮手，但“知道它能”和“它真帮到我”之间，总差一口气。</p>
+
+        <p>我试过每次聊完让 AI 总结报告、手动保存，但没几天就放弃了。</p>
+
+        <p>经过一个半月，我把这个想法做成了「学者夜话」——一个能陪我长期学习的 AI 伙伴。它不只是聊天机器人，更像我的老师、档案管理员和私人书房。</p>
+
+        <h2>三个功能</h2>
+
+        <h3>一次对话</h3>
+
+        <p>接触新领域时，最头疼的是根本不知道该问什么。问浅了像在查百科，问深了又超出理解范围。AI 只是在「回答」，不是在「教你」。</p>
+
+        <p>学者夜话把这个关系颠倒过来：AI提问，你回答，它先诊断你的起点，用一系列问题引导你自己推出答案。它不会直接告诉你答案，只会问出那个让你「啊，原来如此」的问题。</p>
+        <div class="card-footer">
+          <div class="line"></div>
+          <span class="brand">学者夜话</span>
+          <span>STUDY PARLOR</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 卡片 2：记忆复习 + 流程图寓言 + UI -->
+    <div class="card">
+      <div class="card-number">02 / 03</div>
+      <div class="card-content">
+        <h3>记忆、复习与新的主题</h3>
+
+        <p>和AI聊完就忘，是因为对话没有归档。夜话每次结束都会自动生成一篇包含对话起点、知识点、认知缺口与未来建议的报告，不仅保存为你的本地文档，还为每一次学习提供复习入口。</p>
+
+        <p>它还会基于你的学习历史推荐下一步学习主题，是继续深入当前主题、还是把几个主题串起来，或者补基础概念——你的知识地图，它会一直帮你往前推。</p>
+
+        <h3>完整的学习单元：流程图与寓言</h3>
+
+        <p>光有文字报告不够。每次学习结束，夜话还会生成一张流程图和一则寓言。流程图把概念关系与推导脉络画清楚，寓言则把抽象概念变成了可触摸的角色和情节——你记住的是故事，理解的是原理。</p>
+
+        <h2>我不想再做「又一个白色背景的 AI 工具」</h2>
+
+        <p>界面参考了《极乐迪斯科》：深褐、米色、暖橙。配合油画背景和沉浸式的语言体系，以及启动时的墨滴扩散动画、AI 思考时的星星轨道旋转，打开像走进一间深夜书房，灯已经点好。</p>
+        <div class="card-footer">
+          <div class="line"></div>
+          <span class="brand">学者夜话</span>
+          <span>STUDY PARLOR</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 卡片 3：扩展与使用 + 结尾 -->
+    <div class="card">
+      <div class="card-number">03 / 03</div>
+      <div class="card-content">
+        <h2>扩展与使用</h2>
+
+        <p>GitHub搜索study-parlor进入Release界面下载安装并按提示完成API与本地文件夹配置（推荐使用DeepseekV4）。</p>
+
+        <p>开发者版内置了`study` 和 `fable`两个skill。</p>
+
+        <h2>最后说几句</h2>
+
+        <p>当 AI 可以生成无限信息的时候，什么才是真正重要的？</p>
+
+        <p>我的答案没有变：记忆、一段被认真对待的学习时光。</p>
+
+        <p>学者夜话是我的一次尝试，如果你也在寻找类似的东西，欢迎免费下载。</p>
+
+        <p>Github链接：https://github.com/ook370641-arch/study-parlor</p>
+        <div class="card-footer">
+          <div class="line"></div>
+          <span class="brand">学者夜话</span>
+          <span>STUDY PARLOR</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
