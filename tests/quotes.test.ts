@@ -1,0 +1,41 @@
+import { describe, expect, it } from 'vitest'
+import { quotes, pickRandomQuote } from '../src/lib/quotes'
+
+describe('quotes library', () => {
+  it('has at least one quote', () => {
+    expect(quotes.length).toBeGreaterThan(0)
+  })
+
+  it('every quote has required fields', () => {
+    for (const q of quotes) {
+      expect(q.id).toBeTruthy()
+      expect(q.text).toBeTruthy()
+      expect(q.author).toBeTruthy()
+    }
+  })
+
+  it('has unique ids', () => {
+    const ids = quotes.map(q => q.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('pickRandomQuote returns a quote from the library', () => {
+    const picked = pickRandomQuote()
+    expect(picked).not.toBeNull()
+    expect(quotes.some(q => q.id === picked!.id)).toBe(true)
+  })
+
+  it('pickRandomQuote can exclude a specific id', () => {
+    const excludeId = quotes[0].id
+    for (let i = 0; i < 50; i++) {
+      const picked = pickRandomQuote({ excludeId })
+      expect(picked).not.toBeNull()
+      expect(picked!.id).not.toBe(excludeId)
+    }
+  })
+
+  it('pickRandomQuote returns null for empty pool', () => {
+    const picked = pickRandomQuote({ pool: [] })
+    expect(picked).toBeNull()
+  })
+})
