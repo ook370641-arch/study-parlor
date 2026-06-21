@@ -124,7 +124,7 @@ export async function sendOrInterrupt(text: string) {
       ? { session: { ...st.session, streaming: true } }
       : st)
     const state = useStore.getState()
-    const MAX_PAIRS = 30
+    const MAX_PAIRS = 100
     const history = state.session!.history
       .slice(-MAX_PAIRS * 2)
 
