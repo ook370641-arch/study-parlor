@@ -55,6 +55,7 @@ type AppStore = {
   archiveResult: ArchiveResult | null
   groupInspirations: Record<string, NewTopic>
   inspirationStrategy: 'v1' | 'v2' | 'v3'
+  wildcardInspiration: NewTopic | null
   topicContinueSuggestions: Record<string, TopicContinueCache>
 
   // 后台归档占位
@@ -113,6 +114,8 @@ type AppStore = {
   setGroupInspiration: (groupId: string, topic: NewTopic) => void
   removeGroupInspiration: (groupId: string) => void
   setInspirationStrategy: (s: 'v1' | 'v2' | 'v3') => void
+  setWildcardInspiration: (topic: NewTopic | null) => void
+  refreshWildcardInspiration: () => Promise<void>
   fableStyleTags: string[]
   lastFableTags: string[]
   setFableStyleTags: (tags: string[]) => void
@@ -145,6 +148,7 @@ export const useStore = create<AppStore>((set, get) => ({
   archiveResult: null,
   groupInspirations: {},
   inspirationStrategy: 'v2',
+  wildcardInspiration: null,
   topicContinueSuggestions: {},
   pendingArchives: [],
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
@@ -163,6 +167,7 @@ export const useStore = create<AppStore>((set, get) => ({
       lastUsed: state.lastUsed ?? { difficulty: 'mid', temperature: 0.7 },
       groupInspirations: state.groupInspirations ?? {},
       inspirationStrategy: state.inspirationStrategy ?? 'v2',
+      wildcardInspiration: state.wildcardInspiration ?? null,
       topicContinueSuggestions: state.topicContinueSuggestions ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
@@ -403,6 +408,16 @@ export const useStore = create<AppStore>((set, get) => ({
   setInspirationStrategy: (strategy) => {
     set({ inspirationStrategy: strategy })
     ipc.patchState({ inspirationStrategy: strategy } as Partial<StateJson>)
+  },
+  setWildcardInspiration: (topic) => {
+    set({ wildcardInspiration: topic })
+    ipc.patchState({ wildcardInspiration: topic } as Partial<StateJson>)
+  },
+  refreshWildcardInspiration: async () => {
+    const { profile, library, setWildcardInspiration } = get()
+    const topics = library.map(t => ({ title: t.title }))
+    const result = await ipc.llmWildcardInspiration({ profile, topics })
+    setWildcardInspiration(result)
   },
   setFableStyleTags: (tags) => {
     set({ fableStyleTags: tags })
