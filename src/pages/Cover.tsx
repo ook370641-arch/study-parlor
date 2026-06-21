@@ -34,6 +34,13 @@ export function Cover() {
           <>
             <div className="text-2xl">迷路了吗，{profile.name}</div>
             <Button onClick={() => goto('home')}>点亮灯火</Button>
+            <Button
+              variant="ghost"
+              onClick={() => goto('briefing')}
+              className="border border-slate text-slate hover:text-parchment hover:border-parchment"
+            >
+              夜航简报
+            </Button>
           </>
         ) : (
           <>
