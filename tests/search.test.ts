@@ -3,6 +3,19 @@ import { searchWeb, generateSearchQueries, generateTutorBrief } from '../electro
 
 vi.stubGlobal('fetch', vi.fn())
 
+vi.mock('../electron/lib/kimi', () => ({
+  chatNonStream: vi.fn()
+}))
+
+import { chatNonStream } from '../electron/lib/kimi'
+
+const mockCfg = {
+  apiKey: 'sk-test',
+  baseUrl: 'https://api.test.com',
+  model: 'test-model',
+  libraryPath: '/tmp/lib'
+}
+
 describe('searchWeb', () => {
   it('returns results on success', async () => {
     const mockFetch = vi.mocked(fetch)
@@ -35,16 +48,65 @@ describe('searchWeb', () => {
     await expect(searchWeb({ query: 'test', apiKey: 'key' }))
       .rejects.toThrow('NO_RESULTS')
   })
+
+  it('throws TAVILY_ERROR on HTTP non-2xx', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => 'Internal Server Error'
+    } as Response)
+
+    await expect(searchWeb({ query: 'test', apiKey: 'key' }))
+      .rejects.toMatchObject({ code: 'TAVILY_ERROR' })
+  })
 })
 
 describe('generateSearchQueries', () => {
-  it('placeholder', () => {
-    expect(true).toBe(true)
+  it('returns parsed array on success', async () => {
+    const mockChat = vi.mocked(chatNonStream)
+    mockChat.mockResolvedValueOnce('```json\n["query1", "query2", "query3"]\n```')
+
+    const queries = await generateSearchQueries(mockCfg, '量子力学')
+
+    expect(queries).toEqual(['query1', 'query2', 'query3'])
+    expect(mockChat).toHaveBeenCalledWith(mockCfg, expect.objectContaining({
+      temperature: 0.3,
+      thinking: { type: 'disabled' }
+    }))
+  })
+
+  it('throws on JSON parse failure', async () => {
+    const mockChat = vi.mocked(chatNonStream)
+    mockChat.mockResolvedValueOnce('not valid json')
+
+    await expect(generateSearchQueries(mockCfg, 'test'))
+      .rejects.toThrow('JSON extraction failed')
   })
 })
 
 describe('generateTutorBrief', () => {
-  it('placeholder', () => {
-    expect(true).toBe(true)
+  it('returns summary and sources on success', async () => {
+    const mockChat = vi.mocked(chatNonStream)
+    mockChat.mockResolvedValueOnce('  This is a tutor brief.  ')
+
+    const results = [
+      { title: 'Title A', url: 'https://a.com', content: 'Content A' },
+      { title: 'Title B', url: 'https://b.com', content: 'Content B' }
+    ]
+
+    const brief = await generateTutorBrief(mockCfg, '相对论', results)
+
+    expect(brief.summary).toBe('This is a tutor brief.')
+    expect(brief.sources).toHaveLength(2)
+    expect(brief.sources[0]).toEqual({
+      title: 'Title A',
+      url: 'https://a.com',
+      snippet: 'Content A'.slice(0, 200)
+    })
+    expect(mockChat).toHaveBeenCalledWith(mockCfg, expect.objectContaining({
+      temperature: 0.3,
+      thinking: { type: 'disabled' }
+    }))
   })
 })

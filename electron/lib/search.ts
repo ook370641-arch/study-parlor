@@ -24,6 +24,7 @@ export async function searchWeb(opts: TavilySearchOptions): Promise<TavilyResult
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(15000),
     body: JSON.stringify({
       api_key: opts.apiKey,
       query: opts.query,
@@ -33,11 +34,15 @@ export async function searchWeb(opts: TavilySearchOptions): Promise<TavilyResult
     })
   })
   if (!res.ok) {
-    throw new Error(`Tavily search failed: ${res.status} ${await res.text()}`)
+    const err = new Error(`Tavily search failed: ${res.status} ${await res.text()}`) as Error & { code: string }
+    err.code = 'TAVILY_ERROR'
+    throw err
   }
   const data = await res.json() as { results?: TavilyResult[] }
   if (!data.results || data.results.length === 0) {
-    throw new Error('NO_RESULTS')
+    const err = new Error('NO_RESULTS') as Error & { code: string }
+    err.code = 'NO_RESULTS'
+    throw err
   }
   return data.results
 }
@@ -65,7 +70,12 @@ export async function generateSearchQueries(
   })
   const extracted = extractJsonArray(text)
   if (!extracted) throw new Error('JSON extraction failed')
-  const arr = JSON.parse(extracted) as string[]
+  let arr: string[]
+  try {
+    arr = JSON.parse(extracted) as string[]
+  } catch {
+    throw new Error('JSON parse failed')
+  }
   return arr.filter(q => typeof q === 'string').slice(0, 3)
 }
 
