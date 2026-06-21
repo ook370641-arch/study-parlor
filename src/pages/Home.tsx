@@ -1,6 +1,7 @@
 import { useStore } from '@/store'
 import { Button } from '@/components/Button'
 import { GroupRecCard } from '@/components/GroupRecCard'
+import { Quote } from '@/components/Quote'
 import { StudyLibrary } from '@/components/StudyLibrary'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
@@ -109,6 +110,9 @@ export function Home() {
         <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
           <div className="text-xs text-parchment/40 font-sans mb-3">学习库</div>
           <StudyLibrary />
+          <div className="mt-4 shrink-0">
+            <Quote surface="home" />
+          </div>
         </div>
       </div>
     </div>
