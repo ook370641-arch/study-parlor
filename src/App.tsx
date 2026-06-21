@@ -6,6 +6,7 @@ import { Study } from '@/pages/Study'
 import { Profile } from '@/pages/Profile'
 import { Extension } from '@/pages/Extension'
 import { Settings } from '@/pages/Settings'
+import { Briefing } from '@/pages/Briefing'
 import { Toast } from '@/components/Toast'
 import { PreStudyModal } from '@/components/PreStudyModal'
 import { LoadingScreen } from '@/components/LoadingScreen'
@@ -165,6 +166,7 @@ export function App() {
           {page === 'profile' && <Profile />}
           {page === 'extension' && <Extension />}
           {page === 'settings' && <Settings />}
+          {page === 'briefing' && <Briefing />}
         </>
       )}
       {modal === 'preStudy' && <PreStudyModal />}
