@@ -6,21 +6,27 @@ import { safeStorage } from 'electron'
 const CRED_DIR = path.join(os.homedir(), '.studyparlor')
 const CRED_FILE = path.join(CRED_DIR, 'search-key.enc')
 
-function ensureDir() {
-  if (!fs.existsSync(CRED_DIR)) {
-    fs.mkdirSync(CRED_DIR, { recursive: true })
+async function ensureDir(): Promise<void> {
+  try {
+    await fs.promises.access(CRED_DIR)
+  } catch {
+    await fs.promises.mkdir(CRED_DIR, { recursive: true })
   }
 }
 
 export async function setSearchApiKey(key: string): Promise<void> {
-  ensureDir()
+  await ensureDir()
   const encrypted = safeStorage.encryptString(key)
-  fs.writeFileSync(CRED_FILE, encrypted)
+  await fs.promises.writeFile(CRED_FILE, encrypted)
 }
 
 export async function getSearchApiKey(): Promise<string | null> {
-  if (!fs.existsSync(CRED_FILE)) return null
-  const encrypted = fs.readFileSync(CRED_FILE)
+  try {
+    await fs.promises.access(CRED_FILE)
+  } catch {
+    return null
+  }
+  const encrypted = await fs.promises.readFile(CRED_FILE)
   try {
     return safeStorage.decryptString(encrypted)
   } catch (err) {
@@ -30,5 +36,10 @@ export async function getSearchApiKey(): Promise<string | null> {
 }
 
 export async function hasSearchApiKey(): Promise<boolean> {
-  return fs.existsSync(CRED_FILE)
+  try {
+    await fs.promises.access(CRED_FILE)
+    return true
+  } catch {
+    return false
+  }
 }
