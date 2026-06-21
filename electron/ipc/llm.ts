@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import type { AppConfig } from '../env'
 import { probeModel, chatStream } from '../lib/kimi'
-import { finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport, generateContinueSuggestions } from '../lib/llm-tasks'
+import { finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport, generateContinueSuggestions, generateWildcardInspiration } from '../lib/llm-tasks'
 import { generateDiagram } from '../lib/diagram'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -73,6 +73,19 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     } catch (err: any) {
       const message = String(err?.message ?? err)
       console.error('[llm:groupInspiration] error:', message)
+      throw new Error(message)
+    }
+  })
+
+  ipcMain.handle('llm:wildcardInspiration', async (_, args: {
+    profile: Profile
+    topics: { title: string }[]
+  }) => {
+    try {
+      return await generateWildcardInspiration(cfg, args)
+    } catch (err: any) {
+      const message = String(err?.message ?? err)
+      console.error('[llm:wildcardInspiration] error:', message)
       throw new Error(message)
     }
   })
