@@ -29,6 +29,7 @@ function inferDocTypeFromFilename(filename: string): DocType {
   if (lower.includes('复习报告')) return 'review'
   if (lower.includes('寓言')) return 'fable'
   if (lower.includes('原始对话')) return 'transcript'
+  if (lower.includes('外部资料')) return 'external-materials'
   return 'progress'
 }
 
@@ -55,6 +56,7 @@ export function parseFrontmatter(
     tags: Array.isArray(data.tags) ? data.tags : [],
     session_number: typeof data.session_number === 'number' ? data.session_number : 0,
     type,
+    topic: data.topic,
     progress_summary: data.progress_summary,
   }
 
