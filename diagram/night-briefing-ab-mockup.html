@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>夜航简报 - A/B 模式对比</title>
+  <style>
+    :root {
+      --ink: #1a1410;
+      --parchment: #e8d5b7;
+      --parchment-dim: #a89880;
+      --ember: #d97757;
+      --wine: #5c2a2a;
+      --slate: #3a322d;
+      --card: #231b16;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--ink);
+      color: var(--parchment);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    .mode-switch {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+      position: sticky;
+      top: 0;
+      background: rgba(26, 20, 16, 0.92);
+      backdrop-filter: blur(8px);
+      padding: 16px 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(232, 213, 183, 0.1);
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid rgba(232, 213, 183, 0.25);
+      background: transparent;
+      color: var(--parchment-dim);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+    .mode-btn.active {
+      background: var(--ember);
+      color: var(--ink);
+      border-color: var(--ember);
+      font-weight: 600;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0 0 8px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+    .meta {
+      color: var(--parchment-dim);
+      font-size: 13px;
+      margin-bottom: 32px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .meta .badge {
+      background: rgba(217, 119, 87, 0.15);
+      color: var(--ember);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .article {
+      background: var(--card);
+      border: 1px solid rgba(232, 213, 183, 0.12);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 16px;
+    }
+    .article h2 {
+      font-size: 17px;
+      color: var(--ember);
+      margin: 28px 0 12px;
+      font-weight: 500;
+    }
+    .article h2:first-child { margin-top: 0; }
+    .article p {
+      margin: 0 0 14px;
+      color: rgba(232, 213, 183, 0.92);
+    }
+    .article a {
+      color: var(--ember);
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(217, 119, 87, 0.4);
+    }
+    .source-box {
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: rgba(0,0,0,0.22);
+      border-radius: 8px;
+      border-left: 3px solid var(--ember);
+    }
+    .source-box summary {
+      cursor: pointer;
+      color: var(--parchment-dim);
+      font-size: 13px;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .source-box summary::after {
+      content: "展开";
+      color: var(--ember);
+      font-size: 12px;
+    }
+    .source-box[open] summary::after { content: "收起"; }
+    .source-box ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      font-size: 13px;
+      color: rgba(232, 213, 183, 0.75);
+    }
+    .source-box li { margin-bottom: 8px; }
+    .hidden { display: none; }
+    .save-hint {
+      margin-top: 24px;
+      padding: 14px 16px;
+      background: rgba(217, 119, 87, 0.08);
+      border: 1px dashed rgba(217, 119, 87, 0.3);
+      border-radius: 8px;
+      color: var(--parchment-dim);
+      font-size: 13px;
+    }
+    .mode-label {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--slate);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--parchment-dim);
+      border: 1px solid rgba(232, 213, 183, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="mode-switch">
+      <button class="mode-btn active" data-mode="a">A · 纯摘要文章</button>
+      <button class="mode-btn" data-mode="b">B · 摘要 + 可展开来源</button>
+    </div>
+
+    <h1>夜航简报</h1>
+    <div class="meta">
+      <span>2026 年 6 月 21 日</span>
+      <span class="badge">AI 行业日报</span>
+    </div>
+
+    <!-- 共享的摘要主体 -->
+    <div class="article">
+      <h2>今日航标</h2>
+      <p>今天 Builder 圈子的核心话题集中在两个方向：一是多模态模型的推理成本正在快速下降，二是 AI 辅助编程的工作流正在从"补全"走向"结对"。</p>
+
+      <h2>Builder 动态</h2>
+      <p><strong>@karpathy</strong> 发文指出，未来 12 个月模型训练的重点将从 scale 转向 data quality 和 post-training。他提到一个小型团队用精心筛选的 50B token 追平了过去 200B 的效果。</p>
+      <p><strong>@swyx</strong> 整理了 Latent Space 播客里关于 AI 工程化的新观点，认为"eval 驱动开发"将成为下一个默认范式，和测试驱动开发并列。</p>
+
+      <h2>播客与长文</h2>
+      <p>本期 <em>Latent Space</em> 采访了 Cursor 团队，聊了代码编辑器的上下文窗口设计。核心结论是：与其塞更多 token，不如让模型学会主动提问。</p>
+
+      <h2>一句话火种</h2>
+      <p>"好的 AI 产品不是让用户少思考，而是让用户敢于思考更大的问题。"</p>
+    </div>
+
+    <!-- B 模式专属的原始来源展开区 -->
+    <div id="b-sources" class="hidden">
+      <div class="article">
+        <h2>原始来源</h2>
+
+        <details class="source-box">
+          <summary>@karpathy 相关推文</summary>
+          <ul>
+            <li>"Data quality beats data quantity, but only if you have a way to measure quality." <a href="#">x.com/karpathy/...</a></li>
+            <li>回复中补充了筛选 pipeline 的三个阶段：dedup、quality classifier、domain filter。</li>
+          </ul>
+        </details>
+
+        <details class="source-box">
+          <summary>@swyx 推文串</summary>
+          <ul>
+            <li>"Eval-driven development is TDD for the LLM era." <a href="#">x.com/swyx/...</a></li>
+            <li>附上了 5 个他认为值得参考的 eval 框架链接。</li>
+          </ul>
+        </details>
+
+        <details class="source-box">
+          <summary>Latent Space #157</summary>
+          <ul>
+            <li>嘉宾：Cursor 联合创始人</li>
+            <li>时长：72 分钟</li>
+            <li>核心片段：23:00 - 31:00 讨论上下文压缩策略</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+
+    <div class="save-hint">
+      💡 设计备注：无论 A 还是 B，生成完成后都会自动保存为学习库中的一篇 .md 笔记，文件名为 <code>夜航简报-2026-06-21.md</code>。
+    </div>
+
+    <div class="mode-label" id="mode-label">当前：A · 纯摘要文章</div>
+  </div>
+
+  <script>
+    const btns = document.querySelectorAll('.mode-btn');
+    const bSources = document.getElementById('b-sources');
+    const label = document.getElementById('mode-label');
+
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const mode = btn.dataset.mode;
+        if (mode === 'a') {
+          bSources.classList.add('hidden');
+          label.textContent = '当前：A · 纯摘要文章';
+        } else {
+          bSources.classList.remove('hidden');
+          label.textContent = '当前：B · 摘要 + 可展开来源';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
