@@ -7,8 +7,13 @@ const TEST_DIR = path.join(os.tmpdir(), 'study-parlor-credentials-test')
 
 vi.mock('electron', () => ({
   safeStorage: {
+    isEncryptionAvailable: () => true,
     encryptString: (s: string) => Buffer.from(`enc:${s}`),
-    decryptString: (b: Buffer) => b.toString().replace(/^enc:/, '')
+    decryptString: (b: Buffer) => {
+      const str = b.toString()
+      if (!str.startsWith('enc:')) throw new Error('Invalid encrypted data')
+      return str.replace(/^enc:/, '')
+    }
   }
 }))
 
@@ -18,14 +23,20 @@ describe('credentials', () => {
   beforeEach(async () => {
     vi.resetModules()
     vi.spyOn(os, 'homedir').mockReturnValue(TEST_DIR)
-    if (fs.existsSync(TEST_DIR)) fs.rmSync(TEST_DIR, { recursive: true })
-    fs.mkdirSync(TEST_DIR, { recursive: true })
+    try {
+      await fs.promises.access(TEST_DIR)
+      await fs.promises.rm(TEST_DIR, { recursive: true })
+    } catch {}
+    await fs.promises.mkdir(TEST_DIR, { recursive: true })
     credentials = await import('@electron/lib/credentials')
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.restoreAllMocks()
-    if (fs.existsSync(TEST_DIR)) fs.rmSync(TEST_DIR, { recursive: true })
+    try {
+      await fs.promises.access(TEST_DIR)
+      await fs.promises.rm(TEST_DIR, { recursive: true })
+    } catch {}
   })
 
   it('hasSearchApiKey returns false when key not set', async () => {
@@ -46,8 +57,28 @@ describe('credentials', () => {
   it('getSearchApiKey returns null after deleting the credential file', async () => {
     await credentials.setSearchApiKey('my-secret-key')
     const credFile = path.join(TEST_DIR, '.studyparlor', 'search-key.enc')
-    fs.rmSync(credFile)
+    await fs.promises.rm(credFile)
     const result = await credentials.getSearchApiKey()
     expect(result).toBeNull()
+  })
+
+  it('getSearchApiKey returns null when the credential file is corrupted', async () => {
+    await credentials.setSearchApiKey('my-secret-key')
+    const credFile = path.join(TEST_DIR, '.studyparlor', 'search-key.enc')
+    await fs.promises.writeFile(credFile, 'garbage-data')
+    const result = await credentials.getSearchApiKey()
+    expect(result).toBeNull()
+  })
+
+  it('removeSearchApiKey deletes the credential file', async () => {
+    await credentials.setSearchApiKey('my-secret-key')
+    expect(await credentials.hasSearchApiKey()).toBe(true)
+    await credentials.removeSearchApiKey()
+    expect(await credentials.hasSearchApiKey()).toBe(false)
+  })
+
+  it('removeSearchApiKey is a no-op when no credential file exists', async () => {
+    await expect(credentials.removeSearchApiKey()).resolves.toBeUndefined()
+    expect(await credentials.hasSearchApiKey()).toBe(false)
   })
 })

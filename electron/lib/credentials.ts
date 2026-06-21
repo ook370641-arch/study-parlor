@@ -15,12 +15,24 @@ async function ensureDir(): Promise<void> {
 }
 
 export async function setSearchApiKey(key: string): Promise<void> {
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('Encryption is not available on this system')
+  }
   await ensureDir()
-  const encrypted = safeStorage.encryptString(key)
-  await fs.promises.writeFile(CRED_FILE, encrypted)
+  try {
+    const encrypted = safeStorage.encryptString(key)
+    await fs.promises.writeFile(CRED_FILE, encrypted)
+  } catch (err) {
+    throw new Error(
+      `Failed to encrypt and store the API key: ${err instanceof Error ? err.message : String(err)}`
+    )
+  }
 }
 
 export async function getSearchApiKey(): Promise<string | null> {
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('Encryption is not available on this system')
+  }
   try {
     await fs.promises.access(CRED_FILE)
   } catch {
@@ -33,6 +45,11 @@ export async function getSearchApiKey(): Promise<string | null> {
     console.error('[credentials] failed to decrypt search key:', err)
     return null
   }
+}
+
+export async function removeSearchApiKey(): Promise<void> {
+  if (!fs.existsSync(CRED_FILE)) return
+  await fs.promises.unlink(CRED_FILE)
 }
 
 export async function hasSearchApiKey(): Promise<boolean> {
