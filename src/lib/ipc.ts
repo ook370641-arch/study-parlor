@@ -24,6 +24,7 @@ export const ipc = {
   get llmFinalizeReview() { return ensure().llmFinalizeReview },
   get llmGenerateFable() { return ensure().llmGenerateFable },
   get llmGroupInspiration() { return ensure().llmGroupInspiration },
+  get llmWildcardInspiration() { return ensure().llmWildcardInspiration },
   get llmGenerateFableFromReport() { return ensure().llmGenerateFableFromReport },
   get llmGenerateContinueSuggestions() { return ensure().llmGenerateContinueSuggestions },
   get llmGenerateDiagram() { return ensure().llmGenerateDiagram },
