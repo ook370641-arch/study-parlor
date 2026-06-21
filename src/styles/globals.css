@@ -140,5 +140,11 @@
   }
 }
 
-html, body, #root { height: 100%; }
-body { @apply bg-ink text-parchment font-serif antialiased; }
+.timeline a {
+  color: #6b8fa8;
+  text-decoration: underline;
+}
+.timeline a:hover {
+  color: #e8d5b7;
+}
+

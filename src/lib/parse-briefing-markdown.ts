@@ -47,7 +47,7 @@ export function parseBriefingMarkdown(raw: string): ParsedBriefing {
     }
 
     if (sourceMatch && current?.kind === 'source') {
-      const parentTitle = current.title
+      const parentTitle: string = current.title
       flush()
       current = { kind: 'source', title: parentTitle, subTitle: sourceMatch[1].trim(), buffer: [] }
       continue
