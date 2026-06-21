@@ -232,6 +232,41 @@ function readReportFrontmatter(libraryPath: string, dirName: string): { tags: st
   }
 }
 
+export async function generateWildcardInspiration(
+  cfg: AppConfig,
+  args: {
+    profile: Profile
+    topics: { title: string }[]
+  }
+): Promise<NewTopic> {
+  const topicList = args.topics.length > 0
+    ? args.topics.map(t => `- ${t.title}`).join('\n')
+    : '（学习库为空）'
+
+  const prompt = read('wild-card-v1.md')
+    .replace('{{profile_text}}', args.profile.profile_text)
+    .replace('{{topic_list}}', topicList)
+
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.8,
+    thinking: { type: 'enabled', reasoning_effort: 'max' }
+  })
+
+  const extracted = extractJsonObject(text)
+  if (!extracted) {
+    const debugDir = path.join(os.homedir(), '.studyparlor', 'debug')
+    fs.mkdirSync(debugDir, { recursive: true })
+    const debugFile = path.join(debugDir, `wild-card-fail-${Date.now()}.txt`)
+    fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== LLM Response ===\n${text}`, 'utf8')
+    throw new Error(`JSON extraction failed. Debug written to: ${debugFile}`)
+  }
+
+  const json = JSON.parse(extracted) as NewTopic
+  if (!json.topic || !json.hook) throw new Error('shape')
+  return json
+}
+
 export async function generateGroupInspiration(
   cfg: AppConfig,
   args: {
