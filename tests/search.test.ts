@@ -76,12 +76,12 @@ describe('generateSearchQueries', () => {
     }))
   })
 
-  it('throws on JSON parse failure', async () => {
+  it('throws on non-string array items', async () => {
     const mockChat = vi.mocked(chatNonStream)
-    mockChat.mockResolvedValueOnce('not valid json')
+    mockChat.mockResolvedValueOnce('```json\n[1, 2, 3]\n```')
 
     await expect(generateSearchQueries(mockCfg, 'test'))
-      .rejects.toThrow('JSON extraction failed')
+      .rejects.toThrow('No valid search queries generated')
   })
 })
 
@@ -108,5 +108,8 @@ describe('generateTutorBrief', () => {
       temperature: 0.3,
       thinking: { type: 'disabled' }
     }))
+    const callArg = mockChat.mock.lastCall![1]
+    expect(callArg.messages[0].content).toContain('[1]')
+    expect(callArg.messages[0].content).toContain('https://a.com')
   })
 })

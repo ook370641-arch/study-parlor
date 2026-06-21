@@ -4,6 +4,7 @@ import type { AppConfig } from '../env'
 import type { SearchSource, SearchResult } from '@shared/index'
 
 const TAVILY_API_URL = 'https://api.tavily.com/search'
+const MAX_SNIPPET_LENGTH = 200
 
 export type TavilySearchOptions = {
   query: string
@@ -34,7 +35,9 @@ export async function searchWeb(opts: TavilySearchOptions): Promise<TavilyResult
     })
   })
   if (!res.ok) {
-    const err = new Error(`Tavily search failed: ${res.status} ${await res.text()}`) as Error & { code: string }
+    let body = ''
+    try { body = await res.text() } catch { /* ignore */ }
+    const err = new Error(`Tavily search failed: ${res.status} ${body}`) as Error & { code: string }
     err.code = 'TAVILY_ERROR'
     throw err
   }
@@ -76,7 +79,9 @@ export async function generateSearchQueries(
   } catch {
     throw new Error('JSON parse failed')
   }
-  return arr.filter(q => typeof q === 'string').slice(0, 3)
+  const queries = arr.filter(q => typeof q === 'string')
+  if (queries.length === 0) throw new Error('No valid search queries generated')
+  return queries.slice(0, 3)
 }
 
 export async function generateTutorBrief(
@@ -110,7 +115,7 @@ ${sourcesText}`
   const sources: SearchSource[] = results.map(r => ({
     title: r.title,
     url: r.url,
-    snippet: r.content.slice(0, 200)
+    snippet: r.content.slice(0, MAX_SNIPPET_LENGTH)
   }))
 
   return { summary: summary.trim(), sources }
