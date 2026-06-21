@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 
 interface Props {
-  surface: 'cover' | 'home' | 'study'
+  surface: 'cover' | 'home' | 'study' | 'briefing'
 }
 
 export function SurfaceBackground({ surface }: Props) {

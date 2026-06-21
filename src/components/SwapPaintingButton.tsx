@@ -2,7 +2,7 @@ import { useStore } from '@/store'
 import { formatAttribution } from '@/lib/paintings'
 
 interface Props {
-  surface: 'cover' | 'home' | 'study'
+  surface: 'cover' | 'home' | 'study' | 'briefing'
   className?: string
 }
 
