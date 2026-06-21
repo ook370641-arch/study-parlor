@@ -4,6 +4,7 @@ import { Input } from '@/components/Input'
 import { Button } from '@/components/Button'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { Quote } from '@/components/Quote'
 
 export function Cover() {
   const profile = useStore(s => s.profile)
@@ -44,6 +45,9 @@ export function Cover() {
             <Button onClick={onEnter}>进入夜话</Button>
           </>
         )}
+      </div>
+      <div className="absolute bottom-12 right-12 z-[5]">
+        <Quote surface="cover" />
       </div>
     </div>
   )
