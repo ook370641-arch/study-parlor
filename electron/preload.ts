@@ -32,6 +32,7 @@ const api: IpcApi = {
   llmGenerateFableFromReport: (a) => ipcRenderer.invoke('llm:generateFableFromReport', a),
   llmGenerateContinueSuggestions: (a) => ipcRenderer.invoke('llm:generateContinueSuggestions', a),
   llmGenerateDiagram: (a) => ipcRenderer.invoke('llm:generateDiagram', a),
+  llmWildcardInspiration: (a) => ipcRenderer.invoke('llm:wildcardInspiration', a),
 
   onLlmChunk: (cb) => {
     const handler = (_: unknown, sid: string, text: string) => cb(sid, text)
@@ -70,6 +71,8 @@ const api: IpcApi = {
     ipcRenderer.on('setup:done', handler)
     return () => ipcRenderer.off('setup:done', handler)
   },
+
+  briefingGenerate: (args) => ipcRenderer.invoke('briefing:generate', args),
 
   bootStart: () => ipcRenderer.invoke('boot:start'),
 

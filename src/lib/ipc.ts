@@ -55,5 +55,7 @@ export const ipc = {
   get setupSelectDirectory() { return ensure().setupSelectDirectory },
   get setupProbeKey() { return ensure().setupProbeKey },
   get setupWriteConfig() { return ensure().setupWriteConfig },
-  get onSetupDone() { return ensure().onSetupDone }
+  get onSetupDone() { return ensure().onSetupDone },
+
+  get briefingGenerate() { return ensure().briefingGenerate }
 }

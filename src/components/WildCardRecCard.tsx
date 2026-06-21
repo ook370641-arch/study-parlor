@@ -37,8 +37,7 @@ export function WildCardRecCard({
     }
   }, [profile, library, setWildcardInspiration])
 
-  const refresh = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
+  const refresh = useCallback(() => {
     load()
   }, [load])
 
