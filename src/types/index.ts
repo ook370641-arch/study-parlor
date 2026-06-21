@@ -3,7 +3,7 @@ import type { AppConfig } from '@electron/env'
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = number
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript'
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing'
 
 export type Profile = {
   name: string
@@ -101,6 +101,31 @@ export type ArchiveResult = {
   content: string  // progress: body; review: summary + gaps rendered
 }
 
+export type BriefingSourceType = 'x' | 'podcast' | 'blog'
+
+export type BriefingSourceItem = {
+  text?: string
+  url?: string
+  timestamp?: string
+}
+
+export type BriefingSource = {
+  type: BriefingSourceType
+  author?: string
+  title?: string
+  url?: string
+  items: BriefingSourceItem[]
+}
+
+export type BriefingResult = {
+  title: string
+  date: string
+  content: string
+  sources: BriefingSource[]
+  filePath: string
+  cached: boolean
+}
+
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
 export type StateJson = {
@@ -155,6 +180,7 @@ export type IpcApi = {
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
+  briefingGenerate: (args: { date: string; force?: boolean }) => Promise<BriefingResult>
   bootFatal: () => Promise<string | null>
   bootStart: () => Promise<void>
   onBootProgress: (cb: (stage: string, progress: number) => void) => () => void

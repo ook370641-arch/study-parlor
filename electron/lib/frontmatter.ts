@@ -10,6 +10,7 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   review: ['review_index', 'last_reviewed', 'source_title'],
   fable: ['source_topic'],
   transcript: ['session_number'],
+  briefing: [],
 }
 
 function extractTitleFromFilename(name: string): string | undefined {
@@ -28,6 +29,7 @@ function inferDocTypeFromFilename(filename: string): DocType {
   if (lower.includes('复习报告')) return 'review'
   if (lower.includes('寓言')) return 'fable'
   if (lower.includes('原始对话')) return 'transcript'
+  if (lower.includes('夜航简报')) return 'briefing'
   return 'progress'
 }
 
