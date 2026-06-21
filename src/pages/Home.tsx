@@ -6,6 +6,7 @@ import { StudyLibrary } from '@/components/StudyLibrary'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { StrategyToggle } from '@/components/StrategyToggle'
+import { WildCardRecCard } from '@/components/WildCardRecCard'
 
 export function Home() {
   const profile = useStore(s => s.profile)
@@ -86,6 +87,10 @@ export function Home() {
               <span className="text-xs text-parchment/40 font-sans">推开下一扇门</span>
               <StrategyToggle />
             </div>
+
+            <WildCardRecCard
+              onClickTopic={(topic) => openPreStudy({ mode: 'progress', topic })}
+            />
 
             {groups.map((group) => {
               const groupTopics = library
