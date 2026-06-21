@@ -22,14 +22,6 @@ describe('Quote', () => {
     const button = screen.getByRole('button', { name: /换一句/i })
     fireEvent.click(button)
     const newText = screen.getByTestId('quote-text').textContent
-    let changed = false
-    for (let i = 0; i < 10; i++) {
-      fireEvent.click(button)
-      if (screen.getByTestId('quote-text').textContent !== initialText) {
-        changed = true
-        break
-      }
-    }
-    expect(changed).toBe(true)
+    expect(newText).not.toBe(initialText)
   })
 })
