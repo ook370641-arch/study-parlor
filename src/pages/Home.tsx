@@ -7,6 +7,7 @@ import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { StrategyToggle } from '@/components/StrategyToggle'
 import { WildCardRecCard } from '@/components/WildCardRecCard'
+import { BackToCover } from '@/components/BackToCover'
 
 export function Home() {
   const profile = useStore(s => s.profile)
@@ -22,6 +23,7 @@ export function Home() {
 
   return (
     <div className="h-full p-8 relative">
+      <BackToCover className="absolute top-4 left-4 z-10" />
       <SurfaceBackground surface="home" />
       <SwapPaintingButton surface="home" className="absolute top-4 right-52 z-10" />
       <Button variant="ghost"
