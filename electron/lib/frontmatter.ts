@@ -10,6 +10,7 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   review: ['review_index', 'last_reviewed', 'source_title'],
   fable: ['source_topic'],
   transcript: ['session_number'],
+  'external-materials': ['session_number', 'topic'],
 }
 
 function extractTitleFromFilename(name: string): string | undefined {

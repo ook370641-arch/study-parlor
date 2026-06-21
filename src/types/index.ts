@@ -3,7 +3,7 @@ import type { AppConfig } from '@electron/env'
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = number
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript'
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'external-materials'
 
 export type Profile = {
   name: string
@@ -23,6 +23,7 @@ export type Frontmatter = {
   session_number?: number
   type?: DocType
   progress_summary?: string
+  topic?: string
 }
 
 export type Group = {
@@ -92,6 +93,7 @@ export type UnsavedSession = {
   history: Message[]
   userRequirement?: string
   selectedTopic?: string
+  enableExternalMaterials?: boolean
 }
 
 export type ArchiveResult = {
@@ -100,6 +102,23 @@ export type ArchiveResult = {
   title: string
   content: string  // progress: body; review: summary + gaps rendered
 }
+
+export type SearchSource = {
+  title: string
+  url: string
+  snippet?: string
+}
+
+export type SearchResult = {
+  summary: string
+  sources: SearchSource[]
+}
+
+export type SearchErrorCode =
+  | 'MISSING_API_KEY'
+  | 'NETWORK_ERROR'
+  | 'LLM_ERROR'
+  | 'NO_RESULTS'
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
@@ -184,6 +203,19 @@ export type IpcApi = {
 
   // Recovery dump
   recoveryDump: (args: { filename: string; content: string }) => Promise<void>
+
+  // External materials writing
+  writeExternalMaterials: (args: {
+    dirName: string
+    sessionNumber: number
+    topic: string
+    summary: string
+    sources: SearchSource[]
+  }) => Promise<void>
+
+  // Search & external materials
+  searchPrepare: (args: { topic: string }) => Promise<SearchResult>
+  searchCheckConfig: () => Promise<{ configured: boolean }>
 
   // Extension info
   getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>
