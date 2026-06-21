@@ -3,13 +3,13 @@ import { create } from 'zustand'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
-  TopicContinueCache
+  TopicContinueCache, BriefingResult
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
 
-type Page = 'cover' | 'home' | 'study' | 'profile' | 'extension' | 'settings'
+type Page = 'cover' | 'home' | 'study' | 'profile' | 'extension' | 'settings' | 'briefing'
 
 type Session = {
   mode: Mode
@@ -67,17 +67,26 @@ type AppStore = {
     date: string
   }>
 
+  // 简报
+  briefing: {
+    result: BriefingResult | null
+    loading: boolean
+    error: string | null
+  }
+  generateBriefing: (date: string) => Promise<void>
+
   // 画作背景
   currentPaintings: {
     cover: Painting | null
     home: Painting | null
     study: Painting | null
+    briefing: Painting | null
   }
 
   // 操作
   init: () => Promise<void>
   initPaintings: () => void
-  swapPainting: (surface: 'cover' | 'home' | 'study') => void
+  swapPainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => void
   goto: (p: Page) => void
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
   closePreStudy: () => void
@@ -156,7 +165,8 @@ export const useStore = create<AppStore>((set, get) => ({
   modal: null,
   preStudyArgs: null,
   toast: null,
-  currentPaintings: { cover: null, home: null, study: null },
+  currentPaintings: { cover: null, home: null, study: null, briefing: null },
+  briefing: { result: null, loading: false, error: null },
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -186,6 +196,7 @@ export const useStore = create<AppStore>((set, get) => ({
         cover: pickRandom(manifest, null),
         home: pickRandom(manifest, null),
         study: pickRandom(manifest, null),
+        briefing: pickRandom(manifest, null),
       }
     })
   },
@@ -270,6 +281,16 @@ export const useStore = create<AppStore>((set, get) => ({
   ),
 
   clearArchiveResult: () => set({ archiveResult: null }),
+
+  generateBriefing: async (date: string) => {
+    set(s => ({ briefing: { ...s.briefing, loading: true, error: null } }))
+    try {
+      const result = await ipc.briefingGenerate({ date })
+      set({ briefing: { result, loading: false, error: null } })
+    } catch (err: any) {
+      set({ briefing: { result: null, loading: false, error: err.message || String(err) } })
+    }
+  },
 
   resetSession: () => set({ session: null, currentPage: 'home' }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
