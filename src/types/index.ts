@@ -108,6 +108,7 @@ export type StateJson = {
   profile: Profile
   lastUsed: { difficulty: Difficulty; temperature: Temperature }
   groupInspirations: Record<string, NewTopic>
+  wildcardInspiration?: NewTopic
   ui: { session_count: number }
   inspirationStrategy: 'v1' | 'v2' | 'v3'
   fableStyleTags: string[]
@@ -132,6 +133,10 @@ export type IpcApi = {
     topics: { dirName: string; title: string }[]
     profile: Profile
     strategy?: 'v1' | 'v2' | 'v3'
+  }) => Promise<NewTopic>
+  llmWildcardInspiration: (args: {
+    profile: Profile
+    topics: { title: string }[]
   }) => Promise<NewTopic>
   llmGenerateFableFromReport: (args: {
     reportBody: string
