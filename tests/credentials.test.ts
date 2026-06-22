@@ -5,23 +5,22 @@ import os from 'node:os'
 
 const TEST_DIR = path.join(os.tmpdir(), 'study-parlor-credentials-test')
 
-vi.mock('electron', () => ({
-  safeStorage: {
-    isEncryptionAvailable: () => true,
-    encryptString: (s: string) => Buffer.from(`enc:${s}`),
-    decryptString: (b: Buffer) => {
-      const str = b.toString()
-      if (!str.startsWith('enc:')) throw new Error('Invalid encrypted data')
-      return str.replace(/^enc:/, '')
-    }
-  }
-}))
-
 describe('credentials', () => {
   let credentials: typeof import('@electron/lib/credentials')
 
   beforeEach(async () => {
     vi.resetModules()
+    vi.doMock('electron', () => ({
+      safeStorage: {
+        isEncryptionAvailable: () => true,
+        encryptString: (s: string) => Buffer.from(`enc:${s}`),
+        decryptString: (b: Buffer) => {
+          const str = b.toString()
+          if (!str.startsWith('enc:')) throw new Error('Invalid encrypted data')
+          return str.replace(/^enc:/, '')
+        }
+      }
+    }))
     vi.spyOn(os, 'homedir').mockReturnValue(TEST_DIR)
     try {
       await fs.promises.access(TEST_DIR)
