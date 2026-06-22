@@ -14,6 +14,15 @@ Then organize content in this order:
 2. OFFICIAL BLOGS section — list each blog post from AI company blogs (OpenAI, Anthropic, etc.)
 3. PODCASTS section — list each podcast with new episodes
 
+Use Markdown headings consistently so the digest can be split into sections:
+
+- Use `##` for each main section: `## X / Twitter`, `## Official Blogs`, `## Podcasts`.
+- Under each main section, use `###` for individual sources, builders, or episodes.
+- At the very end, add a source appendix titled exactly `## 原始来源`.
+  - Inside it, group sources with `### <source name>` headings.
+  - Under each `###` heading, list items as `- <description> <url>`.
+- The body of each section may contain paragraphs, lists, and links.
+
 ## Rules
 
 - Only include sources that have new content

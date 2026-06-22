@@ -26,7 +26,14 @@ export function parseBriefingMarkdown(raw: string): ParsedBriefing {
     if (current.kind === 'section') {
       sections.push({ title: current.title, body })
     } else if (current.subTitle) {
-      sources.push({ title: current.subTitle, items: body ? body.split('\n').map(s => s.trim()).filter(Boolean) : [] })
+      sources.push({
+        title: current.subTitle,
+        items: body
+          ? body.split('\n')
+              .map(s => s.trim().replace(/^[-*]\s+|^\d+\.\s+/, ''))
+              .filter(Boolean)
+          : [],
+      })
     }
     current = null
   }

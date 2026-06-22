@@ -51,6 +51,13 @@ export function Cover() {
                    placeholder="..."
                    autoFocus className="w-64 text-lg" />
             <Button onClick={onEnter}>进入夜话</Button>
+            <Button
+              variant="ghost"
+              onClick={() => goto('briefing')}
+              className="border border-slate text-slate hover:text-parchment hover:border-parchment"
+            >
+              夜航简报
+            </Button>
           </>
         )}
         </div>

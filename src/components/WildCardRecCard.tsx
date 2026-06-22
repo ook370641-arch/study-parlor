@@ -1,6 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
 import { useStore } from '@/store'
-import { ipc } from '@/lib/ipc'
 import { StarOrbit } from './StarOrbit'
 
 export function WildCardRecCard({
@@ -8,50 +6,14 @@ export function WildCardRecCard({
 }: {
   onClickTopic: (topic: string) => void
 }) {
-  const profile = useStore((s) => s.profile)
-  const library = useStore((s) => s.library)
-  const cached = useStore((s) => s.wildcardInspiration)
-  const setWildcardInspiration = useStore((s) => s.setWildcardInspiration)
-
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('')
-
-  const recommendation = cached ?? null
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(false)
-    setErrorMsg('')
-    try {
-      const topics = library.map((t) => ({ title: t.title }))
-      const result = await ipc.llmWildcardInspiration({ profile, topics })
-      setWildcardInspiration(result)
-    } catch (err: any) {
-      const msg = String(err?.message ?? err)
-      console.error('[WildCardRecCard] load error:', msg)
-      setErrorMsg(msg)
-      setError(true)
-    } finally {
-      setLoading(false)
-    }
-  }, [profile, library, setWildcardInspiration])
-
-  const refresh = useCallback(() => {
-    load()
-  }, [load])
-
-  // 首次加载：无缓存且无错误时才触发
-  useEffect(() => {
-    if (!cached && !error) {
-      load()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const recommendation = useStore((s) => s.wildcardInspiration)
+  const loading = useStore((s) => s.wildcardLoading)
+  const error = useStore((s) => s.wildcardError)
+  const refresh = useStore((s) => s.refreshWildcardInspiration)
 
   if (loading && !recommendation) {
     return (
-      <div className="bg-ink/70 backdrop-blur-md border border-violet/30 rounded py-3 px-4">
+      <div className="bg-ink/70 backdrop-blur-md border border-wildcard/30 rounded py-3 px-4">
         <div className="flex flex-col items-center gap-3 py-2">
           <StarOrbit starCount={4} radius={14} period={3000} showLines={true} />
           <span className="text-xs text-parchment/40 font-sans italic tracking-wide">
@@ -62,34 +24,31 @@ export function WildCardRecCard({
     )
   }
 
-  if (error) {
-    return (
-      <button
-        onClick={() => load()}
-        className="block w-full text-left bg-ink/70 backdrop-blur-md border border-violet/30 rounded py-3 px-4 hover:border-violet/50 transition-colors"
-      >
-        <div className="text-xs text-parchment/40 font-sans mb-1">
-          这次闯入失败了，再试一次
-        </div>
-        {errorMsg && (
-          <div className="text-[10px] text-red-400/70 font-sans break-words max-h-16 overflow-y-auto leading-relaxed">
-            {errorMsg}
+  if (!recommendation) {
+    if (error) {
+      return (
+        <button
+          onClick={refresh}
+          className="block w-full text-left bg-ink/70 backdrop-blur-md border border-wildcard/30 rounded py-3 px-4 hover:border-wildcard/50 transition-colors"
+        >
+          <div className="text-xs text-parchment/40 font-sans mb-1">
+            这次闯入失败了，再试一次
           </div>
-        )}
-      </button>
-    )
+          {error && (
+            <div className="text-[10px] text-red-400/70 font-sans break-words max-h-16 overflow-y-auto leading-relaxed">
+              {error}
+            </div>
+          )}
+        </button>
+      )
+    }
+    return null
   }
-
-  if (!recommendation) return null
 
   return (
     <div
-      className="relative bg-ink/70 backdrop-blur-md border border-violet/30 border-l-4 border-l-violet rounded overflow-hidden hover:border-violet/60 hover:bg-ink/80 transition-all cursor-pointer group"
-      onClick={(e) => {
-        const target = e.target as HTMLElement
-        if (target.closest('[data-refresh]')) return
-        onClickTopic(recommendation.topic)
-      }}
+      className="relative bg-ink/70 backdrop-blur-md border border-wildcard/30 border-l-4 border-l-wildcard rounded overflow-hidden hover:border-wildcard/60 hover:bg-ink/80 transition-all cursor-pointer group"
+      onClick={() => onClickTopic(recommendation.topic)}
     >
       {loading && (
         <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
@@ -102,14 +61,16 @@ export function WildCardRecCard({
 
       <div className="px-3 py-2.5 relative">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] font-sans px-2 py-0.5 rounded bg-violet/15 text-violet">
+          <span className="text-[11px] font-sans px-2 py-0.5 rounded bg-wildcard/15 text-wildcard">
             ✦ 意外之径
           </span>
           <button
-            data-refresh
-            onClick={refresh}
+            onClick={(e) => {
+              e.stopPropagation()
+              refresh()
+            }}
             disabled={loading}
-            className={`w-5 h-5 flex items-center justify-center rounded text-parchment/40 hover:text-violet hover:bg-violet/10 transition-all ${loading ? 'animate-spin' : ''}`}
+            className={`w-5 h-5 flex items-center justify-center rounded text-parchment/40 hover:text-wildcard hover:bg-wildcard/10 transition-all ${loading ? 'animate-spin' : ''}`}
             title="换一条"
           >
             ↻
@@ -121,6 +82,22 @@ export function WildCardRecCard({
         <div className="text-xs text-parchment/50 leading-relaxed italic">
           {recommendation.hook}
         </div>
+        {error && (
+          <div className="mt-2 text-[10px] text-red-400/80 font-sans break-words">
+            {error}
+            {' · '}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                refresh()
+              }}
+              disabled={loading}
+              className="underline hover:text-red-300 disabled:opacity-50"
+            >
+              重试
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

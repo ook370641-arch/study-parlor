@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
@@ -91,6 +91,32 @@ async function bootstrap() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
+
+  // Keep external links in the system browser instead of navigating the app window.
+  const isExternalLink = (targetUrl: string, currentUrl: string): boolean => {
+    if (!/^https?:\/\//.test(targetUrl)) return false
+    try {
+      const target = new URL(targetUrl)
+      const base = new URL(currentUrl || 'http://localhost')
+      return target.origin !== base.origin
+    } catch {
+      return false
+    }
+  }
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isExternalLink(url, mainWindow?.webContents.getURL() ?? '')) {
+      shell.openExternal(url).catch(err => console.error('[shell] openExternal failed:', err))
+    }
+    return { action: 'deny' }
+  })
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isExternalLink(url, mainWindow?.webContents.getURL() ?? '')) {
+      event.preventDefault()
+      shell.openExternal(url).catch(err => console.error('[shell] openExternal failed:', err))
+    }
+  })
 
   const isDev = !!process.env.ELECTRON_RENDERER_URL
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {

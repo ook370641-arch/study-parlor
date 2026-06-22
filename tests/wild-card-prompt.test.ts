@@ -27,7 +27,8 @@ describe('wild-card-v1.md', () => {
     expect(prompt).toContain('不要推荐列表中已存在的主题')
   })
 
-  it('limits hook length', () => {
-    expect(prompt).toContain('不超过 40 个汉字')
+  it('handles empty library explicitly', () => {
+    expect(prompt).toContain('（学习库为空）')
+    expect(prompt).toContain('适合零基础初学者')
   })
 })

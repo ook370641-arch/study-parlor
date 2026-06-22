@@ -11,12 +11,13 @@ describe('parseBriefingMarkdown', () => {
     expect(sources).toHaveLength(0)
   })
 
-  it('collects sources under 原始来源', () => {
-    const raw = `## 原始来源\n### @karpathy\n- tweet a\n- tweet b\n### Latent Space\n- episode 1`
+  it('collects sources under 原始来源 and strips list markers', () => {
+    const raw = `## 原始来源\n### @karpathy\n- tweet a\n- tweet b\n### Latent Space\n1. episode 1`
     const { sections, sources } = parseBriefingMarkdown(raw)
     expect(sections).toHaveLength(0)
     expect(sources).toHaveLength(2)
     expect(sources[0].title).toBe('@karpathy')
-    expect(sources[0].items).toEqual(['- tweet a', '- tweet b'])
+    expect(sources[0].items).toEqual(['tweet a', 'tweet b'])
+    expect(sources[1].items).toEqual(['episode 1'])
   })
 })
