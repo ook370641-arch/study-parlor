@@ -11,6 +11,12 @@ export function registerSearchIpc(cfg: AppConfig) {
   })
 
   ipcMain.handle('search:prepare', async (_, args: { topic: string }) => {
+    if (!args?.topic || typeof args.topic !== 'string') {
+      const err = new Error('Topic is required') as Error & { code: SearchErrorCode }
+      err.code = 'LLM_ERROR'
+      throw err
+    }
+
     const apiKey = await getSearchApiKey()
     if (!apiKey) {
       const err = new Error('Search API key not configured') as Error & { code: SearchErrorCode }
@@ -71,7 +77,8 @@ async function searchWebWithRetry(opts: { queries: string[]; apiKey: string }): 
   if (allResults.length === 0) {
     const message = lastError instanceof Error ? lastError.message : 'Unknown error'
     const err = new Error(message) as Error & { code: SearchErrorCode }
-    err.code = message === 'NO_RESULTS' ? 'NO_RESULTS' : 'NETWORK_ERROR'
+    const code = (lastError as Error & { code?: string })?.code
+    err.code = code === 'NO_RESULTS' ? 'NO_RESULTS' : 'NETWORK_ERROR'
     throw err
   }
 
