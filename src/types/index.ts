@@ -224,7 +224,6 @@ export type IpcApi = {
   // Session file operations
   writeTranscript: (args: { dirName: string; sessionNumber: number; content: string }) => Promise<void>
   readSessionFile: (args: { dirName: string; sessionNumber: number; fileName: string }) => Promise<{ content: string; mimeType?: string }>
-  readExternalMaterials: (dirName: string) => Promise<{ summary: string; sources: SearchSource[]; topic?: string } | null>
 
   // Group management
   loadGroups: () => Promise<{ groups: Group[]; mapping: GroupMapping }>

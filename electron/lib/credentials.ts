@@ -31,7 +31,8 @@ export async function setSearchApiKey(key: string): Promise<void> {
 
 export async function getSearchApiKey(): Promise<string | null> {
   if (!safeStorage.isEncryptionAvailable()) {
-    throw new Error('Encryption is not available on this system')
+    console.warn('[credentials] encryption unavailable, cannot retrieve search key')
+    return null
   }
   try {
     await fs.promises.access(CRED_FILE)
@@ -53,6 +54,7 @@ export async function removeSearchApiKey(): Promise<void> {
 }
 
 export async function hasSearchApiKey(): Promise<boolean> {
+  if (!safeStorage.isEncryptionAvailable()) return false
   try {
     await fs.promises.access(CRED_FILE)
     return true

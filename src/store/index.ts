@@ -317,6 +317,18 @@ export const useStore = create<AppStore>((set, get) => ({
 
   clearArchiveResult: () => set({ archiveResult: null }),
 
+  generateBriefing: async (date: string) => {
+    const s = get()
+    if (s.briefing.loading) return
+    set({ briefing: { result: null, loading: true, error: null } })
+    try {
+      const result = await ipc.briefingGenerate({ date, profile: s.profile })
+      set({ briefing: { result, loading: false, error: null } })
+    } catch (err: any) {
+      set({ briefing: { result: null, loading: false, error: err.message || String(err) } })
+    }
+  },
+
   loadBriefingHistory: async () => {
     set({ briefingHistory: { ...get().briefingHistory, loading: true, error: null } })
     try {
