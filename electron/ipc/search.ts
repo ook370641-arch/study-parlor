@@ -52,27 +52,28 @@ export function registerSearchIpc(cfg: AppConfig) {
 }
 
 async function searchWebWithRetry(opts: { queries: string[]; apiKey: string }): Promise<ReturnType<typeof searchWeb>> {
-  const lastError: Error & { code?: string } = new Error('All queries failed') as Error & { code?: string }
+  let allResults: Awaited<ReturnType<typeof searchWeb>> = []
+  let lastError: unknown
 
-  for (const query of opts.queries) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      return await searchWeb({ query, apiKey: opts.apiKey, maxResults: 5 })
-    } catch (err: any) {
-      lastError.message = err?.message ?? 'Unknown search error'
-      lastError.code = err?.code
-      // Continue to next query
+      const results = await Promise.all(
+        opts.queries.map(q => searchWeb({ query: q, apiKey: opts.apiKey, maxResults: 5 }))
+      )
+      allResults = results.flat()
+      break
+    } catch (e) {
+      lastError = e
+      if (attempt === 0) continue
     }
   }
 
-  // If all queries failed, retry once with the first query
-  if (opts.queries.length > 0) {
-    try {
-      return await searchWeb({ query: opts.queries[0], apiKey: opts.apiKey, maxResults: 5 })
-    } catch (err: any) {
-      lastError.message = err?.message ?? 'Unknown search error'
-      lastError.code = err?.code
-    }
+  if (allResults.length === 0) {
+    const message = lastError instanceof Error ? lastError.message : 'Unknown error'
+    const err = new Error(message) as Error & { code: SearchErrorCode }
+    err.code = message === 'NO_RESULTS' ? 'NO_RESULTS' : 'NETWORK_ERROR'
+    throw err
   }
 
-  throw lastError
+  return allResults
 }
