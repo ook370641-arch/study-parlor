@@ -194,6 +194,8 @@ function parseExternalMaterialsBody(body: string): { summary: string; sources: S
   return { summary, sources }
 }
 
+export { parseExternalMaterialsBody }
+
 export function registerFilesIpc(cfg: AppConfig) {
   // Promise 队列：串行化 updateContinueSuggestions 调用，避免并发覆盖
   let _suggestionQueue: Promise<void> = Promise.resolve()

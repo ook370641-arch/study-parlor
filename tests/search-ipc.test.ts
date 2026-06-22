@@ -22,7 +22,8 @@ describe('registerSearchIpc', () => {
 
     vi.doMock('@electron/lib/credentials', () => ({
       hasSearchApiKey: vi.fn().mockResolvedValue(hasKey),
-      getSearchApiKey: vi.fn().mockResolvedValue(searchKey)
+      getSearchApiKey: vi.fn().mockResolvedValue(searchKey),
+      setSearchApiKey: vi.fn().mockResolvedValue(undefined)
     }))
 
     vi.doMock('@electron/lib/search', () => ({
@@ -43,9 +44,10 @@ describe('registerSearchIpc', () => {
       libraryPath: '/tmp/lib'
     })
 
-    expect(handleMock).toHaveBeenCalledTimes(2)
+    expect(handleMock).toHaveBeenCalledTimes(3)
     expect(handleMock).toHaveBeenCalledWith('search:checkConfig', expect.any(Function))
     expect(handleMock).toHaveBeenCalledWith('search:prepare', expect.any(Function))
+    expect(handleMock).toHaveBeenCalledWith('search:setApiKey', expect.any(Function))
   })
 
   it('search:checkConfig returns true when key exists', async () => {
@@ -80,6 +82,38 @@ describe('registerSearchIpc', () => {
 
     const result = await checkConfigHandler()
     expect(result).toEqual({ configured: false })
+  })
+
+  it('search:setApiKey saves the key', async () => {
+    const { registerSearchIpc } = await importSearchIpc(true, 'key')
+    registerSearchIpc({
+      apiKey: 'sk-test',
+      baseUrl: 'https://api.test.com',
+      model: 'test-model',
+      libraryPath: '/tmp/lib'
+    })
+
+    const setApiKeyHandler = handleMock.mock.calls.find(
+      ([name]) => name === 'search:setApiKey'
+    )[1]
+
+    await expect(setApiKeyHandler(null, 'tvly-new-key')).resolves.toBeUndefined()
+  })
+
+  it('search:setApiKey rejects empty key', async () => {
+    const { registerSearchIpc } = await importSearchIpc(true, 'key')
+    registerSearchIpc({
+      apiKey: 'sk-test',
+      baseUrl: 'https://api.test.com',
+      model: 'test-model',
+      libraryPath: '/tmp/lib'
+    })
+
+    const setApiKeyHandler = handleMock.mock.calls.find(
+      ([name]) => name === 'search:setApiKey'
+    )[1]
+
+    await expect(setApiKeyHandler(null, '')).rejects.toThrow('API key is required')
   })
 
   it('search:prepare throws MISSING_API_KEY when key is not configured', async () => {
