@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import type { AppConfig } from '../env'
-import { getSearchApiKey, hasSearchApiKey } from '../lib/credentials'
+import { getSearchApiKey, hasSearchApiKey, setSearchApiKey } from '../lib/credentials'
 import { generateSearchQueries, searchWeb, generateTutorBrief } from '../lib/search'
 import type { SearchErrorCode } from '@shared/index'
 
@@ -8,6 +8,11 @@ export function registerSearchIpc(cfg: AppConfig) {
   ipcMain.handle('search:checkConfig', async () => {
     const configured = await hasSearchApiKey()
     return { configured }
+  })
+
+  ipcMain.handle('search:setApiKey', async (_, key: string) => {
+    if (!key || typeof key !== 'string') throw new Error('API key is required')
+    await setSearchApiKey(key)
   })
 
   ipcMain.handle('search:prepare', async (_, args: { topic: string }) => {

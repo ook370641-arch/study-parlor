@@ -216,6 +216,7 @@ export type IpcApi = {
   // Search & external materials
   searchPrepare: (args: { topic: string }) => Promise<SearchResult>
   searchCheckConfig: () => Promise<{ configured: boolean }>
+  setSearchApiKey: (key: string) => Promise<void>
 
   // Extension info
   getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>

@@ -87,6 +87,12 @@ const api: IpcApi = {
   loadSessions: () => ipcRenderer.invoke('sessions:load'),
   saveSession: (s) => ipcRenderer.invoke('sessions:save', s),
   deleteSession: (id) => ipcRenderer.invoke('sessions:delete', id),
+
+  // Search & external materials
+  searchPrepare: (a) => ipcRenderer.invoke('search:prepare', a),
+  searchCheckConfig: () => ipcRenderer.invoke('search:checkConfig'),
+  setSearchApiKey: (key) => ipcRenderer.invoke('search:setApiKey', key),
+  writeExternalMaterials: (a) => ipcRenderer.invoke('files:writeExternalMaterials', a),
 }
 
 contextBridge.exposeInMainWorld('api', api)

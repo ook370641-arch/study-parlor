@@ -53,6 +53,16 @@ export async function kickoffSession() {
         console.warn('[kickoff] failed to read anchor:', err)
       }
     }
+
+    // 若用户选择引入联网资料，提前搜索并整理
+    if (s.session.enableExternalMaterials && !s.externalMaterials?.summary && !s.externalMaterials?.loading) {
+      try {
+        await useStore.getState().prepareExternalMaterials(s.session.topic)
+      } catch (err) {
+        // prepareExternalMaterials 内部已 toast 并记录 error，继续降级对话
+        console.warn('[kickoff] external materials failed:', err)
+      }
+    }
   } else if (s.session.mode === 'review') {
     // 复习现取最新一次 session 的 学习报告.md(via readAnchorFile),
     // 不再依赖 file_path —— StudyLibrary 复习入口本就没传 file_path,
@@ -66,6 +76,7 @@ export async function kickoffSession() {
   }
 
   try {
+    const state = useStore.getState()
     await ipc.llmStart({
       sessionId: s.session.abortId,
       mode: s.session.mode,
@@ -76,7 +87,8 @@ export async function kickoffSession() {
       history,
       temperature: s.session.temperature,
       selectedTopic: s.session.selectedTopic,
-      userRequirement: s.session.userRequirement
+      userRequirement: s.session.userRequirement,
+      externalMaterialsSummary: state.externalMaterials?.summary ?? undefined
     })
   } catch (err: any) {
     useStore.setState(state => state.session
@@ -138,7 +150,8 @@ export async function sendOrInterrupt(text: string) {
         history,
         temperature: state.session!.temperature,
         selectedTopic: state.session!.selectedTopic,
-        userRequirement: state.session!.userRequirement
+        userRequirement: state.session!.userRequirement,
+        externalMaterialsSummary: state.externalMaterials?.summary ?? undefined
       })
     } catch (err: any) {
       useStore.setState(st => st.session

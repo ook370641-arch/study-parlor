@@ -45,6 +45,12 @@ export const ipc = {
   get onBootComplete() { return ensure().onBootComplete },
   get getExtensionInfo() { return ensure().getExtensionInfo },
 
+  // Search & external materials
+  get searchPrepare() { return ensure().searchPrepare },
+  get searchCheckConfig() { return ensure().searchCheckConfig },
+  get setSearchApiKey() { return ensure().setSearchApiKey },
+  get writeExternalMaterials() { return ensure().writeExternalMaterials },
+
   // Config
   get getConfig() { return ensure().getConfig },
   get writeConfig() { return ensure().writeConfig },
