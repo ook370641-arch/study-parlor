@@ -1,10 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { ipcMain } from 'electron'
+import matter from 'gray-matter'
 import { chatNonStream } from '../lib/kimi'
+import { dumpRecovery } from '../lib/recovery'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import type { AppConfig } from '../env'
-import type { BriefingResult, BriefingSource, Message } from '@shared/index'
+import type { BriefingResult, BriefingSource, Message, Profile } from '@shared/index'
 
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json'
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json'
@@ -21,11 +23,19 @@ function promptsDir(): string {
   throw new Error(`briefing prompts dir not found. Tried: ${candidates.join(', ')}`)
 }
 
+const PROMPT_FILES = [
+  'profile-context.md',
+  'digest-intro.md',
+  'summarize-tweets.md',
+  'summarize-podcast.md',
+  'summarize-blogs.md',
+  'translate.md',
+]
+
 function readPrompts(): Record<string, string> {
   const dir = promptsDir()
-  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'))
   const out: Record<string, string> = {}
-  for (const f of files) {
+  for (const f of PROMPT_FILES) {
     const key = f.replace(/\.md$/, '').replace(/-/g, '_')
     out[key] = fs.readFileSync(path.join(dir, f), 'utf8')
   }
@@ -49,36 +59,53 @@ function validateDate(date: string): void {
   }
 }
 
-function buildUserContent(args: {
-  date: string
-  prompts: Record<string, string>
-  feedX: unknown
-  feedPodcasts: unknown
-  feedBlogs: unknown
-}): string {
-  const sections = [
-    `# Follow Builders Digest — ${args.date}`,
-    `## Output mode`,
-    `Bilingual (English + Chinese). Follow the translate.md bilingual interleaving rule.`,
-    ``,
-    `## Prompts`,
-    ...Object.entries(args.prompts).map(([k, v]) => `### ${k}\n${v}`),
-    ``,
-    `## Feeds`,
-    `### X/Twitter`,
-    '```json\n' + JSON.stringify(args.feedX, null, 2) + '\n```',
-    `### Podcasts`,
-    '```json\n' + JSON.stringify(args.feedPodcasts, null, 2) + '\n```',
-    `### Blogs`,
-    '```json\n' + JSON.stringify(args.feedBlogs, null, 2) + '\n```',
-  ]
-  return sections.join('\n\n')
+function briefingDir(cfg: AppConfig): string {
+  return path.join(cfg.libraryPath, '夜航简报')
+}
+
+function briefingFilePath(cfg: AppConfig, date: string): string {
+  return path.join(briefingDir(cfg), `夜航简报-${date}.md`)
+}
+
+type FeedX = {
+  x?: Array<{
+    name: string
+    handle: string
+    role?: string
+    tweets: Array<{ text: string; url: string; createdAt: string }>
+  }>
+}
+
+type FeedPodcasts = {
+  podcasts?: Array<{
+    name: string
+    title: string
+    url: string
+    publishedAt?: string
+  }>
+}
+
+type FeedBlogs = {
+  blogs?: Array<{
+    name: string
+    title: string
+    url: string
+    publishedAt?: string | null
+  }>
+}
+
+function hasAnyContent(feedX: FeedX | null, feedPodcasts: FeedPodcasts | null, feedBlogs: FeedBlogs | null): boolean {
+  return (
+    (feedX?.x?.length ?? 0) > 0 ||
+    (feedPodcasts?.podcasts?.length ?? 0) > 0 ||
+    (feedBlogs?.blogs?.length ?? 0) > 0
+  )
 }
 
 function buildSources(args: {
-  feedX?: { x?: Array<{ name: string; handle: string; tweets: Array<{ text: string; url: string; createdAt: string }> }> } | null
-  feedPodcasts?: { podcasts?: Array<{ name: string; title: string; url: string; publishedAt?: string }> } | null
-  feedBlogs?: { blogs?: Array<{ name: string; title: string; url: string; publishedAt?: string | null }> } | null
+  feedX?: FeedX | null
+  feedPodcasts?: FeedPodcasts | null
+  feedBlogs?: FeedBlogs | null
 }): BriefingSource[] {
   const sources: BriefingSource[] = []
 
@@ -115,20 +142,126 @@ function buildSources(args: {
   return sources
 }
 
+function buildExtractionPrompt(args: {
+  profile: Profile
+  prompts: Record<string, string>
+  feedX: unknown
+  feedPodcasts: unknown
+  feedBlogs: unknown
+}): string {
+  const profileContext = args.prompts.profile_context.replace(
+    '{{profile_text}}',
+    args.profile.profile_text || '（未提供背景，按通用 AI 从业者处理）'
+  )
+
+  const schema = {
+    builders: [
+      {
+        name: '...',
+        role: '...',
+        handle: '...',
+        summary: '...',
+        key_url: '...',
+      },
+    ],
+    podcasts: [
+      {
+        show: '...',
+        episode: '...',
+        url: '...',
+        takeaway: '...',
+        summary: '...',
+        quote: '...',
+      },
+    ],
+    blogs: [
+      {
+        blog: '...',
+        title: '...',
+        url: '...',
+        summary: '...',
+        quote: '...',
+      },
+    ],
+  }
+
+  const sections = [
+    `# Follow Builders Structured Extraction`,
+    ``,
+    profileContext,
+    ``,
+    `## Output format`,
+    `Output ONLY a single JSON object matching the schema below. Do not include markdown code fences or explanations.`,
+    ``,
+    '```json\n' + JSON.stringify(schema, null, 2) + '\n```',
+    ``,
+    `## Summary instructions`,
+    `### summarize-tweets`,
+    args.prompts.summarize_tweets,
+    ``,
+    `### summarize-podcast`,
+    args.prompts.summarize_podcast,
+    ``,
+    `### summarize-blogs`,
+    args.prompts.summarize_blogs,
+    ``,
+    `## Feeds`,
+    `### X/Twitter`,
+    '```json\n' + JSON.stringify(args.feedX, null, 2) + '\n```',
+    `### Podcasts`,
+    '```json\n' + JSON.stringify(args.feedPodcasts, null, 2) + '\n```',
+    `### Blogs`,
+    '```json\n' + JSON.stringify(args.feedBlogs, null, 2) + '\n```',
+  ]
+  return sections.join('\n')
+}
+
+function buildAssemblyPrompt(args: {
+  prompts: Record<string, string>
+  structured: string
+}): string {
+  const sections = [
+    `# Bilingual Digest Assembly`,
+    ``,
+    args.prompts.digest_intro,
+    ``,
+    args.prompts.translate,
+    ``,
+    `## Structured summaries to assemble`,
+    '```json\n' + args.structured + '\n```',
+    ``,
+    `Write the final digest in Markdown following the section order and bilingual interleaving rules above.`,
+  ]
+  return sections.join('\n')
+}
+
+function parseStructuredJson(raw: string): unknown {
+  let text = raw.trim()
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+  }
+  return JSON.parse(text)
+}
+
 export function registerBriefingIpc(cfg: AppConfig) {
-  ipcMain.handle('briefing:generate', async (_, args: { date: string; force?: boolean }): Promise<BriefingResult> => {
-    const { date } = args
+  ipcMain.handle('briefing:generate', async (_, args: { date: string; profile: Profile; force?: boolean }): Promise<BriefingResult> => {
+    const { date, profile } = args
     validateDate(date)
 
-    const fileName = `夜航简报-${date}.md`
-    const filePath = path.join(cfg.libraryPath, fileName)
+    const filePath = briefingFilePath(cfg, date)
 
-    // Same-day cache hit
     if (!args.force && fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, 'utf8')
-      const { frontmatter, body } = parseFrontmatter(raw, { filename: fileName })
-      const rawSources = (frontmatter as unknown as { sources?: string }).sources
-      const sources: BriefingSource[] = rawSources ? JSON.parse(rawSources) as BriefingSource[] : []
+      const { frontmatter, body } = parseFrontmatter(raw, { filename: path.basename(filePath) })
+      const rawSources = matter(raw).data?.sources
+      let sources: BriefingSource[] = []
+      if (typeof rawSources === 'string' && rawSources) {
+        try {
+          sources = JSON.parse(rawSources) as BriefingSource[]
+        } catch {
+          sources = []
+        }
+      }
       return {
         title: String(frontmatter.title || '夜航简报'),
         date,
@@ -140,29 +273,45 @@ export function registerBriefingIpc(cfg: AppConfig) {
     }
 
     const [feedX, feedPodcasts, feedBlogs] = await Promise.all([
-      fetchJson<unknown>(FEED_X_URL),
-      fetchJson<unknown>(FEED_PODCASTS_URL),
-      fetchJson<unknown>(FEED_BLOGS_URL),
+      fetchJson<FeedX>(FEED_X_URL),
+      fetchJson<FeedPodcasts>(FEED_PODCASTS_URL),
+      fetchJson<FeedBlogs>(FEED_BLOGS_URL),
     ])
 
-    const hasAnyContent =
-      (feedX as any)?.x?.length > 0 ||
-      (feedPodcasts as any)?.podcasts?.length > 0 ||
-      (feedBlogs as any)?.blogs?.length > 0
-
-    if (!hasAnyContent) {
+    if (!hasAnyContent(feedX, feedPodcasts, feedBlogs)) {
       throw new Error('FEED_EMPTY')
     }
 
     const prompts = readPrompts()
-    const userContent = buildUserContent({ date, prompts, feedX, feedPodcasts, feedBlogs })
 
-    const content = await chatNonStream(cfg, {
-      messages: [{ role: 'user', content: userContent } as Message],
-      temperature: 0.5,
+    const extractionPrompt = buildExtractionPrompt({
+      profile,
+      prompts,
+      feedX,
+      feedPodcasts,
+      feedBlogs,
     })
 
-    const sources = buildSources({ feedX: feedX as any, feedPodcasts: feedPodcasts as any, feedBlogs: feedBlogs as any })
+    const structuredRaw = await chatNonStream(cfg, {
+      messages: [{ role: 'user', content: extractionPrompt } as Message],
+      temperature: 0.5,
+      thinking: { type: 'enabled', reasoning_effort: 'max' },
+    })
+
+    const structured = parseStructuredJson(structuredRaw)
+
+    const assemblyPrompt = buildAssemblyPrompt({
+      prompts,
+      structured: JSON.stringify(structured, null, 2),
+    })
+
+    const content = await chatNonStream(cfg, {
+      messages: [{ role: 'user', content: assemblyPrompt } as Message],
+      temperature: 0.5,
+      thinking: { type: 'enabled', reasoning_effort: 'max' },
+    })
+
+    const sources = buildSources({ feedX, feedPodcasts, feedBlogs })
 
     const fm = {
       title: '夜航简报',
@@ -172,7 +321,13 @@ export function registerBriefingIpc(cfg: AppConfig) {
       sources: JSON.stringify(sources),
     }
 
-    fs.writeFileSync(filePath, serializeFrontmatter('briefing', fm, content), 'utf8')
+    try {
+      fs.mkdirSync(briefingDir(cfg), { recursive: true })
+      fs.writeFileSync(filePath, serializeFrontmatter('briefing', fm, content), 'utf8')
+    } catch (writeErr) {
+      console.error('[briefing] failed to write cached file, dumping recovery', writeErr)
+      dumpRecovery(path.basename(filePath), content)
+    }
 
     return {
       title: '夜航简报',
@@ -182,5 +337,19 @@ export function registerBriefingIpc(cfg: AppConfig) {
       filePath,
       cached: false,
     }
+  })
+
+  ipcMain.handle('briefing:list', async (): Promise<{ date: string; filePath: string }[]> => {
+    const dir = briefingDir(cfg)
+    if (!fs.existsSync(dir)) return []
+
+    const entries = fs.readdirSync(dir)
+    const list: { date: string; filePath: string }[] = []
+    for (const name of entries) {
+      const m = name.match(/^夜航简报-(\d{4}-\d{2}-\d{2})\.md$/)
+      if (!m) continue
+      list.push({ date: m[1], filePath: path.join(dir, name) })
+    }
+    return list.sort((a, b) => b.date.localeCompare(a.date))
   })
 }
