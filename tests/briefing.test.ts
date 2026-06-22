@@ -89,6 +89,28 @@ describe('registerBriefingIpc', () => {
     await expect(ipcHandlers['briefing:generate'](null, { date: 'not-a-date', profile })).rejects.toThrow('Invalid')
   })
 
+  it('skips X builders with missing or empty tweets instead of crashing', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        x: [
+          { name: 'A', handle: 'a', tweets: [] },
+          { name: 'B', handle: 'b' },
+          { name: 'C', handle: 'c', tweets: [{ text: 't', url: 'u', createdAt: 'd' }] },
+        ],
+        podcasts: [],
+        blogs: [],
+      })
+    })) as any)
+
+    vi.spyOn(kimi, 'chatNonStream')
+      .mockResolvedValueOnce(JSON.stringify({ builders: [], podcasts: [], blogs: [] }))
+      .mockResolvedValueOnce('content')
+
+    const result = await ipcHandlers['briefing:generate'](null, { date: '2026-06-23', profile })
+    expect(result.sources).toHaveLength(1)
+    expect(result.sources[0].author).toBe('C')
+  })
   it('lists cached briefing dates', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,

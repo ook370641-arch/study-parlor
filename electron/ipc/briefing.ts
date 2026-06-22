@@ -110,12 +110,14 @@ function buildSources(args: {
   const sources: BriefingSource[] = []
 
   for (const builder of args.feedX?.x ?? []) {
+    const tweets = builder.tweets ?? []
+    if (tweets.length === 0) continue
     sources.push({
       type: 'x',
       author: builder.name,
       title: builder.handle,
-      url: builder.tweets[0]?.url,
-      items: builder.tweets.map(t => ({ text: t.text, url: t.url, timestamp: t.createdAt })),
+      url: tweets[0]?.url,
+      items: tweets.map(t => ({ text: t.text, url: t.url, timestamp: t.createdAt })),
     })
   }
 
