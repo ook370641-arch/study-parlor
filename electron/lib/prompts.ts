@@ -26,6 +26,7 @@ export type AssembleArgs = {
   progressSummary?: string
   selectedTopic?: string
   userRequirement?: string
+  externalMaterialsSummary?: string
 }
 
 export function assemblePrompt(args: AssembleArgs): string {
@@ -42,6 +43,10 @@ export function assemblePrompt(args: AssembleArgs): string {
   }
   if (directionParts.length > 0) {
     parts.push(`【本次学习方向】\n${directionParts.join('\n')}`)
+  }
+
+  if (args.externalMaterialsSummary) {
+    parts.push(`【外部参考资料】\n${args.externalMaterialsSummary}\n\n以上资料仅供你作为背景知识使用。请继续以苏格拉底方式引导用户，不要直接引用资料给出答案。`)
   }
 
   if (args.mode === 'review') {
