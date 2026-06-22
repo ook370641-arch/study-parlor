@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const PROMPT_DIR = path.resolve(__dirname, '../electron/prompts/briefing')
-const files = ['digest-intro.md', 'summarize-tweets.md', 'summarize-podcast.md', 'summarize-blogs.md', 'translate.md']
+const files = ['profile-context.md', 'digest-intro.md', 'summarize-tweets.md', 'summarize-podcast.md', 'summarize-blogs.md', 'translate.md']
 
 describe('briefing prompts', () => {
   for (const f of files) {
@@ -18,5 +18,10 @@ describe('briefing prompts', () => {
   it('translate.md mentions bilingual mode', () => {
     const text = fs.readFileSync(path.join(PROMPT_DIR, 'translate.md'), 'utf8')
     expect(text).toContain('bilingual')
+  })
+
+  it('profile-context.md contains the profile placeholder', () => {
+    const text = fs.readFileSync(path.join(PROMPT_DIR, 'profile-context.md'), 'utf8')
+    expect(text).toContain('{{profile_text}}')
   })
 })
