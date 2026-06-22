@@ -177,6 +177,23 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
   }
 }
 
+function parseExternalMaterialsBody(body: string): { summary: string; sources: SearchSource[] } {
+  const summaryMatch = body.match(/## 摘要\s*\n([\s\S]*?)(?=\n## |$)/)
+  const summary = summaryMatch ? summaryMatch[1].trim() : ''
+  const sourcesMatch = body.match(/## 来源\s*\n([\s\S]*?)(?=\n## |$)/)
+  const sources: SearchSource[] = []
+  if (sourcesMatch) {
+    const lines = sourcesMatch[1].trim().split('\n')
+    for (const line of lines) {
+      const match = line.match(/^\d+\.\s*\[([^\]]+)\]\(([^)]+)\)(?:\s*—\s*(.*))?$/)
+      if (match) {
+        sources.push({ title: match[1], url: match[2], snippet: match[3] })
+      }
+    }
+  }
+  return { summary, sources }
+}
+
 export function registerFilesIpc(cfg: AppConfig) {
   // Promise 队列：串行化 updateContinueSuggestions 调用，避免并发覆盖
   let _suggestionQueue: Promise<void> = Promise.resolve()
@@ -340,6 +357,29 @@ export function registerFilesIpc(cfg: AppConfig) {
     }
     const raw = fs.readFileSync(reportPath, 'utf8')
     return parseFrontmatter(raw, { filename: path.basename(reportPath) })
+  })
+
+  ipcMain.handle('files:readExternalMaterials', async (_, dirName: string) => {
+    validateDirName(dirName)
+    const topicDir = path.join(cfg.libraryPath, dirName)
+    const sessionDirs = getSortedSessionDirs(topicDir)
+    if (sessionDirs.length === 0) return null
+    const latestDir = path.join(topicDir, sessionDirs[sessionDirs.length - 1])
+    const filePath = path.join(latestDir, '外部资料.md')
+    if (!fs.existsSync(filePath)) return null
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8')
+      const { frontmatter, body } = parseFrontmatter(raw, { filename: '外部资料.md' })
+      const { summary, sources } = parseExternalMaterialsBody(body)
+      return {
+        summary: summary || frontmatter.summary || '',
+        sources,
+        topic: frontmatter.topic as string | undefined
+      }
+    } catch (err) {
+      console.warn(`[files:readExternalMaterials] failed to read ${filePath}:`, err)
+      return null
+    }
   })
 
   ipcMain.handle('files:writeReviewReport', async (_, args: {

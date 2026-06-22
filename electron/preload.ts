@@ -10,6 +10,7 @@ const api: IpcApi = {
   writeTranscript: (a) => ipcRenderer.invoke('files:writeTranscript', a),
   writeFable: (a) => ipcRenderer.invoke('files:writeFable', a),
   readSessionFile: (a) => ipcRenderer.invoke('files:readSessionFile', a),
+  readExternalMaterials: (dirName) => ipcRenderer.invoke('files:readExternalMaterials', dirName),
   recoveryDump: (a) => ipcRenderer.invoke('files:recoveryDump', a),
 
   loadGroups: () => ipcRenderer.invoke('groups:load'),

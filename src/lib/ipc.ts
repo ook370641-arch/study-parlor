@@ -15,6 +15,7 @@ export const ipc = {
   get writeTranscript() { return ensure().writeTranscript },
   get writeFable() { return ensure().writeFable },
   get readSessionFile() { return ensure().readSessionFile },
+  get readExternalMaterials() { return ensure().readExternalMaterials },
   get getState() { return ensure().getState },
   get patchState() { return ensure().patchState },
   get llmProbe() { return ensure().llmProbe },

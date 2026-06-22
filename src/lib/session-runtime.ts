@@ -70,6 +70,17 @@ export async function kickoffSession() {
     if (!s.session.dirName) throw new Error('review session needs dirName')
     const { body } = await ipc.readAnchorFile(s.session.dirName)
     reviewFileBody = body
+
+    // 复用同一次 progress 归档的外部资料
+    try {
+      const materials = await ipc.readExternalMaterials(s.session.dirName)
+      if (materials?.summary) {
+        useStore.getState().setExternalMaterials(materials)
+      }
+    } catch (err) {
+      console.warn('[kickoff] failed to load historical external materials:', err)
+    }
+
     useStore.setState(state => state.session
       ? { session: { ...state.session, streaming: true, reviewFileBody: body } }
       : state)
