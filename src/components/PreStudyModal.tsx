@@ -94,6 +94,7 @@ export function PreStudyModal() {
   const patchLastUsed = useStore(s => s.patchLastUsed)
   const topicContinueSuggestions = useStore(s => s.topicContinueSuggestions)
   const library = useStore(s => s.library)
+  const showToast = useStore(s => s.showToast)
 
   const [topic, setTopic] = useState(args?.topic ?? '')
   const [difficulty, setDifficulty] = useState<Difficulty>(lastUsed.difficulty)
@@ -108,12 +109,15 @@ export function PreStudyModal() {
   const [selectedDirName, setSelectedDirName] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [customTopic, setCustomTopic] = useState('')
+  const [enableExternalMaterials, setEnableExternalMaterials] = useState(false)
+  const [searchConfigured, setSearchConfigured] = useState(false)
 
   const topicRef = useRef<HTMLInputElement>(null)
   const diffRef = useRef<HTMLDivElement>(null)
 
   const isContinue = !!(args?.dirName && args.mode === 'progress')
   const showTopicInput = !args?.dirName
+  const showExternalMaterialsToggle = args?.mode === 'progress'
 
   // Load continue suggestions when modal opens for continue scenario
   useEffect(() => {
@@ -132,6 +136,14 @@ export function PreStudyModal() {
     setSelectedDirName(null)
     setSearchQuery('')
     setCustomTopic('')
+    setEnableExternalMaterials(false)
+    setSearchConfigured(false)
+
+    if (args.mode === 'progress') {
+      ipc.searchCheckConfig()
+        .then(({ configured }) => setSearchConfigured(configured))
+        .catch(err => console.warn('[PreStudyModal] search config check failed:', err))
+    }
 
     if (isContinue && args.dirName) {
       const cacheKey = args.dirName
@@ -240,7 +252,8 @@ export function PreStudyModal() {
       difficulty,
       temperature,
       userRequirement: userRequirement.trim() || undefined,
-      selectedTopic
+      selectedTopic,
+      enableExternalMaterials: args.mode === 'progress' ? enableExternalMaterials : undefined
     })
   }
 
@@ -400,6 +413,42 @@ export function PreStudyModal() {
             {userRequirement.length}/200
           </div>
         </div>
+
+        {/* External materials toggle (progress only) */}
+        {showExternalMaterialsToggle && (
+          <div
+            className={`rounded-lg border p-3 transition-colors cursor-pointer ${
+              enableExternalMaterials
+                ? 'bg-ember/10 border-ember/30'
+                : 'border-slate/20 hover:border-slate/40'
+            }`}
+            onClick={() => {
+              if (!enableExternalMaterials && !searchConfigured) {
+                showToast('请先在设置中配置 Tavily API Key')
+                return
+              }
+              setEnableExternalMaterials(v => !v)
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div className={`mt-0.5 w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 ${
+                enableExternalMaterials
+                  ? 'bg-ember border-ember'
+                  : 'border-parchment/30'
+              }`}>
+                {enableExternalMaterials && <span className="text-ink text-xs">✓</span>}
+              </div>
+              <div className="flex-1">
+                <div className={`text-sm font-medium ${enableExternalMaterials ? 'text-parchment' : 'text-parchment/80'}`}>
+                  引入联网资料
+                </div>
+                <div className="text-xs text-parchment/50 leading-relaxed mt-0.5">
+                  开始时会集中搜索一次主题资料，整理后注入对话上下文。来源将归档到本次学习目录。
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Difficulty selection */}
         <div ref={diffRef}>
