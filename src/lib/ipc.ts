@@ -57,5 +57,6 @@ export const ipc = {
   get setupWriteConfig() { return ensure().setupWriteConfig },
   get onSetupDone() { return ensure().onSetupDone },
 
-  get briefingGenerate() { return ensure().briefingGenerate }
+  get briefingGenerate() { return ensure().briefingGenerate },
+  get briefingList() { return ensure().briefingList }
 }

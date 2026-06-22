@@ -56,6 +56,8 @@ type AppStore = {
   groupInspirations: Record<string, NewTopic>
   inspirationStrategy: 'v1' | 'v2' | 'v3'
   wildcardInspiration: NewTopic | null
+  wildcardLoading: boolean
+  wildcardError: string | null
   topicContinueSuggestions: Record<string, TopicContinueCache>
 
   // 后台归档占位
@@ -73,7 +75,13 @@ type AppStore = {
     loading: boolean
     error: string | null
   }
+  briefingHistory: {
+    list: { date: string; filePath: string }[]
+    loading: boolean
+    error: string | null
+  }
   generateBriefing: (date: string) => Promise<void>
+  loadBriefingHistory: () => Promise<void>
 
   // 画作背景
   currentPaintings: {
@@ -158,6 +166,8 @@ export const useStore = create<AppStore>((set, get) => ({
   groupInspirations: {},
   inspirationStrategy: 'v2',
   wildcardInspiration: null,
+  wildcardLoading: false,
+  wildcardError: null,
   topicContinueSuggestions: {},
   pendingArchives: [],
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
@@ -167,6 +177,7 @@ export const useStore = create<AppStore>((set, get) => ({
   toast: null,
   currentPaintings: { cover: null, home: null, study: null, briefing: null },
   briefing: { result: null, loading: false, error: null },
+  briefingHistory: { list: [], loading: false, error: null },
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -188,6 +199,12 @@ export const useStore = create<AppStore>((set, get) => ({
       groupMapping: groupsData.mapping
     })
     get().initPaintings()
+
+    // 首次启动且没有缓存推荐时，在后台生成一次意外之径
+    // 不 await，避免阻塞首页渲染；加载状态由 WildCardRecCard 展示
+    if (!state.wildcardInspiration) {
+      get().refreshWildcardInspiration().catch(() => {})
+    }
   },
 
   initPaintings: () => {
@@ -283,12 +300,24 @@ export const useStore = create<AppStore>((set, get) => ({
   clearArchiveResult: () => set({ archiveResult: null }),
 
   generateBriefing: async (date: string) => {
-    set(s => ({ briefing: { ...s.briefing, loading: true, error: null } }))
+    const s = get()
+    if (s.briefing.loading) return
+    set({ briefing: { result: null, loading: true, error: null } })
     try {
-      const result = await ipc.briefingGenerate({ date })
+      const result = await ipc.briefingGenerate({ date, profile: s.profile })
       set({ briefing: { result, loading: false, error: null } })
     } catch (err: any) {
       set({ briefing: { result: null, loading: false, error: err.message || String(err) } })
+    }
+  },
+
+  loadBriefingHistory: async () => {
+    set({ briefingHistory: { ...get().briefingHistory, loading: true, error: null } })
+    try {
+      const list = await ipc.briefingList()
+      set({ briefingHistory: { list, loading: false, error: null } })
+    } catch (err: any) {
+      set({ briefingHistory: { ...get().briefingHistory, loading: false, error: err.message || String(err) } })
     }
   },
 
@@ -431,14 +460,24 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ inspirationStrategy: strategy } as Partial<StateJson>)
   },
   setWildcardInspiration: (topic) => {
-    set({ wildcardInspiration: topic })
+    set({ wildcardInspiration: topic, wildcardError: null })
     ipc.patchState({ wildcardInspiration: topic } as Partial<StateJson>)
   },
   refreshWildcardInspiration: async () => {
-    const { profile, library, setWildcardInspiration } = get()
-    const topics = library.map(t => ({ title: t.title }))
-    const result = await ipc.llmWildcardInspiration({ profile, topics })
-    setWildcardInspiration(result)
+    if (get().wildcardLoading) return
+    set({ wildcardLoading: true, wildcardError: null })
+    try {
+      const { profile, library } = get()
+      const topics = library.map(t => ({ title: t.title }))
+      const result = await ipc.llmWildcardInspiration({ profile, topics })
+      get().setWildcardInspiration(result)
+    } catch (err: any) {
+      const msg = String(err?.message ?? err)
+      console.error('[refreshWildcardInspiration] error:', msg)
+      set({ wildcardError: msg })
+    } finally {
+      set({ wildcardLoading: false })
+    }
   },
   setFableStyleTags: (tags) => {
     set({ fableStyleTags: tags })
