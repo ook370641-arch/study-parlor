@@ -42,6 +42,21 @@ export async function finalizeAndReturnHome() {
         dirName, session_number: sessionNumber, progress_summary
       })
 
+      // 写外部资料
+      if (s.externalMaterials?.summary) {
+        try {
+          await ipc.writeExternalMaterials({
+            dirName,
+            sessionNumber,
+            topic: title,
+            summary: s.externalMaterials.summary,
+            sources: s.externalMaterials.sources
+          })
+        } catch (e) {
+          console.warn('[finalize] external materials write failed:', e)
+        }
+      }
+
       // 生成并写寓言
       try {
         const fable = await ipc.llmGenerateFable({ history: historySnapshot, topic: title })
