@@ -5,7 +5,7 @@ import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { generateContinueSuggestions, readTopicReportSummaries } from '../lib/llm-tasks'
 import { patchState } from './state'
 import type { AppConfig } from '../env'
-import type { TopicMeta, SessionMeta, Group, GroupMapping, TopicContinueCache } from '@shared/index'
+import type { TopicMeta, SessionMeta, Group, GroupMapping, TopicContinueCache, SearchSource } from '@shared/index'
 
 export function getSessionMeta(sessionDir: string): SessionMeta {
   const files = fs.readdirSync(sessionDir, { withFileTypes: true })
@@ -467,6 +467,36 @@ function getMimeType(filePath: string): string {
     }
     const content = fs.readFileSync(resolved, 'utf8')
     return { content, mimeType: isSvg ? 'image/svg+xml' : 'text/markdown' }
+  })
+
+  ipcMain.handle('files:writeExternalMaterials', async (_, args: {
+    dirName: string
+    sessionNumber: number
+    topic: string
+    summary: string
+    sources: SearchSource[]
+  }) => {
+    validateDirName(args.dirName)
+    const now = new Date()
+    const topicDir = path.join(cfg.libraryPath, args.dirName)
+    const sessionDir = path.join(topicDir, `s${args.sessionNumber}`)
+    fs.mkdirSync(sessionDir, { recursive: true })
+    const filePath = path.join(sessionDir, '外部资料.md')
+    if (fs.existsSync(filePath)) {
+      throw new Error(`外部资料已存在: ${filePath}`)
+    }
+    const fm = {
+      title: '外部资料',
+      type: 'external-materials' as const,
+      created: now.toISOString(),
+      session_number: args.sessionNumber,
+      topic: args.topic,
+    }
+    const sourceLines = args.sources.map((s, i) =>
+      `${i + 1}. [${s.title}](${s.url})${s.snippet ? ` — ${s.snippet}` : ''}`
+    ).join('\n')
+    const body = `## 摘要\n${args.summary.trim()}\n\n## 来源\n${sourceLines}\n`
+    fs.writeFileSync(filePath, serializeFrontmatter('external-materials', fm, body), 'utf8')
   })
 
   ipcMain.handle('files:recoveryDump', async (_, args: { filename: string; content: string }) => {
