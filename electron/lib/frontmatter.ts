@@ -31,6 +31,7 @@ function inferDocTypeFromFilename(filename: string): DocType {
   if (lower.includes('寓言')) return 'fable'
   if (lower.includes('原始对话')) return 'transcript'
   if (lower.includes('夜航简报')) return 'briefing'
+  if (lower.includes('外部资料')) return 'external-materials'
   return 'progress'
 }
 
