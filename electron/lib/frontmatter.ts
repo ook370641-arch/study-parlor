@@ -11,6 +11,7 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   fable: ['source_topic'],
   transcript: ['session_number'],
   briefing: [],
+  'external-materials': ['session_number', 'topic', 'summary', 'sources'],
 }
 
 function extractTitleFromFilename(name: string): string | undefined {
@@ -57,6 +58,8 @@ export function parseFrontmatter(
     session_number: typeof data.session_number === 'number' ? data.session_number : 0,
     type,
     progress_summary: data.progress_summary,
+    summary: data.summary,
+    sources: Array.isArray(data.sources) ? data.sources : undefined,
   }
 
   return { frontmatter, body: parsed.content }

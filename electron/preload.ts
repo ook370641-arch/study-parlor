@@ -53,6 +53,15 @@ const api: IpcApi = {
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
   getExtensionInfo: () => ipcRenderer.invoke('files:getExtensionInfo'),
 
+  // External materials
+  readExternalMaterials: (dirName) => ipcRenderer.invoke('files:readExternalMaterials', dirName),
+  writeExternalMaterials: (a) => ipcRenderer.invoke('files:writeExternalMaterials', a),
+
+  // Search
+  searchPrepare: (a) => ipcRenderer.invoke('search:prepare', a),
+  searchCheckConfig: () => ipcRenderer.invoke('search:checkConfig'),
+  setSearchApiKey: (key) => ipcRenderer.invoke('search:setApiKey', key),
+
   // Config
   getConfig: () => ipcRenderer.invoke('config:get'),
   writeConfig: (config) => ipcRenderer.invoke('config:write', config),

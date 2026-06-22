@@ -6,6 +6,7 @@ const TYPE_LABELS: Record<DocType, string> = {
   fable: '寓言',
   transcript: '原始对话',
   briefing: '夜航简报',
+  'external-materials': '外部资料',
 }
 
 const TYPE_BADGE_STYLES: Record<DocType, string> = {
@@ -14,6 +15,7 @@ const TYPE_BADGE_STYLES: Record<DocType, string> = {
   fable: 'bg-ink border border-ember/60 text-parchment',
   transcript: 'bg-ink/60 text-parchment/60',
   briefing: 'bg-slate text-parchment',
+  'external-materials': 'bg-ink/60 text-parchment/60',
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {

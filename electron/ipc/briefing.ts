@@ -253,7 +253,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
     if (!args.force && fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, 'utf8')
       const { frontmatter, body } = parseFrontmatter(raw, { filename: path.basename(filePath) })
-      const rawSources = matter(raw).data?.sources
+      const rawSources = matter(raw).data?.briefing_sources ?? matter(raw).data?.sources
       let sources: BriefingSource[] = []
       if (typeof rawSources === 'string' && rawSources) {
         try {
@@ -318,7 +318,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
       type: 'briefing' as const,
       created: new Date().toISOString(),
       tags: ['industry-digest', 'ai'],
-      sources: JSON.stringify(sources),
+      briefing_sources: JSON.stringify(sources),
     }
 
     try {

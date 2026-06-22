@@ -3,7 +3,7 @@ import type { AppConfig } from '@electron/env'
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = number
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing'
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials'
 
 export type Profile = {
   name: string
@@ -23,6 +23,8 @@ export type Frontmatter = {
   session_number?: number
   type?: DocType
   progress_summary?: string
+  summary?: string
+  sources?: SearchSource[]
 }
 
 export type Group = {
@@ -92,6 +94,8 @@ export type UnsavedSession = {
   history: Message[]
   userRequirement?: string
   selectedTopic?: string
+  enableExternalMaterials?: boolean
+  externalMaterials?: SearchResult
 }
 
 export type ArchiveResult = {
@@ -100,6 +104,23 @@ export type ArchiveResult = {
   title: string
   content: string  // progress: body; review: summary + gaps rendered
 }
+
+export type SearchSource = {
+  title: string
+  url: string
+  snippet?: string
+}
+
+export type SearchResult = {
+  summary: string
+  sources: SearchSource[]
+}
+
+export type SearchErrorCode =
+  | 'MISSING_API_KEY'
+  | 'NETWORK_ERROR'
+  | 'LLM_ERROR'
+  | 'NO_RESULTS'
 
 export type BriefingSourceType = 'x' | 'podcast' | 'blog'
 
@@ -148,7 +169,7 @@ export type IpcApi = {
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
-  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string }) => Promise<void>
+  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; description?: string; body: string; progress_summary?: string }>
   llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[]; mastery_assessment?: string; mastery_checklist?: string[]; future_advice?: string[] }>
@@ -219,6 +240,21 @@ export type IpcApi = {
 
   // Extension info
   getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>
+
+  // External materials
+  readExternalMaterials: (dirName: string) => Promise<{ summary: string; sources: SearchSource[]; topic?: string } | null>
+  writeExternalMaterials: (args: {
+    dirName: string
+    sessionNumber: number
+    topic: string
+    summary: string
+    sources: SearchSource[]
+  }) => Promise<void>
+
+  // Search
+  searchPrepare: (args: { topic: string }) => Promise<SearchResult>
+  searchCheckConfig: () => Promise<{ configured: boolean }>
+  setSearchApiKey: (key: string) => Promise<void>
 
   // Config
   getConfig: () => Promise<AppConfig>
