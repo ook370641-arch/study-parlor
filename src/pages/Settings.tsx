@@ -26,6 +26,9 @@ export function Settings() {
   const [showKey, setShowKey] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus | null>(null)
+  const [searchApiKey, setSearchApiKey] = useState('')
+  const [showSearchKey, setShowSearchKey] = useState(false)
+  const [searchConfigured, setSearchConfigured] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -39,6 +42,9 @@ export function Settings() {
     }).catch(err => {
       setError(err.message || '读取配置失败')
     })
+    ipc.searchCheckConfig()
+      .then(({ configured }) => { if (mounted) setSearchConfigured(configured) })
+      .catch(err => { if (mounted) setError(err.message || '读取搜索配置失败') })
     return () => { mounted = false }
   }, [])
 
@@ -48,6 +54,7 @@ export function Settings() {
     setBaseUrl(initialConfig.baseUrl)
     setModel(initialConfig.model)
     setLibraryPath(initialConfig.libraryPath)
+    setSearchApiKey('')
     setError(null)
     setVerifyStatus(null)
   }
@@ -103,6 +110,23 @@ export function Settings() {
       showToast('配置已保存，重启后生效')
     } catch (err: any) {
       setError(err.message || '保存配置失败')
+    }
+  }
+
+  const handleSaveSearchKey = async () => {
+    setError(null)
+    const key = searchApiKey.trim()
+    if (!key) {
+      setError('请输入 Tavily API Key')
+      return
+    }
+    try {
+      await ipc.setSearchApiKey(key)
+      setSearchApiKey('')
+      setSearchConfigured(true)
+      showToast('Tavily API Key 已保存')
+    } catch (err: any) {
+      setError(err.message || '保存 Tavily API Key 失败')
     }
   }
 
@@ -198,6 +222,41 @@ export function Settings() {
                       {verifyStatus.message}
                     </span>
                   )}
+                </div>
+              </div>
+
+              {/* 联网搜索 */}
+              <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
+                <h3 className="text-ember font-semibold mb-4">联网搜索</h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-[11px] text-parchment/60 font-sans mb-1">Tavily API Key</div>
+                    <div className="flex gap-2">
+                      <input
+                        type={showSearchKey ? 'text' : 'password'}
+                        value={searchApiKey}
+                        onChange={e => setSearchApiKey(e.target.value)}
+                        placeholder={searchConfigured ? '已配置，输入新 key 可覆盖' : 'tvly-...'}
+                        className="flex-1 bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSearchKey(!showSearchKey)}
+                        className="px-3 py-2 border border-slate/40 rounded-md text-sm text-parchment/80 hover:text-parchment transition-colors shrink-0"
+                      >
+                        {showSearchKey ? '隐藏' : '显示'}
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="text-xs text-parchment/40">
+                        Key 会加密存储在系统密钥库中，不会写入 .env 文件；联网资料仅在你主动开启时使用。
+                      </div>
+                      <Button onClick={handleSaveSearchKey} disabled={!searchApiKey.trim()}>
+                        保存
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
 

@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
-  TopicContinueCache, BriefingResult
+  TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
@@ -25,6 +25,7 @@ type Session = {
   reviewFileBody?: string
   userRequirement?: string
   selectedTopic?: string
+  enableExternalMaterials?: boolean
 }
 
 type AppStore = {
@@ -91,6 +92,14 @@ type AppStore = {
     briefing: Painting | null
   }
 
+  // 外部资料
+  externalMaterials: {
+    summary: string | null
+    sources: SearchSource[]
+    loading: boolean
+    error: SearchErrorCode | null
+  } | null
+
   // 操作
   init: () => Promise<void>
   initPaintings: () => void
@@ -103,6 +112,7 @@ type AppStore = {
     difficulty: Difficulty; temperature: number
     userRequirement?: string
     selectedTopic?: string
+    enableExternalMaterials?: boolean
   }) => void
   appendChunk: (text: string) => void
   finishStreaming: () => void
@@ -118,6 +128,12 @@ type AppStore = {
   restoreSession: (session: UnsavedSession) => void
   removeUnsavedSession: (id: string) => void
   deleteArchivedSession: (dirName: string, sessionNumber: number) => Promise<void>
+
+  // 外部资料操作
+  prepareExternalMaterials: (topic: string) => Promise<void>
+  setExternalMaterials: (materials: SearchResult) => void
+  setExternalMaterialsError: (error: SearchErrorCode) => void
+  clearExternalMaterials: () => void
 
   // 分组操作
   loadGroups: () => Promise<void>
@@ -172,6 +188,7 @@ export const useStore = create<AppStore>((set, get) => ({
   pendingArchives: [],
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
   lastFableTags: [],
+  externalMaterials: null,
   modal: null,
   preStudyArgs: null,
   toast: null,
@@ -241,7 +258,8 @@ export const useStore = create<AppStore>((set, get) => ({
         difficulty: a.difficulty, temperature: a.temperature,
         history: [], streaming: false, abortId: sid, archivePending: false,
         userRequirement: a.userRequirement,
-        selectedTopic: a.selectedTopic
+        selectedTopic: a.selectedTopic,
+        enableExternalMaterials: a.enableExternalMaterials
       },
       modal: null,
       preStudyArgs: null,
@@ -299,18 +317,6 @@ export const useStore = create<AppStore>((set, get) => ({
 
   clearArchiveResult: () => set({ archiveResult: null }),
 
-  generateBriefing: async (date: string) => {
-    const s = get()
-    if (s.briefing.loading) return
-    set({ briefing: { result: null, loading: true, error: null } })
-    try {
-      const result = await ipc.briefingGenerate({ date, profile: s.profile })
-      set({ briefing: { result, loading: false, error: null } })
-    } catch (err: any) {
-      set({ briefing: { result: null, loading: false, error: err.message || String(err) } })
-    }
-  },
-
   loadBriefingHistory: async () => {
     set({ briefingHistory: { ...get().briefingHistory, loading: true, error: null } })
     try {
@@ -321,8 +327,36 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  resetSession: () => set({ session: null, currentPage: 'home' }),
+  resetSession: () => set({ session: null, currentPage: 'home', externalMaterials: null }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
+
+  prepareExternalMaterials: async (topic) => {
+    set({ externalMaterials: { summary: null, sources: [], loading: true, error: null } })
+    try {
+      const result = await ipc.searchPrepare({ topic })
+      set({ externalMaterials: { summary: result.summary, sources: result.sources, loading: false, error: null } })
+    } catch (err: any) {
+      const code: SearchErrorCode = err?.code ?? 'NETWORK_ERROR'
+      const messages: Record<SearchErrorCode, string> = {
+        MISSING_API_KEY: '请先在设置中配置 Tavily API Key',
+        NETWORK_ERROR: '外部资料获取失败，本次不使用联网内容',
+        LLM_ERROR: '外部资料整理失败，本次不使用联网内容',
+        NO_RESULTS: '未找到相关外部资料，本次不使用联网内容'
+      }
+      get().showToast(messages[code] ?? '外部资料获取失败')
+      set({ externalMaterials: { summary: null, sources: [], loading: false, error: code } })
+    }
+  },
+
+  setExternalMaterials: (materials) => set({
+    externalMaterials: { summary: materials.summary, sources: materials.sources, loading: false, error: null }
+  }),
+
+  setExternalMaterialsError: (error) => set({
+    externalMaterials: { summary: null, sources: [], loading: false, error }
+  }),
+
+  clearExternalMaterials: () => set({ externalMaterials: null }),
 
   patchProfile: async (p) => {
     const next = { ...get().profile, ...p }
@@ -337,7 +371,8 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   saveCurrentSession: async () => {
-    const s = get().session
+    const state = get()
+    const s = state.session
     if (!s) return
     // 空对话不写入 unsaved 队列:onBack 在用户一句话都没说时也会调本方法,
     // 没有 history 的 stub 既不能恢复也不该污染首页"未完成的会话"提示。
@@ -352,7 +387,11 @@ export const useStore = create<AppStore>((set, get) => ({
       temperature: s.temperature,
       history: s.history,
       userRequirement: s.userRequirement,
-      selectedTopic: s.selectedTopic
+      selectedTopic: s.selectedTopic,
+      enableExternalMaterials: s.enableExternalMaterials,
+      externalMaterials: state.externalMaterials?.summary
+        ? { summary: state.externalMaterials.summary, sources: state.externalMaterials.sources }
+        : undefined
     }
     await ipc.saveSession(unsaved)
     // 刷新 store 中的未保存会话列表，确保返回首页后立即可见
@@ -374,8 +413,12 @@ export const useStore = create<AppStore>((set, get) => ({
         abortId: unsaved.id,
         archivePending: false,
         userRequirement: unsaved.userRequirement,
-        selectedTopic: unsaved.selectedTopic
+        selectedTopic: unsaved.selectedTopic,
+        enableExternalMaterials: unsaved.enableExternalMaterials
       },
+      externalMaterials: unsaved.externalMaterials
+        ? { summary: unsaved.externalMaterials.summary, sources: unsaved.externalMaterials.sources, loading: false, error: null }
+        : null,
       currentPage: 'study'
     })
   },

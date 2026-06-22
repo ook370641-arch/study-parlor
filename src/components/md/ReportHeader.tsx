@@ -15,7 +15,7 @@ const TYPE_BADGE_STYLES: Record<DocType, string> = {
   fable: 'bg-ink border border-ember/60 text-parchment',
   transcript: 'bg-ink/60 text-parchment/60',
   briefing: 'bg-slate text-parchment',
-  'external-materials': 'bg-ink/60 text-parchment/60',
+  'external-materials': 'bg-ink/40 border border-parchment/20 text-parchment/70',
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {

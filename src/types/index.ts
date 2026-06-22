@@ -25,6 +25,7 @@ export type Frontmatter = {
   progress_summary?: string
   summary?: string
   sources?: SearchSource[]
+  topic?: string
 }
 
 export type Group = {
@@ -223,6 +224,7 @@ export type IpcApi = {
   // Session file operations
   writeTranscript: (args: { dirName: string; sessionNumber: number; content: string }) => Promise<void>
   readSessionFile: (args: { dirName: string; sessionNumber: number; fileName: string }) => Promise<{ content: string; mimeType?: string }>
+  readExternalMaterials: (dirName: string) => Promise<{ summary: string; sources: SearchSource[]; topic?: string } | null>
 
   // Group management
   loadGroups: () => Promise<{ groups: Group[]; mapping: GroupMapping }>
@@ -238,9 +240,6 @@ export type IpcApi = {
   // Recovery dump
   recoveryDump: (args: { filename: string; content: string }) => Promise<void>
 
-  // Extension info
-  getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>
-
   // External materials
   readExternalMaterials: (dirName: string) => Promise<{ summary: string; sources: SearchSource[]; topic?: string } | null>
   writeExternalMaterials: (args: {
@@ -255,6 +254,9 @@ export type IpcApi = {
   searchPrepare: (args: { topic: string }) => Promise<SearchResult>
   searchCheckConfig: () => Promise<{ configured: boolean }>
   setSearchApiKey: (key: string) => Promise<void>
+
+  // Extension info
+  getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>
 
   // Config
   getConfig: () => Promise<AppConfig>

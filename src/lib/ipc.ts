@@ -15,6 +15,7 @@ export const ipc = {
   get writeTranscript() { return ensure().writeTranscript },
   get writeFable() { return ensure().writeFable },
   get readSessionFile() { return ensure().readSessionFile },
+  get readExternalMaterials() { return ensure().readExternalMaterials },
   get getState() { return ensure().getState },
   get patchState() { return ensure().patchState },
   get llmProbe() { return ensure().llmProbe },
@@ -45,6 +46,12 @@ export const ipc = {
   get onBootProgress() { return ensure().onBootProgress },
   get onBootComplete() { return ensure().onBootComplete },
   get getExtensionInfo() { return ensure().getExtensionInfo },
+
+  // Search & external materials
+  get searchPrepare() { return ensure().searchPrepare },
+  get searchCheckConfig() { return ensure().searchCheckConfig },
+  get setSearchApiKey() { return ensure().setSearchApiKey },
+  get writeExternalMaterials() { return ensure().writeExternalMaterials },
 
   // Config
   get getConfig() { return ensure().getConfig },

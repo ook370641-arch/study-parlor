@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import type { AppConfig } from '../env'
-import { getSearchApiKey, hasSearchApiKey } from '../lib/credentials'
+import { getSearchApiKey, hasSearchApiKey, setSearchApiKey } from '../lib/credentials'
 import { generateSearchQueries, searchWeb, generateTutorBrief } from '../lib/search'
 import type { SearchErrorCode } from '@shared/index'
 
@@ -10,12 +10,19 @@ export function registerSearchIpc(cfg: AppConfig) {
     return { configured }
   })
 
+  ipcMain.handle('search:setApiKey', async (_, key: string) => {
+    if (!key || typeof key !== 'string') throw new Error('API key is required')
+    await setSearchApiKey(key)
+  })
+
   ipcMain.handle('search:prepare', async (_, args: { topic: string }) => {
-    if (!args?.topic || typeof args.topic !== 'string') {
+    const rawTopic = args?.topic
+    if (typeof rawTopic !== 'string' || !rawTopic.trim()) {
       const err = new Error('Topic is required') as Error & { code: SearchErrorCode }
       err.code = 'LLM_ERROR'
       throw err
     }
+    const topic = rawTopic.trim()
 
     const apiKey = await getSearchApiKey()
     if (!apiKey) {
@@ -27,7 +34,7 @@ export function registerSearchIpc(cfg: AppConfig) {
     // Step 1: Generate search queries via LLM
     let queries: string[]
     try {
-      queries = await generateSearchQueries(cfg, args.topic)
+      queries = await generateSearchQueries(cfg, topic)
     } catch (err: any) {
       const wrapped = new Error(err?.message ?? 'Failed to generate search queries') as Error & { code: SearchErrorCode }
       wrapped.code = 'LLM_ERROR'
@@ -47,7 +54,7 @@ export function registerSearchIpc(cfg: AppConfig) {
 
     // Step 3: Generate tutor brief
     try {
-      const brief = await generateTutorBrief(cfg, args.topic, results)
+      const brief = await generateTutorBrief(cfg, topic, results)
       return brief
     } catch (err: any) {
       const wrapped = new Error(err?.message ?? 'Failed to generate tutor brief') as Error & { code: SearchErrorCode }
@@ -58,15 +65,28 @@ export function registerSearchIpc(cfg: AppConfig) {
 }
 
 async function searchWebWithRetry(opts: { queries: string[]; apiKey: string }): Promise<ReturnType<typeof searchWeb>> {
-  let allResults: Awaited<ReturnType<typeof searchWeb>> = []
   let lastError: unknown
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const results = await Promise.all(
-        opts.queries.map(q => searchWeb({ query: q, apiKey: opts.apiKey, maxResults: 5 }))
+        opts.queries.map(async q => {
+          try {
+            return await searchWeb({ query: q, apiKey: opts.apiKey, maxResults: 5 })
+          } catch (e) {
+            // 单个查询无结果不应导致整批失败；其他查询的结果仍可保留
+            if ((e as Error & { code?: string })?.code === 'NO_RESULTS') return []
+            throw e
+          }
+        })
       )
-      allResults = results.flat()
+      const allResults = results.flat()
+      if (allResults.length > 0) return allResults
+
+      // 所有查询都返回空结果
+      const noResultsErr = new Error('NO_RESULTS') as Error & { code: SearchErrorCode }
+      noResultsErr.code = 'NO_RESULTS'
+      lastError = noResultsErr
       break
     } catch (e) {
       lastError = e
@@ -74,13 +94,15 @@ async function searchWebWithRetry(opts: { queries: string[]; apiKey: string }): 
     }
   }
 
-  if (allResults.length === 0) {
-    const message = lastError instanceof Error ? lastError.message : 'Unknown error'
-    const err = new Error(message) as Error & { code: SearchErrorCode }
+  if (lastError instanceof Error) {
     const code = (lastError as Error & { code?: string })?.code
-    err.code = code === 'NO_RESULTS' ? 'NO_RESULTS' : 'NETWORK_ERROR'
+    if (code === 'NO_RESULTS') throw lastError
+    const err = new Error(lastError.message) as Error & { code: SearchErrorCode }
+    err.code = 'NETWORK_ERROR'
     throw err
   }
 
-  return allResults
+  const err = new Error('Search failed') as Error & { code: SearchErrorCode }
+  err.code = 'NETWORK_ERROR'
+  throw err
 }

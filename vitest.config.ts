@@ -28,6 +28,33 @@ export default defineConfig({
           return 'export default "' + id + '"'
         }
       }
+    },
+    {
+      name: 'mock-electron',
+      enforce: 'pre',
+      resolveId(id) {
+        if (id === 'electron') {
+          return '\0mock-electron'
+        }
+      },
+      load(id) {
+        if (id === '\0mock-electron') {
+          return `
+            export const safeStorage = {
+              isEncryptionAvailable: () => true,
+              encryptString: (s) => Buffer.from('enc:' + s),
+              decryptString: (b) => {
+                const str = b.toString()
+                if (!str.startsWith('enc:')) throw new Error('Invalid encrypted data')
+                return str.replace(/^enc:/, '')
+              }
+            }
+            export const ipcMain = {
+              handle: () => {}
+            }
+          `
+        }
+      }
     }
   ]
 })

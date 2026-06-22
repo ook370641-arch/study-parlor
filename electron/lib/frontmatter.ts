@@ -58,6 +58,7 @@ export function parseFrontmatter(
     tags: Array.isArray(data.tags) ? data.tags : [],
     session_number: typeof data.session_number === 'number' ? data.session_number : 0,
     type,
+    topic: data.topic,
     progress_summary: data.progress_summary,
     summary: data.summary,
     sources: Array.isArray(data.sources) ? data.sources : undefined,

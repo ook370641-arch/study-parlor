@@ -24,6 +24,7 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     temperature: number
     selectedTopic?: string
     userRequirement?: string
+    externalMaterialsSummary?: string
   }) => {
     const win = getMainWindow()
     if (!win) return
@@ -43,7 +44,8 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
         profile: args.profile, reviewFileBody: args.reviewFileBody,
         progressSummary: args.progressSummary,
         selectedTopic: args.selectedTopic,
-        userRequirement: args.userRequirement
+        userRequirement: args.userRequirement,
+        externalMaterialsSummary: args.externalMaterialsSummary
       })
       const messages: Message[] = [{ role: 'system', content: system }, ...args.history]
       await chatStream(cfg, { messages, temperature: args.temperature, signal: ctl.signal },
