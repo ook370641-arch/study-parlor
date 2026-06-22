@@ -374,7 +374,7 @@ export function registerFilesIpc(cfg: AppConfig) {
       const { frontmatter, body } = parseFrontmatter(raw, { filename: '外部资料.md' })
       const { summary, sources } = parseExternalMaterialsBody(body)
       return {
-        summary: summary || frontmatter.summary || '',
+        summary,
         sources,
         topic: frontmatter.topic as string | undefined
       }

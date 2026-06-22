@@ -8,7 +8,9 @@ vi.mock('@/lib/ipc', () => ({
     getConfig: vi.fn(),
     writeConfig: vi.fn(),
     setupProbeKey: vi.fn(),
-    setupSelectDirectory: vi.fn()
+    setupSelectDirectory: vi.fn(),
+    searchCheckConfig: vi.fn(),
+    setSearchApiKey: vi.fn()
   }
 }))
 
@@ -24,6 +26,8 @@ describe('Settings', () => {
     vi.mocked(ipc.writeConfig).mockResolvedValue(undefined)
     vi.mocked(ipc.setupProbeKey).mockResolvedValue({ ok: true })
     vi.mocked(ipc.setupSelectDirectory).mockResolvedValue({ canceled: true, path: null })
+    vi.mocked(ipc.searchCheckConfig).mockResolvedValue({ configured: false })
+    vi.mocked(ipc.setSearchApiKey).mockResolvedValue(undefined)
   })
 
   it('renders current config values', async () => {
@@ -38,7 +42,7 @@ describe('Settings', () => {
     await waitFor(() => expect(screen.getByDisplayValue('sk-kimi-test')).toBeInTheDocument())
     const input = screen.getByDisplayValue('sk-kimi-test')
     expect(input).toHaveAttribute('type', 'password')
-    fireEvent.click(screen.getByText('显示'))
+    fireEvent.click(screen.getAllByText('显示')[0])
     expect(input).toHaveAttribute('type', 'text')
   })
 
@@ -47,14 +51,16 @@ describe('Settings', () => {
     await waitFor(() => expect(screen.getByDisplayValue('sk-kimi-test')).toBeInTheDocument())
     const keyInput = screen.getByDisplayValue('sk-kimi-test')
     fireEvent.change(keyInput, { target: { value: '' } })
-    expect(screen.getByRole('button', { name: '保存' })).toBeDisabled()
+    const saveButtons = screen.getAllByRole('button', { name: '保存' })
+    expect(saveButtons[saveButtons.length - 1]).toBeDisabled()
     expect(screen.getByRole('button', { name: '验证连接' })).toBeDisabled()
   })
 
   it('calls writeConfig with form values on save', async () => {
     render(<Settings />)
     await waitFor(() => expect(screen.getByDisplayValue('sk-kimi-test')).toBeInTheDocument())
-    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+    const saveButtons = screen.getAllByRole('button', { name: '保存' })
+    fireEvent.click(saveButtons[saveButtons.length - 1])
     await waitFor(() => {
       expect(ipc.writeConfig).toHaveBeenCalledWith({
         apiKey: 'sk-kimi-test',
