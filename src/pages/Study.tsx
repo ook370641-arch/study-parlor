@@ -14,6 +14,7 @@ import { ArchiveReportModal } from '@/components/ArchiveReportModal'
 import { StarOrbit } from '@/components/StarOrbit'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { ExternalMaterialsCard } from '@/components/ExternalMaterialsCard'
 
 export function Study() {
   const session = useStore(s => s.session)
@@ -201,6 +202,8 @@ export function Study() {
           </div>
         </div>
       </header>
+
+      <ExternalMaterialsCard />
 
       {streamError && (
         <div className="relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans">
