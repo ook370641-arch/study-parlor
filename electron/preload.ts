@@ -73,6 +73,7 @@ const api: IpcApi = {
   },
 
   briefingGenerate: (args) => ipcRenderer.invoke('briefing:generate', args),
+  briefingList: () => ipcRenderer.invoke('briefing:list'),
 
   bootStart: () => ipcRenderer.invoke('boot:start'),
 

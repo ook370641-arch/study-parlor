@@ -180,7 +180,8 @@ export type IpcApi = {
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
-  briefingGenerate: (args: { date: string; force?: boolean }) => Promise<BriefingResult>
+  briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
+  briefingList: () => Promise<{ date: string; filePath: string }[]>
   bootFatal: () => Promise<string | null>
   bootStart: () => Promise<void>
   onBootProgress: (cb: (stage: string, progress: number) => void) => () => void
