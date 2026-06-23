@@ -11,6 +11,7 @@ export type TavilySearchOptions = {
   apiKey: string
   baseUrl?: string
   maxResults?: number
+  signal?: AbortSignal
 }
 
 export type TavilyResult = {
@@ -22,32 +23,53 @@ export type TavilyResult = {
 
 export async function searchWeb(opts: TavilySearchOptions): Promise<TavilyResult[]> {
   const url = opts.baseUrl || TAVILY_API_URL
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    signal: AbortSignal.timeout(15000),
-    body: JSON.stringify({
-      api_key: opts.apiKey,
-      query: opts.query,
-      search_depth: 'basic',
-      max_results: opts.maxResults ?? 5,
-      include_answer: false
+  const ctl = new AbortController()
+  const timeoutId = setTimeout(() => ctl.abort(), 15000)
+  let externalListenerAdded = false
+  const onExternalAbort = () => ctl.abort()
+  if (opts.signal) {
+    if (opts.signal.aborted) {
+      ctl.abort()
+    } else {
+      opts.signal.addEventListener('abort', onExternalAbort, { once: true })
+      externalListenerAdded = true
+    }
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ctl.signal,
+      body: JSON.stringify({
+        api_key: opts.apiKey,
+        query: opts.query,
+        search_depth: 'basic',
+        max_results: opts.maxResults ?? 5,
+        include_answer: false
+      })
     })
-  })
-  if (!res.ok) {
-    let body = ''
-    try { body = await res.text() } catch { /* ignore */ }
-    const err = new Error(`Tavily search failed: ${res.status} ${body}`) as Error & { code: string }
-    err.code = 'TAVILY_ERROR'
-    throw err
+    if (!res.ok) {
+      let body = ''
+      try { body = await res.text() } catch { /* ignore */ }
+      console.error(`[search] Tavily HTTP ${res.status}: ${body.slice(0, 500)}`)
+      const err = new Error(`Tavily search failed: HTTP ${res.status}`) as Error & { code: string }
+      err.code = 'TAVILY_ERROR'
+      throw err
+    }
+    const data = await res.json() as { results?: TavilyResult[] }
+    if (!data.results || data.results.length === 0) {
+      const err = new Error('NO_RESULTS') as Error & { code: string }
+      err.code = 'NO_RESULTS'
+      throw err
+    }
+    return data.results
+  } finally {
+    clearTimeout(timeoutId)
+    if (externalListenerAdded) {
+      opts.signal!.removeEventListener('abort', onExternalAbort)
+    }
   }
-  const data = await res.json() as { results?: TavilyResult[] }
-  if (!data.results || data.results.length === 0) {
-    const err = new Error('NO_RESULTS') as Error & { code: string }
-    err.code = 'NO_RESULTS'
-    throw err
-  }
-  return data.results
 }
 
 export async function generateSearchQueries(
@@ -73,13 +95,14 @@ export async function generateSearchQueries(
   })
   const extracted = extractJsonArray(text)
   if (!extracted) throw new Error('JSON extraction failed')
-  let arr: string[]
+  let arr: unknown
   try {
-    arr = JSON.parse(extracted) as string[]
+    arr = JSON.parse(extracted)
   } catch {
     throw new Error('JSON parse failed')
   }
-  const queries = arr.filter(q => typeof q === 'string')
+  if (!Array.isArray(arr)) throw new Error('JSON parse failed: not an array')
+  const queries = arr.filter((q): q is string => typeof q === 'string')
   if (queries.length === 0) throw new Error('No valid search queries generated')
   return queries.slice(0, 3)
 }

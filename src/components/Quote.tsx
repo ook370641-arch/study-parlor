@@ -29,7 +29,7 @@ export function Quote({ surface }: Props) {
         <span>— {quote.author}</span>
         <button
           onClick={refresh}
-          className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-parchment/40 hover:text-ember transition-opacity"
+          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-parchment/40 hover:text-ember transition-opacity"
           aria-label="换一句"
           title="换一句"
         >

@@ -128,6 +128,30 @@ describe('generateGroupInspiration', () => {
     })).rejects.toThrow()
   })
 
+  it('throws when extracted JSON is syntactically invalid', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: '{"topic": "x", "hook": "y",}' } }] })
+    })) as any)
+
+    await expect(generateGroupInspiration(cfg, {
+      groupName: 'TestGroup',
+      topics: [],
+      profile
+    })).rejects.toThrow('JSON parse failed after extraction')
+  })
+
+  it('throws when topic or hook are not strings', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: '{"topic":123,"hook":true}' } }] })
+    })) as any)
+
+    await expect(generateGroupInspiration(cfg, {
+      groupName: 'TestGroup',
+      topics: [],
+      profile
+    })).rejects.toThrow('JSON parse failed after extraction')
+  })
+
   it('passes group data into prompt', async () => {
     const fetchSpy = vi.fn(async () => ({
       ok: true,
@@ -224,6 +248,28 @@ describe('generateWildcardInspiration', () => {
     expect(body.messages[0].content).toContain('产品经理，喜欢哲学')
     expect(body.messages[0].content).toContain('康德')
     expect(body.messages[0].content).toContain('尼采')
+  })
+
+  it('throws when extracted JSON is syntactically invalid', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: '{"topic": "x", "hook": "y",}' } }] })
+    })) as any)
+
+    await expect(generateWildcardInspiration(cfg, {
+      profile,
+      topics: []
+    })).rejects.toThrow('JSON parse failed after extraction')
+  })
+
+  it('throws when topic or hook are not strings', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: '{"topic":123,"hook":true}' } }] })
+    })) as any)
+
+    await expect(generateWildcardInspiration(cfg, {
+      profile,
+      topics: []
+    })).rejects.toThrow('JSON parse failed after extraction')
   })
 
   it('throws on parse failure', async () => {

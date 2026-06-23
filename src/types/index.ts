@@ -146,6 +146,7 @@ export type BriefingResult = {
   sources: BriefingSource[]
   filePath: string
   cached: boolean
+  cacheWriteFailed?: boolean
 }
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }

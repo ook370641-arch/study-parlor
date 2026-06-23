@@ -37,7 +37,7 @@
 
 1. **实时预览**：改一个词，立刻看到它在真实上下文里的样子。
 2. **默认值始终可回退**：一键恢复默认，降低「叫错了」的心理负担。
-3. **分批开放**：第一批只给核心仪式词，避免把全部文案都摊开造成选择瘫痪。
+3. **同一批全部开放**：本批次一次性提供所有可自定义术语，按语义分组只是为了编辑区组织，不做先后解锁。
 
 ### 3.2 仪式优先
 
@@ -49,9 +49,9 @@
 
 ---
 
-## 4. 术语清单（第一批）
+## 4. 术语清单（本批次）
 
-分为四类：仪式动词、模式与流程、参数标签、界面名词。
+本批次一次性开放以下所有可自定义术语。表中按语义分为四类，仅用于「我的语言」面板中的折叠分组组织。
 
 ### 4.1 仪式动词（最高优先级）
 
@@ -87,7 +87,7 @@
 | 强 / 中 / 弱 | `difficultyHigh` / `difficultyMid` / `difficultyLow` | PreStudy、Profile |
 | 坚硬 / 适中 / 活泼 | `temperatureCold` / `temperatureNeutral` / `temperatureWarm` | PreStudy、Profile |
 
-### 4.4 界面名词（第二批，可选）
+### 4.4 界面名词
 
 | 默认 | key | 出现位置 |
 |------|-----|----------|
@@ -101,8 +101,6 @@
 | 晚安，{name} | `homeGreeting` | Home |
 | 开始 | `startButton` | PreStudy |
 | 撤回 | `cancelButton` | PreStudy |
-
-**实现时先只做 4.1–4.3**。4.4 作为扩展字段预留 schema，UI 可在后续迭代中逐步接入，不需要改数据结构。
 
 ---
 
@@ -139,7 +137,7 @@
 1. **仪式动词**（夜话、卷宗、封存、笔录、焚毁等）
 2. **模式与流程**（探索新知、复习检测、归档确认等）
 3. **参数标签**（审讯强度、腔调及等级）
-4. **界面名词**（第二批，默认折叠）
+4. **界面名词**（默认折叠）
 
 每个字段展示：
 
@@ -200,7 +198,7 @@ export type Terminology = {
   temperatureNeutral?: string
   temperatureWarm?: string
 
-  // 界面名词（第二批）
+  // 界面名词
   profileNameLabel?: string
   profileFieldLabel?: string
   profileTextLabel?: string

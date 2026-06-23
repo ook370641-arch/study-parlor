@@ -268,4 +268,40 @@ describe('registerSearchIpc', () => {
     const result = await prepareHandler(null, { topic: 'test' })
     expect(result).toEqual({ summary: 'ok', sources: [] })
   })
+
+  it('search:prepare keeps partial results when some queries hit network errors', async () => {
+    const networkErr = new Error('connection refused') as Error & { code: string }
+    networkErr.code = 'TAVILY_ERROR'
+
+    vi.doMock('electron', () => ({
+      ipcMain: { handle: handleMock }
+    }))
+    vi.doMock('@electron/lib/credentials', () => ({
+      hasSearchApiKey: vi.fn().mockResolvedValue(true),
+      getSearchApiKey: vi.fn().mockResolvedValue('key')
+    }))
+    vi.doMock('@electron/lib/search', () => ({
+      generateSearchQueries: vi.fn().mockResolvedValue(['q1', 'q2', 'q3']),
+      searchWeb: vi.fn()
+        .mockRejectedValueOnce(networkErr)
+        .mockResolvedValueOnce([{ title: 'Partial', url: 'https://p', content: 'c' }])
+        .mockRejectedValueOnce(networkErr),
+      generateTutorBrief: vi.fn().mockResolvedValue({ summary: 'ok', sources: [] })
+    }))
+
+    const { registerSearchIpc } = await import('@electron/ipc/search')
+    registerSearchIpc({
+      apiKey: 'sk-test',
+      baseUrl: 'https://api.test.com',
+      model: 'test-model',
+      libraryPath: '/tmp/lib'
+    })
+
+    const prepareHandler = handleMock.mock.calls.find(
+      ([name]) => name === 'search:prepare'
+    )[1]
+
+    const result = await prepareHandler(null, { topic: 'test' })
+    expect(result).toEqual({ summary: 'ok', sources: [] })
+  })
 })

@@ -4,6 +4,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { ipcMain } from 'electron'
 import { registerBriefingIpc } from '@electron/ipc/briefing'
+import { formatDisplayDate } from '@/pages/Briefing'
 import * as kimi from '@electron/lib/kimi'
 import type { AppConfig } from '@electron/env'
 import type { Profile } from '@shared/index'
@@ -111,6 +112,78 @@ describe('registerBriefingIpc', () => {
     expect(result.sources).toHaveLength(1)
     expect(result.sources[0].author).toBe('C')
   })
+
+  it('throws BRIEFING_PARSE_ERROR when LLM returns malformed JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        x: [{ name: 'A', handle: 'a', tweets: [{ text: 't', url: 'u', createdAt: 'd' }] }],
+        podcasts: [],
+        blogs: [],
+      })
+    })) as any)
+
+    vi.spyOn(kimi, 'chatNonStream')
+      .mockResolvedValueOnce('not valid json')
+
+    await expect(ipcHandlers['briefing:generate'](null, { date: '2026-06-23', profile }))
+      .rejects.toThrow('BRIEFING_PARSE_ERROR')
+  })
+
+  it('passes abort signal to both LLM calls', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        x: [{ name: 'A', handle: 'a', tweets: [{ text: 't', url: 'u', createdAt: 'd' }] }],
+        podcasts: [],
+        blogs: [],
+      })
+    })) as any)
+
+    const chatSpy = vi.spyOn(kimi, 'chatNonStream')
+      .mockResolvedValueOnce(JSON.stringify({ builders: [], podcasts: [], blogs: [] }))
+      .mockResolvedValueOnce('content')
+
+    await ipcHandlers['briefing:generate'](null, { date: '2026-06-23', profile })
+
+    expect(chatSpy).toHaveBeenCalledTimes(2)
+    expect((chatSpy.mock.calls[0][1] as any).signal).toBeInstanceOf(AbortSignal)
+    expect((chatSpy.mock.calls[1][1] as any).signal).toBeInstanceOf(AbortSignal)
+  })
+
+  it('returns cacheWriteFailed when file write fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        x: [{ name: 'A', handle: 'a', tweets: [{ text: 't', url: 'u', createdAt: 'd' }] }],
+        podcasts: [],
+        blogs: [],
+      })
+    })) as any)
+
+    vi.spyOn(kimi, 'chatNonStream')
+      .mockResolvedValueOnce(JSON.stringify({ builders: [], podcasts: [], blogs: [] }))
+      .mockResolvedValueOnce('content')
+
+    const writeSpy = vi.spyOn(fs, 'writeFileSync').mockImplementation((filePath) => {
+      if (
+        typeof filePath === 'string' &&
+        filePath.includes('夜航简报') &&
+        !filePath.includes('recovery')
+      ) {
+        throw new Error('disk full')
+      }
+    })
+
+    try {
+      const result = await ipcHandlers['briefing:generate'](null, { date: '2026-06-24', profile })
+      expect(result.cacheWriteFailed).toBe(true)
+      expect(result.cached).toBe(false)
+    } finally {
+      writeSpy.mockRestore()
+    }
+  })
+
   it('lists cached briefing dates', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
@@ -131,5 +204,16 @@ describe('registerBriefingIpc', () => {
     expect(list).toHaveLength(1)
     expect(list[0].date).toBe('2026-06-22')
     expect(list[0].filePath).toContain(`${path.sep}夜航简报${path.sep}`)
+  })
+})
+
+describe('formatDisplayDate', () => {
+  it('formats valid date', () => {
+    expect(formatDisplayDate('2026-06-23')).toBe('2026 年 6 月 23 日')
+  })
+
+  it('returns raw string for invalid date', () => {
+    expect(formatDisplayDate('invalid')).toBe('invalid')
+    expect(formatDisplayDate('abc-def-ghi')).toBe('abc-def-ghi')
   })
 })

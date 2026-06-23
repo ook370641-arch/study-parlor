@@ -242,7 +242,11 @@ function parseStructuredJson(raw: string): unknown {
   if (text.startsWith('```')) {
     text = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
   }
-  return JSON.parse(text)
+  try {
+    return JSON.parse(text)
+  } catch (err) {
+    throw new Error(`BRIEFING_PARSE_ERROR: ${err instanceof Error ? err.message : String(err)}`)
+  }
 }
 
 export function registerBriefingIpc(cfg: AppConfig) {
@@ -294,50 +298,62 @@ export function registerBriefingIpc(cfg: AppConfig) {
       feedBlogs,
     })
 
-    const structuredRaw = await chatNonStream(cfg, {
-      messages: [{ role: 'user', content: extractionPrompt } as Message],
-      temperature: 0.5,
-      thinking: { type: 'enabled', reasoning_effort: 'max' },
-    })
-
-    const structured = parseStructuredJson(structuredRaw)
-
-    const assemblyPrompt = buildAssemblyPrompt({
-      prompts,
-      structured: JSON.stringify(structured, null, 2),
-    })
-
-    const content = await chatNonStream(cfg, {
-      messages: [{ role: 'user', content: assemblyPrompt } as Message],
-      temperature: 0.5,
-      thinking: { type: 'enabled', reasoning_effort: 'max' },
-    })
-
-    const sources = buildSources({ feedX, feedPodcasts, feedBlogs })
-
-    const fm = {
-      title: '夜航简报',
-      type: 'briefing' as const,
-      created: new Date().toISOString(),
-      tags: ['industry-digest', 'ai'],
-      briefing_sources: JSON.stringify(sources),
-    }
+    const llmCtl = new AbortController()
+    const llmTimeout = setTimeout(() => llmCtl.abort(), 120_000)
+    let cacheWriteFailed = false
 
     try {
-      fs.mkdirSync(briefingDir(cfg), { recursive: true })
-      fs.writeFileSync(filePath, serializeFrontmatter('briefing', fm, content), 'utf8')
-    } catch (writeErr) {
-      console.error('[briefing] failed to write cached file, dumping recovery', writeErr)
-      dumpRecovery(path.basename(filePath), content)
-    }
+      const structuredRaw = await chatNonStream(cfg, {
+        messages: [{ role: 'user', content: extractionPrompt } as Message],
+        temperature: 0.5,
+        thinking: { type: 'enabled', reasoning_effort: 'max' },
+        signal: llmCtl.signal,
+      })
 
-    return {
-      title: '夜航简报',
-      date,
-      content,
-      sources,
-      filePath,
-      cached: false,
+      const structured = parseStructuredJson(structuredRaw)
+
+      const assemblyPrompt = buildAssemblyPrompt({
+        prompts,
+        structured: JSON.stringify(structured, null, 2),
+      })
+
+      const content = await chatNonStream(cfg, {
+        messages: [{ role: 'user', content: assemblyPrompt } as Message],
+        temperature: 0.5,
+        thinking: { type: 'enabled', reasoning_effort: 'max' },
+        signal: llmCtl.signal,
+      })
+
+      const sources = buildSources({ feedX, feedPodcasts, feedBlogs })
+
+      const fm = {
+        title: '夜航简报',
+        type: 'briefing' as const,
+        created: new Date().toISOString(),
+        tags: ['industry-digest', 'ai'],
+        briefing_sources: JSON.stringify(sources),
+      }
+
+      try {
+        fs.mkdirSync(briefingDir(cfg), { recursive: true })
+        fs.writeFileSync(filePath, serializeFrontmatter('briefing', fm, content), 'utf8')
+      } catch (writeErr) {
+        console.error('[briefing] failed to write cached file, dumping recovery', writeErr)
+        dumpRecovery(path.basename(filePath), content)
+        cacheWriteFailed = true
+      }
+
+      return {
+        title: '夜航简报',
+        date,
+        content,
+        sources,
+        filePath,
+        cached: false,
+        cacheWriteFailed,
+      }
+    } finally {
+      clearTimeout(llmTimeout)
     }
   })
 

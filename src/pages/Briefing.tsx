@@ -28,8 +28,9 @@ function buildSourceGroupsFromStructured(sources: BriefingSource[]): BriefingSou
   })).filter(g => g.items.length > 0)
 }
 
-function formatDisplayDate(dateStr: string): string {
+export function formatDisplayDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
+  if ([y, m, d].some(n => Number.isNaN(n))) return dateStr
   return `${y} 年 ${m} 月 ${d} 日`
 }
 
@@ -67,6 +68,9 @@ export function Briefing() {
           {result && (
             <div className="text-xs text-parchment/50 font-sans">
               {formatDisplayDate(result.date)} · AI 行业日报
+              {result.cacheWriteFailed && (
+                <span className="ml-2 text-wine">（本次未写入缓存）</span>
+              )}
             </div>
           )}
         </div>
@@ -117,7 +121,7 @@ export function Briefing() {
                   onClick={() => setShowSources(s => !s)}
                   className="w-full text-left text-xs text-slate hover:text-parchment transition-colors flex items-center justify-between py-2"
                 >
-                  <span>▼ 原始来源</span>
+                  <span>{showSources ? '▲' : '▼'} 原始来源</span>
                   <span>{showSources ? '收起' : '展开'}</span>
                 </button>
                 {showSources && (
@@ -147,6 +151,7 @@ export function Briefing() {
         currentDate={result?.date ?? today}
         history={historyList}
         loading={historyLoading}
+        error={useStore(s => s.briefingHistory.error)}
         onSelect={(date) => generateBriefing(date)}
       />
     </div>

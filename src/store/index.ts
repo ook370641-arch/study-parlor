@@ -164,6 +164,8 @@ type AppStore = {
   removePendingArchive: (dirName: string, sessionNumber: number) => void
 }
 
+let wildcardRequestId = 0
+
 export const useStore = create<AppStore>((set, get) => ({
   profile: { name: '', profile_text: '', preferred_topics: [] },
   lastUsed: { difficulty: 'mid', temperature: 0.7 },
@@ -220,7 +222,11 @@ export const useStore = create<AppStore>((set, get) => ({
     // 首次启动且没有缓存推荐时，在后台生成一次意外之径
     // 不 await，避免阻塞首页渲染；加载状态由 WildCardRecCard 展示
     if (!state.wildcardInspiration) {
-      get().refreshWildcardInspiration().catch(() => {})
+      get().refreshWildcardInspiration().catch((err) => {
+        const msg = String(err?.message ?? err)
+        console.error('[init] wildcard generation failed:', msg)
+        set({ wildcardError: msg })
+      })
     }
   },
 
@@ -343,6 +349,7 @@ export const useStore = create<AppStore>((set, get) => ({
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
 
   prepareExternalMaterials: async (topic) => {
+    if (get().externalMaterials?.loading) return
     set({ externalMaterials: { summary: null, sources: [], loading: true, error: null } })
     try {
       const result = await ipc.searchPrepare({ topic })
@@ -520,18 +527,23 @@ export const useStore = create<AppStore>((set, get) => ({
   },
   refreshWildcardInspiration: async () => {
     if (get().wildcardLoading) return
+    const requestId = ++wildcardRequestId
     set({ wildcardLoading: true, wildcardError: null })
     try {
       const { profile, library } = get()
       const topics = library.map(t => ({ title: t.title }))
       const result = await ipc.llmWildcardInspiration({ profile, topics })
+      if (requestId !== wildcardRequestId) return
       get().setWildcardInspiration(result)
     } catch (err: any) {
+      if (requestId !== wildcardRequestId) return
       const msg = String(err?.message ?? err)
       console.error('[refreshWildcardInspiration] error:', msg)
       set({ wildcardError: msg })
     } finally {
-      set({ wildcardLoading: false })
+      if (requestId === wildcardRequestId) {
+        set({ wildcardLoading: false })
+      }
     }
   },
   setFableStyleTags: (tags) => {

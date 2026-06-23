@@ -11,6 +11,7 @@ type Props = {
   currentDate?: string
   history: BriefingHistoryItem[]
   loading: boolean
+  error?: string | null
   onSelect: (date: string) => void
 }
 
@@ -18,7 +19,7 @@ function formatDrawerDate(date: string): string {
   return date.slice(5)
 }
 
-export function BriefingHistoryDrawer({ open, onClose, currentDate, history, loading, onSelect }: Props) {
+export function BriefingHistoryDrawer({ open, onClose, currentDate, history, loading, error, onSelect }: Props) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
@@ -53,6 +54,10 @@ export function BriefingHistoryDrawer({ open, onClose, currentDate, history, loa
 
         {loading && (
           <div className="text-xs text-slate py-2">加载中...</div>
+        )}
+
+        {!loading && error && (
+          <div className="text-xs text-wine py-2">{error}</div>
         )}
 
         <div className="flex-1 overflow-y-auto space-y-1">

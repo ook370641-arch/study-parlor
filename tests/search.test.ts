@@ -52,7 +52,23 @@ describe('searchWeb', () => {
     } as Response)
 
     await expect(searchWeb({ query: 'test', apiKey: 'key' }))
-      .rejects.toMatchObject({ code: 'TAVILY_ERROR' })
+      .rejects.toMatchObject({ code: 'TAVILY_ERROR', message: /HTTP 500/ })
+  })
+
+  it('accepts external abort signal', async () => {
+    const mockFetch = vi.fn(async (_url, init) => {
+      await new Promise((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(new Error('AbortError')))
+      })
+      return { ok: true, json: async () => ({ results: [] }) }
+    })
+    vi.stubGlobal('fetch', mockFetch as any)
+
+    const ctl = new AbortController()
+    const promise = searchWeb({ query: 'test', apiKey: 'key', signal: ctl.signal })
+    ctl.abort()
+
+    await expect(promise).rejects.toThrow('AbortError')
   })
 })
 
@@ -86,6 +102,22 @@ describe('generateSearchQueries', () => {
 
     await expect(generateSearchQueries(mockCfg, 'test'))
       .rejects.toThrow('No valid search queries generated')
+  })
+
+  it('throws when extracted JSON is not an array', async () => {
+    const extractJsonModule = await import('@electron/lib/extract-json')
+    vi.spyOn(extractJsonModule, 'extractJsonArray').mockReturnValue('{"query": "test"}')
+
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'not important' } }]
+      })
+    } as Response)
+
+    await expect(generateSearchQueries(mockCfg, 'test'))
+      .rejects.toThrow('not an array')
   })
 })
 

@@ -69,6 +69,46 @@ describe('chatNonStream', () => {
     expect(body.stream).toBe(false)
     expect(body.model).toBe('kimi-k2.6')
     expect(body.temperature).toBe(0.6)
+    expect(body.thinking).toEqual({ type: 'disabled' })
+  })
+
+  it('respects enabled thinking for Kimi models', async () => {
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'hi' } }] })
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+
+    await chatNonStream(cfg, {
+      messages: [{ role: 'user', content: 'q' }],
+      temperature: 0.5,
+      thinking: { type: 'enabled', reasoning_effort: 'max' }
+    })
+
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.thinking).toEqual({ type: 'enabled' })
+    expect(body.reasoning_effort).toBe('max')
+    expect(body.temperature).toBe(0.5)
+  })
+
+  it('aborts when external signal is triggered', async () => {
+    const fetchSpy = vi.fn(async (_url, init) => {
+      await new Promise((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(new Error('AbortError')))
+      })
+      return { ok: true, json: async () => ({ choices: [{ message: { content: 'hi' } }] }) }
+    })
+    vi.stubGlobal('fetch', fetchSpy as any)
+
+    const ctl = new AbortController()
+    const promise = chatNonStream(cfg, {
+      messages: [{ role: 'user', content: 'q' }],
+      temperature: 0.3,
+      signal: ctl.signal
+    })
+    ctl.abort()
+
+    await expect(promise).rejects.toThrow('AbortError')
   })
 
   it('keeps temperature for non-kimi models', async () => {

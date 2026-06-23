@@ -68,30 +68,37 @@ async function searchWebWithRetry(opts: { queries: string[]; apiKey: string }): 
   let lastError: unknown
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const results = await Promise.all(
-        opts.queries.map(async q => {
-          try {
-            return await searchWeb({ query: q, apiKey: opts.apiKey, maxResults: 5 })
-          } catch (e) {
-            // 单个查询无结果不应导致整批失败；其他查询的结果仍可保留
-            if ((e as Error & { code?: string })?.code === 'NO_RESULTS') return []
-            throw e
-          }
+    const settled = (await Promise.allSettled(
+      opts.queries.map(q =>
+        searchWeb({ query: q, apiKey: opts.apiKey, maxResults: 5 }).catch(e => {
+          // 单个查询无结果不应导致整批失败；其他查询的结果仍可保留
+          if ((e as Error & { code?: string })?.code === 'NO_RESULTS') return []
+          throw e
         })
       )
-      const allResults = results.flat()
-      if (allResults.length > 0) return allResults
+    )) as PromiseSettledResult<Awaited<ReturnType<typeof searchWeb>>>[]
 
-      // 所有查询都返回空结果
+    const successes = settled
+      .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof searchWeb>>> => r.status === 'fulfilled')
+      .map(r => r.value)
+    const allResults = successes.flat()
+    if (allResults.length > 0) return allResults
+
+    // 所有查询都返回空结果（包括显式 NO_RESULTS 或成功但空）
+    const allEmpty = successes.length === settled.length
+    if (allEmpty) {
       const noResultsErr = new Error('NO_RESULTS') as Error & { code: SearchErrorCode }
       noResultsErr.code = 'NO_RESULTS'
-      lastError = noResultsErr
-      break
-    } catch (e) {
-      lastError = e
+      throw noResultsErr
+    }
+
+    // 部分查询因网络错误失败：记录错误，若还有重试机会则整批重试
+    const firstRejection = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+    if (firstRejection) {
+      lastError = firstRejection.reason
       if (attempt === 0) continue
     }
+    break
   }
 
   if (lastError instanceof Error) {

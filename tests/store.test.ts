@@ -11,7 +11,8 @@ vi.mock('@/lib/ipc', () => ({
     scanLibrary: vi.fn(),
     loadGroups: vi.fn(),
     llmWildcardInspiration: vi.fn(),
-    briefingGenerate: vi.fn()
+    briefingGenerate: vi.fn(),
+    searchPrepare: vi.fn()
   }
 }))
 
@@ -329,6 +330,59 @@ describe('store core operations', () => {
 
       expect(ipc.llmWildcardInspiration).toHaveBeenCalledTimes(1)
     })
+
+    it('ignores stale results from slow requests', async () => {
+      let resolveFirst: (value: { topic: string; hook: string }) => void
+      let resolveSecond: (value: { topic: string; hook: string }) => void
+
+      vi.mocked(ipc.llmWildcardInspiration)
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve }))
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve }))
+
+      useStore.setState({
+        profile: { name: 'Test', profile_text: 'p', preferred_topics: [] },
+        library: [{ title: '康德' } as any]
+      })
+
+      const p1 = useStore.getState().refreshWildcardInspiration()
+      // 模拟 loading 守卫被绕过（如两次调用间恰好 reset 了 loading）
+      useStore.setState({ wildcardLoading: false })
+      const p2 = useStore.getState().refreshWildcardInspiration()
+
+      resolveSecond!({ topic: 'Second', hook: 'second hook' })
+      await p2
+      expect(useStore.getState().wildcardInspiration).toEqual({ topic: 'Second', hook: 'second hook' })
+
+      resolveFirst!({ topic: 'First', hook: 'first hook' })
+      await p1
+      expect(useStore.getState().wildcardInspiration).toEqual({ topic: 'Second', hook: 'second hook' })
+    })
+  })
+
+  describe('prepareExternalMaterials', () => {
+    beforeEach(() => {
+      useStore.setState({ externalMaterials: null })
+    })
+
+    it('does not run concurrent calls', async () => {
+      vi.mocked(ipc.searchPrepare).mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ summary: 's', sources: [] }), 50)))
+
+      const p1 = useStore.getState().prepareExternalMaterials('topic1')
+      const p2 = useStore.getState().prepareExternalMaterials('topic2')
+      await Promise.all([p1, p2])
+
+      expect(ipc.searchPrepare).toHaveBeenCalledTimes(1)
+    })
+
+    it('sets error on failure', async () => {
+      vi.mocked(ipc.searchPrepare).mockRejectedValue({ code: 'NETWORK_ERROR', message: 'fail' })
+
+      await useStore.getState().prepareExternalMaterials('topic')
+
+      const em = useStore.getState().externalMaterials
+      expect(em?.loading).toBe(false)
+      expect(em?.error).toBe('NETWORK_ERROR')
+    })
   })
 
   describe('generateBriefing', () => {
@@ -441,6 +495,31 @@ describe('store core operations', () => {
 
       expect(ipc.llmWildcardInspiration).not.toHaveBeenCalled()
       expect(useStore.getState().wildcardInspiration).toEqual({ topic: 'Cached', hook: 'Hook' })
+    })
+
+    it('sets wildcardError when background generation fails', async () => {
+      vi.mocked(ipc.getState).mockResolvedValue({
+        version: 1,
+        profile: { name: 'Test', profile_text: 'p', preferred_topics: [] },
+        lastUsed: { difficulty: 'mid', temperature: 0.7 },
+        groupInspirations: {},
+        wildcardInspiration: undefined,
+        ui: { session_count: 0 },
+        inspirationStrategy: 'v2',
+        fableStyleTags: [],
+        lastFableTags: [],
+        topicContinueSuggestions: {}
+      } as any)
+      vi.mocked(ipc.scanLibrary).mockResolvedValue([{ title: '康德' } as any])
+      vi.mocked(ipc.loadSessions).mockResolvedValue([])
+      vi.mocked(ipc.loadGroups).mockResolvedValue({ groups: [], mapping: {} })
+      vi.mocked(ipc.llmWildcardInspiration).mockRejectedValue(new Error('network error'))
+
+      await useStore.getState().init()
+      await new Promise((r) => setTimeout(r, 10))
+
+      expect(useStore.getState().wildcardError).toBe('network error')
+      expect(useStore.getState().wildcardInspiration).toBeNull()
     })
   })
 })

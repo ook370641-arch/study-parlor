@@ -232,6 +232,11 @@ function readReportFrontmatter(libraryPath: string, dirName: string): { tags: st
   }
 }
 
+function isValidNewTopic(value: unknown): value is NewTopic {
+  const obj = value as Record<string, unknown> | null
+  return !!obj && typeof obj.topic === 'string' && typeof obj.hook === 'string'
+}
+
 export async function generateWildcardInspiration(
   cfg: AppConfig,
   args: {
@@ -262,9 +267,17 @@ export async function generateWildcardInspiration(
     throw new Error(`JSON extraction failed. Debug written to: ${debugFile}`)
   }
 
-  const json = JSON.parse(extracted) as NewTopic
-  if (!json.topic || !json.hook) throw new Error('shape')
-  return json
+  try {
+    const json = JSON.parse(extracted) as unknown
+    if (!isValidNewTopic(json)) throw new Error('shape')
+    return json
+  } catch {
+    const debugDir = path.join(os.homedir(), '.studyparlor', 'debug')
+    fs.mkdirSync(debugDir, { recursive: true })
+    const debugFile = path.join(debugDir, `wild-card-parse-fail-${Date.now()}.txt`)
+    fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== Extracted ===\n${extracted}\n\n=== LLM Response ===\n${text}`, 'utf8')
+    throw new Error(`JSON parse failed after extraction. Debug written to: ${debugFile}`)
+  }
 }
 
 export async function generateGroupInspiration(
@@ -312,7 +325,15 @@ export async function generateGroupInspiration(
     fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== LLM Response ===\n${text}`, 'utf8')
     throw new Error(`JSON extraction failed. Debug written to: ${debugFile}`)
   }
-  const json = JSON.parse(extracted) as NewTopic
-  if (!json.topic || !json.hook) throw new Error('shape')
-  return json
+  try {
+    const json = JSON.parse(extracted) as unknown
+    if (!isValidNewTopic(json)) throw new Error('shape')
+    return json
+  } catch {
+    const debugDir = path.join(os.homedir(), '.studyparlor', 'debug')
+    fs.mkdirSync(debugDir, { recursive: true })
+    const debugFile = path.join(debugDir, `group-inspiration-parse-fail-${Date.now()}.txt`)
+    fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== Extracted ===\n${extracted}\n\n=== LLM Response ===\n${text}`, 'utf8')
+    throw new Error(`JSON parse failed after extraction. Debug written to: ${debugFile}`)
+  }
 }
