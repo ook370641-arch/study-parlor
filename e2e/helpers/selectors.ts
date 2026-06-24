@@ -22,5 +22,6 @@ export const SELECTORS = {
     archivePendingBanner: '[data-testid="archive-pending-banner"]',
     archiveButton: '[data-testid="archive-button"]',
     assistantMessage: '[data-testid="assistant-message"]',
+    userMessage: '[data-testid="user-message"]',
   },
 } as const
