@@ -260,12 +260,14 @@ export function PreStudyModal() {
   return (
     <div className="fixed inset-0 z-40 bg-ink/70 flex items-center justify-center"
          onClick={closePreStudy}>
-      <div className="panel w-[480px] p-8 space-y-6 max-h-[90vh] overflow-y-auto"
+      <div data-testid="prestudy-modal"
+           className="panel w-[480px] p-8 space-y-6 max-h-[90vh] overflow-y-auto"
            onClick={e => e.stopPropagation()}>
         {/* Header: topic source toggle (only for progress mode without dirName) */}
         {args.mode === 'progress' && !args.dirName && (
           <div className="flex gap-2">
             <button
+              data-testid="topic-source-new"
               onClick={() => {
                 setTopicSource('new')
                 setSelectedDirName(null)
@@ -280,6 +282,7 @@ export function PreStudyModal() {
               全新主题
             </button>
             <button
+              data-testid="topic-source-existing"
               onClick={() => {
                 setTopicSource('existing')
                 setTopic('')
@@ -359,7 +362,8 @@ export function PreStudyModal() {
           ) : (
             <div>
               <div className="field-label mb-2">今夜想学</div>
-              <Input ref={topicRef} value={topic}
+              <Input data-testid="topic-input"
+                     ref={topicRef} value={topic}
                      onChange={e => setTopic(e.target.value)}
                      placeholder="主题或一个问题"
                      className="w-full" />
@@ -486,8 +490,8 @@ export function PreStudyModal() {
 
         {/* Action buttons */}
         <div className="flex justify-end gap-3 pt-2">
-          <Button variant="ghost" onClick={closePreStudy}>撤回</Button>
-          <Button onClick={onConfirm}>开始</Button>
+          <Button data-testid="cancel-button" variant="ghost" onClick={closePreStudy}>撤回</Button>
+          <Button data-testid="start-button" onClick={onConfirm}>开始</Button>
         </div>
       </div>
     </div>
