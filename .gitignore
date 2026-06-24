@@ -24,3 +24,10 @@ coverage/
 test-results/
 .vite/
 *.tsbuildinfo
+
+# Playwright E2E
+e2e-results/
+e2e/.test-library/
+test-results/
+playwright-report/
+*.trace.zip
