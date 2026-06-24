@@ -4,6 +4,7 @@ export const SELECTORS = {
     newTopicButton: '[data-testid="new-topic-button"]',
     librarySection: '[data-testid="library-section"]',
     continueUnsavedButton: '[data-testid="continue-unsaved-button"]',
+    topicCard: '[data-testid="topic-card"]',
   },
   preStudy: {
     modal: '[data-testid="prestudy-modal"]',

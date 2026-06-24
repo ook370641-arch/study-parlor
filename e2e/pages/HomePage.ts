@@ -5,11 +5,13 @@ export class HomePage {
   readonly greeting: Locator
   readonly newTopicButton: Locator
   readonly librarySection: Locator
+  readonly continueUnsavedButton: Locator
 
   constructor(private page: Page) {
     this.greeting = page.locator(SELECTORS.home.greeting)
     this.newTopicButton = page.locator(SELECTORS.home.newTopicButton)
     this.librarySection = page.locator(SELECTORS.home.librarySection)
+    this.continueUnsavedButton = page.locator(SELECTORS.home.continueUnsavedButton)
   }
 
   async waitForLoaded() {
@@ -22,10 +24,10 @@ export class HomePage {
   }
 
   async getTopicCardCount(): Promise<number> {
-    return this.page.locator('[data-testid="topic-card"]').count()
+    return this.page.locator(SELECTORS.home.topicCard).count()
   }
 
   async continueUnsavedSession() {
-    await this.page.locator(SELECTORS.home.continueUnsavedButton).click()
+    await this.continueUnsavedButton.click()
   }
 }

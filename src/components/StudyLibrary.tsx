@@ -278,7 +278,7 @@ function TopicAccordion({
         : `${topic.last_studied_days}天前`
 
   return (
-    <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden shrink-0">
+    <div data-testid="topic-card" className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden shrink-0">
       <div
         onClick={handleToggle}
         onMouseDown={(e) => {
