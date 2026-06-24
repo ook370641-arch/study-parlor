@@ -168,7 +168,7 @@ export function Study() {
         />
       )}
 
-      <div className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''}`}>
+      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''}`}>
       <SurfaceBackground surface="study" />
       {isExiting && (
         <div className="fixed inset-0 z-40 pointer-events-none">
@@ -223,7 +223,7 @@ export function Study() {
         </div>
       )}
 
-      <div ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto">
+      <div data-testid="message-list" ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto">
         {session.history.map((m, i) => <ChatBubble key={i} msg={m} />)}
         {session.streaming && !assistantHasContent && (
           <div className="flex justify-start my-3">
@@ -241,14 +241,15 @@ export function Study() {
 
       {session.archivePending && !session.streaming && (
         <div className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
-          <div className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
+          <div data-testid="archive-pending-banner"
+               className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
                           text-sm font-sans text-parchment/80 flex justify-between items-center">
             <span>是否封存？一旦归档，就不再更改。</span>
             <div className="flex gap-1.5 items-center">
               <Button variant="ghost" onClick={() => useStore.getState().dismissArchive()}>
                 暂不封存
               </Button>
-              <Button onClick={onEnd}>封存。它从此成为档案。</Button>
+              <Button data-testid="archive-button" onClick={onEnd}>封存。它从此成为档案。</Button>
             </div>
           </div>
         </div>
