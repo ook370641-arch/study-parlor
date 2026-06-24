@@ -30,6 +30,12 @@ let mainWindow: BrowserWindow | null = null
 let fatalError: string | null = null
 let pendingBootCfg: ReturnType<typeof loadEnv> | null = null
 
+const isDev = !!process.env.ELECTRON_RENDERER_URL
+
+if (isDev || process.env.NODE_ENV === 'test') {
+  app.commandLine.appendSwitch('remote-debugging-port', '9222')
+}
+
 function verifyPackagedResources(): string | null {
   if (process.env.ELECTRON_RENDERER_URL) return null
   const required = [
@@ -46,6 +52,13 @@ function verifyPackagedResources(): string | null {
 
 async function bootstrap() {
   console.log('[bootstrap] start')
+
+  // E2E tests can inject a temporary library path via environment variable.
+  if (process.env.E2E_STUDY_LIBRARY_PATH) {
+    process.env.STUDY_LIBRARY_PATH = process.env.E2E_STUDY_LIBRARY_PATH
+    console.log('[bootstrap] E2E library override:', process.env.STUDY_LIBRARY_PATH)
+  }
+
   let cfg: ReturnType<typeof loadEnv> | undefined
   let needsSetup = false
 
@@ -118,7 +131,6 @@ async function bootstrap() {
     }
   })
 
-  const isDev = !!process.env.ELECTRON_RENDERER_URL
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
