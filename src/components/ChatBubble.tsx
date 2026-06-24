@@ -71,7 +71,7 @@ export function ChatBubble({ msg }: { msg: Message }) {
   if (!content) return null
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} my-3`}>
+    <div data-testid={isUser ? 'user-message' : 'assistant-message'} className={`flex ${isUser ? 'justify-end' : 'justify-start'} my-3`}>
       <div
         className={`max-w-[70%] px-4 py-3 rounded-md leading-relaxed
         ${isUser

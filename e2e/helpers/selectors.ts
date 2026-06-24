@@ -21,5 +21,6 @@ export const SELECTORS = {
     sendButton: '[data-testid="send-button"]',
     archivePendingBanner: '[data-testid="archive-pending-banner"]',
     archiveButton: '[data-testid="archive-button"]',
+    assistantMessage: '[data-testid="assistant-message"]',
   },
 } as const

@@ -23,8 +23,7 @@ export class StudyPage {
   }
 
   async waitForAssistantContent(timeout: number = 60000) {
-    // Wait until there is at least one assistant message with non-empty text.
-    await this.messageList.locator('.assistant, > div')
+    await this.messageList.locator(SELECTORS.study.assistantMessage)
       .filter({ hasText: /\S/ })
       .first()
       .waitFor({ state: 'visible', timeout })
