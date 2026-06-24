@@ -42,7 +42,7 @@ export function Home() {
         扩展
       </Button>
 
-      <div className="relative z-[5] text-center text-parchment/60 font-sans text-sm mb-8">
+      <div data-testid="home-greeting" className="relative z-[5] text-center text-parchment/60 font-sans text-sm mb-8">
         晚安，{profile.name}
       </div>
 
@@ -59,6 +59,7 @@ export function Home() {
                 </span>
                 <div className="flex gap-2 shrink-0">
                   <button
+                    data-testid="continue-unsaved-button"
                     onClick={() => restoreSession(firstUnsaved)}
                     className="text-xs text-ember hover:text-parchment transition-colors font-sans"
                   >
@@ -77,6 +78,7 @@ export function Home() {
 
           {/* 开始新学习 */}
           <Button
+            data-testid="new-topic-button"
             onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
             className="w-full text-lg py-4"
           >
@@ -115,7 +117,7 @@ export function Home() {
 
         {/* 右侧：学习库 */}
         <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
-          <div className="text-xs text-parchment/40 font-sans mb-3">学习库</div>
+          <div data-testid="library-section" className="text-xs text-parchment/40 font-sans mb-3">学习库</div>
           <StudyLibrary />
           <div className="mt-4 shrink-0">
             <Quote surface="home" />
