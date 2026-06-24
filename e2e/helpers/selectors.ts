@@ -17,8 +17,8 @@ export const SELECTORS = {
   study: {
     page: '[data-testid="study-page"]',
     messageList: '[data-testid="message-list"]',
-    chatInput: '[data-testid="study-page"] textarea',
-    sendButton: 'text=递出',
+    chatInput: '[data-testid="chat-input"]',
+    sendButton: '[data-testid="send-button"]',
     archivePendingBanner: '[data-testid="archive-pending-banner"]',
     archiveButton: '[data-testid="archive-button"]',
   },
