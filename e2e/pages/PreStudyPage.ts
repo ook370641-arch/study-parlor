@@ -5,11 +5,13 @@ export class PreStudyPage {
   readonly modal: Locator
   readonly topicInput: Locator
   readonly startButton: Locator
+  readonly cancelButton: Locator
 
   constructor(private page: Page) {
     this.modal = page.locator(SELECTORS.preStudy.modal)
     this.topicInput = page.locator(SELECTORS.preStudy.topicInput)
     this.startButton = page.locator(SELECTORS.preStudy.startButton)
+    this.cancelButton = page.locator(SELECTORS.preStudy.cancelButton)
   }
 
   async waitForVisible() {
@@ -33,7 +35,7 @@ export class PreStudyPage {
   async selectMode(mode: 'progress' | 'review') {
     // Mode is selected by the caller (openPreStudy). This helper waits for UI to reflect it.
     const expectedText = mode === 'progress' ? '探索新知' : '复习检测'
-    await this.page.locator(`text=${expectedText}`).first().waitFor({ state: 'visible' })
+    await this.modal.locator(`text=${expectedText}`).first().waitFor({ state: 'visible' })
   }
 
   async clickStart() {
