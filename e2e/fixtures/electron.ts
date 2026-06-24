@@ -33,7 +33,11 @@ export const test = base.extend<E2EFixtures>({
     if (failed) {
       console.log(`[e2e] test failed, keeping test library for inspection: ${testLibraryPath}`)
     }
-    await cleanupTestLibrary(testLibraryPath, failed)
+    try {
+      await cleanupTestLibrary(testLibraryPath, failed)
+    } catch (err) {
+      console.warn('[e2e] failed to clean up test library:', testLibraryPath, err)
+    }
   },
 
   window: async ({ electronApp }, use) => {
