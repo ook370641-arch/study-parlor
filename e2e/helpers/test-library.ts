@@ -1,10 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 const TEST_LIBRARY_ROOT = path.join(process.cwd(), 'e2e', '.test-library')
 
 export function createTestLibrary(): string {
-  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const id = `${Date.now()}-${randomUUID()}`
   const dir = path.join(TEST_LIBRARY_ROOT, id)
   fs.mkdirSync(dir, { recursive: true })
   return dir
@@ -12,14 +13,18 @@ export function createTestLibrary(): string {
 
 export async function cleanupTestLibrary(dir: string, keepOnFailure: boolean = false): Promise<void> {
   if (keepOnFailure) return
-  try {
-    fs.rmSync(dir, { recursive: true, force: true })
-  } catch (err) {
-    console.warn('[e2e] failed to cleanup test library:', dir, err)
+  fs.rmSync(dir, { recursive: true, force: true })
+}
+
+function validateSlug(slug: string): void {
+  if (!slug) throw new Error('Slug must be non-empty')
+  if (slug.includes('..') || slug.includes('/') || slug.includes('\\') || slug.includes(':')) {
+    throw new Error(`Slug contains invalid characters: ${slug}`)
   }
 }
 
 export function seedNewTopic(libPath: string, slug: string, title: string): void {
+  validateSlug(slug)
   const dir = path.join(libPath, slug, 's1')
   fs.mkdirSync(dir, { recursive: true })
   const filePath = path.join(dir, '学习报告.md')
@@ -46,6 +51,7 @@ review_count: 0
 }
 
 export function seedReviewableTopic(libPath: string, slug: string, title: string): void {
+  validateSlug(slug)
   const dir = path.join(libPath, slug, 's2')
   fs.mkdirSync(dir, { recursive: true })
   const filePath = path.join(dir, '学习报告.md')
