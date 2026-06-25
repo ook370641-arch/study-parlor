@@ -47,7 +47,8 @@ describe('Quote', () => {
     expect(meta.textContent).not.toContain('·')
   })
 
-  it('renders all three surfaces without error', () => {
+  // home and study share centered layout per spec
+  it('renders cover, home, and study surfaces without throwing', () => {
     vi.spyOn(quotesModule, 'pickRandomQuote').mockReturnValue(fullQuote)
     const { rerender } = render(<Quote surface="cover" />)
     expect(screen.getByTestId('quote-text')).toBeTruthy()
