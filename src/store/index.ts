@@ -559,7 +559,7 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ lastFableTags: tags } as Partial<StateJson>)
   },
 
-  patchTerminology: async (patch) => {
+  patchTerminology: async (patch: Terminology) => {
     const next = { ...get().terminology, ...patch }
     set({ terminology: next })
     await ipc.patchState({ terminology: next } as Partial<StateJson>)

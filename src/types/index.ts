@@ -3,6 +3,7 @@ import type { AppConfig } from '@electron/env'
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = number
+export type Terminology = Record<string, string>
 export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials'
 
 export type Profile = {
@@ -162,6 +163,7 @@ export type StateJson = {
   fableStyleTags: string[]
   lastFableTags: string[]
   topicContinueSuggestions: Record<string, TopicContinueCache>
+  terminology?: Terminology
 }
 
 export type IpcApi = {
