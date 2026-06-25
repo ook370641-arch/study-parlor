@@ -33,4 +33,10 @@ export const SELECTORS = {
     assistantMessage: '[data-testid="assistant-message"]',
     userMessage: '[data-testid="user-message"]',
   },
+  quote: {
+    text: '[data-testid="quote-text"]',
+    original: '[data-testid="quote-original"]',
+    meta: '[data-testid="quote-meta"]',
+    refreshButton: 'button[aria-label="换一句"]',
+  },
 } as const
