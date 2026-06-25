@@ -1,9 +1,25 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { quotes, pickRandomQuote } from '../src/lib/quotes'
+
+const QUOTES_MD = path.resolve('docs/superpowers/quotes-collection-draft-2026-06-22.md')
 
 describe('quotes library', () => {
   it('has at least one quote', () => {
     expect(quotes.length).toBeGreaterThan(0)
+  })
+
+  it('matches the curated markdown source', () => {
+    const md = fs.readFileSync(QUOTES_MD, 'utf-8')
+    const mdIds = [...md.matchAll(/^-\s+\*\*([^*\s]+)\*\*\s+(.+)$/gm)].map(m => m[1])
+    const quoteIds = quotes.map(q => q.id)
+
+    expect(quoteIds.length).toBe(mdIds.length)
+    expect(new Set(quoteIds).size).toBe(mdIds.length)
+    for (const id of quoteIds) {
+      expect(mdIds).toContain(id)
+    }
   })
 
   it('every quote has required fields', () => {
