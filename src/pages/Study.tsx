@@ -15,6 +15,7 @@ import { StarOrbit } from '@/components/StarOrbit'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ExternalMaterialsCard } from '@/components/ExternalMaterialsCard'
+import { Quote } from '@/components/Quote'
 
 export function Study() {
   const session = useStore(s => s.session)
@@ -224,6 +225,9 @@ export function Study() {
       )}
 
       <div data-testid="message-list" ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto">
+        <div className="mb-6">
+          <Quote surface="study" />
+        </div>
         {session.history.map((m, i) => <ChatBubble key={i} msg={m} />)}
         {session.streaming && !assistantHasContent && (
           <div className="flex justify-start my-3">
