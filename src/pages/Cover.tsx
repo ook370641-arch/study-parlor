@@ -34,8 +34,9 @@ export function Cover() {
         {profile.name ? (
           <>
             <div className="text-2xl">迷路了吗，{profile.name}</div>
-            <Button onClick={() => goto('home')}>点亮灯火</Button>
+            <Button data-testid="cover-light-button" onClick={() => goto('home')}>点亮灯火</Button>
             <Button
+              data-testid="cover-briefing-button"
               variant="ghost"
               onClick={() => goto('briefing')}
               className="border border-slate text-slate hover:text-parchment hover:border-parchment"
@@ -46,12 +47,13 @@ export function Cover() {
         ) : (
           <>
             <div className="font-sans text-parchment/60">第一次到来,告诉我你的名字</div>
-            <Input value={name} onChange={e => setName(e.target.value)}
+            <Input data-testid="cover-name-input" value={name} onChange={e => setName(e.target.value)}
                    onKeyDown={e => e.key === 'Enter' && onEnter()}
                    placeholder="..."
                    autoFocus className="w-64 text-lg" />
-            <Button onClick={onEnter}>进入夜话</Button>
+            <Button data-testid="cover-enter-button" onClick={onEnter}>进入夜话</Button>
             <Button
+              data-testid="cover-briefing-button"
               variant="ghost"
               onClick={() => goto('briefing')}
               className="border border-slate text-slate hover:text-parchment hover:border-parchment"

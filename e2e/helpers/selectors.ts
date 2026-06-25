@@ -1,10 +1,18 @@
 export const SELECTORS = {
+  cover: {
+    nameInput: '[data-testid="cover-name-input"]',
+    enterButton: '[data-testid="cover-enter-button"]',
+    lightButton: '[data-testid="cover-light-button"]',
+    briefingButton: '[data-testid="cover-briefing-button"]',
+  },
   home: {
     greeting: '[data-testid="home-greeting"]',
     newTopicButton: '[data-testid="new-topic-button"]',
     librarySection: '[data-testid="library-section"]',
     continueUnsavedButton: '[data-testid="continue-unsaved-button"]',
     topicCard: '[data-testid="topic-card"]',
+    topicContinueButton: '[data-testid="topic-continue-button"]',
+    sessionReviewButton: '[data-testid="session-review-button"]',
   },
   preStudy: {
     modal: '[data-testid="prestudy-modal"]',
@@ -21,6 +29,7 @@ export const SELECTORS = {
     sendButton: '[data-testid="send-button"]',
     archivePendingBanner: '[data-testid="archive-pending-banner"]',
     archiveButton: '[data-testid="archive-button"]',
+    archiveReportClose: '[data-testid="archive-report-close"]',
     assistantMessage: '[data-testid="assistant-message"]',
     userMessage: '[data-testid="user-message"]',
   },

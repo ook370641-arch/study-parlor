@@ -28,6 +28,7 @@ test-results/
 # Playwright E2E
 e2e-results/
 e2e/.test-library/
+e2e/.test-config/
 test-results/
 playwright-report/
 *.trace.zip

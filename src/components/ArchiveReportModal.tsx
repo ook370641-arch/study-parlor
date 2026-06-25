@@ -45,6 +45,7 @@ export function ArchiveReportModal({ result, onClose }: Props) {
       <div className="px-6 py-4 border-t flex justify-center shrink-0"
            style={{ borderColor: 'rgba(232, 213, 183, 0.13)' }}>
         <button
+          data-testid="archive-report-close"
           onClick={onClose}
           className="font-serif font-semibold text-sm tracking-widest px-8 py-2.5 transition-all hover:shadow-lg"
           style={{

@@ -3,6 +3,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 const TEST_LIBRARY_ROOT = path.join(process.cwd(), 'e2e', '.test-library')
+const TEST_CONFIG_ROOT = path.join(process.cwd(), 'e2e', '.test-config')
 
 export function createTestLibrary(): string {
   const id = `${Date.now()}-${randomUUID()}`
@@ -12,6 +13,23 @@ export function createTestLibrary(): string {
 }
 
 export async function cleanupTestLibrary(dir: string, keepOnFailure: boolean = false): Promise<void> {
+  if (keepOnFailure) return
+  fs.rmSync(dir, { recursive: true, force: true })
+}
+
+export function createTestConfigDir(): string {
+  const id = `${Date.now()}-${randomUUID()}`
+  const dir = path.join(TEST_CONFIG_ROOT, id)
+  fs.mkdirSync(dir, { recursive: true })
+  // Copy .env so the Electron main process can load credentials in isolation.
+  const envPath = path.join(process.cwd(), '.env')
+  if (fs.existsSync(envPath)) {
+    fs.copyFileSync(envPath, path.join(dir, '.env'))
+  }
+  return dir
+}
+
+export async function cleanupTestConfigDir(dir: string, keepOnFailure: boolean = false): Promise<void> {
   if (keepOnFailure) return
   fs.rmSync(dir, { recursive: true, force: true })
 }

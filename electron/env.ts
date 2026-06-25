@@ -66,8 +66,12 @@ export function setConfigDir(dir: string | null): void {
   configDir = dir
 }
 
+export function getConfigDir(): string {
+  return configDir ?? process.cwd()
+}
+
 export function getEnvPath(): string {
-  return path.join(configDir ?? process.cwd(), '.env')
+  return path.join(getConfigDir(), '.env')
 }
 
 export function saveEnv(config: AppConfig): void {

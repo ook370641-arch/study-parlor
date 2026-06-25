@@ -27,6 +27,21 @@ export class HomePage {
     return this.page.locator(SELECTORS.home.topicCard).count()
   }
 
+  async continueTopic(index: number = 0) {
+    const button = this.page.locator(SELECTORS.home.topicContinueButton).nth(index)
+    await button.click()
+  }
+
+  async expandTopic(index: number = 0) {
+    const card = this.page.locator(SELECTORS.home.topicCard).nth(index)
+    await card.click()
+  }
+
+  async reviewSession(index: number = 0) {
+    const button = this.page.locator(SELECTORS.home.sessionReviewButton).nth(index)
+    await button.click()
+  }
+
   async continueUnsavedSession() {
     await this.continueUnsavedButton.click()
   }

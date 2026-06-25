@@ -4,14 +4,23 @@ import type { Message } from '@shared/index'
 export async function probeModelWithCredentials(
   creds: { apiKey: string; baseUrl: string; model: string }
 ): Promise<{ ok: boolean; reason?: string }> {
-  const res = await fetch(`${creds.baseUrl}/models`, {
-    headers: {
-      Authorization: `Bearer ${creds.apiKey}`,
-      'User-Agent': 'claude-code/0.1.0'
-    }
-  } as any)
-  if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` }
-  return { ok: true }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10000)
+  try {
+    const res = await fetch(`${creds.baseUrl}/models`, {
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${creds.apiKey}`,
+        'User-Agent': 'claude-code/0.1.0'
+      }
+    } as any)
+    if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` }
+    return { ok: true }
+  } catch (err: any) {
+    return { ok: false, reason: err.name === 'AbortError' ? 'probe timeout' : err.message }
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?: string }> {
@@ -19,7 +28,7 @@ export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?
 }
 
 export type ThinkingConfig =
-  | { type: 'enabled'; reasoning_effort?: 'high' | 'max' }
+  | { type: 'enabled'; reasoning_effort?: 'high' }
   | { type: 'disabled' }
 
 function isKimiModel(model: string): boolean {

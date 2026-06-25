@@ -13,7 +13,10 @@ import { patchState } from './ipc/state'
 // dir (may be Program Files → EPERM, and wiped on uninstall/update). Store
 // .env alongside state.json under the user's home dir instead. Dev keeps cwd.
 // Must run before dotenv.config() so it reads from the right place.
-if (app.isPackaged) {
+// E2E tests can also override the config dir for full isolation.
+if (process.env.E2E_CONFIG_DIR) {
+  setConfigDir(process.env.E2E_CONFIG_DIR)
+} else if (app.isPackaged) {
   setConfigDir(path.join(os.homedir(), '.studyparlor'))
 }
 

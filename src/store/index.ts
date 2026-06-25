@@ -3,7 +3,8 @@ import { create } from 'zustand'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
-  TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode
+  TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
+  Terminology
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
@@ -60,6 +61,7 @@ type AppStore = {
   wildcardLoading: boolean
   wildcardError: string | null
   topicContinueSuggestions: Record<string, TopicContinueCache>
+  terminology: Terminology
 
   // 后台归档占位
   pendingArchives: Array<{
@@ -187,6 +189,7 @@ export const useStore = create<AppStore>((set, get) => ({
   wildcardLoading: false,
   wildcardError: null,
   topicContinueSuggestions: {},
+  terminology: {},
   pendingArchives: [],
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
   lastFableTags: [],
@@ -209,6 +212,7 @@ export const useStore = create<AppStore>((set, get) => ({
       inspirationStrategy: state.inspirationStrategy ?? 'v2',
       wildcardInspiration: state.wildcardInspiration ?? null,
       topicContinueSuggestions: state.topicContinueSuggestions ?? {},
+      terminology: state.terminology ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -555,6 +559,17 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ lastFableTags: tags } as Partial<StateJson>)
   },
 
+  patchTerminology: async (patch) => {
+    const next = { ...get().terminology, ...patch }
+    set({ terminology: next })
+    await ipc.patchState({ terminology: next } as Partial<StateJson>)
+  },
+
+  resetTerminology: async () => {
+    set({ terminology: {} })
+    await ipc.patchState({ terminology: {} } as Partial<StateJson>)
+  },
+
   addPendingArchive: (pending) => set(s => ({
     pendingArchives: [...s.pendingArchives, pending]
   })),
@@ -565,6 +580,11 @@ export const useStore = create<AppStore>((set, get) => ({
     )
   })),
 }))
+
+// Expose store for E2E automation so tests can deterministically drive internal state.
+if (typeof window !== 'undefined') {
+  ;(window as any).useStore = useStore
+}
 
 function generateGroupColor(): string {
   const darkColors = [

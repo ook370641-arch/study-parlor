@@ -8,6 +8,7 @@ export class StudyPage {
   readonly sendButton: Locator
   readonly archivePendingBanner: Locator
   readonly archiveButton: Locator
+  readonly archiveReportClose: Locator
 
   constructor(private page: Page) {
     this.pageElement = page.locator(SELECTORS.study.page)
@@ -16,6 +17,7 @@ export class StudyPage {
     this.sendButton = page.locator(SELECTORS.study.sendButton)
     this.archivePendingBanner = page.locator(SELECTORS.study.archivePendingBanner)
     this.archiveButton = page.locator(SELECTORS.study.archiveButton)
+    this.archiveReportClose = page.locator(SELECTORS.study.archiveReportClose)
   }
 
   async waitForLoaded() {
@@ -37,5 +39,10 @@ export class StudyPage {
   async archive() {
     await this.archivePendingBanner.waitFor({ state: 'visible' })
     await this.archiveButton.click()
+  }
+
+  async closeArchiveReport() {
+    await this.archiveReportClose.waitFor({ state: 'visible', timeout: 120000 })
+    await this.archiveReportClose.click()
   }
 }

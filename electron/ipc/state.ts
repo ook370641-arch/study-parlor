@@ -1,10 +1,10 @@
 import { ipcMain } from 'electron'
 import path from 'node:path'
-import os from 'node:os'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
+import { getConfigDir } from '../env'
 import type { StateJson } from '@shared/index'
 
-const STATE_FILE = path.join(os.homedir(), '.studyparlor', 'state.json')
+const STATE_FILE = path.join(getConfigDir(), 'state.json')
 
 const DEFAULT: StateJson = {
   version: 1,

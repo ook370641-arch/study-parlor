@@ -217,6 +217,7 @@ function SessionRow({
           </button>
         ) : (
           <button
+            data-testid="session-review-button"
             onClick={() => onReview(session)}
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember text-ember hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
@@ -311,6 +312,7 @@ function TopicAccordion({
         <div className="flex-1" />
 
         <button
+          data-testid="topic-continue-button"
           onClick={(e) => {
             e.stopPropagation()
             openPreStudy({
