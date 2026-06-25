@@ -306,7 +306,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
       const structuredRaw = await chatNonStream(cfg, {
         messages: [{ role: 'user', content: extractionPrompt } as Message],
         temperature: 0.5,
-        thinking: { type: 'enabled', reasoning_effort: 'max' },
+        thinking: { type: 'enabled', reasoning_effort: 'high' },
         signal: llmCtl.signal,
       })
 
@@ -320,7 +320,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
       const content = await chatNonStream(cfg, {
         messages: [{ role: 'user', content: assemblyPrompt } as Message],
         temperature: 0.5,
-        thinking: { type: 'enabled', reasoning_effort: 'max' },
+        thinking: { type: 'enabled', reasoning_effort: 'high' },
         signal: llmCtl.signal,
       })
 

@@ -148,3 +148,5 @@
   color: #e8d5b7;
 }
 
+html, body, #root { height: 100%; }
+

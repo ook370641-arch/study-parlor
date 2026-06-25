@@ -459,7 +459,8 @@ describe('store core operations', () => {
         inspirationStrategy: 'v2',
         fableStyleTags: [],
         lastFableTags: [],
-        topicContinueSuggestions: {}
+        topicContinueSuggestions: {},
+        terminology: {}
       } as any)
       vi.mocked(ipc.scanLibrary).mockResolvedValue([{ title: '康德' } as any])
       vi.mocked(ipc.loadSessions).mockResolvedValue([])
@@ -484,7 +485,8 @@ describe('store core operations', () => {
         inspirationStrategy: 'v2',
         fableStyleTags: [],
         lastFableTags: [],
-        topicContinueSuggestions: {}
+        topicContinueSuggestions: {},
+        terminology: {}
       } as any)
       vi.mocked(ipc.scanLibrary).mockResolvedValue([{ title: '康德' } as any])
       vi.mocked(ipc.loadSessions).mockResolvedValue([])
@@ -508,7 +510,8 @@ describe('store core operations', () => {
         inspirationStrategy: 'v2',
         fableStyleTags: [],
         lastFableTags: [],
-        topicContinueSuggestions: {}
+        topicContinueSuggestions: {},
+        terminology: {}
       } as any)
       vi.mocked(ipc.scanLibrary).mockResolvedValue([{ title: '康德' } as any])
       vi.mocked(ipc.loadSessions).mockResolvedValue([])

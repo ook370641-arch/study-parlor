@@ -199,7 +199,7 @@ describe('generateGroupInspiration', () => {
     })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.thinking).toEqual({ type: 'enabled' })
-    expect(body.reasoning_effort).toBe('max')
+    expect(body.reasoning_effort).toBe('high')
   })
 })
 
@@ -484,7 +484,7 @@ describe('generateContinueSuggestions', () => {
     await generateContinueSuggestions({ ...cfg, model: 'deepseek-v4-pro' }, { topic: '拓扑学', dirName: '拓扑学' })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.thinking).toEqual({ type: 'enabled' })
-    expect(body.reasoning_effort).toBe('max')
+    expect(body.reasoning_effort).toBe('high')
 
     summariesSpy.mockRestore()
   })

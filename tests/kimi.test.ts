@@ -82,12 +82,12 @@ describe('chatNonStream', () => {
     await chatNonStream(cfg, {
       messages: [{ role: 'user', content: 'q' }],
       temperature: 0.5,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
 
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.thinking).toEqual({ type: 'enabled' })
-    expect(body.reasoning_effort).toBe('max')
+    expect(body.reasoning_effort).toBe('high')
     expect(body.temperature).toBe(0.5)
   })
 
@@ -145,7 +145,7 @@ describe('chatNonStream', () => {
     expect(body.temperature).toBe(0.7)
   })
 
-  it('enables DeepSeek thinking with max effort when requested', async () => {
+  it('enables DeepSeek thinking with high effort when requested', async () => {
     const fetchSpy = vi.fn(async () => ({
       ok: true,
       json: async () => ({ choices: [{ message: { content: 'hi' } }] })
@@ -155,12 +155,12 @@ describe('chatNonStream', () => {
     await chatNonStream({ ...cfg, baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-v4-pro' }, {
       messages: [{ role: 'user', content: 'q' }],
       temperature: 0.3,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     } as any)
 
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.thinking).toEqual({ type: 'enabled' })
-    expect(body.reasoning_effort).toBe('max')
+    expect(body.reasoning_effort).toBe('high')
     expect(body.temperature).toBe(0.3)
   })
 })

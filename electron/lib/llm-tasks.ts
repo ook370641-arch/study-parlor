@@ -41,7 +41,7 @@ export async function finalizeProgress(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const title = extractXmlTag(text, 'title')
     const body = extractXmlTag(text, 'body')
@@ -75,7 +75,7 @@ export async function finalizeReview(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const summary = extractXmlTag(text, 'summary')
     if (!summary) {
@@ -108,7 +108,7 @@ export async function generateFable(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const extracted = extractJsonObject(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -137,7 +137,7 @@ export async function generateFableFromReport(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const extracted = extractJsonObject(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -166,7 +166,7 @@ export async function generateContinueSuggestions(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const extracted = extractJsonArray(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -255,7 +255,7 @@ export async function generateWildcardInspiration(
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.8,
-    thinking: { type: 'enabled', reasoning_effort: 'max' }
+    thinking: { type: 'enabled', reasoning_effort: 'high' }
   })
 
   const extracted = extractJsonObject(text)
@@ -312,7 +312,7 @@ export async function generateGroupInspiration(
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
-    thinking: { type: 'enabled', reasoning_effort: 'max' }
+    thinking: { type: 'enabled', reasoning_effort: 'high' }
   })
 
   // 激进 JSON 提取：从 LLM 返回的任意文本中找第一个 {...} 结构

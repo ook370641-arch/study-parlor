@@ -67,11 +67,11 @@ describe('registerBriefingIpc', () => {
     expect(kimi.chatNonStream).toHaveBeenCalledTimes(2)
 
     const firstCall = (kimi.chatNonStream as any).mock.calls[0][1]
-    expect(firstCall.thinking).toEqual({ type: 'enabled', reasoning_effort: 'max' })
+    expect(firstCall.thinking).toEqual({ type: 'enabled', reasoning_effort: 'high' })
     expect(firstCall.messages[0].content).toContain('I follow LLM infrastructure')
 
     const secondCall = (kimi.chatNonStream as any).mock.calls[1][1]
-    expect(secondCall.thinking).toEqual({ type: 'enabled', reasoning_effort: 'max' })
+    expect(secondCall.thinking).toEqual({ type: 'enabled', reasoning_effort: 'high' })
     expect(secondCall.messages[0].content).toContain('"builders"')
     expect(secondCall.messages[0].content).toContain('"name": "A"')
 
