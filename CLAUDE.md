@@ -72,8 +72,14 @@ npx vitest run tests/prompts.test.ts
 ### 状态与持久化
 
 - **运行时状态**: Zustand 单 store (`src/store/index.ts`)
-- **持久化**: `~/.studyparlor/state.json` (profile / lastUsed / groupInspirations / topicContinueSuggestions)
+- **持久化状态**: `~/.studyparlor/state.json` (profile / lastUsed / groupInspirations / topicContinueSuggestions / session_count 等)
+- **环境配置 (`.env`)**:
+  - `npm run dev` 时读取项目根目录的 `.env`
+  - 打包安装后读取 `~/.studyparlor/.env`
+  - E2E 测试时读取临时配置目录的 `.env`
 - **学习库**: 用户指定的 `.md` 目录（通过 `.env` 的 `STUDY_LIBRARY_PATH`），应用只读/写，不锁定格式。frontmatter 用 gray-matter 解析，schema 见 `src/types/index.ts` 的 `Frontmatter`。
+
+> 为什么 `state.json` 和 `.env` 分开：`.env` 在开发时放在项目根目录方便编辑；`state.json` 统一放在 `~/.studyparlor`，这样 `npm run dev` 和打包版共享同一份用户状态，E2E 测试通过 `E2E_CONFIG_DIR` 完全隔离。
 
 ### 文件系统 (`electron/ipc/files.ts`)
 
@@ -124,12 +130,3 @@ STUDY_LIBRARY_PATH=...            # 学习库根目录
 - `kimi.test.ts` — SSE chunk 解析
 - `llm-tasks.test.ts` — 灵感生成、归档提取
 - `safe-json.test.ts` — state.json 读写与备份
-
-### 测试分层
-
-- `tests/`：单元/集成测试，覆盖纯函数、IPC、LLM 解析、状态逻辑。
-- `e2e/specs/`：端到端测试，覆盖用户可见的页面流程与交互（如 Cover → Home → Study）。
-
-新增影响 UI 的功能时，实现计划应同时为两层测试分配任务；纯逻辑改动可只写单元测试。
-
-**执行时**：涉及 UI 的改动完成后，自动运行 `npm run test` 和 `npm run test:e2e`，无需询问，直接报告结果。
