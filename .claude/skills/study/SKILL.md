@@ -7,6 +7,7 @@ description: >
   触发时自动同步学习库目录的历史进度。
   学习完成后主动询问是否存档，按 Study Parlor 学习库规范写入。
   触发词："study"。
+study_library_path: ''
 ---
 
 # /study — 苏格拉底式私教
@@ -15,10 +16,10 @@ description: >
 
 **每次触发 `/study` 时，先检查是否已完成路径配置：**
 
-读取本 SKILL.md 文件内容，检查是否包含 `YOUR_LIBRARY_PATH`：
+读取本 SKILL.md 文件的 YAML frontmatter，检查 `study_library_path` 字段：
 
-- **如果已替换为实际路径**（如 `C:/Users/.../学习库`）：跳过本步骤，直接使用该路径
-- **如果仍是 `YOUR_LIBRARY_PATH`**：执行以下配置流程
+- **如果 `study_library_path` 存在且非空**：跳过本步骤，直接使用该路径
+- **如果 `study_library_path` 为空或缺失**：执行以下配置流程
 
 ### 配置流程
 
@@ -36,24 +37,15 @@ description: >
    - 如果读取成功，提取 `STUDY_LIBRARY_PATH` 的值（去掉等号左边，取右边）
    - 如果读取失败，提示用户检查路径是否正确，并重新询问
 
-3. **写入配置到本 skill**
+3. **写入配置到本 skill 的 frontmatter**
 
-   提取到路径后，用以下命令把本 SKILL.md 中所有 `YOUR_LIBRARY_PATH` 替换为实际路径（ skill 自修改，一次配置永久生效）：
+   提取到路径后，使用 Edit 工具修改本 SKILL.md 的 YAML frontmatter，把 `study_library_path` 字段设置为实际路径。例如：
 
-   **Windows (PowerShell):**
-   ```powershell
-   $skillPath = "{本 skill 的 SKILL.md 完整路径}"
-   $content = Get-Content $skillPath -Raw
-   $content = $content -replace 'YOUR_LIBRARY_PATH', '{提取到的实际路径}'
-   Set-Content $skillPath $content -NoNewline
+   ```yaml
+   study_library_path: 'C:/Users/xxx/Desktop/学习库'
    ```
 
-   **macOS / Linux:**
-   ```bash
-   sed -i 's|YOUR_LIBRARY_PATH|{提取到的实际路径}|g' "{本 skill 的 SKILL.md 完整路径}"
-   ```
-
-   > **注意**：替换后 SKILL.md 中所有 `YOUR_LIBRARY_PATH` 都会变成实际路径，包括保存配置、扫描学习库、创建目录、写入文件等所有位置。
+   > **注意**：配置写入 frontmatter 后，SKILL.md 正文中的 `{study_library_path}` 占位符都会被解析为该路径，包括保存配置、扫描学习库、创建目录、写入文件等所有位置。
 
 4. **确认配置完成**
 
@@ -63,7 +55,7 @@ description: >
 
 ## 保存配置
 
-- **学习库根目录**：`YOUR_LIBRARY_PATH`（首次使用时会通过上述配置流程自动替换为实际路径）
+- **学习库根目录**：由本 SKILL.md frontmatter 的 `study_library_path` 字段指定
 - **文件命名**：固定为 `学习报告.md`，放在对应主题的 session 目录下
 - **Session 编号**：新主题从 `s1` 开始；已有主题取最大 session 编号 + 1
 - **保存时机**：学习完成后主动询问，用户同意才保存
@@ -95,7 +87,7 @@ description: >
 
 主题确认后：
 ```bash
-ls "YOUR_LIBRARY_PATH"
+ls "{study_library_path}"
 ```
 
 ### 3. 解析历史记录并告知用户
@@ -166,7 +158,7 @@ ls "YOUR_LIBRARY_PATH"
 3. 计算下一个 session 编号：
    - 如果主题目录不存在或没有 `s\d+` 子目录 → `s1`
    - 否则 → 取现有最大编号 + 1
-4. 目标路径：`YOUR_LIBRARY_PATH/{主题名}/s{编号}/学习报告.md`
+4. 目标路径：`{study_library_path}/{主题名}/s{编号}/学习报告.md`
 
 **步骤 2：生成 frontmatter**
 
@@ -256,12 +248,12 @@ review_count: 0
 
 **步骤 4：写入文件**
 
-1. 创建目录：`mkdir -p "YOUR_LIBRARY_PATH/{主题名}/s{编号}"`
+1. 创建目录：`mkdir -p "{study_library_path}/{主题名}/s{编号}"`
 2. 写入文件：把 frontmatter + 正文写入 `学习报告.md`
 
 完整命令示例：
 ```bash
-mkdir -p "YOUR_LIBRARY_PATH/项目目录结构/s2"
+mkdir -p "{study_library_path}/项目目录结构/s2"
 echo "---
 title: 项目目录结构
 session_number: 2
@@ -278,7 +270,7 @@ progress_summary: 理解了 node_modules 树状依赖、Electron 双层结构与
 ---
 
 # 项目目录结构
-..." > "YOUR_LIBRARY_PATH/项目目录结构/s2/学习报告.md"
+..." > "{study_library_path}/项目目录结构/s2/学习报告.md"
 ```
 
 ## 特殊情况
@@ -290,7 +282,7 @@ progress_summary: 理解了 node_modules 树状依赖、Electron 双层结构与
 - 询问是否存档当前主题，然后开始新主题
 
 **主题目录不存在**：
-- 自动创建：`mkdir -p "YOUR_LIBRARY_PATH/{主题名}/s1"`
+- 自动创建：`mkdir -p "{study_library_path}/{主题名}/s1"`
 
 **文件名冲突**：
 - 同一主题同一 session 编号理论上不会冲突（编号是递增的）
