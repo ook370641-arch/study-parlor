@@ -131,3 +131,5 @@ STUDY_LIBRARY_PATH=...            # 学习库根目录
 - `e2e/specs/`：端到端测试，覆盖用户可见的页面流程与交互（如 Cover → Home → Study）。
 
 新增影响 UI 的功能时，实现计划应同时为两层测试分配任务；纯逻辑改动可只写单元测试。
+
+**执行时**：涉及 UI 的改动完成后，自动运行 `npm run test` 和 `npm run test:e2e`，无需询问，直接报告结果。
