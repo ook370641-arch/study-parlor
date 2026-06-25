@@ -124,3 +124,10 @@ STUDY_LIBRARY_PATH=...            # 学习库根目录
 - `kimi.test.ts` — SSE chunk 解析
 - `llm-tasks.test.ts` — 灵感生成、归档提取
 - `safe-json.test.ts` — state.json 读写与备份
+
+### 测试分层
+
+- `tests/`：单元/集成测试，覆盖纯函数、IPC、LLM 解析、状态逻辑。
+- `e2e/specs/`：端到端测试，覆盖用户可见的页面流程与交互（如 Cover → Home → Study）。
+
+新增影响 UI 的功能时，实现计划应同时为两层测试分配任务；纯逻辑改动可只写单元测试。
