@@ -4,6 +4,7 @@ import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import type { ContinueTopicSuggestion, Difficulty } from '@shared/index'
 import { getTemperatureLabel } from '@/lib/temperature-label'
+import { useTerminology } from '@/lib/terminology'
 
 const ICONS = {
   context: '\u{1F50D}',
@@ -95,6 +96,7 @@ export function PreStudyModal() {
   const topicContinueSuggestions = useStore(s => s.topicContinueSuggestions)
   const library = useStore(s => s.library)
   const showToast = useStore(s => s.showToast)
+  const t = useTerminology()
 
   const [topic, setTopic] = useState(args?.topic ?? '')
   const [difficulty, setDifficulty] = useState<Difficulty>(lastUsed.difficulty)
@@ -279,7 +281,7 @@ export function PreStudyModal() {
                   ? 'bg-ember text-ink border-ember'
                   : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}
             >
-              全新主题
+              {t.newTopicMode}
             </button>
             <button
               data-testid="topic-source-existing"
@@ -295,13 +297,13 @@ export function PreStudyModal() {
                   ? 'bg-ember text-ink border-ember'
                   : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}
             >
-              已有主题
+              {t.existingTopicMode}
             </button>
           </div>
         )}
         {!(args.mode === 'progress' && !args.dirName) && (
           <div className="font-sans text-xs text-parchment/50">
-            {args.mode === 'progress' ? '探索新知' : '复习检测'}
+            {args.mode === 'progress' ? t.modeProgress : t.modeReview}
           </div>
         )}
 
@@ -311,7 +313,7 @@ export function PreStudyModal() {
             <div className="space-y-3">
               {/* Search existing topics */}
               <div>
-                <div className="field-label mb-2">选择已有主题</div>
+                <div className="field-label mb-2">{t.topicInputLabel}</div>
                 <Input
                   value={searchQuery}
                   onChange={e => {
@@ -350,7 +352,7 @@ export function PreStudyModal() {
               </div>
               {/* Custom sub-topic input */}
               <div>
-                <div className="field-label mb-2">细分方向</div>
+                <div className="field-label mb-2">{t.subTopicLabel}</div>
                 <Input
                   value={customTopic}
                   onChange={e => setCustomTopic(e.target.value)}
@@ -361,7 +363,7 @@ export function PreStudyModal() {
             </div>
           ) : (
             <div>
-              <div className="field-label mb-2">今夜想学</div>
+              <div className="field-label mb-2">{t.topicInputLabel}</div>
               <Input data-testid="topic-input"
                      ref={topicRef} value={topic}
                      onChange={e => setTopic(e.target.value)}
@@ -376,7 +378,7 @@ export function PreStudyModal() {
         {/* Continue suggestions (only for continue scenario) */}
         {isContinue && (
           <div>
-            <div className="field-label mb-2">续谈方向</div>
+            <div className="field-label mb-2">{t.continueDirectionLabel}</div>
             {loadingSuggestions ? (
               <SuggestionSkeleton />
             ) : suggestions.length > 0 ? (
@@ -404,7 +406,7 @@ export function PreStudyModal() {
 
         {/* User requirement textarea (all scenarios) */}
         <div>
-          <div className="field-label mb-2">附加要求</div>
+          <div className="field-label mb-2">{t.requirementLabel}</div>
           <textarea
             value={userRequirement}
             onChange={e => setUserRequirement(e.target.value)}
@@ -456,7 +458,7 @@ export function PreStudyModal() {
 
         {/* Difficulty selection */}
         <div ref={diffRef}>
-          <div className="field-label mb-2">审讯强度</div>
+          <div className="field-label mb-2">{t.difficultyLabel}</div>
           <div className="flex gap-2">
             {(['high', 'mid', 'low'] as Difficulty[]).map(d => (
               <button key={d}
@@ -465,7 +467,7 @@ export function PreStudyModal() {
                   ${difficulty === d
                     ? 'bg-ember text-ink border-ember'
                     : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
-                {getDifficultyLabel(d)}
+                {getDifficultyLabel(d, t)}
               </button>
             ))}
           </div>
@@ -473,16 +475,16 @@ export function PreStudyModal() {
 
         {/* Temperature selection */}
         <div>
-          <div className="field-label mb-2">腔调</div>
+          <div className="field-label mb-2">{t.temperatureLabel}</div>
           <div className="flex gap-2">
-            {[0.3, 0.7, 1.0].map(t => (
-              <button key={t}
-                onClick={() => setTemperature(t)}
+            {[0.3, 0.7, 1.0].map(temp => (
+              <button key={temp}
+                onClick={() => setTemperature(temp)}
                 className={`px-4 py-1.5 rounded font-sans text-sm border transition-colors
-                  ${temperature === t
+                  ${temperature === temp
                     ? 'bg-ember text-ink border-ember'
                     : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
-                {getTemperatureLabel(t)}
+                {getTemperatureLabel(temp, t)}
               </button>
             ))}
           </div>
@@ -490,8 +492,8 @@ export function PreStudyModal() {
 
         {/* Action buttons */}
         <div className="flex justify-end gap-3 pt-2">
-          <Button data-testid="cancel-button" variant="ghost" onClick={closePreStudy}>撤回</Button>
-          <Button data-testid="start-button" onClick={onConfirm}>开始</Button>
+          <Button data-testid="cancel-button" variant="ghost" onClick={closePreStudy}>{t.cancelButton}</Button>
+          <Button data-testid="start-button" onClick={onConfirm}>{t.startButton}</Button>
         </div>
       </div>
     </div>
