@@ -75,6 +75,10 @@ export const SELECTORS = {
     regenerateButton: '[data-testid="briefing-regenerate-button"]',
     skeleton: '[data-testid="briefing-skeleton"]',
     errorDisplay: '[data-testid="briefing-error-display"]',
+    retryButton: '[data-testid="briefing-retry-button"]',
+    progress: '[data-testid="briefing-progress"]',
+    progressStep: (key: string) => `[data-testid="briefing-progress-step-${key}"]`,
+    generatedAt: '[data-testid="briefing-generated-at"]',
     cacheWriteFailedBadge: '[data-testid="briefing-cache-write-failed"]',
   },
   profile: {
