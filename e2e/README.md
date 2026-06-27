@@ -65,7 +65,18 @@ e2e/
 npx playwright show-trace e2e-results/<trace-file>.zip
 ```
 
+## LLM 调用策略
+
+本项目 E2E 测试使用真实 Kimi API 调用，不 mock LLM。
+所有涉及 `llm:start` / `llm:finalize*` 的测试必须走真实网络，
+以确保验证的是生产环境下的端到端行为。
+
+后续所有新增 API 相关功能也应遵循此策略。
+
 ## 标记
 
 - `@smoke`：启动冒烟测试，快且不调用 LLM
 - `@slow`：调用真实 Kimi API，每个用例可能耗时 10 秒到 2 分钟
+- `@p0`：核心路径，每次 CI/本地提交前跑
+- `@p1`：重要功能，PR 合并前跑
+- `@p2`：边界/慢路径，发布前全量或按需跑
