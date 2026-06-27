@@ -5,11 +5,13 @@ export class CoverPage {
   readonly nameInput: Locator
   readonly enterButton: Locator
   readonly lightButton: Locator
+  readonly briefingButton: Locator
 
   constructor(private page: Page) {
     this.nameInput = page.locator(SELECTORS.cover.nameInput)
     this.enterButton = page.locator(SELECTORS.cover.enterButton)
     this.lightButton = page.locator(SELECTORS.cover.lightButton)
+    this.briefingButton = page.locator(SELECTORS.cover.briefingButton)
   }
 
   async enterName(name: string) {
@@ -23,13 +25,15 @@ export class CoverPage {
   }
 
   async enterIfNeeded(name: string = 'E2E 测试员') {
-    // Fresh isolated config lands on the name-input cover. Existing profile lands on the
-    // "light the lamp" cover. Handle both deterministically.
     await this.nameInput.or(this.lightButton).waitFor({ state: 'visible' })
     if (await this.lightButton.isVisible().catch(() => false)) {
       await this.lightButton.click()
     } else {
       await this.enterApp(name)
     }
+  }
+
+  async goToBriefing() {
+    await this.briefingButton.click()
   }
 }
