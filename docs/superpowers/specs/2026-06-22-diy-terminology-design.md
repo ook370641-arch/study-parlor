@@ -6,6 +6,22 @@
 
 ---
 
+## 0. 当前实现状态（2026-06-27）
+
+- ✅ `StateJson.terminology` 字段已存在
+- ✅ `src/store/index.ts` 已接入 `terminology` 状态、`patchTerminology` / `resetTerminology`
+- ⚠️ `Terminology` 类型当前为 `Record<string, string>`，需改为本 spec 第 6.1 节的结构化类型
+- ⚠️ `src/lib/terminology-defaults.ts` 当前为 `{}`，需填充第 6.2 节的默认值
+- ❌ `src/lib/terminology.ts` helper 已存在但未被任何组件使用
+- ❌ `getDifficultyLabel` / `getTemperatureLabel` 尚未支持自定义术语
+- ❌ `Home / Study / Profile / PreStudyModal / Extension` 仍为硬编码文案
+- ❌ 扩展页尚无「我的语言」面板
+- ❌ 缺少 `tests/terminology.test.ts`
+
+本 spec 保持原设计不变，作为剩余实现工作的唯一来源。
+
+---
+
 ## 1. 目标
 
 让用户可以自定义 Study Parlor 前端可见的核心仪式术语与参数标签，使工具的叫法贴合个人习惯，而不是被应用的默认词汇硬编码。
