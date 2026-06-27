@@ -14,11 +14,13 @@ import { ArchiveReportModal } from '@/components/ArchiveReportModal'
 import { StarOrbit } from '@/components/StarOrbit'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { useTerminology } from '@/lib/terminology'
 import { ExternalMaterialsCard } from '@/components/ExternalMaterialsCard'
 import { Quote } from '@/components/Quote'
 
 export function Study() {
   const session = useStore(s => s.session)
+  const t = useTerminology()
   const scrollRef = useRef<HTMLDivElement>(null)
   const userScrolledUpRef = useRef(false)
 
@@ -197,9 +199,9 @@ export function Study() {
         <div className="flex items-center gap-3">
           <SwapPaintingButton surface="study" />
           <div className="font-sans text-sm text-parchment/60">
-            {session.mode === 'progress' ? '探索新知' : '复习检测'} ·
-            {getDifficultyLabel(session.difficulty)} ·
-            腔调={getTemperatureLabel(session.temperature)}
+            {session.mode === 'progress' ? t.modeProgress : t.modeReview} ·
+            {getDifficultyLabel(session.difficulty, t)} ·
+            {t.temperatureLabel}={getTemperatureLabel(session.temperature, t)}
           </div>
         </div>
       </header>
@@ -248,12 +250,12 @@ export function Study() {
           <div data-testid="archive-pending-banner"
                className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
                           text-sm font-sans text-parchment/80 flex justify-between items-center">
-            <span>是否封存？一旦归档，就不再更改。</span>
+            <span>{t.archiveConfirmTitle}</span>
             <div className="flex gap-1.5 items-center">
               <Button variant="ghost" onClick={() => useStore.getState().dismissArchive()}>
-                暂不封存
+                {t.archiveDismiss}
               </Button>
-              <Button data-testid="archive-button" onClick={onEnd}>封存。它从此成为档案。</Button>
+              <Button data-testid="archive-button" onClick={onEnd}>{t.archiveConfirm}</Button>
             </div>
           </div>
         </div>
