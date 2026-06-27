@@ -126,6 +126,8 @@ type AppStore = {
   showToast: (m: string) => void
   patchProfile: (p: Partial<Profile>) => Promise<void>
   patchLastUsed: (l: Partial<{ difficulty: Difficulty; temperature: number }>) => Promise<void>
+  patchTerminology: (patch: Terminology) => Promise<void>
+  resetTerminology: () => Promise<void>
   saveCurrentSession: () => Promise<void>
   restoreSession: (session: UnsavedSession) => void
   removeUnsavedSession: (id: string) => void
@@ -560,7 +562,15 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   patchTerminology: async (patch: Terminology) => {
-    const next = { ...get().terminology, ...patch }
+    const current = get().terminology
+    const next: Terminology = { ...current }
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined || value === '') {
+        delete (next as Record<string, string | undefined>)[key]
+      } else {
+        (next as Record<string, string | undefined>)[key] = value
+      }
+    }
     set({ terminology: next })
     await ipc.patchState({ terminology: next } as Partial<StateJson>)
   },
