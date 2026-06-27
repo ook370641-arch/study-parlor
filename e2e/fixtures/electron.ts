@@ -99,7 +99,7 @@ export const test = base.extend<E2EFixtures>({
 
     const proc = spawn(
       path.join(process.cwd(), 'node_modules', 'electron', 'dist', 'electron.exe'),
-      ['--remote-debugging-port=0', '.'],
+      ['--remote-debugging-port=0', '--no-sandbox', '.'],
       {
         cwd: process.cwd(),
         env: {
