@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { quotes, pickRandomQuote } from '../src/lib/quotes'
 
-const QUOTES_MD = path.resolve('docs/superpowers/quotes-collection-draft-2026-06-22.md')
+const QUOTES_MD = path.resolve('docs/superpowers/plans/quotes-collection-draft-2026-06-22.md')
 
 describe('quotes library', () => {
   it('has at least one quote', () => {

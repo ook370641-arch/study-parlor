@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { useStore } from '@/store'
 import { getDifficultyLabel } from '@/lib/difficulty-label'
 import { getTemperatureLabel } from '@/lib/temperature-label'
-import { getTerminology } from '@/lib/terminology'
+import { getTerminology, useTerminology } from '@/lib/terminology'
 import { DEFAULT_TERMINOLOGY } from '@/lib/terminology-defaults'
 
 describe('terminology helpers', () => {
@@ -53,6 +55,17 @@ describe('terminology helpers', () => {
     it('returns all defaults when custom is undefined', () => {
       const merged = getTerminology(undefined)
       expect(merged).toEqual(DEFAULT_TERMINOLOGY)
+    })
+  })
+
+  describe('useTerminology integration', () => {
+    it('reflects store terminology overrides', () => {
+      act(() => {
+        useStore.setState({ terminology: { sessionName: '炉边谈话' } })
+      })
+      const { result } = renderHook(() => useTerminology())
+      expect(result.current.sessionName).toBe('炉边谈话')
+      expect(result.current.libraryName).toBe(DEFAULT_TERMINOLOGY.libraryName)
     })
   })
 })
