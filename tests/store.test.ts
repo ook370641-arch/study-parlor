@@ -12,6 +12,8 @@ vi.mock('@/lib/ipc', () => ({
     loadGroups: vi.fn(),
     llmWildcardInspiration: vi.fn(),
     briefingGenerate: vi.fn(),
+    onBriefingProgress: vi.fn(() => () => {}),
+    briefingList: vi.fn(),
     searchPrepare: vi.fn()
   }
 }))

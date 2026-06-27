@@ -67,7 +67,7 @@ describe('Quote', () => {
 
     render(<Quote surface="home" />)
     const initialText = screen.getByTestId('quote-text').textContent
-    const button = screen.getByRole('button', { name: /换一句/i })
+    const button = screen.getByTestId('quote-refresh-button')
     fireEvent.click(button)
     const newText = screen.getByTestId('quote-text').textContent
 

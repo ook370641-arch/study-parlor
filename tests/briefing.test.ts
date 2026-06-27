@@ -77,10 +77,10 @@ describe('registerBriefingIpc', () => {
     expect(secondCall.messages[0].content).toContain('"builders"')
     expect(secondCall.messages[0].content).toContain('"name": "A"')
 
-    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'fetching')
-    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'extracting')
-    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'assembling')
-    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'finalizing')
+    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'fetching', undefined)
+    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'extracting', undefined)
+    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'assembling', undefined)
+    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'finalizing', undefined)
 
     expect(first.generatedAt).toBeDefined()
 
