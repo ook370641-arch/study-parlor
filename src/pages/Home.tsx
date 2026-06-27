@@ -8,6 +8,7 @@ import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { StrategyToggle } from '@/components/StrategyToggle'
 import { WildCardRecCard } from '@/components/WildCardRecCard'
 import { BackToCover } from '@/components/BackToCover'
+import { useTerminology } from '@/lib/terminology'
 
 export function Home() {
   const profile = useStore(s => s.profile)
@@ -18,6 +19,7 @@ export function Home() {
   const removeUnsavedSession = useStore(s => s.removeUnsavedSession)
   const goto = useStore(s => s.goto)
   const openPreStudy = useStore(s => s.openPreStudy)
+  const t = useTerminology()
 
   const firstUnsaved = unsavedSessions[0]
 
@@ -34,7 +36,7 @@ export function Home() {
       <Button variant="ghost"
         onClick={() => goto('profile')}
         className="absolute top-4 right-20 font-sans text-sm z-10">
-        卷宗
+        {t.libraryName}
       </Button>
       <Button variant="ghost"
         onClick={() => goto('extension')}
@@ -43,7 +45,7 @@ export function Home() {
       </Button>
 
       <div data-testid="home-greeting" className="relative z-[5] text-center text-parchment/60 font-sans text-sm mb-8">
-        晚安，{profile.name}
+        {t.homeGreeting}，{profile.name}
       </div>
 
       <div className="relative z-[5] flex gap-6 max-w-6xl mx-auto h-full">
@@ -52,7 +54,7 @@ export function Home() {
           {/* 恢复提示 */}
           {firstUnsaved && (
             <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded-md p-4">
-              <div className="text-xs text-parchment/50 font-sans mb-2">中断的笔录</div>
+              <div className="text-xs text-parchment/50 font-sans mb-2">{t.unsavedSessionLabel}</div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm text-parchment/70 font-serif truncate">
                   {firstUnsaved.topic}
@@ -69,7 +71,7 @@ export function Home() {
                     onClick={() => removeUnsavedSession(firstUnsaved.id)}
                     className="text-xs text-parchment/30 hover:text-red-400 transition-colors font-sans"
                   >
-                    焚毁
+                    {t.burnVerb}
                   </button>
                 </div>
               </div>
@@ -82,13 +84,13 @@ export function Home() {
             onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
             className="w-full text-lg py-4"
           >
-            新的小径
+            {t.newTopicLabel}
           </Button>
 
           {/* 从已知推未知 */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-xs text-parchment/40 font-sans">推开下一扇门</span>
+              <span className="text-xs text-parchment/40 font-sans">{t.continuePrompt}</span>
               <StrategyToggle />
             </div>
 
@@ -117,7 +119,7 @@ export function Home() {
 
         {/* 右侧：学习库 */}
         <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
-          <div data-testid="library-section" className="text-xs text-parchment/40 font-sans mb-3">学习库</div>
+          <div data-testid="library-section" className="text-xs text-parchment/40 font-sans mb-3">{t.libraryName}</div>
           <StudyLibrary />
           <div className="mt-4 shrink-0">
             <Quote surface="home" />
