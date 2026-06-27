@@ -27,9 +27,9 @@ npx playwright test --config e2e/playwright.config.ts --grep-invert @slow
 
 ## 测试隔离
 
-每个测试用例都会创建独立的临时学习库（`e2e/.test-library/`）和临时配置目录（`e2e/.test-config/`）。测试结束后自动清理；测试失败时会保留现场，路径会打印到控制台。
+每个测试用例都会创建独立的临时学习库（`e2e/.test-library/`）和临时配置目录（`e2e/.test-config/`），并通过 `E2E_CONFIG_DIR` 环境变量同时隔离 `.env` 与 `state.json`。测试结束后自动清理；测试失败时会保留现场，路径会打印到控制台。
 
-真实学习库和 `~/.studyparlor/state.json` 不会被污染。
+真实学习库、`~/.studyparlor/state.json` 以及项目根目录的 `.env` 均不会被污染。
 
 ## 目录结构
 
