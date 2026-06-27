@@ -59,7 +59,7 @@ export function Home() {
             <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded-md p-4">
               <div className="text-xs text-parchment/50 font-sans mb-2">{t.unsavedSessionLabel}</div>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-parchment/70 font-serif truncate">
+                <span data-testid="unsaved-session-title" className="text-sm text-parchment/70 font-serif truncate">
                   {firstUnsaved.topic}
                 </span>
                 <div className="flex gap-2 shrink-0">
