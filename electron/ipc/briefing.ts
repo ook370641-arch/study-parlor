@@ -6,11 +6,11 @@ import { chatNonStream } from '../lib/kimi'
 import { dumpRecovery } from '../lib/recovery'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import type { AppConfig } from '../env'
-import type { BriefingResult, BriefingSource, Message, Profile } from '@shared/index'
+import type { BriefingResult, BriefingSource, BriefingStage, Message, Profile } from '@shared/index'
 
-const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json'
-const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json'
-const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json'
+const FEED_X_URL = process.env.BRIEFING_FEED_X_URL || 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json'
+const FEED_PODCASTS_URL = process.env.BRIEFING_FEED_PODCASTS_URL || 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json'
+const FEED_BLOGS_URL = process.env.BRIEFING_FEED_BLOGS_URL || 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json'
 
 function promptsDir(): string {
   const candidates = [
@@ -43,13 +43,22 @@ function readPrompts(): Record<string, string> {
 }
 
 async function fetchJson<T>(url: string): Promise<T | null> {
+  let res: Response
   try {
-    const res = await fetch(url)
-    if (!res.ok) return null
-    return (await res.json()) as T
+    res = await fetch(url)
   } catch (err) {
     console.error(`[briefing] fetch failed: ${url}`, err)
-    return null
+    throw new Error(`NETWORK_ERROR: ${url}`)
+  }
+  if (!res.ok) {
+    console.error(`[briefing] fetch returned ${res.status}: ${url}`)
+    throw new Error(`NETWORK_ERROR: ${url} (${res.status})`)
+  }
+  try {
+    return (await res.json()) as T
+  } catch (err) {
+    console.error(`[briefing] invalid JSON from ${url}`, err)
+    throw new Error(`NETWORK_ERROR: ${url} (invalid JSON)`)
   }
 }
 
@@ -250,7 +259,13 @@ function parseStructuredJson(raw: string): unknown {
 }
 
 export function registerBriefingIpc(cfg: AppConfig) {
-  ipcMain.handle('briefing:generate', async (_, args: { date: string; profile: Profile; force?: boolean }): Promise<BriefingResult> => {
+  ipcMain.handle('briefing:generate', async (event, args: { date: string; profile: Profile; force?: boolean }): Promise<BriefingResult> => {
+    const sender = event.sender
+    const emitProgress = (stage: BriefingStage, detail?: string) => {
+      if (!sender.isDestroyed()) {
+        sender.send('briefing:progress', stage, detail)
+      }
+    }
     const { date, profile } = args
     validateDate(date)
 
@@ -268,6 +283,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
           sources = []
         }
       }
+      const generatedAt = String(frontmatter.created ?? new Date().toISOString())
       return {
         title: String(frontmatter.title || '夜航简报'),
         date,
@@ -275,6 +291,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
         sources,
         filePath,
         cached: true,
+        generatedAt,
       }
     }
 
@@ -283,6 +300,8 @@ export function registerBriefingIpc(cfg: AppConfig) {
       fetchJson<FeedPodcasts>(FEED_PODCASTS_URL),
       fetchJson<FeedBlogs>(FEED_BLOGS_URL),
     ])
+
+    emitProgress('fetching')
 
     if (!hasAnyContent(feedX, feedPodcasts, feedBlogs)) {
       throw new Error('FEED_EMPTY')
@@ -303,33 +322,52 @@ export function registerBriefingIpc(cfg: AppConfig) {
     let cacheWriteFailed = false
 
     try {
-      const structuredRaw = await chatNonStream(cfg, {
-        messages: [{ role: 'user', content: extractionPrompt } as Message],
-        temperature: 0.5,
-        thinking: { type: 'enabled', reasoning_effort: 'high' },
-        signal: llmCtl.signal,
-      })
+      emitProgress('extracting')
+      let structuredRaw: string
+      try {
+        structuredRaw = await chatNonStream(cfg, {
+          messages: [{ role: 'user', content: extractionPrompt } as Message],
+          temperature: 0.5,
+          thinking: { type: 'enabled', reasoning_effort: 'high' },
+          signal: llmCtl.signal,
+        })
+      } catch (err) {
+        throw new Error(`LLM_ERROR: ${err instanceof Error ? err.message : String(err)}`)
+      }
 
-      const structured = parseStructuredJson(structuredRaw)
+      let structured: unknown
+      try {
+        structured = parseStructuredJson(structuredRaw)
+      } catch (err) {
+        throw new Error(`ASSEMBLY_ERROR: ${err instanceof Error ? err.message : String(err)}`)
+      }
 
+      emitProgress('assembling')
       const assemblyPrompt = buildAssemblyPrompt({
         prompts,
         structured: JSON.stringify(structured, null, 2),
       })
 
-      const content = await chatNonStream(cfg, {
-        messages: [{ role: 'user', content: assemblyPrompt } as Message],
-        temperature: 0.5,
-        thinking: { type: 'enabled', reasoning_effort: 'high' },
-        signal: llmCtl.signal,
-      })
+      let content: string
+      try {
+        content = await chatNonStream(cfg, {
+          messages: [{ role: 'user', content: assemblyPrompt } as Message],
+          temperature: 0.5,
+          thinking: { type: 'enabled', reasoning_effort: 'high' },
+          signal: llmCtl.signal,
+        })
+      } catch (err) {
+        throw new Error(`LLM_ERROR: ${err instanceof Error ? err.message : String(err)}`)
+      }
 
+      emitProgress('finalizing')
       const sources = buildSources({ feedX, feedPodcasts, feedBlogs })
+      const generatedAt = new Date().toISOString()
 
       const fm = {
         title: '夜航简报',
         type: 'briefing' as const,
-        created: new Date().toISOString(),
+        created: generatedAt,
         tags: ['industry-digest', 'ai'],
         briefing_sources: JSON.stringify(sources),
       }
@@ -351,6 +389,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
         filePath,
         cached: false,
         cacheWriteFailed,
+        generatedAt,
       }
     } finally {
       clearTimeout(llmTimeout)
