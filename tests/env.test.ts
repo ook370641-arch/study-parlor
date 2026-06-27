@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { loadEnv, saveEnv, setConfigDir, getEnvPath } from '@electron/env'
+import { loadEnv, saveEnv, setConfigDir, setStateDir, getEnvPath, getStateDir } from '@electron/env'
 
 describe('loadEnv', () => {
   it('throws when KIMI_API_KEY is missing', () => {
@@ -159,6 +159,7 @@ describe('config dir resolution', () => {
 
   afterEach(() => {
     setConfigDir(null)
+    setStateDir(null)
     process.chdir(originalCwd)
     fs.rmSync(cwdDir, { recursive: true, force: true })
     fs.rmSync(homeDir, { recursive: true, force: true })
@@ -186,5 +187,19 @@ describe('config dir resolution', () => {
     expect(content).toContain('KIMI_API_KEY=sk-kimi-x')
     // and not in cwd
     expect(fs.existsSync(path.join(cwdDir, '.env'))).toBe(false)
+  })
+
+  it('state dir defaults to ~/.studyparlor independently of config dir', () => {
+    expect(getStateDir()).toBe(path.join(os.homedir(), '.studyparlor'))
+    // Changing config dir (for .env) does not move state.json.
+    setConfigDir(cwdDir)
+    expect(getStateDir()).toBe(path.join(os.homedir(), '.studyparlor'))
+  })
+
+  it('state dir can be overridden separately from config dir', () => {
+    setConfigDir(cwdDir)
+    setStateDir(homeDir)
+    expect(getStateDir()).toBe(homeDir)
+    expect(getEnvPath()).toBe(path.join(cwdDir, '.env'))
   })
 })
