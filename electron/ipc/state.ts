@@ -1,10 +1,12 @@
 import { ipcMain } from 'electron'
 import path from 'node:path'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
-import { getConfigDir } from '../env'
+import { getStateDir } from '../env'
 import type { StateJson } from '@shared/index'
 
-const STATE_FILE = path.join(getConfigDir(), 'state.json')
+function getStateFile(): string {
+  return path.join(getStateDir(), 'state.json')
+}
 
 const DEFAULT: StateJson = {
   version: 1,
@@ -22,7 +24,7 @@ let currentState: StateJson | null = null
 
 function loadState(): StateJson {
   if (!currentState) {
-    const raw = safeReadJson(STATE_FILE, { fallback: DEFAULT })
+    const raw = safeReadJson(getStateFile(), { fallback: DEFAULT })
     currentState = { ...DEFAULT, ...raw }
   }
   return currentState
@@ -72,5 +74,5 @@ export function patchState(patch: Partial<StateJson>): void {
   }
 
   currentState = merged
-  safeWriteJson(STATE_FILE, currentState)
+  safeWriteJson(getStateFile(), currentState)
 }

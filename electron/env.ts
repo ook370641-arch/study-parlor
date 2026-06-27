@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 
 export type AppConfig = {
   apiKey: string
@@ -62,12 +63,25 @@ export function loadEnv(env: Record<string, string | undefined>): AppConfig {
 // cwd=/) or the install dir (Windows), neither of which we may write to.
 let configDir: string | null = null
 
+// Directory holding state.json. Defaults to ~/.studyparlor so that dev mode
+// and packaged builds share runtime state (profile, session count, etc.).
+// E2E tests override this for isolation.
+let stateDir: string | null = null
+
 export function setConfigDir(dir: string | null): void {
   configDir = dir
 }
 
 export function getConfigDir(): string {
   return configDir ?? process.cwd()
+}
+
+export function setStateDir(dir: string | null): void {
+  stateDir = dir
+}
+
+export function getStateDir(): string {
+  return stateDir ?? path.join(os.homedir(), '.studyparlor')
 }
 
 export function getEnvPath(): string {

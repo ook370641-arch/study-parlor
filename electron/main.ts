@@ -3,22 +3,29 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import dotenv from 'dotenv'
-import { loadEnv, saveEnv, setConfigDir, getEnvPath } from './env'
+import { loadEnv, saveEnv, setConfigDir, setStateDir, getEnvPath } from './env'
 import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
 import { patchState } from './ipc/state'
 
 // In packaged builds cwd is not writable for our config — macOS launches the
 // .app with cwd=/ (read-only system volume → EROFS), Windows uses the install
-// dir (may be Program Files → EPERM, and wiped on uninstall/update). Store
-// .env alongside state.json under the user's home dir instead. Dev keeps cwd.
-// Must run before dotenv.config() so it reads from the right place.
-// E2E tests can also override the config dir for full isolation.
+// dir (may be Program Files → EPERM, and wiped on uninstall/update).
+//
+// We therefore keep runtime state (state.json) under the user's home dir
+// (~/.studyparlor) by default. Dev mode keeps .env in cwd for convenience,
+// but still writes state.json to ~/.studyparlor so dev and packaged builds
+// share the same profile.
+//
+// E2E tests can override both dirs for full isolation.
 if (process.env.E2E_CONFIG_DIR) {
   setConfigDir(process.env.E2E_CONFIG_DIR)
+  setStateDir(process.env.E2E_CONFIG_DIR)
 } else if (app.isPackaged) {
   setConfigDir(path.join(os.homedir(), '.studyparlor'))
+  // stateDir already defaults to ~/.studyparlor.
 }
+// Dev mode: configDir defaults to cwd (reads ./.env), stateDir defaults to ~/.studyparlor.
 
 dotenv.config({ path: getEnvPath() })
 
