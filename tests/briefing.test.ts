@@ -60,7 +60,9 @@ describe('registerBriefingIpc', () => {
       .mockResolvedValueOnce(structured)
       .mockResolvedValueOnce('## X / Twitter\nSummary text')
 
-    const first = await ipcHandlers['briefing:generate'](null, { date: '2026-06-21', profile })
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    const first = await ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-21', profile })
 
     expect(first.cached).toBe(false)
     expect(first.filePath).toContain(`${path.sep}夜航简报${path.sep}`)
@@ -75,7 +77,14 @@ describe('registerBriefingIpc', () => {
     expect(secondCall.messages[0].content).toContain('"builders"')
     expect(secondCall.messages[0].content).toContain('"name": "A"')
 
-    const second = await ipcHandlers['briefing:generate'](null, { date: '2026-06-21', profile })
+    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'fetching')
+    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'extracting')
+    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'assembling')
+    expect(mockSender.send).toHaveBeenCalledWith('briefing:progress', 'finalizing')
+
+    expect(first.generatedAt).toBeDefined()
+
+    const second = await ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-21', profile })
     expect(second.cached).toBe(true)
     expect(second.content.trim()).toBe(first.content.trim())
     expect(second.sources).toEqual(first.sources)
@@ -83,11 +92,15 @@ describe('registerBriefingIpc', () => {
 
   it('throws FEED_EMPTY when all feeds are empty', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ x: [], podcasts: [], blogs: [] }) })) as any)
-    await expect(ipcHandlers['briefing:generate'](null, { date: '2026-06-21', profile })).rejects.toThrow('FEED_EMPTY')
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    await expect(ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-21', profile })).rejects.toThrow('FEED_EMPTY')
   })
 
   it('rejects invalid date', async () => {
-    await expect(ipcHandlers['briefing:generate'](null, { date: 'not-a-date', profile })).rejects.toThrow('Invalid')
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    await expect(ipcHandlers['briefing:generate'](mockEvent, { date: 'not-a-date', profile })).rejects.toThrow('Invalid')
   })
 
   it('skips X builders with missing or empty tweets instead of crashing', async () => {
@@ -108,12 +121,14 @@ describe('registerBriefingIpc', () => {
       .mockResolvedValueOnce(JSON.stringify({ builders: [], podcasts: [], blogs: [] }))
       .mockResolvedValueOnce('content')
 
-    const result = await ipcHandlers['briefing:generate'](null, { date: '2026-06-23', profile })
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    const result = await ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-23', profile })
     expect(result.sources).toHaveLength(1)
     expect(result.sources[0].author).toBe('C')
   })
 
-  it('throws BRIEFING_PARSE_ERROR when LLM returns malformed JSON', async () => {
+  it('throws ASSEMBLY_ERROR when LLM returns malformed JSON', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ({
@@ -126,8 +141,10 @@ describe('registerBriefingIpc', () => {
     vi.spyOn(kimi, 'chatNonStream')
       .mockResolvedValueOnce('not valid json')
 
-    await expect(ipcHandlers['briefing:generate'](null, { date: '2026-06-23', profile }))
-      .rejects.toThrow('BRIEFING_PARSE_ERROR')
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    await expect(ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-23', profile }))
+      .rejects.toThrow('ASSEMBLY_ERROR')
   })
 
   it('passes abort signal to both LLM calls', async () => {
@@ -144,7 +161,9 @@ describe('registerBriefingIpc', () => {
       .mockResolvedValueOnce(JSON.stringify({ builders: [], podcasts: [], blogs: [] }))
       .mockResolvedValueOnce('content')
 
-    await ipcHandlers['briefing:generate'](null, { date: '2026-06-23', profile })
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    await ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-23', profile })
 
     expect(chatSpy).toHaveBeenCalledTimes(2)
     expect((chatSpy.mock.calls[0][1] as any).signal).toBeInstanceOf(AbortSignal)
@@ -176,7 +195,9 @@ describe('registerBriefingIpc', () => {
     })
 
     try {
-      const result = await ipcHandlers['briefing:generate'](null, { date: '2026-06-24', profile })
+      const mockSender = { send: vi.fn(), isDestroyed: () => false }
+      const mockEvent = { sender: mockSender }
+      const result = await ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-24', profile })
       expect(result.cacheWriteFailed).toBe(true)
       expect(result.cached).toBe(false)
     } finally {
@@ -198,7 +219,9 @@ describe('registerBriefingIpc', () => {
       .mockResolvedValueOnce(JSON.stringify({ builders: [], podcasts: [], blogs: [] }))
       .mockResolvedValueOnce('content')
 
-    await ipcHandlers['briefing:generate'](null, { date: '2026-06-22', profile })
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    await ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-22', profile })
 
     const list = await ipcHandlers['briefing:list'](null)
     expect(list).toHaveLength(1)
