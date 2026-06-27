@@ -12,6 +12,13 @@ export function Cover() {
   const goto = useStore(s => s.goto)
   const [name, setName] = useState('')
 
+  const briefingButtonClass = `bg-parchment text-ink shadow-[3px_3px_0_0_#d97757]
+    hover:translate-x-[1px] hover:translate-y-[1px]
+    hover:shadow-[2px_2px_0_0_#d97757]
+    active:translate-x-[3px] active:translate-y-[3px]
+    active:shadow-none
+    transition-[transform,box-shadow] duration-100`
+
   const onEnter = async () => {
     const n = name.trim()
     if (!n) return
@@ -37,9 +44,8 @@ export function Cover() {
             <Button data-testid="cover-light-button" onClick={() => goto('home')}>点亮灯火</Button>
             <Button
               data-testid="cover-briefing-button"
-              variant="ghost"
               onClick={() => goto('briefing')}
-              className="border border-slate text-slate hover:text-parchment hover:border-parchment"
+              className={briefingButtonClass}
             >
               夜航简报
             </Button>
@@ -51,12 +57,12 @@ export function Cover() {
                    onKeyDown={e => e.key === 'Enter' && onEnter()}
                    placeholder="..."
                    autoFocus className="w-64 text-lg" />
-            <Button data-testid="cover-enter-button" onClick={onEnter}>进入夜话</Button>
+            <Button data-testid="cover-enter-button" onClick={onEnter} disabled={!name.trim()}>进入夜话</Button>
             <Button
               data-testid="cover-briefing-button"
-              variant="ghost"
               onClick={() => goto('briefing')}
-              className="border border-slate text-slate hover:text-parchment hover:border-parchment"
+              disabled={!name.trim()}
+              className={briefingButtonClass}
             >
               夜航简报
             </Button>
