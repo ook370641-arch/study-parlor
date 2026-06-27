@@ -32,13 +32,50 @@ export class PreStudyPage {
     }
   }
 
-  async selectMode(mode: 'progress' | 'review') {
-    // Mode is selected by the caller (openPreStudy). This helper waits for UI to reflect it.
-    const expectedText = mode === 'progress' ? '探索新知' : '复习检测'
-    await this.modal.locator(`text=${expectedText}`).first().waitFor({ state: 'visible' })
+  async selectExistingTopicSource() {
+    await this.page.locator(SELECTORS.preStudy.topicSourceExisting).click()
+  }
+
+  async selectExistingTopic(title: string) {
+    await this.page.locator(SELECTORS.preStudy.existingTopicOption)
+      .filter({ hasText: title })
+      .first()
+      .click()
+  }
+
+  async fillCustomTopic(text: string) {
+    await this.page.locator(SELECTORS.preStudy.customTopicInput).fill(text)
+  }
+
+  async selectContinueSuggestion(index: number = 0) {
+    await this.page.locator(SELECTORS.preStudy.continueSuggestionCard).nth(index).click()
+  }
+
+  async fillUserRequirement(text: string) {
+    await this.page.locator(SELECTORS.preStudy.userRequirementInput).fill(text)
+  }
+
+  async setDifficulty(difficulty: 'low' | 'mid' | 'high') {
+    await this.page.locator(SELECTORS.preStudy.difficultyButton(difficulty)).click()
+  }
+
+  async setTemperature(temperature: 'strict' | 'balanced' | 'creative') {
+    await this.page.locator(SELECTORS.preStudy.temperatureButton(temperature)).click()
+  }
+
+  async toggleExternalMaterials() {
+    await this.page.locator(SELECTORS.preStudy.externalMaterialsToggle).click()
   }
 
   async clickStart() {
     await this.startButton.click()
+  }
+
+  async close() {
+    await this.cancelButton.click()
+  }
+
+  async isVisible(): Promise<boolean> {
+    return this.modal.isVisible().catch(() => false)
   }
 }
