@@ -4,7 +4,7 @@ import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
-  Terminology
+  Terminology, BriefingTheme, BriefingStage
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
@@ -83,8 +83,12 @@ type AppStore = {
     loading: boolean
     error: string | null
   }
-  generateBriefing: (date: string) => Promise<void>
+  briefingTheme: BriefingTheme
+  briefingStage: BriefingStage | null
+  setBriefingStage: (stage: BriefingStage | null) => void
+  generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
+  setBriefingTheme: (theme: BriefingTheme) => Promise<void>
 
   // 画作背景
   currentPaintings: {
@@ -202,6 +206,8 @@ export const useStore = create<AppStore>((set, get) => ({
   currentPaintings: { cover: null, home: null, study: null, briefing: null },
   briefing: { result: null, loading: false, error: null },
   briefingHistory: { list: [], loading: false, error: null },
+  briefingTheme: 'academic',
+  briefingStage: null,
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -215,6 +221,7 @@ export const useStore = create<AppStore>((set, get) => ({
       wildcardInspiration: state.wildcardInspiration ?? null,
       topicContinueSuggestions: state.topicContinueSuggestions ?? {},
       terminology: state.terminology ?? {},
+      briefingTheme: state.briefingTheme ?? 'academic',
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -329,15 +336,41 @@ export const useStore = create<AppStore>((set, get) => ({
 
   clearArchiveResult: () => set({ archiveResult: null }),
 
-  generateBriefing: async (date: string) => {
+  generateBriefing: async (date: string, opts?: { force?: boolean }) => {
     const s = get()
     if (s.briefing.loading) return
-    set({ briefing: { result: null, loading: true, error: null } })
+    set({
+      briefing: { result: null, loading: true, error: null },
+      briefingStage: 'fetching',
+    })
+
+    const unsubscribe = ipc.onBriefingProgress((stage) => {
+      set({ briefingStage: stage })
+    })
+
     try {
-      const result = await ipc.briefingGenerate({ date, profile: s.profile })
-      set({ briefing: { result, loading: false, error: null } })
+      const result = await ipc.briefingGenerate({ date, profile: s.profile, force: opts?.force })
+      set({
+        briefing: { result, loading: false, error: null },
+        briefingStage: null,
+      })
     } catch (err: any) {
-      set({ briefing: { result: null, loading: false, error: err.message || String(err) } })
+      const raw = err.message || String(err)
+      const error = raw.includes('FEED_EMPTY')
+        ? 'FEED_EMPTY'
+        : raw.includes('NETWORK_ERROR')
+          ? 'NETWORK_ERROR'
+          : raw.includes('LLM_ERROR')
+            ? 'LLM_ERROR'
+            : raw.includes('ASSEMBLY_ERROR')
+              ? 'ASSEMBLY_ERROR'
+              : raw
+      set({
+        briefing: { result: null, loading: false, error },
+        briefingStage: null,
+      })
+    } finally {
+      unsubscribe()
     }
   },
 
@@ -350,6 +383,13 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ briefingHistory: { ...get().briefingHistory, loading: false, error: err.message || String(err) } })
     }
   },
+
+  setBriefingTheme: async (theme: BriefingTheme) => {
+    set({ briefingTheme: theme })
+    await ipc.patchState({ briefingTheme: theme } as Partial<StateJson>)
+  },
+
+  setBriefingStage: (stage) => set({ briefingStage: stage }),
 
   resetSession: () => set({ session: null, currentPage: 'home', externalMaterials: null }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
