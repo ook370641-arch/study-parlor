@@ -48,6 +48,18 @@ test.describe('@p1 cover', () => {
     await expect(home.greeting).toContainText('归来者')
   })
 
+  test('briefing button is disabled before entering name', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.nameInput.waitFor({ state: 'visible' })
+    await cover.expectBriefingButtonDisabled()
+  })
+
+  test('briefing button is enabled after entering name', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('夜话旅人')
+    await cover.expectBriefingButtonEnabled()
+  })
+
   test('briefing button navigates to briefing', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()

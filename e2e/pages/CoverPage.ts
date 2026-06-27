@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test'
+import { Page, Locator, expect } from '@playwright/test'
 import { SELECTORS } from '../helpers/selectors'
 
 export class CoverPage {
@@ -35,5 +35,13 @@ export class CoverPage {
 
   async goToBriefing() {
     await this.briefingButton.click()
+  }
+
+  async expectBriefingButtonDisabled() {
+    await expect(this.briefingButton).toBeDisabled()
+  }
+
+  async expectBriefingButtonEnabled() {
+    await expect(this.briefingButton).toBeEnabled()
   }
 }
