@@ -3,7 +3,48 @@ import type { AppConfig } from '@electron/env'
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = number
-export type Terminology = Record<string, string>
+export type Terminology = {
+  // 仪式动词
+  sessionName?: string
+  libraryName?: string
+  archiveVerb?: string
+  transcriptName?: string
+  burnVerb?: string
+  newTopicLabel?: string
+  continuePrompt?: string
+  unsavedSessionLabel?: string
+
+  // 模式与流程
+  modeProgress?: string
+  modeReview?: string
+  newTopicMode?: string
+  existingTopicMode?: string
+  archiveConfirmTitle?: string
+  archiveDismiss?: string
+  archiveConfirm?: string
+
+  // 参数标签
+  difficultyLabel?: string
+  temperatureLabel?: string
+  difficultyHigh?: string
+  difficultyMid?: string
+  difficultyLow?: string
+  temperatureCold?: string
+  temperatureNeutral?: string
+  temperatureWarm?: string
+
+  // 界面名词
+  profileNameLabel?: string
+  profileFieldLabel?: string
+  profileTextLabel?: string
+  topicInputLabel?: string
+  subTopicLabel?: string
+  continueDirectionLabel?: string
+  requirementLabel?: string
+  homeGreeting?: string
+  startButton?: string
+  cancelButton?: string
+}
 export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials'
 
 export type Profile = {
