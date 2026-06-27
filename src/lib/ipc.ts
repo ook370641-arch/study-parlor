@@ -32,6 +32,7 @@ export const ipc = {
   get onLlmChunk() { return ensure().onLlmChunk },
   get onLlmDone() { return ensure().onLlmDone },
   get onLlmError() { return ensure().onLlmError },
+  get onBriefingProgress() { return ensure().onBriefingProgress },
   get saveSession() { return ensure().saveSession },
   get loadSessions() { return ensure().loadSessions },
   get deleteSession() { return ensure().deleteSession },

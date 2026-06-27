@@ -167,6 +167,10 @@ export type SearchErrorCode =
 
 export type BriefingSourceType = 'x' | 'podcast' | 'blog'
 
+export type BriefingTheme = 'academic' | 'newspaper'
+
+export type BriefingStage = 'fetching' | 'extracting' | 'assembling' | 'finalizing' | 'done'
+
 export type BriefingSourceItem = {
   text?: string
   url?: string
@@ -189,6 +193,7 @@ export type BriefingResult = {
   filePath: string
   cached: boolean
   cacheWriteFailed?: boolean
+  generatedAt: string
 }
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
@@ -205,6 +210,7 @@ export type StateJson = {
   lastFableTags: string[]
   topicContinueSuggestions: Record<string, TopicContinueCache>
   terminology?: Terminology
+  briefingTheme?: BriefingTheme
 }
 
 export type IpcApi = {
@@ -246,6 +252,7 @@ export type IpcApi = {
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
+  onBriefingProgress: (cb: (stage: BriefingStage, detail?: string) => void) => () => void
   briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
   briefingList: () => Promise<{ date: string; filePath: string }[]>
   bootFatal: () => Promise<string | null>

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcApi, UnsavedSession } from '@shared/index'
+import type { IpcApi, UnsavedSession, BriefingStage } from '@shared/index'
 
 const api: IpcApi = {
   scanLibrary: () => ipcRenderer.invoke('files:scan'),
@@ -83,6 +83,12 @@ const api: IpcApi = {
 
   briefingGenerate: (args) => ipcRenderer.invoke('briefing:generate', args),
   briefingList: () => ipcRenderer.invoke('briefing:list'),
+
+  onBriefingProgress: (cb) => {
+    const handler = (_: unknown, stage: BriefingStage, detail?: string) => cb(stage, detail)
+    ipcRenderer.on('briefing:progress', handler)
+    return () => ipcRenderer.off('briefing:progress', handler)
+  },
 
   bootStart: () => ipcRenderer.invoke('boot:start'),
 
