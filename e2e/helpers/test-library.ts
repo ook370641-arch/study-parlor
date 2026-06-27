@@ -262,3 +262,42 @@ export function seedStateJson(
     JSON.stringify({ ...base, ...partialState }, null, 2)
   )
 }
+
+export function seedBriefing(libPath: string, date: string, content?: string, generatedAt?: string): void {
+  const dir = path.join(libPath, '夜航简报')
+  fs.mkdirSync(dir, { recursive: true })
+  const filePath = path.join(dir, `夜航简报-${date}.md`)
+  const defaultContent = content ?? `## X / Twitter
+
+### Box CEO Aaron Levie
+Aaron Levie 讨论了 LLM 在企业工作流中的落地。
+
+## Official Blogs
+
+### Anthropic Engineering
+Claude 的新功能提升了长上下文可靠性。
+
+## Podcasts
+
+### Latent Space
+最新一期采访了 Anthropic 研究员。
+
+## 原始来源
+### Aaron Levie
+- [tweet](https://x.com/levie/status/1)
+### Anthropic Engineering
+- [post](https://anthropic.com/engineering/1)
+### Latent Space
+- [episode](https://youtube.com/watch?v=1)`
+  const fm = `---
+title: 夜航简报
+type: briefing
+created: '${generatedAt ?? new Date().toISOString()}'
+tags:
+  - industry-digest
+  - ai
+---
+
+`
+  fs.writeFileSync(filePath, fm + defaultContent, 'utf8')
+}
