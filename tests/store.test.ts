@@ -243,6 +243,41 @@ describe('store core operations', () => {
     })
   })
 
+  describe('terminology', () => {
+    it('patches a terminology key', async () => {
+      vi.mocked(ipc.patchState).mockResolvedValue(undefined)
+      await useStore.getState().patchTerminology({ sessionName: '炉边谈话' })
+      expect(useStore.getState().terminology.sessionName).toBe('炉边谈话')
+      expect(vi.mocked(ipc.patchState)).toHaveBeenCalledWith(
+        expect.objectContaining({ terminology: { sessionName: '炉边谈话' } })
+      )
+    })
+
+    it('deletes a key when patched with empty string', async () => {
+      vi.mocked(ipc.patchState).mockResolvedValue(undefined)
+      useStore.setState({ terminology: { sessionName: '炉边谈话' } })
+      await useStore.getState().patchTerminology({ sessionName: '' })
+      expect(useStore.getState().terminology.sessionName).toBeUndefined()
+    })
+
+    it('deletes a key when patched with undefined', async () => {
+      vi.mocked(ipc.patchState).mockResolvedValue(undefined)
+      useStore.setState({ terminology: { sessionName: '炉边谈话' } })
+      await useStore.getState().patchTerminology({ sessionName: undefined })
+      expect(useStore.getState().terminology.sessionName).toBeUndefined()
+    })
+
+    it('resets terminology to empty object', async () => {
+      vi.mocked(ipc.patchState).mockResolvedValue(undefined)
+      useStore.setState({ terminology: { sessionName: '炉边谈话' } })
+      await useStore.getState().resetTerminology()
+      expect(useStore.getState().terminology).toEqual({})
+      expect(vi.mocked(ipc.patchState)).toHaveBeenCalledWith(
+        expect.objectContaining({ terminology: {} })
+      )
+    })
+  })
+
   describe('dismissArchive', () => {
     it('clears archivePending flag', () => {
       useStore.getState().startSession({

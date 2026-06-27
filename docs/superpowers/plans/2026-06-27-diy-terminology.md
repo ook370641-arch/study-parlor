@@ -12,15 +12,15 @@
 
 ## 当前状态（2026-06-27）
 
-- ✅ `StateJson.terminology` 字段已存在
-- ✅ `src/store/index.ts` 已接入 `terminology` 状态、`patchTerminology` / `resetTerminology`
-- ⚠️ `Terminology` 类型当前为 `Record<string, string>`，需改为结构化 key
-- ⚠️ `src/lib/terminology-defaults.ts` 当前为 `{}`，需填充默认值
-- ❌ `src/lib/terminology.ts` helper 已存在但未被任何组件使用
-- ❌ `getDifficultyLabel` / `getTemperatureLabel` 尚未支持自定义术语
-- ❌ `Home / Study / Profile / PreStudyModal / Extension` 仍为硬编码文案
-- ❌ 扩展页尚无「我的语言」面板
-- ❌ 缺少 `tests/terminology.test.ts`
+- ✅ `Terminology` 类型已改为结构化 key
+- ✅ `src/lib/terminology-defaults.ts` 已填充默认值
+- ✅ `src/lib/terminology.ts` helper 已完成
+- ✅ `getDifficultyLabel` / `getTemperatureLabel` 已支持自定义术语
+- ✅ Store 状态、init、patch、reset 已验证
+- ✅ `Home / Study / Profile / PreStudyModal` 已迁移
+- ✅ 扩展页已重构为侧边栏导航并新增「我的语言」面板
+- ✅ `tests/terminology.test.ts` 与 store 持久化测试已补充
+- ✅ `npm run test` 与 `npm run build` 通过
 
 ---
 

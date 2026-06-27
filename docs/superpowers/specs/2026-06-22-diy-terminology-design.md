@@ -10,13 +10,13 @@
 
 - ✅ `StateJson.terminology` 字段已存在
 - ✅ `src/store/index.ts` 已接入 `terminology` 状态、`patchTerminology` / `resetTerminology`
-- ⚠️ `Terminology` 类型当前为 `Record<string, string>`，需改为本 spec 第 6.1 节的结构化类型
-- ⚠️ `src/lib/terminology-defaults.ts` 当前为 `{}`，需填充第 6.2 节的默认值
-- ❌ `src/lib/terminology.ts` helper 已存在但未被任何组件使用
-- ❌ `getDifficultyLabel` / `getTemperatureLabel` 尚未支持自定义术语
-- ❌ `Home / Study / Profile / PreStudyModal / Extension` 仍为硬编码文案
-- ❌ 扩展页尚无「我的语言」面板
-- ❌ 缺少 `tests/terminology.test.ts`
+- ✅ `Terminology` 类型已改为本 spec 第 6.1 节的结构化类型
+- ✅ `src/lib/terminology-defaults.ts` 已填充第 6.2 节的默认值
+- ✅ `src/lib/terminology.ts` helper 已完成，组件通过 `useTerminology()` 读取
+- ✅ `getDifficultyLabel` / `getTemperatureLabel` 已支持自定义术语
+- ✅ `Home / Study / Profile / PreStudyModal` 已改用 `useTerminology()`
+- ✅ 扩展页已重构为侧边栏导航，「我的语言」面板可用
+- ✅ 已补充 `tests/terminology.test.ts` 与 store 持久化测试
 
 本 spec 保持原设计不变，作为剩余实现工作的唯一来源。
 
