@@ -333,6 +333,7 @@ export function PreStudyModal() {
                 ) : (
                   filterAndSortTopics(library, searchQuery).map(t => (
                     <button
+                      data-testid="existing-topic-option"
                       key={t.dirName}
                       onClick={() => setSelectedDirName(t.dirName)}
                       className={`w-full text-left px-3 py-2 rounded text-sm transition-colors
@@ -354,6 +355,7 @@ export function PreStudyModal() {
               <div>
                 <div className="field-label mb-2">{t.subTopicLabel}</div>
                 <Input
+                  data-testid="custom-topic-input"
                   value={customTopic}
                   onChange={e => setCustomTopic(e.target.value)}
                   placeholder="想深入探讨的具体方向..."
@@ -384,12 +386,13 @@ export function PreStudyModal() {
             ) : suggestions.length > 0 ? (
               <div className="space-y-2">
                 {suggestions.map((suggestion, index) => (
-                  <SuggestionCard
-                    key={index}
-                    suggestion={suggestion}
-                    selected={selectedSuggestionIndex === index}
-                    onSelect={() => setSelectedSuggestionIndex(index)}
-                  />
+                  <div data-testid="continue-suggestion-card" key={index}>
+                    <SuggestionCard
+                      suggestion={suggestion}
+                      selected={selectedSuggestionIndex === index}
+                      onSelect={() => setSelectedSuggestionIndex(index)}
+                    />
+                  </div>
                 ))}
               </div>
             ) : suggestionError ? (
@@ -408,6 +411,7 @@ export function PreStudyModal() {
         <div>
           <div className="field-label mb-2">{t.requirementLabel}</div>
           <textarea
+            data-testid="user-requirement-input"
             value={userRequirement}
             onChange={e => setUserRequirement(e.target.value)}
             placeholder="例如：多给我一些代码示例 / 用更直观的比喻 / 重点讲数学推导..."
@@ -423,6 +427,7 @@ export function PreStudyModal() {
         {/* External materials toggle (progress only) */}
         {showExternalMaterialsToggle && (
           <div
+            data-testid="external-materials-toggle"
             className={`rounded-lg border p-3 transition-colors cursor-pointer ${
               enableExternalMaterials
                 ? 'bg-ember/10 border-ember/30'
@@ -462,6 +467,7 @@ export function PreStudyModal() {
           <div className="flex gap-2">
             {(['high', 'mid', 'low'] as Difficulty[]).map(d => (
               <button key={d}
+                data-testid={`difficulty-button-${d}`}
                 onClick={() => setDifficulty(d)}
                 className={`px-4 py-1.5 rounded font-sans text-sm border transition-colors
                   ${difficulty === d
@@ -479,6 +485,7 @@ export function PreStudyModal() {
           <div className="flex gap-2">
             {[0.3, 0.7, 1.0].map(temp => (
               <button key={temp}
+                data-testid={`temperature-button-${temp}`}
                 onClick={() => setTemperature(temp)}
                 className={`px-4 py-1.5 rounded font-sans text-sm border transition-colors
                   ${temperature === temp

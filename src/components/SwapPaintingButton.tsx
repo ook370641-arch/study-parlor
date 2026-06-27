@@ -4,15 +4,17 @@ import { formatAttribution } from '@/lib/paintings'
 interface Props {
   surface: 'cover' | 'home' | 'study' | 'briefing'
   className?: string
+  'data-testid'?: string
 }
 
-export function SwapPaintingButton({ surface, className = '' }: Props) {
+export function SwapPaintingButton({ surface, className = '', 'data-testid': dataTestId }: Props) {
   const painting = useStore(s => s.currentPaintings[surface])
   const swap = useStore(s => s.swapPainting)
   const tooltip = painting ? formatAttribution(painting) : ''
 
   return (
     <button
+      data-testid={dataTestId}
       type="button"
       onClick={() => swap(surface)}
       title={tooltip}

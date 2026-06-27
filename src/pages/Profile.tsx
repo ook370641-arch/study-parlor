@@ -37,7 +37,7 @@ export function Profile() {
 
   if (!editing) {
     return (
-      <div className="fixed inset-0">
+      <div data-testid="profile-page" className="fixed inset-0">
         <SurfaceBackground surface="home" />
         <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
 
@@ -47,6 +47,7 @@ export function Profile() {
             <div className="flex justify-between items-center pb-3 mb-4 border-b border-slate/25">
               <h2 className="text-2xl font-serif font-semibold">你</h2>
               <button
+                data-testid="profile-exit-button"
                 onClick={() => goto('home')}
                 className="text-parchment/70 hover:text-parchment text-sm bg-transparent border-none cursor-pointer font-sans"
               >
@@ -57,31 +58,31 @@ export function Profile() {
             <div className="grid grid-cols-2 gap-x-7 gap-y-3.5">
               <div>
                 <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">{t.profileNameLabel}</div>
-                <div className="text-xl font-semibold text-ember">{profile.name}</div>
+                <div data-testid="profile-name-display" className="text-xl font-semibold text-ember">{profile.name}</div>
               </div>
               <div>
                 <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">{t.profileFieldLabel}</div>
-                <div className="text-sm text-parchment">{profile.preferred_topics.join(' · ') || '未填'}</div>
+                <div data-testid="profile-topics-display" className="text-sm text-parchment">{profile.preferred_topics.join(' · ') || '未填'}</div>
               </div>
               <div className="col-span-2">
                 <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">{t.profileTextLabel}</div>
-                <div className="text-sm text-parchment leading-relaxed">{profile.profile_text || '未填'}</div>
+                <div data-testid="profile-text-display" className="text-sm text-parchment leading-relaxed">{profile.profile_text || '未填'}</div>
               </div>
               <div>
                 <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">{t.difficultyLabel}</div>
-                <div className="text-sm text-parchment">
+                <div data-testid="profile-difficulty-display" className="text-sm text-parchment">
                   {getDifficultyLabel(lastUsed.difficulty, t)}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] text-parchment/50 font-sans uppercase tracking-wider mb-1">{t.temperatureLabel}</div>
-                <div className="text-sm text-parchment">{getTemperatureLabel(lastUsed.temperature, t)}</div>
+                <div data-testid="profile-temperature-display" className="text-sm text-parchment">{getTemperatureLabel(lastUsed.temperature, t)}</div>
               </div>
             </div>
           </div>
 
           <div className="flex justify-center mt-5">
-            <Button onClick={() => setEditing(true)}>改写</Button>
+            <Button data-testid="profile-edit-button" onClick={() => setEditing(true)}>改写</Button>
           </div>
         </div>
       </div>
@@ -101,12 +102,13 @@ export function Profile() {
 
           <div>
             <div className="text-[11px] text-parchment/60 font-sans mb-1">{t.profileNameLabel}</div>
-            <Input value={name} onChange={e => setName(e.target.value)} className="w-full" />
+            <Input data-testid="profile-name-input" value={name} onChange={e => setName(e.target.value)} className="w-full" />
           </div>
 
           <div>
             <div className="text-[11px] text-parchment/60 font-sans mb-1">{t.profileTextLabel}</div>
             <textarea
+              data-testid="profile-text-input"
               rows={4}
               value={text}
               onChange={e => setText(e.target.value)}
@@ -116,7 +118,7 @@ export function Profile() {
 
           <div>
             <div className="text-[11px] text-parchment/60 font-sans mb-1">{t.profileFieldLabel}</div>
-            <Input value={topics} onChange={e => setTopics(e.target.value)} className="w-full" />
+            <Input data-testid="profile-topics-input" value={topics} onChange={e => setTopics(e.target.value)} className="w-full" />
           </div>
 
           <div>
@@ -125,6 +127,7 @@ export function Profile() {
               {(['high', 'mid', 'low'] as const).map(d => (
                 <button
                   key={d}
+                  data-testid={`profile-difficulty-${d}`}
                   onClick={() => setDifficulty(d)}
                   className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
                     difficulty === d
@@ -144,6 +147,7 @@ export function Profile() {
               {[0.3, 0.7, 1.0].map(temp => (
                 <button
                   key={temp}
+                  data-testid={`profile-temperature-${temp}`}
                   onClick={() => setTemperature(temp)}
                   className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
                     temperature === temp
@@ -158,8 +162,8 @@ export function Profile() {
           </div>
 
           <div className="flex gap-3 pt-2 mt-auto">
-            <Button onClick={onSave}>落印</Button>
-            <Button variant="ghost" onClick={() => setEditing(false)}>作废</Button>
+            <Button data-testid="profile-save-button" onClick={onSave}>落印</Button>
+            <Button data-testid="profile-cancel-button" variant="ghost" onClick={() => setEditing(false)}>作废</Button>
           </div>
         </div>
       </div>

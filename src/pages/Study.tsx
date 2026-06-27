@@ -197,7 +197,7 @@ export function Study() {
         </button>
         <div className="font-serif">{session.topic}</div>
         <div className="flex items-center gap-3">
-          <SwapPaintingButton surface="study" />
+          <SwapPaintingButton data-testid="swap-painting-button" surface="study" />
           <div className="font-sans text-sm text-parchment/60">
             {session.mode === 'progress' ? t.modeProgress : t.modeReview} ·
             {getDifficultyLabel(session.difficulty, t)} ·
@@ -209,7 +209,7 @@ export function Study() {
       <ExternalMaterialsCard />
 
       {streamError && (
-        <div className="relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans">
+        <div data-testid="stream-error-banner" className="relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans">
           <div className="flex justify-between items-center">
             <span>
               {streamError.code === 'UNAUTHORIZED'
@@ -218,9 +218,9 @@ export function Study() {
             </span>
             <div className="flex gap-2">
               {streamError.code !== 'UNAUTHORIZED' && (
-                <Button variant="ghost" onClick={() => { setStreamError(null); sendOrInterrupt('继续') }}>重递</Button>
+                <Button data-testid="stream-retry-button" variant="ghost" onClick={() => { setStreamError(null); sendOrInterrupt('继续') }}>重递</Button>
               )}
-              <Button variant="ghost" onClick={() => setStreamError(null)}>合上</Button>
+              <Button data-testid="stream-dismiss-button" variant="ghost" onClick={() => setStreamError(null)}>合上</Button>
             </div>
           </div>
         </div>
@@ -252,7 +252,7 @@ export function Study() {
                           text-sm font-sans text-parchment/80 flex justify-between items-center">
             <span>{t.archiveConfirmTitle}</span>
             <div className="flex gap-1.5 items-center">
-              <Button variant="ghost" onClick={() => useStore.getState().dismissArchive()}>
+              <Button data-testid="dismiss-archive-button" variant="ghost" onClick={() => useStore.getState().dismissArchive()}>
                 {t.archiveDismiss}
               </Button>
               <Button data-testid="archive-button" onClick={onEnd}>{t.archiveConfirm}</Button>

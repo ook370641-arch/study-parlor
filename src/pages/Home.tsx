@@ -29,16 +29,19 @@ export function Home() {
       <SurfaceBackground surface="home" />
       <SwapPaintingButton surface="home" className="absolute top-4 right-52 z-10" />
       <Button variant="ghost"
+        data-testid="home-settings-button"
         onClick={() => goto('settings')}
         className="absolute top-4 right-36 font-sans text-sm z-10">
         设置
       </Button>
       <Button variant="ghost"
+        data-testid="home-profile-button"
         onClick={() => goto('profile')}
         className="absolute top-4 right-20 font-sans text-sm z-10">
         {t.libraryName}
       </Button>
       <Button variant="ghost"
+        data-testid="home-extension-button"
         onClick={() => goto('extension')}
         className="absolute top-4 right-4 font-sans text-sm z-10">
         扩展
@@ -68,6 +71,7 @@ export function Home() {
                     继续
                   </button>
                   <button
+                    data-testid="burn-unsaved-button"
                     onClick={() => removeUnsavedSession(firstUnsaved.id)}
                     className="text-xs text-parchment/30 hover:text-red-400 transition-colors font-sans"
                   >

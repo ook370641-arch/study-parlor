@@ -12,7 +12,7 @@ export function ExternalMaterialsCard() {
   const hasSources = materials.sources.length > 0
 
   return (
-    <div className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
+    <div data-testid="external-materials-card" className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
       <div className="my-3 bg-ink/60 backdrop-blur-md border border-slate/30 rounded-lg overflow-hidden">
         <button
           onClick={() => setExpanded(v => !v)}

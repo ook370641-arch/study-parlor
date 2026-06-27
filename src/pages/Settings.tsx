@@ -134,7 +134,7 @@ export function Settings() {
   const canVerify = apiKey.trim().length > 0
 
   return (
-    <div className="fixed inset-0">
+    <div data-testid="settings-page" className="fixed inset-0">
       <SurfaceBackground surface="home" />
       <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
 
@@ -144,6 +144,7 @@ export function Settings() {
             <div className="flex justify-between items-center px-6 pt-5 pb-3 border-b border-slate/25 shrink-0">
               <h2 className="text-2xl font-serif font-semibold">设置 · 仪器调校</h2>
               <button
+                data-testid="settings-back-button"
                 onClick={() => goto('home')}
                 className="text-parchment/70 hover:text-parchment text-sm bg-transparent border-none cursor-pointer font-sans"
               >
@@ -153,7 +154,7 @@ export function Settings() {
 
             <div className="overflow-y-auto flex-1 px-6 py-5">
               {error && (
-                <div className="mb-4 bg-wine/10 border border-wine/40 rounded-md px-4 py-3">
+                <div data-testid="settings-error-display" className="mb-4 bg-wine/10 border border-wine/40 rounded-md px-4 py-3">
                   <p className="text-sm text-parchment/80">{error}</p>
                 </div>
               )}
@@ -167,6 +168,7 @@ export function Settings() {
                     <div className="text-[11px] text-parchment/60 font-sans mb-1">API Key</div>
                     <div className="flex gap-2">
                       <input
+                        data-testid="settings-api-key-input"
                         type={showKey ? 'text' : 'password'}
                         value={apiKey}
                         onChange={e => setApiKey(e.target.value)}
@@ -174,6 +176,7 @@ export function Settings() {
                         className="flex-1 bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
                       />
                       <button
+                        data-testid="settings-api-key-toggle"
                         type="button"
                         onClick={() => setShowKey(!showKey)}
                         className="px-3 py-2 border border-slate/40 rounded-md text-sm text-parchment/80 hover:text-parchment transition-colors shrink-0"
@@ -189,6 +192,7 @@ export function Settings() {
                   <div>
                     <div className="text-[11px] text-parchment/60 font-sans mb-1">Base URL</div>
                     <input
+                      data-testid="settings-base-url-input"
                       type="text"
                       value={baseUrl}
                       onChange={e => setBaseUrl(e.target.value)}
@@ -200,6 +204,7 @@ export function Settings() {
                   <div>
                     <div className="text-[11px] text-parchment/60 font-sans mb-1">Model</div>
                     <input
+                      data-testid="settings-model-input"
                       type="text"
                       value={model}
                       onChange={e => setModel(e.target.value)}
@@ -210,11 +215,11 @@ export function Settings() {
                 </div>
 
                 <div className="flex items-center gap-3 mt-4">
-                  <Button onClick={handleVerify} disabled={!canVerify}>
+                  <Button data-testid="settings-verify-button" onClick={handleVerify} disabled={!canVerify}>
                     验证连接
                   </Button>
                   {verifyStatus && (
-                    <span className={`text-xs ${
+                    <span data-testid="settings-verify-status" className={`text-xs ${
                       verifyStatus.kind === 'error' ? 'text-wine' :
                       verifyStatus.kind === 'success' ? 'text-ember' :
                       'text-parchment/40'
@@ -234,6 +239,7 @@ export function Settings() {
                     <div className="text-[11px] text-parchment/60 font-sans mb-1">Tavily API Key</div>
                     <div className="flex gap-2">
                       <input
+                        data-testid="settings-search-api-key-input"
                         type={showSearchKey ? 'text' : 'password'}
                         value={searchApiKey}
                         onChange={e => setSearchApiKey(e.target.value)}
@@ -241,6 +247,7 @@ export function Settings() {
                         className="flex-1 bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
                       />
                       <button
+                        data-testid="settings-search-api-key-toggle"
                         type="button"
                         onClick={() => setShowSearchKey(!showSearchKey)}
                         className="px-3 py-2 border border-slate/40 rounded-md text-sm text-parchment/80 hover:text-parchment transition-colors shrink-0"
@@ -252,7 +259,7 @@ export function Settings() {
                       <div className="text-xs text-parchment/40">
                         Key 会加密存储在系统密钥库中，不会写入 .env 文件；联网资料仅在你主动开启时使用。
                       </div>
-                      <Button onClick={handleSaveSearchKey} disabled={!searchApiKey.trim()}>
+                      <Button data-testid="settings-search-save-button" onClick={handleSaveSearchKey} disabled={!searchApiKey.trim()}>
                         保存
                       </Button>
                     </div>
@@ -267,12 +274,14 @@ export function Settings() {
                   <div className="text-[11px] text-parchment/60 font-sans mb-1">目录路径</div>
                   <div className="flex gap-2">
                     <input
+                      data-testid="settings-library-path-input"
                       type="text"
                       value={libraryPath}
                       onChange={e => setLibraryPath(e.target.value)}
                       className="flex-1 bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
                     />
                     <button
+                      data-testid="settings-select-directory-button"
                       type="button"
                       onClick={handleSelectDirectory}
                       className="px-3 py-2 border border-slate/40 rounded-md text-sm text-parchment/80 hover:text-parchment transition-colors shrink-0"
@@ -286,10 +295,10 @@ export function Settings() {
               {/* 保存 */}
               <div className="flex flex-col gap-3">
                 <div className="flex gap-3">
-                  <Button onClick={handleSave} disabled={!canSave}>
+                  <Button data-testid="settings-save-button" onClick={handleSave} disabled={!canSave}>
                     保存
                   </Button>
-                  <Button variant="ghost" onClick={resetForm}>
+                  <Button data-testid="settings-reset-button" variant="ghost" onClick={resetForm}>
                     作废
                   </Button>
                 </div>

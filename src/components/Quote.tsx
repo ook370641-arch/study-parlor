@@ -57,7 +57,7 @@ export function Quote({ surface }: Props) {
         <button
           onClick={refresh}
           className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-parchment/40 hover:text-ember transition-opacity"
-          aria-label="换一句"
+          data-testid="quote-refresh-button"
           title="换一句"
         >
           ↻

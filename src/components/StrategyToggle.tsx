@@ -23,7 +23,7 @@ export function StrategyToggle() {
   const borderColor = meta.color + '80' // 50% opacity
 
   return (
-    <div className="relative">
+    <div data-testid="strategy-toggle" className="relative">
       <button
         onClick={cycle}
         onMouseEnter={() => setHovered(true)}

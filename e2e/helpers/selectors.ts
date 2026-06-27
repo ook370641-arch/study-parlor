@@ -63,7 +63,7 @@ export const SELECTORS = {
     text: '[data-testid="quote-text"]',
     original: '[data-testid="quote-original"]',
     meta: '[data-testid="quote-meta"]',
-    refreshButton: 'button[aria-label="换一句"]',
+    refreshButton: '[data-testid="quote-refresh-button"]',
   },
   profile: {
     page: '[data-testid="profile-page"]',

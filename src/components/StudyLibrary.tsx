@@ -82,6 +82,7 @@ function SessionRow({
       <div className="flex flex-row gap-1.5 shrink-0">
         {fileButtons.map((btn) => (
           <button
+            data-testid={btn.label === '谈话记录' ? 'session-file-button' : undefined}
             key={btn.label}
             disabled={btn.disabled || isPending}
             onClick={() =>
@@ -131,6 +132,7 @@ function SessionRow({
           </button>
         ) : !isPending && session.hasReport && session.reportFile ? (
           <button
+            data-testid="generate-diagram-button"
             onClick={() => onGenerateDiagram(dirName, session.sessionNumber)}
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
@@ -138,6 +140,7 @@ function SessionRow({
           </button>
         ) : (
           <button
+            data-testid="session-diagram-button"
             disabled
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
@@ -148,6 +151,7 @@ function SessionRow({
         {/* 寓言按钮 */}
         {isPending ? (
           <button
+            data-testid="session-fable-button"
             disabled
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
@@ -178,6 +182,7 @@ function SessionRow({
           </button>
         ) : session.hasReport ? (
           <button
+            data-testid="generate-fable-button"
             onClick={() => onGenerateFable(dirName, session.sessionNumber)}
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:border-ember hover:bg-ember/20 hover:text-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
@@ -185,6 +190,7 @@ function SessionRow({
           </button>
         ) : (
           <button
+            data-testid="session-fable-button"
             disabled
             className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
@@ -227,6 +233,7 @@ function SessionRow({
 
         {onDelete && (
           <button
+            data-testid="delete-session-button"
             onClick={() => onDelete(dirName, session.sessionNumber)}
             className="w-[18px] h-[18px] flex items-center justify-center rounded text-wine/40 hover:text-wine hover:bg-wine/15 transition-all ml-1 shrink-0"
             title="注销此份"
@@ -771,6 +778,7 @@ export function StudyLibrary() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 py-2.5 border-b border-slate/10">
           <button
+            data-testid="pagination-prev"
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             disabled={currentPage === 0}
             aria-label="前一屉"
@@ -798,6 +806,7 @@ export function StudyLibrary() {
               for (let i = start; i <= end; i++) {
                 dots.push(
                   <button
+                    data-testid={`pagination-dot-${i}`}
                     key={i}
                     onClick={() => setCurrentPage(i)}
                     aria-label={`第${i + 1}屉`}
@@ -813,6 +822,7 @@ export function StudyLibrary() {
             })()}
           </div>
           <button
+            data-testid="pagination-next"
             onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={currentPage >= totalPages - 1}
             aria-label="后一屉"

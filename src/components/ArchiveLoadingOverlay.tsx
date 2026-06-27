@@ -4,10 +4,11 @@ interface ArchiveLoadingOverlayProps {
 
 export function ArchiveLoadingOverlay({ onBack }: ArchiveLoadingOverlayProps) {
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6"
+    <div data-testid="archive-loading-overlay" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6"
          style={{ backgroundColor: 'rgba(42, 31, 26, 0.95)' }}>
       {onBack && (
         <button
+          data-testid="archive-return-home-button"
           onClick={onBack}
           aria-label="返回"
           className="absolute top-4 left-4 text-2xl leading-none text-parchment/70 hover:text-parchment transition-colors px-2 py-1"
