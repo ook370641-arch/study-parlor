@@ -40,7 +40,7 @@ export function BriefingHistoryDrawer({ open, onClose, currentDate, history, loa
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="fixed right-0 top-0 h-full w-60 bg-ink/95 border-l border-slate/40 z-50 p-4 flex flex-col shadow-2xl">
+      <div data-testid="briefing-history-drawer" className="fixed right-0 top-0 h-full w-60 bg-ink/95 border-l border-slate/40 z-50 p-4 flex flex-col shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold text-parchment">往期简报</h2>
           <button

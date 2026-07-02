@@ -1,11 +1,32 @@
-import { test, expect } from '../fixtures/electron'
+import { test as base, expect } from '../fixtures/electron'
 import { SetupWizardPage } from '../pages/SetupWizardPage'
 import { CoverPage } from '../pages/CoverPage'
 import { HomePage } from '../pages/HomePage'
 import { PreStudyPage } from '../pages/PreStudyPage'
 import { StudyPage } from '../pages/StudyPage'
+import { cleanupTestConfigDir } from '../helpers/test-library'
+import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+
+function loadApiKeyFromRootEnv(): string {
+  const envPath = path.join(process.cwd(), '.env')
+  if (!fs.existsSync(envPath)) return ''
+  const content = fs.readFileSync(envPath, 'utf8')
+  const match = content.match(/^KIMI_API_KEY=(.+)$/m)
+  return match?.[1]?.trim() ?? ''
+}
+
+const test = base.extend({
+  // Onboarding requires an empty config dir (no .env) so the setup wizard appears.
+  testConfigDir: async ({}, use, testInfo) => {
+    const dir = path.join(process.cwd(), 'e2e', '.test-config', `${Date.now()}-${randomUUID()}`)
+    fs.mkdirSync(dir, { recursive: true })
+    await use(dir)
+    const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
+    await cleanupTestConfigDir(dir, failed)
+  },
+})
 
 test.describe('@p1 onboarding journey', () => {
   test('complete setup wizard and first study session', async ({ window, testConfigDir }) => {
@@ -14,7 +35,7 @@ test.describe('@p1 onboarding journey', () => {
     const wizard = new SetupWizardPage(window)
     await wizard.start()
 
-    await wizard.fillApiKey(process.env.KIMI_API_KEY ?? '')
+    await wizard.fillApiKey(loadApiKeyFromRootEnv())
     await wizard.fillBaseUrl('https://api.kimi.com/coding/v1')
     await wizard.fillModel('kimi-k2.6')
     await wizard.verifyAndContinue()
@@ -28,7 +49,7 @@ test.describe('@p1 onboarding journey', () => {
     await wizard.complete()
 
     const cover = new CoverPage(window)
-    await cover.enterApp('新旅人')
+    await cover.enterIfNeeded('新旅人')
 
     const home = new HomePage(window)
     await home.waitForLoaded()

@@ -8,7 +8,7 @@ import * as path from 'node:path'
 
 test.describe('@p2 archive edge', () => {
   test('multiple archives create unique filenames', async ({ window, testLibraryPath }) => {
-    test.setTimeout(600000)
+    test.setTimeout(300000)
 
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()

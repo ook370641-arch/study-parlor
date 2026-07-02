@@ -39,7 +39,7 @@ export function Extension() {
   }, [])
 
   return (
-    <div className="fixed inset-0">
+    <div data-testid="extension-page" className="fixed inset-0">
       <SurfaceBackground surface="home" />
       <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
 
@@ -85,7 +85,7 @@ export function Extension() {
               {activeTab === 'terminology' && <TerminologyPanel />}
 
               {activeTab === 'library' && (
-                <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4">
+                <div data-testid="extension-library-directory-card" className="bg-parchment/5 border border-slate/20 rounded-lg p-4">
                   <h3 className="text-ember font-semibold mb-2 flex items-center gap-2">
                     <span>📁</span> {t.libraryName}
                   </h3>
@@ -105,7 +105,7 @@ export function Extension() {
               )}
 
               {activeTab === 'agent' && (
-                <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4">
+                <div data-testid="extension-local-agent-card" className="bg-parchment/5 border border-slate/20 rounded-lg p-4">
                   <h3 className="text-ember font-semibold mb-2 flex items-center gap-2">
                     <span>⚡</span> 本地 Agent 打通
                   </h3>
@@ -125,7 +125,7 @@ export function Extension() {
               )}
 
               {activeTab === 'paintings' && (
-                <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4">
+                <div data-testid="extension-custom-pictures-card" className="bg-parchment/5 border border-slate/20 rounded-lg p-4">
                   <h3 className="text-ember font-semibold mb-2 flex items-center gap-2">
                     <span>🖼️</span> 自选配图
                   </h3>

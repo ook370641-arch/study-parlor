@@ -39,10 +39,11 @@ process.on('unhandledRejection', (reason) => {
 let mainWindow: BrowserWindow | null = null
 let fatalError: string | null = null
 let pendingBootCfg: ReturnType<typeof loadEnv> | null = null
+let bootCompleted = false
 
 const isDev = !!process.env.ELECTRON_RENDERER_URL
 
-if (isDev || process.env.NODE_ENV === 'test') {
+if (isDev) {
   app.commandLine.appendSwitch('remote-debugging-port', '9222')
 }
 
@@ -173,6 +174,10 @@ async function bootstrap() {
   })
 
   ipcMain.handle('setup:probeKey', async (_, args) => {
+    // E2E tests can bypass the network probe for reliability.
+    if (process.env.E2E_SKIP_PROBE === '1') {
+      return { ok: true }
+    }
     const { apiKey, baseUrl, model } = args
     const result = await probeModelWithCredentials({
       apiKey,
@@ -230,12 +235,20 @@ async function bootstrap() {
 
   // Renderer calls this when LoadingScreen mounts and is ready to receive events
   ipcMain.handle('boot:start', async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return { alreadyCompleted: false }
+    if (bootCompleted) {
+      console.log('[bootstrap] boot already completed, sending boot:complete on reload')
+      mainWindow.webContents.send('boot:complete')
+      return { alreadyCompleted: true }
+    }
     const cfg = pendingBootCfg
-    if (!cfg || !mainWindow || mainWindow.isDestroyed()) return
+    if (!cfg) return { alreadyCompleted: false }
     pendingBootCfg = null
     console.log('[bootstrap] boot sequence start')
     await runBootSequence(cfg, mainWindow)
+    bootCompleted = true
     console.log('[bootstrap] boot sequence complete')
+    return { alreadyCompleted: false }
   })
 
   if (!needsSetup) {

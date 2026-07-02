@@ -30,6 +30,7 @@ export class ProfilePage {
 
   async enterEditMode() {
     await this.editButton.click()
+    await this.page.locator(SELECTORS.profile.nameInput).waitFor({ state: 'visible' })
   }
 
   async setName(name: string) {
@@ -49,15 +50,18 @@ export class ProfilePage {
   }
 
   async setTemperature(temperature: 'strict' | 'balanced' | 'creative') {
-    await this.page.locator(SELECTORS.profile.temperatureButton(temperature)).click()
+    const value = { strict: '0.3', balanced: '0.7', creative: '1.0' }[temperature]
+    await this.page.locator(SELECTORS.profile.temperatureButton(value)).click()
   }
 
   async save() {
     await this.saveButton.click()
+    await this.nameDisplay.waitFor({ state: 'visible' })
   }
 
   async cancel() {
     await this.cancelButton.click()
+    await this.nameDisplay.waitFor({ state: 'visible' })
   }
 
   async exit() {

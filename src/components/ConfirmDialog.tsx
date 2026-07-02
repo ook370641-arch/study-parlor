@@ -41,6 +41,7 @@ export function ConfirmDialog({
 
   return (
     <div
+      data-testid="confirm-dialog"
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: 'rgba(20,15,12,0.85)' }}
       onClick={onCancel}
@@ -61,6 +62,7 @@ export function ConfirmDialog({
         </div>
         <div className="flex gap-3 justify-end">
           <button
+            data-testid="confirm-dialog-cancel"
             onClick={onCancel}
             className="px-4 py-2 text-sm rounded border font-sans transition-colors"
             style={{
@@ -80,6 +82,7 @@ export function ConfirmDialog({
             {confirmVariant === 'danger' ? '你还没有准备好' : '维持现状'}
           </button>
           <button
+            data-testid="confirm-dialog-confirm"
             onClick={onConfirm}
             className="px-4 py-2 text-sm rounded font-sans transition-all"
             style={{

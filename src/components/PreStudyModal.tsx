@@ -485,7 +485,7 @@ export function PreStudyModal() {
           <div className="flex gap-2">
             {[0.3, 0.7, 1.0].map(temp => (
               <button key={temp}
-                data-testid={`temperature-button-${temp}`}
+                data-testid={`temperature-button-${temp.toFixed(1)}`}
                 onClick={() => setTemperature(temp)}
                 className={`px-4 py-1.5 rounded font-sans text-sm border transition-colors
                   ${temperature === temp

@@ -299,7 +299,7 @@ export function seedWildCardInspiration(
   } else {
     state = { ...BASE_STATE }
   }
-  state.wildCardInspiration = payload
+  state.wildcardInspiration = payload
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2))
 }
 

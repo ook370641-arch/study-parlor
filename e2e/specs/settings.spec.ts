@@ -32,7 +32,7 @@ test.describe('@p1 settings', () => {
   test('verify connection with real API', async ({ window }) => {
     test.setTimeout(120000)
     if (!process.env.KIMI_API_KEY) {
-      test.skip('KIMI_API_KEY not available')
+      test.skip(!process.env.KIMI_API_KEY, 'KIMI_API_KEY not available')
     }
 
     const cover = new CoverPage(window)
@@ -46,7 +46,7 @@ test.describe('@p1 settings', () => {
     await settings.waitForLoaded()
     await settings.clickVerify()
 
-    await expect(settings.page.locator(SELECTORS.settings.verifyStatus))
+    await expect(window.locator(SELECTORS.settings.verifyStatus))
       .toContainText('正常', { timeout: 60000 })
   })
 })

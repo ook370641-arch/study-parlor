@@ -256,7 +256,7 @@ export type IpcApi = {
   briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
   briefingList: () => Promise<{ date: string; filePath: string }[]>
   bootFatal: () => Promise<string | null>
-  bootStart: () => Promise<void>
+  bootStart: () => Promise<{ alreadyCompleted: boolean }>
   onBootProgress: (cb: (stage: string, progress: number) => void) => () => void
   onBootComplete: (cb: () => void) => () => void
 

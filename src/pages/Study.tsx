@@ -112,11 +112,9 @@ export function Study() {
     if (unsaved) s.removeUnsavedSession(unsaved.id)
 
     // 计算占位信息并加入 pendingArchives,让主页学习库立即显示"归档中"
-    const topicMeta = s.library.find(t => t.dirName === sess.dirName)
-    const sessionNumber = sess.dirName && topicMeta
-      ? topicMeta.sessionCount + 1
-      : 1
     const dirName = sess.dirName ?? sanitizeDirName(sess.topic)
+    const topicMeta = s.library.find(t => t.dirName === dirName)
+    const sessionNumber = topicMeta ? topicMeta.sessionCount + 1 : 1
     s.addPendingArchive({
       dirName,
       topic: sess.topic,

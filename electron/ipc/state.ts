@@ -34,7 +34,9 @@ export function registerStateIpc() {
   loadState()
 
   ipcMain.handle('state:get', async (): Promise<StateJson> => {
-    return loadState()
+    // Always read from disk so that renderer reloads pick up external state changes (e.g. E2E fixtures).
+    const raw = safeReadJson(getStateFile(), { fallback: DEFAULT })
+    return { ...DEFAULT, ...raw }
   })
 
   ipcMain.handle('state:patch', async (_, patch: Partial<StateJson>) => {

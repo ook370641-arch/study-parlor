@@ -123,11 +123,11 @@ export function Home() {
 
         {/* 右侧：学习库 */}
         <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
-          <div data-testid="library-section" className="text-xs text-parchment/40 font-sans mb-3">{t.libraryName}</div>
-          <StudyLibrary />
-          <div className="mt-4 shrink-0">
+          <div className="mb-4 shrink-0">
             <Quote surface="home" />
           </div>
+          <div data-testid="library-section" className="text-xs text-parchment/40 font-sans mb-3">{t.libraryName}</div>
+          <StudyLibrary />
         </div>
       </div>
     </div>

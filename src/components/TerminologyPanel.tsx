@@ -86,10 +86,11 @@ export function TerminologyPanel() {
   const hasCustom = (key: keyof Terminology) => custom[key] !== undefined && custom[key] !== ''
 
   return (
-    <div className="h-full flex flex-col">
+    <div data-testid="terminology-panel" className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-serif font-semibold">我的语言</h3>
         <button
+          data-testid="terminology-reset-all"
           onClick={() => void resetTerminology()}
           className="text-xs text-parchment/50 hover:text-parchment font-sans transition-colors"
         >
@@ -115,6 +116,7 @@ export function TerminologyPanel() {
                   <div className="text-xs text-parchment/40 font-sans truncate">{DEFAULT_TERMINOLOGY[key]}</div>
                   <input
                     type="text"
+                    data-testid={`terminology-input-${key}`}
                     value={custom[key] ?? ''}
                     onChange={e => handleChange(key, e.target.value)}
                     className="bg-ink/50 border border-slate/40 rounded px-2 py-1.5 text-sm text-parchment focus:outline-none focus:border-ember/60 font-sans"
@@ -122,6 +124,7 @@ export function TerminologyPanel() {
                   />
                   <button
                     onClick={() => handleResetKey(key)}
+                    data-testid={`terminology-reset-${key}`}
                     disabled={!hasCustom(key)}
                     className={`text-xs font-sans transition-colors ${
                       hasCustom(key)
@@ -138,7 +141,7 @@ export function TerminologyPanel() {
         ))}
       </div>
 
-      <div className="mt-4 shrink-0 bg-ember/5 border border-ember/20 rounded-lg p-4">
+      <div data-testid="terminology-preview" className="mt-4 shrink-0 bg-ember/5 border border-ember/20 rounded-lg p-4">
         <div className="text-xs text-parchment/50 font-sans mb-2">实时预览</div>
         <div className="text-sm text-parchment font-sans">
           进入 <span className="text-ember">{t.sessionName}</span>

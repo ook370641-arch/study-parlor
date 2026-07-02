@@ -13,16 +13,23 @@ test.describe('@p1 library management', () => {
     await home.waitForLoaded()
 
     const library = new LibraryPage(window)
-    await library.createGroup()
-    const newGroupTab = window.locator(SELECTORS.library.groupTab('group-1'))
-    await expect(newGroupTab).toBeVisible()
+    await library.waitForVisible()
+    const groupId = await library.createGroup('新分组')
 
-    await library.renameGroup('group-1', '重构后的分组')
-    await expect(window.locator(SELECTORS.library.groupTab('group-1'))).toContainText('重构后的分组')
+    const newGroupTab = window.locator(SELECTORS.library.groupTab(groupId))
+    await expect(newGroupTab).toBeVisible()
+    await expect(newGroupTab).toContainText('新分组')
+
+    await library.renameGroup(groupId, '重构后的分组')
+    await expect(window.locator(SELECTORS.library.groupTab(groupId))).toContainText('重构后的分组')
   })
 
   test('view fable from seeded topic', async ({ window, testLibraryPath }) => {
     seedTopicWithFable(testLibraryPath, 'fable-topic', '寓言测试主题')
+
+    // Reload so the freshly seeded library is picked up during init().
+    await window.reload()
+    await window.waitForLoadState('networkidle')
 
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
@@ -30,7 +37,8 @@ test.describe('@p1 library management', () => {
     await home.waitForLoaded()
 
     const library = new LibraryPage(window)
-    await expect(window.locator(SELECTORS.home.topicCard).first()).toContainText('寓言测试主题')
+    // Topic cards render dirName as their title (getTopicMeta uses dirName for the topic title).
+    await expect(window.locator(SELECTORS.home.topicCard).first()).toContainText('fable-topic')
     await library.openFable(0, 0)
 
     await expect(window.locator(SELECTORS.library.sessionViewer)).toBeVisible()
@@ -41,13 +49,17 @@ test.describe('@p1 library management', () => {
   test('view diagram from seeded topic', async ({ window, testLibraryPath }) => {
     seedTopicWithDiagram(testLibraryPath, 'diagram-topic', '图表测试主题')
 
+    // Reload so the freshly seeded library is picked up during init().
+    await window.reload()
+    await window.waitForLoadState('networkidle')
+
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
     const home = new HomePage(window)
     await home.waitForLoaded()
 
     const library = new LibraryPage(window)
-    await expect(window.locator(SELECTORS.home.topicCard).first()).toContainText('图表测试主题')
+    await expect(window.locator(SELECTORS.home.topicCard).first()).toContainText('diagram-topic')
     await library.openDiagram(0, 0)
 
     await expect(window.locator(SELECTORS.library.sessionViewer)).toBeVisible()

@@ -47,6 +47,7 @@ export function WildCardRecCard({
 
   return (
     <div
+      data-testid="wild-card-card"
       className="relative bg-ink/70 backdrop-blur-md border border-wildcard/30 border-l-4 border-l-wildcard rounded overflow-hidden hover:border-wildcard/60 hover:bg-ink/80 transition-all cursor-pointer group"
       onClick={() => onClickTopic(recommendation.topic)}
     >
@@ -65,6 +66,7 @@ export function WildCardRecCard({
             ✦ 意外之径
           </span>
           <button
+            data-testid="wild-card-refresh"
             onClick={(e) => {
               e.stopPropagation()
               refresh()
@@ -76,10 +78,10 @@ export function WildCardRecCard({
             ↻
           </button>
         </div>
-        <div className="font-serif text-[0.95rem] text-parchment font-semibold mb-1">
+        <div data-testid="wild-card-title" className="font-serif text-[0.95rem] text-parchment font-semibold mb-1">
           {recommendation.topic}
         </div>
-        <div className="text-xs text-parchment/50 leading-relaxed italic">
+        <div data-testid="wild-card-hook" className="text-xs text-parchment/50 leading-relaxed italic">
           {recommendation.hook}
         </div>
         {error && (

@@ -117,6 +117,7 @@ function SessionRow({
           </button>
         ) : session.hasDiagram && session.diagramFile ? (
           <button
+            data-testid="session-diagram-button"
             onClick={() =>
               onViewFile({
                 dirName,
@@ -166,6 +167,7 @@ function SessionRow({
           </button>
         ) : session.hasFable ? (
           <button
+            data-testid="session-fable-button"
             onClick={() =>
               session.fableFile &&
               onViewFile({
@@ -752,9 +754,19 @@ export function StudyLibrary() {
 
   if (mergedLibrary.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-lg text-parchment/50 italic">档案室还空着。但空也是一种档案。</p>
-        <p className="text-sm text-parchment/30 mt-2">点击上方 <strong className="text-parchment/60">新的小径</strong> 开始学习</p>
+      <div className="relative flex flex-col flex-1 min-h-0">
+        <GroupRibbon
+          groups={groups}
+          activeGroupId={activeGroupId}
+          onSelect={setActiveGroup}
+          onCreate={createGroup}
+          onRename={renameGroup}
+          onDelete={deleteGroup}
+        />
+        <div className="flex flex-col items-center justify-center py-16 text-center flex-1">
+          <p className="text-lg text-parchment/50 italic">档案室还空着。但空也是一种档案。</p>
+          <p className="text-sm text-parchment/30 mt-2">点击上方 <strong className="text-parchment/60">新的小径</strong> 开始学习</p>
+        </div>
       </div>
     )
   }

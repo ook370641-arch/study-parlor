@@ -60,7 +60,8 @@ export class PreStudyPage {
   }
 
   async setTemperature(temperature: 'strict' | 'balanced' | 'creative') {
-    await this.page.locator(SELECTORS.preStudy.temperatureButton(temperature)).click()
+    const value = { strict: '0.3', balanced: '0.7', creative: '1.0' }[temperature]
+    await this.page.locator(SELECTORS.preStudy.temperatureButton(value)).click()
   }
 
   async toggleExternalMaterials() {

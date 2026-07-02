@@ -34,6 +34,7 @@ export class CoverPage {
   }
 
   async goToBriefing() {
+    await this.briefingButton.waitFor({ state: 'visible' })
     await this.briefingButton.click()
   }
 

@@ -28,7 +28,7 @@ export function Quote({ surface }: Props) {
     >
       <div
         data-testid="quote-text"
-        className="font-serif text-[26px] leading-relaxed text-parchment line-clamp-3"
+        className="font-serif text-[26px] leading-relaxed text-parchment"
         style={{ textShadow: '0 1px 8px rgba(0,0,0,0.75)' }}
       >
         “{quote.text}”
@@ -37,7 +37,7 @@ export function Quote({ surface }: Props) {
       {quote.original && (
         <div
           data-testid="quote-original"
-          className="mt-2 font-serif italic text-sm leading-relaxed text-parchment/60 line-clamp-2"
+          className="mt-2 font-serif italic text-sm leading-relaxed text-parchment/60"
           style={{ textShadow: '0 1px 6px rgba(0,0,0,0.65)' }}
         >
           {quote.original}

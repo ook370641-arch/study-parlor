@@ -91,7 +91,7 @@ export function Profile() {
 }
 
   return (
-    <div className="fixed inset-0">
+    <div data-testid="profile-page" className="fixed inset-0">
       <SurfaceBackground surface="home" />
       <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
 
@@ -147,7 +147,7 @@ export function Profile() {
               {[0.3, 0.7, 1.0].map(temp => (
                 <button
                   key={temp}
-                  data-testid={`profile-temperature-${temp}`}
+                  data-testid={`profile-temperature-${temp.toFixed(1)}`}
                   onClick={() => setTemperature(temp)}
                   className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
                     temperature === temp

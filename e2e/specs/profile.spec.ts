@@ -19,7 +19,7 @@ test.describe('@p1 profile', () => {
     await profile.enterEditMode()
     await profile.setName('苏格拉底')
     await profile.setProfileText('喜欢追问到底')
-    await profile.setPreferredTopics('哲学，数学')
+    await profile.setPreferredTopics('哲学,数学')
     await profile.setDifficulty('high')
     await profile.setTemperature('strict')
     await profile.save()
@@ -32,7 +32,7 @@ test.describe('@p1 profile', () => {
     expect(state.profile.profile_text).toBe('喜欢追问到底')
     expect(state.profile.preferred_topics).toEqual(['哲学', '数学'])
     expect(state.lastUsed.difficulty).toBe('high')
-    expect(state.lastUsed.temperature).toBe('strict')
+    expect(state.lastUsed.temperature).toBe(0.3)
   })
 
   test('cancel edit discards changes', async ({ window }) => {

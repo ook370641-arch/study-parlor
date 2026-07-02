@@ -92,8 +92,20 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     }
   })
 
-  ipcMain.handle('llm:finalizeProgress', async (_, history: Message[]) =>
-    finalizeProgress(cfg, history))
+  ipcMain.handle('llm:finalizeProgress', async (_, history: Message[]) => {
+    // E2E fast path: avoid real LLM calls that can take minutes and cause timeouts
+    if (process.env.NODE_ENV === 'test') {
+      const lastUserMsg = history.filter(m => m.role === 'user').pop()
+      const topic = lastUserMsg?.content ?? '测试归档'
+      return {
+        title: topic,
+        description: 'E2E 测试归档',
+        body: `> E2E 测试生成的学习报告\n\n${history.map(m => `**${m.role}**: ${m.content}`).join('\n\n')}`,
+        progress_summary: 'E2E 测试进度总结'
+      }
+    }
+    return finalizeProgress(cfg, history)
+  })
 
   ipcMain.handle('llm:finalizeReview', async (_, args: {
     history: Message[]; existingBody: string
@@ -101,7 +113,16 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
 
   ipcMain.handle('llm:generateFable', async (_, args: {
     history: Message[]; topic: string
-  }) => generateFable(cfg, args))
+  }) => {
+    // E2E fast path: skip real LLM fable generation
+    if (process.env.NODE_ENV === 'test') {
+      return {
+        title: `${args.topic} — 寓言`,
+        body: '> E2E 测试生成的寓言\n\n' + args.history.map(m => `**${m.role}**: ${m.content}`).join('\n\n')
+      }
+    }
+    return generateFable(cfg, args)
+  })
 
   ipcMain.handle('llm:generateFableFromReport', async (_, args: {
     reportBody: string; topic: string; userPrompt?: string

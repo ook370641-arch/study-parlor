@@ -25,7 +25,7 @@ function formatGeneratedAt(iso: string, date: string): string {
     minute: '2-digit',
     hour12: false,
   })
-  const today = new Date().toISOString().slice(0, 10)
+  const today = formatBriefingDate(new Date())
   if (date === today) return time
   const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   return `${dateStr} · ${time}`

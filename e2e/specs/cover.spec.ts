@@ -2,6 +2,7 @@ import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { HomePage } from '../pages/HomePage'
 import { SELECTORS } from '../helpers/selectors'
+import { seedStateJson } from '../helpers/test-library'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
@@ -22,20 +23,9 @@ test.describe('@p0 cover', () => {
 
 test.describe('@p1 cover', () => {
   test('returning user sees light button', async ({ window, testConfigDir }) => {
-    const statePath = path.join(testConfigDir, 'state.json')
-    fs.writeFileSync(statePath, JSON.stringify({
+    seedStateJson(testConfigDir, {
       profile: { name: '归来者', profile_text: '', preferred_topics: [] },
-      lastUsed: { difficulty: 'mid', temperature: 'balanced' },
-      session_count: 0,
-      groups: [],
-      activeGroupId: null,
-      groupInspirations: {},
-      topicContinueSuggestions: {},
-      unsavedSessions: [],
-      pendingArchives: [],
-      archiveResult: null,
-      terminology: {},
-    }))
+    })
 
     await window.reload()
 
@@ -62,7 +52,8 @@ test.describe('@p1 cover', () => {
 
   test('briefing button navigates to briefing', async ({ window }) => {
     const cover = new CoverPage(window)
-    await cover.enterIfNeeded()
+    await cover.nameInput.waitFor({ state: 'visible' })
+    await cover.enterName('夜话旅人')
     await cover.goToBriefing()
 
     await expect(window.locator('[data-testid="briefing-page"]')).toBeVisible({ timeout: 10000 })

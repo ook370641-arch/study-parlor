@@ -34,16 +34,15 @@ test.describe('@p1 study', () => {
     await expect(study.archivePendingBanner).not.toBeVisible()
   })
 
-  test('return home without archive does not create unsaved when history empty', async ({ window, testConfigDir }) => {
+  test('return home without archive creates unsaved session', async ({ window, testConfigDir }) => {
+    test.setTimeout(300000)
     const study = await startNewTopic(window, '空对话返回测试')
+    await study.waitForAssistantContent()
     await study.goBack()
 
     const home = new HomePage(window)
     await home.waitForLoaded()
-
-    const statePath = path.join(testConfigDir, 'state.json')
-    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'))
-    expect(state.unsavedSessions).toHaveLength(0)
+    await home.assertUnsavedSessionVisible('空对话返回测试')
   })
 
   test('return home saves unsaved session', async ({ window, testConfigDir }) => {

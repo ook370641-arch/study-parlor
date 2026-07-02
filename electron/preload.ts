@@ -90,7 +90,7 @@ const api: IpcApi = {
     return () => ipcRenderer.off('briefing:progress', handler)
   },
 
-  bootStart: () => ipcRenderer.invoke('boot:start'),
+  bootStart: () => ipcRenderer.invoke('boot:start') as Promise<{ alreadyCompleted: boolean }>,
 
   onBootProgress: (cb: (stage: string, progress: number) => void) => {
     const handler = (_: unknown, stage: string, progress: number) => cb(stage, progress)

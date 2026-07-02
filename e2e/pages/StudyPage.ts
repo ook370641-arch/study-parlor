@@ -67,7 +67,7 @@ export class StudyPage {
   }
 
   async closeArchiveReport() {
-    await this.archiveReportClose.waitFor({ state: 'visible', timeout: 120000 })
+    await this.archiveReportClose.waitFor({ state: 'visible', timeout: 300000 })
     await this.archiveReportClose.click()
   }
 

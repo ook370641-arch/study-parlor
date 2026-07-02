@@ -274,6 +274,16 @@ export function registerBriefingIpc(cfg: AppConfig) {
     if (!args.force && fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, 'utf8')
       const { frontmatter, body } = parseFrontmatter(raw, { filename: path.basename(filePath) })
+
+      // E2E fixtures can seed cached error files with "## Error\n\nBRIEFING_<ERROR_CODE>"
+      // to exercise error UI without hitting the network/LLM.
+      const errorMatch = body
+        .trim()
+        .match(/^##\s*Error\s*\n\s*(BRIEFING_(FEED_EMPTY|NETWORK_ERROR|LLM_ERROR|ASSEMBLY_ERROR))$/)
+      if (errorMatch) {
+        throw new Error(errorMatch[1])
+      }
+
       const rawSources = matter(raw).data?.briefing_sources ?? matter(raw).data?.sources
       let sources: BriefingSource[] = []
       if (typeof rawSources === 'string' && rawSources) {

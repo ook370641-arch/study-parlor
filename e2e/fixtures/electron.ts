@@ -19,28 +19,51 @@ type E2EFixtures = {
 function waitForCdpUrl(proc: ChildProcess, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      cleanup()
       reject(new Error(`Timed out waiting for Electron CDP URL (${timeoutMs}ms)`))
     }, timeoutMs)
 
     const onData = (data: Buffer) => {
       const line = data.toString()
+      // Stream Electron logs to test output for debugging startup issues.
+      process.stdout.write(line)
       const match = line.match(/DevTools listening on (ws:\/\/\S+)/)
-      if (match) {
-        cleanup()
+      if (match && timer) {
+        clearTimeout(timer)
         resolve(match[1])
       }
     }
 
-    const cleanup = () => {
-      clearTimeout(timer)
-      proc.stdout?.off('data', onData)
-      proc.stderr?.off('data', onData)
-    }
-
+    // Keep streams flowing so Electron does not block once the internal buffer fills up.
     proc.stdout?.on('data', onData)
     proc.stderr?.on('data', onData)
   })
+}
+
+async function waitForProcessExit(proc: ChildProcess, timeoutMs: number): Promise<void> {
+  if (proc.exitCode !== null) return
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      resolve()
+    }, timeoutMs)
+    proc.once('exit', () => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
+
+async function killProcessTree(proc: ChildProcess): Promise<void> {
+  if (!proc.pid) return
+  if (process.platform === 'win32') {
+    return new Promise((resolve) => {
+      const killer = spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { stdio: 'ignore' })
+      killer.on('exit', () => resolve())
+      killer.on('error', () => resolve())
+      setTimeout(() => resolve(), 5000)
+    })
+  }
+  proc.kill('SIGKILL')
+  await waitForProcessExit(proc, 5000)
 }
 
 async function waitForCdpPort(url: string, timeoutMs: number): Promise<void> {
@@ -107,6 +130,7 @@ export const test = base.extend<E2EFixtures>({
           NODE_ENV: 'test',
           E2E_CONFIG_DIR: testConfigDir,
           E2E_STUDY_LIBRARY_PATH: testLibraryPath,
+          E2E_SKIP_PROBE: '1',
         },
       }
     )
@@ -116,13 +140,14 @@ export const test = base.extend<E2EFixtures>({
       cdpUrl = await waitForCdpUrl(proc, 60000)
       await waitForCdpPort(cdpUrl, 10000)
     } catch (err) {
-      proc.kill()
+      await killProcessTree(proc)
       throw err
     }
 
     await use({ process: proc, cdpUrl })
 
-    proc.kill()
+    await killProcessTree(proc)
+    await waitForProcessExit(proc, 5000)
 
     const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
     if (failed) {
@@ -136,7 +161,9 @@ export const test = base.extend<E2EFixtures>({
   },
 
   window: async ({ electronProcess }, use) => {
-    const browser = await chromium.connectOverCDP(electronProcess.cdpUrl)
+    const portMatch = electronProcess.cdpUrl.match(/ws:\/\/127\.0\.0\.1:(\d+)/)
+    const port = portMatch ? parseInt(portMatch[1], 10) : 9222
+    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 60000 })
     try {
       const context = browser.contexts()[0]
       if (!context) throw new Error('No browser context available')
