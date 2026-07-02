@@ -263,6 +263,70 @@ export function seedStateJson(
   )
 }
 
+export function seedTerminology(
+  configDir: string,
+  terminology: Record<string, string>
+): void {
+  const statePath = path.join(configDir, 'state.json')
+  const base = {
+    profile: {
+      name: 'E2E 测试员',
+      profile_text: '',
+      preferred_topics: [],
+    },
+    lastUsed: {
+      difficulty: 'mid',
+      temperature: 0.7,
+    },
+    session_count: 0,
+    groups: [],
+    activeGroupId: null,
+    groupInspirations: {},
+    topicContinueSuggestions: {},
+    unsavedSessions: [],
+    pendingArchives: [],
+    archiveResult: null,
+    terminology: {},
+  }
+  const state = fs.existsSync(statePath)
+    ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    : base
+  state.terminology = { ...state.terminology, ...terminology }
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8')
+}
+
+export function seedWildCardInspiration(
+  configDir: string,
+  payload: { title: string; hook: string; topic: string }
+): void {
+  const statePath = path.join(configDir, 'state.json')
+  const base = {
+    profile: {
+      name: 'E2E 测试员',
+      profile_text: '',
+      preferred_topics: [],
+    },
+    lastUsed: {
+      difficulty: 'mid',
+      temperature: 0.7,
+    },
+    session_count: 0,
+    groups: [],
+    activeGroupId: null,
+    groupInspirations: {},
+    topicContinueSuggestions: {},
+    unsavedSessions: [],
+    pendingArchives: [],
+    archiveResult: null,
+    terminology: {},
+  }
+  const state = fs.existsSync(statePath)
+    ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    : base
+  state.wildCardInspiration = payload
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8')
+}
+
 export function seedBriefing(libPath: string, date: string, content?: string, generatedAt?: string): void {
   const dir = path.join(libPath, '夜航简报')
   fs.mkdirSync(dir, { recursive: true })
