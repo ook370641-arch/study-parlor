@@ -23,6 +23,10 @@ export const SELECTORS = {
     groupRecCard: '[data-testid="group-rec-card"]',
     groupRecRefresh: '[data-testid="group-rec-refresh"]',
     groupRecTitle: '[data-testid="group-rec-title"]',
+    wildCardCard: '[data-testid="wild-card-card"]',
+    wildCardTitle: '[data-testid="wild-card-title"]',
+    wildCardHook: '[data-testid="wild-card-hook"]',
+    wildCardRefresh: '[data-testid="wild-card-refresh"]',
   },
   extension: {
     page: '[data-testid="extension-page"]',

@@ -84,8 +84,8 @@ export class HomePage {
     await this.extensionButton.click()
   }
 
-  async switchInspirationStrategy(version: 'v1' | 'v2' | 'v3') {
-    await this.page.locator(SELECTORS.home.strategyOption(version)).click()
+  async switchInspirationStrategy() {
+    await this.page.locator(SELECTORS.home.strategyToggle).click()
   }
 
   async getGroupRecCardCount(): Promise<number> {
@@ -98,5 +98,21 @@ export class HomePage {
 
   async clickGroupRecTopic(index: number = 0) {
     await this.page.locator(SELECTORS.home.groupRecCard).nth(index).click()
+  }
+
+  get wildCardCard() {
+    return this.page.locator(SELECTORS.home.wildCardCard)
+  }
+
+  get wildCardTitle() {
+    return this.page.locator(SELECTORS.home.wildCardTitle)
+  }
+
+  get wildCardHook() {
+    return this.page.locator(SELECTORS.home.wildCardHook)
+  }
+
+  async refreshWildCard() {
+    await this.page.locator(SELECTORS.home.wildCardRefresh).click()
   }
 }
