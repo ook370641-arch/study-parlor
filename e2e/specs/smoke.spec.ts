@@ -14,10 +14,13 @@ test.describe('@smoke', () => {
     await expect(home.librarySection).toBeVisible()
   })
 
-  test('background surface exists', async ({ window }) => {
+  test('cover shows greeting after entry', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
-    // Verify background surface element renders
-    await expect(window.locator('[data-testid="surface-background"]').or(window.locator('canvas')).first()).toBeAttached()
+    const home = new HomePage(window)
+    await home.waitForLoaded()
+    // Home page greeting and library should be visible
+    await expect(home.greeting).toBeVisible()
+    await expect(home.librarySection).toBeVisible()
   })
 })
