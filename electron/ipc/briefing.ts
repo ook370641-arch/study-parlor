@@ -269,29 +269,6 @@ export function registerBriefingIpc(cfg: AppConfig) {
     const { date, profile } = args
     validateDate(date)
 
-    // E2E fast path: return mock briefing without hitting feeds/LLM
-    if (process.env.NODE_ENV === 'test') {
-      emitProgress('fetching', 'MOCK')
-      emitProgress('extracting', 'MOCK')
-      emitProgress('assembling', 'MOCK')
-      emitProgress('finalizing', 'MOCK')
-      const filePath = briefingFilePath(cfg, date)
-      const mockContent = '## X / Twitter\n\n### Test Feed\nTest content in English.\n\n## 中文摘要\n\n这是一条中文测试内容。'
-      const frontmatter = `---\ntitle: 夜航简报\ntype: briefing\ncreated: '${new Date().toISOString()}'\ntags:\n  - industry-digest\n  - ai\n---\n\n`
-      fs.mkdirSync(path.dirname(filePath), { recursive: true })
-      fs.writeFileSync(filePath, frontmatter + mockContent, 'utf8')
-      emitProgress('done')
-      return {
-        title: '夜航简报',
-        date,
-        content: mockContent,
-        sources: [],
-        filePath,
-        cached: false,
-        generatedAt: new Date().toISOString(),
-      }
-    }
-
     const filePath = briefingFilePath(cfg, date)
 
     if (!args.force && fs.existsSync(filePath)) {
@@ -325,6 +302,32 @@ export function registerBriefingIpc(cfg: AppConfig) {
         filePath,
         cached: true,
         generatedAt,
+      }
+    }
+
+    // E2E fast path: return mock briefing without hitting feeds/LLM when no cache
+    if (process.env.NODE_ENV === 'test') {
+      emitProgress('fetching', 'MOCK')
+      emitProgress('extracting', 'MOCK')
+      emitProgress('assembling', 'MOCK')
+      emitProgress('finalizing', 'MOCK')
+      const mockContent = '## X / Twitter\n\n### Test Feed\nTest content in English.\n\n## 中文摘要\n\n这是一条中文测试内容。'
+      const frontmatter = `---\ntitle: 夜航简报\ntype: briefing\ncreated: '${new Date().toISOString()}'\ntags:\n  - industry-digest\n  - ai\n---\n\n`
+      fs.mkdirSync(path.dirname(filePath), { recursive: true })
+      try {
+        fs.writeFileSync(filePath, frontmatter + mockContent, 'utf8')
+      } catch {
+        // cache write can fail silently
+      }
+      emitProgress('done')
+      return {
+        title: '夜航简报',
+        date,
+        content: mockContent,
+        sources: [],
+        filePath,
+        cached: false,
+        generatedAt: new Date().toISOString(),
       }
     }
 
