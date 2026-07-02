@@ -213,6 +213,64 @@ review_count: 0
   fs.writeFileSync(path.join(dir, '学习图表.svg'), diagramContent)
 }
 
+export function seedTopicWithoutFable(
+  libPath: string,
+  slug: string,
+  title: string
+): void {
+  validateSlug(slug)
+  const dir = path.join(libPath, slug, 's1')
+  fs.mkdirSync(dir, { recursive: true })
+  const content = `---
+title: ${title}
+description: E2E fixture without fable
+type: progress
+created: '${new Date().toISOString()}'
+tags:
+  - test
+session_number: 1
+difficulty: mid
+progress_summary: E2E fixture without fable
+last_studied: '${new Date().toISOString()}'
+review_count: 0
+---
+
+# ${title}
+
+占位报告，无寓言。
+`
+  fs.writeFileSync(path.join(dir, '学习报告.md'), content)
+}
+
+export function seedTopicWithoutDiagram(
+  libPath: string,
+  slug: string,
+  title: string
+): void {
+  validateSlug(slug)
+  const dir = path.join(libPath, slug, 's1')
+  fs.mkdirSync(dir, { recursive: true })
+  const content = `---
+title: ${title}
+description: E2E fixture without diagram
+type: progress
+created: '${new Date().toISOString()}'
+tags:
+  - test
+session_number: 1
+difficulty: mid
+progress_summary: E2E fixture without diagram
+last_studied: '${new Date().toISOString()}'
+review_count: 0
+---
+
+# ${title}
+
+占位报告，无图表。
+`
+  fs.writeFileSync(path.join(dir, '学习报告.md'), content)
+}
+
 type GroupDef = { id: string; name: string; color?: string }
 
 type GroupMapping = Record<string, string | null>

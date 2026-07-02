@@ -118,4 +118,8 @@ export class StudyPage {
   async goBack() {
     await this.page.keyboard.press('Escape')
   }
+
+  get externalMaterialsCard() {
+    return this.page.locator(SELECTORS.study.externalMaterialsCard)
+  }
 }

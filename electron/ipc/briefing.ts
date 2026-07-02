@@ -270,7 +270,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
     validateDate(date)
 
     // E2E fast path: return mock briefing without hitting feeds/LLM
-    if (process.env.NODE_ENV === 'test' && args.force) {
+    if (process.env.NODE_ENV === 'test') {
       emitProgress('fetching', 'MOCK')
       emitProgress('extracting', 'MOCK')
       emitProgress('assembling', 'MOCK')

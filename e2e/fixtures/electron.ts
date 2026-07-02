@@ -131,6 +131,7 @@ export const test = base.extend<E2EFixtures>({
           E2E_CONFIG_DIR: testConfigDir,
           E2E_STUDY_LIBRARY_PATH: testLibraryPath,
           E2E_SKIP_PROBE: '1',
+          TAVILY_API_KEY: process.env.TAVILY_API_KEY ?? '',
         },
       }
     )
