@@ -13,4 +13,11 @@ test.describe('@smoke', () => {
     await expect(home.newTopicButton).toBeVisible()
     await expect(home.librarySection).toBeVisible()
   })
+
+  test('background surface exists', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterIfNeeded()
+    // Verify background surface element renders
+    await expect(window.locator('[data-testid="surface-background"]').or(window.locator('canvas')).first()).toBeAttached()
+  })
 })

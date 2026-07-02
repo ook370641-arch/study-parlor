@@ -424,3 +424,27 @@ export function seedUnsavedSession(
   }
   fs.writeFileSync(path.join(dir, fileName), JSON.stringify(full, null, 2), 'utf8')
 }
+
+export function seedContinueSuggestions(
+  configDir: string,
+  topic: string,
+  suggestions: Array<Record<string, string>>,
+  sessionCount: number
+): void {
+  const statePath = path.join(configDir, 'state.json')
+  let state: Record<string, unknown>
+  if (fs.existsSync(statePath)) {
+    try {
+      state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    } catch (error: any) {
+      throw new Error(`Failed to parse state.json at ${statePath}: ${error.message}`)
+    }
+  } else {
+    state = { ...BASE_STATE }
+  }
+  state.topicContinueSuggestions = {
+    ...(state.topicContinueSuggestions as Record<string, unknown> || {}),
+    [topic]: { suggestions, sessionCount },
+  }
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2))
+}
