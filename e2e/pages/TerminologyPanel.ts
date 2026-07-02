@@ -8,12 +8,12 @@ export class TerminologyPanel {
     return this.page.locator(SELECTORS.extension.terminologyPanel)
   }
 
-  async inputForField(field: string) {
+  inputForField(field: string) {
     return this.page.locator(SELECTORS.extension.terminologyInput(field))
   }
 
   async setField(field: string, value: string) {
-    const input = await this.inputForField(field)
+    const input = this.inputForField(field)
     await input.fill(value)
   }
 

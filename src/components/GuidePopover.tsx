@@ -114,6 +114,7 @@ export function GuidePopover({ open, anchorRef, onClose }: GuidePopoverProps) {
   return (
     <div
       ref={panelRef}
+      data-testid="group-guide-popover"
       role="dialog"
       aria-modal="true"
       aria-label="分组使用指南"

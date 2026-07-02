@@ -20,7 +20,7 @@ const test = base.extend({
       testInfo.title.includes('persists') ||
       testInfo.title.includes('reset')
     ) {
-      seedTerminology(dir, { startButton: '启程' })
+      seedTerminology(dir, { sessionName: '启程' })
     }
     await use(dir)
     await cleanupTestConfigDir(dir, testInfo.status === 'failed' || testInfo.status === 'timedOut')
@@ -46,10 +46,10 @@ test.describe('@p1 terminology', () => {
     const extension = new ExtensionPage(window)
     await extension.goto()
     const panel = new TerminologyPanel(window)
-    await panel.setField('startButton', '启明')
+    await panel.setField('sessionName', '启明')
     const statePath = path.join(testConfigDir, 'state.json')
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.terminology.startButton).toBe('启明')
+    expect(state.terminology.sessionName).toBe('启明')
   })
 
   test('preview card shows custom term', async ({ window }) => {
@@ -60,7 +60,7 @@ test.describe('@p1 terminology', () => {
     const extension = new ExtensionPage(window)
     await extension.goto()
     const panel = new TerminologyPanel(window)
-    await panel.setField('startButton', '启明')
+    await panel.setField('sessionName', '启明')
     await expect(panel.previewCard).toContainText('启明')
   })
 
@@ -72,10 +72,10 @@ test.describe('@p1 terminology', () => {
     const extension = new ExtensionPage(window)
     await extension.goto()
     const panel = new TerminologyPanel(window)
-    await panel.resetField('startButton')
+    await panel.resetField('sessionName')
     const statePath = path.join(testConfigDir, 'state.json')
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.terminology?.startButton ?? undefined).toBeUndefined()
+    expect(state.terminology?.sessionName ?? undefined).toBeUndefined()
   })
 
   test('all reset restores all defaults', async ({ window }) => {
@@ -86,10 +86,10 @@ test.describe('@p1 terminology', () => {
     const extension = new ExtensionPage(window)
     await extension.goto()
     const panel = new TerminologyPanel(window)
-    await panel.setField('startButton', '启明')
+    await panel.setField('sessionName', '启明')
     await panel.resetAll()
     // After reset all, custom terminology should be cleared
-    const startButtonInput = panel.inputForField('startButton')
-    await expect(startButtonInput).toHaveValue('')
+    const sessionNameInput = panel.inputForField('sessionName')
+    await expect(sessionNameInput).toHaveValue('')
   })
 })

@@ -84,6 +84,9 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     topics: { title: string }[]
   }) => {
     try {
+      if (process.env.NODE_ENV === 'test') {
+        return { title: '量子烹饪学', hook: '当粒子对撞机遇上分子料理', topic: '量子烹饪学' }
+      }
       return await generateWildcardInspiration(cfg, args)
     } catch (err: any) {
       const message = String(err?.message ?? err)
@@ -133,6 +136,12 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     dirName: string
   }) => {
     try {
+      if (process.env.NODE_ENV === 'test') {
+        return [
+          { title: 'NestJS 中的装饰器模式', context: 'TypeScript 装饰器', rationale: '贴近实际项目', benefit: '提升框架理解' },
+          { title: '依赖注入原理', context: 'IoC 容器', rationale: '补全基础', benefit: '理解底层机制' },
+        ]
+      }
       return await generateContinueSuggestions(cfg, args)
     } catch (err: any) {
       const message = String(err?.message ?? err)
