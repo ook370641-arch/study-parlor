@@ -204,27 +204,28 @@ review_count: 0
 `
   fs.writeFileSync(path.join(dir, '学习报告.md'), reportContent)
 
-  const diagramContent = `# 流程图
-
-\`\`\`mermaid
-graph TD
-  A[开始] --> B[结束]
-\`\`\`
+  const diagramContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100">
+  <rect x="10" y="10" width="180" height="80" rx="8" fill="#d97757" opacity="0.2" stroke="#d97757" stroke-width="2"/>
+  <text x="100" y="55" text-anchor="middle" fill="#e8d5b7" font-size="14">E2E 测试图表</text>
+</svg>
 `
-  fs.writeFileSync(path.join(dir, '流程图.md'), diagramContent)
+  fs.writeFileSync(path.join(dir, '学习图表.svg'), diagramContent)
 }
 
 type GroupDef = { id: string; name: string; color?: string }
-type GroupMapping = { dirName: string; groupId: string | null }
+
+type GroupMapping = Record<string, string | null>
 
 export function seedGroupState(
   libPath: string,
   groups: GroupDef[],
-  mappings: GroupMapping[]
+  mapping: GroupMapping
 ): void {
   const state = {
+    version: 1,
     groups,
-    mappings,
+    mapping,
   }
   fs.writeFileSync(
     path.join(libPath, '.study-groups.json'),
@@ -232,34 +233,35 @@ export function seedGroupState(
   )
 }
 
+const BASE_STATE = {
+  profile: {
+    name: 'E2E 测试员',
+    profile_text: '',
+    preferred_topics: [],
+  },
+  lastUsed: {
+    difficulty: 'mid',
+    temperature: 0.7,
+  },
+  session_count: 0,
+  groups: [],
+  activeGroupId: null,
+  groupInspirations: {},
+  topicContinueSuggestions: {},
+  unsavedSessions: [],
+  pendingArchives: [],
+  archiveResult: null,
+  terminology: {},
+}
+
 export function seedStateJson(
   configDir: string,
   partialState: Record<string, unknown>
 ): void {
   const statePath = path.join(configDir, 'state.json')
-  const base = {
-    profile: {
-      name: 'E2E 测试员',
-      profile_text: '',
-      preferred_topics: [],
-    },
-    lastUsed: {
-      difficulty: 'mid',
-      temperature: 'balanced',
-    },
-    session_count: 0,
-    groups: [],
-    activeGroupId: null,
-    groupInspirations: {},
-    topicContinueSuggestions: {},
-    unsavedSessions: [],
-    pendingArchives: [],
-    archiveResult: null,
-    terminology: {},
-  }
   fs.writeFileSync(
     statePath,
-    JSON.stringify({ ...base, ...partialState }, null, 2)
+    JSON.stringify({ ...BASE_STATE, ...partialState }, null, 2)
   )
 }
 
@@ -268,31 +270,18 @@ export function seedTerminology(
   terminology: Record<string, string>
 ): void {
   const statePath = path.join(configDir, 'state.json')
-  const base = {
-    profile: {
-      name: 'E2E 测试员',
-      profile_text: '',
-      preferred_topics: [],
-    },
-    lastUsed: {
-      difficulty: 'mid',
-      temperature: 0.7,
-    },
-    session_count: 0,
-    groups: [],
-    activeGroupId: null,
-    groupInspirations: {},
-    topicContinueSuggestions: {},
-    unsavedSessions: [],
-    pendingArchives: [],
-    archiveResult: null,
-    terminology: {},
+  let state: Record<string, unknown>
+  if (fs.existsSync(statePath)) {
+    try {
+      state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    } catch (error: any) {
+      throw new Error(`Failed to parse state.json at ${statePath}: ${error.message}`)
+    }
+  } else {
+    state = { ...BASE_STATE }
   }
-  const state = fs.existsSync(statePath)
-    ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    : base
-  state.terminology = { ...state.terminology, ...terminology }
-  fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8')
+  state.terminology = { ...(state.terminology as Record<string, string> || {}), ...terminology }
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2))
 }
 
 export function seedWildCardInspiration(
@@ -300,31 +289,18 @@ export function seedWildCardInspiration(
   payload: { title: string; hook: string; topic: string }
 ): void {
   const statePath = path.join(configDir, 'state.json')
-  const base = {
-    profile: {
-      name: 'E2E 测试员',
-      profile_text: '',
-      preferred_topics: [],
-    },
-    lastUsed: {
-      difficulty: 'mid',
-      temperature: 0.7,
-    },
-    session_count: 0,
-    groups: [],
-    activeGroupId: null,
-    groupInspirations: {},
-    topicContinueSuggestions: {},
-    unsavedSessions: [],
-    pendingArchives: [],
-    archiveResult: null,
-    terminology: {},
+  let state: Record<string, unknown>
+  if (fs.existsSync(statePath)) {
+    try {
+      state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    } catch (error: any) {
+      throw new Error(`Failed to parse state.json at ${statePath}: ${error.message}`)
+    }
+  } else {
+    state = { ...BASE_STATE }
   }
-  const state = fs.existsSync(statePath)
-    ? JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    : base
   state.wildCardInspiration = payload
-  fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8')
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2))
 }
 
 export function seedBriefing(libPath: string, date: string, content?: string, generatedAt?: string): void {
@@ -364,4 +340,29 @@ tags:
 
 `
   fs.writeFileSync(filePath, fm + defaultContent, 'utf8')
+}
+
+export function seedUnsavedSession(
+  configDir: string,
+  session: {
+    id: string
+    topic: string
+    mode?: string
+    difficulty?: string
+    temperature?: number | string
+    history?: Array<{ role: string; content: string }>
+  }
+): void {
+  const dir = path.join(configDir, 'sessions')
+  fs.mkdirSync(dir, { recursive: true })
+  const sanitized = session.topic.replace(/[^\w一-龥]/g, '_')
+  const fileName = `${sanitized}_${session.id.slice(0, 8)}.json`
+  const full = {
+    mode: session.mode ?? 'progress',
+    difficulty: session.difficulty ?? 'mid',
+    temperature: session.temperature ?? 0.7,
+    history: session.history ?? [],
+    ...session,
+  }
+  fs.writeFileSync(path.join(dir, fileName), JSON.stringify(full, null, 2), 'utf8')
 }
