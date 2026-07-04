@@ -14,7 +14,7 @@ function localToday(): string {
 test.describe('@p1 briefing generation', () => {
   test('shows briefing page with auto-generated content @unstable', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
-    await cover.enterIfNeeded()
+    await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     // Wait for either the academic layout (content loaded) or progress bar (generating)
     const academicLayout = window.locator(SELECTORS.briefing.academicLayout)
@@ -27,7 +27,7 @@ test.describe('@p1 briefing generation', () => {
     const today = localToday()
     seedBriefing(testLibraryPath, today)
     const cover = new CoverPage(window)
-    await cover.enterIfNeeded()
+    await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
     await expect(window.locator(SELECTORS.briefing.academicLayout)).toContainText('Box CEO Aaron Levie')

@@ -6,6 +6,9 @@ import { seedTopicWithoutFable, seedTopicWithFable } from '../helpers/test-libra
 test.describe('@p1 fable generation', () => {
   test('topic without fable appears in library', async ({ window, testLibraryPath }) => {
     seedTopicWithoutFable(testLibraryPath, 'no-fable-topic', '无寓言主题')
+    // Reload so the freshly seeded library is picked up during init()
+    await window.reload()
+    await window.waitForLoadState('networkidle')
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
     const home = new HomePage(window)
@@ -16,6 +19,9 @@ test.describe('@p1 fable generation', () => {
 
   test('topic with fable shows fable button', async ({ window, testLibraryPath }) => {
     seedTopicWithFable(testLibraryPath, 'has-fable', '有寓言主题')
+    // Reload so the freshly seeded library is picked up during init()
+    await window.reload()
+    await window.waitForLoadState('networkidle')
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
     const home = new HomePage(window)

@@ -2,12 +2,13 @@ import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { HomePage } from '../pages/HomePage'
 import { seedMultiSessionTopic } from '../helpers/test-library'
-import * as fs from 'node:fs'
-import * as path from 'node:path'
 
 test.describe('@p2 library drag and delete', () => {
   test('multi-session topic shows all sessions', async ({ window, testLibraryPath }) => {
     seedMultiSessionTopic(testLibraryPath, 'multi-session', '多会话主题', 3)
+    // Reload so the freshly seeded library is picked up during init()
+    await window.reload()
+    await window.waitForLoadState('networkidle')
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
     const home = new HomePage(window)

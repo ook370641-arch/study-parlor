@@ -6,6 +6,9 @@ import { seedTopicWithoutDiagram, seedTopicWithDiagram } from '../helpers/test-l
 test.describe('@p1 diagram generation', () => {
   test('topic without diagram shows in library', async ({ window, testLibraryPath }) => {
     seedTopicWithoutDiagram(testLibraryPath, 'no-diagram', '无图表主题')
+    // Reload so the freshly seeded library is picked up during init()
+    await window.reload()
+    await window.waitForLoadState('networkidle')
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
     const home = new HomePage(window)
@@ -16,6 +19,9 @@ test.describe('@p1 diagram generation', () => {
 
   test('topic with diagram shows diagram button', async ({ window, testLibraryPath }) => {
     seedTopicWithDiagram(testLibraryPath, 'has-diagram', '有图表主题')
+    // Reload so the freshly seeded library is picked up during init()
+    await window.reload()
+    await window.waitForLoadState('networkidle')
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
     const home = new HomePage(window)
