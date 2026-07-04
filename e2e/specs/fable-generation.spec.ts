@@ -5,7 +5,7 @@ import { seedTopicWithoutFable, seedTopicWithFable } from '../helpers/test-libra
 
 test.describe('@p1 fable generation', () => {
   test('topic without fable appears in library', async ({ window, testLibraryPath }) => {
-    seedTopicWithoutFable(testLibraryPath, 'no-fable-topic', '无寓言主题')
+    seedTopicWithoutFable(testLibraryPath, 'no-fable-topic', 'no-fable-topic')
     // Reload so the freshly seeded library is picked up during init()
     await window.reload()
     await window.waitForLoadState('networkidle')
@@ -13,12 +13,12 @@ test.describe('@p1 fable generation', () => {
     await cover.enterIfNeeded()
     const home = new HomePage(window)
     await home.waitForLoaded()
-    const topicCard = window.locator('[data-testid="topic-card"]').filter({ hasText: '无寓言主题' })
+    const topicCard = window.locator('[data-testid="topic-card"]').filter({ hasText: 'no-fable-topic' })
     await expect(topicCard).toBeVisible({ timeout: 10000 })
   })
 
   test('topic with fable shows fable button', async ({ window, testLibraryPath }) => {
-    seedTopicWithFable(testLibraryPath, 'has-fable', '有寓言主题')
+    seedTopicWithFable(testLibraryPath, 'has-fable', 'has-fable')
     // Reload so the freshly seeded library is picked up during init()
     await window.reload()
     await window.waitForLoadState('networkidle')
@@ -26,7 +26,7 @@ test.describe('@p1 fable generation', () => {
     await cover.enterIfNeeded()
     const home = new HomePage(window)
     await home.waitForLoaded()
-    const topicCard = window.locator('[data-testid="topic-card"]').filter({ hasText: '有寓言主题' })
+    const topicCard = window.locator('[data-testid="topic-card"]').filter({ hasText: 'has-fable' })
     await expect(topicCard).toBeVisible({ timeout: 10000 })
   })
 })

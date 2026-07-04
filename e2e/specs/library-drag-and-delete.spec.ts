@@ -5,7 +5,7 @@ import { seedMultiSessionTopic } from '../helpers/test-library'
 
 test.describe('@p2 library drag and delete', () => {
   test('multi-session topic shows all sessions', async ({ window, testLibraryPath }) => {
-    seedMultiSessionTopic(testLibraryPath, 'multi-session', '多会话主题', 3)
+    seedMultiSessionTopic(testLibraryPath, 'multi-session', 'multi-session', 3)
     // Reload so the freshly seeded library is picked up during init()
     await window.reload()
     await window.waitForLoadState('networkidle')
@@ -14,7 +14,7 @@ test.describe('@p2 library drag and delete', () => {
     const home = new HomePage(window)
     await home.waitForLoaded()
     // The topic card should be visible and expandable
-    const topicCard = window.locator('[data-testid="topic-card"]').filter({ hasText: '多会话主题' })
+    const topicCard = window.locator('[data-testid="topic-card"]').filter({ hasText: 'multi-session' })
     await expect(topicCard).toBeVisible({ timeout: 10000 })
     await topicCard.click()
     // Session entries should appear after expanding
