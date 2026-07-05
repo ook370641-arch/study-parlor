@@ -86,7 +86,7 @@ export function Briefing() {
           </div>
           <div className="flex items-center gap-1">
             <BriefingThemeToggle />
-            <SwapPaintingButton surface="briefing" className={swapOverride} />
+            {isAcademic && <SwapPaintingButton surface="briefing" className={swapOverride} data-testid="briefing-swap-painting-button" />}
           </div>
         </header>
         <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
@@ -108,7 +108,7 @@ export function Briefing() {
           <BackToCover className={backOverride} />
           <div className="flex items-center gap-1">
             <BriefingThemeToggle />
-            <SwapPaintingButton surface="briefing" className={swapOverride} />
+            {isAcademic && <SwapPaintingButton surface="briefing" className={swapOverride} data-testid="briefing-swap-painting-button" />}
           </div>
         </header>
         <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
@@ -176,7 +176,7 @@ export function Briefing() {
             往期
           </Button>
           <BriefingThemeToggle />
-          <SwapPaintingButton surface="briefing" className={swapOverride} />
+          {isAcademic && <SwapPaintingButton surface="briefing" className={swapOverride} data-testid="briefing-swap-painting-button" />}
         </div>
       </header>
 

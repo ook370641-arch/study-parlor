@@ -269,6 +269,7 @@ export function registerFilesIpc(cfg: AppConfig) {
   }
 
   ipcMain.handle('files:scan', async (): Promise<TopicMeta[]> => {
+    const scanStart = Date.now()
     const root = cfg.libraryPath
     if (!fs.existsSync(root)) {
       console.error(`[files:scan] library path does not exist: ${root}`)
@@ -299,6 +300,7 @@ export function registerFilesIpc(cfg: AppConfig) {
       return new Date(b.last_studied).getTime() - new Date(a.last_studied).getTime()
     })
 
+    console.log(`[files:scan] ${topicDirs.length} topics scanned in ${Date.now() - scanStart}ms`)
     return results
   })
 

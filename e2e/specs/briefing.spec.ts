@@ -66,6 +66,22 @@ test('toggles between academic and newspaper layout @smoke', async () => {
   await expect(window.locator(SELECTORS.briefing.newspaperLayout)).toHaveCount(0)
 })
 
+test('swap painting button is visible in academic layout and hidden in newspaper layout @smoke', async () => {
+  test.setTimeout(240000)
+  const today = localToday()
+  seedBriefing(testLibraryPath, today)
+  const coverPage = new CoverPage(window)
+  await coverPage.gotoBriefing()
+  await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible()
+  await expect(window.locator(SELECTORS.briefing.swapPaintingButton)).toBeVisible()
+  await expect(window.locator(SELECTORS.briefing.surfaceBackground)).toBeVisible()
+
+  await window.locator(SELECTORS.briefing.themeToggle).click()
+  await expect(window.locator(SELECTORS.briefing.newspaperLayout)).toBeVisible()
+  await expect(window.locator(SELECTORS.briefing.swapPaintingButton)).toHaveCount(0)
+  await expect(window.locator(SELECTORS.briefing.surfaceBackground)).toHaveCount(0)
+})
+
 test('shows FEED_EMPTY error with no retry button @smoke', async () => {
   const today = localToday()
   seedBriefing(testLibraryPath, today, '## Error\n\nBRIEFING_FEED_EMPTY')

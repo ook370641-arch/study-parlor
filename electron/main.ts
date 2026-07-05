@@ -291,12 +291,17 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
     }
   }
 
+  const bootSeqStart = Date.now()
+
   // ===== 阶段 1: 注册 IPC =====
+  console.time('[bootstrap] stage: register IPC')
   console.log('[bootstrap] stage: register IPC')
   registerAllIpc(cfg, () => mainWindow)
   await animate('注册服务', 0, 15, 300)
+  console.timeEnd('[bootstrap] stage: register IPC')
 
   // ===== 阶段 2: 探活模型（网络请求，最耗时）=====
+  console.time('[bootstrap] stage: probe model')
   console.log('[bootstrap] stage: probe model')
   const probeStart = Date.now()
   try {
@@ -310,20 +315,27 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   const probeElapsed = Date.now() - probeStart
   // 探活期间进度从 15% 平滑推进到 50%
   await animate('探活模型', 15, 50, Math.max(400, probeElapsed))
+  console.timeEnd('[bootstrap] stage: probe model')
 
   // ===== 阶段 3: 扫描学习库 =====
+  console.time('[bootstrap] stage: scan library')
   console.log('[bootstrap] stage: scan library')
   await animate('扫描学习库', 50, 75, 500)
+  console.timeEnd('[bootstrap] stage: scan library')
 
   // ===== 阶段 4: 初始化状态 =====
+  console.time('[bootstrap] stage: init state')
   console.log('[bootstrap] stage: init state')
   await animate('初始化状态', 75, 95, 400)
+  console.timeEnd('[bootstrap] stage: init state')
 
   // ===== 阶段 5: 就绪 =====
+  console.time('[bootstrap] stage: ready')
   console.log('[bootstrap] stage: ready')
   await animate('就绪', 95, 100, 300)
   sendComplete()
-  console.log('[bootstrap] ready')
+  console.timeEnd('[bootstrap] stage: ready')
+  console.log('[bootstrap] boot sequence total:', Date.now() - bootSeqStart, 'ms')
 }
 
 app.whenReady().then(bootstrap)

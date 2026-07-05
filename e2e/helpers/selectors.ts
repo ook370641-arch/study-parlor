@@ -95,6 +95,8 @@ export const SELECTORS = {
     progressStep: (key: string) => `[data-testid="briefing-progress-step-${key}"]`,
     generatedAt: '[data-testid="briefing-generated-at"]',
     cacheWriteFailedBadge: '[data-testid="briefing-cache-write-failed"]',
+    swapPaintingButton: '[data-testid="briefing-swap-painting-button"]',
+    surfaceBackground: '[data-testid="surface-background"]',
   },
   profile: {
     page: '[data-testid="profile-page"]',
