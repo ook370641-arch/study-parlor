@@ -74,6 +74,7 @@ export function FableStyleDialog({ open, tags, defaultSelected, onClose, onConfi
 
   return (
     <div
+      data-testid="fable-style-dialog"
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
       onClick={(e) => {
@@ -90,6 +91,7 @@ export function FableStyleDialog({ open, tags, defaultSelected, onClose, onConfi
           {localTags.map(tag => (
             <span
               key={tag}
+              data-testid={`fable-tag-${tag}`}
               onClick={() => toggleTag(tag)}
               className={`relative group px-2.5 py-1 text-[11px] rounded-full border cursor-pointer transition-colors ${
                 selected.has(tag)
@@ -110,6 +112,7 @@ export function FableStyleDialog({ open, tags, defaultSelected, onClose, onConfi
           {isAdding ? (
             <input
               ref={inputRef}
+              data-testid="fable-custom-tag-input"
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -122,6 +125,7 @@ export function FableStyleDialog({ open, tags, defaultSelected, onClose, onConfi
             />
           ) : (
             <button
+              data-testid="fable-add-custom-tag-button"
               onClick={() => setIsAdding(true)}
               className="px-2.5 py-1 text-[11px] rounded-full border border-dashed border-slate/20 text-parchment/40 hover:border-slate/40 hover:text-parchment/60 transition-colors"
             >
@@ -131,6 +135,7 @@ export function FableStyleDialog({ open, tags, defaultSelected, onClose, onConfi
         </div>
 
         <textarea
+          data-testid="fable-description-input"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="补充你的想法（可选）...&#10;如：主角是一位老档案管理员，背景是一座不断丢失数据的图书馆"
@@ -143,12 +148,14 @@ export function FableStyleDialog({ open, tags, defaultSelected, onClose, onConfi
 
         <div className="flex justify-end gap-2 mt-4">
           <button
+            data-testid="fable-cancel-button"
             onClick={onClose}
             className="px-3 py-1.5 text-[11px] rounded border border-slate/20 text-parchment/50 hover:border-slate/40 transition-colors"
           >
             取消
           </button>
           <button
+            data-testid="fable-start-button"
             onClick={handleConfirm}
             className="px-3 py-1.5 text-[11px] rounded border border-ember/40 text-ember bg-ember/10 hover:bg-ember/20 transition-colors"
           >

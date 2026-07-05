@@ -68,4 +68,17 @@ describe('assemblePrompt', () => {
     expect(iReview).toBeLessThan(iDiff)
     expect(iDiff).toBeLessThan(iProfile)
   })
+
+  it('injects external materials summary when provided', () => {
+    const sys = assemblePrompt({
+      mode: 'progress',
+      difficulty: 'mid',
+      profile,
+      externalMaterialsSummary: 'React 19 引入了 use hook，允许在条件分支中读取 Context。'
+    })
+    expect(sys).toContain('【外部参考资料】')
+    expect(sys).toContain('React 19 引入了 use hook')
+    expect(sys).toMatch(/以上资料仅供你作为背景知识使用/)
+    expect(sys).toMatch(/不要直接引用资料给出答案/)
+  })
 })

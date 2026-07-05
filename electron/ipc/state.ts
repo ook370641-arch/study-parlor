@@ -1,10 +1,12 @@
 import { ipcMain } from 'electron'
 import path from 'node:path'
-import os from 'node:os'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
+import { getStateDir } from '../env'
 import type { StateJson } from '@shared/index'
 
-const STATE_FILE = path.join(os.homedir(), '.studyparlor', 'state.json')
+function getStateFile(): string {
+  return path.join(getStateDir(), 'state.json')
+}
 
 const DEFAULT: StateJson = {
   version: 1,
@@ -22,7 +24,7 @@ let currentState: StateJson | null = null
 
 function loadState(): StateJson {
   if (!currentState) {
-    const raw = safeReadJson(STATE_FILE, { fallback: DEFAULT })
+    const raw = safeReadJson(getStateFile(), { fallback: DEFAULT })
     currentState = { ...DEFAULT, ...raw }
   }
   return currentState
@@ -32,7 +34,9 @@ export function registerStateIpc() {
   loadState()
 
   ipcMain.handle('state:get', async (): Promise<StateJson> => {
-    return loadState()
+    // Always read from disk so that renderer reloads pick up external state changes (e.g. E2E fixtures).
+    const raw = safeReadJson(getStateFile(), { fallback: DEFAULT })
+    return { ...DEFAULT, ...raw }
   })
 
   ipcMain.handle('state:patch', async (_, patch: Partial<StateJson>) => {
@@ -72,5 +76,5 @@ export function patchState(patch: Partial<StateJson>): void {
   }
 
   currentState = merged
-  safeWriteJson(STATE_FILE, currentState)
+  safeWriteJson(getStateFile(), currentState)
 }

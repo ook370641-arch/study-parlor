@@ -41,7 +41,7 @@ export async function finalizeProgress(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const title = extractXmlTag(text, 'title')
     const body = extractXmlTag(text, 'body')
@@ -75,7 +75,7 @@ export async function finalizeReview(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const summary = extractXmlTag(text, 'summary')
     if (!summary) {
@@ -108,7 +108,7 @@ export async function generateFable(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const extracted = extractJsonObject(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -137,7 +137,7 @@ export async function generateFableFromReport(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const extracted = extractJsonObject(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -166,7 +166,7 @@ export async function generateContinueSuggestions(
     const text = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      thinking: { type: 'enabled', reasoning_effort: 'max' }
+      thinking: { type: 'enabled', reasoning_effort: 'high' }
     })
     const extracted = extractJsonArray(text)
     if (!extracted) throw new Error('JSON extraction failed')
@@ -232,6 +232,54 @@ function readReportFrontmatter(libraryPath: string, dirName: string): { tags: st
   }
 }
 
+function isValidNewTopic(value: unknown): value is NewTopic {
+  const obj = value as Record<string, unknown> | null
+  return !!obj && typeof obj.topic === 'string' && typeof obj.hook === 'string'
+}
+
+export async function generateWildcardInspiration(
+  cfg: AppConfig,
+  args: {
+    profile: Profile
+    topics: { title: string }[]
+  }
+): Promise<NewTopic> {
+  const topicList = args.topics.length > 0
+    ? args.topics.map(t => `- ${t.title}`).join('\n')
+    : '（学习库为空）'
+
+  const prompt = read('wild-card-v1.md')
+    .replace('{{profile_text}}', args.profile.profile_text)
+    .replace('{{topic_list}}', topicList)
+
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.8,
+    thinking: { type: 'enabled', reasoning_effort: 'high' }
+  })
+
+  const extracted = extractJsonObject(text)
+  if (!extracted) {
+    const debugDir = path.join(os.homedir(), '.studyparlor', 'debug')
+    fs.mkdirSync(debugDir, { recursive: true })
+    const debugFile = path.join(debugDir, `wild-card-fail-${Date.now()}.txt`)
+    fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== LLM Response ===\n${text}`, 'utf8')
+    throw new Error(`JSON extraction failed. Debug written to: ${debugFile}`)
+  }
+
+  try {
+    const json = JSON.parse(extracted) as unknown
+    if (!isValidNewTopic(json)) throw new Error('shape')
+    return json
+  } catch {
+    const debugDir = path.join(os.homedir(), '.studyparlor', 'debug')
+    fs.mkdirSync(debugDir, { recursive: true })
+    const debugFile = path.join(debugDir, `wild-card-parse-fail-${Date.now()}.txt`)
+    fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== Extracted ===\n${extracted}\n\n=== LLM Response ===\n${text}`, 'utf8')
+    throw new Error(`JSON parse failed after extraction. Debug written to: ${debugFile}`)
+  }
+}
+
 export async function generateGroupInspiration(
   cfg: AppConfig,
   args: {
@@ -264,7 +312,7 @@ export async function generateGroupInspiration(
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
-    thinking: { type: 'enabled', reasoning_effort: 'max' }
+    thinking: { type: 'enabled', reasoning_effort: 'high' }
   })
 
   // 激进 JSON 提取：从 LLM 返回的任意文本中找第一个 {...} 结构
@@ -277,7 +325,15 @@ export async function generateGroupInspiration(
     fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== LLM Response ===\n${text}`, 'utf8')
     throw new Error(`JSON extraction failed. Debug written to: ${debugFile}`)
   }
-  const json = JSON.parse(extracted) as NewTopic
-  if (!json.topic || !json.hook) throw new Error('shape')
-  return json
+  try {
+    const json = JSON.parse(extracted) as unknown
+    if (!isValidNewTopic(json)) throw new Error('shape')
+    return json
+  } catch {
+    const debugDir = path.join(os.homedir(), '.studyparlor', 'debug')
+    fs.mkdirSync(debugDir, { recursive: true })
+    const debugFile = path.join(debugDir, `group-inspiration-parse-fail-${Date.now()}.txt`)
+    fs.writeFileSync(debugFile, `=== Prompt ===\n${prompt}\n\n=== Extracted ===\n${extracted}\n\n=== LLM Response ===\n${text}`, 'utf8')
+    throw new Error(`JSON parse failed after extraction. Debug written to: ${debugFile}`)
+  }
 }

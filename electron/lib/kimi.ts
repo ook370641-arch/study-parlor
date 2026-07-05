@@ -4,14 +4,23 @@ import type { Message } from '@shared/index'
 export async function probeModelWithCredentials(
   creds: { apiKey: string; baseUrl: string; model: string }
 ): Promise<{ ok: boolean; reason?: string }> {
-  const res = await fetch(`${creds.baseUrl}/models`, {
-    headers: {
-      Authorization: `Bearer ${creds.apiKey}`,
-      'User-Agent': 'claude-code/0.1.0'
-    }
-  } as any)
-  if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` }
-  return { ok: true }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10000)
+  try {
+    const res = await fetch(`${creds.baseUrl}/models`, {
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${creds.apiKey}`,
+        'User-Agent': 'claude-code/0.1.0'
+      }
+    } as any)
+    if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` }
+    return { ok: true }
+  } catch (err: any) {
+    return { ok: false, reason: err.name === 'AbortError' ? 'probe timeout' : err.message }
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?: string }> {
@@ -19,7 +28,7 @@ export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?
 }
 
 export type ThinkingConfig =
-  | { type: 'enabled'; reasoning_effort?: 'high' | 'max' }
+  | { type: 'enabled'; reasoning_effort?: 'high' }
   | { type: 'disabled' }
 
 function isKimiModel(model: string): boolean {
@@ -47,9 +56,15 @@ function buildChatBody(
   }
 
   if (isKimiModel(cfg.model)) {
-    // Kimi k2.x / kimi-for-coding 在 thinking disabled 模式下只允许 temperature=0.6
-    body.temperature = 0.6
-    body.thinking = { type: 'disabled' }
+    const thinking = args.thinking ?? { type: 'disabled' }
+    body.thinking = { type: thinking.type }
+    if (thinking.type === 'enabled') {
+      body.reasoning_effort = thinking.reasoning_effort ?? 'high'
+      body.temperature = args.temperature
+    } else {
+      // Kimi k2.x / kimi-for-coding 在 thinking disabled 模式下只允许 temperature=0.6
+      body.temperature = 0.6
+    }
   } else if (isDeepSeekModel(cfg.model)) {
     const thinking = args.thinking ?? { type: 'disabled' }
     body.thinking = { type: thinking.type }
@@ -70,32 +85,54 @@ function buildChatBody(
 
 export async function chatNonStream(
   cfg: AppConfig,
-  args: { messages: Message[]; temperature: number; thinking?: ThinkingConfig }
+  args: { messages: Message[]; temperature: number; thinking?: ThinkingConfig; signal?: AbortSignal }
 ): Promise<string> {
-  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${cfg.apiKey}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'claude-code/0.1.0'
-    },
-    body: JSON.stringify(buildChatBody(cfg, {
-      messages: args.messages,
-      temperature: args.temperature,
-      stream: false,
-      maxTokens: 16384,
-      thinking: args.thinking,
-    })),
-  } as any)
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    console.error('[kimi] chatNonStream HTTP error:', res.status, body.slice(0, 500))
-    throw new Error(`Kimi non-stream HTTP ${res.status}: ${body.slice(0, 200)}`)
+  const TIMEOUT_MS = 120_000
+  const ctl = new AbortController()
+  const timeoutId = setTimeout(() => ctl.abort(), TIMEOUT_MS)
+  let externalListenerAdded = false
+  const onExternalAbort = () => ctl.abort()
+  if (args.signal) {
+    if (args.signal.aborted) {
+      ctl.abort()
+    } else {
+      args.signal.addEventListener('abort', onExternalAbort, { once: true })
+      externalListenerAdded = true
+    }
   }
-  const json = await res.json() as { choices: { message: { content: string } }[] }
-  const content = json.choices[0]?.message?.content ?? ''
-  if (!content) throw new Error('Kimi returned empty content')
-  return content
+
+  try {
+    const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${cfg.apiKey}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'claude-code/0.1.0'
+      },
+      body: JSON.stringify(buildChatBody(cfg, {
+        messages: args.messages,
+        temperature: args.temperature,
+        stream: false,
+        maxTokens: 16384,
+        thinking: args.thinking,
+      })),
+      signal: ctl.signal,
+    } as any)
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      console.error('[kimi] chatNonStream HTTP error:', res.status, body.slice(0, 500))
+      throw new Error(`Kimi non-stream HTTP ${res.status}: ${body.slice(0, 200)}`)
+    }
+    const json = await res.json() as { choices: { message: { content: string } }[] }
+    const content = json.choices[0]?.message?.content ?? ''
+    if (!content) throw new Error('Kimi returned empty content')
+    return content
+  } finally {
+    clearTimeout(timeoutId)
+    if (externalListenerAdded) {
+      args.signal!.removeEventListener('abort', onExternalAbort)
+    }
+  }
 }
 
 export type SseEvent =

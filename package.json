@@ -10,6 +10,12 @@
     "pretest": "node scripts/build-manifest.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test --config e2e/playwright.config.ts",
+    "test:e2e:smoke": "playwright test --config e2e/playwright.config.ts --grep @smoke",
+    "test:e2e:core": "playwright test --config e2e/playwright.config.ts --grep \"@p0|@p1\"",
+    "test:e2e:p1": "playwright test --config e2e/playwright.config.ts --grep @p1",
+    "test:e2e:p2": "playwright test --config e2e/playwright.config.ts --grep @p2",
+    "test:e2e:debug": "playwright test --config e2e/playwright.config.ts --headed --trace on",
     "package": "electron-vite build && electron-builder --config electron-builder.yml"
   },
   "dependencies": {
@@ -34,10 +40,15 @@
     "electron-builder": "^26.8.1",
     "electron-vite": "^2.3.0",
     "jsdom": "^29.1.1",
+    "@playwright/test": "^1.45.0",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4",
     "vite": "^5.4.1",
     "vitest": "^2.0.5"
+  },
+  "allowScripts": {
+    "electron@30.5.1": true,
+    "electron-winstaller@5.4.0": true
   }
 }

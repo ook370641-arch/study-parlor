@@ -3,7 +3,49 @@ import type { AppConfig } from '@electron/env'
 export type Difficulty = 'high' | 'mid' | 'low'
 export type Mode = 'progress' | 'review'
 export type Temperature = number
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript'
+export type Terminology = {
+  // 仪式动词
+  sessionName?: string
+  libraryName?: string
+  archiveVerb?: string
+  transcriptName?: string
+  burnVerb?: string
+  newTopicLabel?: string
+  continuePrompt?: string
+  unsavedSessionLabel?: string
+
+  // 模式与流程
+  modeProgress?: string
+  modeReview?: string
+  newTopicMode?: string
+  existingTopicMode?: string
+  archiveConfirmTitle?: string
+  archiveDismiss?: string
+  archiveConfirm?: string
+
+  // 参数标签
+  difficultyLabel?: string
+  temperatureLabel?: string
+  difficultyHigh?: string
+  difficultyMid?: string
+  difficultyLow?: string
+  temperatureCold?: string
+  temperatureNeutral?: string
+  temperatureWarm?: string
+
+  // 界面名词
+  profileNameLabel?: string
+  profileFieldLabel?: string
+  profileTextLabel?: string
+  topicInputLabel?: string
+  subTopicLabel?: string
+  continueDirectionLabel?: string
+  requirementLabel?: string
+  homeGreeting?: string
+  startButton?: string
+  cancelButton?: string
+}
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials'
 
 export type Profile = {
   name: string
@@ -23,6 +65,9 @@ export type Frontmatter = {
   session_number?: number
   type?: DocType
   progress_summary?: string
+  summary?: string
+  sources?: SearchSource[]
+  topic?: string
 }
 
 export type Group = {
@@ -92,6 +137,8 @@ export type UnsavedSession = {
   history: Message[]
   userRequirement?: string
   selectedTopic?: string
+  enableExternalMaterials?: boolean
+  externalMaterials?: SearchResult
 }
 
 export type ArchiveResult = {
@@ -101,6 +148,54 @@ export type ArchiveResult = {
   content: string  // progress: body; review: summary + gaps rendered
 }
 
+export type SearchSource = {
+  title: string
+  url: string
+  snippet?: string
+}
+
+export type SearchResult = {
+  summary: string
+  sources: SearchSource[]
+}
+
+export type SearchErrorCode =
+  | 'MISSING_API_KEY'
+  | 'NETWORK_ERROR'
+  | 'LLM_ERROR'
+  | 'NO_RESULTS'
+
+export type BriefingSourceType = 'x' | 'podcast' | 'blog'
+
+export type BriefingTheme = 'academic' | 'newspaper'
+
+export type BriefingStage = 'fetching' | 'extracting' | 'assembling' | 'finalizing' | 'done'
+
+export type BriefingSourceItem = {
+  text?: string
+  url?: string
+  timestamp?: string
+}
+
+export type BriefingSource = {
+  type: BriefingSourceType
+  author?: string
+  title?: string
+  url?: string
+  items: BriefingSourceItem[]
+}
+
+export type BriefingResult = {
+  title: string
+  date: string
+  content: string
+  sources: BriefingSource[]
+  filePath: string
+  cached: boolean
+  cacheWriteFailed?: boolean
+  generatedAt: string
+}
+
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
 export type StateJson = {
@@ -108,11 +203,14 @@ export type StateJson = {
   profile: Profile
   lastUsed: { difficulty: Difficulty; temperature: Temperature }
   groupInspirations: Record<string, NewTopic>
+  wildcardInspiration?: NewTopic
   ui: { session_count: number }
   inspirationStrategy: 'v1' | 'v2' | 'v3'
   fableStyleTags: string[]
   lastFableTags: string[]
   topicContinueSuggestions: Record<string, TopicContinueCache>
+  terminology?: Terminology
+  briefingTheme?: BriefingTheme
 }
 
 export type IpcApi = {
@@ -122,7 +220,7 @@ export type IpcApi = {
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
-  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string }) => Promise<void>
+  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; description?: string; body: string; progress_summary?: string }>
   llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[]; mastery_assessment?: string; mastery_checklist?: string[]; future_advice?: string[] }>
@@ -132,6 +230,10 @@ export type IpcApi = {
     topics: { dirName: string; title: string }[]
     profile: Profile
     strategy?: 'v1' | 'v2' | 'v3'
+  }) => Promise<NewTopic>
+  llmWildcardInspiration: (args: {
+    profile: Profile
+    topics: { title: string }[]
   }) => Promise<NewTopic>
   llmGenerateFableFromReport: (args: {
     reportBody: string
@@ -150,8 +252,11 @@ export type IpcApi = {
   onLlmChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
+  onBriefingProgress: (cb: (stage: BriefingStage, detail?: string) => void) => () => void
+  briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
+  briefingList: () => Promise<{ date: string; filePath: string }[]>
   bootFatal: () => Promise<string | null>
-  bootStart: () => Promise<void>
+  bootStart: () => Promise<{ alreadyCompleted: boolean }>
   onBootProgress: (cb: (stage: string, progress: number) => void) => () => void
   onBootComplete: (cb: () => void) => () => void
 
@@ -184,6 +289,21 @@ export type IpcApi = {
 
   // Recovery dump
   recoveryDump: (args: { filename: string; content: string }) => Promise<void>
+
+  // External materials
+  readExternalMaterials: (dirName: string) => Promise<{ summary: string; sources: SearchSource[]; topic?: string } | null>
+  writeExternalMaterials: (args: {
+    dirName: string
+    sessionNumber: number
+    topic: string
+    summary: string
+    sources: SearchSource[]
+  }) => Promise<void>
+
+  // Search
+  searchPrepare: (args: { topic: string }) => Promise<SearchResult>
+  searchCheckConfig: () => Promise<{ configured: boolean }>
+  setSearchApiKey: (key: string) => Promise<void>
 
   // Extension info
   getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>

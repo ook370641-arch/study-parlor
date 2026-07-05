@@ -19,9 +19,9 @@ export async function finalizeAndReturnHome() {
     : state)
 
   // 预计算 pending archive 的 key，用于成功或失败时统一清理
-  const pendingDirName = sess.dirName ?? sanitizeDirName(sess.topic)
-  const pendingTopicMeta = s.library.find(t => t.dirName === sess.dirName)
-  const pendingSessionNumber = sess.dirName && pendingTopicMeta ? pendingTopicMeta.sessionCount + 1 : 1
+  const dirName = sess.dirName ?? sanitizeDirName(sess.topic)
+  const topicMeta = s.library.find(t => t.dirName === dirName)
+  const sessionNumber = topicMeta ? topicMeta.sessionCount + 1 : 1
 
   try {
     if (sess.mode === 'progress') {
@@ -29,18 +29,26 @@ export async function finalizeAndReturnHome() {
       // 新主题优先使用用户输入的 topic 作为 title，LLM 提取的作为 fallback
       const title = sess.topic || llmTitle
 
-      // 确定 session 编号
-      const topicMeta = s.library.find(t => t.dirName === sess.dirName)
-      const sessionNumber = sess.dirName && topicMeta
-        ? topicMeta.sessionCount + 1
-        : 1
-      const dirName = sess.dirName ?? sanitizeDirName(title)
-
       // 写学习报告
       await ipc.writeProgressMd({
         title, description, body, difficulty: sess.difficulty,
         dirName, session_number: sessionNumber, progress_summary
       })
+
+      // 写外部资料
+      if (s.externalMaterials?.summary) {
+        try {
+          await ipc.writeExternalMaterials({
+            dirName,
+            sessionNumber,
+            topic: title,
+            summary: s.externalMaterials.summary,
+            sources: s.externalMaterials.sources
+          })
+        } catch (e) {
+          console.warn('[finalize] external materials write failed:', e)
+        }
+      }
 
       // 生成并写寓言
       try {
@@ -157,12 +165,12 @@ export async function finalizeAndReturnHome() {
     }
 
     // 归档成功：清理占位和未保存会话
-    s.removePendingArchive(pendingDirName, pendingSessionNumber)
+    s.removePendingArchive(dirName, sessionNumber)
     const unsaved = s.unsavedSessions.find(us => us.topic === sess.topic)
     if (unsaved) s.removeUnsavedSession(unsaved.id)
   } catch (err: any) {
     // 归档失败：清理占位，避免残留
-    s.removePendingArchive(pendingDirName, pendingSessionNumber)
+    s.removePendingArchive(dirName, sessionNumber)
     s.showToast('归档失败:' + (err?.message ?? err))
     throw err
   }

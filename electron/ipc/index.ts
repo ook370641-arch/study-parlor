@@ -5,6 +5,8 @@ import { registerFilesIpc } from './files'
 import { registerStateIpc } from './state'
 import { registerLlmIpc } from './llm'
 import { registerSessionsIpc } from './sessions'
+import { registerBriefingIpc } from './briefing'
+import { registerSearchIpc } from './search'
 
 export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
   registerConfigIpc()
@@ -12,4 +14,6 @@ export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   registerStateIpc()
   registerLlmIpc(cfg, getMainWindow)
   registerSessionsIpc()
+  registerBriefingIpc(cfg)
+  registerSearchIpc(cfg)
 }

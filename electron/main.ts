@@ -1,21 +1,31 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import dotenv from 'dotenv'
-import { loadEnv, saveEnv, setConfigDir, getEnvPath } from './env'
+import { loadEnv, saveEnv, setConfigDir, setStateDir, getEnvPath } from './env'
 import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
 import { patchState } from './ipc/state'
 
 // In packaged builds cwd is not writable for our config — macOS launches the
 // .app with cwd=/ (read-only system volume → EROFS), Windows uses the install
-// dir (may be Program Files → EPERM, and wiped on uninstall/update). Store
-// .env alongside state.json under the user's home dir instead. Dev keeps cwd.
-// Must run before dotenv.config() so it reads from the right place.
-if (app.isPackaged) {
+// dir (may be Program Files → EPERM, and wiped on uninstall/update).
+//
+// We therefore keep runtime state (state.json) under the user's home dir
+// (~/.studyparlor) by default. Dev mode keeps .env in cwd for convenience,
+// but still writes state.json to ~/.studyparlor so dev and packaged builds
+// share the same profile.
+//
+// E2E tests can override both dirs for full isolation.
+if (process.env.E2E_CONFIG_DIR) {
+  setConfigDir(process.env.E2E_CONFIG_DIR)
+  setStateDir(process.env.E2E_CONFIG_DIR)
+} else if (app.isPackaged) {
   setConfigDir(path.join(os.homedir(), '.studyparlor'))
+  // stateDir already defaults to ~/.studyparlor.
 }
+// Dev mode: configDir defaults to cwd (reads ./.env), stateDir defaults to ~/.studyparlor.
 
 dotenv.config({ path: getEnvPath() })
 
@@ -29,6 +39,13 @@ process.on('unhandledRejection', (reason) => {
 let mainWindow: BrowserWindow | null = null
 let fatalError: string | null = null
 let pendingBootCfg: ReturnType<typeof loadEnv> | null = null
+let bootCompleted = false
+
+const isDev = !!process.env.ELECTRON_RENDERER_URL
+
+if (isDev) {
+  app.commandLine.appendSwitch('remote-debugging-port', '9222')
+}
 
 function verifyPackagedResources(): string | null {
   if (process.env.ELECTRON_RENDERER_URL) return null
@@ -46,6 +63,13 @@ function verifyPackagedResources(): string | null {
 
 async function bootstrap() {
   console.log('[bootstrap] start')
+
+  // E2E tests can inject a temporary library path via environment variable.
+  if (process.env.E2E_STUDY_LIBRARY_PATH) {
+    process.env.STUDY_LIBRARY_PATH = process.env.E2E_STUDY_LIBRARY_PATH
+    console.log('[bootstrap] E2E library override:', process.env.STUDY_LIBRARY_PATH)
+  }
+
   let cfg: ReturnType<typeof loadEnv> | undefined
   let needsSetup = false
 
@@ -92,7 +116,32 @@ async function bootstrap() {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
 
-  const isDev = !!process.env.ELECTRON_RENDERER_URL
+  // Keep external links in the system browser instead of navigating the app window.
+  const isExternalLink = (targetUrl: string, currentUrl: string): boolean => {
+    if (!/^https?:\/\//.test(targetUrl)) return false
+    try {
+      const target = new URL(targetUrl)
+      const base = new URL(currentUrl || 'http://localhost')
+      return target.origin !== base.origin
+    } catch {
+      return false
+    }
+  }
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isExternalLink(url, mainWindow?.webContents.getURL() ?? '')) {
+      shell.openExternal(url).catch(err => console.error('[shell] openExternal failed:', err))
+    }
+    return { action: 'deny' }
+  })
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isExternalLink(url, mainWindow?.webContents.getURL() ?? '')) {
+      event.preventDefault()
+      shell.openExternal(url).catch(err => console.error('[shell] openExternal failed:', err))
+    }
+  })
+
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -125,6 +174,10 @@ async function bootstrap() {
   })
 
   ipcMain.handle('setup:probeKey', async (_, args) => {
+    // E2E tests can bypass the network probe for reliability.
+    if (process.env.E2E_SKIP_PROBE === '1') {
+      return { ok: true }
+    }
     const { apiKey, baseUrl, model } = args
     const result = await probeModelWithCredentials({
       apiKey,
@@ -182,12 +235,20 @@ async function bootstrap() {
 
   // Renderer calls this when LoadingScreen mounts and is ready to receive events
   ipcMain.handle('boot:start', async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return { alreadyCompleted: false }
+    if (bootCompleted) {
+      console.log('[bootstrap] boot already completed, sending boot:complete on reload')
+      mainWindow.webContents.send('boot:complete')
+      return { alreadyCompleted: true }
+    }
     const cfg = pendingBootCfg
-    if (!cfg || !mainWindow || mainWindow.isDestroyed()) return
+    if (!cfg) return { alreadyCompleted: false }
     pendingBootCfg = null
     console.log('[bootstrap] boot sequence start')
     await runBootSequence(cfg, mainWindow)
+    bootCompleted = true
     console.log('[bootstrap] boot sequence complete')
+    return { alreadyCompleted: false }
   })
 
   if (!needsSetup) {
@@ -230,12 +291,17 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
     }
   }
 
+  const bootSeqStart = Date.now()
+
   // ===== 阶段 1: 注册 IPC =====
+  console.time('[bootstrap] stage: register IPC')
   console.log('[bootstrap] stage: register IPC')
   registerAllIpc(cfg, () => mainWindow)
   await animate('注册服务', 0, 15, 300)
+  console.timeEnd('[bootstrap] stage: register IPC')
 
   // ===== 阶段 2: 探活模型（网络请求，最耗时）=====
+  console.time('[bootstrap] stage: probe model')
   console.log('[bootstrap] stage: probe model')
   const probeStart = Date.now()
   try {
@@ -249,20 +315,27 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   const probeElapsed = Date.now() - probeStart
   // 探活期间进度从 15% 平滑推进到 50%
   await animate('探活模型', 15, 50, Math.max(400, probeElapsed))
+  console.timeEnd('[bootstrap] stage: probe model')
 
   // ===== 阶段 3: 扫描学习库 =====
+  console.time('[bootstrap] stage: scan library')
   console.log('[bootstrap] stage: scan library')
   await animate('扫描学习库', 50, 75, 500)
+  console.timeEnd('[bootstrap] stage: scan library')
 
   // ===== 阶段 4: 初始化状态 =====
+  console.time('[bootstrap] stage: init state')
   console.log('[bootstrap] stage: init state')
   await animate('初始化状态', 75, 95, 400)
+  console.timeEnd('[bootstrap] stage: init state')
 
   // ===== 阶段 5: 就绪 =====
+  console.time('[bootstrap] stage: ready')
   console.log('[bootstrap] stage: ready')
   await animate('就绪', 95, 100, 300)
   sendComplete()
-  console.log('[bootstrap] ready')
+  console.timeEnd('[bootstrap] stage: ready')
+  console.log('[bootstrap] boot sequence total:', Date.now() - bootSeqStart, 'ms')
 }
 
 app.whenReady().then(bootstrap)

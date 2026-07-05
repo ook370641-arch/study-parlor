@@ -1,0 +1,181 @@
+import { test as base, chromium } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
+import { spawn, ChildProcess } from 'node:child_process'
+import path from 'node:path'
+import {
+  createTestLibrary,
+  cleanupTestLibrary,
+  createTestConfigDir,
+  cleanupTestConfigDir,
+} from '../helpers/test-library'
+
+type E2EFixtures = {
+  electronProcess: { process: ChildProcess; cdpUrl: string }
+  window: Page
+  testLibraryPath: string
+  testConfigDir: string
+}
+
+function waitForCdpUrl(proc: ChildProcess, timeoutMs: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timed out waiting for Electron CDP URL (${timeoutMs}ms)`))
+    }, timeoutMs)
+
+    const onData = (data: Buffer) => {
+      const line = data.toString()
+      // Stream Electron logs to test output for debugging startup issues.
+      process.stdout.write(line)
+      const match = line.match(/DevTools listening on (ws:\/\/\S+)/)
+      if (match && timer) {
+        clearTimeout(timer)
+        resolve(match[1])
+      }
+    }
+
+    // Keep streams flowing so Electron does not block once the internal buffer fills up.
+    proc.stdout?.on('data', onData)
+    proc.stderr?.on('data', onData)
+  })
+}
+
+async function waitForProcessExit(proc: ChildProcess, timeoutMs: number): Promise<void> {
+  if (proc.exitCode !== null) return
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      resolve()
+    }, timeoutMs)
+    proc.once('exit', () => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
+
+async function killProcessTree(proc: ChildProcess): Promise<void> {
+  if (!proc.pid) return
+  if (process.platform === 'win32') {
+    return new Promise((resolve) => {
+      const killer = spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { stdio: 'ignore' })
+      killer.on('exit', () => resolve())
+      killer.on('error', () => resolve())
+      setTimeout(() => resolve(), 5000)
+    })
+  }
+  proc.kill('SIGKILL')
+  await waitForProcessExit(proc, 5000)
+}
+
+async function waitForCdpPort(url: string, timeoutMs: number): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  const portMatch = url.match(/ws:\/\/127\.0\.0\.1:(\d+)/)
+  if (!portMatch) throw new Error(`Could not extract port from CDP URL: ${url}`)
+  const port = parseInt(portMatch[1], 10)
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/json/version`)
+      if (response.ok) return
+    } catch {
+      // port not ready yet
+    }
+    await new Promise(r => setTimeout(r, 100))
+  }
+  throw new Error(`CDP port ${port} did not become ready within ${timeoutMs}ms`)
+}
+
+async function getAppPage(context: BrowserContext, timeoutMs: number): Promise<Page> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    for (const page of context.pages()) {
+      const url = page.url()
+      if (url !== 'about:blank' && url !== '') {
+        return page
+      }
+    }
+    await new Promise(r => setTimeout(r, 100))
+  }
+  throw new Error(`No app page found within ${timeoutMs}ms`)
+}
+
+export const test = base.extend<E2EFixtures>({
+  testLibraryPath: async ({}, use) => {
+    const dir = createTestLibrary()
+    await use(dir)
+  },
+
+  testConfigDir: async ({}, use, testInfo) => {
+    const dir = createTestConfigDir()
+    await use(dir)
+
+    const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
+    try {
+      await cleanupTestConfigDir(dir, failed)
+    } catch (err) {
+      console.warn('[e2e] failed to clean up test config dir:', dir, err)
+    }
+  },
+
+  electronProcess: async ({ testLibraryPath, testConfigDir }, use, testInfo) => {
+    const env = { ...process.env }
+    delete env.ELECTRON_RUN_AS_NODE
+
+    const proc = spawn(
+      path.join(process.cwd(), 'node_modules', 'electron', 'dist', 'electron.exe'),
+      ['--remote-debugging-port=0', '--no-sandbox', '.'],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...env,
+          NODE_ENV: 'test',
+          E2E_CONFIG_DIR: testConfigDir,
+          E2E_STUDY_LIBRARY_PATH: testLibraryPath,
+          E2E_SKIP_PROBE: '1',
+          TAVILY_API_KEY: process.env.TAVILY_API_KEY ?? '',
+        },
+      }
+    )
+
+    let cdpUrl: string
+    try {
+      cdpUrl = await waitForCdpUrl(proc, 60000)
+      await waitForCdpPort(cdpUrl, 10000)
+    } catch (err) {
+      await killProcessTree(proc)
+      throw err
+    }
+
+    await use({ process: proc, cdpUrl })
+
+    await killProcessTree(proc)
+    await waitForProcessExit(proc, 5000)
+
+    const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
+    if (failed) {
+      console.log(`[e2e] test failed, keeping test library for inspection: ${testLibraryPath}`)
+    }
+    try {
+      await cleanupTestLibrary(testLibraryPath, failed)
+    } catch (err) {
+      console.warn('[e2e] failed to clean up test library:', testLibraryPath, err)
+    }
+  },
+
+  window: async ({ electronProcess }, use) => {
+    const portMatch = electronProcess.cdpUrl.match(/ws:\/\/127\.0\.0\.1:(\d+)/)
+    const port = portMatch ? parseInt(portMatch[1], 10) : 9222
+    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 60000 })
+    try {
+      const context = browser.contexts()[0]
+      if (!context) throw new Error('No browser context available')
+
+      const page = await getAppPage(context, 30000)
+      await page.waitForLoadState('domcontentloaded')
+      await use(page)
+    } finally {
+      await browser.close()
+    }
+  },
+})
+
+export { expect } from '@playwright/test'

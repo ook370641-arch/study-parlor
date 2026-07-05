@@ -97,6 +97,7 @@ export function GroupRecCard({
 
   return (
     <div
+      data-testid="group-rec-card"
       className="relative bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden hover:border-ember/60 hover:bg-ink/80 transition-all cursor-pointer group"
       onClick={(e) => {
         const target = e.target as HTMLElement
@@ -133,6 +134,7 @@ export function GroupRecCard({
             {group.name}
           </span>
           <button
+            data-testid="group-rec-refresh"
             data-refresh
             onClick={(e) => {
               e.stopPropagation()
@@ -145,7 +147,7 @@ export function GroupRecCard({
             ↻
           </button>
         </div>
-        <div className="font-serif text-[0.95rem] text-parchment font-semibold mb-1">
+        <div data-testid="group-rec-title" className="font-serif text-[0.95rem] text-parchment font-semibold mb-1">
           {recommendation.topic}
         </div>
         <div className="text-xs text-parchment/50 leading-relaxed italic">

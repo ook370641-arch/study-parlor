@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import {
   generateGroupInspiration,
+  generateWildcardInspiration,
   finalizeProgress,
   finalizeReview,
   generateFableFromReport,
@@ -127,6 +128,30 @@ describe('generateGroupInspiration', () => {
     })).rejects.toThrow()
   })
 
+  it('throws when extracted JSON is syntactically invalid', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: '{"topic": "x", "hook": "y",}' } }] })
+    })) as any)
+
+    await expect(generateGroupInspiration(cfg, {
+      groupName: 'TestGroup',
+      topics: [],
+      profile
+    })).rejects.toThrow('JSON parse failed after extraction')
+  })
+
+  it('throws when topic or hook are not strings', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: '{"topic":123,"hook":true}' } }] })
+    })) as any)
+
+    await expect(generateGroupInspiration(cfg, {
+      groupName: 'TestGroup',
+      topics: [],
+      profile
+    })).rejects.toThrow('JSON parse failed after extraction')
+  })
+
   it('passes group data into prompt', async () => {
     const fetchSpy = vi.fn(async () => ({
       ok: true,
@@ -174,7 +199,87 @@ describe('generateGroupInspiration', () => {
     })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.thinking).toEqual({ type: 'enabled' })
-    expect(body.reasoning_effort).toBe('max')
+    expect(body.reasoning_effort).toBe('high')
+  })
+})
+
+describe('generateWildcardInspiration', () => {
+  it('parses valid JSON object', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"topic":"熵增定律","hook":"它解释为什么房间总会变乱。"}' } }]
+      })
+    })) as any)
+    const out = await generateWildcardInspiration(cfg, {
+      profile,
+      topics: [{ title: '康德' }, { title: 'React Hooks' }]
+    })
+    expect(out.topic).toBe('熵增定律')
+    expect(out.hook).toBe('它解释为什么房间总会变乱。')
+  })
+
+  it('strips markdown code block before parsing', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '```json\n{"topic":"量子纠缠","hook":"粒子间的幽灵同步。"}\n```' } }]
+      })
+    })) as any)
+    const out = await generateWildcardInspiration(cfg, {
+      profile,
+      topics: [{ title: '康德' }]
+    })
+    expect(out.topic).toBe('量子纠缠')
+    expect(out.hook).toBe('粒子间的幽灵同步。')
+  })
+
+  it('passes profile and topics into prompt', async () => {
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '{"topic":"T","hook":"h"}' } }] })
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+    await generateWildcardInspiration(cfg, {
+      profile: { ...profile, profile_text: '产品经理，喜欢哲学' },
+      topics: [{ title: '康德' }, { title: '尼采' }]
+    })
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.messages[0].content).toContain('产品经理，喜欢哲学')
+    expect(body.messages[0].content).toContain('康德')
+    expect(body.messages[0].content).toContain('尼采')
+  })
+
+  it('throws when extracted JSON is syntactically invalid', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: '{"topic": "x", "hook": "y",}' } }] })
+    })) as any)
+
+    await expect(generateWildcardInspiration(cfg, {
+      profile,
+      topics: []
+    })).rejects.toThrow('JSON parse failed after extraction')
+  })
+
+  it('throws when topic or hook are not strings', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: '{"topic":123,"hook":true}' } }] })
+    })) as any)
+
+    await expect(generateWildcardInspiration(cfg, {
+      profile,
+      topics: []
+    })).rejects.toThrow('JSON parse failed after extraction')
+  })
+
+  it('throws on parse failure', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, json: async () => ({ choices: [{ message: { content: 'not json' } }] })
+    })) as any)
+    await expect(generateWildcardInspiration(cfg, {
+      profile,
+      topics: []
+    })).rejects.toThrow()
   })
 })
 
@@ -379,7 +484,7 @@ describe('generateContinueSuggestions', () => {
     await generateContinueSuggestions({ ...cfg, model: 'deepseek-v4-pro' }, { topic: '拓扑学', dirName: '拓扑学' })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.thinking).toEqual({ type: 'enabled' })
-    expect(body.reasoning_effort).toBe('max')
+    expect(body.reasoning_effort).toBe('high')
 
     summariesSpy.mockRestore()
   })

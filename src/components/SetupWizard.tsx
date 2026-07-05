@@ -116,6 +116,7 @@ export function SetupWizard({ onDone }: Props) {
               <div key={s} className="flex items-center flex-1">
                 <div className="flex flex-col items-center">
                   <div
+                    data-testid={`wizard-step-${s}`}
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                       isCompleted
                         ? 'bg-ember text-ink'
@@ -146,7 +147,7 @@ export function SetupWizard({ onDone }: Props) {
 
         {/* Error display */}
         {error && (
-          <div className="mb-6 bg-wine/10 border border-wine/40 rounded-md px-4 py-3">
+          <div data-testid="wizard-error-display" className="mb-6 bg-wine/10 border border-wine/40 rounded-md px-4 py-3">
             <p className="text-sm text-parchment/80">{error}</p>
           </div>
         )}
@@ -175,6 +176,7 @@ export function SetupWizard({ onDone }: Props) {
               </div>
               <div className="flex justify-center pt-2">
                 <button
+                  data-testid="wizard-next-button"
                   onClick={() => { clearError(); setStep(2) }}
                   className="relative inline-block px-8 py-2.5 font-sans bg-ember text-ink shadow-[3px_3px_0_0_#3a5a6a] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_#3a5a6a] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-[transform,box-shadow] duration-100"
                 >
@@ -195,6 +197,7 @@ export function SetupWizard({ onDone }: Props) {
                   <label className="field-label">API Key</label>
                   <div className="relative">
                     <input
+                      data-testid="wizard-api-key-input"
                       type={showKey ? 'text' : 'password'}
                       value={apiKey}
                       onChange={(e) => { setApiKey(e.target.value); clearError() }}
@@ -202,6 +205,7 @@ export function SetupWizard({ onDone }: Props) {
                       className="w-full bg-ink border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60 pr-10"
                     />
                     <button
+                      data-testid="wizard-api-key-toggle"
                       type="button"
                       onClick={() => setShowKey(!showKey)}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-parchment/40 hover:text-parchment/70 transition-colors"
@@ -224,6 +228,7 @@ export function SetupWizard({ onDone }: Props) {
                 <div className="space-y-1.5">
                   <label className="field-label">Base URL</label>
                   <input
+                    data-testid="wizard-base-url-input"
                     type="text"
                     value={baseUrl}
                     onChange={(e) => { setBaseUrl(e.target.value); clearError() }}
@@ -234,6 +239,7 @@ export function SetupWizard({ onDone }: Props) {
                 <div className="space-y-1.5">
                   <label className="field-label">Model</label>
                   <input
+                    data-testid="wizard-model-input"
                     type="text"
                     value={model}
                     onChange={(e) => { setModel(e.target.value); clearError() }}
@@ -244,12 +250,14 @@ export function SetupWizard({ onDone }: Props) {
               </div>
               <div className="flex justify-between pt-2">
                 <button
+                  data-testid="wizard-back-button"
                   onClick={() => { clearError(); setStep(1) }}
                   className="px-4 py-2 text-parchment/80 hover:text-parchment transition-colors text-sm"
                 >
                   返回
                 </button>
                 <button
+                  data-testid="wizard-next-button"
                   onClick={handleProbeKey}
                   disabled={loading}
                   className="relative inline-block px-6 py-2 font-sans bg-ember text-ink shadow-[3px_3px_0_0_#3a5a6a] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_#3a5a6a] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-[transform,box-shadow] duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -274,12 +282,14 @@ export function SetupWizard({ onDone }: Props) {
                   <label className="field-label">目录路径</label>
                   <div className="flex gap-2">
                     <input
+                      data-testid="wizard-library-path-input"
                       type="text"
                       value={libraryPath}
                       onChange={(e) => { setLibraryPath(e.target.value); clearError() }}
                       className="flex-1 bg-ink border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
                     />
                     <button
+                      data-testid="wizard-select-directory-button"
                       onClick={handleSelectDirectory}
                       className="px-4 py-2 border border-slate/40 rounded-md text-sm text-parchment/80 hover:text-parchment hover:border-slate/60 transition-colors shrink-0"
                     >
@@ -290,12 +300,14 @@ export function SetupWizard({ onDone }: Props) {
               </div>
               <div className="flex justify-between pt-2">
                 <button
+                  data-testid="wizard-back-button"
                   onClick={() => { clearError(); setStep(2) }}
                   className="px-4 py-2 text-parchment/80 hover:text-parchment transition-colors text-sm"
                 >
                   返回
                 </button>
                 <button
+                  data-testid="wizard-next-button"
                   onClick={() => { clearError(); setStep(4) }}
                   className="relative inline-block px-6 py-2 font-sans bg-ember text-ink shadow-[3px_3px_0_0_#3a5a6a] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_#3a5a6a] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-[transform,box-shadow] duration-100"
                 >
@@ -317,6 +329,7 @@ export function SetupWizard({ onDone }: Props) {
                     昵称 <span className="text-wine">*</span>
                   </label>
                   <input
+                    data-testid="wizard-name-input"
                     type="text"
                     value={name}
                     onChange={(e) => { setName(e.target.value); clearError() }}
@@ -327,6 +340,7 @@ export function SetupWizard({ onDone }: Props) {
                 <div className="space-y-1.5">
                   <label className="field-label">个人简介</label>
                   <textarea
+                    data-testid="wizard-profile-text-input"
                     value={profileText}
                     onChange={(e) => { setProfileText(e.target.value); clearError() }}
                     placeholder="你的学习背景、目标或任何想让 AI 了解的信息..."
@@ -337,6 +351,7 @@ export function SetupWizard({ onDone }: Props) {
                 <div className="space-y-1.5">
                   <label className="field-label">感兴趣的话题</label>
                   <input
+                    data-testid="wizard-preferred-topics-input"
                     type="text"
                     value={preferredTopics}
                     onChange={(e) => { setPreferredTopics(e.target.value); clearError() }}
@@ -347,12 +362,14 @@ export function SetupWizard({ onDone }: Props) {
               </div>
               <div className="flex justify-between pt-2">
                 <button
+                  data-testid="wizard-back-button"
                   onClick={() => { clearError(); setStep(3) }}
                   className="px-4 py-2 text-parchment/80 hover:text-parchment transition-colors text-sm"
                 >
                   返回
                 </button>
                 <button
+                  data-testid="wizard-next-button"
                   onClick={handleWriteConfig}
                   disabled={loading}
                   className="relative inline-block px-6 py-2 font-sans bg-ember text-ink shadow-[3px_3px_0_0_#3a5a6a] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_#3a5a6a] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-[transform,box-shadow] duration-100 disabled:opacity-50 disabled:cursor-not-allowed"

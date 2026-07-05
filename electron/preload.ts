@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcApi, UnsavedSession } from '@shared/index'
+import type { IpcApi, UnsavedSession, BriefingStage } from '@shared/index'
 
 const api: IpcApi = {
   scanLibrary: () => ipcRenderer.invoke('files:scan'),
@@ -32,6 +32,7 @@ const api: IpcApi = {
   llmGenerateFableFromReport: (a) => ipcRenderer.invoke('llm:generateFableFromReport', a),
   llmGenerateContinueSuggestions: (a) => ipcRenderer.invoke('llm:generateContinueSuggestions', a),
   llmGenerateDiagram: (a) => ipcRenderer.invoke('llm:generateDiagram', a),
+  llmWildcardInspiration: (a) => ipcRenderer.invoke('llm:wildcardInspiration', a),
 
   onLlmChunk: (cb) => {
     const handler = (_: unknown, sid: string, text: string) => cb(sid, text)
@@ -52,6 +53,15 @@ const api: IpcApi = {
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
   getExtensionInfo: () => ipcRenderer.invoke('files:getExtensionInfo'),
 
+  // External materials
+  readExternalMaterials: (dirName) => ipcRenderer.invoke('files:readExternalMaterials', dirName),
+  writeExternalMaterials: (a) => ipcRenderer.invoke('files:writeExternalMaterials', a),
+
+  // Search
+  searchPrepare: (a) => ipcRenderer.invoke('search:prepare', a),
+  searchCheckConfig: () => ipcRenderer.invoke('search:checkConfig'),
+  setSearchApiKey: (key) => ipcRenderer.invoke('search:setApiKey', key),
+
   // Config
   getConfig: () => ipcRenderer.invoke('config:get'),
   writeConfig: (config) => ipcRenderer.invoke('config:write', config),
@@ -71,7 +81,16 @@ const api: IpcApi = {
     return () => ipcRenderer.off('setup:done', handler)
   },
 
-  bootStart: () => ipcRenderer.invoke('boot:start'),
+  briefingGenerate: (args) => ipcRenderer.invoke('briefing:generate', args),
+  briefingList: () => ipcRenderer.invoke('briefing:list'),
+
+  onBriefingProgress: (cb) => {
+    const handler = (_: unknown, stage: BriefingStage, detail?: string) => cb(stage, detail)
+    ipcRenderer.on('briefing:progress', handler)
+    return () => ipcRenderer.off('briefing:progress', handler)
+  },
+
+  bootStart: () => ipcRenderer.invoke('boot:start') as Promise<{ alreadyCompleted: boolean }>,
 
   onBootProgress: (cb: (stage: string, progress: number) => void) => {
     const handler = (_: unknown, stage: string, progress: number) => cb(stage, progress)

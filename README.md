@@ -1,220 +1,161 @@
-# Study Parlor / 学者夜话
+# 学者夜话 / Study Parlor
 
-> A local Electron learning companion powered by Kimi AI. Socratic tutoring for your personal Markdown study library.
->
-> 基于 Kimi AI 的本地 Electron 学习助手，为你的个人 Markdown 学习库提供苏格拉底式辅导。
+> 一个极乐迪斯科风格的本地 AI 深夜书房。  
+> 不是聊天机器人，而是会追问的老师、档案管理员和永久知识库。
 
-## ⬇️ Download / 下载安装
+[⬇️ 下载最新版](https://github.com/ook370641-arch/study-parlor/releases/latest) · [English →](#english)
 
-**👉 [点击这里下载最新版本](https://github.com/ook370641-arch/study-parlor/releases/latest)**
+<!-- 建议替换为应用主界面截图或 5-10 秒演示 GIF -->
+<!-- ![学者夜话主界面](./docs/assets/hero-screenshot.png) -->
 
-| 平台 / Platform | 文件 | 安装方式 |
+---
+
+## 为什么我做这个
+
+AI 已经成了我最常用的学习帮手，但「知道它能」和「它真帮到我」之间，总差一口气。
+
+每次聊完让 AI 总结报告、手动保存，但没几天就放弃了。那些曾经让我豁然开朗的对话像风，吹过去就散了——没有积累，没有方向。
+
+作为一个哲学本硕背景、长期和文本打交道的人，我想要一个能陪我长期学习的本地 AI 伙伴。它不只是聊天机器人，更像我的老师、档案管理员和私人书房。
+
+经过一个半月、252 次提交，它成了「学者夜话」。
+
+---
+
+## 它解决三个问题
+
+### 1. 你不会提问，它也不会追问
+
+普通 AI 对话是你问它答。学者夜话把这个关系颠倒过来：**AI 提问，你回答**。它先诊断你的起点，用一系列有针对性的问题引导你自己推出答案。
+
+它不会直接告诉你答案。只会问出那个让你「啊，原来如此」的问题。
+
+### 2. 聊完就散，没有连续性
+
+每次夜话结束，应用会自动归档一篇学习笔记：你的起点、知识的关键突破、认知缺口、掌握度评估、未来发展建议。同一个主题下的多次夜话各自独立，又都归在一起。
+
+回到旧主题，AI 会读取你的学习进度，自然接续。
+
+### 3. 纯文字记不住，知识结构看不见
+
+每次学习结束，除了文字报告，你还会得到两样东西：
+
+- **一张流程图**：把概念关系和推导脉络画清楚
+- **一则寓言**：把抽象概念变成可触摸的角色和情节，在「啊，原来如此」的瞬间记住它
+
+---
+
+## 核心功能
+
+- **苏格拉底式夜话** — AI 根据你的背景和选择的难度，一步步追问，引导你自己发现答案
+- **自动归档** — 每次对话生成学习报告，存为本地 Markdown，按分组 / 主题 / 夜话三层整理
+- **智能复习** — 基于笔记出题考你、找薄弱点、给掌握度评分，复习记录独立存档
+- **主题推荐** — 基于学习历史推荐下一步方向：继续深入、串联主题、或补基础概念
+- **寓言与流程图** — 用故事帮你记忆，用图表帮你理清结构
+- **你的笔记永远属于你** — 所有内容都是纯 Markdown，存在你指定的本地文件夹，卸载也不会丢
+- **深夜书房般的体验** — 深褐、米色、暖橙配色，名画背景，沉浸式语言体系（夜话、笔录、封存、焚毁……）
+
+---
+
+## 下载安装
+
+**👉 [点击下载最新版本](https://github.com/ook370641-arch/study-parlor/releases/latest)**
+
+| 平台 | 文件 | 安装方式 |
 |---|---|---|
-| Windows | `study-parlor-setup-x.x.x-x64.exe` | 双击运行，选择安装目录，自动生成桌面快捷方式 |
-| macOS | `学者夜话-x.x.x-arm64.dmg`（Apple Silicon）<br>`学者夜话-x.x.x-x64.dmg`（Intel） | 双击打开 dmg，将应用拖入 Applications 文件夹 |
+| Windows | `study-parlor-setup-x.x.x-x64.exe` | 双击运行，按提示安装 |
+| macOS (Apple Silicon) | `学者夜话-x.x.x-arm64.dmg` | 打开 dmg，将应用拖入 Applications |
+| macOS (Intel) | `学者夜话-x.x.x-x64.dmg` | 打开 dmg，将应用拖入 Applications |
 
-> **macOS 用户注意**：首次打开可能提示"无法验证开发者"，请右键点击应用 → 选择"打开" → 确认即可。
+首次启动时，配置向导会引导你填入 API Key（推荐使用 DeepSeek V4，也支持任意 OpenAI 兼容端点）和本地学习库路径。
 
-安装后首次启动会引导你配置 Kimi API Key 和学习库路径，按提示操作即可。
-
----
-
-## English
-
-### Why Study Parlor
-
-You open it at night, pick a topic, and chat like talking to a friend who knows their stuff. When you're done, you close it — your study report, a fable, and the full transcript are already saved. A week later, you come back to review, and instead of re-reading, the tutor quizzes you, spots your weak points, and gives you an honest score.
-
-No cloud. No lock-in. Just your thoughts, organized.
-
-### Features
-
-- **Chat to Learn, Walk Away** — Just talk. When you're done, the AI writes your study report, generates a fable, and saves the full transcript. You don't lift a finger.
-- **Fables That Make Concepts Stick** — Every session ends with a story. The concept only reveals itself at the "moment of insight" — because understanding sticks when you discover it yourself.
-- **Review Is a Test, Not a Reread** — The tutor quizzes you, finds your weak spots, and gives you an honest mastery score. No more passive re-reading.
-- **Pick Up Where You Left Off** — Returning to a topic? The AI remembers your last progress and continues the conversation naturally.
-- **Your Notes, Forever Yours** — Everything is saved as plain Markdown files in folders you own. Stop using the app? Your knowledge is still there, readable in any editor.
-- **A Warm Companion for Night Study** — Classic paintings as backdrop, warm parchment tones, one-on-one dialogue — it feels like a late-night conversation, not a tutoring session.
-
-### Installation
-
-**Prerequisites:** Node.js 20+, npm 10+
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/ook370641-arch/study-parlor
-   cd study-parlor
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Configure environment variables:
-   ```bash
-   # macOS / Linux
-   cp .env.example .env
-   # Windows
-   copy .env.example .env
-   # Edit .env and fill in your Kimi API key and study library path
-   ```
-
-4. Start in development mode:
-   ```bash
-   npm run dev
-   ```
-
-### Usage
-
-- **Home** — Browse your Markdown library, start a study session, or review past notes.
-- **Study** — Engage in a Socratic dialogue with the AI tutor. Interrupt anytime to redirect the conversation.
-- **Profile** — View and edit your learner profile, which customizes the AI's teaching style.
-- **Packaging** — Build a Windows installer:
-  ```bash
-  npm run package
-  ```
-
-### Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Desktop | Electron 30 |
-| Frontend | React 18 + TypeScript |
-| Styling | Tailwind CSS |
-| State | Zustand |
-| Build | electron-vite |
-| Testing | Vitest |
-| Packaging | electron-builder (Windows NSIS) |
-
-### Project Structure
-
-```
-study-parlor/
-├── electron/           # Main process & IPC handlers
-│   ├── main.ts
-│   ├── preload.ts
-│   └── ipc/            # files, llm, state
-├── src/
-│   ├── pages/          # cover, home, preStudy, study, profile
-│   ├── components/     # Reusable UI components
-│   ├── lib/            # Session runtime, finalization logic
-│   ├── store/          # Zustand store
-│   └── types/          # TypeScript types & IPC API definitions
-├── tests/              # Vitest test suite
-└── public/             # Static assets
-```
-
-### Development
-
-```bash
-npm run dev          # Development mode (keep terminal running)
-npm run test         # Run all tests
-npm run test:watch   # Test watch mode
-npm run build        # Production build
-npm run package      # Build Windows installer → release/
-```
+> **macOS 用户注意**：首次打开可能提示「无法验证开发者」，请右键点击应用 → 选择「打开」→ 确认即可。
 
 ---
 
-## 中文
+## 快速开始
 
-### 为什么选择学者夜话
+1. 下载并安装
+2. 首次启动填入 API Key 和学习库路径
+3. 在首页选一个主题，或新建一个分组 / 主题
+4. 点击「落印」，开始第一次「夜话」
+5. 聊完后结束会话，学习报告、寓言、流程图会自动归档到你的学习库
 
-你在夜晚打开它，选一个主题，像和一位懂行的朋友聊天。聊完你直接关掉——学习报告、寓言故事、完整对话记录已经自动存好。一周后你回来复习，AI 不是让你重读，而是出题考你、找出薄弱点、给你诚实的掌握度评分。
+---
 
-没有云端。没有绑架。只有你的思考，被好好整理。
+## 开发者
 
-### 功能特性
+### 扩展能力
 
-- **聊完就走，笔记自动生成** — 你只需要对话。结束后 AI 自动写学习报告、生成寓言故事、保存完整对话记录。你什么都不用管。
-- **用寓言帮你记住概念** — 每次学习结束，AI 都会写一则故事。概念在"领悟时刻"才点破——因为只有自己发现的东西才记得住。
-- **复习是考试，不是重读** — AI 导师会考你、找薄弱点、给你诚实的掌握度评分。告别被动翻笔记。
-- **上次学到哪了？接着聊** — 回到一个主题，AI 自动读取你的学习进度，自然接续。
-- **笔记永远属于你** — 所有内容都是纯 Markdown 文件，存在你的文件夹里。不用这个应用了，知识依然可用任何编辑器打开。
-- **深夜学习的陪伴感** — 名画背景、暖褐色调、一对一对话——像是和老朋友深夜夜话，不是上课。
-
-### 安装
-
-**前置条件：** Node.js 20+, npm 10+
-
-1. 克隆仓库：
-   ```bash
-   git clone https://github.com/ook370641-arch/study-parlor
-   cd study-parlor
-   ```
-
-2. 安装依赖：
-   ```bash
-   npm install
-   ```
-
-3. 配置环境变量：
-   ```bash
-   # macOS / Linux
-   cp .env.example .env
-   # Windows
-   copy .env.example .env
-   # 编辑 .env，填入你的 Kimi API Key 和学习库路径
-   ```
-
-4. 启动开发模式：
-   ```bash
-   npm run dev
-   ```
-
-### 使用说明
-
-- **首页** — 浏览 Markdown 学习库，开始学习会话或复习过往笔记。
-- **学习** — 与 AI 导师进行苏格拉底式对话。可随时打断并重定向话题。
-- **资料** — 查看和编辑学习者档案，定制 AI 的教学风格。
-- **打包** — 构建 Windows 安装包：
-  ```bash
-  npm run package
-  ```
+开发者版本内置了两个 Skill：`study` 和 `fable`。你可以在工作流中直接调用，生成的报告会自动归档到学习库。
 
 ### 技术栈
 
 | 层级 | 技术 |
-|------|------|
+|---|---|
 | 桌面端 | Electron 30 |
 | 前端 | React 18 + TypeScript |
 | 样式 | Tailwind CSS |
 | 状态 | Zustand |
 | 构建 | electron-vite |
 | 测试 | Vitest |
-| 打包 | electron-builder (Windows NSIS) |
+| 打包 | electron-builder |
 
-### 项目结构
-
-```
-study-parlor/
-├── electron/           # 主进程与 IPC 处理器
-│   ├── main.ts
-│   ├── preload.ts
-│   └── ipc/            # files, llm, state
-├── src/
-│   ├── pages/          # cover, home, preStudy, study, profile
-│   ├── components/     # 可复用 UI 组件
-│   ├── lib/            # 会话运行时、归档逻辑
-│   ├── store/          # Zustand 状态管理
-│   └── types/          # TypeScript 类型与 IPC API 定义
-├── tests/              # Vitest 测试套件
-└── public/             # 静态资源
-```
-
-### 开发命令
+### 本地运行
 
 ```bash
-npm run dev          # 开发模式（保持终端运行）
-npm run test         # 运行所有测试
-npm run test:watch   # 测试监视模式
-npm run build        # 生产构建
-npm run package      # 构建 Windows 安装包 → release/
+git clone https://github.com/ook370641-arch/study-parlor
+cd study-parlor
+npm install
+cp .env.example .env  # 编辑 .env 填入 API Key 和学习库路径
+npm run dev
+```
+
+常用命令：
+
+```bash
+npm run dev        # 开发模式
+npm run test       # 运行测试
+npm run build      # 生产构建
+npm run package    # 构建 Windows 安装包 → release/
 ```
 
 ---
 
-## License / 许可证
+## 路线图
+
+- [ ] **本地文件读取**：让 AI 直接读取你的资料、项目文件，基于真实上下文展开学习
+- [ ] **网络搜索**：每次夜话开始时同步最新网络资讯
+- [ ] **行业日报**：根据你的学习领域，每天早上推送一份简报
+- [ ] **用户画像**：自动扫描学习库，画出一张知识全景图
+- [ ] **作家语录**：封面随机展示喜欢的作家句子
+- [ ] **DIY 字段**：标签、分类、术语可按你的习惯自定义
+- [ ] **随机推荐**：故意推荐完全无关的主题，打破信息茧房
+
+---
+
+## 许可
 
 [MIT](LICENSE)
+
+---
+
+## English
+
+**Study Parlor** is a local Electron learning companion powered by Kimi / OpenAI-compatible APIs. It provides Socratic tutoring for your personal Markdown study library.
+
+Instead of answering your questions directly, it asks you questions, diagnoses your starting point, and guides you to discover answers yourself. After each session, it automatically archives a study report, generates a fable, and draws a flowchart — all saved as plain Markdown files in folders you own.
+
+- [Download latest release](https://github.com/ook370641-arch/study-parlor/releases/latest)
+- Run the installer and configure your API key + study library path on first launch
+- Pick a topic and start your first session
+
+```bash
+git clone https://github.com/ook370641-arch/study-parlor
+cd study-parlor
+npm install
+cp .env.example .env
+npm run dev
+```
+
+[MIT License](LICENSE)

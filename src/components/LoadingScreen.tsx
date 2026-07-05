@@ -60,7 +60,19 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
       }, 700)
     })
     // Signal main process that we're ready to receive boot events
-    window.api.bootStart()
+    window.api.bootStart().then((result) => {
+      // If boot already completed before this renderer mounted (e.g. after reload),
+      // trigger completion locally to avoid relying on a race-prone event.
+      if (result?.alreadyCompleted) {
+        setProgress(100)
+        setStage('就绪')
+        setExiting(true)
+        setTimeout(() => {
+          setVisible(false)
+          onCompleteRef.current?.()
+        }, 700)
+      }
+    })
     return () => {
       unsubProgress()
       unsubComplete()

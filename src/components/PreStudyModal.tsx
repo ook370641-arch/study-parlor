@@ -4,6 +4,7 @@ import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import type { ContinueTopicSuggestion, Difficulty } from '@shared/index'
 import { getTemperatureLabel } from '@/lib/temperature-label'
+import { useTerminology } from '@/lib/terminology'
 
 const ICONS = {
   context: '\u{1F50D}',
@@ -94,6 +95,8 @@ export function PreStudyModal() {
   const patchLastUsed = useStore(s => s.patchLastUsed)
   const topicContinueSuggestions = useStore(s => s.topicContinueSuggestions)
   const library = useStore(s => s.library)
+  const showToast = useStore(s => s.showToast)
+  const t = useTerminology()
 
   const [topic, setTopic] = useState(args?.topic ?? '')
   const [difficulty, setDifficulty] = useState<Difficulty>(lastUsed.difficulty)
@@ -108,12 +111,15 @@ export function PreStudyModal() {
   const [selectedDirName, setSelectedDirName] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [customTopic, setCustomTopic] = useState('')
+  const [enableExternalMaterials, setEnableExternalMaterials] = useState(false)
+  const [searchConfigured, setSearchConfigured] = useState(false)
 
   const topicRef = useRef<HTMLInputElement>(null)
   const diffRef = useRef<HTMLDivElement>(null)
 
   const isContinue = !!(args?.dirName && args.mode === 'progress')
   const showTopicInput = !args?.dirName
+  const showExternalMaterialsToggle = args?.mode === 'progress'
 
   // Load continue suggestions when modal opens for continue scenario
   useEffect(() => {
@@ -132,6 +138,14 @@ export function PreStudyModal() {
     setSelectedDirName(null)
     setSearchQuery('')
     setCustomTopic('')
+    setEnableExternalMaterials(false)
+    setSearchConfigured(false)
+
+    if (args.mode === 'progress') {
+      ipc.searchCheckConfig()
+        .then(({ configured }) => setSearchConfigured(configured))
+        .catch(err => console.warn('[PreStudyModal] search config check failed:', err))
+    }
 
     if (isContinue && args.dirName) {
       const cacheKey = args.dirName
@@ -240,19 +254,22 @@ export function PreStudyModal() {
       difficulty,
       temperature,
       userRequirement: userRequirement.trim() || undefined,
-      selectedTopic
+      selectedTopic,
+      enableExternalMaterials: args.mode === 'progress' ? enableExternalMaterials : undefined
     })
   }
 
   return (
     <div className="fixed inset-0 z-40 bg-ink/70 flex items-center justify-center"
          onClick={closePreStudy}>
-      <div className="panel w-[480px] p-8 space-y-6 max-h-[90vh] overflow-y-auto"
+      <div data-testid="prestudy-modal"
+           className="panel w-[480px] p-8 space-y-6 max-h-[90vh] overflow-y-auto"
            onClick={e => e.stopPropagation()}>
         {/* Header: topic source toggle (only for progress mode without dirName) */}
         {args.mode === 'progress' && !args.dirName && (
           <div className="flex gap-2">
             <button
+              data-testid="topic-source-new"
               onClick={() => {
                 setTopicSource('new')
                 setSelectedDirName(null)
@@ -264,9 +281,10 @@ export function PreStudyModal() {
                   ? 'bg-ember text-ink border-ember'
                   : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}
             >
-              全新主题
+              {t.newTopicMode}
             </button>
             <button
+              data-testid="topic-source-existing"
               onClick={() => {
                 setTopicSource('existing')
                 setTopic('')
@@ -279,13 +297,13 @@ export function PreStudyModal() {
                   ? 'bg-ember text-ink border-ember'
                   : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}
             >
-              已有主题
+              {t.existingTopicMode}
             </button>
           </div>
         )}
         {!(args.mode === 'progress' && !args.dirName) && (
           <div className="font-sans text-xs text-parchment/50">
-            {args.mode === 'progress' ? '探索新知' : '复习检测'}
+            {args.mode === 'progress' ? t.modeProgress : t.modeReview}
           </div>
         )}
 
@@ -295,7 +313,7 @@ export function PreStudyModal() {
             <div className="space-y-3">
               {/* Search existing topics */}
               <div>
-                <div className="field-label mb-2">选择已有主题</div>
+                <div className="field-label mb-2">{t.topicInputLabel}</div>
                 <Input
                   value={searchQuery}
                   onChange={e => {
@@ -315,6 +333,7 @@ export function PreStudyModal() {
                 ) : (
                   filterAndSortTopics(library, searchQuery).map(t => (
                     <button
+                      data-testid="existing-topic-option"
                       key={t.dirName}
                       onClick={() => setSelectedDirName(t.dirName)}
                       className={`w-full text-left px-3 py-2 rounded text-sm transition-colors
@@ -334,8 +353,9 @@ export function PreStudyModal() {
               </div>
               {/* Custom sub-topic input */}
               <div>
-                <div className="field-label mb-2">细分方向</div>
+                <div className="field-label mb-2">{t.subTopicLabel}</div>
                 <Input
+                  data-testid="custom-topic-input"
                   value={customTopic}
                   onChange={e => setCustomTopic(e.target.value)}
                   placeholder="想深入探讨的具体方向..."
@@ -345,8 +365,9 @@ export function PreStudyModal() {
             </div>
           ) : (
             <div>
-              <div className="field-label mb-2">今夜想学</div>
-              <Input ref={topicRef} value={topic}
+              <div className="field-label mb-2">{t.topicInputLabel}</div>
+              <Input data-testid="topic-input"
+                     ref={topicRef} value={topic}
                      onChange={e => setTopic(e.target.value)}
                      placeholder="主题或一个问题"
                      className="w-full" />
@@ -359,18 +380,19 @@ export function PreStudyModal() {
         {/* Continue suggestions (only for continue scenario) */}
         {isContinue && (
           <div>
-            <div className="field-label mb-2">续谈方向</div>
+            <div className="field-label mb-2">{t.continueDirectionLabel}</div>
             {loadingSuggestions ? (
               <SuggestionSkeleton />
             ) : suggestions.length > 0 ? (
               <div className="space-y-2">
                 {suggestions.map((suggestion, index) => (
-                  <SuggestionCard
-                    key={index}
-                    suggestion={suggestion}
-                    selected={selectedSuggestionIndex === index}
-                    onSelect={() => setSelectedSuggestionIndex(index)}
-                  />
+                  <div data-testid="continue-suggestion-card" key={index}>
+                    <SuggestionCard
+                      suggestion={suggestion}
+                      selected={selectedSuggestionIndex === index}
+                      onSelect={() => setSelectedSuggestionIndex(index)}
+                    />
+                  </div>
                 ))}
               </div>
             ) : suggestionError ? (
@@ -387,8 +409,9 @@ export function PreStudyModal() {
 
         {/* User requirement textarea (all scenarios) */}
         <div>
-          <div className="field-label mb-2">附加要求</div>
+          <div className="field-label mb-2">{t.requirementLabel}</div>
           <textarea
+            data-testid="user-requirement-input"
             value={userRequirement}
             onChange={e => setUserRequirement(e.target.value)}
             placeholder="例如：多给我一些代码示例 / 用更直观的比喻 / 重点讲数学推导..."
@@ -401,18 +424,56 @@ export function PreStudyModal() {
           </div>
         </div>
 
+        {/* External materials toggle (progress only) */}
+        {showExternalMaterialsToggle && (
+          <div
+            data-testid="external-materials-toggle"
+            className={`rounded-lg border p-3 transition-colors cursor-pointer ${
+              enableExternalMaterials
+                ? 'bg-ember/10 border-ember/30'
+                : 'border-slate/20 hover:border-slate/40'
+            }`}
+            onClick={() => {
+              if (!enableExternalMaterials && !searchConfigured) {
+                showToast('请先在设置中配置 Tavily API Key')
+                return
+              }
+              setEnableExternalMaterials(v => !v)
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div className={`mt-0.5 w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 ${
+                enableExternalMaterials
+                  ? 'bg-ember border-ember'
+                  : 'border-parchment/30'
+              }`}>
+                {enableExternalMaterials && <span className="text-ink text-xs">✓</span>}
+              </div>
+              <div className="flex-1">
+                <div className={`text-sm font-medium ${enableExternalMaterials ? 'text-parchment' : 'text-parchment/80'}`}>
+                  引入联网资料
+                </div>
+                <div className="text-xs text-parchment/50 leading-relaxed mt-0.5">
+                  开始时会集中搜索一次主题资料，整理后注入对话上下文。来源将归档到本次学习目录。
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Difficulty selection */}
         <div ref={diffRef}>
-          <div className="field-label mb-2">审讯强度</div>
+          <div className="field-label mb-2">{t.difficultyLabel}</div>
           <div className="flex gap-2">
             {(['high', 'mid', 'low'] as Difficulty[]).map(d => (
               <button key={d}
+                data-testid={`difficulty-button-${d}`}
                 onClick={() => setDifficulty(d)}
                 className={`px-4 py-1.5 rounded font-sans text-sm border transition-colors
                   ${difficulty === d
                     ? 'bg-ember text-ink border-ember'
                     : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
-                {getDifficultyLabel(d)}
+                {getDifficultyLabel(d, t)}
               </button>
             ))}
           </div>
@@ -420,16 +481,17 @@ export function PreStudyModal() {
 
         {/* Temperature selection */}
         <div>
-          <div className="field-label mb-2">腔调</div>
+          <div className="field-label mb-2">{t.temperatureLabel}</div>
           <div className="flex gap-2">
-            {[0.3, 0.7, 1.0].map(t => (
-              <button key={t}
-                onClick={() => setTemperature(t)}
+            {[0.3, 0.7, 1.0].map(temp => (
+              <button key={temp}
+                data-testid={`temperature-button-${temp.toFixed(1)}`}
+                onClick={() => setTemperature(temp)}
                 className={`px-4 py-1.5 rounded font-sans text-sm border transition-colors
-                  ${temperature === t
+                  ${temperature === temp
                     ? 'bg-ember text-ink border-ember'
                     : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
-                {getTemperatureLabel(t)}
+                {getTemperatureLabel(temp, t)}
               </button>
             ))}
           </div>
@@ -437,8 +499,8 @@ export function PreStudyModal() {
 
         {/* Action buttons */}
         <div className="flex justify-end gap-3 pt-2">
-          <Button variant="ghost" onClick={closePreStudy}>撤回</Button>
-          <Button onClick={onConfirm}>开始</Button>
+          <Button data-testid="cancel-button" variant="ghost" onClick={closePreStudy}>{t.cancelButton}</Button>
+          <Button data-testid="start-button" onClick={onConfirm}>{t.startButton}</Button>
         </div>
       </div>
     </div>

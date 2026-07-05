@@ -57,6 +57,7 @@ export function GroupRibbon({
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {/* "All" button */}
         <button
+          data-testid="group-tab-all"
           onClick={() => onSelect(null)}
           className={`shrink-0 px-3 py-1 text-xs font-sans rounded-full transition-colors ${
             activeGroupId === null
@@ -71,6 +72,7 @@ export function GroupRibbon({
           <div key={group.id} className="relative shrink-0">
             {renaming === group.id ? (
               <input
+                data-testid="group-rename-input"
                 ref={inputRef}
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
@@ -84,6 +86,7 @@ export function GroupRibbon({
               />
             ) : (
               <button
+                data-testid={`group-tab-${group.id}`}
                 onClick={() => onSelect(group.id)}
                 onContextMenu={(e) => handleContextMenu(e, group.id)}
                 className={`group inline-flex items-center gap-0.5 px-3 py-1 text-xs font-sans rounded-full transition-colors ${
@@ -100,6 +103,7 @@ export function GroupRibbon({
                 {group.name}
                 {group.id !== 'default' && (
                   <span
+                    data-testid="group-delete-button"
                     onClick={(e) => {
                       e.stopPropagation()
                       setDeleteTarget(group)
@@ -157,6 +161,7 @@ export function GroupRibbon({
           />
         ) : (
           <button
+            data-testid="create-group-button"
             onClick={() => setCreating(true)}
             className="shrink-0 px-2 py-1 text-xs font-sans rounded-full border border-parchment/15 text-parchment/30 hover:border-parchment/30 hover:text-parchment/50 transition-colors"
           >
@@ -166,6 +171,7 @@ export function GroupRibbon({
 
         {/* Help button */}
         <button
+          data-testid="group-guide-button"
           ref={guideBtnRef}
           onClick={() => setGuideOpen((v) => !v)}
           className="shrink-0 px-2.5 py-1 text-[11px] font-serif italic rounded-full border border-parchment/15 text-parchment/30 hover:border-parchment/30 hover:text-parchment/50 transition-colors"

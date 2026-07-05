@@ -90,6 +90,7 @@ export function GravityField({
 
   return (
     <div
+      data-testid="gravity-field"
       className="fixed inset-0 z-40 pointer-events-none"
       style={{ background: 'rgba(26, 21, 18, 0.92)' }}
     >
@@ -118,6 +119,7 @@ export function GravityField({
       {centers.map((center) => (
         <div
           key={center.group.id}
+          data-testid={`gravity-target-${center.group.id}`}
           className="absolute flex items-center justify-center rounded-full"
           style={{
             left: center.x - 24,

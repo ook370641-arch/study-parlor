@@ -41,6 +41,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
 
   return (
     <div
+      data-testid="session-viewer"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
@@ -49,7 +50,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
       <div className="w-[1200px] max-w-[96vw] max-h-[92vh] flex flex-col bg-ink border border-slate/40 rounded-md overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate/30 shrink-0">
-          <span className="font-serif text-parchment/90 truncate">{title}</span>
+          <span data-testid="session-viewer-title" className="font-serif text-parchment/90 truncate">{title}</span>
           <div className="flex items-center gap-1">
             {isFable && onRegenerateFable && (
               <button
@@ -61,6 +62,7 @@ export function SessionViewer({ dirName, sessionNumber, fileName, title, onClose
               </button>
             )}
             <button
+              data-testid="session-viewer-close"
               onClick={onClose}
               className="text-parchment/50 hover:text-parchment transition-colors text-lg leading-none px-2"
             >

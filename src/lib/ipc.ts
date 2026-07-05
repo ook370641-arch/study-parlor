@@ -15,6 +15,7 @@ export const ipc = {
   get writeTranscript() { return ensure().writeTranscript },
   get writeFable() { return ensure().writeFable },
   get readSessionFile() { return ensure().readSessionFile },
+  get readExternalMaterials() { return ensure().readExternalMaterials },
   get getState() { return ensure().getState },
   get patchState() { return ensure().patchState },
   get llmProbe() { return ensure().llmProbe },
@@ -24,12 +25,14 @@ export const ipc = {
   get llmFinalizeReview() { return ensure().llmFinalizeReview },
   get llmGenerateFable() { return ensure().llmGenerateFable },
   get llmGroupInspiration() { return ensure().llmGroupInspiration },
+  get llmWildcardInspiration() { return ensure().llmWildcardInspiration },
   get llmGenerateFableFromReport() { return ensure().llmGenerateFableFromReport },
   get llmGenerateContinueSuggestions() { return ensure().llmGenerateContinueSuggestions },
   get llmGenerateDiagram() { return ensure().llmGenerateDiagram },
   get onLlmChunk() { return ensure().onLlmChunk },
   get onLlmDone() { return ensure().onLlmDone },
   get onLlmError() { return ensure().onLlmError },
+  get onBriefingProgress() { return ensure().onBriefingProgress },
   get saveSession() { return ensure().saveSession },
   get loadSessions() { return ensure().loadSessions },
   get deleteSession() { return ensure().deleteSession },
@@ -45,6 +48,12 @@ export const ipc = {
   get onBootComplete() { return ensure().onBootComplete },
   get getExtensionInfo() { return ensure().getExtensionInfo },
 
+  // Search & external materials
+  get searchPrepare() { return ensure().searchPrepare },
+  get searchCheckConfig() { return ensure().searchCheckConfig },
+  get setSearchApiKey() { return ensure().setSearchApiKey },
+  get writeExternalMaterials() { return ensure().writeExternalMaterials },
+
   // Config
   get getConfig() { return ensure().getConfig },
   get writeConfig() { return ensure().writeConfig },
@@ -54,5 +63,8 @@ export const ipc = {
   get setupSelectDirectory() { return ensure().setupSelectDirectory },
   get setupProbeKey() { return ensure().setupProbeKey },
   get setupWriteConfig() { return ensure().setupWriteConfig },
-  get onSetupDone() { return ensure().onSetupDone }
+  get onSetupDone() { return ensure().onSetupDone },
+
+  get briefingGenerate() { return ensure().briefingGenerate },
+  get briefingList() { return ensure().briefingList }
 }
