@@ -30,6 +30,9 @@ export async function setSearchApiKey(key: string): Promise<void> {
 }
 
 export async function getSearchApiKey(): Promise<string | null> {
+  const envKey = process.env.TAVILY_API_KEY?.trim()
+  if (envKey) return envKey
+
   if (!safeStorage.isEncryptionAvailable()) {
     console.warn('[credentials] encryption unavailable, cannot retrieve search key')
     return null
@@ -54,6 +57,7 @@ export async function removeSearchApiKey(): Promise<void> {
 }
 
 export async function hasSearchApiKey(): Promise<boolean> {
+  if (process.env.TAVILY_API_KEY?.trim()) return true
   if (!safeStorage.isEncryptionAvailable()) return false
   try {
     await fs.promises.access(CRED_FILE)

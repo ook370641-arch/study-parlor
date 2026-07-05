@@ -3,7 +3,7 @@ import { extractJsonArray } from './extract-json'
 import type { AppConfig } from '../env'
 import type { SearchSource, SearchResult } from '@shared/index'
 
-const TAVILY_API_URL = 'https://api.tavily.com/search'
+const DEFAULT_TAVILY_API_URL = 'https://api.tavily.com/search'
 const MAX_SNIPPET_LENGTH = 200
 
 export type TavilySearchOptions = {
@@ -22,7 +22,7 @@ export type TavilyResult = {
 }
 
 export async function searchWeb(opts: TavilySearchOptions): Promise<TavilyResult[]> {
-  const url = opts.baseUrl || TAVILY_API_URL
+  const url = opts.baseUrl || process.env.TAVILY_API_URL || DEFAULT_TAVILY_API_URL
   const ctl = new AbortController()
   const timeoutId = setTimeout(() => ctl.abort(), 15000)
   let externalListenerAdded = false

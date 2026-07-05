@@ -8,9 +8,17 @@ import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import type { AppConfig } from '../env'
 import type { BriefingResult, BriefingSource, BriefingStage, Message, Profile } from '@shared/index'
 
-const FEED_X_URL = process.env.BRIEFING_FEED_X_URL || 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json'
-const FEED_PODCASTS_URL = process.env.BRIEFING_FEED_PODCASTS_URL || 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json'
-const FEED_BLOGS_URL = process.env.BRIEFING_FEED_BLOGS_URL || 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json'
+const DEFAULT_FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json'
+const DEFAULT_FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json'
+const DEFAULT_FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json'
+
+function feedUrls() {
+  return {
+    x: process.env.BRIEFING_FEED_X_URL || DEFAULT_FEED_X_URL,
+    podcasts: process.env.BRIEFING_FEED_PODCASTS_URL || DEFAULT_FEED_PODCASTS_URL,
+    blogs: process.env.BRIEFING_FEED_BLOGS_URL || DEFAULT_FEED_BLOGS_URL,
+  }
+}
 
 function promptsDir(): string {
   const candidates = [
@@ -305,8 +313,14 @@ export function registerBriefingIpc(cfg: AppConfig) {
       }
     }
 
-    // E2E fast path: return mock briefing without hitting feeds/LLM when no cache
-    if (process.env.NODE_ENV === 'test') {
+    // E2E fast path: return mock briefing without hitting feeds/LLM when no cache.
+    // Set E2E_BRIEFING_DISABLE_MOCK=1 to exercise the real fetch/LLM generation chain.
+    // Also require E2E_CONFIG_DIR so unit tests (NODE_ENV=test) do not take this path.
+    if (
+      process.env.NODE_ENV === 'test' &&
+      process.env.E2E_CONFIG_DIR &&
+      process.env.E2E_BRIEFING_DISABLE_MOCK !== '1'
+    ) {
       emitProgress('fetching', 'MOCK')
       emitProgress('extracting', 'MOCK')
       emitProgress('assembling', 'MOCK')
@@ -331,10 +345,11 @@ export function registerBriefingIpc(cfg: AppConfig) {
       }
     }
 
+    const urls = feedUrls()
     const [feedX, feedPodcasts, feedBlogs] = await Promise.all([
-      fetchJson<FeedX>(FEED_X_URL),
-      fetchJson<FeedPodcasts>(FEED_PODCASTS_URL),
-      fetchJson<FeedBlogs>(FEED_BLOGS_URL),
+      fetchJson<FeedX>(urls.x),
+      fetchJson<FeedPodcasts>(urls.podcasts),
+      fetchJson<FeedBlogs>(urls.blogs),
     ])
 
     emitProgress('fetching')
