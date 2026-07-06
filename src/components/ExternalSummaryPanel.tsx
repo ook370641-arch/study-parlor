@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import Markdown from 'react-markdown'
 import { useStore } from '@/store'
 import type { SearchSource } from '@shared/index'
@@ -89,15 +88,6 @@ export function ExternalSummaryPanel() {
   const isOpen = useStore(s => s.isExternalSummaryOpen)
   const materials = useStore(s => s.externalMaterials)
   const closeExternalSummary = useStore(s => s.closeExternalSummary)
-
-  useEffect(() => {
-    if (!isOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeExternalSummary()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [isOpen, closeExternalSummary])
 
   if (!isOpen) return null
 
