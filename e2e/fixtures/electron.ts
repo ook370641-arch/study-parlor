@@ -2,6 +2,7 @@ import { test as base, chromium } from '@playwright/test'
 import type { BrowserContext, Page } from '@playwright/test'
 import { spawn, ChildProcess } from 'node:child_process'
 import path from 'node:path'
+import fs from 'node:fs'
 import {
   createTestLibrary,
   cleanupTestLibrary,
@@ -14,6 +15,7 @@ type E2EFixtures = {
   window: Page
   testLibraryPath: string
   testConfigDir: string
+  extraEnv: Record<string, string>
 }
 
 function waitForCdpUrl(proc: ChildProcess, timeoutMs: number): Promise<string> {
@@ -116,9 +118,26 @@ export const test = base.extend<E2EFixtures>({
     }
   },
 
-  electronProcess: async ({ testLibraryPath, testConfigDir }, use, testInfo) => {
+  extraEnv: async ({}, use) => {
+    await use({})
+  },
+
+  electronProcess: async ({ testLibraryPath, testConfigDir, extraEnv }, use, testInfo) => {
     const env = { ...process.env }
     delete env.ELECTRON_RUN_AS_NODE
+
+    // Ensure TAVILY_API_KEY is loaded from project .env so E2E real-API
+    // tests use the same key regardless of process.env inheritance quirks.
+    const tavilyKey = (() => {
+      const envPath = path.join(process.cwd(), '.env')
+      try {
+        const content = fs.readFileSync(envPath, 'utf8')
+        const match = content.match(/^TAVILY_API_KEY=(.+?)\s*$/m)
+        return match ? match[1].trim() : ''
+      } catch {
+        return ''
+      }
+    })()
 
     const proc = spawn(
       path.join(process.cwd(), 'node_modules', 'electron', 'dist', 'electron.exe'),
@@ -131,7 +150,8 @@ export const test = base.extend<E2EFixtures>({
           E2E_CONFIG_DIR: testConfigDir,
           E2E_STUDY_LIBRARY_PATH: testLibraryPath,
           E2E_SKIP_PROBE: '1',
-          TAVILY_API_KEY: process.env.TAVILY_API_KEY ?? '',
+          TAVILY_API_KEY: tavilyKey || process.env.TAVILY_API_KEY || '',
+          ...extraEnv,
         },
       }
     )

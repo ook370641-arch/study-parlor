@@ -87,7 +87,7 @@ export async function chatNonStream(
   cfg: AppConfig,
   args: { messages: Message[]; temperature: number; thinking?: ThinkingConfig; signal?: AbortSignal }
 ): Promise<string> {
-  const TIMEOUT_MS = 120_000
+  const TIMEOUT_MS = 300_000
   const ctl = new AbortController()
   const timeoutId = setTimeout(() => ctl.abort(), TIMEOUT_MS)
   let externalListenerAdded = false

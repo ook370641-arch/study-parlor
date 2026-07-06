@@ -53,7 +53,16 @@ function readPrompts(): Record<string, string> {
 async function fetchJson<T>(url: string): Promise<T | null> {
   let res: Response
   try {
-    res = await fetch(url)
+    const ctl = new AbortController()
+    const timeoutId = setTimeout(() => ctl.abort(), 30_000)
+    try {
+      res = await fetch(url, {
+        signal: ctl.signal,
+        headers: { 'User-Agent': 'study-parlor/1.0' },
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
   } catch (err) {
     console.error(`[briefing] fetch failed: ${url}`, err)
     throw new Error(`NETWORK_ERROR: ${url}`)
@@ -347,9 +356,18 @@ export function registerBriefingIpc(cfg: AppConfig) {
 
     const urls = feedUrls()
     const [feedX, feedPodcasts, feedBlogs] = await Promise.all([
-      fetchJson<FeedX>(urls.x),
-      fetchJson<FeedPodcasts>(urls.podcasts),
-      fetchJson<FeedBlogs>(urls.blogs),
+      fetchJson<FeedX>(urls.x).catch((err) => {
+        console.warn(`[briefing] feed X unavailable, continuing: ${err.message}`)
+        return null
+      }),
+      fetchJson<FeedPodcasts>(urls.podcasts).catch((err) => {
+        console.warn(`[briefing] feed podcasts unavailable, continuing: ${err.message}`)
+        return null
+      }),
+      fetchJson<FeedBlogs>(urls.blogs).catch((err) => {
+        console.warn(`[briefing] feed blogs unavailable, continuing: ${err.message}`)
+        return null
+      }),
     ])
 
     emitProgress('fetching')
@@ -363,13 +381,13 @@ export function registerBriefingIpc(cfg: AppConfig) {
     const extractionPrompt = buildExtractionPrompt({
       profile,
       prompts,
-      feedX,
-      feedPodcasts,
-      feedBlogs,
+      feedX: feedX ?? {},
+      feedPodcasts: feedPodcasts ?? {},
+      feedBlogs: feedBlogs ?? {},
     })
 
     const llmCtl = new AbortController()
-    const llmTimeout = setTimeout(() => llmCtl.abort(), 120_000)
+    const llmTimeout = setTimeout(() => llmCtl.abort(), 300_000)
     let cacheWriteFailed = false
 
     try {
