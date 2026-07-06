@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 
 export function AcademicBriefingLayout({
   result,
@@ -19,8 +20,15 @@ export function AcademicBriefingLayout({
       data-testid="briefing-academic-layout"
       className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto"
     >
+      <div className="absolute top-4 left-4 z-10">
+        <SwapPaintingButton
+          surface="briefing"
+          data-testid="briefing-swap-painting-button"
+          className="text-parchment/70 hover:text-parchment"
+        />
+      </div>
       <article className="prose prose-invert max-w-none">
-        <h1 className="text-2xl font-serif text-parchment mb-2">{result.title}</h1>
+        <h1 className="text-[20px] font-bold font-serif text-parchment mb-2">{result.title}</h1>
         <p className="text-sm text-parchment/50 mb-6">{displayDate}</p>
 
         {parsed.sections.map((section, i) => (
@@ -28,7 +36,10 @@ export function AcademicBriefingLayout({
             <h2 className="text-lg font-serif text-parchment/90 mb-3 border-b border-parchment/20 pb-2">
               {section.title}
             </h2>
-            <div className="text-parchment/80 leading-relaxed">
+            <div
+              className="text-parchment/80 leading-relaxed"
+              style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
+            >
               <MarkdownRenderer content={section.body} fileName="briefing.md" />
             </div>
           </section>
