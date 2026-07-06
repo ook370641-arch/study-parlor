@@ -16,6 +16,7 @@ import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { useTerminology } from '@/lib/terminology'
 import { ExternalMaterialsCard } from '@/components/ExternalMaterialsCard'
+import { ExternalSummaryPanel } from '@/components/ExternalSummaryPanel'
 import { Quote } from '@/components/Quote'
 
 export function Study() {
@@ -71,22 +72,30 @@ export function Study() {
     }
   }, [session?.history, session?.streaming])
 
-  // ESC = 返回(等同左上箭头)
-  const onBackRef = useRef(onBack)
-  onBackRef.current = onBack
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onBackRef.current()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
   const [streamError, setStreamError] = useState<{ code: string; message: string } | null>(null)
   const [archiving, setArchiving] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const archiveResult = useStore(s => s.archiveResult)
   const clearArchiveResult = useStore(s => s.clearArchiveResult)
+  const isExternalSummaryOpen = useStore(s => s.isExternalSummaryOpen)
+  const closeExternalSummary = useStore(s => s.closeExternalSummary)
+
+  // ESC = 返回(等同左上箭头); 若外部资料摘要面板打开则优先关闭面板
+  const onBackRef = useRef(onBack)
+  onBackRef.current = onBack
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (useStore.getState().isExternalSummaryOpen) {
+        closeExternalSummary()
+        return
+      }
+      onBackRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   useEffect(() => {
     const off = ipc.onLlmError((sid, err) => {
       if (sid !== session?.abortId) return
@@ -169,6 +178,8 @@ export function Study() {
         />
       )}
 
+      <ExternalSummaryPanel />
+
       <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''}`}>
       <SurfaceBackground surface="study" />
       {isExiting && (
@@ -224,7 +235,7 @@ export function Study() {
         </div>
       )}
 
-      <div data-testid="message-list" ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto">
+      <div data-testid="message-list" ref={scrollRef} className={`relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto transition-all duration-300 ${isExternalSummaryOpen ? 'pr-[380px]' : ''}`}>
         <div className="mb-6">
           <Quote surface="study" />
         </div>
