@@ -21,7 +21,7 @@ export function NewspaperBriefingLayout({
     >
       <article className="max-w-none">
         <div className="border-b-2 border-[#1a1a1a] pb-4 mb-6">
-          <h1 className="text-3xl font-serif text-[#1a1a1a] mb-1">{result.title}</h1>
+          <h1 className="text-[24px] font-extrabold font-serif text-[#1a1a1a] mb-1">{result.title}</h1>
           <p className="text-sm text-[#555] uppercase tracking-wider">{displayDate}</p>
         </div>
 
@@ -30,7 +30,10 @@ export function NewspaperBriefingLayout({
             <h2 className="text-lg font-bold text-[#1a1a1a] mb-3 uppercase tracking-wide">
               {section.title}
             </h2>
-            <div className="text-[#333] leading-relaxed columns-1">
+            <div
+              className="text-[#1a1a1a] leading-relaxed columns-1"
+              style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
+            >
               <MarkdownRenderer content={section.body} fileName="briefing.md" />
             </div>
           </section>
