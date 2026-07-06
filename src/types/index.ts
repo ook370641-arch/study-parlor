@@ -169,6 +169,14 @@ export type BriefingSourceType = 'x' | 'podcast' | 'blog'
 
 export type BriefingTheme = 'academic' | 'newspaper'
 
+export type BriefingFontSize = 'sm' | 'base' | 'lg' | 'xl'
+
+export type BriefingSourceStatus = {
+  x: 'ok' | 'failed'
+  podcasts: 'ok' | 'failed'
+  blogs: 'ok' | 'failed'
+}
+
 export type BriefingStage = 'fetching' | 'extracting' | 'assembling' | 'finalizing' | 'done'
 
 export type BriefingSourceItem = {
@@ -194,6 +202,7 @@ export type BriefingResult = {
   cached: boolean
   cacheWriteFailed?: boolean
   generatedAt: string
+  sourceStatus: BriefingSourceStatus
 }
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
@@ -211,6 +220,7 @@ export type StateJson = {
   topicContinueSuggestions: Record<string, TopicContinueCache>
   terminology?: Terminology
   briefingTheme?: BriefingTheme
+  briefingFontSize?: BriefingFontSize
 }
 
 export type IpcApi = {
