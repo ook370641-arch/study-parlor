@@ -51,7 +51,7 @@ export function BriefingHeader({
       <BackToCover className={backOverride} />
       <div className="text-center">
         <h1 className={titleClass}>夜航简报</h1>
-        <div className={metaClass}>
+        <div className={metaClass} data-testid="briefing-generated-at">
           {displayDate}
           {timeString && ` · ${timeString}`}
           {sourceStatus && (

@@ -31,6 +31,7 @@ export function NewspaperBriefingLayout({
               {section.title}
             </h2>
             <div
+              data-testid="briefing-markdown-body"
               className="text-[#1a1a1a] leading-relaxed columns-1"
               style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
             >

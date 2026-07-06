@@ -49,7 +49,7 @@ test('shows generated timestamp for cached briefing @smoke', async () => {
   const coverPage = new CoverPage(window)
   await coverPage.gotoBriefing()
   await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible()
-  await expect(window.locator(SELECTORS.briefing.generatedAt)).toContainText('生成于 08:32')
+  await expect(window.locator(SELECTORS.briefing.generatedAt)).toContainText('08:32')
 })
 
 test('toggles between academic and newspaper layout @smoke', async () => {

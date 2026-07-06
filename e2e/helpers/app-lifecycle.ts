@@ -97,7 +97,9 @@ export async function startApp({
   delete env.ELECTRON_RUN_AS_NODE
 
   const proc = spawn(
-    path.join(process.cwd(), 'node_modules', 'electron', 'dist', 'electron.exe'),
+    process.env.ELECTRON_OVERRIDE_DIST_PATH
+      ? path.join(process.env.ELECTRON_OVERRIDE_DIST_PATH, 'electron.exe')
+      : path.join(process.cwd(), 'node_modules', 'electron', 'dist', 'electron.exe'),
     ['--remote-debugging-port=0', '--no-sandbox', '.'],
     {
       cwd: process.cwd(),

@@ -108,10 +108,12 @@ export function MarkdownRenderer({ content, fileName }: Props) {
     : docType === 'fable' ? fableComponents
     : dialogueComponents
 
+  const hideReportHeader = fileName === 'briefing.md'
+
   return (
     <div className="md-container">
       <MdErrorBoundary>
-        <ReportHeader frontmatter={frontmatter} />
+        {!hideReportHeader && <ReportHeader frontmatter={frontmatter} />}
       </MdErrorBoundary>
       <div className={`md-body ${getDocTypeClass(docType)}`}>
         <MdErrorBoundary>

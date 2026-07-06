@@ -37,6 +37,7 @@ export function AcademicBriefingLayout({
               {section.title}
             </h2>
             <div
+              data-testid="briefing-markdown-body"
               className="text-parchment/80 leading-relaxed"
               style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
             >

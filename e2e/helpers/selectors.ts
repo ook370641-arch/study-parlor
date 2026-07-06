@@ -100,6 +100,7 @@ export const SELECTORS = {
     cacheWriteFailedBadge: '[data-testid="briefing-cache-write-failed"]',
     swapPaintingButton: '[data-testid="briefing-swap-painting-button"]',
     surfaceBackground: '[data-testid="surface-background"]',
+    markdownBody: '[data-testid="briefing-markdown-body"]',
   },
   profile: {
     page: '[data-testid="profile-page"]',

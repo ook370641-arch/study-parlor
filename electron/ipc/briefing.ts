@@ -407,7 +407,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
       throw new Error('FEED_EMPTY')
     }
 
-    const sourceStatus = {
+    const sourceStatus: BriefingSourceStatus = {
       x: feedX?.x?.length ? 'ok' : 'failed',
       podcasts: feedPodcasts?.podcasts?.length ? 'ok' : 'failed',
       blogs: feedBlogs?.blogs?.length ? 'ok' : 'failed',
