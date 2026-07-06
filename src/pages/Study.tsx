@@ -235,7 +235,7 @@ export function Study() {
         </div>
       )}
 
-      <div data-testid="message-list" ref={scrollRef} className={`relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto transition-all duration-300 ${isExternalSummaryOpen ? 'pr-[380px]' : ''}`}>
+      <div data-testid="message-list" ref={scrollRef} className={`relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto ${isExternalSummaryOpen ? 'pr-[380px]' : ''}`}>
         <div className="mb-6">
           <Quote surface="study" />
         </div>
