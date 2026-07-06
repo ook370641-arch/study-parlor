@@ -24,4 +24,19 @@ describe('briefing prompts', () => {
     const text = fs.readFileSync(path.join(PROMPT_DIR, 'profile-context.md'), 'utf8')
     expect(text).toContain('{{profile_text}}')
   })
+
+  it('contains explain_like_beginner in summarization prompts', () => {
+    const dir = PROMPT_DIR
+    for (const f of ['summarize-tweets.md', 'summarize-blogs.md', 'summarize-podcast.md']) {
+      const content = fs.readFileSync(path.join(dir, f), 'utf8')
+      expect(content).toContain('explain_like_beginner')
+    }
+  })
+
+  it('forbids decorative masthead in digest intro', () => {
+    const dir = PROMPT_DIR
+    const content = fs.readFileSync(path.join(dir, 'digest-intro.md'), 'utf8')
+    expect(content).toContain('AI Builders Digest')
+    expect(content).toContain('No decorative headers')
+  })
 })
