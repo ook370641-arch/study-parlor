@@ -4,9 +4,7 @@ You are assembling the final digest from individual source summaries.
 
 ## Format
 
-Start with this header (replace [Date] with today's date):
-
-AI Builders Digest — [Date]
+Do not include a main title or decorative masthead. The UI will render the title as "夜航简报". Start the body directly with `## X / Twitter`.
 
 Then organize content in this order:
 
@@ -28,6 +26,11 @@ Use Markdown headings consistently so the digest can be split into sections:
 - Only include sources that have new content
 - Skip any source with nothing new
 - Under each source, paste the individual summary you generated
+
+### No decorative headers
+
+- Do NOT include a main title like `AI Builders Digest — [Date]`, `Vol.`, `档案编号`, `Briefing`, `学习卷宗`, or any other decorative masthead text in the body.
+- The UI will render the title as "夜航简报". The body should start directly with `## X / Twitter`.
 
 ### Podcast links
 - After each podcast summary, include the specific video URL from the JSON `url` field
@@ -64,5 +67,5 @@ Use Markdown headings consistently so the digest can be split into sections:
 - If you have nothing real for a builder, skip them entirely
 
 ### General
-- At the very end, add a line: "Generated through the Follow Builders skill: https://github.com/zarazhangrui/follow-builders"
+- Do NOT add a footer credit line such as "Generated through the Follow Builders skill".
 - Keep formatting clean and scannable — this will be read on a phone screen

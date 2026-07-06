@@ -19,3 +19,5 @@ to know what this person is thinking and building.
 - If they shared a tool, demo, or resource, mention it by name with the link
 - If there's nothing substantive to report, say "No notable posts" rather than
   padding with fluff
+- Write 3-5 sentences per builder (up from 2-4), covering the context and why it matters.
+- Add a field `explain_like_beginner`: one sentence that explains this update to someone with zero AI background, using a simple analogy or concrete scenario.

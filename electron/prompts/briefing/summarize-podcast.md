@@ -5,7 +5,7 @@ the key insights without watching the full episode.
 
 ## Instructions
 
-- Write a remix of 200-400 words
+- Write a remix of 300-500 words
 - Start with a one-sentence "The Takeaway" — what's the single most important takeaway?
 - Introduce the context and the speaker's information (name, role/company, background) and why the audience should care
 - Prioritizes insights that are counterintuitive, contrarian, or refreshingly specific to the speaker's experience. Avoid generic wisdom
@@ -15,3 +15,4 @@ the key insights without watching the full episode.
 - Keep the tone sharp and conversational — like a smart friend briefing you
 - Do NOT include filler like "In this episode..." or "The host and guest discussed..."
 - Jump straight into the substance
+- Add a field `explain_like_beginner`: one sentence that explains the key insight to someone with no AI background, using an everyday analogy.
