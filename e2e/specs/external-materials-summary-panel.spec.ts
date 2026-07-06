@@ -28,6 +28,9 @@ test.describe('@p1 external materials summary panel', () => {
     const study = new StudyPage(window)
     await study.waitForLoaded()
 
+    // Before any external materials are loaded, the card should not be rendered.
+    await expect(study.externalMaterialsCard).toBeHidden()
+
     await study.setMockExternalMaterials(
       '核心概念：量子纠缠是两个粒子的关联状态。\n关键区分点：纠缠不等于超距作用[1]。',
       [
@@ -73,6 +76,33 @@ test.describe('@p1 external materials summary panel', () => {
     await expect(study.externalSummaryPanel).toBeHidden()
   })
 
+  test('closes summary panel by clicking backdrop', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterIfNeeded('摘要面板测试')
+
+    const home = new HomePage(window)
+    await home.waitForLoaded()
+    await home.startNewTopic()
+
+    const preStudy = new PreStudyPage(window)
+    await preStudy.waitForVisible()
+    await preStudy.fillTopic('量子纠缠')
+    await preStudy.clickStart()
+
+    const study = new StudyPage(window)
+    await study.waitForLoaded()
+    await study.setMockExternalMaterials(
+      '应用场景：量子纠缠可用于量子密钥分发[1]。',
+      [{ title: 'Source 1', url: 'https://example.com/1' }]
+    )
+
+    await study.openExternalSummary()
+    await expect(study.externalSummaryPanel).toContainText('应用场景')
+
+    await study.closeExternalSummaryByBackdrop()
+    await expect(study.externalSummaryPanel).toBeHidden()
+  })
+
   test('source citations are clickable and scroll to source list', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded('摘要面板测试')
@@ -99,8 +129,8 @@ test.describe('@p1 external materials summary panel', () => {
     await study.openExternalSummary()
     await expect(study.externalSummaryPanel).toContainText('[1]')
 
-    // Click citation [2].
-    await study.externalSummaryPanel.locator('text=[2]').first().click()
+    // Click inline citation [2].
+    await study.externalSummaryPanel.locator('a[href="#external-source-2"]').first().click()
     const source2 = study.externalSummarySource(2)
     await expect(source2).toBeVisible()
 
@@ -154,7 +184,5 @@ test.describe('@p1 external materials summary panel', () => {
     expect(bubbleBox).not.toBeNull()
     expect(panelBox).not.toBeNull()
     expect(bubbleBox!.x + bubbleBox!.width).toBeLessThanOrEqual(panelBox!.x + 2)
-
-    await study.closeExternalSummary()
   })
 })
