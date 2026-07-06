@@ -73,6 +73,11 @@ export const SELECTORS = {
     streamRetryButton: '[data-testid="stream-retry-button"]',
     streamDismissButton: '[data-testid="stream-dismiss-button"]',
     externalMaterialsCard: '[data-testid="external-materials-card"]',
+    externalSummaryOpen: '[data-testid="external-summary-open"]',
+    externalSummaryPanel: '[data-testid="external-summary-panel"]',
+    externalSummaryBackdrop: '[data-testid="external-summary-backdrop"]',
+    externalSummaryClose: '[data-testid="external-summary-close"]',
+    externalSummarySource: (n: number) => `[data-testid="external-summary-source-${n}"]`,
     swapPaintingButton: '[data-testid="swap-painting-button"]',
   },
   quote: {
