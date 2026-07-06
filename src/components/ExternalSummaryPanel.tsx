@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import Markdown from 'react-markdown'
 import { useStore } from '@/store'
 import type { SearchSource } from '@shared/index'
@@ -89,7 +89,6 @@ export function ExternalSummaryPanel() {
   const isOpen = useStore(s => s.isExternalSummaryOpen)
   const materials = useStore(s => s.externalMaterials)
   const closeExternalSummary = useStore(s => s.closeExternalSummary)
-  const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -116,7 +115,6 @@ export function ExternalSummaryPanel() {
         aria-hidden="true"
       />
       <div
-        ref={panelRef}
         data-testid="external-summary-panel"
         className="fixed right-0 top-0 bottom-0 z-[15] flex flex-col bg-[rgba(22,17,14,0.98)] border-l border-parchment/15 shadow-[-10px_0_40px_rgba(0,0,0,0.5)]"
         style={{ width: `${PANEL_WIDTH}px` }}
