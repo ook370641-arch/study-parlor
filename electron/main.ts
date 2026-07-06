@@ -21,6 +21,14 @@ import { patchState } from './ipc/state'
 if (process.env.E2E_CONFIG_DIR) {
   setConfigDir(process.env.E2E_CONFIG_DIR)
   setStateDir(process.env.E2E_CONFIG_DIR)
+  // E2E tests force-kill the Electron process (taskkill /F /T).  Chromium's
+  // caches / databases in the default userData directory are then left in an
+  // unclean state, which slows down the next dev/packaged launch while
+  // Chromium tries to recover them.  Redirect userData and cache under the
+  // per-test E2E_CONFIG_DIR so they are deleted together with the test temp
+  // directory and never shared with dev mode.
+  app.setPath('userData', path.join(process.env.E2E_CONFIG_DIR, 'userData'))
+  app.setPath('cache', path.join(process.env.E2E_CONFIG_DIR, 'cache'))
 } else if (app.isPackaged) {
   setConfigDir(path.join(os.homedir(), '.studyparlor'))
   // stateDir already defaults to ~/.studyparlor.
@@ -40,6 +48,11 @@ let mainWindow: BrowserWindow | null = null
 let fatalError: string | null = null
 let pendingBootCfg: ReturnType<typeof loadEnv> | null = null
 let bootCompleted = false
+let bootT0 = 0
+function bootTs(): string {
+  if (!bootT0) bootT0 = Date.now()
+  return `[+${String(Date.now() - bootT0).padStart(5, '0')}ms]`
+}
 
 const isDev = !!process.env.ELECTRON_RENDERER_URL
 
@@ -62,12 +75,13 @@ function verifyPackagedResources(): string | null {
 }
 
 async function bootstrap() {
-  console.log('[bootstrap] start')
+  bootT0 = Date.now()
+  console.log('[bootstrap] start', bootTs())
 
   // E2E tests can inject a temporary library path via environment variable.
   if (process.env.E2E_STUDY_LIBRARY_PATH) {
     process.env.STUDY_LIBRARY_PATH = process.env.E2E_STUDY_LIBRARY_PATH
-    console.log('[bootstrap] E2E library override:', process.env.STUDY_LIBRARY_PATH)
+    console.log('[bootstrap] E2E library override:', process.env.STUDY_LIBRARY_PATH, bootTs())
   }
 
   let cfg: ReturnType<typeof loadEnv> | undefined
@@ -82,10 +96,10 @@ async function bootstrap() {
     const testFile = path.join(cfg.libraryPath, '.write-test')
     fs.writeFileSync(testFile, '')
     fs.unlinkSync(testFile)
-    console.log('[bootstrap] env loaded, library:', cfg.libraryPath)
+    console.log('[bootstrap] env loaded, library:', cfg.libraryPath, bootTs())
   } catch (err: any) {
     // 配置缺失 → 进入向导，不是 fatal
-    console.log('[bootstrap] setup required:', err.message)
+    console.log('[bootstrap] setup required:', err.message, bootTs())
     needsSetup = true
   }
 
@@ -108,7 +122,7 @@ async function bootstrap() {
     }
   })
   mainWindow.maximize()
-  console.log('[bootstrap] window created')
+  console.log('[bootstrap] window created', bootTs())
 
   if (process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -235,19 +249,20 @@ async function bootstrap() {
 
   // Renderer calls this when LoadingScreen mounts and is ready to receive events
   ipcMain.handle('boot:start', async () => {
+    console.log('[bootstrap] boot:start invoked', bootTs())
     if (!mainWindow || mainWindow.isDestroyed()) return { alreadyCompleted: false }
     if (bootCompleted) {
-      console.log('[bootstrap] boot already completed, sending boot:complete on reload')
+      console.log('[bootstrap] boot already completed, sending boot:complete on reload', bootTs())
       mainWindow.webContents.send('boot:complete')
       return { alreadyCompleted: true }
     }
     const cfg = pendingBootCfg
     if (!cfg) return { alreadyCompleted: false }
     pendingBootCfg = null
-    console.log('[bootstrap] boot sequence start')
+    console.log('[bootstrap] boot sequence start', bootTs())
     await runBootSequence(cfg, mainWindow)
     bootCompleted = true
-    console.log('[bootstrap] boot sequence complete')
+    console.log('[bootstrap] boot sequence complete', bootTs())
     return { alreadyCompleted: false }
   })
 
@@ -295,22 +310,22 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
 
   // ===== 阶段 1: 注册 IPC =====
   console.time('[bootstrap] stage: register IPC')
-  console.log('[bootstrap] stage: register IPC')
+  console.log('[bootstrap] stage: register IPC', bootTs())
   registerAllIpc(cfg, () => mainWindow)
   await animate('注册服务', 0, 15, 300)
   console.timeEnd('[bootstrap] stage: register IPC')
 
   // ===== 阶段 2: 探活模型（网络请求，最耗时）=====
   console.time('[bootstrap] stage: probe model')
-  console.log('[bootstrap] stage: probe model')
+  console.log('[bootstrap] stage: probe model', bootTs())
   const probeStart = Date.now()
   try {
     const probeResult = await probeModel(cfg)
     if (!probeResult.ok) {
-      console.warn('[bootstrap] model probe failed:', probeResult.reason)
+      console.warn('[bootstrap] model probe failed:', probeResult.reason, bootTs())
     }
   } catch (err) {
-    console.warn('[bootstrap] model probe error:', err)
+    console.warn('[bootstrap] model probe error:', err, bootTs())
   }
   const probeElapsed = Date.now() - probeStart
   // 探活期间进度从 15% 平滑推进到 50%
@@ -319,26 +334,29 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
 
   // ===== 阶段 3: 扫描学习库 =====
   console.time('[bootstrap] stage: scan library')
-  console.log('[bootstrap] stage: scan library')
+  console.log('[bootstrap] stage: scan library', bootTs())
   await animate('扫描学习库', 50, 75, 500)
   console.timeEnd('[bootstrap] stage: scan library')
 
   // ===== 阶段 4: 初始化状态 =====
   console.time('[bootstrap] stage: init state')
-  console.log('[bootstrap] stage: init state')
+  console.log('[bootstrap] stage: init state', bootTs())
   await animate('初始化状态', 75, 95, 400)
   console.timeEnd('[bootstrap] stage: init state')
 
   // ===== 阶段 5: 就绪 =====
   console.time('[bootstrap] stage: ready')
-  console.log('[bootstrap] stage: ready')
+  console.log('[bootstrap] stage: ready', bootTs())
   await animate('就绪', 95, 100, 300)
   sendComplete()
   console.timeEnd('[bootstrap] stage: ready')
-  console.log('[bootstrap] boot sequence total:', Date.now() - bootSeqStart, 'ms')
+  console.log('[bootstrap] boot sequence total:', Date.now() - bootSeqStart, 'ms', bootTs())
 }
 
-app.whenReady().then(bootstrap)
+app.whenReady().then(() => {
+  console.log('[bootstrap] app.whenReady', bootTs())
+  bootstrap()
+})
 app.on('window-all-closed', () => {
   mainWindow = null
   if (process.platform !== 'darwin') app.quit()

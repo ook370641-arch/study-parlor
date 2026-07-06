@@ -61,6 +61,31 @@ async function getAppPage(context: BrowserContext, timeoutMs: number): Promise<P
   throw new Error(`No app page found within ${timeoutMs}ms`)
 }
 
+async function waitForProcessExit(proc: ChildProcess, timeoutMs: number): Promise<void> {
+  if (proc.exitCode !== null) return
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(), timeoutMs)
+    proc.once('exit', () => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
+
+async function killProcessTree(proc: ChildProcess): Promise<void> {
+  if (!proc.pid) return
+  if (process.platform === 'win32') {
+    return new Promise((resolve) => {
+      const killer = spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { stdio: 'ignore' })
+      killer.on('exit', () => resolve())
+      killer.on('error', () => resolve())
+      setTimeout(() => resolve(), 5000)
+    })
+  }
+  proc.kill('SIGKILL')
+  await waitForProcessExit(proc, 5000)
+}
+
 export async function startApp({
   testLibraryPath,
   testConfigDir,
@@ -106,13 +131,14 @@ export async function startApp({
           } catch (err) {
             console.warn('[e2e] failed to close browser:', err)
           }
-          proc.kill()
+          await killProcessTree(proc)
+          await waitForProcessExit(proc, 5000)
         },
       },
       window,
     }
   } catch (err) {
-    proc.kill()
+    await killProcessTree(proc)
     throw err
   }
 }

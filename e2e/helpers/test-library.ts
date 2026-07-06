@@ -14,7 +14,7 @@ export function createTestLibrary(): string {
 
 export async function cleanupTestLibrary(dir: string, keepOnFailure: boolean = false): Promise<void> {
   if (keepOnFailure) return
-  fs.rmSync(dir, { recursive: true, force: true })
+  await retryRm(dir)
 }
 
 export function createTestConfigDir(): string {
@@ -31,7 +31,22 @@ export function createTestConfigDir(): string {
 
 export async function cleanupTestConfigDir(dir: string, keepOnFailure: boolean = false): Promise<void> {
   if (keepOnFailure) return
-  fs.rmSync(dir, { recursive: true, force: true })
+  await retryRm(dir)
+}
+
+async function retryRm(dir: string, timeoutMs = 10000, intervalMs = 500): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  let lastErr: unknown
+  while (Date.now() < deadline) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true })
+      return
+    } catch (err) {
+      lastErr = err
+      await new Promise((resolve) => setTimeout(resolve, intervalMs))
+    }
+  }
+  throw lastErr
 }
 
 function validateSlug(slug: string): void {
