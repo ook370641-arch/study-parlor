@@ -408,6 +408,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const current = get().briefingFontSize
     const idx = BRIEFING_FONT_SIZES.indexOf(current)
     const next = BRIEFING_FONT_SIZES[Math.min(idx + 1, BRIEFING_FONT_SIZES.length - 1)]
+    if (next === current) return
     set({ briefingFontSize: next })
     await ipc.patchState({ briefingFontSize: next } as Partial<StateJson>)
   },
@@ -417,6 +418,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const current = get().briefingFontSize
     const idx = BRIEFING_FONT_SIZES.indexOf(current)
     const prev = BRIEFING_FONT_SIZES[Math.max(idx - 1, 0)]
+    if (prev === current) return
     set({ briefingFontSize: prev })
     await ipc.patchState({ briefingFontSize: prev } as Partial<StateJson>)
   },

@@ -562,4 +562,45 @@ describe('store core operations', () => {
       expect(useStore.getState().wildcardInspiration).toBeNull()
     })
   })
+
+  describe('briefing font size', () => {
+    beforeEach(() => {
+      useStore.setState({ briefingFontSize: 'base' })
+      vi.mocked(ipc.patchState).mockResolvedValue(undefined)
+    })
+
+    it('defaults to base', () => {
+      expect(useStore.getState().briefingFontSize).toBe('base')
+    })
+
+    it('increases font size', async () => {
+      await useStore.getState().increaseBriefingFontSize()
+      expect(useStore.getState().briefingFontSize).toBe('lg')
+      expect(vi.mocked(ipc.patchState)).toHaveBeenCalledWith(
+        expect.objectContaining({ briefingFontSize: 'lg' })
+      )
+    })
+
+    it('decreases font size', async () => {
+      await useStore.getState().decreaseBriefingFontSize()
+      expect(useStore.getState().briefingFontSize).toBe('sm')
+      expect(vi.mocked(ipc.patchState)).toHaveBeenCalledWith(
+        expect.objectContaining({ briefingFontSize: 'sm' })
+      )
+    })
+
+    it('does not increase beyond xl', async () => {
+      useStore.setState({ briefingFontSize: 'xl' })
+      await useStore.getState().increaseBriefingFontSize()
+      expect(useStore.getState().briefingFontSize).toBe('xl')
+      expect(vi.mocked(ipc.patchState)).not.toHaveBeenCalled()
+    })
+
+    it('does not decrease below sm', async () => {
+      useStore.setState({ briefingFontSize: 'sm' })
+      await useStore.getState().decreaseBriefingFontSize()
+      expect(useStore.getState().briefingFontSize).toBe('sm')
+      expect(vi.mocked(ipc.patchState)).not.toHaveBeenCalled()
+    })
+  })
 })
