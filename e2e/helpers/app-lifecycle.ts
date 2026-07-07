@@ -61,29 +61,66 @@ async function getAppPage(context: BrowserContext, timeoutMs: number): Promise<P
   throw new Error(`No app page found within ${timeoutMs}ms`)
 }
 
-async function waitForProcessExit(proc: ChildProcess, timeoutMs: number): Promise<void> {
-  if (proc.exitCode !== null) return
+async function waitForProcessExit(proc: ChildProcess, timeoutMs: number): Promise<boolean> {
+  if (proc.exitCode !== null) return true
   return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(), timeoutMs)
+    const timer = setTimeout(() => resolve(false), timeoutMs)
     proc.once('exit', () => {
       clearTimeout(timer)
-      resolve()
+      resolve(true)
     })
+  })
+}
+
+async function isProcessRunning(pid: number): Promise<boolean> {
+  if (process.platform !== 'win32' || pid <= 0) return false
+  return new Promise((resolve) => {
+    const checker = spawn('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { stdio: 'pipe' })
+    let output = ''
+    checker.stdout?.on('data', (data: Buffer) => {
+      output += data.toString()
+    })
+    checker.on('exit', () => {
+      resolve(output.includes(String(pid)))
+    })
+    checker.on('error', () => resolve(false))
+    setTimeout(() => resolve(false), 2000)
   })
 }
 
 async function killProcessTree(proc: ChildProcess): Promise<void> {
   if (!proc.pid) return
+
   if (process.platform === 'win32') {
-    return new Promise((resolve) => {
-      const killer = spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { stdio: 'ignore' })
-      killer.on('exit', () => resolve())
-      killer.on('error', () => resolve())
-      setTimeout(() => resolve(), 5000)
-    })
+    // First attempt: graceful-but-firm process-tree termination.
+    await runTaskkill(proc.pid)
+    let exited = await waitForProcessExit(proc, 10000)
+
+    // Verify the PID is actually gone; the 'exit' event can fire before all
+    // child electron.exe processes release handles.
+    if (!exited && (await isProcessRunning(proc.pid))) {
+      console.warn(`[e2e] process ${proc.pid} still running after taskkill, retrying`)
+      await runTaskkill(proc.pid)
+      exited = await waitForProcessExit(proc, 10000)
+    }
+
+    if (!exited) {
+      console.warn(`[e2e] process ${proc.pid} did not exit cleanly`)
+    }
+    return
   }
+
   proc.kill('SIGKILL')
-  await waitForProcessExit(proc, 5000)
+  await waitForProcessExit(proc, 15000)
+}
+
+function runTaskkill(pid: number): Promise<void> {
+  return new Promise((resolve) => {
+    const killer = spawn('taskkill', ['/F', '/T', '/PID', String(pid)], { stdio: 'ignore' })
+    killer.on('exit', () => resolve())
+    killer.on('error', () => resolve())
+    setTimeout(() => resolve(), 5000)
+  })
 }
 
 export async function startApp({
@@ -134,7 +171,6 @@ export async function startApp({
             console.warn('[e2e] failed to close browser:', err)
           }
           await killProcessTree(proc)
-          await waitForProcessExit(proc, 5000)
         },
       },
       window,

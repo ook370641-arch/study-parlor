@@ -43,7 +43,7 @@ export function BriefingHeader({
   const backOverride = isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'
 
   const canDecrease = fontSize !== 'sm'
-  const canIncrease = fontSize !== 'xl'
+  const canIncrease = fontSize !== '7xl'
 
   const sourceLabel = (label: string, status: 'ok' | 'failed') =>
     `${label} ${status === 'ok' ? '✓' : '✗'}`

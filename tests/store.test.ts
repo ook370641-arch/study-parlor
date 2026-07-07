@@ -589,10 +589,10 @@ describe('store core operations', () => {
       )
     })
 
-    it('does not increase beyond xl', async () => {
-      useStore.setState({ briefingFontSize: 'xl' })
+    it('does not increase beyond 7xl', async () => {
+      useStore.setState({ briefingFontSize: '7xl' })
       await useStore.getState().increaseBriefingFontSize()
-      expect(useStore.getState().briefingFontSize).toBe('xl')
+      expect(useStore.getState().briefingFontSize).toBe('7xl')
       expect(vi.mocked(ipc.patchState)).not.toHaveBeenCalled()
     })
 

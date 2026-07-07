@@ -169,7 +169,17 @@ export type BriefingSourceType = 'x' | 'podcast' | 'blog'
 
 export type BriefingTheme = 'academic' | 'newspaper'
 
-export type BriefingFontSize = 'sm' | 'base' | 'lg' | 'xl'
+export type BriefingFontSize =
+  | 'sm'
+  | 'base'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | '4xl'
+  | '5xl'
+  | '6xl'
+  | '7xl'
 
 export type BriefingSourceStatus = {
   x: 'ok' | 'failed'

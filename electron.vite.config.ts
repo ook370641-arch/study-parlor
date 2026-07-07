@@ -28,6 +28,18 @@ export default defineConfig({
   },
   renderer: {
     root: '.',
+    server: {
+      watch: {
+        ignored: [
+          '**/e2e/.test-library/**',
+          '**/e2e/.test-config/**',
+          '**/e2e-results/**',
+          '**/playwright-report/**',
+          '**/test-results/**',
+          '**/coverage/**',
+        ],
+      },
+    },
     build: {
       rollupOptions: { input: 'index.html' },
       outDir: 'out/renderer'

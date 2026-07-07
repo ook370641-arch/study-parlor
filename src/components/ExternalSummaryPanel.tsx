@@ -49,7 +49,7 @@ export function ExternalSummaryPanel() {
       role="dialog"
       aria-modal="true"
       aria-label="外部资料摘要"
-      className={`fixed right-0 top-0 bottom-0 z-[15] flex flex-col bg-[rgba(22,17,14,0.98)] border-l border-parchment/15 shadow-[-10px_0_40px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out ${
+      className={`fixed right-0 top-16 bottom-0 z-[15] flex flex-col bg-[rgba(22,17,14,0.98)] border-l border-parchment/15 shadow-[-10px_0_40px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
       style={{ width: `${PANEL_WIDTH}px` }}
