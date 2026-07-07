@@ -1,5 +1,6 @@
 // src/store/index.ts
 import { create } from 'zustand'
+import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
@@ -85,6 +86,7 @@ type AppStore = {
   }
   briefingTheme: BriefingTheme
   briefingFontSize: BriefingFontSize
+  externalSummaryFontSize: BriefingFontSize
   briefingStage: BriefingStage | null
   setBriefingStage: (stage: BriefingStage | null) => void
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
@@ -92,6 +94,8 @@ type AppStore = {
   setBriefingTheme: (theme: BriefingTheme) => Promise<void>
   increaseBriefingFontSize: () => Promise<void>
   decreaseBriefingFontSize: () => Promise<void>
+  increaseExternalSummaryFontSize: () => Promise<void>
+  decreaseExternalSummaryFontSize: () => Promise<void>
 
   // 画作背景
   currentPaintings: {
@@ -220,6 +224,7 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingHistory: { list: [], loading: false, error: null },
   briefingTheme: 'academic',
   briefingFontSize: 'base',
+  externalSummaryFontSize: 'base',
   briefingStage: null,
 
   init: async () => {
@@ -236,6 +241,7 @@ export const useStore = create<AppStore>((set, get) => ({
       terminology: state.terminology ?? {},
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
+      externalSummaryFontSize: normalizeSummaryFontSize(state.externalSummaryFontSize),
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -421,6 +427,24 @@ export const useStore = create<AppStore>((set, get) => ({
     if (prev === current) return
     set({ briefingFontSize: prev })
     await ipc.patchState({ briefingFontSize: prev } as Partial<StateJson>)
+  },
+
+  increaseExternalSummaryFontSize: async () => {
+    const { nextSummaryFontSize } = await import('@/lib/external-summary-font-size')
+    const current = normalizeSummaryFontSize(get().externalSummaryFontSize)
+    const next = nextSummaryFontSize(current)
+    if (next === current) return
+    set({ externalSummaryFontSize: next })
+    await ipc.patchState({ externalSummaryFontSize: next } as Partial<StateJson>)
+  },
+
+  decreaseExternalSummaryFontSize: async () => {
+    const { prevSummaryFontSize } = await import('@/lib/external-summary-font-size')
+    const current = normalizeSummaryFontSize(get().externalSummaryFontSize)
+    const prev = prevSummaryFontSize(current)
+    if (prev === current) return
+    set({ externalSummaryFontSize: prev })
+    await ipc.patchState({ externalSummaryFontSize: prev } as Partial<StateJson>)
   },
 
   setBriefingStage: (stage) => set({ briefingStage: stage }),

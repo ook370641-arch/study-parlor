@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ExternalSummaryContent } from './ExternalSummaryContent'
+import { SUMMARY_BASE_STYLES } from '@/lib/external-summary-font-size'
+import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
 
-const PANEL_WIDTH = 380
+const PANEL_WIDTH = 760
 const SLIDE_DURATION_MS = 300
 
 export function ExternalSummaryPanel() {
   const isOpen = useStore(s => s.isExternalSummaryOpen)
   const materials = useStore(s => s.externalMaterials)
   const closeExternalSummary = useStore(s => s.closeExternalSummary)
+  const fontSize = useStore(s => s.externalSummaryFontSize)
+  const increaseFontSize = useStore(s => s.increaseExternalSummaryFontSize)
+  const decreaseFontSize = useStore(s => s.decreaseExternalSummaryFontSize)
   const panelRef = useRef<HTMLDivElement>(null)
   const [rendered, setRendered] = useState(isOpen)
 
@@ -41,6 +46,7 @@ export function ExternalSummaryPanel() {
 
   const hasSummary = !!materials?.summary
   const sources = materials?.sources ?? []
+  const baseStyle = SUMMARY_BASE_STYLES[normalizeSummaryFontSize(fontSize)]
 
   return (
     <div
@@ -59,17 +65,38 @@ export function ExternalSummaryPanel() {
           <span>🌐</span>
           <span>外部资料摘要</span>
         </div>
-        <button
-          data-testid="external-summary-close"
-          onClick={closeExternalSummary}
-          className="text-parchment/50 hover:text-parchment text-sm px-1"
-          aria-label="关闭摘要面板"
-        >
-          ✕
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={decreaseFontSize}
+            className="w-7 h-7 flex items-center justify-center text-parchment/60 hover:text-parchment hover:bg-parchment/10 rounded transition-colors"
+            aria-label="缩小摘要字号"
+            title="缩小字号"
+          >
+            -
+          </button>
+          <button
+            onClick={increaseFontSize}
+            className="w-7 h-7 flex items-center justify-center text-parchment/60 hover:text-parchment hover:bg-parchment/10 rounded transition-colors"
+            aria-label="放大摘要字号"
+            title="放大字号"
+          >
+            +
+          </button>
+          <button
+            data-testid="external-summary-close"
+            onClick={closeExternalSummary}
+            className="text-parchment/50 hover:text-parchment text-sm px-1 ml-1"
+            aria-label="关闭摘要面板"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 text-[13px] leading-[1.75] text-parchment/80 font-serif">
+      <div
+        className="flex-1 overflow-y-auto px-4 py-4 leading-[1.75] text-parchment/80 font-serif"
+        style={{ fontSize: baseStyle.size }}
+      >
         {!hasSummary ? (
           <div className="text-parchment/50 italic">暂无摘要</div>
         ) : (

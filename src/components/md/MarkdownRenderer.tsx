@@ -1,12 +1,11 @@
-import React from 'react'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import matter from 'gray-matter'
 import './markdown.css'
 import { detectDocType } from './fileType'
+import { MarkdownContent } from './MarkdownContent'
 import { reportComponents, fableComponents, dialogueComponents, briefingComponents } from './components'
 import { ReportHeader } from './ReportHeader'
 import { parseFrontmatter } from '@electron/lib/frontmatter'
+import React from 'react'
 import type { DocType } from './fileType'
 import type { Frontmatter } from '@shared/index'
 
@@ -121,14 +120,7 @@ export function MarkdownRenderer({ content, fileName, briefingStyle }: Props) {
         {!hideReportHeader && <ReportHeader frontmatter={frontmatter} />}
       </MdErrorBoundary>
       <div className={`md-body ${getDocTypeClass(docType)}`}>
-        <MdErrorBoundary>
-          <Markdown
-            remarkPlugins={[remarkGfm]}
-            components={components}
-          >
-            {body}
-          </Markdown>
-        </MdErrorBoundary>
+        <MarkdownContent components={components}>{body}</MarkdownContent>
       </div>
     </div>
   )

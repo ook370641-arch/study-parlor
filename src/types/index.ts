@@ -231,6 +231,7 @@ export type StateJson = {
   terminology?: Terminology
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
+  externalSummaryFontSize?: BriefingFontSize
 }
 
 export type IpcApi = {
