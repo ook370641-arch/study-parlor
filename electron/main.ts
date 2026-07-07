@@ -124,6 +124,13 @@ async function bootstrap() {
   mainWindow.maximize()
   console.log('[bootstrap] window created', bootTs())
 
+  mainWindow.webContents.on('did-start-loading', () => {
+    console.log('[bootstrap] renderer did-start-loading', bootTs())
+  })
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('[bootstrap] renderer did-finish-load', bootTs())
+  })
+
   if (process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {

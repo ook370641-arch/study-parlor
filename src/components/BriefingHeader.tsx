@@ -32,10 +32,10 @@ export function BriefingHeader({
 
   const isAcademic = theme === 'academic'
 
-  const headerBase = 'relative z-[5] flex items-center justify-between px-8 py-4 border-b'
+  const headerBase = 'relative z-[5] flex items-center px-8 py-4 border-b'
   const headerTheme = isAcademic
     ? 'bg-ink/70 border-slate/40 backdrop-blur-md'
-    : 'bg-[#f7f5f0] border-[#1a1a1a]'
+    : 'bg-white border-[#1a1a1a]'
 
   const titleClass = isAcademic ? 'text-xl font-serif text-parchment' : 'text-xl text-[#1a1a1a]'
   const metaClass = isAcademic ? 'text-xs text-parchment/50 font-sans' : 'text-xs text-[#555] font-sans'
@@ -60,7 +60,7 @@ export function BriefingHeader({
   return (
     <header className={`${headerBase} ${headerTheme}`}>
       <BackToCover className={backOverride} />
-      <div className="text-center">
+      <div className="absolute left-1/2 -translate-x-1/2 text-center">
         <h1 className={titleClass}>夜航简报</h1>
         <div className={metaClass} data-testid="briefing-generated-at">
           {displayDate}
@@ -81,7 +81,7 @@ export function BriefingHeader({
           )}
         </div>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 ml-auto">
         <Button
           variant="ghost"
           onClick={decrease}

@@ -1,4 +1,6 @@
 import type { BriefingStage } from '@shared/index'
+import { useStore } from '@/store'
+import { StarOrbit } from '@/components/StarOrbit'
 
 const STAGES: { key: BriefingStage; label: string }[] = [
   { key: 'fetching', label: '正在采集今日信号…' },
@@ -12,7 +14,9 @@ interface Props {
 }
 
 export function BriefingProgress({ stage }: Props) {
+  const theme = useStore((s) => s.briefingTheme)
   const currentIndex = STAGES.findIndex((s) => s.key === stage)
+  const isAcademic = theme === 'academic'
   return (
     <div data-testid="briefing-progress" className="flex flex-col items-center justify-center h-full">
       <div className="space-y-5">
@@ -25,22 +29,32 @@ export function BriefingProgress({ stage }: Props) {
               data-testid={`briefing-progress-step-${s.key}`}
               className="flex items-center gap-3"
             >
-              <div
-                className={`w-3 h-3 rounded-full border ${
-                  done
-                    ? 'bg-ember border-ember'
-                    : active
-                      ? 'bg-parchment border-parchment'
-                      : 'border-parchment/30'
-                }`}
-              />
+              {active ? (
+                <StarOrbit starCount={3} radius={10} period={2000} />
+              ) : (
+                <div
+                  className={`w-3 h-3 rounded-full border ${
+                    done
+                      ? 'bg-ember border-ember'
+                      : isAcademic
+                        ? 'border-parchment/30'
+                        : 'border-[#1a1a1a]/30'
+                  }`}
+                />
+              )}
               <span
-                className={`font-sans text-sm ${
+                className={`font-sans text-3xl font-bold ${
                   done
-                    ? 'text-parchment/50'
+                    ? isAcademic
+                      ? 'text-parchment/50'
+                      : 'text-[#1a1a1a]/50'
                     : active
-                      ? 'text-parchment'
-                      : 'text-parchment/30'
+                      ? isAcademic
+                        ? 'text-parchment'
+                        : 'text-[#1a1a1a]'
+                      : isAcademic
+                        ? 'text-parchment/30'
+                        : 'text-[#1a1a1a]/30'
                 }`}
               >
                 {s.label}

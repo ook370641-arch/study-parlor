@@ -6,6 +6,7 @@ import { BriefingSkeleton } from '@/components/BriefingSkeleton'
 import { BriefingProgress } from '@/components/BriefingProgress'
 import { BriefingError } from '@/components/BriefingError'
 import { BriefingHeader } from '@/components/BriefingHeader'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
 import { formatBriefingDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
@@ -88,7 +89,7 @@ export function Briefing() {
     return (
       <div
         data-testid="briefing-page"
-        className="relative h-full flex flex-col overflow-hidden"
+        className={`relative h-full flex flex-col overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
         style={pageStyle}
       >
         {isAcademic && <SurfaceBackground surface="briefing" />}
@@ -113,7 +114,7 @@ export function Briefing() {
     return (
       <div
         data-testid="briefing-page"
-        className="relative h-full flex flex-col overflow-hidden"
+        className={`relative h-full flex flex-col overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
         style={pageStyle}
       >
         {isAcademic && <SurfaceBackground surface="briefing" />}
@@ -140,7 +141,7 @@ export function Briefing() {
   return (
     <div
       data-testid="briefing-page"
-      className={`relative h-full flex flex-col overflow-hidden ${isAcademic ? '' : 'bg-[#f7f5f0]'}`}
+      className={`relative h-full flex flex-col overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
       style={pageStyle}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
@@ -155,6 +156,16 @@ export function Briefing() {
         {...headerHistoryProps}
         showRegenerate
       />
+
+      {isAcademic && (
+        <div className="absolute top-24 right-4 z-10">
+          <SwapPaintingButton
+            surface="briefing"
+            data-testid="briefing-swap-painting-button"
+            className="text-parchment/70 hover:text-parchment"
+          />
+        </div>
+      )}
 
       {isAcademic ? (
         <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />

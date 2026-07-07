@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
-import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 
 export function AcademicBriefingLayout({
   result,
@@ -20,13 +19,6 @@ export function AcademicBriefingLayout({
       data-testid="briefing-academic-layout"
       className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto"
     >
-      <div className="absolute top-4 left-4 z-10">
-        <SwapPaintingButton
-          surface="briefing"
-          data-testid="briefing-swap-painting-button"
-          className="text-parchment/70 hover:text-parchment"
-        />
-      </div>
       <article className="prose prose-invert max-w-none">
         <h1 className="text-[20px] font-bold font-serif text-parchment mb-2">{result.title}</h1>
         <p className="text-sm text-parchment/50 mb-6">{displayDate}</p>

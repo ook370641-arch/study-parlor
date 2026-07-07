@@ -17,7 +17,7 @@ export function NewspaperBriefingLayout({
   return (
     <main
       data-testid="briefing-newspaper-layout"
-      className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto bg-[#f7f5f0]"
+      className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto bg-white"
     >
       <article className="max-w-none">
         <div className="border-b-2 border-[#1a1a1a] pb-4 mb-6">
