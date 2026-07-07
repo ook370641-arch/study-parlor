@@ -17,6 +17,9 @@ export class StudyPage {
   readonly streamErrorBanner: Locator
   readonly streamRetryButton: Locator
   readonly streamDismissButton: Locator
+  readonly externalSummaryOpen: Locator
+  readonly externalSummaryPanel: Locator
+  readonly externalSummaryClose: Locator
 
   constructor(private page: Page) {
     this.pageElement = page.locator(SELECTORS.study.page)
@@ -34,6 +37,13 @@ export class StudyPage {
     this.streamErrorBanner = page.locator(SELECTORS.study.streamErrorBanner)
     this.streamRetryButton = page.locator(SELECTORS.study.streamRetryButton)
     this.streamDismissButton = page.locator(SELECTORS.study.streamDismissButton)
+    this.externalSummaryOpen = page.locator(SELECTORS.study.externalSummaryOpen)
+    this.externalSummaryPanel = page.locator(SELECTORS.study.externalSummaryPanel)
+    this.externalSummaryClose = page.locator(SELECTORS.study.externalSummaryClose)
+  }
+
+  externalSummarySource(n: number) {
+    return this.page.locator(SELECTORS.study.externalSummarySource(n))
   }
 
   async waitForLoaded() {
@@ -121,5 +131,44 @@ export class StudyPage {
 
   get externalMaterialsCard() {
     return this.page.locator(SELECTORS.study.externalMaterialsCard)
+  }
+
+  async openExternalSummary() {
+    await this.externalSummaryOpen.click()
+    await this.externalSummaryPanel.waitFor({ state: 'visible' })
+  }
+
+  async closeExternalSummary() {
+    await this.externalSummaryClose.click()
+    await this.externalSummaryPanel.waitFor({ state: 'hidden' })
+  }
+
+  async closeExternalSummaryByBackdrop() {
+    // Click near the left edge of the study page (outside the panel) to trigger an outside click.
+    await this.pageElement.click({ position: { x: 10, y: 10 } })
+    await this.externalSummaryPanel.waitFor({ state: 'hidden' })
+  }
+
+  async closeExternalSummaryByEsc() {
+    await this.page.keyboard.press('Escape')
+    await this.externalSummaryPanel.waitFor({ state: 'hidden' })
+  }
+
+  async isExternalSummaryVisible(): Promise<boolean> {
+    return this.externalSummaryPanel.isVisible()
+  }
+
+  async getExternalSummaryText(): Promise<string | null> {
+    return this.externalSummaryPanel.textContent()
+  }
+
+  async setMockExternalMaterials(summary: string, sources: { title: string; url: string; snippet?: string }[]) {
+    await this.page.evaluate((args) => {
+      const store = (window as any).useStore
+      store.getState().setExternalMaterials({
+        summary: args.summary,
+        sources: args.sources,
+      })
+    }, { summary, sources })
   }
 }

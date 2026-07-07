@@ -98,6 +98,9 @@ type AppStore = {
     briefing: Painting | null
   }
 
+  // 外部资料摘要面板
+  isExternalSummaryOpen: boolean
+
   // 外部资料
   externalMaterials: {
     summary: string | null
@@ -142,6 +145,11 @@ type AppStore = {
   setExternalMaterials: (materials: SearchResult) => void
   setExternalMaterialsError: (error: SearchErrorCode) => void
   clearExternalMaterials: () => void
+
+  // 外部资料摘要面板操作
+  openExternalSummary: () => void
+  closeExternalSummary: () => void
+  toggleExternalSummary: () => void
 
   // 分组操作
   loadGroups: () => Promise<void>
@@ -200,6 +208,7 @@ export const useStore = create<AppStore>((set, get) => ({
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
   lastFableTags: [],
   externalMaterials: null,
+  isExternalSummaryOpen: false,
   modal: null,
   preStudyArgs: null,
   toast: null,
@@ -391,7 +400,7 @@ export const useStore = create<AppStore>((set, get) => ({
 
   setBriefingStage: (stage) => set({ briefingStage: stage }),
 
-  resetSession: () => set({ session: null, currentPage: 'home', externalMaterials: null }),
+  resetSession: () => set({ session: null, currentPage: 'home', externalMaterials: null, isExternalSummaryOpen: false }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
 
   prepareExternalMaterials: async (topic) => {
@@ -422,6 +431,10 @@ export const useStore = create<AppStore>((set, get) => ({
   }),
 
   clearExternalMaterials: () => set({ externalMaterials: null }),
+
+  openExternalSummary: () => set({ isExternalSummaryOpen: true }),
+  closeExternalSummary: () => set({ isExternalSummaryOpen: false }),
+  toggleExternalSummary: () => set(s => ({ isExternalSummaryOpen: !s.isExternalSummaryOpen })),
 
   patchProfile: async (p) => {
     const next = { ...get().profile, ...p }

@@ -16,6 +16,7 @@ import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { useTerminology } from '@/lib/terminology'
 import { ExternalMaterialsCard } from '@/components/ExternalMaterialsCard'
+import { ExternalSummaryPanel } from '@/components/ExternalSummaryPanel'
 import { Quote } from '@/components/Quote'
 
 export function Study() {
@@ -71,22 +72,30 @@ export function Study() {
     }
   }, [session?.history, session?.streaming])
 
-  // ESC = 返回(等同左上箭头)
-  const onBackRef = useRef(onBack)
-  onBackRef.current = onBack
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onBackRef.current()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
   const [streamError, setStreamError] = useState<{ code: string; message: string } | null>(null)
   const [archiving, setArchiving] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const archiveResult = useStore(s => s.archiveResult)
   const clearArchiveResult = useStore(s => s.clearArchiveResult)
+  const isExternalSummaryOpen = useStore(s => s.isExternalSummaryOpen)
+  const closeExternalSummary = useStore(s => s.closeExternalSummary)
+
+  // ESC = 返回(等同左上箭头); 若外部资料摘要面板打开则优先关闭面板
+  const onBackRef = useRef(onBack)
+  onBackRef.current = onBack
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (useStore.getState().isExternalSummaryOpen) {
+        closeExternalSummary()
+        return
+      }
+      onBackRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   useEffect(() => {
     const off = ipc.onLlmError((sid, err) => {
       if (sid !== session?.abortId) return
@@ -96,6 +105,8 @@ export function Study() {
   }, [session?.abortId])
 
   if (!session) return null
+
+  const panelPadding = isExternalSummaryOpen ? 'pr-[380px]' : ''
 
   const onSend = (text: string) => sendOrInterrupt(text).catch(err =>
     useStore.getState().showToast('发送失败:' + err.message))
@@ -169,6 +180,8 @@ export function Study() {
         />
       )}
 
+      <ExternalSummaryPanel />
+
       <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''}`}>
       <SurfaceBackground surface="study" />
       {isExiting && (
@@ -186,7 +199,7 @@ export function Study() {
           ))}
         </div>
       )}
-      <header className="relative z-[5] flex justify-between items-center px-8 py-4 bg-ink/70 backdrop-blur-md border-b border-slate/40">
+      <header className={`relative z-[5] flex justify-between items-center px-8 py-4 bg-ink/70 backdrop-blur-md border-b border-slate/40 ${panelPadding}`}>
         <button
           onClick={onBack}
           aria-label="退席"
@@ -207,7 +220,7 @@ export function Study() {
       <ExternalMaterialsCard />
 
       {streamError && (
-        <div data-testid="stream-error-banner" className="relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans">
+        <div data-testid="stream-error-banner" className={`relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans ${panelPadding}`}>
           <div className="flex justify-between items-center">
             <span>
               {streamError.code === 'UNAUTHORIZED'
@@ -224,7 +237,7 @@ export function Study() {
         </div>
       )}
 
-      <div data-testid="message-list" ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto">
+      <div data-testid="message-list" ref={scrollRef} className={`relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto ${panelPadding}`}>
         <div className="mb-6">
           <Quote surface="study" />
         </div>
@@ -244,7 +257,7 @@ export function Study() {
       </div>
 
       {session.archivePending && !session.streaming && (
-        <div className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
+        <div className={`relative z-[5] px-8 max-w-4xl w-full mx-auto ${panelPadding}`}>
           <div data-testid="archive-pending-banner"
                className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
                           text-sm font-sans text-parchment/80 flex justify-between items-center">
@@ -259,7 +272,7 @@ export function Study() {
         </div>
       )}
 
-      <div className="relative z-[5] bg-ink/70 backdrop-blur-md border-t border-slate/40">
+      <div className={`relative z-[5] bg-ink/70 backdrop-blur-md border-t border-slate/40 ${panelPadding}`}>
         <div className="px-8 py-4 max-w-4xl w-full mx-auto">
           <ChatInput onSend={onSend} />
         </div>
