@@ -80,6 +80,37 @@ No digest header here.
   expect(pageText).not.toContain('档案编号')
 })
 
+test('no AI industry daily subtitle @smoke', async () => {
+  const today = localToday()
+  seedBriefing(testLibraryPath, today)
+  const coverPage = new CoverPage(window)
+  await coverPage.gotoBriefing()
+  const headerText = await window.locator('header').innerText()
+  expect(headerText).not.toContain('AI 行业日报')
+})
+
+test('generated time has no "生成于" prefix @smoke', async () => {
+  const today = localToday()
+  const generatedAt = new Date(`${today}T08:32:00`).toISOString()
+  seedBriefing(testLibraryPath, today, undefined, generatedAt)
+  const coverPage = new CoverPage(window)
+  await coverPage.gotoBriefing()
+  const metaText = await window.locator(SELECTORS.briefing.generatedAt).innerText()
+  expect(metaText).not.toContain('生成于')
+  expect(metaText).toContain('08:32')
+})
+
+test('history button is visible before generation and opens drawer @smoke', async () => {
+  const today = localToday()
+  seedBriefing(testLibraryPath, today)
+  const coverPage = new CoverPage(window)
+  await coverPage.gotoBriefing()
+  const historyButton = window.locator(SELECTORS.briefing.historyButton)
+  await expect(historyButton).toBeVisible()
+  await historyButton.click()
+  await expect(window.locator('[data-testid="briefing-history-drawer"]')).toBeVisible()
+})
+
 test('swap painting button is below header in academic layout @smoke', async () => {
   const today = localToday()
   seedBriefing(testLibraryPath, today)

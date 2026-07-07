@@ -9,7 +9,7 @@ import { BriefingHeader } from '@/components/BriefingHeader'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
 import { formatBriefingDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
-import { ACADEMIC_BODY_STYLES, NEWSPAPER_BODY_STYLES } from '@/lib/briefing-font-size'
+import { ACADEMIC_BODY_STYLES, NEWSPAPER_BODY_STYLES, ACADEMIC_HEADING_STYLES, NEWSPAPER_HEADING_STYLES } from '@/lib/briefing-font-size'
 export function formatDisplayDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   if ([y, m, d].some((n) => Number.isNaN(n))) return dateStr
@@ -63,27 +63,40 @@ export function Briefing() {
   const displayDate = useMemo(() => (result ? formatDisplayDate(result.date) : ''), [result])
 
   const isAcademic = theme === 'academic'
-  const fontStyle = isAcademic
+  const bodyStyle = isAcademic
     ? ACADEMIC_BODY_STYLES[fontSize]
     : NEWSPAPER_BODY_STYLES[fontSize]
+  const headingStyle = isAcademic
+    ? ACADEMIC_HEADING_STYLES[fontSize]
+    : NEWSPAPER_HEADING_STYLES[fontSize]
+
+  const pageStyle = {
+    '--briefing-body-size': bodyStyle.size,
+    '--briefing-body-weight': String(bodyStyle.weight),
+    '--briefing-heading-size': headingStyle.size,
+    '--briefing-heading-weight': String(headingStyle.weight),
+  } as React.CSSProperties
+
+  const headerHistoryProps = {
+    onHistory: () => {
+      setDrawerOpen(true)
+      loadBriefingHistory()
+    },
+  }
 
   if (loading || (!result && !error)) {
     return (
       <div
         data-testid="briefing-page"
         className="relative h-full flex flex-col overflow-hidden"
-        style={{
-          '--briefing-body-size': fontStyle.size,
-          '--briefing-body-weight': String(fontStyle.weight),
-        } as React.CSSProperties}
+        style={pageStyle}
       >
         {isAcademic && <SurfaceBackground surface="briefing" />}
         <BriefingHeader
           displayDate=""
-          onHistory={() => {
-            setDrawerOpen(true)
-            loadBriefingHistory()
-          }}
+          {...headerHistoryProps}
+          showRegenerate
+          onRegenerate={() => generateBriefing(today, { force: true })}
         />
         <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
           {stage ? (
@@ -101,18 +114,14 @@ export function Briefing() {
       <div
         data-testid="briefing-page"
         className="relative h-full flex flex-col overflow-hidden"
-        style={{
-          '--briefing-body-size': fontStyle.size,
-          '--briefing-body-weight': String(fontStyle.weight),
-        } as React.CSSProperties}
+        style={pageStyle}
       >
         {isAcademic && <SurfaceBackground surface="briefing" />}
         <BriefingHeader
           displayDate=""
-          onHistory={() => {
-            setDrawerOpen(true)
-            loadBriefingHistory()
-          }}
+          {...headerHistoryProps}
+          showRegenerate
+          onRegenerate={() => generateBriefing(today, { force: true })}
         />
         <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
           <div className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
@@ -132,10 +141,7 @@ export function Briefing() {
     <div
       data-testid="briefing-page"
       className={`relative h-full flex flex-col overflow-hidden ${isAcademic ? '' : 'bg-[#f7f5f0]'}`}
-      style={{
-        '--briefing-body-size': fontStyle.size,
-        '--briefing-body-weight': String(fontStyle.weight),
-      } as React.CSSProperties}
+      style={pageStyle}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
 
@@ -143,12 +149,10 @@ export function Briefing() {
         displayDate={displayDate}
         timeString={result.generatedAt ? formatGeneratedAt(result.generatedAt, result.date) : undefined}
         sourceStatus={result.sourceStatus}
+        cacheWriteFailed={result.cacheWriteFailed}
         onRegenerate={handleRegenerate}
         regenerating={regenerating}
-        onHistory={() => {
-          setDrawerOpen(true)
-          loadBriefingHistory()
-        }}
+        {...headerHistoryProps}
         showRegenerate
       />
 

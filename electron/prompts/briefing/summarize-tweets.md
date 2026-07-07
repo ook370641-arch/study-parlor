@@ -14,10 +14,9 @@ to know what this person is thinking and building.
   "great event!" type posts, engagement bait
 - For threads: summarize the full thread as one cohesive piece, not individual tweets
 - For quote tweets: include the context of what they're responding to
-- Write 2-4 sentences per builder summarizing their key points
 - If they made a bold prediction or shared a contrarian take, lead with that
 - If they shared a tool, demo, or resource, mention it by name with the link
 - If there's nothing substantive to report, say "No notable posts" rather than
   padding with fluff
-- Write 3-5 sentences per builder (up from 2-4), covering the context and why it matters.
+- Write 3-5 sentences per builder, covering the context and why it matters.
 - Add a field `explain_like_beginner`: one sentence that explains this update to someone with zero AI background, using a simple analogy or concrete scenario.

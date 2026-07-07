@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm'
 import matter from 'gray-matter'
 import './markdown.css'
 import { detectDocType } from './fileType'
-import { reportComponents, fableComponents, dialogueComponents } from './components'
+import { reportComponents, fableComponents, dialogueComponents, briefingComponents } from './components'
 import { ReportHeader } from './ReportHeader'
 import { parseFrontmatter } from '@electron/lib/frontmatter'
 import type { DocType } from './fileType'
@@ -13,6 +13,7 @@ import type { Frontmatter } from '@shared/index'
 interface Props {
   content: string
   fileName: string
+  briefingStyle?: 'academic' | 'newspaper'
 }
 
 function getDocTypeClass(docType: DocType): string {
@@ -64,7 +65,7 @@ function forceStripFrontmatter(raw: string): { body: string; stripped: boolean }
   return { body: raw, stripped: false }
 }
 
-export function MarkdownRenderer({ content, fileName }: Props) {
+export function MarkdownRenderer({ content, fileName, briefingStyle }: Props) {
   // Defensive: ensure content is a string
   const safeContent = typeof content === 'string' ? content : String(content ?? '')
 
@@ -104,9 +105,13 @@ export function MarkdownRenderer({ content, fileName }: Props) {
 
   const docType = detectDocType(content, fileName)
 
-  const components = docType === 'report' ? reportComponents
-    : docType === 'fable' ? fableComponents
-    : dialogueComponents
+  const components = briefingStyle
+    ? briefingComponents(briefingStyle)
+    : docType === 'report'
+      ? reportComponents
+      : docType === 'fable'
+        ? fableComponents
+        : dialogueComponents
 
   const hideReportHeader = fileName === 'briefing.md'
 

@@ -33,15 +33,18 @@ export function AcademicBriefingLayout({
 
         {parsed.sections.map((section, i) => (
           <section key={i} className="mb-8">
-            <h2 className="text-lg font-serif text-parchment/90 mb-3 border-b border-parchment/20 pb-2">
+            <h2
+              className="font-serif text-parchment/90 mb-3 border-b border-parchment/20 pb-2"
+              style={{ fontSize: 'var(--briefing-heading-size)', fontWeight: 'var(--briefing-heading-weight)' }}
+            >
               {section.title}
             </h2>
             <div
               data-testid="briefing-markdown-body"
-              className="text-parchment/80 leading-relaxed"
+              className="briefing-body-academic text-parchment/80 leading-[1.85]"
               style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
             >
-              <MarkdownRenderer content={section.body} fileName="briefing.md" />
+              <MarkdownRenderer content={section.body} fileName="briefing.md" briefingStyle="academic" />
             </div>
           </section>
         ))}

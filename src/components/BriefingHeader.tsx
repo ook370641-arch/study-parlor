@@ -8,6 +8,7 @@ interface Props {
   displayDate: string
   timeString?: string
   sourceStatus?: BriefingSourceStatus
+  cacheWriteFailed?: boolean
   onRegenerate?: () => void
   regenerating?: boolean
   onHistory: () => void
@@ -18,6 +19,7 @@ export function BriefingHeader({
   displayDate,
   timeString,
   sourceStatus,
+  cacheWriteFailed,
   onRegenerate,
   regenerating,
   onHistory,
@@ -46,6 +48,15 @@ export function BriefingHeader({
   const sourceLabel = (label: string, status: 'ok' | 'failed') =>
     `${label} ${status === 'ok' ? '✓' : '✗'}`
 
+  const failedSources = sourceStatus
+    ? Object.entries(sourceStatus)
+        .filter(([, status]) => status === 'failed')
+        .map(([key]) => ({ x: 'X', blogs: '博客', podcasts: '播客' }[key] ?? key))
+    : []
+  const sourceStatusTitle = failedSources.length > 0
+    ? `来源获取失败：${failedSources.join('、')}`
+    : '全部来源获取成功'
+
   return (
     <header className={`${headerBase} ${headerTheme}`}>
       <BackToCover className={backOverride} />
@@ -55,8 +66,17 @@ export function BriefingHeader({
           {displayDate}
           {timeString && ` · ${timeString}`}
           {sourceStatus && (
-            <span className="ml-2" data-testid="briefing-source-status">
+            <span
+              className="ml-2"
+              data-testid="briefing-source-status"
+              title={sourceStatusTitle}
+            >
               {sourceLabel('X', sourceStatus.x)} · {sourceLabel('博客', sourceStatus.blogs)} · {sourceLabel('播客', sourceStatus.podcasts)}
+            </span>
+          )}
+          {cacheWriteFailed && (
+            <span className="ml-2 text-wine" data-testid="briefing-cache-write-failed">
+              （本次未写入缓存）
             </span>
           )}
         </div>

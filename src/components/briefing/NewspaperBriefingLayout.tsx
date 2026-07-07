@@ -27,15 +27,18 @@ export function NewspaperBriefingLayout({
 
         {parsed.sections.map((section, i) => (
           <section key={i} className="mb-8">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-3 uppercase tracking-wide">
+            <h2
+              className="text-[#1a1a1a] mb-3 uppercase tracking-wide"
+              style={{ fontSize: 'var(--briefing-heading-size)', fontWeight: 'var(--briefing-heading-weight)' }}
+            >
               {section.title}
             </h2>
             <div
               data-testid="briefing-markdown-body"
-              className="text-[#1a1a1a] leading-relaxed columns-1"
+              className="briefing-body-newspaper text-[#1a1a1a] leading-[1.85] columns-1"
               style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
             >
-              <MarkdownRenderer content={section.body} fileName="briefing.md" />
+              <MarkdownRenderer content={section.body} fileName="briefing.md" briefingStyle="newspaper" />
             </div>
           </section>
         ))}
