@@ -1,0 +1,95 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { render, screen, cleanup } from '@testing-library/react'
+import type { CSSProperties } from 'react'
+
+vi.mock('@/lib/ipc', () => ({
+  ipc: {
+    patchState: vi.fn(),
+    getState: vi.fn(),
+    scanLibrary: vi.fn(),
+    loadGroups: vi.fn(),
+    loadSessions: vi.fn(),
+    llmWildcardInspiration: vi.fn(),
+    briefingGenerate: vi.fn(),
+    onBriefingProgress: vi.fn(() => () => {}),
+    briefingList: vi.fn(),
+    searchPrepare: vi.fn(),
+  }
+}))
+
+vi.mock('@/lib/paintings', () => ({
+  manifest: [{ id: 'test', painter: 'Test', title: 'Test', url: '/test.jpg' }],
+  pickRandom: vi.fn((manifest: unknown[]) => manifest[0] ?? null)
+}))
+
+import { useStore } from '@/store'
+import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
+import type { BriefingResult } from '@/types'
+import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
+import { ACADEMIC_BODY_STYLES, NEWSPAPER_BODY_STYLES } from '@/lib/briefing-font-size'
+
+const baseResult: BriefingResult = {
+  title: '夜航简报',
+  date: '2026-07-07',
+  content: '## X / Twitter\n\nNo digest header here.',
+  sources: [],
+  filePath: '/tmp/briefing.md',
+  cached: false,
+  generatedAt: new Date().toISOString(),
+  sourceStatus: { x: 'ok', blogs: 'ok', podcasts: 'ok' },
+}
+
+const baseParsed: ParsedBriefing = {
+  sections: [{ title: 'X / Twitter', body: 'No digest header here.' }],
+  sources: [],
+}
+
+function AcademicWrapper({ children }: { children: React.ReactNode }) {
+  const fontSize = useStore((s) => s.briefingFontSize)
+  return (
+    <div data-testid="briefing-layout-wrapper" style={{ '--briefing-body-size': ACADEMIC_BODY_STYLES[fontSize].size } as CSSProperties}>
+      {children}
+    </div>
+  )
+}
+
+function NewspaperWrapper({ children }: { children: React.ReactNode }) {
+  const fontSize = useStore((s) => s.briefingFontSize)
+  return (
+    <div data-testid="briefing-layout-wrapper" style={{ '--briefing-body-size': NEWSPAPER_BODY_STYLES[fontSize].size } as CSSProperties}>
+      {children}
+    </div>
+  )
+}
+
+describe('BriefingLayout font size CSS variables', () => {
+  beforeEach(() => {
+    cleanup()
+  })
+
+  it('AcademicBriefingLayout applies --briefing-body-size from store font size', () => {
+    useStore.setState({ briefingFontSize: 'lg' })
+    render(
+      <AcademicWrapper>
+        <AcademicBriefingLayout result={baseResult} parsed={baseParsed} displayDate="2026年7月7日" />
+      </AcademicWrapper>
+    )
+    const wrapper = screen.getByTestId('briefing-layout-wrapper')
+    const body = screen.getByTestId('briefing-markdown-body')
+    expect(wrapper).toHaveStyle({ '--briefing-body-size': ACADEMIC_BODY_STYLES.lg.size })
+    expect(body).toHaveStyle({ fontSize: 'var(--briefing-body-size)' })
+  })
+
+  it('NewspaperBriefingLayout applies --briefing-body-size from store font size', () => {
+    useStore.setState({ briefingFontSize: 'xl' })
+    render(
+      <NewspaperWrapper>
+        <NewspaperBriefingLayout result={baseResult} parsed={baseParsed} displayDate="2026年7月7日" />
+      </NewspaperWrapper>
+    )
+    const wrapper = screen.getByTestId('briefing-layout-wrapper')
+    const body = screen.getByTestId('briefing-markdown-body')
+    expect(wrapper).toHaveStyle({ '--briefing-body-size': NEWSPAPER_BODY_STYLES.xl.size })
+    expect(body).toHaveStyle({ fontSize: 'var(--briefing-body-size)' })
+  })
+})

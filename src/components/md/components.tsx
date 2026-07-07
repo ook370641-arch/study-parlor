@@ -126,3 +126,21 @@ export const dialogueComponents: Components = {
   ...baseComponents,
   p: ({ children }) => <DialogueParagraph>{children}</DialogueParagraph>,
 }
+
+// ===== Briefing paragraph styling =====
+function BriefingParagraph({ children }: { children: React.ReactNode }) {
+  const text = extractText(children)
+  const hasCJK = /[一-龥぀-ゟ゠-ヿ]/.test(text)
+  const isNonCJK = text.length > 0 && !hasCJK
+  if (isNonCJK) {
+    return <p lang="en">{children}</p>
+  }
+  return <p>{children}</p>
+}
+
+export function briefingComponents(_style: 'academic' | 'newspaper'): Components {
+  return {
+    ...baseComponents,
+    p: ({ children }) => <BriefingParagraph>{children}</BriefingParagraph>,
+  }
+}

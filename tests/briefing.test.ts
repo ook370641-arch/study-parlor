@@ -205,6 +205,57 @@ describe('registerBriefingIpc', () => {
     }
   })
 
+  it('retries failed feed once and succeeds', async () => {
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      calls++
+      if (calls === 1) return { ok: false, status: 500 }
+      return {
+        ok: true,
+        json: async () => ({
+          x: [{ name: 'A', handle: 'a', tweets: [{ text: 't', url: 'u', createdAt: 'd' }] }],
+          podcasts: [],
+          blogs: [],
+        })
+      }
+    }) as any)
+
+    vi.spyOn(kimi, 'chatNonStream')
+      .mockResolvedValueOnce(JSON.stringify({ builders: [], podcasts: [], blogs: [] }))
+      .mockResolvedValueOnce('content')
+
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    const result = await ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-25', profile })
+    expect(result.sourceStatus.x).toBe('ok')
+  })
+
+  it('continues generation when one feed fails after retries', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.includes('feed-blogs')) {
+        return { ok: false, status: 500 }
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          x: [{ name: 'A', handle: 'a', tweets: [{ text: 't', url: 'u', createdAt: 'd' }] }],
+          podcasts: [],
+          blogs: [],
+        })
+      }
+    }) as any)
+
+    vi.spyOn(kimi, 'chatNonStream')
+      .mockResolvedValueOnce(JSON.stringify({ builders: [], podcasts: [], blogs: [] }))
+      .mockResolvedValueOnce('content')
+
+    const mockSender = { send: vi.fn(), isDestroyed: () => false }
+    const mockEvent = { sender: mockSender }
+    const result = await ipcHandlers['briefing:generate'](mockEvent, { date: '2026-06-26', profile })
+    expect(result.sourceStatus.blogs).toBe('failed')
+    expect(result.sourceStatus.x).toBe('ok')
+  })
+
   it('lists cached briefing dates', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,

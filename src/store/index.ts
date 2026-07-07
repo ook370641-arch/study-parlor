@@ -4,7 +4,7 @@ import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
-  Terminology, BriefingTheme, BriefingStage
+  Terminology, BriefingTheme, BriefingStage, BriefingFontSize
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
@@ -84,11 +84,14 @@ type AppStore = {
     error: string | null
   }
   briefingTheme: BriefingTheme
+  briefingFontSize: BriefingFontSize
   briefingStage: BriefingStage | null
   setBriefingStage: (stage: BriefingStage | null) => void
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
   setBriefingTheme: (theme: BriefingTheme) => Promise<void>
+  increaseBriefingFontSize: () => Promise<void>
+  decreaseBriefingFontSize: () => Promise<void>
 
   // 画作背景
   currentPaintings: {
@@ -216,6 +219,7 @@ export const useStore = create<AppStore>((set, get) => ({
   briefing: { result: null, loading: false, error: null },
   briefingHistory: { list: [], loading: false, error: null },
   briefingTheme: 'academic',
+  briefingFontSize: 'base',
   briefingStage: null,
 
   init: async () => {
@@ -231,6 +235,7 @@ export const useStore = create<AppStore>((set, get) => ({
       topicContinueSuggestions: state.topicContinueSuggestions ?? {},
       terminology: state.terminology ?? {},
       briefingTheme: state.briefingTheme ?? 'academic',
+      briefingFontSize: state.briefingFontSize ?? 'base',
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -396,6 +401,26 @@ export const useStore = create<AppStore>((set, get) => ({
   setBriefingTheme: async (theme: BriefingTheme) => {
     set({ briefingTheme: theme })
     await ipc.patchState({ briefingTheme: theme } as Partial<StateJson>)
+  },
+
+  increaseBriefingFontSize: async () => {
+    const { BRIEFING_FONT_SIZES } = await import('@/lib/briefing-font-size')
+    const current = get().briefingFontSize
+    const idx = BRIEFING_FONT_SIZES.indexOf(current)
+    const next = BRIEFING_FONT_SIZES[Math.min(idx + 1, BRIEFING_FONT_SIZES.length - 1)]
+    if (next === current) return
+    set({ briefingFontSize: next })
+    await ipc.patchState({ briefingFontSize: next } as Partial<StateJson>)
+  },
+
+  decreaseBriefingFontSize: async () => {
+    const { BRIEFING_FONT_SIZES } = await import('@/lib/briefing-font-size')
+    const current = get().briefingFontSize
+    const idx = BRIEFING_FONT_SIZES.indexOf(current)
+    const prev = BRIEFING_FONT_SIZES[Math.max(idx - 1, 0)]
+    if (prev === current) return
+    set({ briefingFontSize: prev })
+    await ipc.patchState({ briefingFontSize: prev } as Partial<StateJson>)
   },
 
   setBriefingStage: (stage) => set({ briefingStage: stage }),

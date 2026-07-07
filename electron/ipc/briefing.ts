@@ -6,7 +6,7 @@ import { chatNonStream } from '../lib/kimi'
 import { dumpRecovery } from '../lib/recovery'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import type { AppConfig } from '../env'
-import type { BriefingResult, BriefingSource, BriefingStage, Message, Profile } from '@shared/index'
+import type { BriefingResult, BriefingSource, BriefingSourceStatus, BriefingStage, Message, Profile } from '@shared/index'
 
 const DEFAULT_FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json'
 const DEFAULT_FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json'
@@ -77,6 +77,23 @@ async function fetchJson<T>(url: string): Promise<T | null> {
     console.error(`[briefing] invalid JSON from ${url}`, err)
     throw new Error(`NETWORK_ERROR: ${url} (invalid JSON)`)
   }
+}
+
+async function fetchJsonWithRetry<T>(url: string, retries = 1, delay = 2000): Promise<T | null> {
+  let lastErr: Error | undefined
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fetchJson<T>(url)
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err))
+      if (i < retries) {
+        console.warn(`[briefing] fetch retry ${i + 1}/${retries} for ${url}`)
+        await new Promise(r => setTimeout(r, delay))
+      }
+    }
+  }
+  console.error(`[briefing] fetch failed after retries: ${url}`, lastErr)
+  return null
 }
 
 function validateDate(date: string): void {
@@ -190,6 +207,7 @@ function buildExtractionPrompt(args: {
         handle: '...',
         summary: '...',
         key_url: '...',
+        explain_like_beginner: '...',
       },
     ],
     podcasts: [
@@ -200,6 +218,7 @@ function buildExtractionPrompt(args: {
         takeaway: '...',
         summary: '...',
         quote: '...',
+        explain_like_beginner: '...',
       },
     ],
     blogs: [
@@ -209,6 +228,7 @@ function buildExtractionPrompt(args: {
         url: '...',
         summary: '...',
         quote: '...',
+        explain_like_beginner: '...',
       },
     ],
   }
@@ -310,6 +330,15 @@ export function registerBriefingIpc(cfg: AppConfig) {
           sources = []
         }
       }
+      const rawSourceStatus = matter(raw).data?.briefing_source_status
+      let sourceStatus: BriefingSourceStatus = { x: 'ok', podcasts: 'ok', blogs: 'ok' }
+      if (rawSourceStatus && typeof rawSourceStatus === 'string') {
+        try {
+          sourceStatus = JSON.parse(rawSourceStatus) as BriefingSourceStatus
+        } catch {
+          sourceStatus = { x: 'ok', podcasts: 'ok', blogs: 'ok' }
+        }
+      }
       const generatedAt = String(frontmatter.created ?? new Date().toISOString())
       return {
         title: String(frontmatter.title || '夜航简报'),
@@ -319,6 +348,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
         filePath,
         cached: true,
         generatedAt,
+        sourceStatus,
       }
     }
 
@@ -351,20 +381,21 @@ export function registerBriefingIpc(cfg: AppConfig) {
         filePath,
         cached: false,
         generatedAt: new Date().toISOString(),
+        sourceStatus: { x: 'ok', podcasts: 'ok', blogs: 'ok' },
       }
     }
 
     const urls = feedUrls()
     const [feedX, feedPodcasts, feedBlogs] = await Promise.all([
-      fetchJson<FeedX>(urls.x).catch((err) => {
+      fetchJsonWithRetry<FeedX>(urls.x).catch((err) => {
         console.warn(`[briefing] feed X unavailable, continuing: ${err.message}`)
         return null
       }),
-      fetchJson<FeedPodcasts>(urls.podcasts).catch((err) => {
+      fetchJsonWithRetry<FeedPodcasts>(urls.podcasts).catch((err) => {
         console.warn(`[briefing] feed podcasts unavailable, continuing: ${err.message}`)
         return null
       }),
-      fetchJson<FeedBlogs>(urls.blogs).catch((err) => {
+      fetchJsonWithRetry<FeedBlogs>(urls.blogs).catch((err) => {
         console.warn(`[briefing] feed blogs unavailable, continuing: ${err.message}`)
         return null
       }),
@@ -374,6 +405,12 @@ export function registerBriefingIpc(cfg: AppConfig) {
 
     if (!hasAnyContent(feedX, feedPodcasts, feedBlogs)) {
       throw new Error('FEED_EMPTY')
+    }
+
+    const sourceStatus: BriefingSourceStatus = {
+      x: feedX?.x?.length ? 'ok' : 'failed',
+      podcasts: feedPodcasts?.podcasts?.length ? 'ok' : 'failed',
+      blogs: feedBlogs?.blogs?.length ? 'ok' : 'failed',
     }
 
     const prompts = readPrompts()
@@ -439,6 +476,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
         created: generatedAt,
         tags: ['industry-digest', 'ai'],
         briefing_sources: JSON.stringify(sources),
+        briefing_source_status: JSON.stringify(sourceStatus),
       }
 
       try {
@@ -459,6 +497,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
         cached: false,
         cacheWriteFailed,
         generatedAt,
+        sourceStatus,
       }
     } finally {
       clearTimeout(llmTimeout)

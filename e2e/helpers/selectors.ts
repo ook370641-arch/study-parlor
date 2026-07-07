@@ -92,6 +92,9 @@ export const SELECTORS = {
     themeToggle: '[data-testid="briefing-theme-toggle"]',
     historyButton: '[data-testid="briefing-history-button"]',
     regenerateButton: '[data-testid="briefing-regenerate-button"]',
+    fontSizeDecrease: '[data-testid="briefing-font-size-decrease"]',
+    fontSizeIncrease: '[data-testid="briefing-font-size-increase"]',
+    sourceStatus: '[data-testid="briefing-source-status"]',
     skeleton: '[data-testid="briefing-skeleton"]',
     errorDisplay: '[data-testid="briefing-error-display"]',
     retryButton: '[data-testid="briefing-retry-button"]',
@@ -101,6 +104,7 @@ export const SELECTORS = {
     cacheWriteFailedBadge: '[data-testid="briefing-cache-write-failed"]',
     swapPaintingButton: '[data-testid="briefing-swap-painting-button"]',
     surfaceBackground: '[data-testid="surface-background"]',
+    markdownBody: '[data-testid="briefing-markdown-body"]',
   },
   profile: {
     page: '[data-testid="profile-page"]',

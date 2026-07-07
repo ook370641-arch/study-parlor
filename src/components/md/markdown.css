@@ -199,6 +199,22 @@
   background: rgba(42, 31, 26, 0.3);
 }
 
+/* ===== Briefing english-language paragraphs ===== */
+.briefing-body-academic p:lang(en),
+.briefing-body-newspaper p:lang(en) {
+  font-size: calc(var(--briefing-body-size) - 1px);
+  font-style: italic;
+  line-height: 1.85;
+}
+
+.briefing-body-academic p:lang(en) {
+  color: #a89a86;
+}
+
+.briefing-body-newspaper p:lang(en) {
+  color: #555;
+}
+
 /* ===== Horizontal Rule (Diamond) ===== */
 .md-body hr {
   border: none;

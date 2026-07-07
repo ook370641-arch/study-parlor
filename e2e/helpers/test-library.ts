@@ -23,8 +23,15 @@ export function createTestConfigDir(): string {
   fs.mkdirSync(dir, { recursive: true })
   // Copy .env so the Electron main process can load credentials in isolation.
   const envPath = path.join(process.cwd(), '.env')
+  const targetEnvPath = path.join(dir, '.env')
   if (fs.existsSync(envPath)) {
-    fs.copyFileSync(envPath, path.join(dir, '.env'))
+    fs.copyFileSync(envPath, targetEnvPath)
+  } else {
+    // Fallback test credentials so E2E can start without a committed .env.
+    fs.writeFileSync(
+      targetEnvPath,
+      `KIMI_API_KEY=sk-kimi-e2e-test-key\nKIMI_BASE_URL=https://api.kimi.com/coding/v1\nKIMI_MODEL=kimi-k2.6\nSTUDY_LIBRARY_PATH=${dir}\n`
+    )
   }
   return dir
 }
