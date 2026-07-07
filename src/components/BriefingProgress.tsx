@@ -30,7 +30,7 @@ export function BriefingProgress({ stage }: Props) {
               className="flex items-center gap-3"
             >
               {active ? (
-                <StarOrbit starCount={3} radius={10} period={2000} />
+                <StarOrbit starCount={3} radius={6} period={2000} />
               ) : (
                 <div
                   className={`w-3 h-3 rounded-full border ${
@@ -43,7 +43,7 @@ export function BriefingProgress({ stage }: Props) {
                 />
               )}
               <span
-                className={`font-sans text-3xl font-bold ${
+                className={`font-sans text-xl font-bold ${
                   done
                     ? isAcademic
                       ? 'text-parchment/50'
