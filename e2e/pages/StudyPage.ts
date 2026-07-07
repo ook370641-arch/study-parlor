@@ -19,7 +19,6 @@ export class StudyPage {
   readonly streamDismissButton: Locator
   readonly externalSummaryOpen: Locator
   readonly externalSummaryPanel: Locator
-  readonly externalSummaryBackdrop: Locator
   readonly externalSummaryClose: Locator
 
   constructor(private page: Page) {
@@ -40,7 +39,6 @@ export class StudyPage {
     this.streamDismissButton = page.locator(SELECTORS.study.streamDismissButton)
     this.externalSummaryOpen = page.locator(SELECTORS.study.externalSummaryOpen)
     this.externalSummaryPanel = page.locator(SELECTORS.study.externalSummaryPanel)
-    this.externalSummaryBackdrop = page.locator(SELECTORS.study.externalSummaryBackdrop)
     this.externalSummaryClose = page.locator(SELECTORS.study.externalSummaryClose)
   }
 
@@ -146,7 +144,8 @@ export class StudyPage {
   }
 
   async closeExternalSummaryByBackdrop() {
-    await this.externalSummaryBackdrop.click()
+    // Click near the left edge of the study page (outside the panel) to trigger an outside click.
+    await this.pageElement.click({ position: { x: 10, y: 10 } })
     await this.externalSummaryPanel.waitFor({ state: 'hidden' })
   }
 

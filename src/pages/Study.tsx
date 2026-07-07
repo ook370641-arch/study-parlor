@@ -106,6 +106,8 @@ export function Study() {
 
   if (!session) return null
 
+  const panelPadding = isExternalSummaryOpen ? 'pr-[380px]' : ''
+
   const onSend = (text: string) => sendOrInterrupt(text).catch(err =>
     useStore.getState().showToast('发送失败:' + err.message))
 
@@ -197,7 +199,7 @@ export function Study() {
           ))}
         </div>
       )}
-      <header className="relative z-[5] flex justify-between items-center px-8 py-4 bg-ink/70 backdrop-blur-md border-b border-slate/40">
+      <header className={`relative z-[5] flex justify-between items-center px-8 py-4 bg-ink/70 backdrop-blur-md border-b border-slate/40 ${panelPadding}`}>
         <button
           onClick={onBack}
           aria-label="退席"
@@ -218,7 +220,7 @@ export function Study() {
       <ExternalMaterialsCard />
 
       {streamError && (
-        <div data-testid="stream-error-banner" className="relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans">
+        <div data-testid="stream-error-banner" className={`relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans ${panelPadding}`}>
           <div className="flex justify-between items-center">
             <span>
               {streamError.code === 'UNAUTHORIZED'
@@ -235,7 +237,7 @@ export function Study() {
         </div>
       )}
 
-      <div data-testid="message-list" ref={scrollRef} className={`relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto ${isExternalSummaryOpen ? 'pr-[380px]' : ''}`}>
+      <div data-testid="message-list" ref={scrollRef} className={`relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto ${panelPadding}`}>
         <div className="mb-6">
           <Quote surface="study" />
         </div>
@@ -255,7 +257,7 @@ export function Study() {
       </div>
 
       {session.archivePending && !session.streaming && (
-        <div className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
+        <div className={`relative z-[5] px-8 max-w-4xl w-full mx-auto ${panelPadding}`}>
           <div data-testid="archive-pending-banner"
                className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
                           text-sm font-sans text-parchment/80 flex justify-between items-center">
@@ -270,7 +272,7 @@ export function Study() {
         </div>
       )}
 
-      <div className="relative z-[5] bg-ink/70 backdrop-blur-md border-t border-slate/40">
+      <div className={`relative z-[5] bg-ink/70 backdrop-blur-md border-t border-slate/40 ${panelPadding}`}>
         <div className="px-8 py-4 max-w-4xl w-full mx-auto">
           <ChatInput onSend={onSend} />
         </div>
