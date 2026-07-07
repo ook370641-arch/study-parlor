@@ -46,7 +46,7 @@ describe('BriefingHeader', () => {
     expect(screen.getByTestId('briefing-regenerate-button')).toBeInTheDocument()
   })
 
-  it('increases font size when A+ clicked', async () => {
+  it('increases font size when + clicked', async () => {
     render(<BriefingHeader displayDate="" onHistory={() => {}} />)
     fireEvent.click(screen.getByTestId('briefing-font-size-increase'))
     await waitFor(() => {

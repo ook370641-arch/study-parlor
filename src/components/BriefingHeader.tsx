@@ -45,9 +45,6 @@ export function BriefingHeader({
   const canDecrease = fontSize !== 'sm'
   const canIncrease = fontSize !== '7xl'
 
-  const sourceLabel = (label: string, status: 'ok' | 'failed') =>
-    `${label} ${status === 'ok' ? '✓' : '✗'}`
-
   const failedSources = sourceStatus
     ? Object.entries(sourceStatus)
         .filter(([, status]) => status === 'failed')
@@ -65,13 +62,13 @@ export function BriefingHeader({
         <div className={metaClass} data-testid="briefing-generated-at">
           {displayDate}
           {timeString && ` · ${timeString}`}
-          {sourceStatus && (
+          {sourceStatus && failedSources.length > 0 && (
             <span
               className="ml-2"
               data-testid="briefing-source-status"
               title={sourceStatusTitle}
             >
-              {sourceLabel('X', sourceStatus.x)} · {sourceLabel('博客', sourceStatus.blogs)} · {sourceLabel('播客', sourceStatus.podcasts)}
+              {failedSources.map((label) => `${label} ✗`).join(' · ')}
             </span>
           )}
           {cacheWriteFailed && (
@@ -90,7 +87,7 @@ export function BriefingHeader({
           className={ghostOverride}
           title="减小字号"
         >
-          A-
+          -
         </Button>
         <Button
           variant="ghost"
@@ -100,7 +97,7 @@ export function BriefingHeader({
           className={ghostOverride}
           title="增大字号"
         >
-          A+
+          +
         </Button>
         {showRegenerate && (
           <Button
