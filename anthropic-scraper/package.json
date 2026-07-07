@@ -1,0 +1,16 @@
+{
+  "name": "anthropic-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone Playwright-based scraper for the Anthropic Engineering blog",
+  "scripts": {
+    "scrape": "node src/scrape.mjs",
+    "scrape:single": "node src/scrape.mjs --url https://www.anthropic.com/engineering/april-23-postmortem",
+    "scrape:briefing": "node src/scrape.mjs --limit 10 --briefing"
+  },
+  "dependencies": {
+    "playwright": "^1.45.0",
+    "turndown": "^7.2.0"
+  }
+}

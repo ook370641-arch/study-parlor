@@ -145,6 +145,12 @@ export function Briefing() {
       style={pageStyle}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
+      {isAcademic && (
+        <div
+          className="fixed inset-0 z-[1] bg-[#0c0806]/[0.72] pointer-events-none"
+          aria-hidden="true"
+        />
+      )}
 
       <BriefingHeader
         displayDate={displayDate}

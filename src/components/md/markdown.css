@@ -470,3 +470,40 @@
   color: #1a1a1a;
 }
 
+/* ===== Academic briefing theme overrides ===== */
+.briefing-body-academic .md-body {
+  color: rgba(245, 230, 204, 0.9);
+}
+
+.briefing-body-academic .md-body h1,
+.briefing-body-academic .md-body h2,
+.briefing-body-academic .md-body h3,
+.briefing-body-academic .md-body h4 {
+  color: #f5e6cc;
+}
+
+.briefing-body-academic .md-body strong {
+  color: #f5e6cc;
+}
+
+.briefing-body-academic .md-body a {
+  color: #d97757;
+}
+
+.briefing-body-academic .md-body a:hover {
+  color: #e8a07a;
+}
+
+.briefing-body-academic .md-body blockquote {
+  border-left-color: rgba(217, 119, 87, 0.5);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.briefing-body-academic .md-body blockquote p {
+  color: rgba(245, 230, 204, 0.75);
+}
+
+.briefing-body-academic p:lang(en) {
+  color: #b0a390;
+}
+
