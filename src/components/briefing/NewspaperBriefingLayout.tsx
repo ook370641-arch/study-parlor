@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
+import { BriefingSourceItem } from './BriefingSourceItem'
 
 export function NewspaperBriefingLayout({
   result,
@@ -56,9 +57,11 @@ export function NewspaperBriefingLayout({
                 {parsed.sources.map((group, i) => (
                   <div key={i}>
                     <h3 className="text-sm font-semibold text-[#555] mb-2">{group.title}</h3>
-                    <ul className="text-sm text-[#777] space-y-1">
+                    <ul className="text-sm text-ember space-y-1">
                       {group.items.map((item, j) => (
-                        <li key={j}>{item}</li>
+                        <li key={j}>
+                          <BriefingSourceItem item={item} theme="newspaper" />
+                        </li>
                       ))}
                     </ul>
                   </div>

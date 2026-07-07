@@ -54,9 +54,12 @@ Use Markdown headings consistently so the digest can be split into sections:
 
 ### Mandatory links
 - Every single piece of content MUST have an original source link
+- At the end of each individual content item (tweet summary, blog post, podcast),
+  append a markdown link exactly: `[原文链接](<url>)`
 - Blog posts: the direct article URL (e.g. https://www.anthropic.com/engineering/...)
 - Podcasts: the YouTube video URL (e.g. https://youtube.com/watch?v=xxx)
 - Tweets: the direct tweet URL (e.g. https://x.com/levie/status/xxx)
+- The source appendix at the end should still list `- <description> <url>` as usual
 - If you don't have a link for something, do NOT include it in the digest.
   No link = not real = do not include.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import type { CSSProperties } from 'react'
 
 vi.mock('@/lib/ipc', () => ({
@@ -91,5 +91,60 @@ describe('BriefingLayout font size CSS variables', () => {
     const body = screen.getByTestId('briefing-markdown-body')
     expect(wrapper).toHaveStyle({ '--briefing-body-size': NEWSPAPER_BODY_STYLES.xl.size })
     expect(body).toHaveStyle({ fontSize: 'var(--briefing-body-size)' })
+  })
+})
+
+describe('BriefingLayout source links', () => {
+  beforeEach(() => {
+    cleanup()
+  })
+
+  const parsedWithSources: ParsedBriefing = {
+    sections: [{ title: 'X / Twitter', body: 'Summary text.' }],
+    sources: [
+      {
+        title: 'Swyx',
+        items: [
+          'Swyx on J-space paper: causal control https://x.com/swyx/status/2074344727202463832',
+          '[原文链接](https://x.com/swyx/status/2074344727202463832)',
+        ],
+      },
+    ],
+  }
+
+  it('AcademicBriefingLayout renders bare URLs in source section as clickable links', () => {
+    useStore.setState({ briefingFontSize: 'base' })
+    render(
+      <AcademicWrapper>
+        <AcademicBriefingLayout
+          result={baseResult}
+          parsed={parsedWithSources}
+          displayDate="2026年7月7日"
+        />
+      </AcademicWrapper>
+    )
+    fireEvent.click(screen.getByText('展开来源'))
+    const link = screen.getByRole('link', { name: 'https://x.com/swyx/status/2074344727202463832' })
+    expect(link).toHaveAttribute('href', 'https://x.com/swyx/status/2074344727202463832')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('NewspaperBriefingLayout renders markdown source links as clickable links', () => {
+    useStore.setState({ briefingFontSize: 'base' })
+    render(
+      <NewspaperWrapper>
+        <NewspaperBriefingLayout
+          result={baseResult}
+          parsed={parsedWithSources}
+          displayDate="2026年7月7日"
+        />
+      </NewspaperWrapper>
+    )
+    fireEvent.click(screen.getByText('展开来源'))
+    const link = screen.getByRole('link', { name: '原文链接' })
+    expect(link).toHaveAttribute('href', 'https://x.com/swyx/status/2074344727202463832')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 })
