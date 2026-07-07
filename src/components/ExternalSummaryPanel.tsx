@@ -73,7 +73,7 @@ export function ExternalSummaryPanel() {
         {!hasSummary ? (
           <div className="text-parchment/50 italic">暂无摘要</div>
         ) : (
-          <SummaryContent summary={materials.summary!} sources={sources} />
+          <ExternalSummaryContent summary={materials.summary!} sources={sources} />
         )}
       </div>
     </div>

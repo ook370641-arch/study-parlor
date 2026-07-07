@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '@/store'
+import { ExternalSummaryContent } from './ExternalSummaryContent'
 
 export function ExternalMaterialsCard() {
   const session = useStore(s => s.session)
@@ -68,29 +69,16 @@ export function ExternalMaterialsCard() {
               </div>
             )}
 
+            {!materials.loading && materials.summary && (
+              <div className="pt-3 text-[13px] leading-[1.75] text-parchment/90 font-serif">
+                <ExternalSummaryContent summary={materials.summary} sources={materials.sources} />
+              </div>
+            )}
+
             {!materials.loading && !materials.error && !hasSources && (
               <div className="pt-3 text-sm text-parchment/50">
                 未找到相关外部资料
               </div>
-            )}
-
-            {!materials.loading && hasSources && (
-              <ul className="pt-3 space-y-2">
-                {materials.sources.map((source, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm">
-                    <span className="text-ember text-xs min-w-[1.25rem] mt-0.5">{index + 1}</span>
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-ember hover:underline break-all"
-                      title={source.snippet}
-                    >
-                      {source.title || source.url}
-                    </a>
-                  </li>
-                ))}
-              </ul>
             )}
           </div>
         )}
