@@ -322,7 +322,7 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   console.time('[bootstrap] stage: register IPC')
   console.log('[bootstrap] stage: register IPC', bootTs())
   registerAllIpc(cfg, () => mainWindow)
-  await animate('注册服务', 0, 15, 300)
+  await animate('注册服务', 0, 15, 150)  // 从 300 改为 150
   console.timeEnd('[bootstrap] stage: register IPC')
 
   // ===== 阶段 2: 探活模型（网络请求，最耗时）=====
@@ -345,19 +345,19 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   // ===== 阶段 3: 扫描学习库 =====
   console.time('[bootstrap] stage: scan library')
   console.log('[bootstrap] stage: scan library', bootTs())
-  await animate('扫描学习库', 50, 75, 500)
+  await animate('扫描学习库', 50, 75, 250)  // 从 500 改为 250
   console.timeEnd('[bootstrap] stage: scan library')
 
   // ===== 阶段 4: 初始化状态 =====
   console.time('[bootstrap] stage: init state')
   console.log('[bootstrap] stage: init state', bootTs())
-  await animate('初始化状态', 75, 95, 400)
+  await animate('初始化状态', 75, 95, 200)  // 从 400 改为 200
   console.timeEnd('[bootstrap] stage: init state')
 
   // ===== 阶段 5: 就绪 =====
   console.time('[bootstrap] stage: ready')
   console.log('[bootstrap] stage: ready', bootTs())
-  await animate('就绪', 95, 100, 300)
+  await animate('就绪', 95, 100, 150)  // 从 300 改为 150
   sendComplete()
   console.timeEnd('[bootstrap] stage: ready')
   console.log('[bootstrap] boot sequence total:', Date.now() - bootSeqStart, 'ms', bootTs())
