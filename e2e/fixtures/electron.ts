@@ -9,6 +9,7 @@ import {
   createTestConfigDir,
   cleanupTestConfigDir,
 } from '../helpers/test-library'
+import { killProcessTree } from './process-cleanup'
 
 type E2EFixtures = {
   electronProcess: { process: ChildProcess; cdpUrl: string }
@@ -52,20 +53,6 @@ async function waitForProcessExit(proc: ChildProcess, timeoutMs: number): Promis
       resolve()
     })
   })
-}
-
-async function killProcessTree(proc: ChildProcess): Promise<void> {
-  if (!proc.pid) return
-  if (process.platform === 'win32') {
-    return new Promise((resolve) => {
-      const killer = spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { stdio: 'ignore' })
-      killer.on('exit', () => resolve())
-      killer.on('error', () => resolve())
-      setTimeout(() => resolve(), 5000)
-    })
-  }
-  proc.kill('SIGKILL')
-  await waitForProcessExit(proc, 5000)
 }
 
 async function waitForCdpPort(url: string, timeoutMs: number): Promise<void> {
@@ -168,7 +155,8 @@ export const test = base.extend<E2EFixtures>({
     await use({ process: proc, cdpUrl })
 
     await killProcessTree(proc)
-    await waitForProcessExit(proc, 5000)
+    // 增加等待时间，确保 Windows 子进程（特别是 GPU 进程）释放文件句柄
+    await waitForProcessExit(proc, 15000)
 
     const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
     if (failed) {

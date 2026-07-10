@@ -4,8 +4,10 @@ import * as path from 'node:path'
 
 const TEST_LIBRARY_ROOT = path.join(process.cwd(), 'e2e', '.test-library')
 const TEST_CONFIG_ROOT = path.join(process.cwd(), 'e2e', '.test-config')
+const OLD_DIR_MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 export function createTestLibrary(): string {
+  cleanupOldTestDirs(TEST_LIBRARY_ROOT)
   const id = `${Date.now()}-${randomUUID()}`
   const dir = path.join(TEST_LIBRARY_ROOT, id)
   fs.mkdirSync(dir, { recursive: true })
@@ -18,6 +20,7 @@ export async function cleanupTestLibrary(dir: string, keepOnFailure: boolean = f
 }
 
 export function createTestConfigDir(): string {
+  cleanupOldTestDirs(TEST_CONFIG_ROOT)
   const id = `${Date.now()}-${randomUUID()}`
   const dir = path.join(TEST_CONFIG_ROOT, id)
   fs.mkdirSync(dir, { recursive: true })
@@ -54,6 +57,51 @@ async function retryRm(dir: string, timeoutMs = 10000, intervalMs = 500): Promis
     }
   }
   throw lastErr
+}
+
+function cleanupOldTestDirs(root: string): void {
+  if (!fs.existsSync(root)) return
+  const now = Date.now()
+  for (const entry of fs.readdirSync(root)) {
+    const fullPath = path.join(root, entry)
+    try {
+      const stat = fs.statSync(fullPath)
+      const age = now - stat.mtimeMs
+      if (age > OLD_DIR_MAX_AGE_MS) {
+        fs.rmSync(fullPath, { recursive: true, force: true })
+        console.log(`[e2e] cleaned up old test dir: ${fullPath}`)
+      }
+    } catch (err) {
+      // If a directory is locked by a running test, skip it silently.
+      console.warn(`[e2e] skipped cleanup of ${fullPath}:`, err)
+    }
+  }
+}
+
+/**
+ * Force cleanup of all test directories older than maxAgeMs.
+ * Useful for CI or manual recovery when Windows file locks have left debris.
+ */
+export function forceCleanupOldTestDirs(maxAgeMs: number = OLD_DIR_MAX_AGE_MS): void {
+  cleanupOldTestDirsWithAge(TEST_LIBRARY_ROOT, maxAgeMs)
+  cleanupOldTestDirsWithAge(TEST_CONFIG_ROOT, maxAgeMs)
+}
+
+function cleanupOldTestDirsWithAge(root: string, maxAgeMs: number): void {
+  if (!fs.existsSync(root)) return
+  const now = Date.now()
+  for (const entry of fs.readdirSync(root)) {
+    const fullPath = path.join(root, entry)
+    try {
+      const stat = fs.statSync(fullPath)
+      const age = now - stat.mtimeMs
+      if (age > maxAgeMs) {
+        fs.rmSync(fullPath, { recursive: true, force: true })
+      }
+    } catch {
+      // ignore
+    }
+  }
 }
 
 function validateSlug(slug: string): void {
