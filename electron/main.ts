@@ -7,6 +7,7 @@ import { loadEnv, saveEnv, setConfigDir, setStateDir, getEnvPath } from './env'
 import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
 import { patchState } from './ipc/state'
+import { resolveAppPaths } from './lib/app-paths'
 
 // In packaged builds cwd is not writable for our config — macOS launches the
 // .app with cwd=/ (read-only system volume → EROFS), Windows uses the install
@@ -18,22 +19,24 @@ import { patchState } from './ipc/state'
 // share the same profile.
 //
 // E2E tests can override both dirs for full isolation.
-if (process.env.E2E_CONFIG_DIR) {
-  setConfigDir(process.env.E2E_CONFIG_DIR)
-  setStateDir(process.env.E2E_CONFIG_DIR)
-  // E2E tests force-kill the Electron process (taskkill /F /T).  Chromium's
-  // caches / databases in the default userData directory are then left in an
-  // unclean state, which slows down the next dev/packaged launch while
-  // Chromium tries to recover them.  Redirect userData and cache under the
-  // per-test E2E_CONFIG_DIR so they are deleted together with the test temp
-  // directory and never shared with dev mode.
-  app.setPath('userData', path.join(process.env.E2E_CONFIG_DIR, 'userData'))
-  app.setPath('cache', path.join(process.env.E2E_CONFIG_DIR, 'cache'))
-} else if (app.isPackaged) {
-  setConfigDir(path.join(os.homedir(), '.studyparlor'))
-  // stateDir already defaults to ~/.studyparlor.
+const paths = resolveAppPaths({
+  cwd: process.cwd(),
+  homeDir: os.homedir(),
+  e2eConfigDir: process.env.E2E_CONFIG_DIR,
+  isPackaged: app.isPackaged,
+})
+
+setConfigDir(paths.configDir)
+setStateDir(paths.stateDir)
+
+if (process.env.E2E_CONFIG_DIR || !app.isPackaged) {
+  // Only override userData/cache for isolated environments (E2E and dev).
+  // Packaged builds keep Electron defaults under %APPDATA%/study-parlor.
+  fs.mkdirSync(paths.userData, { recursive: true })
+  fs.mkdirSync(paths.cache, { recursive: true })
+  app.setPath('userData', paths.userData)
+  app.setPath('cache', paths.cache)
 }
-// Dev mode: configDir defaults to cwd (reads ./.env), stateDir defaults to ~/.studyparlor.
 
 dotenv.config({ path: getEnvPath() })
 
