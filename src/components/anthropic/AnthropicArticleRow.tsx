@@ -18,7 +18,7 @@ function formatDate(iso: string | null | undefined) {
 }
 
 export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
-  const isAcademic = theme === 'academic'
+  const isAcademic = theme !== 'newspaper'
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
   const openReader = useStore((s) => s.openAnthropicReader)

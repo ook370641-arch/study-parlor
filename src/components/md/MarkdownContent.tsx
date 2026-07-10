@@ -39,7 +39,7 @@ interface Props {
 }
 
 function allowFileUrlTransform(url: string): string {
-  if (url.startsWith('file://')) return url
+  if (url.toLowerCase().startsWith('file://')) return url
   return defaultUrlTransform(url)
 }
 

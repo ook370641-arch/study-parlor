@@ -67,7 +67,7 @@ export function Briefing() {
   const parsed = result ? parseBriefingMarkdown(result.content) : null
   const displayDate = useMemo(() => (result ? formatDisplayDate(result.date) : ''), [result])
 
-  const isAcademic = theme === 'academic'
+  const isAcademic = theme !== 'newspaper'
   const bodyStyle = isAcademic
     ? ACADEMIC_BODY_STYLES[fontSize]
     : NEWSPAPER_BODY_STYLES[fontSize]

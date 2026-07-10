@@ -49,7 +49,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const source = useStore((s) => s.briefingSource)
   const setSource = useStore((s) => s.setBriefingSource)
 
-  const isAcademic = theme === 'academic'
+  const isAcademic = theme !== 'newspaper'
 
   const themeClasses = isAcademic
     ? {

@@ -31,4 +31,19 @@ describe('MarkdownRenderer images', () => {
     fireEvent.error(img)
     expect(screen.getByTestId('md-image-error')).toBeInTheDocument()
   })
+
+  it('resets error state when src changes', () => {
+    const { rerender } = render(
+      <MarkdownRenderer content="![broken](https://example.com/missing.png)" fileName="test.md" />
+    )
+    const img = screen.getByAltText('broken')
+    fireEvent.error(img)
+    expect(screen.getByTestId('md-image-error')).toBeInTheDocument()
+
+    rerender(<MarkdownRenderer content="![fixed](https://example.com/fixed.png)" fileName="test.md" />)
+    expect(screen.queryByTestId('md-image-error')).not.toBeInTheDocument()
+    const fixedImg = screen.getByAltText('fixed')
+    expect(fixedImg).toHaveAttribute('src', 'https://example.com/fixed.png')
+    expect(fixedImg.tagName.toLowerCase()).toBe('img')
+  })
 })

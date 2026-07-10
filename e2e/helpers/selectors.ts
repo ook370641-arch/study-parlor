@@ -90,6 +90,7 @@ export const SELECTORS = {
     academicLayout: '[data-testid="briefing-academic-layout"]',
     newspaperLayout: '[data-testid="briefing-newspaper-layout"]',
     themeToggle: '[data-testid="briefing-theme-toggle"]',
+    receiveDigestButton: '[data-testid="briefing-receive-digest-button"]',
     historyButton: '[data-testid="briefing-history-button"]',
     regenerateButton: '[data-testid="briefing-regenerate-button"]',
     fontSizeDecrease: '[data-testid="briefing-font-size-decrease"]',

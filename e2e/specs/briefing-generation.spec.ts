@@ -17,14 +17,14 @@ test.describe('@p1 briefing generation', () => {
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     // If the page starts from an empty state, click the receive-digest button to trigger generation
-    const receiveButton = window.locator('[data-testid="briefing-receive-digest-button"]')
+    const receiveButton = window.locator(SELECTORS.briefing.receiveDigestButton)
     if (await receiveButton.isVisible().catch(() => false)) {
       await receiveButton.click()
     }
     // Wait for either the academic layout (content loaded) or progress bar (generating)
     const academicLayout = window.locator(SELECTORS.briefing.academicLayout)
     const progressBar = window.locator(SELECTORS.briefing.progress)
-    // The page starts generating automatically; wait for content or progress
+    // After clicking the empty-state button, wait for content or progress
     await expect(academicLayout.or(progressBar)).toBeVisible({ timeout: 15000 })
   })
 

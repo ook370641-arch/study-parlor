@@ -27,7 +27,7 @@ export function AnthropicErrorMessage({
   if (!error) return null
 
   const title = CODE_TITLE[error.code] ?? CODE_TITLE.unknown
-  const isAcademic = theme === 'academic'
+  const isAcademic = theme !== 'newspaper'
 
   return (
     <div

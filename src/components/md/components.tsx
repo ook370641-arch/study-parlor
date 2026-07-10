@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Components } from 'react-markdown'
 import { ipc } from '@/lib/ipc'
 
@@ -66,6 +66,9 @@ const baseComponents: Components = {
   strong: ({ children }) => <strong>{children}</strong>,
   em: ({ children }) => <em>{children}</em>,
   a: ({ href, children }) => {
+    if (href?.toLowerCase().startsWith('file://')) {
+      return <span className="text-current/70">{children}</span>
+    }
     const handleClick = (e: React.MouseEvent) => {
       if (href && /^https?:\/\//i.test(href)) {
         e.preventDefault()
@@ -99,6 +102,9 @@ const baseComponents: Components = {
 // ===== Image with error placeholder =====
 function MdImage({ src, alt }: { src?: string; alt?: string }) {
   const [error, setError] = useState(false)
+  useEffect(() => {
+    setError(false)
+  }, [src])
   if (error) {
     return (
       <span

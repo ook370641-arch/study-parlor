@@ -49,7 +49,7 @@ function formatDate(iso: string | undefined): string {
 }
 
 export function AnthropicArticleReader({ filePath, onClose, sidebarToggle, theme = 'academic' }: Props) {
-  const isAcademic = theme === 'academic'
+  const isAcademic = theme !== 'newspaper'
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
   const [body, setBody] = useState<string>('')
   const [loading, setLoading] = useState(true)

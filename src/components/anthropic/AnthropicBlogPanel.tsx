@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
-  const isAcademic = theme === 'academic'
+  const isAcademic = theme !== 'newspaper'
   const themeClasses = isAcademic
     ? {
         panelBg: 'bg-ink/60',
