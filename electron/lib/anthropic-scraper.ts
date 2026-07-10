@@ -1,0 +1,415 @@
+import TurndownService from 'turndown'
+import fs from 'node:fs'
+import path from 'node:path'
+import { runScriptInScraperWindow } from './anthropic-browser'
+import { parseFrontmatter, serializeFrontmatter } from './frontmatter'
+import type { AnthropicArticleMeta } from '@shared/index'
+
+const BASE_URL = 'https://www.anthropic.com'
+const ENGINEERING_URL = `${BASE_URL}/engineering`
+const IMPORT_DIR = 'Anthropic博客'
+
+const turndown = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced',
+})
+
+export function toAbsoluteUrl(relativeOrAbsolute: string): string {
+  if (!relativeOrAbsolute) return relativeOrAbsolute
+  if (relativeOrAbsolute.startsWith('http://') || relativeOrAbsolute.startsWith('https://')) {
+    return relativeOrAbsolute
+  }
+  if (relativeOrAbsolute.startsWith('//')) return `https:${relativeOrAbsolute}`
+  return `${BASE_URL}${relativeOrAbsolute.startsWith('/') ? '' : '/'}${relativeOrAbsolute}`
+}
+
+export function parseDateString(str: string | null | undefined): string | null {
+  if (!str) return null
+  try {
+    const cleaned = String(str).trim().replace(/\.$/, '')
+    const parsed = new Date(cleaned)
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString()
+  } catch {}
+  return null
+}
+
+export function firstParagraphToSummary(markdown: string, maxLength = 280): string {
+  if (!markdown) return ''
+  const firstBlock = markdown
+    .split('\n\n')
+    .map((b) => b.trim())
+    .find((b) => b.length > 0 && !b.startsWith('#'))
+  if (!firstBlock) return ''
+  const text = firstBlock.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
+  if (text.length <= maxLength) return text
+  return `${text.slice(0, maxLength - 1)}…`
+}
+
+export function safeFileName(title: string): string {
+  return title
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120)
+}
+
+function getImportFolder(publishedAt: string): string {
+  try {
+    const d = new Date(publishedAt)
+    if (!Number.isNaN(d.getTime())) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    }
+  } catch {}
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+function walkMdFiles(dir: string, cb: (filePath: string) => void) {
+  if (!fs.existsSync(dir)) return
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      walkMdFiles(full, cb)
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      cb(full)
+    }
+  }
+}
+
+export function findSavedArticles(libraryRoot: string): Map<string, string> {
+  const map = new Map<string, string>()
+  const dir = path.join(libraryRoot, IMPORT_DIR)
+  walkMdFiles(dir, (filePath) => {
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8')
+      const { frontmatter } = parseFrontmatter(raw, { filename: path.basename(filePath) })
+      if (frontmatter.source_url) map.set(frontmatter.source_url, filePath)
+    } catch {}
+  })
+  return map
+}
+
+const LISTING_SCRIPT = `(() => {
+  const seen = new Set()
+  const results = []
+  const datePattern = /\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2},?\\s+\\d{4}\\b/
+
+  const findCardDate = (a) => {
+    let container = a.closest('[class*="ArticleList"], article, li')
+    if (!container) container = a.parentElement
+    const dateEl = container?.querySelector('[class*="__date"]')
+    if (dateEl) return dateEl.textContent?.trim() || null
+    let el = a
+    for (let i = 0; i < 4 && el; i++) {
+      const match = el.textContent?.match(datePattern)
+      if (match) return match[0]
+      el = el.parentElement
+    }
+    return null
+  }
+
+  const findCardImage = (a) => {
+    let container = a.closest('[class*="ArticleList"], article, li')
+    if (!container) container = a.parentElement
+    const img = container?.querySelector('img')
+    return img?.getAttribute('src') || img?.getAttribute('data-src') || null
+  }
+
+  document.querySelectorAll('a[href^="/engineering/"]').forEach((a) => {
+    const href = a.getAttribute('href')
+    if (!href) return
+    const url = href.startsWith('http') ? href : 'https://www.anthropic.com' + href
+    if (seen.has(url)) return
+    seen.add(url)
+    const title =
+      a.querySelector('h2, h3, h4, [class*="__title"], [class*="title"]')?.textContent?.trim()
+      || a.textContent?.trim()
+    const summary = a.querySelector('[class*="__summary"]')?.textContent?.trim() || null
+    results.push({ url, title, summary, dateText: findCardDate(a), imageUrl: findCardImage(a) })
+  })
+
+  return results
+})()`
+
+export async function discoverArticles(
+  libraryRoot: string
+): Promise<{ lastFetchedAt: string; articles: AnthropicArticleMeta[] }> {
+  const links = await runScriptInScraperWindow<
+    { url: string; title: string; summary: string | null; dateText: string | null; imageUrl: string | null }[]
+  >(LISTING_SCRIPT, { url: ENGINEERING_URL, waitForSelector: 'a[href^="/engineering/"]' })
+
+  const articles: AnthropicArticleMeta[] = links
+    .map((link) => ({
+      url: link.url,
+      title: link.title,
+      summary: link.summary,
+      publishedAt: parseDateString(link.dateText),
+      imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
+    }))
+    .filter((a) => a.title && a.url)
+
+  const saved = findSavedArticles(libraryRoot)
+  const withSaved = articles.map((a) => {
+    const filePath = saved.get(a.url)
+    return { ...a, isSaved: !!filePath, filePath }
+  })
+  return { lastFetchedAt: new Date().toISOString(), articles: withSaved }
+}
+
+const ARTICLE_SCRIPT = `(() => {
+  const data = {
+    title: '',
+    url: window.location.href,
+    publishedAt: null,
+    authors: [],
+    summary: '',
+    contentHtml: '',
+    images: []
+  }
+
+  data.title = document.querySelector('h1')?.textContent?.trim()
+    || document.querySelector('title')?.textContent?.trim()
+    || ''
+
+  const timeEl = document.querySelector('time[datetime]')
+  if (timeEl) data.publishedAt = timeEl.getAttribute('datetime')
+  if (!data.publishedAt) {
+    data.publishedAt =
+      document.querySelector('meta[property="article:published_time"]')?.getAttribute('content')
+      || document.querySelector('meta[name="publish-date"]')?.getAttribute('content')
+      || null
+  }
+  if (!data.publishedAt) {
+    try {
+      document.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
+        if (data.publishedAt) return
+        const json = JSON.parse(script.textContent || '{}')
+        const candidates = [
+          json.datePublished,
+          json?.['@graph']?.find?.((x) => x.datePublished)?.datePublished
+        ]
+        for (const d of candidates) {
+          if (d) { data.publishedAt = d; break }
+        }
+      })
+    } catch {}
+  }
+
+  document.querySelectorAll('a[href*="/authors/"], [data-testid="author-name"], .author').forEach((el) => {
+    const name = el.textContent?.trim()
+    if (name && !data.authors.includes(name)) data.authors.push(name)
+  })
+  if (data.authors.length === 0) {
+    const authorMeta = document.querySelector('meta[name="author"]')?.getAttribute('content')
+    if (authorMeta) data.authors.push(authorMeta)
+  }
+  if (data.authors.length === 0) {
+    try {
+      document.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
+        if (data.authors.length > 0) return
+        const json = JSON.parse(script.textContent || '{}')
+        const author = json.author?.name || json?.['@graph']?.find?.((x) => x.author)?.author?.name
+        if (author && !data.authors.includes(author)) data.authors.push(author)
+      })
+    } catch {}
+  }
+
+  data.summary =
+    document.querySelector('meta[property="og:description"]')?.getAttribute('content')
+    || document.querySelector('meta[name="twitter:description"]')?.getAttribute('content')
+    || document.querySelector('meta[name="description"]')?.getAttribute('content')
+    || ''
+
+  const selectors = ['article', 'main article', 'main > div', '[data-testid="article-body"]', '.prose', '.article-content', 'main']
+  let contentEl = null
+  for (const sel of selectors) {
+    contentEl = document.querySelector(sel)
+    if (contentEl) break
+  }
+
+  if (contentEl) {
+    const clone = contentEl.cloneNode(true)
+    clone.querySelectorAll('nav, header, footer, aside, script, style, form, .related-posts').forEach((el) => el.remove())
+    clone.querySelectorAll('img').forEach((img) => {
+      const src = img.getAttribute('src') || img.getAttribute('data-src')
+      if (src) {
+        const absolute = src.startsWith('http') ? src : 'https://www.anthropic.com' + (src.startsWith('/') ? '' : '/') + src
+        img.setAttribute('src', absolute)
+        img.removeAttribute('data-src')
+      }
+    })
+    data.contentHtml = clone.innerHTML.trim()
+    clone.querySelectorAll('img').forEach((img) => {
+      const src = img.getAttribute('src')
+      if (src) data.images.push({ url: src, alt: img.getAttribute('alt') || '' })
+    })
+  }
+
+  return data
+})()`
+
+async function extractArticle(
+  url: string,
+  listingMeta: AnthropicArticleMeta | null
+) {
+  const result = await runScriptInScraperWindow<{
+    title: string
+    url: string
+    publishedAt: string | null
+    authors: string[]
+    summary: string
+    contentHtml: string
+    images: { url: string; alt: string }[]
+  }>(ARTICLE_SCRIPT, { url, waitForSelector: 'main, article, [role="main"]' })
+
+  const pageImages = await runScriptInScraperWindow<
+    { url: string | null; alt: string }[]
+  >(
+    `Array.from(document.querySelectorAll('article img, main img')).map((img) => ({
+      url: img.getAttribute('src') || img.getAttribute('data-src'),
+      alt: img.getAttribute('alt') || ''
+    })).filter((img) => img.url)`,
+    { url, timeoutMs: 30000 }
+  )
+
+  const imageMap = new Map<string, { url: string; alt: string }>()
+  for (const img of [...result.images, ...pageImages]) {
+    if (!img.url || img.url.includes('data:image')) continue
+    const absolute = toAbsoluteUrl(img.url)
+    imageMap.set(absolute, { url: absolute, alt: img.alt })
+  }
+  const images = Array.from(imageMap.values())
+
+  const markdown = result.contentHtml ? turndown.turndown(result.contentHtml) : ''
+
+  const GENERIC_SUMMARY_MARKERS = [
+    'Anthropic is an AI safety',
+    'reliable, interpretable, and steerable AI systems',
+  ]
+  const isGeneric = result.summary && GENERIC_SUMMARY_MARKERS.some((marker) => result.summary.includes(marker))
+  const summary = result.summary && !isGeneric
+    ? result.summary
+    : (listingMeta?.summary || firstParagraphToSummary(markdown))
+
+  return {
+    title: result.title,
+    url: result.url,
+    publishedAt: result.publishedAt || listingMeta?.publishedAt || new Date().toISOString(),
+    authors: result.authors.length > 0 ? result.authors : ['Anthropic'],
+    summary,
+    content: { markdown, html: result.contentHtml },
+    images,
+    scrapedAt: new Date().toISOString(),
+  }
+}
+
+function imageFileName(url: string): string {
+  try {
+    const u = new URL(url)
+    const base = path.basename(u.pathname)
+    const clean = base.replace(/[^a-zA-Z0-9._-]/g, '_')
+    if (clean && clean.includes('.')) return clean
+    if (clean) return `${clean}.jpg`
+  } catch {}
+  return `image-${Date.now()}.jpg`
+}
+
+async function downloadImages(
+  images: { url: string; alt: string }[],
+  assetsDir: string
+): Promise<Map<string, string>> {
+  fs.mkdirSync(assetsDir, { recursive: true })
+  const map = new Map<string, string>()
+  const usedNames = new Set<string>()
+
+  for (const { url } of images) {
+    if (!url || map.has(url)) continue
+    let name = imageFileName(url)
+    if (usedNames.has(name)) {
+      const ext = path.extname(name)
+      const base = path.basename(name, ext)
+      let counter = 2
+      let candidate = `${base}-${counter}${ext}`
+      while (usedNames.has(candidate)) {
+        counter++
+        candidate = `${base}-${counter}${ext}`
+      }
+      name = candidate
+    }
+    usedNames.add(name)
+    const dest = path.join(assetsDir, name)
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const buffer = Buffer.from(await res.arrayBuffer())
+      fs.writeFileSync(dest, buffer)
+      map.set(url, `./.assets/${name}`)
+    } catch (err) {
+      console.error(`[anthropic-scraper] failed to download image ${url}:`, err)
+      // Fallback: keep absolute URL
+      map.set(url, url)
+    }
+  }
+  return map
+}
+
+function rewriteMarkdownImages(markdown: string, urlMap: Map<string, string>): string {
+  return markdown.replace(
+    /!\[([^\]]*)\]\(([^)]+)\)/g,
+    (_full, alt: string, url: string) => {
+      const replacement = urlMap.get(url) || url
+      return `![${alt}](${replacement})`
+    }
+  )
+}
+
+export async function importArticle(
+  url: string,
+  libraryRoot: string
+): Promise<{ filePath: string; wasAlreadySaved: boolean }> {
+  const saved = findSavedArticles(libraryRoot)
+  const existing = saved.get(url)
+  if (existing) {
+    // Verify the file still exists on disk; re-import if the user deleted it.
+    if (fs.existsSync(existing)) return { filePath: existing, wasAlreadySaved: true }
+  }
+
+  const listing = await discoverArticles(libraryRoot)
+  const meta = listing.articles.find((a) => a.url === url) || null
+  const article = await extractArticle(url, meta)
+
+  const publishedAt = article.publishedAt || new Date().toISOString()
+  const folder = getImportFolder(publishedAt)
+  const dir = path.join(libraryRoot, IMPORT_DIR, folder)
+  fs.mkdirSync(dir, { recursive: true })
+
+  const baseName = safeFileName(article.title) || 'untitled'
+  let filePath = path.join(dir, `${baseName}.md`)
+  let counter = 2
+  while (fs.existsSync(filePath)) {
+    filePath = path.join(dir, `${baseName}-${counter}.md`)
+    counter++
+  }
+
+  const assetsDir = path.join(path.dirname(filePath), '.assets')
+  const urlMap = await downloadImages(article.images, assetsDir)
+  const markdownWithLocalImages = rewriteMarkdownImages(article.content.markdown, urlMap)
+
+  const raw = serializeFrontmatter(
+    'anthropic-article',
+    {
+      title: article.title,
+      type: 'anthropic-article',
+      created: publishedAt,
+      tags: ['anthropic', 'engineering'],
+      source_url: article.url,
+      published_at: publishedAt,
+      imported_at: new Date().toISOString(),
+      authors: article.authors,
+    },
+    markdownWithLocalImages
+  )
+
+  fs.writeFileSync(filePath, raw, 'utf8')
+  return { filePath, wasAlreadySaved: false }
+}

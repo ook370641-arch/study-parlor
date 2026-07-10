@@ -5,7 +5,7 @@ import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
-  Terminology, BriefingTheme, BriefingStage, BriefingFontSize
+  Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
@@ -89,6 +89,17 @@ type AppStore = {
   externalSummaryFontSize: BriefingFontSize
   briefingStage: BriefingStage | null
   setBriefingStage: (stage: BriefingStage | null) => void
+  // Anthropic 博客
+  briefingSource: 'digest' | 'anthropic'
+  anthropicBlogCache: AnthropicBlogCache
+  anthropicReaderFilePath: string | null
+  anthropicBlogLastSeenAt: string | null
+  setBriefingSource: (source: 'digest' | 'anthropic') => Promise<void>
+  discoverAnthropicArticles: () => Promise<void>
+  importAnthropicArticle: (url: string) => Promise<void>
+  cancelAnthropicImport: () => Promise<void>
+  openAnthropicReader: (filePath: string) => Promise<void>
+  closeAnthropicReader: () => void
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
   setBriefingTheme: (theme: BriefingTheme) => Promise<void>
@@ -226,6 +237,10 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingFontSize: 'base',
   externalSummaryFontSize: 'base',
   briefingStage: null,
+  briefingSource: 'digest',
+  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
+  anthropicReaderFilePath: null,
+  anthropicBlogLastSeenAt: null,
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -242,6 +257,11 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
       externalSummaryFontSize: normalizeSummaryFontSize(state.externalSummaryFontSize),
+      briefingSource: state.briefingSource ?? 'digest',
+      anthropicBlogCache: state.anthropicBlogCache
+        ? { ...state.anthropicBlogCache, loading: false, error: null }
+        : { lastFetchedAt: null, articles: [], loading: false, error: null },
+      anthropicBlogLastSeenAt: state.anthropicBlogLastSeenAt ?? null,
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -448,6 +468,68 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   setBriefingStage: (stage) => set({ briefingStage: stage }),
+
+  setBriefingSource: async (source) => {
+    set({ briefingSource: source })
+    await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
+  },
+
+  discoverAnthropicArticles: async () => {
+    set(s => ({ anthropicBlogCache: { ...s.anthropicBlogCache, loading: true, error: null } }))
+    try {
+      const result = await ipc.anthropicDiscover()
+      if (result.ok) {
+        const next: AnthropicBlogCache = {
+          lastFetchedAt: result.lastFetchedAt,
+          articles: result.articles,
+          loading: false,
+          error: null,
+        }
+        set({ anthropicBlogCache: next })
+      } else {
+        set(s => ({
+          anthropicBlogCache: { ...s.anthropicBlogCache, loading: false, error: result }
+        }))
+      }
+    } catch (err: any) {
+      const error = { code: 'unknown' as const, message: err.message || String(err) }
+      set(s => ({ anthropicBlogCache: { ...s.anthropicBlogCache, loading: false, error } }))
+    }
+  },
+
+  importAnthropicArticle: async (url) => {
+    try {
+      const result = await ipc.anthropicImportArticle(url)
+      if (result.ok) {
+        set(s => ({
+          anthropicBlogCache: {
+            ...s.anthropicBlogCache,
+            articles: s.anthropicBlogCache.articles.map((a) =>
+              a.url === url ? { ...a, isSaved: true, filePath: result.filePath } : a
+            ),
+          },
+          anthropicReaderFilePath: result.filePath,
+        }))
+        get().showToast(result.wasAlreadySaved ? '文章已保存' : '导入成功')
+      } else {
+        get().showToast(result.message || '导入失败')
+      }
+    } catch (err: any) {
+      get().showToast(err.message || '导入失败')
+    }
+  },
+
+  cancelAnthropicImport: async () => {
+    await ipc.anthropicCancelImport()
+    set(s => ({ anthropicBlogCache: { ...s.anthropicBlogCache, loading: false } }))
+  },
+
+  openAnthropicReader: async (filePath) => {
+    const now = new Date().toISOString()
+    set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now })
+    await ipc.patchState({ anthropicBlogLastSeenAt: now } as Partial<StateJson>)
+  },
+  closeAnthropicReader: () => set({ anthropicReaderFilePath: null }),
 
   resetSession: () => set({ session: null, currentPage: 'home', externalMaterials: null, isExternalSummaryOpen: false }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),

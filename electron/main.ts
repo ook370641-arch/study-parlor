@@ -172,8 +172,8 @@ async function bootstrap() {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           isDev
-            ? "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
-            : "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
+            ? "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
+            : "default-src 'self'; script-src 'self'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
         ]
       }
     })

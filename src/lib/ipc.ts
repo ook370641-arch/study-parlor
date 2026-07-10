@@ -66,5 +66,11 @@ export const ipc = {
   get onSetupDone() { return ensure().onSetupDone },
 
   get briefingGenerate() { return ensure().briefingGenerate },
-  get briefingList() { return ensure().briefingList }
+  get briefingList() { return ensure().briefingList },
+
+  get anthropicDiscover() { return ensure().anthropicDiscover },
+  get anthropicImportArticle() { return ensure().anthropicImportArticle },
+  get anthropicCancelImport() { return ensure().anthropicCancelImport },
+
+  get openExternal() { return ensure().openExternal }
 }

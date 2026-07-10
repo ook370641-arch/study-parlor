@@ -13,6 +13,7 @@ interface Props {
   content: string
   fileName: string
   briefingStyle?: 'academic' | 'newspaper'
+  hideHeader?: boolean
 }
 
 function getDocTypeClass(docType: DocType): string {
@@ -64,7 +65,7 @@ function forceStripFrontmatter(raw: string): { body: string; stripped: boolean }
   return { body: raw, stripped: false }
 }
 
-export function MarkdownRenderer({ content, fileName, briefingStyle }: Props) {
+export function MarkdownRenderer({ content, fileName, briefingStyle, hideHeader }: Props) {
   // Defensive: ensure content is a string
   const safeContent = typeof content === 'string' ? content : String(content ?? '')
 
@@ -112,12 +113,12 @@ export function MarkdownRenderer({ content, fileName, briefingStyle }: Props) {
         ? fableComponents
         : dialogueComponents
 
-  const hideReportHeader = fileName === 'briefing.md'
+  const shouldHideReportHeader = hideHeader || fileName === 'briefing.md'
 
   return (
     <div className="md-container">
       <MdErrorBoundary>
-        {!hideReportHeader && <ReportHeader frontmatter={frontmatter} />}
+        {!shouldHideReportHeader && <ReportHeader frontmatter={frontmatter} />}
       </MdErrorBoundary>
       <div className={`md-body ${getDocTypeClass(docType)}`}>
         <MarkdownContent components={components}>{body}</MarkdownContent>

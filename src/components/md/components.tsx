@@ -1,4 +1,5 @@
 import type { Components } from 'react-markdown'
+import { ipc } from '@/lib/ipc'
 
 // ===== Section label mapping =====
 const sectionLabelMap: Record<string, string> = {
@@ -63,7 +64,19 @@ const baseComponents: Components = {
   hr: () => <hr />,
   strong: ({ children }) => <strong>{children}</strong>,
   em: ({ children }) => <em>{children}</em>,
-  a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>,
+  a: ({ href, children }) => {
+    const handleClick = (e: React.MouseEvent) => {
+      if (href && /^https?:\/\//i.test(href)) {
+        e.preventDefault()
+        ipc.openExternal(href).catch((err) => console.error('[openExternal]', err))
+      }
+    }
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" onClick={handleClick}>
+        {children}
+      </a>
+    )
+  },
   table: ({ children }) => <table>{children}</table>,
   thead: ({ children }) => <thead>{children}</thead>,
   tbody: ({ children }) => <tbody>{children}</tbody>,

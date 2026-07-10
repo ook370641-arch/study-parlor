@@ -45,7 +45,37 @@ export type Terminology = {
   startButton?: string
   cancelButton?: string
 }
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials'
+export type AnthropicArticleMeta = {
+  url: string
+  title: string
+  summary: string | null
+  publishedAt: string | null
+  imageUrl: string | null
+  isSaved?: boolean
+  filePath?: string
+}
+
+export type AnthropicErrorCode =
+  | 'browser-init-failed'
+  | 'network-error'
+  | 'parse-error'
+  | 'import-failed'
+  | 'cancelled'
+  | 'unknown'
+
+export type AnthropicError = {
+  code: AnthropicErrorCode
+  message: string
+}
+
+export type AnthropicBlogCache = {
+  lastFetchedAt: string | null
+  articles: AnthropicArticleMeta[]
+  loading: boolean
+  error: AnthropicError | null
+}
+
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article'
 
 export type Profile = {
   name: string
@@ -68,6 +98,10 @@ export type Frontmatter = {
   summary?: string
   sources?: SearchSource[]
   topic?: string
+  source_url?: string
+  published_at?: string
+  imported_at?: string
+  authors?: string[]
 }
 
 export type Group = {
@@ -232,6 +266,9 @@ export type StateJson = {
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
   externalSummaryFontSize?: BriefingFontSize
+  briefingSource?: 'digest' | 'anthropic'
+  anthropicBlogCache?: AnthropicBlogCache
+  anthropicBlogLastSeenAt?: string | null
 }
 
 export type IpcApi = {
@@ -347,6 +384,20 @@ export type IpcApi = {
     preferred_topics?: string[]
   }) => Promise<void>
   onSetupDone: (cb: () => void) => () => void
+
+  // Anthropic blog
+  anthropicDiscover: () => Promise<
+    | { ok: true; lastFetchedAt: string; articles: AnthropicArticleMeta[] }
+    | { ok: false; code: AnthropicErrorCode; message: string }
+  >
+  anthropicImportArticle: (url: string) => Promise<
+    | { ok: true; filePath: string; wasAlreadySaved: boolean }
+    | { ok: false; code: AnthropicErrorCode; message: string }
+  >
+  anthropicCancelImport: () => Promise<void>
+
+  // App shell
+  openExternal: (url: string) => Promise<void>
 }
 
 export type Painting = {

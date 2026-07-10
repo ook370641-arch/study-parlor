@@ -454,7 +454,8 @@ const BASE_STATE = {
   archiveResult: null,
   terminology: {},
   briefingSource: 'digest',
-  anthropicBlogCache: { lastFetchedAt: null, articles: [] },
+  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
+  anthropicBlogLastSeenAt: null,
 }
 
 export function seedStateJson(

@@ -7,6 +7,7 @@ const TYPE_LABELS: Record<DocType, string> = {
   transcript: '原始对话',
   briefing: '夜航简报',
   'external-materials': '外部资料',
+  'anthropic-article': 'Anthropic 博客',
 }
 
 const TYPE_BADGE_STYLES: Record<DocType, string> = {
@@ -16,6 +17,7 @@ const TYPE_BADGE_STYLES: Record<DocType, string> = {
   transcript: 'bg-ink/60 text-parchment/60',
   briefing: 'bg-slate text-parchment',
   'external-materials': 'bg-ink/40 border border-parchment/20 text-parchment/70',
+  'anthropic-article': 'bg-ember/80 text-ink',
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {
