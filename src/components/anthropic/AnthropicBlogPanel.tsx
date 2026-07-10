@@ -1,12 +1,46 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '@/store'
-import type { BriefingTheme } from '@shared/index'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
+import type { BriefingTheme } from '@shared/index'
 
-// TODO(Task 3): consume theme prop for academic/newspaper color switching
-export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) {
+interface Props {
+  theme?: BriefingTheme
+}
+
+export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
+  const isAcademic = theme === 'academic'
+  const themeClasses = isAcademic
+    ? {
+        panelBg: 'bg-ink/60',
+        sidebarBg: 'bg-ink/80',
+        border: 'border-slate/30',
+        text: 'text-parchment',
+        muted: 'text-parchment/50',
+        inputBg: 'bg-parchment/10',
+        inputText: 'text-parchment',
+        inputPlaceholder: 'placeholder:text-parchment/40',
+        inputBorder: 'border-slate/30 focus:border-ember/50',
+        button: 'bg-ember/20 text-parchment hover:bg-ember/30',
+        emptyIcon: 'text-parchment/20',
+        skeleton: 'bg-parchment/10',
+      }
+    : {
+        panelBg: 'bg-white',
+        sidebarBg: 'bg-[#e8e4de]',
+        border: 'border-[#c9c3b8]',
+        text: 'text-[#1a1a1a]',
+        muted: 'text-[#6b5d52]',
+        inputBg: 'bg-white',
+        inputText: 'text-[#1a1a1a]',
+        inputPlaceholder: 'placeholder:text-[#6b5d52]/60',
+        inputBorder: 'border-[#c9c3b8] focus:border-[#1a1a1a]/50',
+        button: 'bg-[#1a1a1a] text-white hover:bg-[#333]',
+        emptyIcon: 'text-[#c9c3b8]',
+        skeleton: 'bg-[#e8e4de]',
+      }
+
   const { articles, loading, error, lastFetchedAt } = useStore((s) => s.anthropicBlogCache)
   const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
   const discover = useStore((s) => s.discoverAnthropicArticles)
@@ -29,7 +63,11 @@ export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) 
     <button
       type="button"
       onClick={() => setListVisible((v) => !v)}
-      className="text-sm text-parchment/70 hover:text-parchment"
+      className={`text-sm ${
+        isAcademic
+          ? 'text-parchment/70 hover:text-parchment'
+          : 'text-[#6b5d52] hover:text-[#1a1a1a]'
+      }`}
       title={listVisible ? '隐藏列表' : '显示列表'}
     >
       {listVisible ? '隐藏列表' : '显示列表'}
@@ -39,18 +77,18 @@ export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) 
   return (
     <div
       data-testid="anthropic-blog-panel"
-      className="relative flex-1 flex min-w-0 bg-ink/60 overflow-hidden"
+      className={`relative flex-1 flex min-w-0 overflow-hidden ${themeClasses.panelBg}`}
     >
       <div
-        className={`flex flex-col border-r border-slate/30 bg-ink/80 transition-all duration-200 ${
+        className={`flex flex-col border-r ${themeClasses.border} ${themeClasses.sidebarBg} transition-all duration-200 ${
           listVisible ? 'w-80 min-w-[20rem]' : 'w-0 opacity-0 overflow-hidden'
         }`}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate/30 shrink-0">
+        <div className={`flex items-center justify-between px-4 py-3 border-b ${themeClasses.border} shrink-0`}>
           <div className="min-w-0">
-            <h2 className="text-base font-serif text-parchment truncate">Anthropic Engineering</h2>
+            <h2 className={`text-base font-serif truncate ${themeClasses.text}`}>Anthropic Engineering</h2>
             {lastFetchedAt && (
-              <p className="text-[10px] text-parchment/50">
+              <p className={`text-[10px] ${themeClasses.muted}`}>
                 更新于 {new Date(lastFetchedAt).toLocaleString('zh-CN')}
               </p>
             )}
@@ -59,19 +97,19 @@ export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) 
             data-testid="anthropic-refresh-button"
             onClick={() => discover()}
             disabled={loading}
-            className="ml-2 px-2.5 py-1 rounded bg-ember/20 text-xs text-parchment hover:bg-ember/30 disabled:opacity-50 shrink-0"
+            className={`ml-2 px-2.5 py-1 rounded text-xs disabled:opacity-50 shrink-0 ${themeClasses.button}`}
           >
             {loading ? '刷新中' : '刷新'}
           </button>
         </div>
 
-        <div className="px-4 py-2 border-b border-slate/30 shrink-0">
+        <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="搜索标题或摘要…"
-            className="w-full px-3 py-1.5 rounded bg-parchment/10 text-sm text-parchment placeholder:text-parchment/40 border border-slate/30 focus:border-ember/50 outline-none"
+            className={`w-full px-3 py-1.5 rounded text-sm outline-none border ${themeClasses.inputBg} ${themeClasses.inputText} ${themeClasses.inputPlaceholder} ${themeClasses.inputBorder}`}
           />
         </div>
 
@@ -79,7 +117,7 @@ export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) 
           {loading && articles.length === 0 && (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 rounded bg-parchment/10 animate-pulse" />
+                <div key={i} className={`h-24 rounded animate-pulse ${themeClasses.skeleton}`} />
               ))}
             </div>
           )}
@@ -89,7 +127,7 @@ export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) 
           )}
 
           {!loading && !error && filtered.length === 0 && (
-            <div className="text-center text-parchment/60 py-12 text-sm">
+            <div className={`text-center py-12 text-sm ${themeClasses.muted}`}>
               {articles.length === 0 ? (
                 <p>暂无文章，点击右上角刷新列表。</p>
               ) : (
@@ -100,7 +138,7 @@ export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) 
 
           <div className="space-y-3">
             {filtered.map((article) => (
-              <AnthropicArticleRow key={article.url} article={article} />
+              <AnthropicArticleRow key={article.url} article={article} theme={theme} />
             ))}
           </div>
         </div>
@@ -114,9 +152,9 @@ export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) 
             sidebarToggle={readerSidebarToggle}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-parchment/50 px-6">
+          <div className={`flex-1 flex flex-col items-center justify-center px-6 ${themeClasses.muted}`}>
             <svg
-              className="w-12 h-12 mb-4 text-parchment/20"
+              className={`w-12 h-12 mb-4 ${themeClasses.emptyIcon}`}
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
