@@ -123,7 +123,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           )}
 
           {error && (
-            <AnthropicErrorMessage error={error} onRetry={() => discover()} />
+            <AnthropicErrorMessage error={error} onRetry={() => discover()} theme={theme} />
           )}
 
           {!loading && !error && filtered.length === 0 && (

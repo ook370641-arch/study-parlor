@@ -141,6 +141,7 @@ export function AnthropicArticleReader({ filePath, onClose, sidebarToggle, theme
           <AnthropicErrorMessage
             error={{ code: 'unknown', message: error.message }}
             onRetry={() => window.location.reload()}
+            theme={theme}
           />
         )}
 

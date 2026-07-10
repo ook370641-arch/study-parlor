@@ -16,6 +16,11 @@ test.describe('@p1 briefing generation', () => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
+    // If the page starts from an empty state, click the receive-digest button to trigger generation
+    const receiveButton = window.locator('[data-testid="briefing-receive-digest-button"]')
+    if (await receiveButton.isVisible().catch(() => false)) {
+      await receiveButton.click()
+    }
     // Wait for either the academic layout (content loaded) or progress bar (generating)
     const academicLayout = window.locator(SELECTORS.briefing.academicLayout)
     const progressBar = window.locator(SELECTORS.briefing.progress)
