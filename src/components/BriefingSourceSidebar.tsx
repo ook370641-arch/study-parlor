@@ -7,11 +7,10 @@ interface Props {
   theme: BriefingTheme
 }
 
-function DigestIcon({ className }: { className?: string }) {
+function DigestIcon() {
   return (
     <svg
-      data-testid="briefing-source-icon"
-      className={className}
+      data-testid="briefing-source-icon-digest"
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -27,11 +26,10 @@ function DigestIcon({ className }: { className?: string }) {
   )
 }
 
-function AnthropicIcon({ className }: { className?: string }) {
+function AnthropicIcon() {
   return (
     <svg
-      data-testid="briefing-source-icon"
-      className={className}
+      data-testid="briefing-source-icon-anthropic"
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -41,9 +39,8 @@ function AnthropicIcon({ className }: { className?: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d="M12 4 L20 8 L12 12 L4 8 Z" />
-      <path d="M4 8v8l8 4 8-4V8" />
-      <path d="M12 12v8" />
+      <path d="M12 4l7 16H5l7-16z" />
+      <path d="M9 13h6" />
     </svg>
   )
 }
@@ -60,7 +57,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         border: 'border-r border-[rgba(232,213,183,0.18)]',
         headerText: 'text-parchment',
         toggle: 'text-parchment/60 hover:text-parchment',
-        active: 'bg-[rgba(232,213,183,0.1)] text-parchment border-l-[3px] border-l-[#d97757]',
+        active: 'bg-[rgba(232,213,183,0.1)] text-parchment border-[#d97757]',
         inactive: 'text-parchment/70 hover:bg-[rgba(232,213,183,0.06)]',
         headerBorder: 'border-b border-[rgba(232,213,183,0.18)]',
       }
@@ -69,12 +66,12 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         border: 'border-r border-[#c9c3b8]',
         headerText: 'text-[#2a1f1a]',
         toggle: 'text-[#2a1f1a]/60 hover:text-[#2a1f1a]',
-        active: 'bg-[rgba(0,0,0,0.06)] text-[#2a1f1a] border-l-[3px] border-l-[#1a1a1a]',
+        active: 'bg-[rgba(0,0,0,0.06)] text-[#2a1f1a] border-[#1a1a1a]',
         inactive: 'text-[#2a1f1a]/70 hover:bg-[rgba(0,0,0,0.04)]',
         headerBorder: 'border-b border-[#c9c3b8]',
       }
 
-  const base = `w-full text-left px-3 py-2 rounded transition-colors flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`
+  const base = `w-full text-left py-2 transition-colors flex items-center gap-3 ${collapsed ? 'justify-center px-2' : 'px-3'} ${collapsed ? '' : 'rounded'}`
 
   const navItems = [
     {
@@ -119,10 +116,10 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
                 setSource(item.id)
                 if (collapsed) onToggle()
               }}
-              className={`${base} ${isActive ? themeClasses.active : themeClasses.inactive}`}
+              className={`${base} ${isActive ? `rounded-none border-l-[3px] ${themeClasses.active}` : themeClasses.inactive}`}
               title={item.label}
             >
-              <Icon className={isActive ? (isAcademic ? 'text-parchment' : 'text-[#2a1f1a]') : ''} />
+              <Icon />
               {!collapsed && <span>{item.label}</span>}
             </button>
           )

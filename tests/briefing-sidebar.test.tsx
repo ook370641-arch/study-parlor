@@ -48,8 +48,51 @@ describe('BriefingSourceSidebar', () => {
     render(<BriefingSourceSidebar theme="academic" collapsed={true} onToggle={() => {}} />)
     expect(screen.queryByText('日')).not.toBeInTheDocument()
     expect(screen.queryByText('A')).not.toBeInTheDocument()
-    const svgs = screen.getAllByTestId('briefing-source-icon')
-    expect(svgs).toHaveLength(2)
+    expect(screen.getByTestId('briefing-source-icon-digest')).toBeInTheDocument()
+    expect(screen.getByTestId('briefing-source-icon-anthropic')).toBeInTheDocument()
+  })
+
+  it('renders text labels in expanded mode', () => {
+    render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
+    expect(screen.getByText('AI 日报')).toBeInTheDocument()
+    expect(screen.getByText('Anthropic 博客')).toBeInTheDocument()
+  })
+
+  it('calls onToggle when a source is clicked while collapsed', () => {
+    const onToggle = vi.fn()
+    render(<BriefingSourceSidebar theme="academic" collapsed={true} onToggle={onToggle} />)
+    fireEvent.click(screen.getByTestId('briefing-source-anthropic'))
+    expect(onToggle).toHaveBeenCalledTimes(1)
+  })
+
+  it('applies academic active button styles', () => {
+    useStore.setState({ briefingSource: 'anthropic' })
+    render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
+    const button = screen.getByTestId('briefing-source-anthropic')
+    expect(button).toHaveClass('bg-[rgba(232,213,183,0.1)]')
+    expect(button).toHaveClass('text-parchment')
+    expect(button).toHaveClass('border-l-[3px]')
+    expect(button).toHaveClass('border-[#d97757]')
+    expect(button).toHaveClass('rounded-none')
+  })
+
+  it('applies newspaper active button styles', () => {
+    useStore.setState({ briefingSource: 'anthropic' })
+    render(<BriefingSourceSidebar theme="newspaper" collapsed={false} onToggle={() => {}} />)
+    const button = screen.getByTestId('briefing-source-anthropic')
+    expect(button).toHaveClass('bg-[rgba(0,0,0,0.06)]')
+    expect(button).toHaveClass('text-[#2a1f1a]')
+    expect(button).toHaveClass('border-l-[3px]')
+    expect(button).toHaveClass('border-[#1a1a1a]')
+    expect(button).toHaveClass('rounded-none')
+  })
+
+  it('shows border active indicator in collapsed mode', () => {
+    useStore.setState({ briefingSource: 'anthropic' })
+    render(<BriefingSourceSidebar theme="academic" collapsed={true} onToggle={() => {}} />)
+    const button = screen.getByTestId('briefing-source-anthropic')
+    expect(button).toHaveClass('border-l-[3px]')
+    expect(button).toHaveClass('border-[#d97757]')
   })
 
   it('switches source on click', () => {
