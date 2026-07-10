@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { killProjectProcessesByPattern } from './process-cleanup'
 
 const TEST_LIBRARY_ROOT = path.join(process.cwd(), 'e2e', '.test-library')
 const TEST_CONFIG_ROOT = path.join(process.cwd(), 'e2e', '.test-config')
@@ -41,22 +42,94 @@ export function createTestConfigDir(): string {
 
 export async function cleanupTestConfigDir(dir: string, keepOnFailure: boolean = false): Promise<void> {
   if (keepOnFailure) return
-  await retryRm(dir)
+  // 先终止任何仍锁定该测试配置目录的残留 Electron 进程，再尝试删除。
+  // 这是 Windows 上避免 EPERM 的最后一道保险。
+  try {
+    const killed = await killProjectProcessesByPattern(process.cwd(), dir)
+    if (killed.length) {
+      console.log('[e2e] killed residual processes before config dir cleanup:', killed.join(', '))
+      // Windows may need a few seconds to release file handles after the
+      // processes are gone; give it a generous buffer before retrying rm.
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+    }
+  } catch (err) {
+    console.warn('[e2e] failed to kill residual processes for config dir:', dir, err)
+  }
+  await retryRm(dir, {
+    onRetry: async () => {
+      try {
+        const killed = await killProjectProcessesByPattern(process.cwd(), dir)
+        if (killed.length) {
+          console.log('[e2e] killed residual processes during retry:', killed.join(', '))
+        }
+      } catch {}
+    },
+  })
 }
 
-async function retryRm(dir: string, timeoutMs = 10000, intervalMs = 500): Promise<void> {
+async function retryRm(
+  dir: string,
+  options: { timeoutMs?: number; intervalMs?: number; onRetry?: () => void | Promise<void> } = {}
+): Promise<void> {
+  const { timeoutMs = 30000, intervalMs = 200, onRetry } = options
+
   const deadline = Date.now() + timeoutMs
   let lastErr: unknown
+  let attempts = 0
   while (Date.now() < deadline) {
     try {
       fs.rmSync(dir, { recursive: true, force: true })
       return
     } catch (err) {
       lastErr = err
+      attempts++
+      // Periodically ask the caller to release external locks (e.g. kill
+      // lingering Electron processes on Windows) instead of waiting passively.
+      if (onRetry && attempts % 25 === 0) {
+        try {
+          await onRetry()
+        } catch {}
+      }
+      // On Windows a single locked file can prevent removing the whole tree.
+      // Delete everything we can so the debris is minimal; the next run's
+      // age-out cleanup will finish the rest.
+      try {
+        removeAsMuchAsPossible(dir)
+      } catch {}
       await new Promise((resolve) => setTimeout(resolve, intervalMs))
     }
   }
-  throw lastErr
+
+  // Last resort: rename the locked directory so it does not block future
+  // test runs and can be picked up by the age-out cleanup later. If even
+  // renaming fails (directory is still locked), leave it for the age-out
+  // cleanup rather than failing the test run.
+  const staleName = `${dir}.stale-${Date.now()}`
+  try {
+    fs.renameSync(dir, staleName)
+    console.warn(`[e2e] could not remove locked dir, renamed to ${staleName}`)
+    return
+  } catch (renameErr) {
+    console.warn(`[e2e] could not remove or rename locked dir ${dir}:`, renameErr)
+  }
+}
+
+function removeAsMuchAsPossible(dir: string): void {
+  if (!fs.existsSync(dir)) return
+  for (const entry of fs.readdirSync(dir)) {
+    const fullPath = path.join(dir, entry)
+    try {
+      const stat = fs.statSync(fullPath)
+      if (stat.isDirectory()) {
+        removeAsMuchAsPossible(fullPath)
+        fs.rmdirSync(fullPath)
+      } else {
+        fs.unlinkSync(fullPath)
+      }
+    } catch {
+      // ignore locked files or directories
+    }
+  }
 }
 
 function cleanupOldTestDirs(root: string): void {
@@ -380,6 +453,8 @@ const BASE_STATE = {
   pendingArchives: [],
   archiveResult: null,
   terminology: {},
+  briefingSource: 'digest',
+  anthropicBlogCache: { lastFetchedAt: null, articles: [] },
 }
 
 export function seedStateJson(

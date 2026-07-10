@@ -3,11 +3,11 @@ import * as path from 'node:path'
 import { resolveAppPaths } from '../electron/lib/app-paths'
 
 describe('resolveAppPaths', () => {
-  it('dev mode uses project-local cache directory', () => {
+  it('dev mode uses project-local cache directory under node_modules', () => {
     const paths = resolveAppPaths({ cwd: '/project', homeDir: '/home/user', isPackaged: false })
     expect(paths.configDir).toBe(path.join('/project'))
-    expect(paths.userData).toBe(path.join('/project', '.electron-cache', 'userData'))
-    expect(paths.cache).toBe(path.join('/project', '.electron-cache', 'cache'))
+    expect(paths.userData).toBe(path.join('/project', 'node_modules', '.electron-cache', 'userData'))
+    expect(paths.cache).toBe(path.join('/project', 'node_modules', '.electron-cache', 'cache'))
   })
 
   it('e2e mode uses E2E_CONFIG_DIR', () => {

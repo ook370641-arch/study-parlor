@@ -9,7 +9,7 @@ import {
   createTestConfigDir,
   cleanupTestConfigDir,
 } from '../helpers/test-library'
-import { killProcessTree } from './process-cleanup'
+import { killProcessTree, killProjectProcessesByPattern } from '../helpers/process-cleanup'
 
 type E2EFixtures = {
   electronProcess: { process: ChildProcess; cdpUrl: string }
@@ -128,7 +128,7 @@ export const test = base.extend<E2EFixtures>({
 
     const proc = spawn(
       path.join(process.cwd(), 'node_modules', 'electron', 'dist', 'electron.exe'),
-      ['--remote-debugging-port=0', '--no-sandbox', '.'],
+      ['--remote-debugging-port=0', '--no-sandbox', '--disable-gpu', '.'],
       {
         cwd: process.cwd(),
         env: {
@@ -148,15 +148,24 @@ export const test = base.extend<E2EFixtures>({
       cdpUrl = await waitForCdpUrl(proc, 60000)
       await waitForCdpPort(cdpUrl, 10000)
     } catch (err) {
-      await killProcessTree(proc)
+      await killProcessTree(proc.pid)
       throw err
     }
 
     await use({ process: proc, cdpUrl })
 
-    await killProcessTree(proc)
+    await killProcessTree(proc.pid)
     // 增加等待时间，确保 Windows 子进程（特别是 GPU 进程）释放文件句柄
     await waitForProcessExit(proc, 15000)
+
+    // 强行终止命令行仍包含该测试配置目录的残留进程，避免 Windows
+    // 文件锁导致 cleanupTestConfigDir 出现 EPERM。
+    const killed = await killProjectProcessesByPattern(process.cwd(), testConfigDir)
+    if (killed.length) {
+      console.log('[e2e] killed residual processes for config dir:', killed.join(', '))
+      // 给 WMIC/句柄释放留一点缓冲
+      await new Promise(r => setTimeout(r, 1000))
+    }
 
     const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
     if (failed) {

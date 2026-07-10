@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findPortListeners, isProcessRunning, killProcessTree, listProjectProcesses } from '../scripts/lib/process-cleanup'
+import { findPortListeners, isProcessRunning, killProcessTree, listProjectProcesses, killProjectProcessesByPattern } from '../scripts/lib/process-cleanup'
 
 describe('process-cleanup', () => {
   it('listProjectProcesses does not throw and returns array', async () => {
@@ -22,5 +22,10 @@ describe('process-cleanup', () => {
 
   it('killProcessTree returns true for non-existent pid', async () => {
     expect(await killProcessTree(0)).toBe(true)
+  })
+
+  it('killProjectProcessesByPattern does not throw and returns array', async () => {
+    const killed = await killProjectProcessesByPattern(process.cwd(), 'definitely-not-a-real-pattern-12345')
+    expect(Array.isArray(killed)).toBe(true)
   })
 })

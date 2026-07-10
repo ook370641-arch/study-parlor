@@ -1,1 +1,1 @@
-export { killProcessTree, isProcessRunning } from '../../scripts/lib/process-cleanup'
+export { killProcessTree, isProcessRunning, killProjectProcessesByPattern } from '../../scripts/lib/process-cleanup'

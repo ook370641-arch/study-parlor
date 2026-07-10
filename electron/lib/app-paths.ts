@@ -34,8 +34,10 @@ export function resolveAppPaths(options: {
     }
   }
 
-  // Dev mode
-  const devCacheDir = path.join(cwd, '.electron-cache')
+  // Dev mode: isolate Chromium caches under project-local node_modules so
+  // they are easy to wipe and are ignored by Vite's file watcher, which would
+  // otherwise crash on locked files like Code Cache/temp-index.
+  const devCacheDir = path.join(cwd, 'node_modules', '.electron-cache')
   return {
     configDir: path.normalize(cwd),
     stateDir: path.join(homeDir, '.studyparlor'),

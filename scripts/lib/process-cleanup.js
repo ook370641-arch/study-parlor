@@ -11,19 +11,24 @@ const execAsync = promisify(exec)
  * 2. 命令行包含当前项目根目录路径
  * 这样可以避免误杀其他项目的 Electron 实例。
  */
-async function listProjectProcesses(projectRoot) {
+async function listProjectProcesses(projectRoot, pattern) {
   if (process.platform !== 'win32') {
     const { stdout } = await execAsync(
       `ps -eo pid,ppid,comm,args | grep -E "(node|electron)" | grep "${escapeShell(projectRoot)}" || true`
     )
-    return parseUnixPs(stdout, projectRoot)
+    return parseUnixPs(stdout, projectRoot, pattern)
   }
 
+  // Use PowerShell instead of WMIC: WMIC's CSV output does not quote command
+  // lines correctly when they themselves contain quotes and commas, so a naive
+  // split(',') ends up treating part of the command line as the Name/PID
+  // columns.
   try {
     const { stdout } = await execAsync(
-      'wmic process where "name=\'node.exe\' or name=\'electron.exe\'" get ProcessId,ParentProcessId,Name,CommandLine /format:csv'
+      `powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -or $_.Name -eq 'electron.exe' } | Select-Object ProcessId,ParentProcessId,Name,CommandLine | ConvertTo-Json -Compress"`,
+      { maxBuffer: 5 * 1024 * 1024 }
     )
-    return parseWmicCsv(stdout, projectRoot)
+    return parseWin32Json(stdout, projectRoot, pattern)
   } catch {
     return []
   }
@@ -33,8 +38,9 @@ function escapeShell(str) {
   return str.replace(/"/g, '\\"')
 }
 
-function parseUnixPs(stdout, projectRoot) {
+function parseUnixPs(stdout, projectRoot, pattern) {
   const result = []
+  const normalizedPattern = pattern ? pattern.toLowerCase() : null
   for (const line of stdout.split('\n')) {
     const trimmed = line.trim()
     if (!trimmed) continue
@@ -44,45 +50,62 @@ function parseUnixPs(stdout, projectRoot) {
     const ppid = parseInt(parts[1], 10)
     const name = path.basename(parts[2])
     const commandLine = parts.slice(3).join(' ')
-    if (!isProjectProcess(commandLine, name, projectRoot)) continue
+    if (!isProjectProcess(commandLine, name, projectRoot, normalizedPattern)) continue
     result.push({ pid, ppid: isNaN(ppid) ? null : ppid, name, commandLine })
   }
   return result
 }
 
-function parseWmicCsv(stdout, projectRoot) {
+function parseWin32Json(stdout, projectRoot, pattern) {
   const result = []
   const normalizedProjectRoot = projectRoot.toLowerCase()
-  for (const line of stdout.split('\n')) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('Node')) continue
-    const parts = trimmed.split(',').map(s => {
-      s = s.trim()
-      if (s.startsWith('"') && s.endsWith('"')) {
-        return s.slice(1, -1).replace(/""/g, '"')
-      }
-      return s
-    })
-    if (parts.length < 5) continue
-    const commandLine = parts[1]
-    const name = parts[2]
-    const ppid = parseInt(parts[3], 10)
-    const pid = parseInt(parts[4], 10)
-    if (!isProjectProcess(commandLine, name, normalizedProjectRoot)) continue
+  const normalizedPattern = pattern ? pattern.toLowerCase() : null
+  let parsed
+  try {
+    parsed = JSON.parse(stdout.trim())
+  } catch {
+    return []
+  }
+  const rows = Array.isArray(parsed) ? parsed : [parsed]
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue
+    const commandLine = row.CommandLine || ''
+    const name = row.Name || ''
+    const ppid = parseInt(row.ParentProcessId, 10)
+    const pid = parseInt(row.ProcessId, 10)
+    if (!isProjectProcess(commandLine, name, normalizedProjectRoot, normalizedPattern)) continue
     if (isNaN(pid)) continue
     result.push({ pid, ppid: isNaN(ppid) ? null : ppid, name, commandLine })
   }
   return result
 }
 
-function isProjectProcess(commandLine, name, projectRoot) {
+
+function isProjectProcess(commandLine, name, projectRoot, pattern) {
   const lowerCmd = commandLine.toLowerCase()
   const lowerRoot = projectRoot.toLowerCase()
   const lowerName = name.toLowerCase()
   if (lowerName !== 'node.exe' && lowerName !== 'electron.exe' && lowerName !== 'node' && lowerName !== 'electron') {
     return false
   }
-  return lowerCmd.includes(lowerRoot)
+  if (!lowerCmd.includes(lowerRoot)) return false
+  if (pattern && !lowerCmd.includes(pattern)) return false
+  return true
+}
+
+/**
+ * 根据命令行模式查找并终止当前项目相关的进程。
+ * 用于清理特定测试实例残留的 Electron renderer 等。
+ */
+async function killProjectProcessesByPattern(projectRoot, pattern) {
+  const processes = await listProjectProcesses(projectRoot, pattern)
+  const killed = []
+  for (const proc of processes) {
+    if (proc.pid === process.pid) continue
+    const success = await killProcessTree(proc.pid, 10000)
+    if (success) killed.push(proc.pid)
+  }
+  return killed
 }
 
 /**
@@ -214,4 +237,5 @@ module.exports = {
   killProcessTree,
   isProcessRunning,
   cleanupProjectOrphans,
+  killProjectProcessesByPattern,
 }
