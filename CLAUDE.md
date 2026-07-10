@@ -33,6 +33,19 @@ npm run test:watch
 npx vitest run tests/prompts.test.ts
 ```
 
+### 清理开发环境
+
+如果 `npm run dev` 启动变慢或出现端口占用，通常是之前的 Electron 进程没有干净退出：
+
+```bash
+# Windows
+taskkill /F /IM electron.exe /T
+taskkill /F /IM node.exe /T
+rm -rf .electron-cache
+```
+
+从 v1.1.x 起，`scripts/dev.js` 会在启动前自动执行上述清理。
+
 ## 路径别名 (tsconfig)
 
 - `@/*` → `src/*`

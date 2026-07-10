@@ -25,6 +25,9 @@ test-results/
 .vite/
 *.tsbuildinfo
 
+# Electron dev-mode isolated caches
+.electron-cache/
+
 # Playwright E2E
 e2e-results/
 e2e/.test-library/
