@@ -107,6 +107,7 @@ export function Briefing() {
     >
       {isAcademic && source === 'digest' && <SurfaceBackground surface="briefing" />}
       <BriefingSourceSidebar
+        theme={theme}
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((c) => !c)}
       />
