@@ -369,7 +369,19 @@ app.whenReady().then(() => {
 })
 app.on('window-all-closed', () => {
   mainWindow = null
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin') {
+    // In dev mode, explicitly close any remaining webContents and exit.
+    // This prevents electron.exe from lingering when the user clicks the
+    // window close button, which would otherwise keep the DevTools port
+    // and Vite dev-server connections alive.
+    for (const wc of BrowserWindow.getAllWindows().map(w => w.webContents)) {
+      if (!wc.isDestroyed()) wc.close()
+    }
+    app.quit()
+  }
+})
+app.on('before-quit', () => {
+  console.log('[bootstrap] app before-quit')
 })
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) bootstrap()
