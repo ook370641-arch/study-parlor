@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { BriefingHistoryDrawer } from '@/components/BriefingHistoryDrawer'
@@ -54,13 +54,6 @@ export function Briefing() {
 
   const today = formatBriefingDate(new Date())
 
-  useEffect(() => {
-    if (source !== 'digest') return
-    if (!result && !loading && !error) {
-      generateBriefing(today)
-    }
-  }, [result, loading, error, today, generateBriefing, source])
-
   const handleRegenerate = async () => {
     if (!result) return
     setRegenerating(true)
@@ -96,8 +89,9 @@ export function Briefing() {
     },
   }
 
-  const isDigestLoading = source === 'digest' && (loading || (!result && !error))
+  const isDigestLoading = source === 'digest' && loading
   const isDigestError = source === 'digest' && error
+  const emptyState = source === 'digest' && !result && !loading && !error
 
   return (
     <div
@@ -129,7 +123,26 @@ export function Briefing() {
         />
 
         {source === 'anthropic' ? (
-          <AnthropicBlogPanel />
+          <AnthropicBlogPanel theme={theme} />
+        ) : emptyState ? (
+          <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
+            <div className="text-center">
+              <p className={`mb-6 ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
+                今日夜航简报尚未生成
+              </p>
+              <button
+                data-testid="briefing-receive-digest-button"
+                onClick={() => generateBriefing(today)}
+                className={`px-8 py-3 rounded text-[15px] font-serif transition-colors ${
+                  isAcademic
+                    ? 'bg-ember text-white hover:bg-ember/90'
+                    : 'bg-[#1a1a1a] text-white hover:bg-[#333]'
+                }`}
+              >
+                查收日报
+              </button>
+            </div>
+          </main>
         ) : isDigestLoading ? (
           <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
             {stage ? (

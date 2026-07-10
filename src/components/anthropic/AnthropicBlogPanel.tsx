@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '@/store'
+import type { BriefingTheme } from '@shared/index'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 
-export function AnthropicBlogPanel() {
+// TODO(Task 3): consume theme prop for academic/newspaper color switching
+export function AnthropicBlogPanel({ theme: _theme }: { theme: BriefingTheme }) {
   const { articles, loading, error, lastFetchedAt } = useStore((s) => s.anthropicBlogCache)
   const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
   const discover = useStore((s) => s.discoverAnthropicArticles)
