@@ -150,6 +150,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             filePath={readerFilePath}
             onClose={closeReader}
             sidebarToggle={readerSidebarToggle}
+            theme={theme}
           />
         ) : (
           <div className={`flex-1 flex flex-col items-center justify-center px-6 ${themeClasses.muted}`}>
