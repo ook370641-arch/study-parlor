@@ -1,5 +1,5 @@
 import React from 'react'
-import Markdown from 'react-markdown'
+import Markdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 
@@ -38,11 +38,16 @@ interface Props {
   className?: string
 }
 
+function allowFileUrlTransform(url: string): string {
+  if (url.startsWith('file://')) return url
+  return defaultUrlTransform(url)
+}
+
 export function MarkdownContent({ children, components, className }: Props) {
   return (
     <div className={className}>
       <MdErrorBoundary>
-        <Markdown remarkPlugins={[remarkGfm]} components={components}>
+        <Markdown remarkPlugins={[remarkGfm]} components={components} urlTransform={allowFileUrlTransform}>
           {children}
         </Markdown>
       </MdErrorBoundary>

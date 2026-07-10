@@ -180,7 +180,7 @@ export function AnthropicArticleReader({ filePath, onClose, sidebarToggle, theme
               )}
             </header>
 
-            <article className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''}`}>
+            <article className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}>
               <MarkdownRenderer
                 content={body}
                 fileName={frontmatter.title ?? 'article.md'}

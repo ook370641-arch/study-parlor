@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Components } from 'react-markdown'
 import { ipc } from '@/lib/ipc'
 
@@ -92,6 +93,31 @@ const baseComponents: Components = {
       </pre>
     )
   },
+  img: ({ src, alt }) => <MdImage src={src} alt={alt} />,
+}
+
+// ===== Image with error placeholder =====
+function MdImage({ src, alt }: { src?: string; alt?: string }) {
+  const [error, setError] = useState(false)
+  if (error) {
+    return (
+      <span
+        data-testid="md-image-error"
+        className="inline-block min-w-[120px] min-h-[80px] px-3 py-2 rounded border border-dashed border-current/30 text-current/50 text-sm"
+      >
+        图片加载失败
+      </span>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt={alt ?? ''}
+      className="max-w-full h-auto rounded my-4 block"
+      onError={() => setError(true)}
+      loading="lazy"
+    />
+  )
 }
 
 // ===== Dialogue paragraph parser =====
