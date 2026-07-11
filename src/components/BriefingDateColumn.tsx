@@ -11,6 +11,7 @@ interface Props {
   onSelect: (date: string) => void
   onReceiveToday: () => void
   theme: 'academic' | 'newspaper'
+  todayLabel?: string
 }
 
 function formatLabel(date: string): string {
@@ -19,7 +20,7 @@ function formatLabel(date: string): string {
   return `${m}月${d}日`
 }
 
-export function BriefingDateColumn({ collapsed, history, currentDate, today, onSelect, onReceiveToday, theme }: Props) {
+export function BriefingDateColumn({ collapsed, history, currentDate, today, onSelect, onReceiveToday, theme, todayLabel = '查收日报' }: Props) {
   const isAcademic = theme !== 'newspaper'
 
   const itemBase = isAcademic
@@ -38,7 +39,7 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
         <button
           data-testid="briefing-date-today-mini"
           onClick={onReceiveToday}
-          title="查收日报"
+          title={todayLabel}
           className={`w-8 h-8 rounded flex items-center justify-center ${isAcademic ? 'bg-ember/20 text-ember' : 'bg-[#1a1a1a] text-white'}`}
         >
           今
@@ -68,7 +69,7 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
             onClick={() => (entry.isToday ? onReceiveToday() : onSelect(entry.date))}
             className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${isCurrent ? activeItem : itemBase}`}
           >
-            {entry.isToday ? '查收日报' : formatLabel(entry.date)}
+            {entry.isToday ? todayLabel : formatLabel(entry.date)}
           </button>
         )
       })}

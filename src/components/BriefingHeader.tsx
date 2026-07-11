@@ -2,12 +2,11 @@ import { useStore } from '@/store'
 import { BackToCover } from './BackToCover'
 import { Button } from './Button'
 import { BriefingThemeToggle } from './briefing/BriefingThemeToggle'
-import type { BriefingSourceStatus } from '@shared/index'
 
 interface Props {
   displayDate: string
   timeString?: string
-  sourceStatus?: BriefingSourceStatus
+  sourceStatus?: Record<string, 'ok' | 'failed'>
   cacheWriteFailed?: boolean
 }
 
@@ -37,10 +36,20 @@ export function BriefingHeader({
   const canDecrease = fontSize !== 'sm'
   const canIncrease = fontSize !== '7xl'
 
+  const knownLabels: Record<string, string> = {
+    x: 'X',
+    blogs: '博客',
+    podcasts: '播客',
+    tavily: 'Tavily',
+  }
+
   const failedSources = sourceStatus
     ? Object.entries(sourceStatus)
         .filter(([, status]) => status === 'failed')
-        .map(([key]) => ({ x: 'X', blogs: '博客', podcasts: '播客' }[key] ?? key))
+        .map(([key]) => {
+          if (key.startsWith('official:')) return `${key.slice(9)} 官方页`
+          return knownLabels[key] ?? key
+        })
     : []
   const sourceStatusTitle = failedSources.length > 0
     ? `来源获取失败：${failedSources.join('、')}`

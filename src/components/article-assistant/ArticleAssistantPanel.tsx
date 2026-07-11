@@ -8,9 +8,10 @@ interface Props {
   parentPath: string
   articleTitle?: string
   articleContent: string
+  showGuide?: boolean
 }
 
-export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent }: Props) {
+export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, showGuide = true }: Props) {
   const session = useStore((s) => s.assistantSession)
   const openAssistantSession = useStore((s) => s.openAssistantSession)
   const closeAssistantSession = useStore((s) => s.closeAssistantSession)
@@ -54,7 +55,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
 
   return (
     <>
-      <GuideSidebar />
+      {showGuide && <GuideSidebar />}
       {/* Vertical tab to toggle chat window */}
       <button
         data-testid="article-assistant-tab"
