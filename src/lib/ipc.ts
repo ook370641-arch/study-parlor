@@ -70,6 +70,10 @@ export const ipc = {
   get briefingGenerate() { return ensure().briefingGenerate },
   get briefingList() { return ensure().briefingList },
 
+  get jobBriefingGenerate() { return ensure().jobBriefingGenerate },
+  get jobBriefingList() { return ensure().jobBriefingList },
+  get jobBriefingDiscoverPages() { return ensure().jobBriefingDiscoverPages },
+
   get anthropicDiscover() { return ensure().anthropicDiscover },
   get anthropicImportArticle() { return ensure().anthropicImportArticle },
   get anthropicCancelImport() { return ensure().anthropicCancelImport },
