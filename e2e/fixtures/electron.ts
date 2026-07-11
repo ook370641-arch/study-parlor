@@ -9,6 +9,7 @@ import {
   createTestConfigDir,
   cleanupTestConfigDir,
 } from '../helpers/test-library'
+import { killProcessTree, killProjectProcessesByPattern } from '../helpers/process-cleanup'
 
 type E2EFixtures = {
   electronProcess: { process: ChildProcess; cdpUrl: string }
@@ -52,20 +53,6 @@ async function waitForProcessExit(proc: ChildProcess, timeoutMs: number): Promis
       resolve()
     })
   })
-}
-
-async function killProcessTree(proc: ChildProcess): Promise<void> {
-  if (!proc.pid) return
-  if (process.platform === 'win32') {
-    return new Promise((resolve) => {
-      const killer = spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { stdio: 'ignore' })
-      killer.on('exit', () => resolve())
-      killer.on('error', () => resolve())
-      setTimeout(() => resolve(), 5000)
-    })
-  }
-  proc.kill('SIGKILL')
-  await waitForProcessExit(proc, 5000)
 }
 
 async function waitForCdpPort(url: string, timeoutMs: number): Promise<void> {
@@ -141,7 +128,7 @@ export const test = base.extend<E2EFixtures>({
 
     const proc = spawn(
       path.join(process.cwd(), 'node_modules', 'electron', 'dist', 'electron.exe'),
-      ['--remote-debugging-port=0', '--no-sandbox', '.'],
+      ['--remote-debugging-port=0', '--no-sandbox', '--disable-gpu', '.'],
       {
         cwd: process.cwd(),
         env: {
@@ -150,6 +137,7 @@ export const test = base.extend<E2EFixtures>({
           E2E_CONFIG_DIR: testConfigDir,
           E2E_STUDY_LIBRARY_PATH: testLibraryPath,
           E2E_SKIP_PROBE: '1',
+          E2E_SILENT: '1',
           TAVILY_API_KEY: tavilyKey || process.env.TAVILY_API_KEY || '',
           ...extraEnv,
         },
@@ -161,21 +149,36 @@ export const test = base.extend<E2EFixtures>({
       cdpUrl = await waitForCdpUrl(proc, 60000)
       await waitForCdpPort(cdpUrl, 10000)
     } catch (err) {
-      await killProcessTree(proc)
+      await killProcessTree(proc.pid)
       throw err
     }
 
     await use({ process: proc, cdpUrl })
 
-    await killProcessTree(proc)
-    await waitForProcessExit(proc, 5000)
+    await killProcessTree(proc.pid)
+    // 增加等待时间，确保 Windows 子进程（特别是 GPU 进程）释放文件句柄
+    await waitForProcessExit(proc, 15000)
 
-    const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
-    if (failed) {
+    // 强行终止命令行仍包含该测试配置目录的残留进程，避免 Windows
+    // 文件锁导致 cleanupTestConfigDir 出现 EPERM。
+    const { killed, failed } = await killProjectProcessesByPattern(process.cwd(), testConfigDir)
+    if (killed.length) {
+      console.log('[e2e] killed residual processes for config dir:', killed.join(', '))
+    }
+    if (failed.length) {
+      console.warn('[e2e] failed to kill residual processes for config dir:', failed.map(f => f.pid).join(', '))
+    }
+    if (killed.length || failed.length) {
+      // 给 WMIC/句柄释放留一点缓冲
+      await new Promise(r => setTimeout(r, 1000))
+    }
+
+    const testFailed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
+    if (testFailed) {
       console.log(`[e2e] test failed, keeping test library for inspection: ${testLibraryPath}`)
     }
     try {
-      await cleanupTestLibrary(testLibraryPath, failed)
+      await cleanupTestLibrary(testLibraryPath, testFailed)
     } catch (err) {
       console.warn('[e2e] failed to clean up test library:', testLibraryPath, err)
     }

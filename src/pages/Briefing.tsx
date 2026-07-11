@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { BriefingHistoryDrawer } from '@/components/BriefingHistoryDrawer'
@@ -7,10 +7,18 @@ import { BriefingProgress } from '@/components/BriefingProgress'
 import { BriefingError } from '@/components/BriefingError'
 import { BriefingHeader } from '@/components/BriefingHeader'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
+import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
 import { formatBriefingDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
-import { ACADEMIC_BODY_STYLES, NEWSPAPER_BODY_STYLES, ACADEMIC_HEADING_STYLES, NEWSPAPER_HEADING_STYLES } from '@/lib/briefing-font-size'
+import {
+  ACADEMIC_BODY_STYLES,
+  NEWSPAPER_BODY_STYLES,
+  ACADEMIC_HEADING_STYLES,
+  NEWSPAPER_HEADING_STYLES,
+} from '@/lib/briefing-font-size'
+
 export function formatDisplayDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   if ([y, m, d].some((n) => Number.isNaN(n))) return dateStr
@@ -37,18 +45,15 @@ export function Briefing() {
   const fontSize = useStore((s) => s.briefingFontSize)
   const generateBriefing = useStore((s) => s.generateBriefing)
   const stage = useStore((s) => s.briefingStage)
+  const source = useStore((s) => s.briefingSource)
   const { list: historyList, loading: historyLoading, error: historyError } = useStore((s) => s.briefingHistory)
   const loadBriefingHistory = useStore((s) => s.loadBriefingHistory)
+  const setBriefingSource = useStore((s) => s.setBriefingSource)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const today = formatBriefingDate(new Date())
-
-  useEffect(() => {
-    if (!result && !loading && !error) {
-      generateBriefing(today)
-    }
-  }, [result, loading, error, today, generateBriefing])
 
   const handleRegenerate = async () => {
     if (!result) return
@@ -63,7 +68,7 @@ export function Briefing() {
   const parsed = result ? parseBriefingMarkdown(result.content) : null
   const displayDate = useMemo(() => (result ? formatDisplayDate(result.date) : ''), [result])
 
-  const isAcademic = theme === 'academic'
+  const isAcademic = theme !== 'newspaper'
   const bodyStyle = isAcademic
     ? ACADEMIC_BODY_STYLES[fontSize]
     : NEWSPAPER_BODY_STYLES[fontSize]
@@ -85,109 +90,111 @@ export function Briefing() {
     },
   }
 
-  if (loading || (!result && !error)) {
-    return (
-      <div
-        data-testid="briefing-page"
-        className={`relative h-full flex flex-col overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
-        style={pageStyle}
-      >
-        {isAcademic && <SurfaceBackground surface="briefing" />}
-        <BriefingHeader
-          displayDate=""
-          {...headerHistoryProps}
-          showRegenerate
-          onRegenerate={() => generateBriefing(today, { force: true })}
-        />
-        <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
-          {stage ? (
-            <BriefingProgress stage={stage} />
-          ) : (
-            <BriefingSkeleton data-testid="briefing-skeleton" />
-          )}
-        </main>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div
-        data-testid="briefing-page"
-        className={`relative h-full flex flex-col overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
-        style={pageStyle}
-      >
-        {isAcademic && <SurfaceBackground surface="briefing" />}
-        <BriefingHeader
-          displayDate=""
-          {...headerHistoryProps}
-          showRegenerate
-          onRegenerate={() => generateBriefing(today, { force: true })}
-        />
-        <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
-          <div className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
-            <BriefingError
-              code={error}
-              onRetry={() => generateBriefing(today, { force: true })}
-            />
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  if (!parsed || !result) return null
+  const isDigestLoading = source === 'digest' && loading
+  const isDigestError = source === 'digest' && error
+  const emptyState = source === 'digest' && !result && !loading && !error
 
   return (
     <div
       data-testid="briefing-page"
-      className={`relative h-full flex flex-col overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
+      className={`relative h-full flex overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
       style={pageStyle}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
-      {isAcademic && (
-        <div
-          className="fixed inset-0 z-[1] bg-[#0c0806]/[0.72] pointer-events-none"
-          aria-hidden="true"
+      <BriefingSourceSidebar
+        theme={theme}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((c) => !c)}
+      />
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {isAcademic && (
+          <div className="absolute top-24 right-4 z-10">
+            <SwapPaintingButton
+              surface="briefing"
+              data-testid="briefing-swap-painting-button"
+              className="text-parchment/70 hover:text-parchment"
+            />
+          </div>
+        )}
+        <BriefingHeader
+          displayDate={source === 'anthropic' ? 'Anthropic Engineering' : displayDate}
+          timeString={
+            source === 'digest' && result?.generatedAt
+              ? formatGeneratedAt(result.generatedAt, result.date)
+              : undefined
+          }
+          sourceStatus={source === 'digest' ? result?.sourceStatus : undefined}
+          cacheWriteFailed={source === 'digest' ? result?.cacheWriteFailed : undefined}
+          onRegenerate={source === 'digest' ? handleRegenerate : undefined}
+          regenerating={regenerating}
+          {...headerHistoryProps}
+          showRegenerate={source === 'digest'}
         />
-      )}
 
-      <BriefingHeader
-        displayDate={displayDate}
-        timeString={result.generatedAt ? formatGeneratedAt(result.generatedAt, result.date) : undefined}
-        sourceStatus={result.sourceStatus}
-        cacheWriteFailed={result.cacheWriteFailed}
-        onRegenerate={handleRegenerate}
-        regenerating={regenerating}
-        {...headerHistoryProps}
-        showRegenerate
-      />
+        {source === 'anthropic' ? (
+          <AnthropicBlogPanel theme={theme} />
+        ) : emptyState ? (
+          <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
+            <div className="text-center">
+              <p className={`mb-6 ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
+                今日夜航简报尚未生成
+              </p>
+              <button
+                data-testid="briefing-receive-digest-button"
+                onClick={() => generateBriefing(today)}
+                className={`px-8 py-3 rounded text-[15px] font-serif transition-colors ${
+                  isAcademic
+                    ? 'bg-ember text-white hover:bg-ember/90'
+                    : 'bg-[#1a1a1a] text-white hover:bg-[#333]'
+                }`}
+              >
+                查收日报
+              </button>
+            </div>
+          </main>
+        ) : isDigestLoading ? (
+          <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
+            {stage ? (
+              <BriefingProgress stage={stage} />
+            ) : (
+              <BriefingSkeleton data-testid="briefing-skeleton" />
+            )}
+          </main>
+        ) : isDigestError ? (
+          <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
+            <div className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
+              <BriefingError
+                code={error}
+                onRetry={() => generateBriefing(today, { force: true })}
+              />
+            </div>
+          </main>
+        ) : parsed && result ? (
+          <>
+            {isAcademic ? (
+              <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />
+            ) : (
+              <NewspaperBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />
+            )}
+          </>
+        ) : null}
 
-      {isAcademic && (
-        <div className="absolute top-24 right-4 z-10">
-          <SwapPaintingButton
-            surface="briefing"
-            data-testid="briefing-swap-painting-button"
-            className="text-parchment/70 hover:text-parchment"
-          />
-        </div>
-      )}
-
-      {isAcademic ? (
-        <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />
-      ) : (
-        <NewspaperBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />
-      )}
-
-      <BriefingHistoryDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        currentDate={result.date}
-        history={historyList}
-        loading={historyLoading}
-        error={historyError}
-        onSelect={(date) => generateBriefing(date)}
-      />
+        <BriefingHistoryDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          currentDate={result?.date ?? today}
+          history={historyList}
+          loading={historyLoading}
+          error={historyError}
+          onSelect={async (date) => {
+            if (source !== 'digest') {
+              await setBriefingSource('digest')
+            }
+            await generateBriefing(date)
+          }}
+        />
+      </div>
     </div>
   )
 }

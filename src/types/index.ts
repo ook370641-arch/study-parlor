@@ -45,7 +45,76 @@ export type Terminology = {
   startButton?: string
   cancelButton?: string
 }
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials'
+export type AnthropicArticleMeta = {
+  url: string
+  title: string
+  summary: string | null
+  publishedAt: string | null
+  imageUrl: string | null
+  isSaved?: boolean
+  filePath?: string
+}
+
+export type AnthropicErrorCode =
+  | 'browser-init-failed'
+  | 'network-error'
+  | 'parse-error'
+  | 'import-failed'
+  | 'cancelled'
+  | 'unknown'
+
+export type AnthropicError = {
+  code: AnthropicErrorCode
+  message: string
+}
+
+export type AnthropicBlogCache = {
+  lastFetchedAt: string | null
+  articles: AnthropicArticleMeta[]
+  loading: boolean
+  error: AnthropicError | null
+}
+
+export type ArticleAssistantTerm = {
+  term: string
+  translation: string
+  explanation: string
+}
+
+export type ArticleAssistantChunk = {
+  heading: string
+  summary: string
+  terms: ArticleAssistantTerm[]
+}
+
+export type ArticleAssistantGuide = {
+  background: string
+  chunks: ArticleAssistantChunk[]
+}
+
+export type ArticleAssistantMessage = {
+  role: 'user' | 'assistant'
+  content: string
+  searchSources?: { title: string; url: string; snippet: string }[]
+}
+
+export type ArticleAssistantSessionFile = {
+  filePath: string
+  messages: ArticleAssistantMessage[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type ArticleAssistantErrorCode =
+  | 'GUIDE_LLM_ERROR'
+  | 'GUIDE_JSON_ERROR'
+  | 'GUIDE_ABORT'
+  | 'CHAT_LLM_ERROR'
+  | 'CHAT_NETWORK_ERROR'
+  | 'CHAT_TIMEOUT'
+  | 'SAVE_ERROR'
+
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'article-assistant'
 
 export type Profile = {
   name: string
@@ -68,6 +137,12 @@ export type Frontmatter = {
   summary?: string
   sources?: SearchSource[]
   topic?: string
+  source_url?: string
+  published_at?: string
+  imported_at?: string
+  authors?: string[]
+  parent_path?: string
+  parent_type?: 'briefing' | 'anthropic-article'
 }
 
 export type Group = {
@@ -232,11 +307,15 @@ export type StateJson = {
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
   externalSummaryFontSize?: BriefingFontSize
+  briefingSource?: 'digest' | 'anthropic'
+  anthropicBlogCache?: AnthropicBlogCache
+  anthropicBlogLastSeenAt?: string | null
 }
 
 export type IpcApi = {
   scanLibrary: () => Promise<TopicMeta[]>
   readMd: (path: string) => Promise<{ frontmatter: Frontmatter; body: string }>
+  readAssetAsDataUrl: (mdFilePath: string, relativePath: string) => Promise<string>
   writeProgressMd: (args: { title: string; description?: string; body: string; difficulty: Difficulty; dirName: string; session_number: number; progress_summary?: string }) => Promise<{ file_path: string }>
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
@@ -347,6 +426,49 @@ export type IpcApi = {
     preferred_topics?: string[]
   }) => Promise<void>
   onSetupDone: (cb: () => void) => () => void
+
+  // Anthropic blog
+  anthropicDiscover: () => Promise<
+    | { ok: true; lastFetchedAt: string; articles: AnthropicArticleMeta[] }
+    | { ok: false; code: AnthropicErrorCode; message: string }
+  >
+  anthropicImportArticle: (url: string) => Promise<
+    | { ok: true; filePath: string; wasAlreadySaved: boolean }
+    | { ok: false; code: AnthropicErrorCode; message: string }
+  >
+  anthropicCancelImport: () => Promise<void>
+
+  // Article assistant
+  articleAssistantGenerateGuide: (args: {
+    articleContent: string
+    articleType: 'briefing' | 'anthropic-article'
+    articleTitle?: string
+  }) => Promise<ArticleAssistantGuide>
+
+  articleAssistantSendMessage: (args: {
+    sessionId: string
+    articleContent: string
+    articleType: 'briefing' | 'anthropic-article'
+    messages: ArticleAssistantMessage[]
+    selection?: string
+    useSearch?: boolean
+  }) => Promise<void>
+
+  articleAssistantAbort: (args: { sessionId: string }) => Promise<void>
+
+  articleAssistantReadSession: (args: {
+    parentPath: string
+    parentType: 'briefing' | 'anthropic-article'
+  }) => Promise<ArticleAssistantSessionFile | null>
+
+  articleAssistantWriteSession: (args: {
+    parentPath: string
+    parentType: 'briefing' | 'anthropic-article'
+    messages: ArticleAssistantMessage[]
+  }) => Promise<{ filePath: string }>
+
+  // App shell
+  openExternal: (url: string) => Promise<void>
 }
 
 export type Painting = {

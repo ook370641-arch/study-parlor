@@ -84,6 +84,12 @@ const api: IpcApi = {
   briefingGenerate: (args) => ipcRenderer.invoke('briefing:generate', args),
   briefingList: () => ipcRenderer.invoke('briefing:list'),
 
+  anthropicDiscover: () => ipcRenderer.invoke('anthropic:discover'),
+  anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
+  anthropicCancelImport: () => ipcRenderer.invoke('anthropic:cancelImport'),
+
+  openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+
   onBriefingProgress: (cb) => {
     const handler = (_: unknown, stage: BriefingStage, detail?: string) => cb(stage, detail)
     ipcRenderer.on('briefing:progress', handler)

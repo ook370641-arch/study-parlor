@@ -17,7 +17,10 @@ const DEFAULT: StateJson = {
   inspirationStrategy: 'v2',
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
   lastFableTags: [],
-  topicContinueSuggestions: {}
+  topicContinueSuggestions: {},
+  briefingSource: 'digest',
+  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
+  anthropicBlogLastSeenAt: null,
 }
 
 let currentState: StateJson | null = null

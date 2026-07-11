@@ -7,8 +7,9 @@ export function detectDocType(content: string, fileName: string): DocType {
   try {
     const { data } = matter(content)
     const type = data?.type
-    if (type === 'progress' || type === 'review') return 'report'
+    if (type === 'progress' || type === 'review' || type === 'anthropic-article') return 'report'
     if (type === 'fable') return 'fable'
+    if (type === 'article-assistant') return 'dialogue'
   } catch {
     // ignore parse errors
   }

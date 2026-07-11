@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { killProjectProcessesByPattern } from './process-cleanup'
 
 const TEST_LIBRARY_ROOT = path.join(process.cwd(), 'e2e', '.test-library')
 const TEST_CONFIG_ROOT = path.join(process.cwd(), 'e2e', '.test-config')
+const OLD_DIR_MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 export function createTestLibrary(): string {
+  cleanupOldTestDirs(TEST_LIBRARY_ROOT)
   const id = `${Date.now()}-${randomUUID()}`
   const dir = path.join(TEST_LIBRARY_ROOT, id)
   fs.mkdirSync(dir, { recursive: true })
@@ -18,6 +21,7 @@ export async function cleanupTestLibrary(dir: string, keepOnFailure: boolean = f
 }
 
 export function createTestConfigDir(): string {
+  cleanupOldTestDirs(TEST_CONFIG_ROOT)
   const id = `${Date.now()}-${randomUUID()}`
   const dir = path.join(TEST_CONFIG_ROOT, id)
   fs.mkdirSync(dir, { recursive: true })
@@ -38,22 +42,139 @@ export function createTestConfigDir(): string {
 
 export async function cleanupTestConfigDir(dir: string, keepOnFailure: boolean = false): Promise<void> {
   if (keepOnFailure) return
-  await retryRm(dir)
+  // 先终止任何仍锁定该测试配置目录的残留 Electron 进程，再尝试删除。
+  // 这是 Windows 上避免 EPERM 的最后一道保险。
+  try {
+    const killed = await killProjectProcessesByPattern(process.cwd(), dir)
+    if (killed.length) {
+      console.log('[e2e] killed residual processes before config dir cleanup:', killed.join(', '))
+      // Windows may need a few seconds to release file handles after the
+      // processes are gone; give it a generous buffer before retrying rm.
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+    }
+  } catch (err) {
+    console.warn('[e2e] failed to kill residual processes for config dir:', dir, err)
+  }
+  await retryRm(dir, {
+    onRetry: async () => {
+      try {
+        const killed = await killProjectProcessesByPattern(process.cwd(), dir)
+        if (killed.length) {
+          console.log('[e2e] killed residual processes during retry:', killed.join(', '))
+        }
+      } catch {}
+    },
+  })
 }
 
-async function retryRm(dir: string, timeoutMs = 10000, intervalMs = 500): Promise<void> {
+async function retryRm(
+  dir: string,
+  options: { timeoutMs?: number; intervalMs?: number; onRetry?: () => void | Promise<void> } = {}
+): Promise<void> {
+  const { timeoutMs = 30000, intervalMs = 200, onRetry } = options
+
   const deadline = Date.now() + timeoutMs
   let lastErr: unknown
+  let attempts = 0
   while (Date.now() < deadline) {
     try {
       fs.rmSync(dir, { recursive: true, force: true })
       return
     } catch (err) {
       lastErr = err
+      attempts++
+      // Periodically ask the caller to release external locks (e.g. kill
+      // lingering Electron processes on Windows) instead of waiting passively.
+      if (onRetry && attempts % 25 === 0) {
+        try {
+          await onRetry()
+        } catch {}
+      }
+      // On Windows a single locked file can prevent removing the whole tree.
+      // Delete everything we can so the debris is minimal; the next run's
+      // age-out cleanup will finish the rest.
+      try {
+        removeAsMuchAsPossible(dir)
+      } catch {}
       await new Promise((resolve) => setTimeout(resolve, intervalMs))
     }
   }
-  throw lastErr
+
+  // Last resort: rename the locked directory so it does not block future
+  // test runs and can be picked up by the age-out cleanup later. If even
+  // renaming fails (directory is still locked), leave it for the age-out
+  // cleanup rather than failing the test run.
+  const staleName = `${dir}.stale-${Date.now()}`
+  try {
+    fs.renameSync(dir, staleName)
+    console.warn(`[e2e] could not remove locked dir, renamed to ${staleName}`)
+    return
+  } catch (renameErr) {
+    console.warn(`[e2e] could not remove or rename locked dir ${dir}:`, renameErr)
+  }
+}
+
+function removeAsMuchAsPossible(dir: string): void {
+  if (!fs.existsSync(dir)) return
+  for (const entry of fs.readdirSync(dir)) {
+    const fullPath = path.join(dir, entry)
+    try {
+      const stat = fs.statSync(fullPath)
+      if (stat.isDirectory()) {
+        removeAsMuchAsPossible(fullPath)
+        fs.rmdirSync(fullPath)
+      } else {
+        fs.unlinkSync(fullPath)
+      }
+    } catch {
+      // ignore locked files or directories
+    }
+  }
+}
+
+function cleanupOldTestDirs(root: string): void {
+  if (!fs.existsSync(root)) return
+  const now = Date.now()
+  for (const entry of fs.readdirSync(root)) {
+    const fullPath = path.join(root, entry)
+    try {
+      const stat = fs.statSync(fullPath)
+      const age = now - stat.mtimeMs
+      if (age > OLD_DIR_MAX_AGE_MS) {
+        fs.rmSync(fullPath, { recursive: true, force: true })
+        console.log(`[e2e] cleaned up old test dir: ${fullPath}`)
+      }
+    } catch (err) {
+      // If a directory is locked by a running test, skip it silently.
+      console.warn(`[e2e] skipped cleanup of ${fullPath}:`, err)
+    }
+  }
+}
+
+/**
+ * Force cleanup of all test directories older than maxAgeMs.
+ * Useful for CI or manual recovery when Windows file locks have left debris.
+ */
+export function forceCleanupOldTestDirs(maxAgeMs: number = OLD_DIR_MAX_AGE_MS): void {
+  cleanupOldTestDirsWithAge(TEST_LIBRARY_ROOT, maxAgeMs)
+  cleanupOldTestDirsWithAge(TEST_CONFIG_ROOT, maxAgeMs)
+}
+
+function cleanupOldTestDirsWithAge(root: string, maxAgeMs: number): void {
+  if (!fs.existsSync(root)) return
+  const now = Date.now()
+  for (const entry of fs.readdirSync(root)) {
+    const fullPath = path.join(root, entry)
+    try {
+      const stat = fs.statSync(fullPath)
+      const age = now - stat.mtimeMs
+      if (age > maxAgeMs) {
+        fs.rmSync(fullPath, { recursive: true, force: true })
+      }
+    } catch {
+      // ignore
+    }
+  }
 }
 
 function validateSlug(slug: string): void {
@@ -332,6 +453,9 @@ const BASE_STATE = {
   pendingArchives: [],
   archiveResult: null,
   terminology: {},
+  briefingSource: 'digest',
+  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
+  anthropicBlogLastSeenAt: null,
 }
 
 export function seedStateJson(

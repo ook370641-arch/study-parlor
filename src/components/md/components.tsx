@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react'
 import type { Components } from 'react-markdown'
+import { ipc } from '@/lib/ipc'
 
 // ===== Section label mapping =====
 const sectionLabelMap: Record<string, string> = {
@@ -63,7 +65,22 @@ const baseComponents: Components = {
   hr: () => <hr />,
   strong: ({ children }) => <strong>{children}</strong>,
   em: ({ children }) => <em>{children}</em>,
-  a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>,
+  a: ({ href, children }) => {
+    if (href?.toLowerCase().startsWith('file://')) {
+      return <span className="text-current/70">{children}</span>
+    }
+    const handleClick = (e: React.MouseEvent) => {
+      if (href && /^https?:\/\//i.test(href)) {
+        e.preventDefault()
+        ipc.openExternal(href).catch((err) => console.error('[openExternal]', err))
+      }
+    }
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" onClick={handleClick}>
+        {children}
+      </a>
+    )
+  },
   table: ({ children }) => <table>{children}</table>,
   thead: ({ children }) => <thead>{children}</thead>,
   tbody: ({ children }) => <tbody>{children}</tbody>,
@@ -79,6 +96,34 @@ const baseComponents: Components = {
       </pre>
     )
   },
+  img: ({ src, alt }) => <MdImage src={src} alt={alt} />,
+}
+
+// ===== Image with error placeholder =====
+function MdImage({ src, alt }: { src?: string; alt?: string }) {
+  const [error, setError] = useState(false)
+  useEffect(() => {
+    setError(false)
+  }, [src])
+  if (error) {
+    return (
+      <span
+        data-testid="md-image-error"
+        className="inline-block min-w-[120px] min-h-[80px] px-3 py-2 rounded border border-dashed border-current/30 text-current/50 text-sm"
+      >
+        图片加载失败
+      </span>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt={alt ?? ''}
+      className="max-w-full h-auto rounded my-4 block"
+      onError={() => setError(true)}
+      loading="lazy"
+    />
+  )
 }
 
 // ===== Dialogue paragraph parser =====

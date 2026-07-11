@@ -7,6 +7,7 @@ import { loadEnv, saveEnv, setConfigDir, setStateDir, getEnvPath } from './env'
 import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
 import { patchState } from './ipc/state'
+import { resolveAppPaths } from './lib/app-paths'
 
 // In packaged builds cwd is not writable for our config — macOS launches the
 // .app with cwd=/ (read-only system volume → EROFS), Windows uses the install
@@ -18,22 +19,24 @@ import { patchState } from './ipc/state'
 // share the same profile.
 //
 // E2E tests can override both dirs for full isolation.
-if (process.env.E2E_CONFIG_DIR) {
-  setConfigDir(process.env.E2E_CONFIG_DIR)
-  setStateDir(process.env.E2E_CONFIG_DIR)
-  // E2E tests force-kill the Electron process (taskkill /F /T).  Chromium's
-  // caches / databases in the default userData directory are then left in an
-  // unclean state, which slows down the next dev/packaged launch while
-  // Chromium tries to recover them.  Redirect userData and cache under the
-  // per-test E2E_CONFIG_DIR so they are deleted together with the test temp
-  // directory and never shared with dev mode.
-  app.setPath('userData', path.join(process.env.E2E_CONFIG_DIR, 'userData'))
-  app.setPath('cache', path.join(process.env.E2E_CONFIG_DIR, 'cache'))
-} else if (app.isPackaged) {
-  setConfigDir(path.join(os.homedir(), '.studyparlor'))
-  // stateDir already defaults to ~/.studyparlor.
+const paths = resolveAppPaths({
+  cwd: process.cwd(),
+  homeDir: os.homedir(),
+  e2eConfigDir: process.env.E2E_CONFIG_DIR,
+  isPackaged: app.isPackaged,
+})
+
+setConfigDir(paths.configDir)
+setStateDir(paths.stateDir)
+
+if (process.env.E2E_CONFIG_DIR || !app.isPackaged) {
+  // Only override userData/cache for isolated environments (E2E and dev).
+  // Packaged builds keep Electron defaults under %APPDATA%/study-parlor.
+  fs.mkdirSync(paths.userData, { recursive: true })
+  fs.mkdirSync(paths.cache, { recursive: true })
+  app.setPath('userData', paths.userData)
+  app.setPath('cache', paths.cache)
 }
-// Dev mode: configDir defaults to cwd (reads ./.env), stateDir defaults to ~/.studyparlor.
 
 dotenv.config({ path: getEnvPath() })
 
@@ -55,6 +58,7 @@ function bootTs(): string {
 }
 
 const isDev = !!process.env.ELECTRON_RENDERER_URL
+const isE2ESilent = process.env.E2E_SILENT === '1'
 
 if (isDev) {
   app.commandLine.appendSwitch('remote-debugging-port', '9222')
@@ -114,6 +118,7 @@ async function bootstrap() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    show: !isE2ESilent,
     backgroundColor: '#2a1f1a',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -121,7 +126,9 @@ async function bootstrap() {
       nodeIntegration: false
     }
   })
-  mainWindow.maximize()
+  if (!isE2ESilent) {
+    mainWindow.maximize()
+  }
   console.log('[bootstrap] window created', bootTs())
 
   mainWindow.webContents.on('did-start-loading', () => {
@@ -169,8 +176,8 @@ async function bootstrap() {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           isDev
-            ? "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
-            : "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
+            ? "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
+            : "default-src 'self'; script-src 'self'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
         ]
       }
     })
@@ -319,7 +326,7 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   console.time('[bootstrap] stage: register IPC')
   console.log('[bootstrap] stage: register IPC', bootTs())
   registerAllIpc(cfg, () => mainWindow)
-  await animate('注册服务', 0, 15, 300)
+  await animate('注册服务', 0, 15, 150)  // 从 300 改为 150
   console.timeEnd('[bootstrap] stage: register IPC')
 
   // ===== 阶段 2: 探活模型（网络请求，最耗时）=====
@@ -342,19 +349,19 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   // ===== 阶段 3: 扫描学习库 =====
   console.time('[bootstrap] stage: scan library')
   console.log('[bootstrap] stage: scan library', bootTs())
-  await animate('扫描学习库', 50, 75, 500)
+  await animate('扫描学习库', 50, 75, 250)  // 从 500 改为 250
   console.timeEnd('[bootstrap] stage: scan library')
 
   // ===== 阶段 4: 初始化状态 =====
   console.time('[bootstrap] stage: init state')
   console.log('[bootstrap] stage: init state', bootTs())
-  await animate('初始化状态', 75, 95, 400)
+  await animate('初始化状态', 75, 95, 200)  // 从 400 改为 200
   console.timeEnd('[bootstrap] stage: init state')
 
   // ===== 阶段 5: 就绪 =====
   console.time('[bootstrap] stage: ready')
   console.log('[bootstrap] stage: ready', bootTs())
-  await animate('就绪', 95, 100, 300)
+  await animate('就绪', 95, 100, 150)  // 从 300 改为 150
   sendComplete()
   console.timeEnd('[bootstrap] stage: ready')
   console.log('[bootstrap] boot sequence total:', Date.now() - bootSeqStart, 'ms', bootTs())
@@ -366,7 +373,19 @@ app.whenReady().then(() => {
 })
 app.on('window-all-closed', () => {
   mainWindow = null
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin') {
+    // In dev mode, explicitly close any remaining webContents and exit.
+    // This prevents electron.exe from lingering when the user clicks the
+    // window close button, which would otherwise keep the DevTools port
+    // and Vite dev-server connections alive.
+    for (const wc of BrowserWindow.getAllWindows().map(w => w.webContents)) {
+      if (!wc.isDestroyed()) wc.close()
+    }
+    app.quit()
+  }
+})
+app.on('before-quit', () => {
+  console.log('[bootstrap] app before-quit')
 })
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) bootstrap()
