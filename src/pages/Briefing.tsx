@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
-import { BriefingHistoryDrawer } from '@/components/BriefingHistoryDrawer'
+import { BriefingListColumn } from '@/components/BriefingListColumn'
+import { BriefingDateColumn } from '@/components/BriefingDateColumn'
 import { BriefingSkeleton } from '@/components/BriefingSkeleton'
 import { BriefingProgress } from '@/components/BriefingProgress'
 import { BriefingError } from '@/components/BriefingError'
@@ -47,10 +48,9 @@ export function Briefing() {
   const generateBriefing = useStore((s) => s.generateBriefing)
   const stage = useStore((s) => s.briefingStage)
   const source = useStore((s) => s.briefingSource)
-  const { list: historyList, loading: historyLoading, error: historyError } = useStore((s) => s.briefingHistory)
-  const setBriefingSource = useStore((s) => s.setBriefingSource)
+  const { list: historyList } = useStore((s) => s.briefingHistory)
   const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const today = formatBriefingDate(new Date())
@@ -95,6 +95,26 @@ export function Briefing() {
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((c) => !c)}
       />
+
+      {source === 'digest' && (
+        <BriefingListColumn
+          collapsed={dateColumnCollapsed}
+          onToggle={() => setDateColumnCollapsed((c) => !c)}
+          theme={theme}
+          width={64}
+          title="日期"
+        >
+          <BriefingDateColumn
+            collapsed={dateColumnCollapsed}
+            history={historyList}
+            currentDate={result?.date}
+            today={today}
+            onSelect={(date) => generateBriefing(date)}
+            onReceiveToday={() => generateBriefing(today)}
+            theme={theme}
+          />
+        </BriefingListColumn>
+      )}
 
       <div className="flex-1 flex flex-col min-w-0">
         {isAcademic && (
@@ -164,21 +184,6 @@ export function Briefing() {
             )}
           </>
         ) : null}
-
-        <BriefingHistoryDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          currentDate={result?.date ?? today}
-          history={historyList}
-          loading={historyLoading}
-          error={historyError}
-          onSelect={async (date) => {
-            if (source !== 'digest') {
-              await setBriefingSource('digest')
-            }
-            await generateBriefing(date)
-          }}
-        />
       </div>
 
       {source === 'digest' && result?.filePath && (
