@@ -456,6 +456,8 @@ const BASE_STATE = {
   briefingSource: 'digest',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicBlogLastSeenAt: null,
+  articleAssistantGuideWidth: 320,
+  articleAssistantGuideCollapsed: false,
 }
 
 export function seedStateJson(
@@ -544,6 +546,56 @@ tags:
 
 `
   fs.writeFileSync(filePath, fm + defaultContent, 'utf8')
+}
+
+export function seedAnthropicArticle(
+  libPath: string,
+  slug: string,
+  title: string,
+  body: string = '正文占位。',
+  extraFrontmatter: Record<string, unknown> = {}
+): string {
+  validateSlug(slug)
+  const dir = path.join(libPath, 'Anthropic博客')
+  fs.mkdirSync(dir, { recursive: true })
+  const filePath = path.join(dir, `${slug}.md`)
+  const frontmatter = {
+    title,
+    type: 'anthropic-article',
+    source_url: `https://www.anthropic.com/engineering/${slug}`,
+    created: new Date().toISOString(),
+    published_at: new Date().toISOString(),
+    ...extraFrontmatter,
+  }
+  const fmLines = Object.entries(frontmatter)
+    .map(([key, value]) => {
+      if (Array.isArray(value)) {
+        return `${key}:\n${value.map((v) => `  - ${v}`).join('\n')}`
+      }
+      return `${key}: ${value}`
+    })
+    .join('\n')
+  const content = `---\n${fmLines}\n---\n\n${body}\n`
+  fs.writeFileSync(filePath, content, 'utf8')
+  return filePath
+}
+
+export function seedAnthropicArticleWithImage(
+  libPath: string,
+  slug: string,
+  title: string,
+  body: string = '正文占位。',
+  extraFrontmatter: Record<string, unknown> = {}
+): { filePath: string; assetPath: string } {
+  const filePath = seedAnthropicArticle(libPath, slug, title, body, extraFrontmatter)
+  const assetsDir = path.join(path.dirname(filePath), '.assets')
+  fs.mkdirSync(assetsDir, { recursive: true })
+  // 1x1 red PNG used as a deterministic image asset for E2E assertions.
+  const assetPath = path.join(assetsDir, 'image.png')
+  const pngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVQIHWP4DwABAQEAGbBRyQAAAABJRU5ErkJggg=='
+  fs.writeFileSync(assetPath, Buffer.from(pngBase64, 'base64'))
+  return { filePath, assetPath }
 }
 
 export function seedUnsavedSession(

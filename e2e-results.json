@@ -1,0 +1,4 @@
+
+> study-parlor@1.1.0 test:e2e
+> playwright test --config e2e/playwright.config.ts --reporter=json
+

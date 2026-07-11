@@ -117,6 +117,8 @@ test.describe('@p1 briefing real generation chain', () => {
 
       const cover = new CoverPage(window)
       await cover.goToBriefing()
+      // Current code no longer auto-generates on mount; explicitly trigger generation.
+      await window.locator(SELECTORS.briefing.receiveDigestButton).click()
 
       await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 30000 })
       await expect(window.locator(SELECTORS.briefing.academicLayout)).toContainText('Enterprise LLM summary')

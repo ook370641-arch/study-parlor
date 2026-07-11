@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { seedStateJson } from '../helpers/test-library'
+import { SELECTORS } from '../helpers/selectors'
 
 test.describe('@real briefing — real API chain', () => {
   // Disable the E2E mock so briefing exercises real feeds + LLM.
@@ -20,6 +21,8 @@ test.describe('@real briefing — real API chain', () => {
     // Do NOT call enterIfNeeded because it clicks "点亮灯火" which navigates AWAY from cover.
     await cover.briefingButton.waitFor({ state: 'visible', timeout: 15000 })
     await cover.goToBriefing()
+    // Current code no longer auto-generates on mount; explicitly trigger generation.
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
 
     // Briefing generation may take 60-120s. Wait for either academic layout (success)
     // or error display (failure).

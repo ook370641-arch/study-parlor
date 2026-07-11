@@ -1,5 +1,6 @@
 const { spawn, exec } = require('node:child_process')
 const path = require('node:path')
+const fs = require('node:fs')
 const { promisify } = require('node:util')
 
 const execAsync = promisify(exec)
@@ -29,7 +30,8 @@ async function listProjectProcesses(projectRoot, pattern) {
       { maxBuffer: 5 * 1024 * 1024 }
     )
     return parseWin32Json(stdout, projectRoot, pattern)
-  } catch {
+  } catch (err) {
+    console.warn('[process-cleanup] failed to enumerate processes:', err.message)
     return []
   }
 }
@@ -100,12 +102,17 @@ function isProjectProcess(commandLine, name, projectRoot, pattern) {
 async function killProjectProcessesByPattern(projectRoot, pattern) {
   const processes = await listProjectProcesses(projectRoot, pattern)
   const killed = []
+  const failed = []
   for (const proc of processes) {
     if (proc.pid === process.pid) continue
     const success = await killProcessTree(proc.pid, 10000)
-    if (success) killed.push(proc.pid)
+    if (success) {
+      killed.push(proc.pid)
+    } else {
+      failed.push(proc)
+    }
   }
-  return killed
+  return { killed, failed }
 }
 
 /**
@@ -157,7 +164,11 @@ async function killProcessTree(pid, timeoutMs = 10000) {
       if (!(await isProcessRunning(pid))) return true
       await sleep(200)
     }
-    return !(await isProcessRunning(pid))
+    const stillRunning = await isProcessRunning(pid)
+    if (stillRunning) {
+      console.warn(`[process-cleanup] failed to kill process tree ${pid} after ${timeoutMs}ms`)
+    }
+    return !stillRunning
   }
 
   try {
@@ -172,14 +183,21 @@ async function killProcessTree(pid, timeoutMs = 10000) {
     process.kill(-pid, 'SIGKILL')
   } catch {}
   await sleep(500)
-  return !(await isProcessRunning(pid))
+  const stillRunning = await isProcessRunning(pid)
+  if (stillRunning) {
+    console.warn(`[process-cleanup] failed to kill process tree ${pid}`)
+  }
+  return !stillRunning
 }
 
 function runTaskkill(pid) {
   return new Promise((resolve) => {
     const killer = spawn('taskkill', ['/F', '/T', '/PID', String(pid)], { stdio: 'ignore' })
     killer.on('exit', () => resolve())
-    killer.on('error', () => resolve())
+    killer.on('error', (err) => {
+      console.warn(`[process-cleanup] taskkill ${pid} error:`, err.message)
+      resolve()
+    })
     setTimeout(() => resolve(), 5000)
   })
 }
@@ -215,20 +233,70 @@ function sleep(ms) {
 /**
  * 清理当前项目相关的孤儿进程。
  * 会保留 currentPids 中指定的进程（通常是当前 dev.js 自己和它直接启动的子进程）。
+ * 返回 { killed: pid[], failed: proc[] }，failed 项包含失败进程的完整信息。
  */
 async function cleanupProjectOrphans(projectRoot, currentPids = []) {
   const pidsToKeep = new Set(currentPids)
   const processes = await listProjectProcesses(projectRoot)
   const killed = []
+  const failed = []
   for (const proc of processes) {
     if (pidsToKeep.has(proc.pid)) continue
     if (proc.pid === process.pid) continue
     const success = await killProcessTree(proc.pid, 10000)
     if (success) {
       killed.push(proc.pid)
+    } else {
+      failed.push(proc)
+      console.warn(`[process-cleanup] failed to kill orphan ${proc.pid} (${proc.name}): ${proc.commandLine}`)
     }
   }
-  return killed
+  return { killed, failed }
+}
+
+/**
+ * 彻底清理开发环境：杀掉所有项目相关进程、释放指定端口、删除 dev cache。
+ * 用于 `npm run dev:clean` 这种手动恢复命令。
+ */
+async function forceCleanupDevEnvironment(projectRoot, options = {}) {
+  const { ports = [], cacheDir = null, currentPids = [] } = options
+  console.log('[dev:clean] scanning for project processes...')
+  const { killed, failed } = await cleanupProjectOrphans(projectRoot, currentPids)
+  if (killed.length > 0) {
+    console.log(`[dev:clean] killed ${killed.length} project process(es): ${killed.join(', ')}`)
+  }
+  if (failed.length > 0) {
+    console.warn(`[dev:clean] failed to kill ${failed.length} project process(es):`)
+    for (const proc of failed) {
+      console.warn(`  - ${proc.pid} ${proc.name}: ${proc.commandLine}`)
+    }
+  }
+
+  for (const port of ports) {
+    const listeners = await findPortListeners(port)
+    const external = listeners.filter(pid => !currentPids.includes(pid))
+    if (external.length === 0) continue
+    console.warn(`[dev:clean] port ${port} still occupied by pids: ${external.join(', ')}`)
+    for (const pid of external) {
+      const success = await killProcessTree(pid, 10000)
+      if (success) {
+        console.log(`[dev:clean] freed port ${port} by killing pid ${pid}`)
+      } else {
+        console.warn(`[dev:clean] could not free port ${port}: pid ${pid} survived`)
+      }
+    }
+  }
+
+  if (cacheDir) {
+    try {
+      fs.rmSync(cacheDir, { recursive: true, force: true })
+      console.log(`[dev:clean] removed cache dir: ${cacheDir}`)
+    } catch (err) {
+      console.warn(`[dev:clean] failed to remove cache dir: ${cacheDir}`, err.message)
+    }
+  }
+
+  return { killed, failed }
 }
 
 module.exports = {
@@ -238,4 +306,5 @@ module.exports = {
   isProcessRunning,
   cleanupProjectOrphans,
   killProjectProcessesByPattern,
+  forceCleanupDevEnvironment,
 }

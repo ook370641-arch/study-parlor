@@ -105,6 +105,18 @@ export type ArticleAssistantSessionFile = {
   updatedAt: string
 }
 
+export type ArticleChunk = {
+  heading: string
+  body: string
+  startIndex: number
+}
+
+export type ArticleAssistantGuideFile = {
+  filePath: string
+  guide: ArticleAssistantGuide
+  generatedAt: string
+}
+
 export type ArticleAssistantErrorCode =
   | 'GUIDE_LLM_ERROR'
   | 'GUIDE_JSON_ERROR'
@@ -114,7 +126,7 @@ export type ArticleAssistantErrorCode =
   | 'CHAT_TIMEOUT'
   | 'SAVE_ERROR'
 
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'article-assistant'
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'article-assistant' | 'job-briefing'
 
 export type Profile = {
   name: string
@@ -144,7 +156,12 @@ export type Frontmatter = {
   imported_at?: string
   authors?: string[]
   parent_path?: string
-  parent_type?: 'briefing' | 'anthropic-article'
+  parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing'
+  generated_at?: string
+  role_keywords?: string[]
+  cities?: string[]
+  companies?: string[]
+  job_sources?: string
 }
 
 export type Group = {
@@ -258,13 +275,15 @@ export type BriefingFontSize =
   | '6xl'
   | '7xl'
 
-export type BriefingSourceStatus = {
-  x: 'ok' | 'failed'
-  podcasts: 'ok' | 'failed'
-  blogs: 'ok' | 'failed'
-}
+export type BriefingSourceStatus = Record<string, 'ok' | 'failed'>
 
-export type BriefingStage = 'fetching' | 'extracting' | 'assembling' | 'finalizing' | 'done'
+export type BriefingStage =
+  | 'fetching'
+  | 'extracting'
+  | 'assembling'
+  | 'finalizing'
+  | 'done'
+  | JobBriefingStage
 
 export type BriefingSourceItem = {
   text?: string
@@ -292,6 +311,52 @@ export type BriefingResult = {
   sourceStatus: BriefingSourceStatus
 }
 
+export type JobCompany = {
+  name: string
+  careerPageUrl?: string
+  priority: number
+  enabled: boolean
+}
+
+export type JobBriefingConfig = {
+  companies: JobCompany[]
+  roleKeywords: string[]
+  cities: string[]
+  skillKeywords: string[]
+}
+
+export type JobErrorCode =
+  | 'MISSING_SEARCH_KEY'
+  | 'NETWORK_ERROR'
+  | 'OFFICIAL_PAGE_FAILED'
+  | 'EXTRACTION_ERROR'
+  | 'EMPTY_RESULTS'
+  | 'CACHE_WRITE_FAILED'
+
+export type JobBriefingSourceStatus = {
+  tavily: 'ok' | 'failed'
+  official: Record<string, 'ok' | 'failed'>
+}
+
+export type JobBriefingStage =
+  | 'discovering'
+  | 'scraping'
+  | 'searching'
+  | 'synthesizing'
+  | 'finalizing'
+  | 'done'
+
+export type JobBriefingResult = {
+  title: string
+  date: string
+  content: string
+  filePath: string
+  cached: boolean
+  cacheWriteFailed?: boolean
+  generatedAt: string
+  sourceStatus: JobBriefingSourceStatus
+}
+
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
 export type StateJson = {
@@ -309,9 +374,12 @@ export type StateJson = {
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
   externalSummaryFontSize?: BriefingFontSize
-  briefingSource?: 'digest' | 'anthropic'
+  briefingSource?: 'digest' | 'anthropic' | 'job-briefing'
+  jobBriefingConfig?: JobBriefingConfig
   anthropicBlogCache?: AnthropicBlogCache
   anthropicBlogLastSeenAt?: string | null
+  articleAssistantGuideWidth?: number
+  articleAssistantGuideCollapsed?: boolean
 }
 
 export type IpcApi = {
@@ -470,6 +538,25 @@ export type IpcApi = {
     parentType: 'briefing' | 'anthropic-article'
     messages: ArticleAssistantMessage[]
   }) => Promise<{ filePath: string }>
+
+  articleAssistantReadGuide: (args: {
+    parentPath: string
+    parentType: 'briefing' | 'anthropic-article'
+  }) => Promise<ArticleAssistantGuideFile | null>
+
+  articleAssistantWriteGuide: (args: {
+    parentPath: string
+    parentType: 'briefing' | 'anthropic-article'
+    guide: ArticleAssistantGuide
+  }) => Promise<{ filePath: string }>
+
+  // Job briefing
+  jobBriefingGenerate: (args: { date: string; force?: boolean }) => Promise<JobBriefingResult>
+  jobBriefingList: () => Promise<{ date: string; filePath: string }[]>
+  jobBriefingDiscoverPages: () => Promise<
+    | { ok: true; companies: JobCompany[] }
+    | { ok: false; code: JobErrorCode; message: string }
+  >
 
   // App shell
   openExternal: (url: string) => Promise<void>

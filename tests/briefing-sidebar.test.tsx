@@ -40,7 +40,7 @@ describe('BriefingSourceSidebar', () => {
   it('renders academic theme colors when theme is academic', () => {
     render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
     const aside = screen.getByTestId('briefing-source-sidebar')
-    expect(aside).toHaveClass('bg-[#3d2f27]')
+    expect(aside).toHaveClass('bg-ink/70')
     expect(aside).toHaveClass('border-r')
   })
 

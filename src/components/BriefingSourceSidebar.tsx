@@ -53,7 +53,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
 
   const themeClasses = isAcademic
     ? {
-        bg: 'bg-[#3d2f27]',
+        bg: 'bg-ink/70',
         border: 'border-r border-[rgba(232,213,183,0.18)]',
         headerText: 'text-parchment',
         toggle: 'text-parchment/60 hover:text-parchment',

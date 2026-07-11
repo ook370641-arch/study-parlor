@@ -31,6 +31,7 @@ export type AssistantSession = {
   retryContext: { text: string; useSearch: boolean } | null
   pendingSelection?: string
   isOpen: boolean
+  activeChunkIndex: number | null
 }
 
 type Page = 'cover' | 'home' | 'study' | 'profile' | 'extension' | 'settings' | 'briefing'
@@ -244,6 +245,13 @@ type AppStore = {
   appendAssistantChunk: (text: string) => void
   finishAssistantStreaming: () => void
   abortAssistantStream: () => void
+  articleAssistantGuideWidth: number
+  articleAssistantGuideCollapsed: boolean
+  setArticleAssistantGuideWidth: (width: number) => void
+  setArticleAssistantGuideCollapsed: (collapsed: boolean) => void
+  setAssistantActiveChunk: (index: number | null) => void
+  persistAssistantState: () => Promise<void>
+  generateAssistantGuide: () => Promise<void>
 }
 
 let wildcardRequestId = 0
@@ -290,6 +298,8 @@ export const useStore = create<AppStore>((set, get) => ({
   anthropicReaderFilePath: null,
   anthropicBlogLastSeenAt: null,
   assistantSession: null,
+  articleAssistantGuideWidth: 320,
+  articleAssistantGuideCollapsed: false,
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -311,6 +321,8 @@ export const useStore = create<AppStore>((set, get) => ({
         ? { ...state.anthropicBlogCache, loading: false, error: null }
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
       anthropicBlogLastSeenAt: state.anthropicBlogLastSeenAt ?? null,
+      articleAssistantGuideWidth: state.articleAssistantGuideWidth ?? 320,
+      articleAssistantGuideCollapsed: state.articleAssistantGuideCollapsed ?? false,
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -863,6 +875,7 @@ export const useStore = create<AppStore>((set, get) => ({
         messages: [], streaming: false, abortId: '',
         searchLoading: false, searchError: null, chatError: null,
         retryContext: null, pendingSelection: undefined, isOpen: false,
+        activeChunkIndex: null,
       },
     })
     get().loadAssistantGuide()
@@ -1028,6 +1041,28 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ assistantSession: { ...s, streaming: false, searchLoading: false } })
     get().saveAssistantSession()
   },
+
+  setArticleAssistantGuideWidth: (width) => {
+    set({ articleAssistantGuideWidth: width })
+    ipc.patchState({ articleAssistantGuideWidth: width } as Partial<StateJson>)
+  },
+
+  setArticleAssistantGuideCollapsed: (collapsed) => {
+    set({ articleAssistantGuideCollapsed: collapsed })
+    ipc.patchState({ articleAssistantGuideCollapsed: collapsed } as Partial<StateJson>)
+  },
+
+  setAssistantActiveChunk: (index) => {
+    const s = get().assistantSession
+    if (!s) return
+    set({ assistantSession: { ...s, activeChunkIndex: index } })
+  },
+
+  // Implemented in Task 2
+  persistAssistantState: async () => {},
+
+  // Implemented in Task 2
+  generateAssistantGuide: async () => {},
 }))
 
 // Expose store for E2E automation so tests can deterministically drive internal state.

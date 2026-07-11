@@ -314,6 +314,37 @@ export function registerFilesIpc(cfg: AppConfig) {
     return parseFrontmatter(raw, { filename: path.basename(resolved) })
   })
 
+  function resolveMimeType(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase()
+    switch (ext) {
+      case '.png': return 'image/png'
+      case '.gif': return 'image/gif'
+      case '.webp': return 'image/webp'
+      case '.svg': return 'image/svg+xml'
+      case '.jpg':
+      case '.jpeg':
+      default: return 'image/jpeg'
+    }
+  }
+
+  ipcMain.handle('files:readAssetAsDataUrl', async (_, mdFilePath: string, relativePath: string) => {
+    const resolvedMd = path.resolve(mdFilePath)
+    const rootResolved = path.resolve(cfg.libraryPath)
+    if (!resolvedMd.startsWith(rootResolved + path.sep) && resolvedMd !== rootResolved) {
+      throw new Error('Access denied: markdown file outside library path')
+    }
+    const assetPath = path.resolve(path.dirname(resolvedMd), relativePath)
+    if (!assetPath.startsWith(rootResolved + path.sep) && assetPath !== rootResolved) {
+      throw new Error('Access denied: asset outside library path')
+    }
+    if (!fs.existsSync(assetPath)) {
+      throw new Error(`Asset not found: ${assetPath}`)
+    }
+    const buffer = fs.readFileSync(assetPath)
+    const mime = resolveMimeType(assetPath)
+    return `data:${mime};base64,${buffer.toString('base64')}`
+  })
+
   ipcMain.handle('files:writeProgress', async (_, args: {
     title: string; description?: string; body: string; difficulty: 'high' | 'mid' | 'low'
     dirName: string; session_number: number; progress_summary?: string

@@ -34,6 +34,8 @@ test.describe('@p1 briefing generation', () => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
+    // Current code no longer auto-generates on mount; explicitly trigger cache load.
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
     await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
     await expect(window.locator(SELECTORS.briefing.academicLayout)).toContainText('Box CEO Aaron Levie')
   })

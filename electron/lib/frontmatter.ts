@@ -14,6 +14,7 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   'external-materials': ['session_number', 'topic', 'summary', 'sources'],
   'anthropic-article': ['source_url', 'published_at', 'imported_at', 'authors'],
   'article-assistant': ['parent_path', 'parent_type', 'created_at', 'updated_at'],
+  'job-briefing': ['date', 'generated_at', 'role_keywords', 'cities', 'companies', 'job_sources'],
 }
 
 function extractTitleFromFilename(name: string): string | undefined {
@@ -34,6 +35,7 @@ function inferDocTypeFromFilename(filename: string): DocType {
   if (lower.includes('原始对话')) return 'transcript'
   if (lower.includes('夜航简报')) return 'briefing'
   if (lower.includes('外部资料')) return 'external-materials'
+  if (lower.includes('求职简报')) return 'job-briefing'
   return 'progress'
 }
 
@@ -71,7 +73,12 @@ export function parseFrontmatter(
     imported_at: typeof data.imported_at === 'string' ? data.imported_at : undefined,
     authors: Array.isArray(data.authors) ? data.authors as string[] : undefined,
     parent_path: typeof data.parent_path === 'string' ? data.parent_path : undefined,
-    parent_type: data.parent_type === 'briefing' || data.parent_type === 'anthropic-article' ? data.parent_type : undefined,
+    parent_type: data.parent_type === 'briefing' || data.parent_type === 'anthropic-article' || data.parent_type === 'job-briefing' ? data.parent_type : undefined,
+    generated_at: typeof data.generated_at === 'string' ? data.generated_at : undefined,
+    role_keywords: Array.isArray(data.role_keywords) ? data.role_keywords as string[] : undefined,
+    cities: Array.isArray(data.cities) ? data.cities as string[] : undefined,
+    companies: Array.isArray(data.companies) ? data.companies as string[] : undefined,
+    job_sources: typeof data.job_sources === 'string' ? data.job_sources : undefined,
   }
 
   return { frontmatter, body: parsed.content }

@@ -117,6 +117,7 @@ function MdImage({ src, alt }: { src?: string; alt?: string }) {
   }
   return (
     <img
+      data-testid="md-image"
       src={src}
       alt={alt ?? ''}
       className="max-w-full h-auto rounded my-4 block"

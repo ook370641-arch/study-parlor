@@ -99,6 +99,8 @@ const api: IpcApi = {
   articleAssistantAbort: (a) => ipcRenderer.invoke('articleAssistant:abort', a),
   articleAssistantReadSession: (a) => ipcRenderer.invoke('articleAssistant:readSession', a),
   articleAssistantWriteSession: (a) => ipcRenderer.invoke('articleAssistant:writeSession', a),
+  articleAssistantReadGuide: (a) => ipcRenderer.invoke('articleAssistant:readGuide', a),
+  articleAssistantWriteGuide: (a) => ipcRenderer.invoke('articleAssistant:writeGuide', a),
 
   openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
 

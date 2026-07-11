@@ -79,6 +79,8 @@ export const ipc = {
   get articleAssistantAbort() { return ensure().articleAssistantAbort },
   get articleAssistantReadSession() { return ensure().articleAssistantReadSession },
   get articleAssistantWriteSession() { return ensure().articleAssistantWriteSession },
+  get articleAssistantReadGuide() { return ensure().articleAssistantReadGuide },
+  get articleAssistantWriteGuide() { return ensure().articleAssistantWriteGuide },
 
   get openExternal() { return ensure().openExternal }
 }
