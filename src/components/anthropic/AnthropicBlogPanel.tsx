@@ -47,7 +47,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const closeReader = useStore((s) => s.closeAnthropicReader)
 
   const [query, setQuery] = useState('')
-  const [listVisible, setListVisible] = useState(true)
+  const [listVisible] = useState(true)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -58,21 +58,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         (a.summary ?? '').toLowerCase().includes(q)
     )
   }, [articles, query])
-
-  const readerSidebarToggle = readerFilePath ? (
-    <button
-      type="button"
-      onClick={() => setListVisible((v) => !v)}
-      className={`text-sm ${
-        isAcademic
-          ? 'text-parchment/70 hover:text-parchment'
-          : 'text-[#6b5d52] hover:text-[#1a1a1a]'
-      }`}
-      title={listVisible ? '隐藏列表' : '显示列表'}
-    >
-      {listVisible ? '隐藏列表' : '显示列表'}
-    </button>
-  ) : null
 
   return (
     <div
@@ -149,7 +134,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           <AnthropicArticleReader
             filePath={readerFilePath}
             onClose={closeReader}
-            sidebarToggle={readerSidebarToggle}
             theme={theme}
           />
         ) : (
