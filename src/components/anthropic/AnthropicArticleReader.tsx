@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ipc } from '@/lib/ipc'
+import { useStore } from '@/store'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
@@ -50,6 +51,7 @@ function formatDate(iso: string | undefined): string {
 
 export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
+  const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
   const [body, setBody] = useState<string>('')
   const [loading, setLoading] = useState(true)
@@ -187,6 +189,7 @@ export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }
                 fileName={frontmatter.title ?? 'article.md'}
                 hideHeader
                 briefingStyle={theme}
+                terms={terms}
               />
             </article>
           </>

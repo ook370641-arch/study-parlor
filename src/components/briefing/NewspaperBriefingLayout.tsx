@@ -2,16 +2,19 @@ import { useState } from 'react'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
+import type { TermDef } from '@/components/md/rehypeTermHighlight'
 import { BriefingSourceItem } from './BriefingSourceItem'
 
 export function NewspaperBriefingLayout({
   result,
   parsed,
   displayDate,
+  terms,
 }: {
   result: BriefingResult
   parsed: ParsedBriefing
   displayDate: string
+  terms?: TermDef[]
 }) {
   const [expandedSources, setExpandedSources] = useState(false)
 
@@ -39,7 +42,7 @@ export function NewspaperBriefingLayout({
               className="briefing-body-newspaper text-[#1a1a1a] leading-[1.85] columns-1"
               style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
             >
-              <MarkdownRenderer content={section.body} fileName="briefing.md" briefingStyle="newspaper" />
+              <MarkdownRenderer content={section.body} fileName="briefing.md" briefingStyle="newspaper" terms={terms} />
             </div>
           </section>
         ))}

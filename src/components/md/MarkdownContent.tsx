@@ -2,6 +2,7 @@ import React from 'react'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
+import { rehypeTermHighlight, type TermDef } from './rehypeTermHighlight'
 
 class MdErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -36,18 +37,26 @@ interface Props {
   children: string
   components?: Components
   className?: string
+  terms?: TermDef[]
 }
 
 function allowFileUrlTransform(url: string): string {
-  if (url.toLowerCase().startsWith('file://')) return url
+  const lower = url.toLowerCase()
+  if (lower.startsWith('file://') || lower.startsWith('data:')) return url
   return defaultUrlTransform(url)
 }
 
-export function MarkdownContent({ children, components, className }: Props) {
+export function MarkdownContent({ children, components, className, terms }: Props) {
+  const rehypePlugins = terms && terms.length > 0 ? [rehypeTermHighlight(terms)] : undefined
   return (
     <div className={className}>
       <MdErrorBoundary>
-        <Markdown remarkPlugins={[remarkGfm]} components={components} urlTransform={allowFileUrlTransform}>
+        <Markdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={rehypePlugins}
+          components={components}
+          urlTransform={allowFileUrlTransform}
+        >
           {children}
         </Markdown>
       </MdErrorBoundary>

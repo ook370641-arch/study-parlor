@@ -50,6 +50,7 @@ export function Briefing() {
   const { list: historyList, loading: historyLoading, error: historyError } = useStore((s) => s.briefingHistory)
   const loadBriefingHistory = useStore((s) => s.loadBriefingHistory)
   const setBriefingSource = useStore((s) => s.setBriefingSource)
+  const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -180,9 +181,9 @@ export function Briefing() {
         ) : parsed && result ? (
           <>
             {isAcademic ? (
-              <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />
+              <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} terms={terms} />
             ) : (
-              <NewspaperBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />
+              <NewspaperBriefingLayout result={result} parsed={parsed} displayDate={displayDate} terms={terms} />
             )}
           </>
         ) : null}
