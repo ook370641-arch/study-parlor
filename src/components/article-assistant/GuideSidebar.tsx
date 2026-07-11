@@ -1,43 +1,63 @@
 import { useStore } from '@/store'
 
-export function GuideSidebar() {
+interface Props {
+  theme?: 'academic' | 'newspaper'
+}
+
+export function GuideSidebar({ theme = 'academic' }: Props) {
   const session = useStore((s) => s.assistantSession)
+  const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
+  const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const isAcademic = theme !== 'newspaper'
+
   if (!session) return null
 
   return (
-    <div className="w-80 h-full border-l border-parchment/10 bg-ink/40 flex flex-col shrink-0">
-      <div className="px-4 py-3 text-xs uppercase tracking-widest text-parchment/60 select-none">导读</div>
+    <div className={`h-full flex flex-col shrink-0 border-l ${isAcademic ? 'border-parchment/10 bg-ink/40' : 'border-[#1a1a1a]/10 bg-[#f5f2ed]'} `}>
+      <div className={`px-4 py-3 text-xs uppercase tracking-widest select-none ${isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}`}>导读</div>
       {session.guideLoading && (
-        <div className="px-4 text-sm text-parchment/50">生成导读中…</div>
+        <div className={`px-4 text-sm ${isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'}`}>生成导读中…</div>
       )}
       {session.guideError && !session.guide && (
         <div className="px-4 text-sm text-ember">未能生成导读，可继续阅读原文。</div>
       )}
       {session.guide && (
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
-          <div className="bg-ink/60 border border-parchment/10 rounded p-3 text-sm leading-relaxed text-parchment/90">
+          <div className={`rounded p-3 text-sm leading-relaxed ${isAcademic ? 'bg-ink/60 border border-parchment/10 text-parchment/90' : 'bg-white border border-[#1a1a1a]/10 text-[#1a1a1a]'}`}>
             <strong className="text-ember">背景</strong>：{session.guide.background}
           </div>
-          {session.guide.chunks.map((chunk, i) => (
-            <div key={i} className="bg-ink/60 border border-parchment/10 rounded p-3 text-sm">
-              <div className="text-ember font-medium mb-1">{chunk.heading}</div>
-              <div className="text-parchment/80 leading-relaxed mb-2">{chunk.summary}</div>
-              {chunk.terms.length > 0 && (
-                <div className="space-y-1.5 mt-2 pt-2 border-t border-parchment/10">
-                  {chunk.terms.map((t) => (
-                    <div key={t.term} className="text-xs text-parchment/70 leading-relaxed">
-                      <span className="text-ember font-medium">{t.term}</span>
-                      <span className="text-parchment/50 mx-1">·</span>
-                      <span>{t.translation}</span>
-                      {t.explanation && (
-                        <div className="text-parchment/50 mt-0.5 ml-0">{t.explanation}</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {session.guide.chunks.map((chunk, i) => {
+            const isActive = activeChunkIndex === i
+            return (
+              <div
+                key={i}
+                data-testid="guide-chunk"
+                data-chunk-index={i}
+                className={`rounded p-3 text-sm cursor-default transition-colors ${
+                  isAcademic
+                    ? `bg-ink/60 border ${isActive ? 'border-ember' : 'border-parchment/10'}`
+                    : `bg-white border ${isActive ? 'border-ember' : 'border-[#1a1a1a]/10'}`
+                }`}
+                onMouseEnter={() => setAssistantActiveChunk(i)}
+                onMouseLeave={() => setAssistantActiveChunk(null)}
+              >
+                <div className="text-ember font-medium mb-1">§{i + 1} {chunk.heading}</div>
+                <div className={`leading-relaxed mb-2 ${isAcademic ? 'text-parchment/80' : 'text-[#555]'}`}>{chunk.summary}</div>
+                {chunk.terms.length > 0 && (
+                  <div className={`space-y-1.5 mt-2 pt-2 border-t ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}>
+                    {chunk.terms.map((t, ti) => (
+                      <div key={`${i}-${ti}`} className={`text-xs leading-relaxed ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
+                        <span className="text-ember font-medium">{t.term}</span>
+                        <span className="text-parchment/50 mx-1">·</span>
+                        <span>{t.translation}</span>
+                        {t.explanation && <div className={`mt-0.5 ${isAcademic ? 'text-parchment/50' : 'text-[#999]'}`}>{t.explanation}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

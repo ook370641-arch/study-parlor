@@ -155,7 +155,7 @@ describe('Briefing layout redesign', () => {
   const redesignResult = {
     title: 'Test',
     date: '2026-07-11',
-    content: '',
+    content: 'Body text with [link](https://example.com).',
     sources: [],
     filePath: '/x.md',
     cached: false,
@@ -168,19 +168,18 @@ describe('Briefing layout redesign', () => {
     sources: [{ title: 'X', items: ['[tweet](https://example.com)'] }],
   }
 
-  it('academic renders shard cards', () => {
+  it('academic renders body through chunks', () => {
     render(<AcademicBriefingLayout result={redesignResult as any} parsed={redesignParsed} displayDate="2026 年 07 月 11 日" />)
     expect(screen.getByTestId('briefing-academic-layout')).toBeInTheDocument()
-    expect(screen.getByText('01')).toBeInTheDocument()
-    expect(screen.getByText('X / Twitter')).toBeInTheDocument()
+    expect(screen.getByTestId('briefing-markdown-body')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'link' })).toBeInTheDocument()
   })
 
-  it('newspaper renders masthead and section title', () => {
+  it('newspaper renders masthead and body through chunks', () => {
     render(<NewspaperBriefingLayout result={redesignResult as any} parsed={redesignParsed} displayDate="2026 年 07 月 11 日" />)
     expect(screen.getByTestId('briefing-newspaper-layout')).toBeInTheDocument()
     expect(screen.getByText('夜航简报')).toBeInTheDocument()
-    const title = screen.getByText('X / Twitter')
-    expect(title).toBeInTheDocument()
-    expect(title).toHaveClass('uppercase')
+    expect(screen.getByTestId('briefing-markdown-body')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'link' })).toBeInTheDocument()
   })
 })

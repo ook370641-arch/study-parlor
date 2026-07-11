@@ -86,6 +86,12 @@ export const SELECTORS = {
     searchBtn: '[data-testid="article-assistant-search-btn"]',
     sendBtn: '[data-testid="article-assistant-send-btn"]',
     stopBtn: '[data-testid="article-assistant-stop-btn"]',
+    divider: '[data-testid="article-assistant-divider"]',
+    dividerToggle: '[data-testid="article-assistant-divider-toggle"]',
+    guideChunk: '[data-testid="guide-chunk"]',
+    bodyChunk: '[data-testid="article-body-chunk"]',
+    swapPaintingButton: '[data-testid="briefing-swap-painting-button"]',
+    anthropicSwapPaintingButton: '[data-testid="anthropic-swap-painting-button"]',
   },
   quote: {
     text: '[data-testid="quote-text"]',

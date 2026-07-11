@@ -17,6 +17,7 @@ import type {
   ArticleAssistantChunk,
   ArticleAssistantErrorCode,
   ArticleAssistantGuide,
+  ArticleAssistantGuideFile,
   ArticleAssistantMessage,
   ArticleAssistantSessionFile,
   ArticleAssistantTerm,
@@ -67,6 +68,62 @@ function isValidGuide(value: unknown): value is ArticleAssistantGuide {
 function sessionPathFor(parentPath: string): string {
   const parsed = path.parse(parentPath)
   return path.join(parsed.dir, `${parsed.name}.assistant.md`)
+}
+
+function guidePathFor(parentPath: string): string {
+  const parsed = path.parse(parentPath)
+  return path.join(parsed.dir, `${parsed.name}.guide.md`)
+}
+
+export function serializeGuide(guide: ArticleAssistantGuide): string {
+  const chunks = guide.chunks.map((c, i) => {
+    const terms = c.terms.length
+      ? '\n\n' + c.terms.map((t) => `**上下文（context）**：${t.term}（${t.translation}）— ${t.explanation}`).join('\n\n')
+      : ''
+    return `## §${i + 1} ${c.heading}\n\n${c.summary}${terms}`
+  }).join('\n\n')
+  return `# 背景\n\n${guide.background}\n\n${chunks}`
+}
+
+export function parseAssistantGuideBody(body: string): ArticleAssistantGuide | null {
+  const lines = body.split('\n')
+  let background = ''
+  let i = 0
+  if (lines[0]?.startsWith('# ')) {
+    i = 1
+    while (i < lines.length && lines[i].trim() === '') i++
+    const bgLines: string[] = []
+    while (i < lines.length && !lines[i].startsWith('## ')) {
+      if (lines[i].trim()) bgLines.push(lines[i].trim())
+      i++
+    }
+    background = bgLines.join(' ')
+  }
+
+  const chunks: ArticleAssistantChunk[] = []
+  while (i < lines.length) {
+    const headingMatch = lines[i].match(/^## §\d+\s+(.+)$/)
+    if (!headingMatch) { i++; continue }
+    const heading = headingMatch[1].trim()
+    i++
+    while (i < lines.length && lines[i].trim() === '') i++
+    const summaryLines: string[] = []
+    const terms: ArticleAssistantTerm[] = []
+    while (i < lines.length && !lines[i].startsWith('## ')) {
+      const line = lines[i]
+      const termMatch = line.match(/^\*\*上下文（context）\*\*：(.+?)（(.+?)）—\s*(.+)$/)
+      if (termMatch) {
+        terms.push({ term: termMatch[1].trim(), translation: termMatch[2].trim(), explanation: termMatch[3].trim() })
+      } else if (line.trim()) {
+        summaryLines.push(line.trim())
+      }
+      i++
+    }
+    chunks.push({ heading, summary: summaryLines.join(' '), terms })
+  }
+
+  if (!background && chunks.length === 0) return null
+  return { background, chunks }
 }
 
 function assertInsideLibrary(targetPath: string, libraryPath: string): void {
@@ -352,6 +409,68 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         })
       } finally {
         assistantSessions.delete(args.sessionId)
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'articleAssistant:writeGuide',
+    async (
+      _,
+      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article'; guide: ArticleAssistantGuide }
+    ): Promise<{ filePath: string }> => {
+      const parsed = path.parse(args.parentPath)
+      const guidePath = guidePathFor(args.parentPath)
+      assertInsideLibrary(guidePath, cfg.libraryPath)
+
+      const now = new Date().toISOString()
+      const fm = {
+        title: '导读',
+        type: 'article-assistant' as const,
+        created: now,
+        created_at: now,
+        updated_at: now,
+        parent_path: args.parentPath,
+        parent_type: args.parentType,
+        generated_at: now,
+        tags: [] as string[],
+      }
+      const body = serializeGuide(args.guide)
+
+      try {
+        fs.mkdirSync(path.dirname(guidePath), { recursive: true })
+        fs.writeFileSync(guidePath, serializeFrontmatter('article-assistant', fm, body), 'utf8')
+      } catch (err) {
+        dumpRecovery(`${parsed.name}.guide.md`, body)
+        throw typedError('SAVE_ERROR', err instanceof Error ? err.message : String(err))
+      }
+
+      return { filePath: guidePath }
+    }
+  )
+
+  ipcMain.handle(
+    'articleAssistant:readGuide',
+    async (
+      _,
+      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' }
+    ): Promise<ArticleAssistantGuideFile | null> => {
+      const guidePath = guidePathFor(args.parentPath)
+      if (!fs.existsSync(guidePath)) return null
+
+      try {
+        const { frontmatter, body } = parseFrontmatter(fs.readFileSync(guidePath, 'utf8'), {
+          filename: path.basename(guidePath),
+        })
+        const guide = parseAssistantGuideBody(body)
+        if (!guide) return null
+        return {
+          filePath: guidePath,
+          guide,
+          generatedAt: (frontmatter as unknown as Record<string, unknown>).generated_at as string | undefined ?? frontmatter.created,
+        }
+      } catch {
+        return null
       }
     }
   )

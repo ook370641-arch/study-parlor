@@ -107,7 +107,9 @@ describe('Briefing global chrome', () => {
   it('renders surface background for anthropic source in academic theme', () => {
     render(<Briefing />)
     expect(screen.getByTestId('surface-background')).toBeInTheDocument()
-    expect(screen.getByTestId('briefing-swap-painting-button')).toBeInTheDocument()
+    // Swap button now lives inside the digest body layout (top-right), so it is
+    // absent for the anthropic source where no digest layout renders.
+    expect(screen.queryByTestId('briefing-swap-painting-button')).not.toBeInTheDocument()
   })
 
   it('does not render surface background for newspaper theme', () => {
