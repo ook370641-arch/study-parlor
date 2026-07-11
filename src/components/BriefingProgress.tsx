@@ -7,6 +7,10 @@ const STAGES: { key: BriefingStage; label: string }[] = [
   { key: 'extracting', label: '正在提取关键信息…' },
   { key: 'assembling', label: '正在组装夜航简报…' },
   { key: 'finalizing', label: '正在归档…' },
+  { key: 'discovering', label: '正在发现招聘页…' },
+  { key: 'scraping', label: '正在抓取官方招聘页…' },
+  { key: 'searching', label: '正在检索全网岗位…' },
+  { key: 'synthesizing', label: '正在综合生成求职简报…' },
 ]
 
 interface Props {

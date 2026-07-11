@@ -45,6 +45,25 @@ function AnthropicIcon() {
   )
 }
 
+function JobBriefingIcon() {
+  return (
+    <svg
+      data-testid="briefing-source-icon-job-briefing"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="7" width="18" height="13" rx="1.5" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" />
+    </svg>
+  )
+}
+
 export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const source = useStore((s) => s.briefingSource)
   const setSource = useStore((s) => s.setBriefingSource)
@@ -85,6 +104,12 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
       label: 'Anthropic 博客',
       icon: AnthropicIcon,
       testId: 'briefing-source-anthropic',
+    },
+    {
+      id: 'job-briefing',
+      label: '求职简报',
+      icon: JobBriefingIcon,
+      testId: 'briefing-source-job-briefing',
     },
   ] as const
 
