@@ -3,11 +3,15 @@ import path from 'node:path'
 import { ipcMain } from 'electron'
 import { chatNonStream } from '../lib/kimi'
 import { extractJsonObject } from '../lib/extract-json'
+import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
+import { dumpRecovery } from '../lib/recovery'
 import type { AppConfig } from '../env'
 import type {
   ArticleAssistantChunk,
   ArticleAssistantErrorCode,
   ArticleAssistantGuide,
+  ArticleAssistantMessage,
+  ArticleAssistantSessionFile,
   ArticleAssistantTerm,
 } from '@shared/index'
 
@@ -41,6 +45,32 @@ function isValidChunk(value: unknown): value is ArticleAssistantChunk {
 function isValidGuide(value: unknown): value is ArticleAssistantGuide {
   const o = value as Record<string, unknown> | null
   return !!o && typeof o.background === 'string' && Array.isArray(o.chunks) && o.chunks.every(isValidChunk)
+}
+
+function sessionPathFor(parentPath: string): string {
+  const parsed = path.parse(parentPath)
+  return path.join(parsed.dir, `${parsed.name}.assistant.md`)
+}
+
+function assertInsideLibrary(targetPath: string, libraryPath: string): void {
+  const root = path.resolve(libraryPath)
+  const resolved = path.resolve(targetPath)
+  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+    throw typedError('SAVE_ERROR', `Refusing to write outside library: ${resolved}`)
+  }
+}
+
+export function parseAssistantSessionBody(body: string): ArticleAssistantMessage[] {
+  const messages: ArticleAssistantMessage[] = []
+  const sections = body.split(/^## /m).slice(1)
+  for (const section of sections) {
+    const nl = section.indexOf('\n')
+    const heading = (nl === -1 ? section : section.slice(0, nl)).trim()
+    const content = (nl === -1 ? '' : section.slice(nl + 1)).trim()
+    if (heading.startsWith('用户')) messages.push({ role: 'user', content })
+    else if (heading.startsWith('助手')) messages.push({ role: 'assistant', content })
+  }
+  return messages
 }
 
 export function registerArticleAssistantIpc(cfg: AppConfig) {
@@ -84,6 +114,85 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         const code = (err as Error & { code?: ArticleAssistantErrorCode }).code
         if (code === 'GUIDE_ABORT' || code === 'GUIDE_JSON_ERROR') throw err
         throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'articleAssistant:writeSession',
+    async (
+      _,
+      args: {
+        parentPath: string
+        parentType: 'briefing' | 'anthropic-article'
+        messages: ArticleAssistantMessage[]
+      }
+    ): Promise<{ filePath: string }> => {
+      const parsed = path.parse(args.parentPath)
+      const sessionPath = sessionPathFor(args.parentPath)
+      assertInsideLibrary(sessionPath, cfg.libraryPath)
+
+      const body = args.messages
+        .map((m) => `## ${m.role === 'user' ? '用户' : '助手'}\n\n${m.content}\n`)
+        .join('\n')
+
+      const now = new Date().toISOString()
+      let createdAt = now
+      if (fs.existsSync(sessionPath)) {
+        try {
+          const existing = parseFrontmatter(fs.readFileSync(sessionPath, 'utf8'), {
+            filename: path.basename(sessionPath),
+          })
+          createdAt = existing.frontmatter.created_at ?? existing.frontmatter.created
+        } catch {
+          createdAt = now
+        }
+      }
+
+      const fm = {
+        title: '旁注记录',
+        type: 'article-assistant' as const,
+        created: createdAt,
+        created_at: createdAt,
+        updated_at: now,
+        parent_path: args.parentPath,
+        parent_type: args.parentType,
+        tags: [] as string[],
+      }
+
+      try {
+        fs.mkdirSync(path.dirname(sessionPath), { recursive: true })
+        fs.writeFileSync(sessionPath, serializeFrontmatter('article-assistant', fm, body), 'utf8')
+      } catch (err) {
+        dumpRecovery(`${parsed.name}.assistant.md`, body)
+        throw typedError('SAVE_ERROR', err instanceof Error ? err.message : String(err))
+      }
+
+      return { filePath: sessionPath }
+    }
+  )
+
+  ipcMain.handle(
+    'articleAssistant:readSession',
+    async (
+      _,
+      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' }
+    ): Promise<ArticleAssistantSessionFile | null> => {
+      const sessionPath = sessionPathFor(args.parentPath)
+      if (!fs.existsSync(sessionPath)) return null
+
+      try {
+        const { frontmatter, body } = parseFrontmatter(fs.readFileSync(sessionPath, 'utf8'), {
+          filename: path.basename(sessionPath),
+        })
+        return {
+          filePath: sessionPath,
+          messages: parseAssistantSessionBody(body),
+          createdAt: frontmatter.created_at ?? frontmatter.created,
+          updatedAt: frontmatter.updated_at ?? frontmatter.created,
+        }
+      } catch {
+        return null
       }
     }
   )

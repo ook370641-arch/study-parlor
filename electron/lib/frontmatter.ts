@@ -13,7 +13,7 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   briefing: [],
   'external-materials': ['session_number', 'topic', 'summary', 'sources'],
   'anthropic-article': ['source_url', 'published_at', 'imported_at', 'authors'],
-  'article-assistant': ['parent_path', 'parent_type'],
+  'article-assistant': ['parent_path', 'parent_type', 'created_at', 'updated_at'],
 }
 
 function extractTitleFromFilename(name: string): string | undefined {
@@ -53,6 +53,8 @@ export function parseFrontmatter(
       ?? 'untitled',
     description: data.description,
     created: data.created ?? new Date().toISOString(),
+    created_at: typeof data.created_at === 'string' ? data.created_at : undefined,
+    updated_at: typeof data.updated_at === 'string' ? data.updated_at : undefined,
     last_studied: data.last_studied,
     last_reviewed: data.last_reviewed,
     review_count: typeof data.review_count === 'number' ? data.review_count : 0,

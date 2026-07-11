@@ -126,6 +126,8 @@ export type Frontmatter = {
   title: string
   description?: string
   created: string
+  created_at?: string
+  updated_at?: string
   last_studied?: string
   last_reviewed?: string
   review_count: number
