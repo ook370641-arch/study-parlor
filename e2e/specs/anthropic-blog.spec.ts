@@ -25,12 +25,13 @@ test.describe('Anthropic 博客集成', () => {
     await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
 
     // E2E-4: 折叠与展开
-    const sidebar = window.locator(SELECTORS.briefing.sourceSidebar)
-    await expect(sidebar).toBeVisible()
-    await window.locator(SELECTORS.briefing.sourceSidebarToggle).click()
-    await expect(sidebar).toHaveClass(/w-14/)
-    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
-    await expect(sidebar).not.toHaveClass(/w-14/)
+    const listColumn = window.locator(SELECTORS.briefing.listColumn)
+    await expect(listColumn).toBeVisible()
+    await window.locator(SELECTORS.briefing.listColumnToggle).click()
+    await expect(listColumn).toHaveClass(/w-14/)
+    await expect(window.locator(SELECTORS.briefing.anthropicListRailThumb)).toBeVisible()
+    await window.locator(SELECTORS.briefing.listColumnToggle).click()
+    await expect(listColumn).not.toHaveClass(/w-14/)
 
     // E2E-1: 列表发现（v1.2 UI：自动检测 + 新文章提示条）
     // 点击自动检测发现的新文章提示条
@@ -71,10 +72,6 @@ test.describe('Anthropic 博客集成', () => {
     const hasImage = saved.match(/!\[.*?\]\((https?:\/\/|\.\/\.assets\/)/)
     expect(hasImage).not.toBeNull()
 
-    // 关闭阅读器
-    await window.locator(SELECTORS.briefing.anthropicReaderClose).click()
-    await expect(reader).toBeHidden()
-
     // E2E-3: 已保存文章再次点击直接打开
     const savedRow = window
       .locator(SELECTORS.briefing.anthropicArticleRow)
@@ -82,7 +79,6 @@ test.describe('Anthropic 博客集成', () => {
       .first()
     await savedRow.click()
     await reader.waitFor({ state: 'visible', timeout: 10000 })
-    await window.locator(SELECTORS.briefing.anthropicReaderClose).click()
   })
 
   test.describe('离线场景', () => {
