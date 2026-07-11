@@ -91,7 +91,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   return (
     <aside
       data-testid="briefing-source-sidebar"
-      className={`h-full flex flex-col transition-all ${collapsed ? 'w-14' : 'w-48'} ${themeClasses.bg} ${themeClasses.border}`}
+      className={`h-full flex flex-col transition-all ${collapsed ? 'w-14' : 'w-48'} ${themeClasses.bg} ${themeClasses.border} z-[5]`}
     >
       <div className={`flex items-center justify-between px-3 py-4 ${themeClasses.headerBorder}`}>
         {!collapsed && <span className={`text-sm font-serif ${themeClasses.headerText}`}>来源</span>}

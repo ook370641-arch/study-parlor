@@ -100,4 +100,10 @@ describe('BriefingSourceSidebar', () => {
     fireEvent.click(screen.getByTestId('briefing-source-anthropic'))
     expect(useStore.getState().briefingSource).toBe('anthropic')
   })
+
+  it('has z-index above surface background', () => {
+    render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
+    const aside = screen.getByTestId('briefing-source-sidebar')
+    expect(aside).toHaveClass('z-[5]')
+  })
 })
