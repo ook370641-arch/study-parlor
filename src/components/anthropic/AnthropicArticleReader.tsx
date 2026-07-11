@@ -85,7 +85,7 @@ export function AnthropicArticleReader({ filePath, onClose, sidebarToggle, theme
 
   const themeClasses = isAcademic
     ? {
-        bg: 'bg-ink',
+        bg: 'bg-ink/90',
         text: 'text-parchment',
         headerBg: 'bg-ink/95',
         headerBorder: 'border-[#3d2f27]',
