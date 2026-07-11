@@ -119,6 +119,17 @@ export function Briefing() {
       />
 
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Digest renders the swap button inside the article body (AcademicBriefingLayout);
+            other academic sources (anthropic, job-briefing) keep the page-level one. */}
+        {isAcademic && source !== 'digest' && (
+          <div className="absolute top-24 right-4 z-10">
+            <SwapPaintingButton
+              surface="briefing"
+              data-testid="briefing-swap-painting-button"
+              className="text-parchment/70 hover:text-parchment"
+            />
+          </div>
+        )}
         <BriefingHeader
           displayDate={source === 'anthropic' ? 'Anthropic Engineering' : isJob ? jobDisplayDate : displayDate}
           timeString={
@@ -291,13 +302,6 @@ export function Briefing() {
                     displayDate={displayDate}
                     terms={terms}
                     chunks={guideChunks}
-                    swapButton={
-                      <SwapPaintingButton
-                        surface="briefing"
-                        data-testid="briefing-swap-painting-button"
-                        className="text-[#555] hover:text-[#1a1a1a]"
-                      />
-                    }
                   />
                 )}
               </>
