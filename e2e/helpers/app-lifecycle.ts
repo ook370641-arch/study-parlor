@@ -146,6 +146,7 @@ export async function startApp({
         E2E_CONFIG_DIR: testConfigDir,
         E2E_STUDY_LIBRARY_PATH: testLibraryPath,
         E2E_SKIP_PROBE: '1',
+        E2E_SILENT: process.env.E2E_DEBUG_VISIBLE === '1' ? '0' : '1',
       },
     }
   )

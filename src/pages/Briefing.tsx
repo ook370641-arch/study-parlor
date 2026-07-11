@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
@@ -49,11 +49,18 @@ export function Briefing() {
   const stage = useStore((s) => s.briefingStage)
   const source = useStore((s) => s.briefingSource)
   const { list: historyList } = useStore((s) => s.briefingHistory)
+  const loadBriefingHistory = useStore((s) => s.loadBriefingHistory)
   const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const today = formatBriefingDate(new Date())
+
+  // The date column IS the history UI, so it must load past briefings on mount
+  // (and whenever a new briefing is generated) rather than only when a drawer opens.
+  useEffect(() => {
+    if (source === 'digest') loadBriefingHistory()
+  }, [source, loadBriefingHistory, result?.date])
 
   const parsed = result ? parseBriefingMarkdown(result.content) : null
   const displayDate = useMemo(() => (result ? formatDisplayDate(result.date) : ''), [result])
@@ -96,26 +103,6 @@ export function Briefing() {
         onToggle={() => setSidebarCollapsed((c) => !c)}
       />
 
-      {source === 'digest' && (
-        <BriefingListColumn
-          collapsed={dateColumnCollapsed}
-          onToggle={() => setDateColumnCollapsed((c) => !c)}
-          theme={theme}
-          width={64}
-          title="日期"
-        >
-          <BriefingDateColumn
-            collapsed={dateColumnCollapsed}
-            history={historyList}
-            currentDate={result?.date}
-            today={today}
-            onSelect={(date) => generateBriefing(date)}
-            onReceiveToday={() => generateBriefing(today)}
-            theme={theme}
-          />
-        </BriefingListColumn>
-      )}
-
       <div className="flex-1 flex flex-col min-w-0">
         {isAcademic && (
           <div className="absolute top-24 right-4 z-10">
@@ -137,53 +124,77 @@ export function Briefing() {
           cacheWriteFailed={source === 'digest' ? result?.cacheWriteFailed : undefined}
         />
 
-        {source === 'anthropic' ? (
-          <AnthropicBlogPanel theme={theme} />
-        ) : emptyState ? (
-          <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
-            <div className="text-center">
-              <p className={`mb-6 ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
-                今日夜航简报尚未生成
-              </p>
-              <button
-                data-testid="briefing-receive-digest-button"
-                onClick={() => generateBriefing(today)}
-                className={`px-8 py-3 rounded text-[15px] font-serif transition-colors ${
-                  isAcademic
-                    ? 'bg-ember text-white hover:bg-ember/90'
-                    : 'bg-[#1a1a1a] text-white hover:bg-[#333]'
-                }`}
-              >
-                查收日报
-              </button>
-            </div>
-          </main>
-        ) : isDigestLoading ? (
-          <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
-            {stage ? (
-              <BriefingProgress stage={stage} />
-            ) : (
-              <BriefingSkeleton data-testid="briefing-skeleton" />
-            )}
-          </main>
-        ) : isDigestError ? (
-          <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
-            <div className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
-              <BriefingError
-                code={error}
-                onRetry={() => generateBriefing(today, { force: true })}
+        <div className="flex-1 flex min-h-0">
+          {source === 'digest' && (
+            <BriefingListColumn
+              collapsed={dateColumnCollapsed}
+              onToggle={() => setDateColumnCollapsed((c) => !c)}
+              theme={theme}
+              width={64}
+              title="日期"
+            >
+              <BriefingDateColumn
+                collapsed={dateColumnCollapsed}
+                history={historyList}
+                currentDate={result?.date}
+                today={today}
+                onSelect={(date) => generateBriefing(date)}
+                onReceiveToday={() => generateBriefing(today)}
+                theme={theme}
               />
-            </div>
-          </main>
-        ) : parsed && result ? (
-          <>
-            {isAcademic ? (
-              <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} terms={terms} />
-            ) : (
-              <NewspaperBriefingLayout result={result} parsed={parsed} displayDate={displayDate} terms={terms} />
-            )}
-          </>
-        ) : null}
+            </BriefingListColumn>
+          )}
+
+          <div className="flex-1 flex flex-col min-w-0">
+            {source === 'anthropic' ? (
+              <AnthropicBlogPanel theme={theme} />
+            ) : emptyState ? (
+              <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
+                <div className="text-center">
+                  <p className={`mb-6 ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
+                    今日夜航简报尚未生成
+                  </p>
+                  <button
+                    data-testid="briefing-receive-digest-button"
+                    onClick={() => generateBriefing(today)}
+                    className={`px-8 py-3 rounded text-[15px] font-serif transition-colors ${
+                      isAcademic
+                        ? 'bg-ember text-white hover:bg-ember/90'
+                        : 'bg-[#1a1a1a] text-white hover:bg-[#333]'
+                    }`}
+                  >
+                    查收日报
+                  </button>
+                </div>
+              </main>
+            ) : isDigestLoading ? (
+              <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
+                {stage ? (
+                  <BriefingProgress stage={stage} />
+                ) : (
+                  <BriefingSkeleton data-testid="briefing-skeleton" />
+                )}
+              </main>
+            ) : isDigestError ? (
+              <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
+                <div className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
+                  <BriefingError
+                    code={error}
+                    onRetry={() => generateBriefing(today, { force: true })}
+                  />
+                </div>
+              </main>
+            ) : parsed && result ? (
+              <>
+                {isAcademic ? (
+                  <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} terms={terms} />
+                ) : (
+                  <NewspaperBriefingLayout result={result} parsed={parsed} displayDate={displayDate} terms={terms} />
+                )}
+              </>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       {source === 'digest' && result?.filePath && (
