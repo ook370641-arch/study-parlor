@@ -12,7 +12,7 @@ import type {
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
-import { manifest, pickRandom } from '@/lib/paintings'
+import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
 import { DEFAULT_JOB_BRIEFING_CONFIG } from '@/lib/job-briefing-defaults'
 import type { Painting } from '@shared/index'
 
@@ -376,14 +376,16 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   initPaintings: () => {
-    set({
-      currentPaintings: {
-        cover: pickRandom(manifest, null),
-        home: pickRandom(manifest, null),
-        study: pickRandom(manifest, null),
-        briefing: pickRandom(manifest, null),
-      }
-    })
+    const next = {
+      cover: pickRandom(manifest, null),
+      home: pickRandom(manifest, null),
+      study: pickRandom(manifest, null),
+      briefing: pickRandom(manifest, null),
+    }
+    set({ currentPaintings: next })
+    // Decode all chosen paintings up front so navigating into a surface shows
+    // its background instantly instead of flashing the dark base color.
+    preloadPaintings([next.cover, next.home, next.study, next.briefing])
   },
 
   swapPainting: (surface) => {
@@ -543,7 +545,7 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ jobBriefingHistory: { ...get().jobBriefingHistory, loading: true, error: null } })
     try {
       const list = await ipc.jobBriefingList()
-      set({ jobBriefingHistory: { list, loading: false, error: null } })
+      set({ jobBriefingHistory: { list: Array.isArray(list) ? list : [], loading: false, error: null } })
     } catch (err: any) {
       set({ jobBriefingHistory: { ...get().jobBriefingHistory, loading: false, error: err.message || String(err) } })
     }
