@@ -231,7 +231,7 @@ type AppStore = {
 
   // 文章旁注助手
   assistantSession: AssistantSession | null
-  openAssistantSession: (args: { contextId: string; contextType: 'briefing' | 'anthropic-article'; articleTitle?: string; articleContent: string }) => void
+  openAssistantSession: (args: { contextId: string; contextType: 'briefing' | 'anthropic-article'; articleTitle?: string; articleContent: string; autoGenerateGuide?: boolean }) => void
   closeAssistantSession: () => void
   toggleAssistantOpen: () => void
   setAssistantSelection: (text: string) => void
@@ -255,6 +255,14 @@ type AppStore = {
 }
 
 let wildcardRequestId = 0
+
+let guideWidthSaveTimer: ReturnType<typeof setTimeout> | null = null
+function debounceSaveGuideWidth(patch: Partial<StateJson>) {
+  if (guideWidthSaveTimer) clearTimeout(guideWidthSaveTimer)
+  guideWidthSaveTimer = setTimeout(() => {
+    ipc.patchState(patch)
+  }, 300)
+}
 
 export const useStore = create<AppStore>((set, get) => ({
   profile: { name: '', profile_text: '', preferred_topics: [] },
@@ -878,7 +886,14 @@ export const useStore = create<AppStore>((set, get) => ({
         activeChunkIndex: null,
       },
     })
-    get().loadAssistantGuide()
+    get().loadAssistantGuide().then(() => {
+      if (args.autoGenerateGuide) {
+        const cur = get().assistantSession
+        if (cur && cur.contextId === args.contextId && !cur.guide && !cur.guideLoading) {
+          get().generateAssistantGuide()
+        }
+      }
+    })
     get().loadAssistantSession()
   },
 
@@ -886,7 +901,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const s = get().assistantSession
     if (!s) return
     if (s.streaming) ipc.articleAssistantAbort({ sessionId: s.abortId })
-    get().saveAssistantSession()
+    get().persistAssistantState()
     set({ assistantSession: null })
   },
 
@@ -908,19 +923,15 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!s) return
     set({ assistantSession: { ...s, guideLoading: true, guideError: null } })
     try {
-      const guide = await ipc.articleAssistantGenerateGuide({
-        articleContent: s.articleContent, articleType: s.contextType, articleTitle: s.articleTitle,
-      })
+      const file = await ipc.articleAssistantReadGuide({ parentPath: s.contextId, parentType: s.contextType })
       const cur = get().assistantSession
       if (!cur || cur.contextId !== s.contextId) return
-      set({ assistantSession: { ...cur, guide, guideLoading: false } })
-    } catch (err) {
-      const code: ArticleAssistantErrorCode = (err as Error & { code?: string })?.code === 'GUIDE_JSON_ERROR' ? 'GUIDE_JSON_ERROR'
-        : (err as Error & { code?: string })?.code === 'GUIDE_ABORT' ? 'GUIDE_ABORT'
-        : 'GUIDE_LLM_ERROR'
+      if (file?.guide) set({ assistantSession: { ...cur, guide: file.guide, guideLoading: false } })
+      else set({ assistantSession: { ...cur, guideLoading: false } })
+    } catch {
       const cur = get().assistantSession
       if (!cur || cur.contextId !== s.contextId) return
-      set({ assistantSession: { ...cur, guideLoading: false, guideError: code } })
+      set({ assistantSession: { ...cur, guideLoading: false } })
     }
   },
 
@@ -1042,15 +1053,58 @@ export const useStore = create<AppStore>((set, get) => ({
     get().saveAssistantSession()
   },
 
-  setArticleAssistantGuideWidth: (width) => set({ articleAssistantGuideWidth: width }),
-  setArticleAssistantGuideCollapsed: (collapsed) => set({ articleAssistantGuideCollapsed: collapsed }),
+  setArticleAssistantGuideWidth: (width) => {
+    const clamped = Math.max(200, Math.min(width, 1200))
+    set({ articleAssistantGuideWidth: clamped })
+    debounceSaveGuideWidth({ articleAssistantGuideWidth: clamped })
+  },
+  setArticleAssistantGuideCollapsed: (collapsed) => {
+    set({ articleAssistantGuideCollapsed: collapsed })
+    debounceSaveGuideWidth({ articleAssistantGuideCollapsed: collapsed })
+  },
   setAssistantActiveChunk: (index) => {
     const s = get().assistantSession
     if (!s) return
     set({ assistantSession: { ...s, activeChunkIndex: index } })
   },
-  persistAssistantState: async () => {},
-  generateAssistantGuide: async () => {},
+  persistAssistantState: async () => {
+    const s = get().assistantSession
+    if (!s) return
+    if (s.guide) {
+      try {
+        await ipc.articleAssistantWriteGuide({ parentPath: s.contextId, parentType: s.contextType, guide: s.guide })
+      } catch {
+        get().showToast('导读保存失败')
+      }
+    }
+    await get().saveAssistantSession()
+  },
+  generateAssistantGuide: async () => {
+    const s = get().assistantSession
+    if (!s || s.guideLoading || s.guide) return
+    set({ assistantSession: { ...s, guideLoading: true, guideError: null } })
+    try {
+      const guide = await ipc.articleAssistantGenerateGuide({
+        articleContent: s.articleContent,
+        articleType: s.contextType,
+        articleTitle: s.articleTitle,
+      })
+      const cur = get().assistantSession
+      if (!cur || cur.contextId !== s.contextId) return
+      set({ assistantSession: { ...cur, guide, guideLoading: false } })
+      try {
+        await ipc.articleAssistantWriteGuide({ parentPath: s.contextId, parentType: s.contextType, guide })
+      } catch {
+        get().showToast('导读已生成但保存失败')
+      }
+    } catch (err) {
+      const raw = (err as Error & { code?: string })?.code
+      const code: ArticleAssistantErrorCode = raw === 'GUIDE_JSON_ERROR' ? 'GUIDE_JSON_ERROR' : raw === 'GUIDE_ABORT' ? 'GUIDE_ABORT' : 'GUIDE_LLM_ERROR'
+      const cur = get().assistantSession
+      if (!cur || cur.contextId !== s.contextId) return
+      set({ assistantSession: { ...cur, guideLoading: false, guideError: code } })
+    }
+  },
 }))
 
 // Expose store for E2E automation so tests can deterministically drive internal state.
