@@ -8,11 +8,9 @@ vi.mock('@/lib/ipc', () => ({
     scanLibrary: vi.fn(),
     loadGroups: vi.fn(),
     loadSessions: vi.fn(),
-    llmWildcardInspiration: vi.fn(),
-    briefingGenerate: vi.fn(),
-    onBriefingProgress: vi.fn(() => () => {}),
-    briefingList: vi.fn(),
-    searchPrepare: vi.fn(),
+    anthropicDiscover: vi.fn(() => Promise.resolve({ ok: true, lastFetchedAt: null, articles: [] })),
+    anthropicImportArticle: vi.fn(),
+    readMd: vi.fn(),
   },
 }))
 
@@ -49,34 +47,24 @@ describe('AnthropicBlogPanel', () => {
     } as any)
   })
 
-  it('hides list and shows expand handle when hide button clicked', () => {
+  it('renders BriefingListColumn shell', () => {
     render(<AnthropicBlogPanel theme="academic" />)
-    // Hide button exists initially
-    expect(screen.getByTestId('anthropic-list-hide-button')).toBeInTheDocument()
-    expect(screen.queryByTestId('anthropic-list-expand-handle')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('anthropic-list-hide-button'))
-    // After hiding, expand handle appears
-    expect(screen.getByTestId('anthropic-list-expand-handle')).toBeInTheDocument()
+    expect(screen.getByTestId('briefing-list-column')).toBeInTheDocument()
   })
 
-  it('expands list when handle clicked', () => {
+  it('toggles collapsed rail and shows thumbnails', () => {
     render(<AnthropicBlogPanel theme="academic" />)
-    fireEvent.click(screen.getByTestId('anthropic-list-hide-button'))
-    expect(screen.getByTestId('anthropic-list-expand-handle')).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('anthropic-list-expand-handle'))
-    // After expanding, hide button is back and expand handle is gone
-    expect(screen.getByTestId('anthropic-list-hide-button')).toBeInTheDocument()
-    expect(screen.queryByTestId('anthropic-list-expand-handle')).not.toBeInTheDocument()
+    const toggle = screen.getByTestId('briefing-list-column-toggle')
+    fireEvent.click(toggle)
+    expect(screen.getByTestId('briefing-list-column')).toHaveClass('w-14')
+    expect(screen.getAllByTestId('anthropic-list-rail-thumb').length).toBeGreaterThan(0)
   })
 
   it('shows new articles prompt after auto-detect finds new articles', async () => {
     const discover = vi.fn().mockResolvedValue({
       ok: true,
       lastFetchedAt: new Date().toISOString(),
-      articles: [
-        article('new-1', 'New Article'),
-        article('old-1', 'Old Article'),
-      ],
+      articles: [article('new-1', 'New Article'), article('old-1', 'Old Article')],
     })
     const merge = vi.fn()
     useStore.setState({ discoverAnthropicArticles: discover, mergeAnthropicArticles: merge } as any)

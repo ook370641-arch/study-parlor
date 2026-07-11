@@ -124,7 +124,7 @@ describe('BriefingLayout source links', () => {
       </AcademicWrapper>
     )
     fireEvent.click(screen.getByText('展开来源'))
-    const link = screen.getByRole('link', { name: 'https://x.com/swyx/status/2074344727202463832' })
+    const link = screen.getByRole('link', { name: /https:\/\/x\.com\/swyx\/status/ })
     expect(link).toHaveAttribute('href', 'https://x.com/swyx/status/2074344727202463832')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
@@ -142,9 +142,45 @@ describe('BriefingLayout source links', () => {
       </NewspaperWrapper>
     )
     fireEvent.click(screen.getByText('展开来源'))
-    const link = screen.getByRole('link', { name: '原文链接' })
+    const link = screen.getByRole('link', { name: /原文链接/ })
     expect(link).toHaveAttribute('href', 'https://x.com/swyx/status/2074344727202463832')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+})
+
+describe('Briefing layout redesign', () => {
+  beforeEach(() => cleanup())
+
+  const redesignResult = {
+    title: 'Test',
+    date: '2026-07-11',
+    content: '',
+    sources: [],
+    filePath: '/x.md',
+    cached: false,
+    generatedAt: new Date().toISOString(),
+    sourceStatus: { x: 'ok', podcasts: 'ok', blogs: 'ok' },
+  } as const
+
+  const redesignParsed = {
+    sections: [{ title: 'X / Twitter', body: 'Body text with [link](https://example.com).' }],
+    sources: [{ title: 'X', items: ['[tweet](https://example.com)'] }],
+  }
+
+  it('academic renders shard cards', () => {
+    render(<AcademicBriefingLayout result={redesignResult as any} parsed={redesignParsed} displayDate="2026 年 07 月 11 日" />)
+    expect(screen.getByTestId('briefing-academic-layout')).toBeInTheDocument()
+    expect(screen.getByText('01')).toBeInTheDocument()
+    expect(screen.getByText('X / Twitter')).toBeInTheDocument()
+  })
+
+  it('newspaper renders masthead and section title', () => {
+    render(<NewspaperBriefingLayout result={redesignResult as any} parsed={redesignParsed} displayDate="2026 年 07 月 11 日" />)
+    expect(screen.getByTestId('briefing-newspaper-layout')).toBeInTheDocument()
+    expect(screen.getByText('夜航简报')).toBeInTheDocument()
+    const title = screen.getByText('X / Twitter')
+    expect(title).toBeInTheDocument()
+    expect(title).toHaveClass('uppercase')
   })
 })
