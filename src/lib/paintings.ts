@@ -14,3 +14,16 @@ export function formatAttribution(p: Painting): string {
   if (typeof p.year === 'number') parts.push(String(p.year))
   return parts.join(' · ')
 }
+
+// Warm the browser image cache for the given paintings so the first time a
+// surface renders one, it paints instantly instead of flashing the dark base
+// color while the JPG loads and decodes from disk. Safe to call in non-DOM
+// (test/node) environments where `Image` is undefined.
+export function preloadPaintings(paintings: (Painting | null | undefined)[]): void {
+  if (typeof Image === 'undefined') return
+  for (const p of paintings) {
+    if (!p?.url) continue
+    const img = new Image()
+    img.src = p.url
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pickRandom, formatAttribution } from '@/lib/paintings'
+import { pickRandom, formatAttribution, preloadPaintings } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
 
 const sample: Painting[] = [
@@ -47,5 +47,34 @@ describe('formatAttribution', () => {
 
   it('handles Billout paintings', () => {
     expect(formatAttribution(sample[2])).toBe('Guy Billout · Moon')
+  })
+})
+
+describe('preloadPaintings', () => {
+  it('sets src only for entries with a url, skipping null/empty', () => {
+    const created: string[] = []
+    const OrigImage = globalThis.Image
+    // @ts-expect-error minimal Image stub for the test
+    globalThis.Image = class {
+      set src(v: string) {
+        created.push(v)
+      }
+    }
+    preloadPaintings([
+      sample[0],
+      null,
+      undefined,
+      { id: 'x', painter: 'p', title: 't', url: '' } as Painting,
+    ])
+    globalThis.Image = OrigImage
+    expect(created).toEqual(['paintings/a.jpg'])
+  })
+
+  it('does not throw when Image is unavailable (node env)', () => {
+    const OrigImage = globalThis.Image
+    // @ts-expect-error simulate non-DOM environment
+    globalThis.Image = undefined
+    expect(() => preloadPaintings([sample[0]])).not.toThrow()
+    globalThis.Image = OrigImage
   })
 })

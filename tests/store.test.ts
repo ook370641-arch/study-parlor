@@ -20,7 +20,8 @@ vi.mock('@/lib/ipc', () => ({
 
 vi.mock('@/lib/paintings', () => ({
   manifest: [{ id: 'test', painter: 'Test', title: 'Test', url: '/test.jpg' }],
-  pickRandom: vi.fn((manifest: unknown[]) => manifest[0] ?? null)
+  pickRandom: vi.fn((manifest: unknown[]) => manifest[0] ?? null),
+  preloadPaintings: vi.fn()
 }))
 
 import { useStore } from '@/store'
