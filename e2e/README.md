@@ -25,6 +25,18 @@ npx playwright test --config e2e/playwright.config.ts --grep-invert @slow
 - 项目根目录有有效的 `.env`（`KIMI_API_KEY`、`KIMI_BASE_URL`、`KIMI_MODEL`、`STUDY_LIBRARY_PATH`）
 - 已构建 Electron 产物：`npx electron-vite build`
 
+## 静默模式
+
+所有 E2E 测试默认在静默模式下运行：Electron 主窗口不显示、不抢焦点、不注册任务栏。由 fixture 层通过 `E2E_SILENT=1` 环境变量控制，主进程检测后创建 `show: false` + `skipTaskbar: true` 的隐藏窗口。
+
+**排查窗口问题时临时恢复可见：** 在 spec 的 `extraEnv` 中覆盖：
+
+```ts
+test.use({ extraEnv: { E2E_SILENT: '0' } })
+```
+
+静默模式不影响 CDP 连接、页面渲染或 Playwright 交互——所有测试行为与可见模式一致。
+
 ## 测试隔离
 
 每个测试用例都会创建独立的临时学习库（`e2e/.test-library/`）和临时配置目录（`e2e/.test-config/`），并通过 `E2E_CONFIG_DIR` 环境变量同时隔离 `.env` 与 `state.json`。测试结束后自动清理；测试失败时会保留现场，路径会打印到控制台。
