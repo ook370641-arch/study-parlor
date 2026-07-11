@@ -510,7 +510,7 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ briefingHistory: { ...get().briefingHistory, loading: true, error: null } })
     try {
       const list = await ipc.briefingList()
-      set({ briefingHistory: { list, loading: false, error: null } })
+      set({ briefingHistory: { list: Array.isArray(list) ? list : [], loading: false, error: null } })
     } catch (err: any) {
       set({ briefingHistory: { ...get().briefingHistory, loading: false, error: err.message || String(err) } })
     }

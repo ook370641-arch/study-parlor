@@ -24,9 +24,8 @@ vi.mock('@/lib/paintings', () => ({
 
 import { useStore } from '@/store'
 import { Briefing } from '@/pages/Briefing'
-import { ipc } from '@/lib/ipc'
 
-describe('Briefing history drawer', () => {
+describe('Briefing date column', () => {
   beforeEach(() => {
     cleanup()
     useStore.setState({
@@ -43,47 +42,30 @@ describe('Briefing history drawer', () => {
     })
   })
 
-  it('opens drawer from empty state', async () => {
+  it('shows the date column in the digest empty state', () => {
     render(<Briefing />)
-    fireEvent.click(screen.getByTestId('briefing-history-button'))
-    await waitFor(() => {
-      expect(screen.getByTestId('briefing-history-drawer')).toBeInTheDocument()
-    })
+    expect(screen.getByTestId('briefing-date-column')).toBeInTheDocument()
   })
 
-  it('opens drawer when source is anthropic', async () => {
+  it('does not show the digest date column when source is anthropic', () => {
     useStore.setState({ briefingSource: 'anthropic' })
     render(<Briefing />)
-    fireEvent.click(screen.getByTestId('briefing-history-button'))
-    await waitFor(() => {
-      expect(screen.getByTestId('briefing-history-drawer')).toBeInTheDocument()
-    })
+    expect(screen.queryByTestId('briefing-date-column')).not.toBeInTheDocument()
   })
 
-  it('switches to digest source when selecting a date from anthropic source', async () => {
+  it('calls generateBriefing when selecting a past date', async () => {
     useStore.setState({
-      briefingSource: 'anthropic',
       briefingHistory: {
         list: [{ date: '2026-07-01', filePath: '/test/2026-07-01.md' }],
         loading: false,
         error: null,
       },
     })
-    vi.mocked(ipc.briefingList).mockResolvedValue([
-      { date: '2026-07-01', filePath: '/test/2026-07-01.md' },
-    ])
-    const setBriefingSourceSpy = vi.spyOn(useStore.getState(), 'setBriefingSource')
-    const generateBriefingSpy = vi.spyOn(useStore.getState(), 'generateBriefing')
+    const generate = vi.fn().mockResolvedValue(undefined)
+    useStore.setState({ generateBriefing: generate })
     render(<Briefing />)
-    fireEvent.click(screen.getByTestId('briefing-history-button'))
-    await waitFor(() => {
-      expect(screen.getByTestId('briefing-history-drawer')).toBeInTheDocument()
-    })
-    fireEvent.click(screen.getByText('07-01'))
-    await waitFor(() => {
-      expect(setBriefingSourceSpy).toHaveBeenCalledWith('digest')
-      expect(generateBriefingSpy).toHaveBeenCalledWith('2026-07-01')
-    })
+    fireEvent.click(screen.getByTestId('briefing-date-item-2026-07-01'))
+    await waitFor(() => expect(generate).toHaveBeenCalledWith('2026-07-01'))
   })
 })
 
@@ -104,12 +86,12 @@ describe('Briefing global chrome', () => {
     })
   })
 
-  it('renders surface background for anthropic source in academic theme', () => {
+  it('renders surface background and swap button for anthropic source in academic theme', () => {
     render(<Briefing />)
     expect(screen.getByTestId('surface-background')).toBeInTheDocument()
-    // Swap button now lives inside the digest body layout (top-right), so it is
-    // absent for the anthropic source where no digest layout renders.
-    expect(screen.queryByTestId('briefing-swap-painting-button')).not.toBeInTheDocument()
+    // Swap button is page-level chrome for every academic source: digest keeps a
+    // body-level button inside its layout, anthropic/job use this page-level one.
+    expect(screen.getByTestId('briefing-swap-painting-button')).toBeInTheDocument()
   })
 
   it('does not render surface background for newspaper theme', () => {
