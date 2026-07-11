@@ -9,6 +9,7 @@ import { BriefingHeader } from '@/components/BriefingHeader'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
+import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
 import { formatBriefingDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
@@ -101,6 +102,12 @@ export function Briefing() {
       style={pageStyle}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
+      {isAcademic && (
+        <div
+          className="fixed inset-0 z-[1] bg-[#0c0806]/[0.72] pointer-events-none"
+          aria-hidden="true"
+        />
+      )}
       <BriefingSourceSidebar
         theme={theme}
         collapsed={sidebarCollapsed}
@@ -195,6 +202,15 @@ export function Briefing() {
           }}
         />
       </div>
+
+      {source === 'digest' && result?.filePath && (
+        <ArticleAssistantPanel
+          articleType="briefing"
+          parentPath={result.filePath}
+          articleTitle={result.title}
+          articleContent={result.content ?? ''}
+        />
+      )}
     </div>
   )
 }

@@ -102,13 +102,6 @@ const api: IpcApi = {
 
   openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
 
-  // Article assistant
-  articleAssistantGenerateGuide: (args) => ipcRenderer.invoke('articleAssistant:generateGuide', args),
-  articleAssistantSendMessage: (args) => ipcRenderer.invoke('articleAssistant:sendMessage', args),
-  articleAssistantAbort: (args) => ipcRenderer.invoke('articleAssistant:abort', args),
-  articleAssistantReadSession: (args) => ipcRenderer.invoke('articleAssistant:readSession', args),
-  articleAssistantWriteSession: (args) => ipcRenderer.invoke('articleAssistant:writeSession', args),
-
   onBriefingProgress: (cb) => {
     const handler = (_: unknown, stage: BriefingStage, detail?: string) => cb(stage, detail)
     ipcRenderer.on('briefing:progress', handler)
