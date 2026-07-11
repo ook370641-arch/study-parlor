@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import path from 'node:path'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
 import { getStateDir } from '../env'
+import { DEFAULT_JOB_BRIEFING_CONFIG } from '../lib/job-briefing'
 import type { StateJson } from '@shared/index'
 
 function getStateFile(): string {
@@ -21,6 +22,7 @@ const DEFAULT: StateJson = {
   briefingSource: 'digest',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicBlogLastSeenAt: null,
+  jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
 }
 
 let currentState: StateJson | null = null

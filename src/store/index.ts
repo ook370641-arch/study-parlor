@@ -8,10 +8,12 @@ import type {
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
   Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache,
   ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
-  AnthropicArticleMeta, AnthropicError
+  AnthropicArticleMeta, AnthropicError,
+  JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
+import { DEFAULT_JOB_BRIEFING_CONFIG } from '@/lib/job-briefing-defaults'
 import type { Painting } from '@shared/index'
 
 export type AssistantSession = {
@@ -113,11 +115,11 @@ type AppStore = {
   briefingStage: BriefingStage | null
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
-  briefingSource: 'digest' | 'anthropic'
+  briefingSource: 'digest' | 'anthropic' | 'job-briefing'
   anthropicBlogCache: AnthropicBlogCache
   anthropicReaderFilePath: string | null
   anthropicBlogLastSeenAt: string | null
-  setBriefingSource: (source: 'digest' | 'anthropic') => Promise<void>
+  setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing') => Promise<void>
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
   ) => Promise<
@@ -139,6 +141,23 @@ type AppStore = {
   decreaseBriefingFontSize: () => Promise<void>
   increaseExternalSummaryFontSize: () => Promise<void>
   decreaseExternalSummaryFontSize: () => Promise<void>
+
+  // 求职简报
+  jobBriefing: {
+    result: JobBriefingResult | null
+    loading: boolean
+    error: JobErrorCode | string | null
+  }
+  jobBriefingHistory: {
+    list: { date: string; filePath: string }[]
+    loading: boolean
+    error: string | null
+  }
+  jobBriefingConfig: JobBriefingConfig
+  generateJobBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
+  loadJobBriefingHistory: () => Promise<void>
+  setJobBriefingConfig: (config: JobBriefingConfig) => Promise<void>
+  discoverJobBriefingPages: () => Promise<{ ok: true; companies: JobCompany[] } | { ok: false; error: JobErrorCode | string; message: string }>
 
   // 画作背景
   currentPaintings: {
@@ -297,6 +316,9 @@ export const useStore = create<AppStore>((set, get) => ({
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicReaderFilePath: null,
   anthropicBlogLastSeenAt: null,
+  jobBriefing: { result: null, loading: false, error: null },
+  jobBriefingHistory: { list: [], loading: false, error: null },
+  jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
   assistantSession: null,
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
@@ -321,6 +343,7 @@ export const useStore = create<AppStore>((set, get) => ({
         ? { ...state.anthropicBlogCache, loading: false, error: null }
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
       anthropicBlogLastSeenAt: state.anthropicBlogLastSeenAt ?? null,
+      jobBriefingConfig: state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG,
       articleAssistantGuideWidth: state.articleAssistantGuideWidth ?? 320,
       articleAssistantGuideCollapsed: state.articleAssistantGuideCollapsed ?? false,
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
@@ -482,6 +505,57 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ briefingHistory: { list, loading: false, error: null } })
     } catch (err: any) {
       set({ briefingHistory: { ...get().briefingHistory, loading: false, error: err.message || String(err) } })
+    }
+  },
+
+  generateJobBriefing: async (date, opts) => {
+    const s = get()
+    if (s.jobBriefing.loading) return
+    set({ jobBriefing: { result: null, loading: true, error: null }, briefingStage: 'discovering' })
+    const unsubscribe = ipc.onBriefingProgress((stage) => set({ briefingStage: stage }))
+    try {
+      const result = await ipc.jobBriefingGenerate({ date, force: opts?.force })
+      set({ jobBriefing: { result, loading: false, error: null }, briefingStage: null })
+    } catch (err: any) {
+      const raw = err.message || String(err)
+      const error = raw.includes('MISSING_SEARCH_KEY') ? 'MISSING_SEARCH_KEY'
+        : raw.includes('NETWORK_ERROR') ? 'NETWORK_ERROR'
+        : raw.includes('OFFICIAL_PAGE_FAILED') ? 'OFFICIAL_PAGE_FAILED'
+        : raw.includes('EXTRACTION_ERROR') ? 'EXTRACTION_ERROR'
+        : raw.includes('EMPTY_RESULTS') ? 'EMPTY_RESULTS'
+        : raw.includes('CACHE_WRITE_FAILED') ? 'CACHE_WRITE_FAILED'
+        : raw
+      set({ jobBriefing: { result: null, loading: false, error }, briefingStage: null })
+    } finally {
+      unsubscribe()
+    }
+  },
+
+  loadJobBriefingHistory: async () => {
+    set({ jobBriefingHistory: { ...get().jobBriefingHistory, loading: true, error: null } })
+    try {
+      const list = await ipc.jobBriefingList()
+      set({ jobBriefingHistory: { list, loading: false, error: null } })
+    } catch (err: any) {
+      set({ jobBriefingHistory: { ...get().jobBriefingHistory, loading: false, error: err.message || String(err) } })
+    }
+  },
+
+  setJobBriefingConfig: async (config) => {
+    set({ jobBriefingConfig: config })
+    await ipc.patchState({ jobBriefingConfig: config } as Partial<StateJson>)
+  },
+
+  discoverJobBriefingPages: async () => {
+    try {
+      const result = await ipc.jobBriefingDiscoverPages()
+      if (result.ok) {
+        const next = { ...get().jobBriefingConfig, companies: result.companies }
+        await get().setJobBriefingConfig(next)
+      }
+      return result.ok ? { ok: true, companies: result.companies } : { ok: false, error: result.code, message: result.message }
+    } catch (err: any) {
+      return { ok: false, error: 'NETWORK_ERROR', message: err.message || String(err) }
     }
   },
 
