@@ -50,6 +50,7 @@ export function Briefing() {
   const source = useStore((s) => s.briefingSource)
   const { list: historyList } = useStore((s) => s.briefingHistory)
   const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
+  const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? [])
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -117,15 +118,6 @@ export function Briefing() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        {isAcademic && (
-          <div className="absolute top-24 right-4 z-10">
-            <SwapPaintingButton
-              surface="briefing"
-              data-testid="briefing-swap-painting-button"
-              className="text-parchment/70 hover:text-parchment"
-            />
-          </div>
-        )}
         <BriefingHeader
           displayDate={source === 'anthropic' ? 'Anthropic Engineering' : displayDate}
           timeString={
@@ -178,9 +170,35 @@ export function Briefing() {
         ) : parsed && result ? (
           <>
             {isAcademic ? (
-              <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} terms={terms} />
+              <AcademicBriefingLayout
+                result={result}
+                parsed={parsed}
+                displayDate={displayDate}
+                terms={terms}
+                chunks={guideChunks}
+                swapButton={
+                  <SwapPaintingButton
+                    surface="briefing"
+                    data-testid="briefing-swap-painting-button"
+                    className="text-parchment/70 hover:text-parchment"
+                  />
+                }
+              />
             ) : (
-              <NewspaperBriefingLayout result={result} parsed={parsed} displayDate={displayDate} terms={terms} />
+              <NewspaperBriefingLayout
+                result={result}
+                parsed={parsed}
+                displayDate={displayDate}
+                terms={terms}
+                chunks={guideChunks}
+                swapButton={
+                  <SwapPaintingButton
+                    surface="briefing"
+                    data-testid="briefing-swap-painting-button"
+                    className="text-[#555] hover:text-[#1a1a1a]"
+                  />
+                }
+              />
             )}
           </>
         ) : null}
@@ -192,6 +210,8 @@ export function Briefing() {
           parentPath={result.filePath}
           articleTitle={result.title}
           articleContent={result.content ?? ''}
+          autoGenerateGuide
+          theme={theme}
         />
       )}
     </div>
