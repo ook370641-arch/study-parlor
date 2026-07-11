@@ -176,17 +176,18 @@ export function Briefing() {
             ) : (
               <NewspaperBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />
             )}
-            <BriefingHistoryDrawer
-              open={drawerOpen}
-              onClose={() => setDrawerOpen(false)}
-              currentDate={result.date}
-              history={historyList}
-              loading={historyLoading}
-              error={historyError}
-              onSelect={(date) => generateBriefing(date)}
-            />
           </>
         ) : null}
+
+        <BriefingHistoryDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          currentDate={result?.date ?? today}
+          history={historyList}
+          loading={historyLoading}
+          error={historyError}
+          onSelect={(date) => generateBriefing(date)}
+        />
       </div>
     </div>
   )
