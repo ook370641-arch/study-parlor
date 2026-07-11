@@ -18,7 +18,8 @@ vi.mock('@/lib/ipc', () => ({
 
 vi.mock('@/lib/paintings', () => ({
   manifest: [{ id: 'test', painter: 'Test', title: 'Test', url: '/test.jpg' }],
-  pickRandom: vi.fn((manifest: unknown[]) => manifest[0] ?? null)
+  pickRandom: vi.fn((manifest: unknown[]) => manifest[0] ?? null),
+  formatAttribution: vi.fn((p: unknown) => (p as { painter?: string })?.painter ?? ''),
 }))
 
 import { useStore } from '@/store'
@@ -59,5 +60,34 @@ describe('Briefing history drawer', () => {
     await waitFor(() => {
       expect(screen.getByTestId('briefing-history-drawer')).toBeInTheDocument()
     })
+  })
+})
+
+describe('Briefing global chrome', () => {
+  beforeEach(() => {
+    cleanup()
+    useStore.setState({
+      briefing: { result: null, loading: false, error: null },
+      briefingSource: 'anthropic',
+      briefingTheme: 'academic',
+      briefingHistory: { list: [], loading: false, error: null },
+      currentPaintings: {
+        briefing: { id: 'test', painter: 'Test', title: 'Test', url: '/test.jpg' },
+        cover: null,
+        home: null,
+        study: null,
+      },
+    })
+  })
+
+  it('renders surface background for anthropic source in academic theme', () => {
+    render(<Briefing />)
+    expect(screen.getByTestId('surface-background')).toBeInTheDocument()
+  })
+
+  it('does not render surface background for newspaper theme', () => {
+    useStore.setState({ briefingTheme: 'newspaper' })
+    render(<Briefing />)
+    expect(screen.queryByTestId('surface-background')).not.toBeInTheDocument()
   })
 })

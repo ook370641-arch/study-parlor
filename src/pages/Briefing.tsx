@@ -99,7 +99,7 @@ export function Briefing() {
       className={`relative h-full flex overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
       style={pageStyle}
     >
-      {isAcademic && source === 'digest' && <SurfaceBackground surface="briefing" />}
+      {isAcademic && <SurfaceBackground surface="briefing" />}
       <BriefingSourceSidebar
         theme={theme}
         collapsed={sidebarCollapsed}
@@ -107,6 +107,15 @@ export function Briefing() {
       />
 
       <div className="flex-1 flex flex-col min-w-0">
+        {isAcademic && (
+          <div className="absolute top-24 right-4 z-10">
+            <SwapPaintingButton
+              surface="briefing"
+              data-testid="briefing-swap-painting-button"
+              className="text-parchment/70 hover:text-parchment"
+            />
+          </div>
+        )}
         <BriefingHeader
           displayDate={source === 'anthropic' ? 'Anthropic Engineering' : displayDate}
           timeString={
@@ -162,15 +171,6 @@ export function Briefing() {
           </main>
         ) : parsed && result ? (
           <>
-            {isAcademic && (
-              <div className="absolute top-24 right-4 z-10">
-                <SwapPaintingButton
-                  surface="briefing"
-                  data-testid="briefing-swap-painting-button"
-                  className="text-parchment/70 hover:text-parchment"
-                />
-              </div>
-            )}
             {isAcademic ? (
               <AcademicBriefingLayout result={result} parsed={parsed} displayDate={displayDate} />
             ) : (
