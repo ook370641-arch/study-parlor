@@ -79,6 +79,14 @@ export const SELECTORS = {
     externalSummarySource: (n: number) => `[data-testid="external-summary-source-${n}"]`,
     swapPaintingButton: '[data-testid="swap-painting-button"]',
   },
+  articleAssistant: {
+    tab: '[data-testid="article-assistant-tab"]',
+    chatWindow: '[data-testid="article-assistant-chat-window"]',
+    input: '[data-testid="article-assistant-input"]',
+    searchBtn: '[data-testid="article-assistant-search-btn"]',
+    sendBtn: '[data-testid="article-assistant-send-btn"]',
+    stopBtn: '[data-testid="article-assistant-stop-btn"]',
+  },
   quote: {
     text: '[data-testid="quote-text"]',
     original: '[data-testid="quote-original"]',

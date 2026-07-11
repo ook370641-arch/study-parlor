@@ -73,6 +73,11 @@ npx playwright show-trace e2e-results/<trace-file>.zip
 
 后续所有新增 API 相关功能也应遵循此策略。
 
+> 注：较新的功能（如 briefing 生成、文章旁注助手 `article-assistant.spec.ts`）在核心
+> `@p1` 用例中改用**确定性 mock**，以保证 `test:e2e:core` 稳定。这些 mock 分支同时受
+> `NODE_ENV==='test'` 与 `E2E_CONFIG_DIR` 两个条件保护（见 `electron/ipc/article-assistant.ts`、
+> `electron/ipc/briefing.ts`），单元测试不会误走 mock。真实链路回归由带 `@real` 的独立用例覆盖。
+
 ## 标记
 
 - `@smoke`：启动冒烟测试，快且不调用 LLM

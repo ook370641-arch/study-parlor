@@ -25,6 +25,13 @@ import type {
 
 const assistantSessions = new Map<string, AbortController>()
 
+// E2E deterministic mock is active only when BOTH the test NODE_ENV and the
+// E2E isolation marker are set. Gating on both keeps unit tests (which run with
+// NODE_ENV=test but no E2E_CONFIG_DIR) on the real code path. See rule e2e.md §1.
+function isE2EMock(): boolean {
+  return process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
+}
+
 function typedError(code: ArticleAssistantErrorCode, message: string): Error & { code: ArticleAssistantErrorCode } {
   const err = new Error(message) as Error & { code: ArticleAssistantErrorCode }
   err.code = code
@@ -87,6 +94,27 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
   ipcMain.handle(
     'articleAssistant:generateGuide',
     async (_, args: { articleContent: string; articleType: 'briefing' | 'anthropic-article'; articleTitle?: string }) => {
+      // E2E deterministic mock: return a fixed valid guide without calling the LLM.
+      if (isE2EMock()) {
+        const mockGuide: ArticleAssistantGuide = {
+          background: '这是一段用于 E2E 测试的文章背景介绍，说明本文讨论 AI 对齐与安全。',
+          chunks: [
+            {
+              heading: 'AI Safety',
+              summary: '本段介绍 Constitutional AI 的核心思想与动机。',
+              terms: [
+                {
+                  term: 'Constitutional AI',
+                  translation: '宪法式 AI',
+                  explanation: '一种用一组书面原则约束模型行为、减少人工标注的对齐方法。',
+                },
+              ],
+            },
+          ],
+        }
+        return mockGuide
+      }
+
       const promptPath = path.join(promptsDir(), 'digest-guide.md')
       const system = fs.existsSync(promptPath) ? fs.readFileSync(promptPath, 'utf8') : ''
       const user = `Article title: ${args.articleTitle ?? 'Untitled'}\n\n${args.articleContent}`
@@ -224,6 +252,34 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       const send = (channel: string, ...payload: unknown[]) => {
         if (event.sender.isDestroyed()) return
         event.sender.send(channel, ...payload)
+      }
+
+      // E2E deterministic mock: skip real search/LLM and emit fixed events keyed
+      // by sessionId. The AbortController is still registered so abort() works.
+      if (isE2EMock()) {
+        const ctl = new AbortController()
+        assistantSessions.set(args.sessionId, ctl)
+        try {
+          if (args.useSearch) {
+            send('articleAssistant:searchDone', args.sessionId, {
+              searchSources: [
+                {
+                  title: 'Constitutional AI（测试来源）',
+                  url: 'https://arxiv.org/abs/2212.08073',
+                  snippet: 'Constitutional AI 的原始论文摘要（E2E mock）。',
+                },
+              ],
+            })
+          }
+          for (const chunk of ['这是一段', 'E2E 测试的', '旁注回复。']) {
+            if (ctl.signal.aborted) return
+            send('llm:chunk', args.sessionId, chunk)
+          }
+          if (!ctl.signal.aborted) send('llm:done', args.sessionId)
+        } finally {
+          assistantSessions.delete(args.sessionId)
+        }
+        return
       }
 
       // --- search phase (only when useSearch) ---
