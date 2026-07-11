@@ -47,6 +47,17 @@ describe('digest-guide.md prompt', () => {
     expect(digestGuidePrompt).toContain('"terms"')
   })
 
+  it('requires Chinese output with original English in parentheses for terms', () => {
+    expect(digestGuidePrompt).toMatch(/中文/)
+    expect(digestGuidePrompt).toContain('上下文（context）')
+    expect(digestGuidePrompt).toMatch(/All explanations[\s\S]*must be in Chinese/)
+  })
+
+  it('keeps original heading language and does not translate headings', () => {
+    expect(digestGuidePrompt).toMatch(/Do not translate headings/)
+    expect(digestGuidePrompt).toMatch(/keep the exact original heading text/)
+  })
+
   it('forbids decorative metadata patterns', () => {
     for (const banned of ['Vol.', 'AI Builders Digest', 'Generated through', '档案编号', '学习卷宗']) {
       expect(digestGuidePrompt).toContain(banned)
