@@ -10,7 +10,8 @@ vi.mock('@/lib/ipc', () => ({
     setupProbeKey: vi.fn(),
     setupSelectDirectory: vi.fn(),
     searchCheckConfig: vi.fn(),
-    setSearchApiKey: vi.fn()
+    setSearchApiKey: vi.fn(),
+    getState: vi.fn().mockResolvedValue({})
   }
 }))
 
