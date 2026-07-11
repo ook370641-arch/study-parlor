@@ -48,6 +48,7 @@ export function Briefing() {
   const source = useStore((s) => s.briefingSource)
   const { list: historyList, loading: historyLoading, error: historyError } = useStore((s) => s.briefingHistory)
   const loadBriefingHistory = useStore((s) => s.loadBriefingHistory)
+  const setBriefingSource = useStore((s) => s.setBriefingSource)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -186,7 +187,12 @@ export function Briefing() {
           history={historyList}
           loading={historyLoading}
           error={historyError}
-          onSelect={(date) => generateBriefing(date)}
+          onSelect={async (date) => {
+            if (source !== 'digest') {
+              await setBriefingSource('digest')
+            }
+            await generateBriefing(date)
+          }}
         />
       </div>
     </div>

@@ -24,6 +24,7 @@ vi.mock('@/lib/paintings', () => ({
 
 import { useStore } from '@/store'
 import { Briefing } from '@/pages/Briefing'
+import { ipc } from '@/lib/ipc'
 
 describe('Briefing history drawer', () => {
   beforeEach(() => {
@@ -59,12 +60,29 @@ describe('Briefing history drawer', () => {
     })
   })
 
-  it('opens drawer in error state', async () => {
-    useStore.setState({ briefing: { result: null, loading: false, error: 'NETWORK_ERROR' } })
+  it('switches to digest source when selecting a date from anthropic source', async () => {
+    useStore.setState({
+      briefingSource: 'anthropic',
+      briefingHistory: {
+        list: [{ date: '2026-07-01', filePath: '/test/2026-07-01.md' }],
+        loading: false,
+        error: null,
+      },
+    })
+    vi.mocked(ipc.briefingList).mockResolvedValue([
+      { date: '2026-07-01', filePath: '/test/2026-07-01.md' },
+    ])
+    const setBriefingSourceSpy = vi.spyOn(useStore.getState(), 'setBriefingSource')
+    const generateBriefingSpy = vi.spyOn(useStore.getState(), 'generateBriefing')
     render(<Briefing />)
     fireEvent.click(screen.getByTestId('briefing-history-button'))
     await waitFor(() => {
       expect(screen.getByTestId('briefing-history-drawer')).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByText('07-01'))
+    await waitFor(() => {
+      expect(setBriefingSourceSpy).toHaveBeenCalledWith('digest')
+      expect(generateBriefingSpy).toHaveBeenCalledWith('2026-07-01')
     })
   })
 })
