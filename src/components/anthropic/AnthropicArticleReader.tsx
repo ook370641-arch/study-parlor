@@ -8,7 +8,6 @@ import type { Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
   filePath: string
-  onClose?: () => void
   theme?: BriefingTheme
 }
 
@@ -49,7 +48,7 @@ function formatDate(iso: string | undefined): string {
   }
 }
 
-export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }: Props) {
+export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
   const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
@@ -89,27 +88,58 @@ export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }
     ? {
         bg: 'bg-transparent',
         text: 'text-parchment',
-        headerBg: 'bg-ink/40 backdrop-blur-sm',
         headerBorder: 'border-[#3d2f27]',
         title: 'text-parchment',
         meta: 'text-parchment/60',
-        summaryBox: 'bg-ink/50 border-l-ember',
+        summaryBox: 'bg-ink/50 border-l-4 border-l-ember',
         summaryText: 'text-parchment/90',
         link: 'text-ember',
+        pillBorder: 'border-ember/30',
+        pillBg: 'bg-ember/10',
+        pillHover: 'hover:bg-ember/20',
         skeleton: 'bg-[#3d2f27]',
       }
     : {
         bg: 'bg-white',
         text: 'text-[#1a1a1a]',
-        headerBg: 'bg-white/95',
         headerBorder: 'border-[#c9c3b8]',
         title: 'text-[#1a1a1a]',
         meta: 'text-[#6b5d52]',
-        summaryBox: 'bg-[#f5f2ed] border-[#c9c3b8]',
+        summaryBox: 'bg-[#f5f2ed] border-l-4 border-l-ember',
         summaryText: 'text-[#555]',
         link: 'text-ember',
+        pillBorder: 'border-[#1a1a1a]/20',
+        pillBg: 'bg-[#f5f2ed]',
+        pillHover: 'hover:bg-[#e8e4de]',
         skeleton: 'bg-[#e8e4de]',
       }
+
+  const articleStyles = `
+    .briefing-body-academic blockquote {
+      border-left: 4px solid #d97757;
+      background: rgba(42, 31, 26, 0.5);
+      padding: 1rem 1.25rem;
+      margin: 1.25rem 0;
+      border-radius: 0.5rem;
+      font-style: italic;
+      color: rgba(232, 213, 183, 0.9);
+    }
+    .briefing-body-newspaper blockquote {
+      border-left: 4px solid #d97757;
+      background: #f5f2ed;
+      padding: 1rem 1.25rem;
+      margin: 1.25rem 0;
+      border-radius: 0.5rem;
+      font-style: italic;
+      color: #555;
+    }
+    .briefing-body-newspaper p {
+      text-indent: 2em;
+    }
+    .briefing-body-newspaper p:first-of-type {
+      text-indent: 0;
+    }
+  `
 
   return (
     <div
@@ -117,84 +147,72 @@ export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }
       className={`relative flex h-full overflow-hidden ${themeClasses.bg} ${themeClasses.text}`}
     >
       <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
-      {onClose && (
-        <div className={`sticky top-0 z-10 flex items-center justify-between px-6 py-3 border-b ${themeClasses.headerBorder} ${themeClasses.headerBg} backdrop-blur`}>
-          <button
-            data-testid="anthropic-reader-close"
-            type="button"
-            onClick={onClose}
-            className={`text-sm ${themeClasses.link} hover:underline`}
-          >
-            ← 返回列表
-          </button>
-        </div>
-      )}
+        <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
+        <div className="w-[90%] max-w-[1250px] min-w-[520px] mx-auto px-6 py-10 pb-24">
+          {loading && (
+            <div className="space-y-4">
+              <div className={`h-8 w-3/4 rounded animate-pulse ${themeClasses.skeleton}`} />
+              <div className={`h-4 w-1/2 rounded animate-pulse ${themeClasses.skeleton}`} />
+              <div className={`h-32 rounded animate-pulse mt-6 ${themeClasses.skeleton}`} />
+            </div>
+          )}
 
-      <div className="max-w-3xl mx-auto w-full px-6 py-10 pb-24">
-        {loading && (
-          <div className="space-y-4">
-            <div className={`h-8 w-3/4 rounded animate-pulse ${themeClasses.skeleton}`} />
-            <div className={`h-4 w-1/2 rounded animate-pulse ${themeClasses.skeleton}`} />
-            <div className={`h-32 rounded animate-pulse mt-6 ${themeClasses.skeleton}`} />
-          </div>
-        )}
+          {!loading && error && (
+            <AnthropicErrorMessage
+              error={{ code: 'unknown', message: error.message }}
+              onRetry={() => window.location.reload()}
+              theme={theme}
+            />
+          )}
 
-        {!loading && error && (
-          <AnthropicErrorMessage
-            error={{ code: 'unknown', message: error.message }}
-            onRetry={() => window.location.reload()}
-            theme={theme}
-          />
-        )}
-
-        {!loading && frontmatter && (
-          <>
-            <header className={`mb-8 pb-8 border-b ${themeClasses.headerBorder}`}>
-              <h1 data-testid="anthropic-reader-title" className={`text-3xl font-serif leading-tight mb-4 ${themeClasses.title}`}>
-                {frontmatter.title}
-              </h1>
-              <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${themeClasses.meta}`}>
-                {frontmatter.source_url && (
-                  <span>
-                    来源：
+          {!loading && frontmatter && (
+            <>
+              <header className={`mb-8 pb-8 border-b ${themeClasses.headerBorder}`}>
+                <h1 data-testid="anthropic-reader-title" className={`text-3xl font-serif leading-tight mb-4 ${themeClasses.title}`}>
+                  {frontmatter.title}
+                </h1>
+                <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${themeClasses.meta}`}>
+                  {frontmatter.source_url && (
                     <button
                       type="button"
                       onClick={() => ipc.openExternal(frontmatter.source_url!)}
-                      className={`${themeClasses.link} hover:underline`}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-colors ${themeClasses.pillBorder} ${themeClasses.pillBg} ${themeClasses.link} ${themeClasses.pillHover}`}
                     >
-                      Anthropic Engineering
+                      <span>Anthropic Engineering</span>
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M7 17L17 7M17 7H9M17 7V15" />
+                      </svg>
                     </button>
-                  </span>
-                )}
-                {frontmatter.published_at && (
-                  <span>发布：{formatDate(frontmatter.published_at)}</span>
-                )}
-                {frontmatter.imported_at && (
-                  <span>导入：{formatDate(frontmatter.imported_at)}</span>
-                )}
-                {frontmatter.authors && frontmatter.authors.length > 0 && (
-                  <span>作者：{frontmatter.authors.join(', ')}</span>
-                )}
-              </div>
-              {frontmatter.summary && (
-                <div className={`mt-6 p-5 rounded-lg border-l-4 italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
-                  {frontmatter.summary}
+                  )}
+                  {frontmatter.published_at && (
+                    <span>发布：{formatDate(frontmatter.published_at)}</span>
+                  )}
+                  {frontmatter.imported_at && (
+                    <span>导入：{formatDate(frontmatter.imported_at)}</span>
+                  )}
+                  {frontmatter.authors && frontmatter.authors.length > 0 && (
+                    <span>作者：{frontmatter.authors.join(', ')}</span>
+                  )}
                 </div>
-              )}
-            </header>
+                {frontmatter.summary && (
+                  <div className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
+                    {frontmatter.summary}
+                  </div>
+                )}
+              </header>
 
-            <article className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}>
-              <MarkdownRenderer
-                content={body}
-                fileName={frontmatter.title ?? 'article.md'}
-                hideHeader
-                briefingStyle={theme}
-                terms={terms}
-              />
-            </article>
-          </>
-        )}
-      </div>
+              <article className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}>
+                <MarkdownRenderer
+                  content={body}
+                  fileName={frontmatter.title ?? 'article.md'}
+                  hideHeader
+                  briefingStyle={theme}
+                  terms={terms}
+                />
+              </article>
+            </>
+          )}
+        </div>
       </div>
       {!loading && frontmatter && body && (
         <ArticleAssistantPanel

@@ -50,7 +50,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const mergeArticles = useStore((s) => s.mergeAnthropicArticles)
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const openReader = useStore((s) => s.openAnthropicReader)
-  const closeReader = useStore((s) => s.closeAnthropicReader)
 
   const [query, setQuery] = useState('')
   const [listCollapsed, setListCollapsed] = useState(false)
@@ -267,7 +266,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         {readerFilePath ? (
           <AnthropicArticleReader
             filePath={readerFilePath}
-            onClose={closeReader}
             theme={theme}
           />
         ) : (
