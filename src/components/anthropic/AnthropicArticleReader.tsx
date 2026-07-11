@@ -7,7 +7,6 @@ import type { Frontmatter, BriefingTheme } from '@shared/index'
 interface Props {
   filePath: string
   onClose?: () => void
-  sidebarToggle?: React.ReactNode
   theme?: BriefingTheme
 }
 
@@ -48,7 +47,7 @@ function formatDate(iso: string | undefined): string {
   }
 }
 
-export function AnthropicArticleReader({ filePath, onClose, sidebarToggle, theme = 'academic' }: Props) {
+export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
   const [body, setBody] = useState<string>('')
@@ -124,7 +123,6 @@ export function AnthropicArticleReader({ filePath, onClose, sidebarToggle, theme
           >
             ← 返回列表
           </button>
-          {sidebarToggle}
         </div>
       )}
 

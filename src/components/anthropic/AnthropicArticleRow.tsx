@@ -23,6 +23,7 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
   const openReader = useStore((s) => s.openAnthropicReader)
   const [importing, setImporting] = useState(false)
+  const [hovered, setHovered] = useState(false)
 
   const handleClick = async () => {
     if (importing) return
@@ -65,7 +66,6 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
     : 'bg-[#1a1a1a] text-white'
   const actionBorder = isAcademic ? 'border-slate/30' : 'border-[#c9c3b8]'
   const actionText = isAcademic ? 'text-parchment/70' : 'text-[#555]'
-  const hintText = isAcademic ? 'text-parchment/40' : 'text-[#999]'
   const titleHover = isAcademic ? 'group-hover:text-ember' : 'group-hover:text-[#1a1a1a]'
   const cancelText = isAcademic ? 'text-ember' : 'text-[#1a1a1a]'
 
@@ -73,6 +73,8 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
     <button
       data-testid="anthropic-article-row"
       onClick={handleClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       disabled={importing}
       className={`w-full text-left rounded border p-4 transition-colors group disabled:opacity-70 ${cardClasses}`}
     >
@@ -93,7 +95,9 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
         <div className="flex-1 min-w-0">
           <h3
             data-testid="anthropic-article-title"
-            className={`text-base font-serif ${titleHover} transition-colors truncate ${isAcademic ? '' : 'text-[#1a1a1a]'}`}
+            className={`text-base font-serif transition-colors ${
+              hovered ? '' : 'line-clamp-1'
+            } ${isAcademic ? '' : 'text-[#1a1a1a]'} ${titleHover}`}
           >
             {article.title}
           </h3>
@@ -122,11 +126,7 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
             >
               取消
             </button>
-          ) : (
-            <span className={`text-xs ${hintText}`}>
-              {article.isSaved ? '阅读' : '点击导入'}
-            </span>
-          )}
+          ) : null}
         </div>
       </div>
     </button>
