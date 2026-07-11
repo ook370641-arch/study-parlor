@@ -338,7 +338,7 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
       externalSummaryFontSize: normalizeSummaryFontSize(state.externalSummaryFontSize),
-      briefingSource: state.briefingSource === 'anthropic' ? 'anthropic' : 'digest',
+      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' ? state.briefingSource : 'digest',
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null }
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
