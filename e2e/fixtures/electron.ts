@@ -137,6 +137,7 @@ export const test = base.extend<E2EFixtures>({
           E2E_CONFIG_DIR: testConfigDir,
           E2E_STUDY_LIBRARY_PATH: testLibraryPath,
           E2E_SKIP_PROBE: '1',
+          E2E_SILENT: '1',
           TAVILY_API_KEY: tavilyKey || process.env.TAVILY_API_KEY || '',
           ...extraEnv,
         },
@@ -160,19 +161,24 @@ export const test = base.extend<E2EFixtures>({
 
     // 强行终止命令行仍包含该测试配置目录的残留进程，避免 Windows
     // 文件锁导致 cleanupTestConfigDir 出现 EPERM。
-    const killed = await killProjectProcessesByPattern(process.cwd(), testConfigDir)
+    const { killed, failed } = await killProjectProcessesByPattern(process.cwd(), testConfigDir)
     if (killed.length) {
       console.log('[e2e] killed residual processes for config dir:', killed.join(', '))
+    }
+    if (failed.length) {
+      console.warn('[e2e] failed to kill residual processes for config dir:', failed.map(f => f.pid).join(', '))
+    }
+    if (killed.length || failed.length) {
       // 给 WMIC/句柄释放留一点缓冲
       await new Promise(r => setTimeout(r, 1000))
     }
 
-    const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
-    if (failed) {
+    const testFailed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
+    if (testFailed) {
       console.log(`[e2e] test failed, keeping test library for inspection: ${testLibraryPath}`)
     }
     try {
-      await cleanupTestLibrary(testLibraryPath, failed)
+      await cleanupTestLibrary(testLibraryPath, testFailed)
     } catch (err) {
       console.warn('[e2e] failed to clean up test library:', testLibraryPath, err)
     }
