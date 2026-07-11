@@ -33,6 +33,12 @@ describe('Briefing history drawer', () => {
       briefingSource: 'digest',
       briefingTheme: 'academic',
       briefingHistory: { list: [], loading: false, error: null },
+      currentPaintings: {
+        briefing: null,
+        cover: null,
+        home: null,
+        study: null,
+      },
     })
   })
 
@@ -83,11 +89,13 @@ describe('Briefing global chrome', () => {
   it('renders surface background for anthropic source in academic theme', () => {
     render(<Briefing />)
     expect(screen.getByTestId('surface-background')).toBeInTheDocument()
+    expect(screen.getByTestId('briefing-swap-painting-button')).toBeInTheDocument()
   })
 
   it('does not render surface background for newspaper theme', () => {
     useStore.setState({ briefingTheme: 'newspaper' })
     render(<Briefing />)
     expect(screen.queryByTestId('surface-background')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('briefing-swap-painting-button')).not.toBeInTheDocument()
   })
 })
