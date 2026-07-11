@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ipc } from '@/lib/ipc'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
+import { ArticleAssistantPanel } from '@/components/article-assistant'
 import type { Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -10,28 +11,28 @@ interface Props {
   theme?: BriefingTheme
 }
 
-function toAbsoluteAssetUrl(filePath: string, src: string): string {
-  if (!src) return src
-  if (/^https?:\/\//i.test(src) || /^file:/i.test(src)) return src
-  const normalizedFile = filePath.replace(/\\/g, '/')
-  const dir = normalizedFile.replace(/\/[^/]*$/, '')
-  let relative = src
-  if (relative.startsWith('./')) relative = relative.slice(2)
-  const absolute = `${dir}/${relative}`
-  const encoded = absolute
-    .split('/')
-    .map((seg) => encodeURIComponent(seg).replace(/%2F/g, '/'))
-    .join('/')
-  return `file:///${encoded}`
-}
-
-function rewriteLocalImagePaths(body: string, filePath: string): string {
-  return body.replace(
-    /!\[([^\]]*)\]\(([^)]+)\)/g,
-    (_full, alt: string, src: string) => {
-      return `![${alt}](${toAbsoluteAssetUrl(filePath, src)})`
-    }
+async function inlineLocalImages(body: string, filePath: string): Promise<string> {
+  const matches = Array.from(body.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g))
+  const replacements = await Promise.all(
+    matches.map(async (match) => {
+      const [, alt, src] = match
+      if (!src || /^https?:\/\//i.test(src) || /^data:/i.test(src)) return null
+      if (!src.startsWith('./') && !src.startsWith('../')) return null
+      try {
+        const dataUrl = await ipc.readAssetAsDataUrl(filePath, src)
+        return { full: match[0], replacement: `![${alt}](${dataUrl})` }
+      } catch (err) {
+        console.error(`[anthropic-reader] failed to inline image ${src}:`, err)
+        return null
+      }
+    })
   )
+
+  let result = body
+  for (const r of replacements) {
+    if (r) result = result.split(r.full).join(r.replacement)
+  }
+  return result
 }
 
 function formatDate(iso: string | undefined): string {
@@ -61,10 +62,10 @@ export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }
 
     ipc
       .readMd(filePath)
-      .then(({ frontmatter: fm, body: rawBody }) => {
+      .then(async ({ frontmatter: fm, body: rawBody }) => {
         if (cancelled) return
         setFrontmatter(fm)
-        setBody(rewriteLocalImagePaths(rawBody, filePath))
+        setBody(await inlineLocalImages(rawBody, filePath))
       })
       .catch((err) => {
         if (cancelled) return
@@ -84,13 +85,13 @@ export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }
 
   const themeClasses = isAcademic
     ? {
-        bg: 'bg-ink/90',
+        bg: 'bg-transparent',
         text: 'text-parchment',
-        headerBg: 'bg-ink/95',
+        headerBg: 'bg-ink/40 backdrop-blur-sm',
         headerBorder: 'border-[#3d2f27]',
         title: 'text-parchment',
         meta: 'text-parchment/60',
-        summaryBox: 'bg-[#3d2f27] border-l-ember',
+        summaryBox: 'bg-ink/50 border-l-ember',
         summaryText: 'text-parchment/90',
         link: 'text-ember',
         skeleton: 'bg-[#3d2f27]',
@@ -111,8 +112,9 @@ export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }
   return (
     <div
       data-testid="anthropic-article-reader"
-      className={`relative flex flex-col h-full overflow-y-auto ${themeClasses.bg} ${themeClasses.text}`}
+      className={`relative flex h-full overflow-hidden ${themeClasses.bg} ${themeClasses.text}`}
     >
+      <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
       {onClose && (
         <div className={`sticky top-0 z-10 flex items-center justify-between px-6 py-3 border-b ${themeClasses.headerBorder} ${themeClasses.headerBg} backdrop-blur`}>
           <button
@@ -190,6 +192,15 @@ export function AnthropicArticleReader({ filePath, onClose, theme = 'academic' }
           </>
         )}
       </div>
+      </div>
+      {!loading && frontmatter && body && (
+        <ArticleAssistantPanel
+          articleType="anthropic-article"
+          parentPath={filePath}
+          articleTitle={frontmatter.title}
+          articleContent={body}
+        />
+      )}
     </div>
   )
 }

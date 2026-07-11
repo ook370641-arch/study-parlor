@@ -54,7 +54,7 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
   }
 
   const cardClasses = isAcademic
-    ? 'border-slate/30 bg-ink/60 hover:border-ember/50 text-parchment'
+    ? 'border-slate/30 bg-ink/30 hover:border-ember/50 text-parchment'
     : 'border-[#c9c3b8] bg-white hover:border-[#1a1a1a]/50 text-[#1a1a1a]'
 
   const mutedText = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'

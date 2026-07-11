@@ -13,6 +13,12 @@ vi.mock('@/lib/ipc', () => ({
       body: 'Hello world.',
     }),
     openExternal: vi.fn(),
+    readAssetAsDataUrl: vi.fn(),
+    articleAssistantReadSession: vi.fn(),
+    articleAssistantWriteSession: vi.fn(),
+    articleAssistantGenerateGuide: vi.fn(),
+    articleAssistantSendMessage: vi.fn(),
+    articleAssistantAbort: vi.fn(),
   }
 }))
 
@@ -26,7 +32,7 @@ describe('AnthropicArticleReader theme', () => {
   it('uses translucent ink background in academic theme', () => {
     render(<AnthropicArticleReader filePath="/tmp/test.md" theme="academic" />)
     const reader = screen.getByTestId('anthropic-article-reader')
-    expect(reader).toHaveClass('bg-ink/90')
+    expect(reader).toHaveClass('bg-transparent')
   })
 
   it('uses opaque white background in newspaper theme', () => {

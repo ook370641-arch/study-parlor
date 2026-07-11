@@ -13,6 +13,11 @@ vi.mock('@/lib/ipc', () => ({
     onBriefingProgress: vi.fn(() => () => {}),
     briefingList: vi.fn(),
     searchPrepare: vi.fn(),
+    articleAssistantReadSession: vi.fn(),
+    articleAssistantWriteSession: vi.fn(),
+    articleAssistantGenerateGuide: vi.fn(),
+    articleAssistantSendMessage: vi.fn(),
+    articleAssistantAbort: vi.fn(),
   }
 }))
 

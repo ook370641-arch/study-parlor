@@ -119,6 +119,7 @@ export const SELECTORS = {
     anthropicReaderTitle: '[data-testid="anthropic-reader-title"]',
     anthropicReaderClose: '[data-testid="anthropic-reader-close"]',
     anthropicErrorMessage: '[data-testid="anthropic-error-message"]',
+    anthropicReaderImage: '[data-testid="anthropic-article-reader"] [data-testid="md-image"]',
     // v1.2 UI redesign: collapsible list & new-article prompt
     anthropicListHideButton: '[data-testid="anthropic-list-hide-button"]',
     anthropicListExpandHandle: '[data-testid="anthropic-list-expand-handle"]',
