@@ -85,4 +85,37 @@ describe('BriefingDateColumn', () => {
     expect(screen.getByTestId('briefing-date-today-mini')).toBeInTheDocument()
     expect(screen.getByTestId('briefing-date-latest-mini')).toBeInTheDocument()
   })
+
+  it('does not render a duplicate row when history already contains today', () => {
+    render(
+      <BriefingDateColumn
+        collapsed={false}
+        history={[
+          { date: '2026-07-11', filePath: '/today.md' },
+          { date: '2026-07-10', filePath: '/x.md' },
+        ]}
+        today="2026-07-11"
+        onSelect={vi.fn()}
+        onReceiveToday={vi.fn()}
+        theme="academic"
+      />
+    )
+    // Today appears only as the synthetic top entry, not a second history row.
+    expect(screen.getAllByTestId('briefing-date-item-2026-07-11')).toHaveLength(1)
+    expect(screen.getByText('7月10日')).toBeInTheDocument()
+  })
+
+  it('shows empty-history hint when history only contains today', () => {
+    render(
+      <BriefingDateColumn
+        collapsed={false}
+        history={[{ date: '2026-07-11', filePath: '/today.md' }]}
+        today="2026-07-11"
+        onSelect={vi.fn()}
+        onReceiveToday={vi.fn()}
+        theme="academic"
+      />
+    )
+    expect(screen.getByText('暂无往期简报')).toBeInTheDocument()
+  })
 })

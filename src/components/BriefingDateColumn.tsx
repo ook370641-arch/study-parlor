@@ -30,10 +30,14 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
     ? 'bg-ember/20 text-ember border border-ember/40'
     : 'bg-[#1a1a1a] text-white'
 
-  const entries = [{ date: today, filePath: '', isToday: true }, ...history.map((h) => ({ ...h, isToday: false }))]
+  // Today is always rendered as the synthetic top entry, so drop any history
+  // record for today. Otherwise a generated-today briefing appears both as the
+  // synthetic entry and in `history`, producing a duplicate React key.
+  const past = history.filter((h) => h.date !== today)
+  const entries = [{ date: today, filePath: '', isToday: true }, ...past.map((h) => ({ ...h, isToday: false }))]
 
   if (collapsed) {
-    const latest = history[0]
+    const latest = past[0]
     return (
       <div className="flex flex-col items-center py-3 px-1 gap-3">
         <button
@@ -73,7 +77,7 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
           </button>
         )
       })}
-      {history.length === 0 && (
+      {past.length === 0 && (
         <div className={`px-3 py-2 text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]'}`}>
           暂无往期简报
         </div>
