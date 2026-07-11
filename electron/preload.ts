@@ -4,6 +4,7 @@ import type { IpcApi, UnsavedSession, BriefingStage } from '@shared/index'
 const api: IpcApi = {
   scanLibrary: () => ipcRenderer.invoke('files:scan'),
   readMd: (p) => ipcRenderer.invoke('files:read', p),
+  readAssetAsDataUrl: (mdFilePath, relativePath) => ipcRenderer.invoke('files:readAssetAsDataUrl', mdFilePath, relativePath),
   writeProgressMd: (a) => ipcRenderer.invoke('files:writeProgress', a),
   writeReviewReport: (a) => ipcRenderer.invoke('files:writeReviewReport', a),
   readAnchorFile: (dirName) => ipcRenderer.invoke('files:readAnchor', dirName),
@@ -89,6 +90,13 @@ const api: IpcApi = {
   anthropicCancelImport: () => ipcRenderer.invoke('anthropic:cancelImport'),
 
   openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+
+  // Article assistant
+  articleAssistantGenerateGuide: (args) => ipcRenderer.invoke('articleAssistant:generateGuide', args),
+  articleAssistantSendMessage: (args) => ipcRenderer.invoke('articleAssistant:sendMessage', args),
+  articleAssistantAbort: (args) => ipcRenderer.invoke('articleAssistant:abort', args),
+  articleAssistantReadSession: (args) => ipcRenderer.invoke('articleAssistant:readSession', args),
+  articleAssistantWriteSession: (args) => ipcRenderer.invoke('articleAssistant:writeSession', args),
 
   onBriefingProgress: (cb) => {
     const handler = (_: unknown, stage: BriefingStage, detail?: string) => cb(stage, detail)
