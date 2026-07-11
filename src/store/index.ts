@@ -1,11 +1,13 @@
 // src/store/index.ts
 import { create } from 'zustand'
 import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
+import { mergeNewArticles } from '@/lib/anthropic-articles'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
-  Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache
+  Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache,
+  AnthropicArticleMeta, AnthropicError
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
@@ -95,7 +97,16 @@ type AppStore = {
   anthropicReaderFilePath: string | null
   anthropicBlogLastSeenAt: string | null
   setBriefingSource: (source: 'digest' | 'anthropic') => Promise<void>
-  discoverAnthropicArticles: () => Promise<void>
+  discoverAnthropicArticles: (
+    opts?: { commit?: boolean }
+  ) => Promise<
+    | { ok: true; lastFetchedAt: string; articles: AnthropicArticleMeta[] }
+    | { ok: false; error: AnthropicError }
+  >
+  mergeAnthropicArticles: (
+    newArticles: AnthropicArticleMeta[],
+    lastFetchedAt: string
+  ) => void
   importAnthropicArticle: (url: string) => Promise<void>
   cancelAnthropicImport: () => Promise<void>
   openAnthropicReader: (filePath: string) => Promise<void>
@@ -474,8 +485,13 @@ export const useStore = create<AppStore>((set, get) => ({
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
   },
 
-  discoverAnthropicArticles: async () => {
-    set(s => ({ anthropicBlogCache: { ...s.anthropicBlogCache, loading: true, error: null } }))
+  discoverAnthropicArticles: async (opts) => {
+    const commit = opts?.commit !== false
+    if (commit) {
+      set((s) => ({
+        anthropicBlogCache: { ...s.anthropicBlogCache, loading: true, error: null },
+      }))
+    }
     try {
       const result = await ipc.anthropicDiscover()
       if (result.ok) {
@@ -485,16 +501,37 @@ export const useStore = create<AppStore>((set, get) => ({
           loading: false,
           error: null,
         }
-        set({ anthropicBlogCache: next })
-      } else {
-        set(s => ({
-          anthropicBlogCache: { ...s.anthropicBlogCache, loading: false, error: result }
+        if (commit) {
+          set({ anthropicBlogCache: next })
+        }
+        return { ok: true as const, lastFetchedAt: result.lastFetchedAt, articles: result.articles }
+      }
+      const error: AnthropicError = { code: result.code, message: result.message }
+      if (commit) {
+        set((s) => ({
+          anthropicBlogCache: { ...s.anthropicBlogCache, loading: false, error },
         }))
       }
+      return { ok: false as const, error }
     } catch (err: any) {
-      const error = { code: 'unknown' as const, message: err.message || String(err) }
-      set(s => ({ anthropicBlogCache: { ...s.anthropicBlogCache, loading: false, error } }))
+      const error: AnthropicError = { code: 'unknown', message: err.message || String(err) }
+      if (commit) {
+        set((s) => ({
+          anthropicBlogCache: { ...s.anthropicBlogCache, loading: false, error },
+        }))
+      }
+      return { ok: false as const, error }
     }
+  },
+
+  mergeAnthropicArticles: (newArticles, lastFetchedAt) => {
+    set((s) => ({
+      anthropicBlogCache: {
+        ...s.anthropicBlogCache,
+        lastFetchedAt,
+        articles: mergeNewArticles(s.anthropicBlogCache.articles, newArticles),
+      },
+    }))
   },
 
   importAnthropicArticle: async (url) => {
