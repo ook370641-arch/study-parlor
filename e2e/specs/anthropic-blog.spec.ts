@@ -32,8 +32,16 @@ test.describe('Anthropic 博客集成', () => {
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
     await expect(sidebar).not.toHaveClass(/w-14/)
 
-    // E2E-1: 列表发现
-    await window.locator(SELECTORS.briefing.anthropicRefreshButton).click()
+    // E2E-1: 列表发现（v1.2 UI：自动检测 + 新文章提示条）
+    // 点击自动检测发现的新文章提示条
+    const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+    await prompt.waitFor({ timeout: 120000 }).catch(() => {
+      // If no new articles detected (all cached), use existing articles
+    })
+    const promptVisible = await prompt.isVisible().catch(() => false)
+    if (promptVisible) {
+      await prompt.click()
+    }
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
     expect(await rows.count()).toBeGreaterThan(0)
@@ -84,7 +92,7 @@ test.describe('Anthropic 博客集成', () => {
       await cover.enterName('E2E 测试员')
       await cover.goToBriefing()
       await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
-      await window.locator(SELECTORS.briefing.anthropicRefreshButton).click()
+      // v1.2: auto-detect fires on mount, error should appear in panel
       const panel = window.locator(SELECTORS.briefing.anthropicPanel)
       await expect(panel.locator(SELECTORS.briefing.anthropicErrorMessage)).toBeVisible({ timeout: 20000 })
     })

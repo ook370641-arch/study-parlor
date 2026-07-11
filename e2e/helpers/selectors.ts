@@ -119,6 +119,11 @@ export const SELECTORS = {
     anthropicReaderTitle: '[data-testid="anthropic-reader-title"]',
     anthropicReaderClose: '[data-testid="anthropic-reader-close"]',
     anthropicErrorMessage: '[data-testid="anthropic-error-message"]',
+    // v1.2 UI redesign: collapsible list & new-article prompt
+    anthropicListHideButton: '[data-testid="anthropic-list-hide-button"]',
+    anthropicListExpandHandle: '[data-testid="anthropic-list-expand-handle"]',
+    anthropicNewArticlesPrompt: '[data-testid="anthropic-new-articles-prompt"]',
+    anthropicListCheckError: '[data-testid="anthropic-list-check-error"]',
   },
   profile: {
     page: '[data-testid="profile-page"]',
