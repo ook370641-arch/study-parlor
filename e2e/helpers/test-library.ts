@@ -456,6 +456,8 @@ const BASE_STATE = {
   briefingSource: 'digest',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicBlogLastSeenAt: null,
+  articleAssistantGuideWidth: 320,
+  articleAssistantGuideCollapsed: false,
 }
 
 export function seedStateJson(

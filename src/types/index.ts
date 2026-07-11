@@ -105,6 +105,18 @@ export type ArticleAssistantSessionFile = {
   updatedAt: string
 }
 
+export type ArticleChunk = {
+  heading: string
+  body: string
+  startIndex: number
+}
+
+export type ArticleAssistantGuideFile = {
+  filePath: string
+  guide: ArticleAssistantGuide
+  generatedAt: string
+}
+
 export type ArticleAssistantErrorCode =
   | 'GUIDE_LLM_ERROR'
   | 'GUIDE_JSON_ERROR'
@@ -312,6 +324,8 @@ export type StateJson = {
   briefingSource?: 'digest' | 'anthropic'
   anthropicBlogCache?: AnthropicBlogCache
   anthropicBlogLastSeenAt?: string | null
+  articleAssistantGuideWidth?: number
+  articleAssistantGuideCollapsed?: boolean
 }
 
 export type IpcApi = {
@@ -470,6 +484,9 @@ export type IpcApi = {
     parentType: 'briefing' | 'anthropic-article'
     messages: ArticleAssistantMessage[]
   }) => Promise<{ filePath: string }>
+
+  articleAssistantReadGuide: (args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' }) => Promise<ArticleAssistantGuideFile | null>
+  articleAssistantWriteGuide: (args: { parentPath: string; parentType: 'briefing' | 'anthropic-article'; guide: ArticleAssistantGuide }) => Promise<{ filePath: string }>
 
   // App shell
   openExternal: (url: string) => Promise<void>
