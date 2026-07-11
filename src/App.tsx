@@ -49,6 +49,31 @@ export function App() {
   // Attach article assistant streaming listeners once globally
   useEffect(() => { attachAssistantSessionListeners() }, [])
 
+  // After boot, prefetch the common page chunks during idle. Pages are
+  // React.lazy (see below) wrapped in <Suspense fallback={null}>, so the first
+  // navigation into a not-yet-loaded page renders nothing while its chunk is
+  // fetched/transformed — showing the brown app background for a beat (very
+  // noticeable in dev on Windows). Warming the chunks means Suspense never
+  // trips on first open.
+  useEffect(() => {
+    if (isBooting) return
+    const prefetch = () => {
+      import('@/pages/Home')
+      import('@/pages/Study')
+      import('@/pages/Briefing')
+    }
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(prefetch)
+      return () => w.cancelIdleCallback?.(id)
+    }
+    const t = setTimeout(prefetch, 300)
+    return () => clearTimeout(t)
+  }, [isBooting])
+
   const handleSetupDone = () => {
     setNeedsSetup(false)
     setIsBooting(true)
