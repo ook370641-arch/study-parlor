@@ -6,13 +6,22 @@ const LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s<>"{}|\
 interface Props {
   item: string
   theme: 'academic' | 'newspaper'
+  variant?: 'inline' | 'pill'
 }
 
-export function BriefingSourceItem({ item, theme }: Props) {
-  const linkClass =
+export function BriefingSourceItem({ item, theme, variant = 'inline' }: Props) {
+  const inlineClass =
     theme === 'academic'
       ? 'text-ember hover:text-[#e8a07a] underline underline-offset-2'
       : 'text-[#d97757] hover:text-[#b55c3e] underline underline-offset-2'
+
+  const pillClass =
+    theme === 'academic'
+      ? 'inline-flex items-center gap-1 rounded-full bg-ember/15 text-ember hover:bg-ember/25 px-2 py-0.5 text-xs'
+      : 'inline-flex items-center gap-1 rounded-full bg-[#1a1a1a] text-white hover:bg-[#333] px-2 py-0.5 text-xs'
+
+  const linkClass = variant === 'pill' ? pillClass : inlineClass
+  const arrow = variant === 'pill' ? <span className="text-[10px]">↗</span> : null
 
   const parts: React.ReactNode[] = []
   let lastIndex = 0
@@ -41,6 +50,7 @@ export function BriefingSourceItem({ item, theme }: Props) {
         rel="noopener noreferrer"
         className={linkClass}
       >
+        {arrow}
         {text}
       </a>
     )
