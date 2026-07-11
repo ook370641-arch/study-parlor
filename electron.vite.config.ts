@@ -37,6 +37,10 @@ export default defineConfig({
           '**/playwright-report/**',
           '**/test-results/**',
           '**/coverage/**',
+          // 防御性排除：当 .electron-cache 因旧代码/手动操作落在项目根时，
+          // 避免 Vite 监控其中的 Chromium 锁文件（Code Cache/temp-index）。
+          // 正常路径在 node_modules/ 下，已被 Vite 默认排除。
+          '**/.electron-cache/**',
         ],
       },
     },

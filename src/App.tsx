@@ -1,18 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useStore } from '@/store'
-import { Cover } from '@/pages/Cover'
-import { Home } from '@/pages/Home'
-import { Study } from '@/pages/Study'
-import { Profile } from '@/pages/Profile'
-import { Extension } from '@/pages/Extension'
-import { Settings } from '@/pages/Settings'
-import { Briefing } from '@/pages/Briefing'
 import { Toast } from '@/components/Toast'
 import { PreStudyModal } from '@/components/PreStudyModal'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { SetupWizard } from '@/components/SetupWizard'
 import { ipc } from '@/lib/ipc'
 import { attachAssistantSessionListeners } from '@/lib/assistant-session-runtime'
+
+// Lazy-load pages to reduce Vite dev-server first-page transform cost.
+// All 7 pages + their dependency trees were eagerly parsed on startup, but the
+// user only needs one.  Lazy loading cuts the initial module graph roughly in
+// half, which is especially noticeable on Windows where Vite's esbuild
+// transform pipeline is 3–5× slower than on macOS/Linux.
+// Pages use named exports; React.lazy needs a default export.
+const Cover    = lazy(() => import('@/pages/Cover').then(m => ({ default: m.Cover })))
+const Home     = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })))
+const Study    = lazy(() => import('@/pages/Study').then(m => ({ default: m.Study })))
+const Profile  = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })))
+const Extension = lazy(() => import('@/pages/Extension').then(m => ({ default: m.Extension })))
+const Settings = lazy(() => import('@/pages/Settings').then(m => ({ default: m.Settings })))
+const Briefing = lazy(() => import('@/pages/Briefing').then(m => ({ default: m.Briefing })))
 
 export function App() {
   const page = useStore(s => s.currentPage)
@@ -163,7 +170,7 @@ export function App() {
     <div className="h-full">
       {isBooting && <LoadingScreen onComplete={handleBootComplete} />}
       {!isBooting && (
-        <>
+        <Suspense fallback={null}>
           {page === 'cover' && <Cover />}
           {page === 'home' && <Home />}
           {page === 'study' && <Study />}
@@ -171,7 +178,7 @@ export function App() {
           {page === 'extension' && <Extension />}
           {page === 'settings' && <Settings />}
           {page === 'briefing' && <Briefing />}
-        </>
+        </Suspense>
       )}
       {modal === 'preStudy' && <PreStudyModal />}
       <Toast />
