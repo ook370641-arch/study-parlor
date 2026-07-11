@@ -5,11 +5,31 @@ import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
-  Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache
+  Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache,
+  ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
+
+export type AssistantSession = {
+  contextId: string
+  contextType: 'briefing' | 'anthropic-article'
+  articleTitle?: string
+  articleContent: string
+  guide: ArticleAssistantGuide | null
+  guideLoading: boolean
+  guideError: ArticleAssistantErrorCode | null
+  messages: ArticleAssistantMessage[]
+  streaming: boolean
+  abortId: string
+  searchLoading: boolean
+  searchError: 'NO_RESULTS' | 'SEARCH_ERROR' | null
+  chatError: ArticleAssistantErrorCode | null
+  retryContext: { text: string; useSearch: boolean } | null
+  pendingSelection?: string
+  isOpen: boolean
+}
 
 type Page = 'cover' | 'home' | 'study' | 'profile' | 'extension' | 'settings' | 'briefing'
 
@@ -196,6 +216,23 @@ type AppStore = {
     date: string
   }) => void
   removePendingArchive: (dirName: string, sessionNumber: number) => void
+
+  // 文章旁注助手
+  assistantSession: AssistantSession | null
+  openAssistantSession: (args: { contextId: string; contextType: 'briefing' | 'anthropic-article'; articleTitle?: string; articleContent: string }) => void
+  closeAssistantSession: () => void
+  toggleAssistantOpen: () => void
+  setAssistantSelection: (text: string) => void
+  loadAssistantGuide: () => Promise<void>
+  loadAssistantSession: () => Promise<void>
+  saveAssistantSession: () => Promise<void>
+  sendAssistantMessage: (text: string, useSearch: boolean) => Promise<void>
+  retryAssistantMessage: () => Promise<void>
+  runAssistantStream: (history: ArticleAssistantMessage[], useSearch: boolean) => Promise<void>
+  applyAssistantSearchResult: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void
+  appendAssistantChunk: (text: string) => void
+  finishAssistantStreaming: () => void
+  abortAssistantStream: () => void
 }
 
 let wildcardRequestId = 0
@@ -241,6 +278,7 @@ export const useStore = create<AppStore>((set, get) => ({
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicReaderFilePath: null,
   anthropicBlogLastSeenAt: null,
+  assistantSession: null,
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -773,6 +811,186 @@ export const useStore = create<AppStore>((set, get) => ({
       p => !(p.dirName === dirName && p.sessionNumber === sessionNumber)
     )
   })),
+
+  // --- 文章旁注助手 ---
+  openAssistantSession: (args) => {
+    const prev = get().assistantSession
+    if (prev && prev.contextId === args.contextId) return
+    set({
+      assistantSession: {
+        contextId: args.contextId,
+        contextType: args.contextType,
+        articleTitle: args.articleTitle,
+        articleContent: args.articleContent,
+        guide: null, guideLoading: false, guideError: null,
+        messages: [], streaming: false, abortId: '',
+        searchLoading: false, searchError: null, chatError: null,
+        retryContext: null, pendingSelection: undefined, isOpen: false,
+      },
+    })
+    get().loadAssistantGuide()
+    get().loadAssistantSession()
+  },
+
+  closeAssistantSession: () => {
+    const s = get().assistantSession
+    if (!s) return
+    if (s.streaming) ipc.articleAssistantAbort({ sessionId: s.abortId })
+    get().saveAssistantSession()
+    set({ assistantSession: null })
+  },
+
+  toggleAssistantOpen: () => {
+    const s = get().assistantSession
+    if (!s) return
+    set({ assistantSession: { ...s, isOpen: !s.isOpen } })
+  },
+
+  setAssistantSelection: (text) => {
+    const s = get().assistantSession
+    if (!s) return
+    const trimmed = text.trim()
+    set({ assistantSession: { ...s, pendingSelection: trimmed || undefined } })
+  },
+
+  loadAssistantGuide: async () => {
+    const s = get().assistantSession
+    if (!s) return
+    set({ assistantSession: { ...s, guideLoading: true, guideError: null } })
+    try {
+      const guide = await ipc.articleAssistantGenerateGuide({
+        articleContent: s.articleContent, articleType: s.contextType, articleTitle: s.articleTitle,
+      })
+      const cur = get().assistantSession
+      if (!cur || cur.contextId !== s.contextId) return
+      set({ assistantSession: { ...cur, guide, guideLoading: false } })
+    } catch (err) {
+      const code: ArticleAssistantErrorCode = (err as Error & { code?: string })?.code === 'GUIDE_JSON_ERROR' ? 'GUIDE_JSON_ERROR'
+        : (err as Error & { code?: string })?.code === 'GUIDE_ABORT' ? 'GUIDE_ABORT'
+        : 'GUIDE_LLM_ERROR'
+      const cur = get().assistantSession
+      if (!cur || cur.contextId !== s.contextId) return
+      set({ assistantSession: { ...cur, guideLoading: false, guideError: code } })
+    }
+  },
+
+  loadAssistantSession: async () => {
+    const s = get().assistantSession
+    if (!s) return
+    const file = await ipc.articleAssistantReadSession({ parentPath: s.contextId, parentType: s.contextType })
+    const cur = get().assistantSession
+    if (!cur || cur.contextId !== s.contextId) return
+    if (file?.messages.length && cur.messages.length === 0) {
+      set({ assistantSession: { ...cur, messages: file.messages } })
+    }
+  },
+
+  saveAssistantSession: async () => {
+    const s = get().assistantSession
+    if (!s) return
+    const persistable = s.messages.filter((m) => m.content.trim().length > 0)
+    if (persistable.length === 0) return
+    try {
+      await ipc.articleAssistantWriteSession({ parentPath: s.contextId, parentType: s.contextType, messages: persistable })
+    } catch (_err) {
+      get().showToast('旁注记录已暂存到恢复目录')
+    }
+  },
+
+  sendAssistantMessage: async (text, useSearch) => {
+    const s = get().assistantSession
+    if (!s || s.streaming || s.searchLoading) return
+    const content = text.trim()
+    if (!content && !s.pendingSelection) return
+    const userMessage: ArticleAssistantMessage = { role: 'user', content }
+    const history = [...s.messages, userMessage]
+    set({ assistantSession: { ...s, messages: history, retryContext: { text, useSearch } } })
+    await get().runAssistantStream(history, useSearch)
+  },
+
+  retryAssistantMessage: async () => {
+    const s = get().assistantSession
+    if (!s || s.streaming || !s.retryContext) return
+    let msgs = s.messages
+    const last = msgs.at(-1)
+    if (last && last.role === 'assistant' && last.content.trim() === '') msgs = msgs.slice(0, -1)
+    set({ assistantSession: { ...s, messages: msgs, chatError: null } })
+    await get().runAssistantStream(msgs, s.retryContext.useSearch)
+  },
+
+  runAssistantStream: async (history, useSearch) => {
+    const s = get().assistantSession
+    if (!s) return
+    const abortId = `article-assistant-${Date.now()}`
+    const placeholder: ArticleAssistantMessage = { role: 'assistant', content: '' }
+    set({
+      assistantSession: {
+        ...s,
+        messages: [...history, placeholder],
+        streaming: true,
+        searchLoading: useSearch,
+        searchError: null,
+        chatError: null,
+        abortId,
+        isOpen: true,
+      },
+    })
+    try {
+      await ipc.articleAssistantSendMessage({
+        sessionId: abortId,
+        articleContent: s.articleContent,
+        articleType: s.contextType,
+        messages: history,
+        selection: s.pendingSelection,
+        useSearch,
+        guide: s.guide,
+      })
+    } catch (err) {
+      const code: ArticleAssistantErrorCode = (err as Error & { code?: string })?.code === 'CHAT_NETWORK_ERROR' ? 'CHAT_NETWORK_ERROR'
+        : (err as Error & { code?: string })?.code === 'CHAT_TIMEOUT' ? 'CHAT_TIMEOUT'
+        : 'CHAT_LLM_ERROR'
+      const cur = get().assistantSession
+      if (!cur || cur.abortId !== abortId) return
+      const trimmed = cur.messages.at(-1)?.content.trim() === '' ? cur.messages.slice(0, -1) : cur.messages
+      set({ assistantSession: { ...cur, messages: trimmed, streaming: false, searchLoading: false, chatError: code } })
+    }
+  },
+
+  applyAssistantSearchResult: (sessionId, payload) => {
+    const s = get().assistantSession
+    if (!s || s.abortId !== sessionId) return
+    const msgs = s.messages.slice()
+    const lastIdx = msgs.length - 1
+    if (lastIdx >= 0 && msgs[lastIdx].role === 'assistant' && payload.searchSources) {
+      msgs[lastIdx] = { ...msgs[lastIdx], searchSources: payload.searchSources }
+    }
+    set({ assistantSession: { ...s, messages: msgs, searchLoading: false, searchError: payload.searchError ?? null } })
+  },
+
+  appendAssistantChunk: (text) => {
+    const s = get().assistantSession
+    if (!s || !s.streaming) return
+    const last = s.messages.at(-1)
+    if (!last || last.role !== 'assistant') return
+    const updated = s.messages.slice(0, -1)
+    updated.push({ ...last, content: last.content + text })
+    set({ assistantSession: { ...s, messages: updated } })
+  },
+
+  finishAssistantStreaming: () => {
+    const s = get().assistantSession
+    if (!s) return
+    set({ assistantSession: { ...s, streaming: false, searchLoading: false } })
+    get().saveAssistantSession()
+  },
+
+  abortAssistantStream: () => {
+    const s = get().assistantSession
+    if (!s || !s.streaming) return
+    ipc.articleAssistantAbort({ sessionId: s.abortId })
+    set({ assistantSession: { ...s, streaming: false, searchLoading: false } })
+    get().saveAssistantSession()
+  },
 }))
 
 // Expose store for E2E automation so tests can deterministically drive internal state.

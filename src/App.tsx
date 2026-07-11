@@ -12,6 +12,7 @@ import { PreStudyModal } from '@/components/PreStudyModal'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { SetupWizard } from '@/components/SetupWizard'
 import { ipc } from '@/lib/ipc'
+import { attachAssistantSessionListeners } from '@/lib/assistant-session-runtime'
 
 export function App() {
   const page = useStore(s => s.currentPage)
@@ -37,6 +38,9 @@ export function App() {
       // boot:complete 事件会触发 LoadingScreen 的 onComplete
     })
   }, [])
+
+  // Attach article assistant streaming listeners once globally
+  useEffect(() => { attachAssistantSessionListeners() }, [])
 
   const handleSetupDone = () => {
     setNeedsSetup(false)
