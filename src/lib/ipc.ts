@@ -9,6 +9,7 @@ const ensure = (): IpcApi => {
 export const ipc = {
   get scanLibrary() { return ensure().scanLibrary },
   get readMd() { return ensure().readMd },
+  get readAssetAsDataUrl() { return ensure().readAssetAsDataUrl },
   get readAnchorFile() { return ensure().readAnchorFile },
   get writeProgressMd() { return ensure().writeProgressMd },
   get writeReviewReport() { return ensure().writeReviewReport },
@@ -71,6 +72,12 @@ export const ipc = {
   get anthropicDiscover() { return ensure().anthropicDiscover },
   get anthropicImportArticle() { return ensure().anthropicImportArticle },
   get anthropicCancelImport() { return ensure().anthropicCancelImport },
+
+  get articleAssistantGenerateGuide() { return ensure().articleAssistantGenerateGuide },
+  get articleAssistantSendMessage() { return ensure().articleAssistantSendMessage },
+  get articleAssistantAbort() { return ensure().articleAssistantAbort },
+  get articleAssistantReadSession() { return ensure().articleAssistantReadSession },
+  get articleAssistantWriteSession() { return ensure().articleAssistantWriteSession },
 
   get openExternal() { return ensure().openExternal }
 }

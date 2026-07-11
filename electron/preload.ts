@@ -4,6 +4,7 @@ import type { IpcApi, UnsavedSession, BriefingStage } from '@shared/index'
 const api: IpcApi = {
   scanLibrary: () => ipcRenderer.invoke('files:scan'),
   readMd: (p) => ipcRenderer.invoke('files:read', p),
+  readAssetAsDataUrl: (mdFilePath, relativePath) => ipcRenderer.invoke('files:readAssetAsDataUrl', mdFilePath, relativePath),
   writeProgressMd: (a) => ipcRenderer.invoke('files:writeProgress', a),
   writeReviewReport: (a) => ipcRenderer.invoke('files:writeReviewReport', a),
   readAnchorFile: (dirName) => ipcRenderer.invoke('files:readAnchor', dirName),
@@ -87,6 +88,12 @@ const api: IpcApi = {
   anthropicDiscover: () => ipcRenderer.invoke('anthropic:discover'),
   anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
   anthropicCancelImport: () => ipcRenderer.invoke('anthropic:cancelImport'),
+
+  articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),
+  articleAssistantSendMessage: (a) => ipcRenderer.invoke('articleAssistant:sendMessage', a),
+  articleAssistantAbort: (a) => ipcRenderer.invoke('articleAssistant:abort', a),
+  articleAssistantReadSession: (a) => ipcRenderer.invoke('articleAssistant:readSession', a),
+  articleAssistantWriteSession: (a) => ipcRenderer.invoke('articleAssistant:writeSession', a),
 
   openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
 

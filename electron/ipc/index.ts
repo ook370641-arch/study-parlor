@@ -8,6 +8,7 @@ import { registerSessionsIpc } from './sessions'
 import { registerBriefingIpc } from './briefing'
 import { registerSearchIpc } from './search'
 import { registerAnthropicIpc } from './anthropic'
+import { registerArticleAssistantIpc } from './article-assistant'
 import { registerAppIpc } from './app'
 
 export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
@@ -19,5 +20,6 @@ export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   registerBriefingIpc(cfg)
   registerSearchIpc(cfg)
   registerAnthropicIpc(cfg)
+  registerArticleAssistantIpc(cfg)
   registerAppIpc()
 }
