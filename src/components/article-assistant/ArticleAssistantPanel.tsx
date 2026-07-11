@@ -2,35 +2,44 @@ import { useEffect, useRef } from 'react'
 import { useStore } from '@/store'
 import { GuideSidebar } from './GuideSidebar'
 import { ChatWindow } from './ChatWindow'
+import { ArticleDivider } from './ArticleDivider'
 
 interface Props {
   articleType: 'briefing' | 'anthropic-article'
   parentPath: string
   articleTitle?: string
   articleContent: string
+  autoGenerateGuide?: boolean
+  theme?: 'academic' | 'newspaper'
 }
 
-export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent }: Props) {
+export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, autoGenerateGuide, theme = 'academic' }: Props) {
   const session = useStore((s) => s.assistantSession)
   const openAssistantSession = useStore((s) => s.openAssistantSession)
-  const closeAssistantSession = useStore((s) => s.closeAssistantSession)
+  const persistAssistantState = useStore((s) => s.persistAssistantState)
   const setAssistantSelection = useStore((s) => s.setAssistantSelection)
   const toggleAssistantOpen = useStore((s) => s.toggleAssistantOpen)
+  const guideWidth = useStore((s) => s.articleAssistantGuideWidth)
+  const guideCollapsed = useStore((s) => s.articleAssistantGuideCollapsed)
+  const setArticleAssistantGuideWidth = useStore((s) => s.setArticleAssistantGuideWidth)
+  const setArticleAssistantGuideCollapsed = useStore((s) => s.setArticleAssistantGuideCollapsed)
+  const containerRef = useRef<HTMLDivElement>(null)
   const prevPath = useRef<string | null>(null)
 
   // Open session when parentPath changes (or on first mount)
   useEffect(() => {
     if (prevPath.current !== parentPath) {
+      const prev = prevPath.current
       prevPath.current = parentPath
-      // Close old session if switching articles
-      if (session && session.contextId !== parentPath) {
-        closeAssistantSession()
+      // Persist the previous session before switching, but keep it in memory/disk so it can be restored
+      if (prev && session) {
+        persistAssistantState()
       }
-      openAssistantSession({ contextId: parentPath, contextType: articleType, articleTitle, articleContent })
+      openAssistantSession({ contextId: parentPath, contextType: articleType, articleTitle, articleContent, autoGenerateGuide })
     }
     return () => {
-      // Save on unmount (page navigation)
-      closeAssistantSession()
+      // Persist but do NOT close/clear the session, so switching back restores it from memory + disk.
+      persistAssistantState()
     }
   }, [parentPath]) // intentionally narrow deps — only remount on path change
 
@@ -52,14 +61,36 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
   // Don't render until session is ready for this parentPath
   if (!session || session.contextId !== parentPath) return null
 
+  const sidebarWidth = guideCollapsed
+    ? 0
+    : Math.max(200, Math.min(guideWidth, (containerRef.current?.clientWidth ?? 1000) * 0.45))
+
   return (
-    <>
-      <GuideSidebar />
+    <div ref={containerRef} className="relative flex h-full shrink-0">
+      <ArticleDivider
+        collapsed={guideCollapsed}
+        onToggleCollapse={() => setArticleAssistantGuideCollapsed(!guideCollapsed)}
+        onResize={(width) => {
+          const containerWidth = containerRef.current?.clientWidth ?? window.innerWidth
+          const maxWidth = containerWidth * 0.45
+          if (width < 40 || containerWidth - width < 20) {
+            setArticleAssistantGuideCollapsed(true)
+          } else {
+            setArticleAssistantGuideCollapsed(false)
+            setArticleAssistantGuideWidth(Math.min(width, maxWidth))
+          }
+        }}
+        theme={theme}
+      />
+      <div className="h-full overflow-hidden transition-[width] duration-150 ease-out" style={{ width: sidebarWidth }}>
+        <GuideSidebar theme={theme} />
+      </div>
       {/* Vertical tab to toggle chat window */}
       <button
         data-testid="article-assistant-tab"
         onClick={toggleAssistantOpen}
-        className="absolute right-80 top-24 z-40 w-6 h-28 bg-ink/80 border border-parchment/20 border-r-0 rounded-l flex items-center justify-center hover:bg-ink/90 transition-colors"
+        className="absolute top-24 z-40 w-6 h-28 bg-ink/80 border border-parchment/20 border-r-0 rounded-l flex items-center justify-center hover:bg-ink/90 transition-colors"
+        style={{ right: sidebarWidth }}
         title={session.isOpen ? '关闭旁注' : '打开旁注'}
       >
         <span
@@ -73,6 +104,6 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
         )}
       </button>
       <ChatWindow />
-    </>
+    </div>
   )
 }

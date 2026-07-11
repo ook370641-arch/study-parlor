@@ -16,7 +16,7 @@ export function ArticleDivider({ collapsed, onToggleCollapse, onResize, theme = 
     target.setPointerCapture(e.pointerId)
     const container = target.parentElement
     const containerWidth = container?.getBoundingClientRect().width ?? window.innerWidth
-    const sidebar = container?.lastElementChild as HTMLElement | null
+    const sidebar = target.nextElementSibling as HTMLElement | null
     const sidebarWidth = sidebar?.getBoundingClientRect().width ?? 320
     dragging.current = { startX: e.clientX, containerWidth, sidebarWidth }
 
