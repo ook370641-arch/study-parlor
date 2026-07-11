@@ -9,10 +9,6 @@ interface Props {
   timeString?: string
   sourceStatus?: BriefingSourceStatus
   cacheWriteFailed?: boolean
-  onRegenerate?: () => void
-  regenerating?: boolean
-  onHistory: () => void
-  showRegenerate?: boolean
 }
 
 export function BriefingHeader({
@@ -20,10 +16,6 @@ export function BriefingHeader({
   timeString,
   sourceStatus,
   cacheWriteFailed,
-  onRegenerate,
-  regenerating,
-  onHistory,
-  showRegenerate = false,
 }: Props) {
   const theme = useStore((s) => s.briefingTheme)
   const fontSize = useStore((s) => s.briefingFontSize)
@@ -64,11 +56,11 @@ export function BriefingHeader({
           {timeString && ` · ${timeString}`}
           {sourceStatus && failedSources.length > 0 && (
             <span
-              className="ml-2"
+              className="ml-2 text-wine"
               data-testid="briefing-source-status"
               title={sourceStatusTitle}
             >
-              {failedSources.map((label) => `${label} ✗`).join(' · ')}
+              {failedSources.join('、')} 获取失败
             </span>
           )}
           {cacheWriteFailed && (
@@ -98,25 +90,6 @@ export function BriefingHeader({
           title="增大字号"
         >
           +
-        </Button>
-        {showRegenerate && (
-          <Button
-            variant="ghost"
-            onClick={onRegenerate}
-            disabled={regenerating}
-            data-testid="briefing-regenerate-button"
-            className={ghostOverride}
-          >
-            {regenerating ? '生成中...' : '重新生成'}
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          onClick={onHistory}
-          data-testid="briefing-history-button"
-          className={ghostOverride}
-        >
-          往期
         </Button>
         <BriefingThemeToggle />
       </div>
