@@ -45,8 +45,8 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
                 <div className={`leading-relaxed mb-2 ${isAcademic ? 'text-parchment/80' : 'text-[#555]'}`}>{chunk.summary}</div>
                 {chunk.terms.length > 0 && (
                   <div className={`space-y-1.5 mt-2 pt-2 border-t ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}>
-                    {chunk.terms.map((t) => (
-                      <div key={t.term} className={`text-xs leading-relaxed ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
+                    {chunk.terms.map((t, ti) => (
+                      <div key={`${i}-${ti}`} className={`text-xs leading-relaxed ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
                         <span className="text-ember font-medium">{t.term}</span>
                         <span className="text-parchment/50 mx-1">·</span>
                         <span>{t.translation}</span>

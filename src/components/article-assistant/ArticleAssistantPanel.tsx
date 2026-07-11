@@ -61,9 +61,8 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
   // Don't render until session is ready for this parentPath
   if (!session || session.contextId !== parentPath) return null
 
-  const sidebarWidth = guideCollapsed
-    ? 0
-    : Math.max(200, Math.min(guideWidth, (containerRef.current?.clientWidth ?? 1000) * 0.45))
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1000
+  const sidebarWidth = guideCollapsed ? 0 : Math.max(200, Math.min(guideWidth, viewportWidth * 0.45))
 
   return (
     <div ref={containerRef} className="relative flex h-full shrink-0">
@@ -71,9 +70,8 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
         collapsed={guideCollapsed}
         onToggleCollapse={() => setArticleAssistantGuideCollapsed(!guideCollapsed)}
         onResize={(width) => {
-          const containerWidth = containerRef.current?.clientWidth ?? window.innerWidth
-          const maxWidth = containerWidth * 0.45
-          if (width < 40 || containerWidth - width < 20) {
+          const maxWidth = (typeof window !== 'undefined' ? window.innerWidth : 1000) * 0.45
+          if (width < 40) {
             setArticleAssistantGuideCollapsed(true)
           } else {
             setArticleAssistantGuideCollapsed(false)

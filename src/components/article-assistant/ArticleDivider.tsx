@@ -45,7 +45,7 @@ export function ArticleDivider({ collapsed, onToggleCollapse, onResize, theme = 
         isAcademic ? 'bg-parchment/10 hover:bg-parchment/20' : 'bg-[#1a1a1a]/10 hover:bg-[#1a1a1a]/20'
       }`}
       onPointerDown={handlePointerDown}
-      title={collapsed ? '展开导读' : '向左拖拽加宽文章'}
+      title={collapsed ? '展开导读' : '拖拽调整导读宽度'}
     >
       <div className={`w-0.5 h-6 rounded-full ${isAcademic ? 'bg-parchment/25' : 'bg-[#1a1a1a]/25'}`} />
       <button

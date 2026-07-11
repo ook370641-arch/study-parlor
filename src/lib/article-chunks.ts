@@ -22,11 +22,16 @@ export function splitArticleIntoChunks(body: string, headings: string[]): Articl
 
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li]
-    const normalizedLine = normalizeHeading(line)
-    const matchIndex = targets.findIndex((t) => t.length > 0 && normalizedLine.includes(t))
+    const isHeadingLine = /^#{1,6}\s/.test(line.trim())
+    let matchIndex = -1
+    if (isHeadingLine) {
+      const normalizedLine = normalizeHeading(line)
+      matchIndex = targets.findIndex((t) => t.length > 0 && normalizedLine.startsWith(t))
+    }
     if (matchIndex !== -1) {
-      if (cursor > currentStart && currentHeading) {
-        chunks.push({ heading: currentHeading, body: body.slice(currentStart, cursor).trim(), startIndex: currentStart })
+      const segment = body.slice(currentStart, cursor).trim()
+      if (segment) {
+        chunks.push({ heading: currentHeading, body: segment, startIndex: currentStart })
       }
       currentHeading = headings[matchIndex]
       currentStart = cursor + line.length + 1
@@ -34,8 +39,9 @@ export function splitArticleIntoChunks(body: string, headings: string[]): Articl
     cursor += line.length + 1
   }
 
-  if (currentStart < body.length) {
-    chunks.push({ heading: currentHeading, body: body.slice(currentStart).trim(), startIndex: currentStart })
+  const tail = body.slice(currentStart).trim()
+  if (tail) {
+    chunks.push({ heading: currentHeading, body: tail, startIndex: currentStart })
   }
 
   if (chunks.length === 0) {
