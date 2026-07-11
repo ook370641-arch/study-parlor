@@ -58,6 +58,7 @@ function bootTs(): string {
 }
 
 const isDev = !!process.env.ELECTRON_RENDERER_URL
+const isE2ESilent = process.env.E2E_SILENT === '1'
 
 if (isDev) {
   app.commandLine.appendSwitch('remote-debugging-port', '9222')
@@ -117,6 +118,7 @@ async function bootstrap() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    show: !isE2ESilent,
     backgroundColor: '#2a1f1a',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -124,7 +126,9 @@ async function bootstrap() {
       nodeIntegration: false
     }
   })
-  mainWindow.maximize()
+  if (!isE2ESilent) {
+    mainWindow.maximize()
+  }
   console.log('[bootstrap] window created', bootTs())
 
   mainWindow.webContents.on('did-start-loading', () => {
