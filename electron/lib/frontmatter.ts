@@ -68,6 +68,8 @@ export function parseFrontmatter(
     published_at: typeof data.published_at === 'string' ? data.published_at : undefined,
     imported_at: typeof data.imported_at === 'string' ? data.imported_at : undefined,
     authors: Array.isArray(data.authors) ? data.authors as string[] : undefined,
+    parent_path: typeof data.parent_path === 'string' ? data.parent_path : undefined,
+    parent_type: data.parent_type === 'briefing' || data.parent_type === 'anthropic-article' ? data.parent_type : undefined,
   }
 
   return { frontmatter, body: parsed.content }
