@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   buildAssistantSystemPrompt,
@@ -5,6 +7,11 @@ import {
   formatSearchResults,
 } from '../../electron/lib/article-assistant-prompt'
 import type { ArticleAssistantGuide } from '@shared/index'
+
+const digestGuidePrompt = fs.readFileSync(
+  path.resolve(process.cwd(), 'electron/prompts/digest-guide.md'),
+  'utf8'
+)
 
 describe('formatSearchResults', () => {
   it('produces ordered 来源/链接 blocks for a 2-item array', () => {
@@ -23,6 +30,29 @@ describe('formatSearchResults', () => {
 describe('buildAssistantSystemPrompt', () => {
   it('does not carry the archive-trigger question', () => {
     expect(buildAssistantSystemPrompt()).not.toMatch(/需要存档吗/)
+  })
+})
+
+describe('digest-guide.md prompt', () => {
+  it('demands JSON-only output with no markdown fences or prose', () => {
+    expect(digestGuidePrompt).toContain('Return ONLY a JSON object')
+    expect(digestGuidePrompt).toContain('Do not wrap it in markdown code blocks or add explanatory prose.')
+  })
+
+  it('documents the background/chunks/heading/summary/terms schema', () => {
+    expect(digestGuidePrompt).toContain('"background"')
+    expect(digestGuidePrompt).toContain('"chunks"')
+    expect(digestGuidePrompt).toContain('"heading"')
+    expect(digestGuidePrompt).toContain('"summary"')
+    expect(digestGuidePrompt).toContain('"terms"')
+  })
+
+  it('forbids decorative metadata patterns', () => {
+    for (const banned of ['Vol.', 'AI Builders Digest', 'Generated through', '档案编号', '学习卷宗']) {
+      expect(digestGuidePrompt).toContain(banned)
+    }
+    // they appear inside the explicit "Do not output ..." constraint
+    expect(digestGuidePrompt).toMatch(/Do not output[\s\S]*档案编号/)
   })
 })
 
