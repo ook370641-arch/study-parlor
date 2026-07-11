@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@/store'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
-import type { BriefingTheme } from '@shared/index'
+import { findNewArticleUrls } from '@/lib/anthropic-articles'
+import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
 interface Props {
   theme?: BriefingTheme
@@ -13,8 +14,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
   const themeClasses = isAcademic
     ? {
-        panelBg: 'bg-ink/60',
-        sidebarBg: 'bg-ink/80',
+        panelBg: 'bg-transparent',
+        sidebarBg: 'bg-ink/30',
         border: 'border-slate/30',
         text: 'text-parchment',
         muted: 'text-parchment/50',
@@ -44,10 +45,16 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const { articles, loading, error, lastFetchedAt } = useStore((s) => s.anthropicBlogCache)
   const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
   const discover = useStore((s) => s.discoverAnthropicArticles)
+  const mergeArticles = useStore((s) => s.mergeAnthropicArticles)
   const closeReader = useStore((s) => s.closeAnthropicReader)
 
   const [query, setQuery] = useState('')
-  const [listVisible] = useState(true)
+  const [listVisible, setListVisible] = useState(true)
+  const [newArticleCount, setNewArticleCount] = useState(0)
+  const [pendingArticles, setPendingArticles] = useState<AnthropicArticleMeta[]>([])
+  const [pendingLastFetchedAt, setPendingLastFetchedAt] = useState<string | null>(null)
+  const [checkError, setCheckError] = useState<AnthropicError | null>(null)
+  const [checkKey, setCheckKey] = useState(0)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -59,14 +66,99 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
     )
   }, [articles, query])
 
+  // 自动检测新文章
+  useEffect(() => {
+    let cancelled = false
+    const check = async () => {
+      if (loading) return
+      const result = await discover({ commit: false })
+      if (cancelled) return
+      if (result.ok) {
+        const newUrls = findNewArticleUrls(articles, result.articles)
+        if (newUrls.length > 0) {
+          setNewArticleCount(newUrls.length)
+          setPendingArticles(result.articles.filter((a) => newUrls.includes(a.url)))
+          setPendingLastFetchedAt(result.lastFetchedAt)
+        }
+      } else {
+        setCheckError(result.error)
+      }
+    }
+    check()
+    return () => {
+      cancelled = true
+    }
+  }, [checkKey])
+
+  const handleRefresh = async () => {
+    if (pendingArticles.length > 0 && pendingLastFetchedAt) {
+      mergeArticles(pendingArticles, pendingLastFetchedAt)
+      setNewArticleCount(0)
+      setPendingArticles([])
+      setPendingLastFetchedAt(null)
+    } else {
+      await discover()
+      setNewArticleCount(0)
+    }
+  }
+
+  const handleRetryCheck = () => {
+    setCheckError(null)
+    setCheckKey((k) => k + 1)
+  }
+
+  const hideButton = (
+    <button
+      type="button"
+      data-testid="anthropic-list-hide-button"
+      onClick={() => setListVisible(false)}
+      title="隐藏列表"
+      className={`p-1 rounded transition-colors ${
+        isAcademic
+          ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10'
+          : 'text-[#6b5d52] hover:text-[#1a1a1a] hover:bg-black/5'
+      }`}
+    >
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  )
+
+  const expandHandle = (
+    <button
+      type="button"
+      data-testid="anthropic-list-expand-handle"
+      onClick={() => setListVisible(true)}
+      title="展开列表"
+      className={`w-2 h-full shrink-0 transition-colors relative ${
+        isAcademic
+          ? 'bg-ink/30 hover:bg-ember/30 border-r border-slate/30'
+          : 'bg-[#e8e4de] hover:bg-[#d9d4cb] border-r border-[#c9c3b8]'
+      }`}
+    >
+      {newArticleCount > 0 && (
+        <span
+          className={`absolute top-3 left-1/2 -translate-x-1/2 min-w-[18px] px-1 py-0.5 rounded-full text-[10px] text-center ${
+            isAcademic ? 'bg-ember text-white' : 'bg-[#1a1a1a] text-white'
+          }`}
+        >
+          {newArticleCount}
+        </span>
+      )}
+    </button>
+  )
+
   return (
     <div
       data-testid="anthropic-blog-panel"
-      className={`relative flex-1 flex min-w-0 overflow-hidden ${themeClasses.panelBg}`}
+      className={`relative flex-1 flex min-w-0 overflow-hidden z-[5] ${themeClasses.panelBg}`}
     >
       <div
-        className={`flex flex-col border-r ${themeClasses.border} ${themeClasses.sidebarBg} transition-all duration-200 ${
-          listVisible ? 'w-80 min-w-[20rem]' : 'w-0 opacity-0 overflow-hidden'
+        className={`flex flex-col ${themeClasses.sidebarBg} transition-all duration-200 ${
+          listVisible
+            ? `w-80 min-w-[20rem] opacity-100 border-r ${themeClasses.border}`
+            : 'w-0 opacity-0 overflow-hidden border-r-0'
         }`}
       >
         <div className={`flex items-center justify-between px-4 py-3 border-b ${themeClasses.border} shrink-0`}>
@@ -78,15 +170,42 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               </p>
             )}
           </div>
-          <button
-            data-testid="anthropic-refresh-button"
-            onClick={() => discover()}
-            disabled={loading}
-            className={`ml-2 px-2.5 py-1 rounded text-xs disabled:opacity-50 shrink-0 ${themeClasses.button}`}
-          >
-            {loading ? '刷新中' : '刷新'}
-          </button>
+          <div className="flex items-center gap-1">
+            {checkError && (
+              <button
+                type="button"
+                data-testid="anthropic-list-check-error"
+                onClick={handleRetryCheck}
+                title={checkError.message || '检测失败，点击重试'}
+                className={`p-1 rounded transition-colors ${
+                  isAcademic
+                    ? 'text-wine hover:bg-wine/10'
+                    : 'text-[#8a3a3a] hover:bg-[#8a3a3a]/10'
+                }`}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </button>
+            )}
+            {hideButton}
+          </div>
         </div>
+
+        {listVisible && newArticleCount > 0 && (
+          <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
+            <button
+              type="button"
+              data-testid="anthropic-new-articles-prompt"
+              onClick={handleRefresh}
+              disabled={loading}
+              className={`w-full text-left text-xs px-3 py-2 rounded flex items-center justify-between disabled:opacity-60 ${themeClasses.button}`}
+            >
+              <span>发现 {newArticleCount} 篇新文章</span>
+              <span>刷新 →</span>
+            </button>
+          </div>
+        )}
 
         <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
           <input
@@ -114,9 +233,9 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           {!loading && !error && filtered.length === 0 && (
             <div className={`text-center py-12 text-sm ${themeClasses.muted}`}>
               {articles.length === 0 ? (
-                <p>暂无文章，点击右上角刷新列表。</p>
+                <p>暂无文章，正在自动检测新文章…</p>
               ) : (
-                <p>没有匹配“{query}”的文章。</p>
+                <p>没有匹配"{query}"的文章。</p>
               )}
             </div>
           )}
@@ -128,6 +247,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           </div>
         </div>
       </div>
+
+      {!listVisible && expandHandle}
 
       <div className="flex-1 min-w-0 flex flex-col">
         {readerFilePath ? (
