@@ -1,10 +1,17 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { ipcMain } from 'electron'
-import { chatNonStream } from '../lib/kimi'
+import { chatNonStream, chatStream } from '../lib/kimi'
+import { searchWeb } from '../lib/search'
+import { getSearchApiKey } from '../lib/credentials'
 import { extractJsonObject } from '../lib/extract-json'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { dumpRecovery } from '../lib/recovery'
+import {
+  buildAssistantSystemPrompt,
+  buildAssistantUserPrompt,
+  formatSearchResults,
+} from '../lib/article-assistant-prompt'
 import type { AppConfig } from '../env'
 import type {
   ArticleAssistantChunk,
@@ -13,7 +20,10 @@ import type {
   ArticleAssistantMessage,
   ArticleAssistantSessionFile,
   ArticleAssistantTerm,
+  Message,
 } from '@shared/index'
+
+const assistantSessions = new Map<string, AbortController>()
 
 function typedError(code: ArticleAssistantErrorCode, message: string): Error & { code: ArticleAssistantErrorCode } {
   const err = new Error(message) as Error & { code: ArticleAssistantErrorCode }
@@ -196,4 +206,102 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       }
     }
   )
+
+  ipcMain.handle(
+    'articleAssistant:sendMessage',
+    async (
+      event,
+      args: {
+        sessionId: string
+        articleContent: string
+        articleType: 'briefing' | 'anthropic-article'
+        messages: ArticleAssistantMessage[]
+        selection?: string
+        useSearch?: boolean
+        guide?: ArticleAssistantGuide | null
+      }
+    ): Promise<void> => {
+      const send = (channel: string, ...payload: unknown[]) => {
+        if (event.sender.isDestroyed()) return
+        event.sender.send(channel, ...payload)
+      }
+
+      // --- search phase (only when useSearch) ---
+      let searchSources: { title: string; url: string; snippet: string }[] | undefined
+      let searchError: 'NO_RESULTS' | 'SEARCH_ERROR' | undefined
+      if (args.useSearch) {
+        const apiKey = await getSearchApiKey()
+        if (!apiKey) {
+          searchError = 'SEARCH_ERROR'
+        } else {
+          const query = [args.selection, args.messages.at(-1)?.content]
+            .filter(Boolean)
+            .join(' ')
+            .trim()
+          try {
+            const results = await searchWeb({ query, apiKey, maxResults: 8 })
+            searchSources = results.map((r) => ({
+              title: r.title,
+              url: r.url,
+              snippet: r.content.slice(0, 300),
+            }))
+          } catch (err) {
+            searchError =
+              (err as Error & { code?: string })?.code === 'NO_RESULTS' ? 'NO_RESULTS' : 'SEARCH_ERROR'
+          }
+        }
+        send('articleAssistant:searchDone', args.sessionId, { searchSources, searchError })
+      }
+
+      // --- assemble prompt ---
+      const searchResults = searchSources
+        ? formatSearchResults(
+            searchSources.map((s) => ({ title: s.title, url: s.url, content: s.snippet }))
+          )
+        : undefined
+      const userPrompt = buildAssistantUserPrompt({
+        articleContent: args.articleContent,
+        guide: args.guide ?? null,
+        selection: args.selection,
+        messages: args.messages,
+        searchResults,
+      })
+      const llmMessages: Message[] = [
+        { role: 'system', content: buildAssistantSystemPrompt() },
+        { role: 'user', content: userPrompt },
+      ]
+
+      // --- stream ---
+      const ctl = new AbortController()
+      assistantSessions.set(args.sessionId, ctl)
+      try {
+        await chatStream(
+          cfg,
+          { messages: llmMessages, temperature: 0.7, signal: ctl.signal },
+          (chunk) => send('llm:chunk', args.sessionId, chunk)
+        )
+        send('llm:done', args.sessionId)
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return
+        const code = (err as Error & { code?: string })?.code
+        const mapped: ArticleAssistantErrorCode =
+          code === 'TIMEOUT'
+            ? 'CHAT_TIMEOUT'
+            : code === 'NETWORK_ERROR'
+              ? 'CHAT_NETWORK_ERROR'
+              : 'CHAT_LLM_ERROR'
+        send('llm:error', args.sessionId, {
+          code: mapped,
+          message: String((err as Error)?.message ?? err),
+        })
+      } finally {
+        assistantSessions.delete(args.sessionId)
+      }
+    }
+  )
+
+  ipcMain.handle('articleAssistant:abort', async (_, args: { sessionId: string }) => {
+    assistantSessions.get(args.sessionId)?.abort()
+    assistantSessions.delete(args.sessionId)
+  })
 }

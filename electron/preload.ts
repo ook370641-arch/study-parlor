@@ -50,6 +50,11 @@ const api: IpcApi = {
     ipcRenderer.on('llm:error', handler)
     return () => ipcRenderer.off('llm:error', handler)
   },
+  onArticleAssistantSearchDone: (cb) => {
+    const handler = (_: unknown, sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => cb(sessionId, payload)
+    ipcRenderer.on('articleAssistant:searchDone', handler)
+    return () => ipcRenderer.off('articleAssistant:searchDone', handler)
+  },
 
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
   getExtensionInfo: () => ipcRenderer.invoke('files:getExtensionInfo'),
