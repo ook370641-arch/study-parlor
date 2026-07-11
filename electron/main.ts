@@ -119,6 +119,7 @@ async function bootstrap() {
     width: 1280,
     height: 800,
     show: !isE2ESilent,
+    skipTaskbar: isE2ESilent,
     backgroundColor: '#2a1f1a',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
