@@ -48,24 +48,12 @@ export function Briefing() {
   const stage = useStore((s) => s.briefingStage)
   const source = useStore((s) => s.briefingSource)
   const { list: historyList, loading: historyLoading, error: historyError } = useStore((s) => s.briefingHistory)
-  const loadBriefingHistory = useStore((s) => s.loadBriefingHistory)
   const setBriefingSource = useStore((s) => s.setBriefingSource)
   const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [regenerating, setRegenerating] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const today = formatBriefingDate(new Date())
-
-  const handleRegenerate = async () => {
-    if (!result) return
-    setRegenerating(true)
-    try {
-      await generateBriefing(result.date, { force: true })
-    } finally {
-      setRegenerating(false)
-    }
-  }
 
   const parsed = result ? parseBriefingMarkdown(result.content) : null
   const displayDate = useMemo(() => (result ? formatDisplayDate(result.date) : ''), [result])
@@ -84,13 +72,6 @@ export function Briefing() {
     '--briefing-heading-size': headingStyle.size,
     '--briefing-heading-weight': String(headingStyle.weight),
   } as React.CSSProperties
-
-  const headerHistoryProps = {
-    onHistory: () => {
-      setDrawerOpen(true)
-      loadBriefingHistory()
-    },
-  }
 
   const isDigestLoading = source === 'digest' && loading
   const isDigestError = source === 'digest' && error
@@ -134,10 +115,6 @@ export function Briefing() {
           }
           sourceStatus={source === 'digest' ? result?.sourceStatus : undefined}
           cacheWriteFailed={source === 'digest' ? result?.cacheWriteFailed : undefined}
-          onRegenerate={source === 'digest' ? handleRegenerate : undefined}
-          regenerating={regenerating}
-          {...headerHistoryProps}
-          showRegenerate={source === 'digest'}
         />
 
         {source === 'anthropic' ? (
