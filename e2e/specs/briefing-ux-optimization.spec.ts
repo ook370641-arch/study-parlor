@@ -151,12 +151,14 @@ test('date column is visible from error state @smoke', async () => {
   await expect(window.locator(SELECTORS.briefing.dateColumn)).toBeVisible()
 })
 
-test('date column is visible when source is anthropic @smoke', async () => {
+test('blog list column is visible when source is anthropic @smoke', async () => {
   seedStateJson(testConfigDir, { briefingSource: 'anthropic' })
   const coverPage = new CoverPage(window)
   await coverPage.gotoBriefing()
   await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
-  await expect(window.locator(SELECTORS.briefing.dateColumn)).toBeVisible()
+  await expect(window.locator(SELECTORS.briefing.listColumn)).toBeVisible()
+  // The digest date column must NOT render for the anthropic source.
+  await expect(window.locator(SELECTORS.briefing.dateColumn)).toHaveCount(0)
 })
 
 test('surface background and swap button are visible in anthropic source @smoke', async () => {

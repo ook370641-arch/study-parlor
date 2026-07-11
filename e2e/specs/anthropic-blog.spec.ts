@@ -24,14 +24,10 @@ test.describe('Anthropic 博客集成', () => {
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
 
-    // E2E-4: 折叠与展开
+    // 切换到 Anthropic 来源（中间列变为博客列表）
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
     const listColumn = window.locator(SELECTORS.briefing.listColumn)
     await expect(listColumn).toBeVisible()
-    await window.locator(SELECTORS.briefing.listColumnToggle).click()
-    await expect(listColumn).toHaveClass(/w-14/)
-    await expect(window.locator(SELECTORS.briefing.anthropicListRailThumb)).toBeVisible()
-    await window.locator(SELECTORS.briefing.listColumnToggle).click()
-    await expect(listColumn).not.toHaveClass(/w-14/)
 
     // E2E-1: 列表发现（v1.2 UI：自动检测 + 新文章提示条）
     // 点击自动检测发现的新文章提示条
@@ -46,6 +42,13 @@ test.describe('Anthropic 博客集成', () => {
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
     expect(await rows.count()).toBeGreaterThan(0)
+
+    // E2E-4: 折叠与展开（此时已有文章，收起后 rail 显示缩略图）
+    await window.locator(SELECTORS.briefing.listColumnToggle).click()
+    await expect(listColumn).toHaveClass(/w-14/)
+    await expect(window.locator(SELECTORS.briefing.anthropicListRailThumb).first()).toBeVisible()
+    await window.locator(SELECTORS.briefing.listColumnToggle).click()
+    await expect(listColumn).not.toHaveClass(/w-14/)
 
     // 选择第一篇未保存文章
     const firstRow = rows.first()
@@ -88,9 +91,10 @@ test.describe('Anthropic 博客集成', () => {
       await cover.enterName('E2E 测试员')
       await cover.goToBriefing()
       await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
-      // v1.2: auto-detect fires on mount, error should appear in panel
+      // v1.2: auto-detect fires on mount with commit:false, surfacing the
+      // check-error indicator (not the store-level error message).
       const panel = window.locator(SELECTORS.briefing.anthropicPanel)
-      await expect(panel.locator(SELECTORS.briefing.anthropicErrorMessage)).toBeVisible({ timeout: 20000 })
+      await expect(panel.locator(SELECTORS.briefing.anthropicListCheckError)).toBeVisible({ timeout: 20000 })
     })
   })
 })

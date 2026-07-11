@@ -20,10 +20,6 @@ export class BriefingPage {
     return this.page.locator(SELECTORS.briefing.newspaperLayout)
   }
 
-  get regenerateButton() {
-    return this.page.locator(SELECTORS.briefing.regenerateButton)
-  }
-
   async waitForLoaded() {
     await this.page.locator(SELECTORS.briefing.page).waitFor({ state: 'visible' })
   }

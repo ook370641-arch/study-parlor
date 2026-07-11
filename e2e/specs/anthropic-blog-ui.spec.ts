@@ -12,16 +12,18 @@ test.describe('Anthropic 博客 UI 优化 (v1.2)', () => {
     // 切换到 Anthropic 来源
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
 
-    // 列表默认展开，隐藏按钮可见
-    await expect(window.locator(SELECTORS.briefing.anthropicListHideButton)).toBeVisible()
+    // 列表默认展开，折叠容器可见
+    const listColumn = window.locator(SELECTORS.briefing.listColumn)
+    await expect(listColumn).toBeVisible()
+    await expect(listColumn).not.toHaveClass(/w-14/)
 
-    // 点击隐藏 → 垂直把手出现
-    await window.locator(SELECTORS.briefing.anthropicListHideButton).click()
-    await expect(window.locator(SELECTORS.briefing.anthropicListExpandHandle)).toBeVisible()
+    // 点击 toggle → 收起为 w-14 缩略图 rail
+    await window.locator(SELECTORS.briefing.listColumnToggle).click()
+    await expect(listColumn).toHaveClass(/w-14/)
 
-    // 点击把手 → 列表重新展开，隐藏按钮回来
-    await window.locator(SELECTORS.briefing.anthropicListExpandHandle).click()
-    await expect(window.locator(SELECTORS.briefing.anthropicListHideButton)).toBeVisible()
+    // 再次点击 → 列表重新展开
+    await window.locator(SELECTORS.briefing.listColumnToggle).click()
+    await expect(listColumn).not.toHaveClass(/w-14/)
   })
 
   test('E2E-7: 自动检测新文章并显示刷新提示', {

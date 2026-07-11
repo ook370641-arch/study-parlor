@@ -38,6 +38,15 @@ export function registerAnthropicIpc(cfg: AppConfig) {
     await patchState({ anthropicBlogCache: loadingCache })
 
     try {
+      // E2E hook: force an offline/network failure without touching the network.
+      // Gated on NODE_ENV=test + E2E_CONFIG_DIR so unit tests and prod never take it.
+      if (
+        process.env.NODE_ENV === 'test' &&
+        process.env.E2E_CONFIG_DIR &&
+        process.env.E2E_ANTHROPIC_OFFLINE === '1'
+      ) {
+        throw new Error('NETWORK_ERROR: offline (E2E)')
+      }
       const result = await discoverArticles(cfg.libraryPath)
       const cache: AnthropicBlogCache = {
         lastFetchedAt: result.lastFetchedAt,
