@@ -8,6 +8,7 @@ const TYPE_LABELS: Record<DocType, string> = {
   briefing: '夜航简报',
   'external-materials': '外部资料',
   'anthropic-article': 'Anthropic 博客',
+  'article-assistant': '旁注记录',
 }
 
 const TYPE_BADGE_STYLES: Record<DocType, string> = {
@@ -18,6 +19,7 @@ const TYPE_BADGE_STYLES: Record<DocType, string> = {
   briefing: 'bg-slate text-parchment',
   'external-materials': 'bg-ink/40 border border-parchment/20 text-parchment/70',
   'anthropic-article': 'bg-ember/80 text-ink',
+  'article-assistant': 'bg-ink/60 text-parchment/60',
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {

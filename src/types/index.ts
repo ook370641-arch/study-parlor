@@ -75,7 +75,46 @@ export type AnthropicBlogCache = {
   error: AnthropicError | null
 }
 
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article'
+export type ArticleAssistantTerm = {
+  term: string
+  translation: string
+  explanation: string
+}
+
+export type ArticleAssistantChunk = {
+  heading: string
+  summary: string
+  terms: ArticleAssistantTerm[]
+}
+
+export type ArticleAssistantGuide = {
+  background: string
+  chunks: ArticleAssistantChunk[]
+}
+
+export type ArticleAssistantMessage = {
+  role: 'user' | 'assistant'
+  content: string
+  searchSources?: { title: string; url: string; snippet: string }[]
+}
+
+export type ArticleAssistantSessionFile = {
+  filePath: string
+  messages: ArticleAssistantMessage[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type ArticleAssistantErrorCode =
+  | 'GUIDE_LLM_ERROR'
+  | 'GUIDE_JSON_ERROR'
+  | 'GUIDE_ABORT'
+  | 'CHAT_LLM_ERROR'
+  | 'CHAT_NETWORK_ERROR'
+  | 'CHAT_TIMEOUT'
+  | 'SAVE_ERROR'
+
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'article-assistant'
 
 export type Profile = {
   name: string
@@ -102,6 +141,8 @@ export type Frontmatter = {
   published_at?: string
   imported_at?: string
   authors?: string[]
+  parent_path?: string
+  parent_type?: 'briefing' | 'anthropic-article'
 }
 
 export type Group = {
@@ -274,6 +315,7 @@ export type StateJson = {
 export type IpcApi = {
   scanLibrary: () => Promise<TopicMeta[]>
   readMd: (path: string) => Promise<{ frontmatter: Frontmatter; body: string }>
+  readAssetAsDataUrl: (mdFilePath: string, relativePath: string) => Promise<string>
   writeProgressMd: (args: { title: string; description?: string; body: string; difficulty: Difficulty; dirName: string; session_number: number; progress_summary?: string }) => Promise<{ file_path: string }>
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
@@ -395,6 +437,35 @@ export type IpcApi = {
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
   anthropicCancelImport: () => Promise<void>
+
+  // Article assistant
+  articleAssistantGenerateGuide: (args: {
+    articleContent: string
+    articleType: 'briefing' | 'anthropic-article'
+    articleTitle?: string
+  }) => Promise<ArticleAssistantGuide>
+
+  articleAssistantSendMessage: (args: {
+    sessionId: string
+    articleContent: string
+    articleType: 'briefing' | 'anthropic-article'
+    messages: ArticleAssistantMessage[]
+    selection?: string
+    useSearch?: boolean
+  }) => Promise<void>
+
+  articleAssistantAbort: (args: { sessionId: string }) => Promise<void>
+
+  articleAssistantReadSession: (args: {
+    parentPath: string
+    parentType: 'briefing' | 'anthropic-article'
+  }) => Promise<ArticleAssistantSessionFile | null>
+
+  articleAssistantWriteSession: (args: {
+    parentPath: string
+    parentType: 'briefing' | 'anthropic-article'
+    messages: ArticleAssistantMessage[]
+  }) => Promise<{ filePath: string }>
 
   // App shell
   openExternal: (url: string) => Promise<void>

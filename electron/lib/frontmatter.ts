@@ -13,6 +13,7 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   briefing: [],
   'external-materials': ['session_number', 'topic', 'summary', 'sources'],
   'anthropic-article': ['source_url', 'published_at', 'imported_at', 'authors'],
+  'article-assistant': ['parent_path', 'parent_type'],
 }
 
 function extractTitleFromFilename(name: string): string | undefined {
