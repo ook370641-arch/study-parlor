@@ -97,6 +97,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       wrap.style.display = 'inline'
 
       const textSpan = document.createElement('span')
+      textSpan.setAttribute('data-testid', 'anno-marked-text')
       textSpan.className = 'anno-text'
       textSpan.style.background = isAcademic ? 'rgba(217,119,87,0.13)' : 'rgba(217,119,87,0.08)'
       textSpan.style.borderRadius = '2px'
@@ -105,6 +106,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       textSpan.textContent = match
 
       const pen = document.createElement('span')
+      pen.setAttribute('data-testid', 'anno-marker-pen')
       pen.className = `anno-pen${anno.note ? ' has-note' : ''}`
       pen.setAttribute('data-anno-id', anno.id)
       pen.style.position = 'absolute'
@@ -335,6 +337,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       {ghost && (
         <div
           ref={ghostRef}
+          data-testid="anno-ghost-pen"
           onClick={handleGhostClick}
           style={{
             position: 'absolute',
@@ -363,6 +366,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       {/* Note card */}
       {openAnnoId && openAnno && cardPos && (
         <div
+          data-testid="anno-note-card"
           style={{
             position: 'absolute',
             left: cardPos.left,
@@ -400,6 +404,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
           <textarea
             autoFocus
+            data-testid="anno-note-textarea"
             className="anno-note-textarea"
             defaultValue={openAnno.note}
             placeholder="写下你的想法…"
@@ -425,6 +430,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
           <div style={{ marginTop: '8px', fontSize: '10px', color: cardMuted, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>{openAnno.createdAt ? `${openAnno.createdAt} · §${openAnno.paragraphIndex}` : '新备注'}</span>
             <button
+              data-testid="anno-save-button"
               onClick={() => {
                 doSaveAndClose()
               }}
@@ -444,6 +450,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
             </button>
             {openAnno.note && (
               <button
+                data-testid="anno-delete-button"
                 onClick={() => handleDeleteAnnotation(openAnnoId)}
                 style={{
                   background: 'none',

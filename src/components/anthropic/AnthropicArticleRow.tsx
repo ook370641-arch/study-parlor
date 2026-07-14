@@ -149,6 +149,8 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
           </p>
         </div>
       </div>
+      {/* Hidden element for E2E selectors — indicates saved state without text badge */}
+      {article.isSaved && <span data-testid="anthropic-article-saved" className="sr-only" />}
     </button>
   )
 }
