@@ -26,9 +26,13 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
   const [hovered, setHovered] = useState(false)
 
   const handleClick = async () => {
-    if (importing) return
+    if (importing) {
+      // Clicking during import cancels it
+      cancelImport()
+      setImporting(false)
+      return
+    }
 
-    // If already saved, try to open directly; re-import if the file is missing.
     if (article.isSaved && article.filePath) {
       try {
         await ipc.readMd(article.filePath)
@@ -47,27 +51,50 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
     }
   }
 
-  const handleCancel = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    cancelImport()
-    setImporting(false)
-  }
-
-  const cardClasses = isAcademic
-    ? 'border-slate/30 bg-ink/30 hover:border-ember/50 text-parchment'
-    : 'border-[#c9c3b8] bg-white hover:border-[#1a1a1a]/50 text-[#1a1a1a]'
-
+  // --- Theme-dependent classes ---
+  const bgClass = isAcademic ? 'bg-ink/30' : 'bg-white'
+  const hoverBorder = isAcademic ? 'hover:border-ember/50' : 'hover:border-[#1a1a1a]/50'
+  const titleColor = isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'
   const mutedText = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
-  const secondaryText = isAcademic ? 'text-parchment/70' : 'text-[#555]'
   const placeholderBg = isAcademic ? 'bg-parchment/10' : 'bg-[#e8e4de]'
   const placeholderText = isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]/60'
-  const savedBadge = isAcademic
-    ? 'bg-ember/20 text-ember'
-    : 'bg-[#1a1a1a] text-white'
-  const actionBorder = isAcademic ? 'border-slate/30' : 'border-[#c9c3b8]'
-  const actionText = isAcademic ? 'text-parchment/70' : 'text-[#555]'
   const titleHover = isAcademic ? 'group-hover:text-ember' : 'group-hover:text-[#1a1a1a]'
-  const cancelText = isAcademic ? 'text-ember' : 'text-[#1a1a1a]'
+
+  // Left border by state
+  let borderClass: string
+  let borderStyle: React.CSSProperties = {}
+  if (importing) {
+    if (isAcademic) {
+      borderStyle = { animation: 'borderPulse 1s ease-in-out infinite' }
+      borderClass = 'border-l-[3px] border-l-ember'
+    } else {
+      borderStyle = { animation: 'borderPulseNewspaper 1s ease-in-out infinite' }
+      borderClass = 'border-l-[3px] border-l-[#1a1a1a]'
+    }
+  } else if (article.isSaved) {
+    borderClass = isAcademic ? 'border-l-[3px] border-l-ember' : 'border-l-[3px] border-l-[#1a1a1a]'
+  } else {
+    borderClass = isAcademic
+      ? 'border-l-[3px] border-l-[rgba(232,213,183,0.12)]'
+      : 'border-l-[3px] border-l-[#c9c3b8]/30'
+  }
+
+  // Spinner SVG for importing state
+  const Spinner = () => (
+    <svg
+      className="inline-flex ml-1.5 animate-spin align-middle"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      style={{ opacity: 0.8 }}
+    >
+      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+      <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+    </svg>
+  )
 
   return (
     <button
@@ -75,9 +102,24 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      disabled={importing}
-      className={`w-full text-left rounded border p-4 transition-colors group disabled:opacity-70 ${cardClasses}`}
+      disabled={false}
+      className={`w-full text-left rounded border p-4 transition-colors group relative overflow-hidden ${borderClass} ${bgClass} ${hoverBorder}`}
+      style={borderStyle}
     >
+      {/* Shimmer sweep line during import */}
+      {importing && (
+        <div
+          className="absolute top-0 h-[2px] pointer-events-none z-10"
+          style={{
+            background: isAcademic
+              ? 'linear-gradient(90deg, transparent, #d97757, transparent)'
+              : 'linear-gradient(90deg, transparent, #1a1a1a, transparent)',
+            width: '60%',
+            animation: 'shimmer 1.2s ease-in-out infinite',
+          }}
+        />
+      )}
+
       <div className="flex items-start gap-4">
         {article.imageUrl ? (
           <img
@@ -96,37 +138,15 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
           <h3
             data-testid="anthropic-article-title"
             className={`text-base font-serif transition-colors ${
-              hovered ? '' : 'line-clamp-1'
-            } ${isAcademic ? '' : 'text-[#1a1a1a]'} ${titleHover}`}
+              hovered && !importing ? '' : 'line-clamp-1'
+            } ${titleColor} ${titleHover}`}
           >
             {article.title}
+            {importing && <Spinner />}
           </h3>
-          <p className={`text-xs mt-1 ${mutedText}`}>{formatDate(article.publishedAt)}</p>
-          {article.summary && (
-            <p className={`text-sm mt-2 line-clamp-2 ${secondaryText}`}>{article.summary}</p>
-          )}
-        </div>
-
-        <div className="shrink-0 flex flex-col items-end gap-2 min-w-[4.5rem]">
-          {article.isSaved ? (
-            <span data-testid="anthropic-article-saved" className={`text-xs px-2 py-0.5 rounded ${savedBadge}`}>
-              已保存
-            </span>
-          ) : (
-            <span className={`text-xs px-2 py-0.5 rounded border ${actionBorder} ${actionText}`}>
-              导入阅读
-            </span>
-          )}
-
-          {importing ? (
-            <button
-              type="button"
-              onClick={handleCancel}
-              className={`text-xs underline ${cancelText}`}
-            >
-              取消
-            </button>
-          ) : null}
+          <p className={`text-xs mt-1 ${mutedText}`}>
+            {importing ? '导入中…' : formatDate(article.publishedAt)}
+          </p>
         </div>
       </div>
     </button>

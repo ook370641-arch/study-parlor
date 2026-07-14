@@ -90,12 +90,4 @@ test.describe('@p1 article assistant', () => {
     expect(raw).toContain('parent_type: briefing')
   })
 
-  // Real text selection via mouse drag over article prose is non-deterministic
-  // across layouts/fonts in headless Electron; the selection → quote path is
-  // covered by the component test instead.
-  test.skip('selected text appears as a quote in the chat window', async () => {})
-
-  // The resize handles use pointer-capture + window pointermove listeners which
-  // Playwright's synthetic drag does not drive reliably; skipped to avoid flake.
-  test.skip('resizing from the southeast corner changes window size', async () => {})
 })

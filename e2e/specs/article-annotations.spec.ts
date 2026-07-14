@@ -1,0 +1,203 @@
+import { test, expect } from '../fixtures/electron'
+import { CoverPage } from '../pages/CoverPage'
+import { SELECTORS } from '../helpers/selectors'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+
+/**
+ * Simulate a text selection on a <p> element inside the article body.
+ * Selects `length` characters starting at `startOffset` within the first
+ * text node of the first <p>, sets window.getSelection(), and dispatches
+ * a mouseup event on the paragraph to trigger the ArticleAnnotations
+ * selection handler.
+ */
+async function selectTextInArticle(
+  window: any,
+  startOffset: number,
+  length: number,
+) {
+  await window.evaluate(
+    ({ start, len }: { start: number; len: number }) => {
+      const article = document.querySelector('article')
+      if (!article) throw new Error('article element not found')
+      const p = article.querySelector('p')
+      if (!p) throw new Error('no <p> in article')
+      const textNode = p.firstChild
+      if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+        throw new Error('first child of <p> is not a text node')
+      }
+
+      const range = document.createRange()
+      range.setStart(textNode, Math.min(start, (textNode.textContent?.length ?? 0)))
+      range.setEnd(textNode, Math.min(start + len, (textNode.textContent?.length ?? 0)))
+
+      const sel = window.getSelection()
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+
+      // Dispatch mouseup on the paragraph — this is what ArticleAnnotations listens for
+      p.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+    },
+    { start: startOffset, len: length },
+  )
+}
+
+test.describe('文章标注 (Article Annotations)', () => {
+  test('E2E-A1: 完整标注生命周期 — 创建、保存、持久化、编辑、删除', async ({
+    window,
+    testLibraryPath,
+  }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
+
+    // --- 第一步：导入一篇 Anthropic 文章 ---
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    const listColumn = window.locator(SELECTORS.briefing.listColumn)
+    await expect(listColumn).toBeVisible()
+
+    // 处理新文章检测提示
+    const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+    await prompt.waitFor({ timeout: 120000 }).catch(() => {})
+    const promptVisible = await prompt.isVisible().catch(() => false)
+    if (promptVisible) await prompt.click()
+
+    const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+    await rows.first().waitFor({ timeout: 120000 })
+
+    // 点击第一篇未保存文章触发导入
+    const firstRow = rows.first()
+    const articleTitle = await firstRow.locator(SELECTORS.briefing.anthropicArticleTitle).textContent()
+    expect(articleTitle).toBeTruthy()
+    await firstRow.click()
+
+    // 等待阅读器加载
+    const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
+    await reader.waitFor({ state: 'visible', timeout: 120000 })
+    const readerTitle = await window.locator(SELECTORS.briefing.anthropicReaderTitle).textContent()
+    expect(readerTitle).toBeTruthy()
+
+    // --- 第二步：选中正文文本，触发幽灵笔 ---
+    // 等待文章正文渲染（article > p 存在）
+    await window.locator('article p').first().waitFor({ state: 'visible', timeout: 15000 })
+
+    // 获取文章正文前几个字，用于后续验证
+    const selectedText = await window.evaluate(() => {
+      const p = document.querySelector('article p')
+      return p?.textContent?.slice(0, 15) ?? ''
+    })
+    expect(selectedText.length).toBeGreaterThanOrEqual(2)
+
+    // 模拟选中前 15 个字符
+    await selectTextInArticle(window, 0, 15)
+
+    // 幽灵笔应出现
+    const ghostPen = window.locator(SELECTORS.annotations.ghostPen)
+    await expect(ghostPen).toBeVisible({ timeout: 5000 })
+
+    // --- 第三步：点击幽灵笔，打开备注卡片 ---
+    await ghostPen.click()
+
+    // 备注卡片应出现
+    const noteCard = window.locator(SELECTORS.annotations.noteCard)
+    await expect(noteCard).toBeVisible({ timeout: 5000 })
+
+    // 文本框应获得焦点
+    const textarea = window.locator(SELECTORS.annotations.noteTextarea)
+    await expect(textarea).toBeVisible()
+
+    // --- 第四步：输入备注并保存 ---
+    const noteText = '这是一条E2E测试备注——波兰尼默会知识。'
+    await textarea.fill(noteText)
+    await window.locator(SELECTORS.annotations.saveButton).click()
+
+    // 卡片应关闭
+    await expect(noteCard).toBeHidden({ timeout: 5000 })
+
+    // 标注标记笔应出现在正文中
+    const markerPen = window.locator(SELECTORS.annotations.markerPen).first()
+    await expect(markerPen).toBeVisible({ timeout: 5000 })
+
+    // 被标注文字应有高亮底色
+    const markedText = window.locator(SELECTORS.annotations.markedText).first()
+    await expect(markedText).toBeVisible()
+
+    // --- 第五步：验证标注文件写入磁盘 ---
+    const anthropicDir = path.join(testLibraryPath, 'Anthropic博客')
+    await expect.poll(() => fs.existsSync(anthropicDir)).toBe(true)
+
+    // 找到对应的 .annotations.md 文件
+    const annoFiles = fs.readdirSync(anthropicDir, { recursive: true } as any)
+      .filter((f: string) => f.endsWith('.annotations.md'))
+    expect(annoFiles.length).toBeGreaterThanOrEqual(1)
+
+    const annoPath = path.join(anthropicDir, annoFiles[0] as string)
+    const annoContent = fs.readFileSync(annoPath, 'utf8')
+    expect(annoContent).toContain(noteText)
+    expect(annoContent).toContain('selected_text')
+    expect(annoContent).toContain('note')
+
+    // --- 第六步：重新打开同一篇文章，验证标注持久化 ---
+    // 切换来源以关闭阅读器
+    await window.locator(SELECTORS.briefing.sourceDigestButton).click()
+    await window.waitForTimeout(1000)
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await expect(listColumn).toBeVisible()
+
+    // 等待列表重新出现
+    const savedRows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+    await savedRows.first().waitFor({ timeout: 30000 })
+
+    // 点击已保存的文章（带 saved testid 的第一篇）
+    const savedRow = savedRows
+      .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      .first()
+    await expect(savedRow).toBeVisible({ timeout: 10000 })
+    await savedRow.click()
+
+    // 阅读器重新打开
+    await reader.waitFor({ state: 'visible', timeout: 30000 })
+    await window.locator('article p').first().waitFor({ state: 'visible', timeout: 15000 })
+
+    // 标注标记应仍然存在（持久化验证）
+    const persistedMarker = window.locator(SELECTORS.annotations.markerPen).first()
+    await expect(persistedMarker).toBeVisible({ timeout: 10000 })
+
+    // --- 第七步：点击标注笔，编辑备注 ---
+    await persistedMarker.click()
+
+    const reopenedCard = window.locator(SELECTORS.annotations.noteCard)
+    await expect(reopenedCard).toBeVisible({ timeout: 5000 })
+
+    const reopenedTextarea = window.locator(SELECTORS.annotations.noteTextarea)
+    await expect(reopenedTextarea).toBeVisible()
+    // 之前的备注内容应保留
+    await expect(reopenedTextarea).toHaveValue(noteText)
+
+    // 编辑备注
+    const updatedNote = '更新后的E2E测试备注。'
+    await reopenedTextarea.fill(updatedNote)
+    await window.locator(SELECTORS.annotations.saveButton).click()
+    await expect(reopenedCard).toBeHidden({ timeout: 5000 })
+
+    // --- 第八步：删除标注 ---
+    // 再次点击标记笔打开卡片
+    await persistedMarker.click()
+    await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible({ timeout: 5000 })
+
+    // 点击删除按钮
+    const deleteButton = window.locator(SELECTORS.annotations.deleteButton)
+    await expect(deleteButton).toBeVisible()
+    await deleteButton.click()
+
+    // 卡片关闭，标记笔从 DOM 中移除
+    await expect(window.locator(SELECTORS.annotations.noteCard)).toBeHidden({ timeout: 5000 })
+    await expect(persistedMarker).toBeHidden({ timeout: 5000 })
+
+    // 标注文件应更新（不含原备注内容，或直接为空数组）
+    const annoAfterDelete = fs.readFileSync(annoPath, 'utf8')
+    expect(annoAfterDelete).not.toContain(noteText)
+    expect(annoAfterDelete).not.toContain(updatedNote)
+  })
+})

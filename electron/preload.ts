@@ -98,6 +98,9 @@ const api: IpcApi = {
   anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
   anthropicCancelImport: () => ipcRenderer.invoke('anthropic:cancelImport'),
 
+  annotationsRead: (articlePath) => ipcRenderer.invoke('annotations:read', articlePath),
+  annotationsWrite: (articlePath, annotations) => ipcRenderer.invoke('annotations:write', articlePath, annotations),
+
   articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),
   articleAssistantSendMessage: (a) => ipcRenderer.invoke('articleAssistant:sendMessage', a),
   articleAssistantAbort: (a) => ipcRenderer.invoke('articleAssistant:abort', a),
