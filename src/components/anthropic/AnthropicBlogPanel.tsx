@@ -127,6 +127,11 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
       data-testid="anthropic-blog-panel"
       className={`relative flex-1 flex min-w-0 overflow-hidden z-[5] ${themeClasses.panelBg}`}
     >
+      <style>{`
+        @keyframes shimmer { 0% { left: -60%; } 100% { left: 100%; } }
+        @keyframes borderPulse { 0%, 100% { border-left-color: #d97757; } 50% { border-left-color: rgba(217, 119, 87, 0.25); } }
+        @keyframes borderPulseNewspaper { 0%, 100% { border-left-color: #1a1a1a; } 50% { border-left-color: rgba(26, 26, 26, 0.25); } }
+      `}</style>
       <BriefingListColumn
         collapsed={listCollapsed}
         onToggle={() => setListCollapsed((c) => !c)}

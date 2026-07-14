@@ -96,7 +96,7 @@ export function registerAnnotationsIpc(cfg: AppConfig) {
         const existing = parseFrontmatter(fs.readFileSync(annoPath, 'utf8'), {
           filename: path.basename(annoPath),
         })
-        createdAt = (existing.frontmatter as unknown as Record<string, unknown>).created_at as string ?? now
+        createdAt = existing.frontmatter.created_at ?? now
       } catch {
         // use now
       }
