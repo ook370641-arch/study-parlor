@@ -19,6 +19,8 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantGenerateGuide: vi.fn(),
     articleAssistantSendMessage: vi.fn(),
     articleAssistantAbort: vi.fn(),
+    annotationsRead: vi.fn().mockResolvedValue([]),
+    annotationsWrite: vi.fn().mockResolvedValue(undefined),
   }
 }))
 
