@@ -13,7 +13,7 @@ paths:
 # 夜航简报五项小升级设计
 
 > 日期：2026-07-14
-> 状态：已完成
+> 状态：设计中
 > 前置 spec：
 > - `2026-07-11-briefing-blog-reader-ui-redesign-design.md`（统一三栏架构）
 > - `2026-07-11-briefing-assistant-design.md`（旁注面板）
@@ -289,29 +289,14 @@ ipcMain.handle('annotations:write', async (_event, articlePath: string, annotati
 | `ArticleAnnotations` 选中文字 → ghost pen 出现 | 新增（jsdom 模拟） |
 | `annotations:read/write` IPC 读写 | 新增 |
 
-### E2E 测试
+### E2E 测试更新
 
-E2E 覆盖范围判定：五点中仅 **Point 3（彩色边框 + shimmer 导入动画）** 和 **Point 5（文本标注系统）** 需要 E2E——前者涉及导入态完整生命周期（状态转换 + IPC），后者涉及 DOM 操作 + 文件持久化 + 跨重开恢复。其余三点为纯 CSS 布局或渲染变更，单元测试已充分覆盖。
-
-| 测试ID | 覆盖功能 | 文件 | 描述 |
-|--------|----------|------|------|
-| E2E-8 | Point 3: 导入边框动画 | `anthropic-blog-ui.spec.ts` | 未保存文章无 ember 边框 → 点击导入 → shimmer+spinner+"导入中…"可见 → 导入完成 ember 边框+saved testid 可见 |
-| E2E-A1 | Point 5: 标注全生命周期 | `article-annotations.spec.ts`（新建） | 导入文章 → 模拟文本选中 → 幽灵笔出现 → 点击打开备注卡 → 输入保存 → 标注标记可见 → `.annotations.md` 写盘 → 重开文章标注持久化 → 编辑 → 删除标记移除 |
-
-**新增 selector：**
-```ts
-annotations: {
-  ghostPen: '[data-testid="anno-ghost-pen"]',
-  noteCard: '[data-testid="anno-note-card"]',
-  noteTextarea: '[data-testid="anno-note-textarea"]',
-  saveButton: '[data-testid="anno-save-button"]',
-  deleteButton: '[data-testid="anno-delete-button"]',
-  markerPen: '[data-testid="anno-marker-pen"]',
-  markedText: '[data-testid="anno-marked-text"]',
-}
-```
-
-**E2E 兼容性：** `anthropic-article-saved` testid 以隐藏 `<span>` 形式保留在 `AnthropicArticleRow` 中（`className="sr-only"`），确保现有 `anthropic-blog.spec.ts` 的 `filter({ has: ... })` 选择器不受边框替代文字标签的影响。
+| 测试项 | 文件 |
+|--------|------|
+| 博客列表折叠后缩略图在折叠列内部 | `anthropic-blog.spec.ts` |
+| 博客列表无独立缩略图 rail | `anthropic-blog.spec.ts` |
+| 文章行无"已保存""导入阅读"文字 | `anthropic-blog.spec.ts` |
+| 导入中可见动画 | `anthropic-blog.spec.ts` |
 
 ## 10. 验收标准
 
@@ -325,6 +310,4 @@ annotations: {
 - [ ] 保存后文字有琥珀底色 + 实心笔标，下次打开默认收起。
 - [ ] 备注持久化到 `annotations.md`，跨会话保留。
 - [ ] 学术/报纸双主题下颜色正确适配。
-- [ ] 所有相关单元测试通过（465 tests, 66 files）。
-- [ ] E2E-8：导入 shimmer 动画 + 边框状态转换通过。
-- [ ] E2E-A1：标注创建、持久化、重开、编辑、删除全生命周期通过。
+- [ ] 所有相关测试通过。

@@ -1,5 +1,5 @@
 import { defineConfig } from 'electron-vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react-swc'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 // createRequire: this config is ESM; the plugin is CJS. Static `import` would inline the
@@ -42,6 +42,12 @@ export default defineConfig({
           // 正常路径在 node_modules/ 下，已被 Vite 默认排除。
           '**/.electron-cache/**',
         ],
+      },
+      // 预转换入口模块图：dev server 启动后立即并行转换 main.tsx
+      // 及其全部 eager import 依赖链。避免浏览器串行请求→发现→再请求
+      // 的级联延迟。Windows 上 esbuild 管线慢 3-5×，预转换收益尤为明显。
+      warmup: {
+        clientFiles: ['./src/main.tsx'],
       },
     },
     build: {

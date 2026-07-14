@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ipc } from '@/lib/ipc'
 import { useStore } from '@/store'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
-import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
 import type { Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -58,7 +57,6 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   const [body, setBody] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<{ code: string; message: string } | null>(null)
-  const articleBodyRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -212,11 +210,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                 )}
               </header>
 
-              <article
-                ref={articleBodyRef}
-                data-testid="anthropic-reader-article"
-                className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}
-              >
+              <article className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}>
                 <ArticleBodyChunks
                   content={body}
                   chunks={guideChunks}
@@ -225,13 +219,6 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                   terms={terms}
                 />
               </article>
-              {body && (
-                <ArticleAnnotations
-                  articlePath={filePath}
-                  articleRef={articleBodyRef}
-                  theme={theme}
-                />
-              )}
             </>
           )}
         </div>

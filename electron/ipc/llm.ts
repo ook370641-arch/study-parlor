@@ -10,13 +10,6 @@ import { assemblePrompt } from '../lib/prompts'
 
 const sessions = new Map<string, AbortController>()
 
-// E2E isolation marker. Gated on both NODE_ENV=test and E2E_CONFIG_DIR so
-// unit tests (which run with NODE_ENV=test but no E2E_CONFIG_DIR) stay on the
-// real code path. See rule e2e.md §1.
-function isE2EMock(): boolean {
-  return process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
-}
-
 export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('llm:probe', async () => probeModel(cfg))
 
@@ -54,25 +47,6 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
         userRequirement: args.userRequirement,
         externalMaterialsSummary: args.externalMaterialsSummary
       })
-      // E2E deterministic mock: skip real LLM streaming and emit fixed chunks.
-      // Gated on both NODE_ENV=test and E2E_CONFIG_DIR so unit tests stay on
-      // the real code path. See rule e2e.md §1.
-      if (isE2EMock()) {
-        const mockChunks = [
-          '你好！欢迎来到学者夜话。',
-          '我是你的苏格拉底式学习助手，',
-          '让我们通过提问与对话，一起深入探索知识的奥秘。',
-          '请随时分享你的想法和疑问，',
-          '我会引导你一步步发现答案。',
-        ]
-        for (const chunk of mockChunks) {
-          if (ctl.signal.aborted) return
-          send('llm:chunk', args.sessionId, chunk)
-        }
-        if (!ctl.signal.aborted) send('llm:done', args.sessionId)
-        return
-      }
-
       const messages: Message[] = [{ role: 'system', content: system }, ...args.history]
       await chatStream(cfg, { messages, temperature: args.temperature, signal: ctl.signal },
         chunk => send('llm:chunk', args.sessionId, chunk))
@@ -97,14 +71,6 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     strategy?: 'v1' | 'v2' | 'v3'
   }) => {
     try {
-      // E2E deterministic mock: skip real LLM call. See rule e2e.md §1.
-      if (isE2EMock()) {
-        return {
-          title: 'E2E 测试灵感',
-          hook: '一段引人入胜的学习开场白',
-          body: '这是 E2E 测试生成的灵感内容，用于验证分组灵感功能。',
-        }
-      }
       return await generateGroupInspiration(cfg, args)
     } catch (err: any) {
       const message = String(err?.message ?? err)

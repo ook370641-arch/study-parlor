@@ -1,0 +1,535 @@
+30ff271 chore: bootstrap electron-vite + react + tailwind skeleton
+6b4580b fix: add @shared vitest alias + macOS window lifecycle
+b333c32 feat(types): shared IPC + domain types
+561d882 feat(env): load and validate .env into AppConfig
+baa385c feat(frontmatter): parse/serialize with gray-matter and defaults
+c33d77e feat(state): atomic JSON write with .bak rollback
+f646d3d feat(prompts): assembly chain (base → review → difficulty → profile)
+0661111 feat(recommend): pick continue/review pair from frontmatter
+c7c0a96 feat(archive): pure helpers for filename conflict + review appendix
+bce78ae feat(llm): Kimi client — probe, non-stream, SSE parser
+5658ae1 feat(llm): inspiration + finalize tasks with parse fallback
+69ecf2d feat(prompts): replace placeholder with /learner skill content
+d0ca81f test(prompts): fix order-check assertion to match real learner content
+242b6a2 feat(ipc): wire files/state/llm handlers + preload bridge
+bc7f752 feat(store): zustand store + typed ipc facade
+4c09d34 style+feat(ui): tokens, scrollbar, Button ②, Input ②
+94e85fa feat(ui): cover page + app router + init flow
+8497fef feat(ui): home with 3-column recommendation + library
+4b0d835 feat(ui): PreStudy modal with three entry behaviors
+396d024 fix(frontmatter): fallback to filename-derived title when frontmatter missing
+c5f4cbf fix(frontmatter): address code review feedback
+3b01a23 fix(critical): address 3 spec-compliance issues from code review
+9748b2a types: add SessionMeta, TopicMeta, update Frontmatter and IpcApi
+e285f40 fix(test): remove redundant expect(state).toBeDefined() assertion
+3d6fc3c feat(files): rewrite scan for nested topic/session structure
+6b5a426 fix(files-scan): read session_number from frontmatter, export helpers for tests
+c16961a fix(files-scan): address 2 critical issues from code review
+24fd964 feat(files): update handlers for nested structure (writeProgress, readAnchor, writeReview, writeTranscript, readSessionFile)
+69e2879 fix(files,types): address 5 code-review issues from Tasks 3-6
+de9bfd5 fix: resolve 3 compile errors from deleted functions
+984ada9 feat: fable generation, expose IPC, update store
+3d91d7d fix(critical): wire up session persistence IPC (C1) + improve fable prompt (I2)
+1933a69 feat(ui): StudyLibrary + SessionViewer components, refactor Home page
+1f991d0 feat(finalize): update progress/review finalize flow + auto-save sessions
+0a25034 fix(auto-save): move save from onLlmChunk to onLlmDone + snapshot history in finalize
+aab201d feat(migration): add library migration script for old folder structure
+551ac8f chore(env): update STUDY_LIBRARY_PATH to new 学习库 directory
+c644ede fix(dev): add ELECTRON_RUN_AS_NODE workaround wrapper
+7da9036 docs(spec): archive trigger redesign — natural-language phrase + edge-counted dismiss
+d9e61e5 docs(plan): archive trigger redesign — implementation plan
+995c2fe chore(baseline): cumulative state before archive-trigger-redesign tasks
+8c49f15 feat(prompt): replace 「本轮归档」 token with natural-language 需要存档吗?
+25d97f1 refactor(store): suggestEnd → archivePending with edge detection + dismiss
+8ab95f8 refactor(session-runtime): strip '需要存档吗?' (not 「本轮归档」) from LLM history
+e707048 feat(ui): archive banner now has dismiss button + matches new state name
+014d9f4 docs(comment): update ChatBubble note for 需要存档吗? trigger phrase
+c93d12b chore(cleanup): plan typo + de-flake date-bound test
+4dfa4b5 fix(prompt): remove conflicting archive instructions from learner-base.md
+b7cfcb7 Merge branch 'feat/archive-trigger-redesign'
+a10854e fix(stuck): unblock restored review sessions + harden llm:start error path
+173e61b fix(archive): apply prompts-dir fallback in llm-tasks.ts
+a18b06f spec: session cache and archive flow redesign
+6a0f184 feat(types): add ArchiveResult type for post-archive display
+305c5e4 feat(store): per-message archive detection, refresh unsaved after save
+e3879da feat(session-runtime): remove history filtering for archive phrase
+b86e517 fix(session-persist): conservative orphan cleanup
+7dccb10 feat(ui): add ArchiveLoadingOverlay component
+a26e982 feat(ui): add ArchiveReportModal component
+787c398 feat(finalize): set archiveResult instead of immediate reset
+fee287a feat(study): integrate archive loading overlay and report modal
+75e79f4 test: update gaps type from string to string[] in type test
+bc39f4c fix(archive): relax phrase detection + add diagnostics for missing banner
+7ac7fe4 perf(kimi): disable thinking mode for faster responses
+47d86ba cleanup: remove recoveryDump type and unused custom-scrollbar class
+756804f types: add Group, GroupMapping and extend TopicMeta/IpcApi
+52296ee feat(groups): add IPC handlers for group CRUD and inject groupId into TopicMeta
+04b8efd feat(groups): expose group IPC methods in preload and renderer facade
+4939713 feat(groups): extend store with group state and operations
+03277a8 feat(groups): add GroupRibbon and GravityField components
+18f6315 feat(groups): integrate ribbon, gravity field, drag logic and group-aware sorting
+00f9825 test(groups): add sorting, color and distance tests
+04606b5 feat(groups): study library grouping with ribbon + gravity field drag
+f2f66f6 fix(groups): fix drag activation deadlock - mousemove now listens from mousedown
+1368f30 fix(groups): topics orbit gravity centers + fix dragState closure bug in handleMouseUp
+222e662 docs: design spec and implementation plan for rec cards + delete confirm
+b52e9db types: add llmGroupInspiration and deleteArchivedSession to IpcApi
+031fb77 feat(ipc): add files:deleteArchivedSession handler with test
+516a075 feat(llm): add group-level inspiration generation with prompt
+ac40a10 feat(store): add deleteArchivedSession action
+98cc3fb feat(ui): add ConfirmDialog shared component with tests
+4ab936f feat(ui): add GroupRecCard component, remove InspirationChip
+c19d042 feat(home): replace flat inspirations with group-colored rec cards
+b9abb65 feat(ribbon): add confirm dialog before deleting a group
+f59f7be feat(library): add session delete button with confirm dialog
+363ed95 fix(rec): improve prompt, add JSON cleanup + tests, fix GroupRecCard mount logic
+ef82654 feat(ribbon): hover-reveal × for group delete, keep rename in context menu
+42d0bba feat: group-colored rec cards + delete confirm dialogs
+0eecaeb fix(rec): systematic debugging — 3 root causes fixed
+d9bb71c fix(rec): robust JSON extraction + progress_summary cleanup + free hook
+d462f1b fix(rec): extractJsonObject uses open-quote to avoid non-JSON braces
+8eb4ce4 feat(stars): 星辰宇宙交互动效 (StarOrbit/StarParticle + Phase 1-2 集成)
+e962c25 docs(art): spec + plan for Rothko + Billout 画作背景
+9e8ea9d feat(art): vite plugin for paintings manifest + dev/build serving
+1091733 docs(art): document why electron.vite.config.ts uses createRequire
+8637a8f feat(art): Painting type + pickRandom/formatAttribution with tests
+f08b38e feat(art): store fields for current paintings + init/swap
+ba810c1 feat(art): SurfaceBackground + SwapPaintingButton components + globals.css
+c880f51 feat(art): Cover uses painting pool + swap button
+5711adc fix(art): z-5 → z-[5] (arbitrary value syntax, real Tailwind output)
+fbb38de feat(art): Home with painting background + glass panels
+766a087 feat(art): Study with painting background + glass header/bubbles/input
+2d19158 deps: add react-markdown, remark-gfm, rehype-raw, @shikijs/rehype, shiki
+7adf8c4 feat(md): file type detector with frontmatter + filename fallback
+9e6f6a9 feat(md): MarkdownRenderer foundation with react-markdown integration
+25c0c4e feat(md): all document type components with Disco Elysium styling
+1250ee8 feat(md): Shiki syntax highlighting with warm dark theme
+bd3cd05 test(md): Heading section label rendering
+b91c962 feat(md): complete Markdown renderer with Disco Elysium styling
+f0b04a7 docs: frontmatter unified display design spec
+4597335 chore: add .worktrees to .gitignore
+f7ddf32 types: add DocType, description field, and writeFable IPC
+1e6c407 feat(frontmatter): type-aware schema with ordered serialization and backward compat
+7c2a77f feat(ipc): add description to writeProgress, frontmatter to review/transcript, new writeFable handler
+5f056b4 feat(prompt): add description field to archive-progress extraction
+cd34df3 feat(finalize): pass description to writeProgress, fix fable to use writeFable IPC
+d60b3ed feat(md): add ReportHeader component with type-differentiated rendering
+8676e83 feat(md): integrate ReportHeader into MarkdownRenderer
+3ddcf56 feat: ArchiveReportModal uses MarkdownRenderer with ReportHeader
+b6cea5d types: add inspirationStrategy to StateJson and IpcApi
+d094994 state: default inspirationStrategy to v2
+05606d0 fix(md): add error boundaries and diagnostic logging to MarkdownRenderer
+b0e7c2e ipc: pass inspiration strategy through to prompt selection
+280c430 store: add inspirationStrategy state with setter and persistence
+0906c7d fix(md): remove async rehypeShiki causing runSync crash
+933eeb4 prompts: add 3 group inspiration variants, remove old unified prompt
+bcc1251 fix(GroupRecCard): remove cache-clear on refresh, add loading overlay
+8d98705 feat: add StrategyToggle component for prompt A/B testing
+6edd985 feat(Home): add StrategyToggle next to inspiration section title
+751ae90 test(llm-tasks): verify strategy parameter selects correct prompt
+d08fec6 fix(md): unconditional frontmatter strip + visible diagnostics
+7c9c80c fix(group-inspiration): JSON extraction failures and refresh flicker
+e687bad fix(group-inspiration): add fallback extraction + stronger prompt constraints
+0408166 fix(GroupRecCard): manual refresh bypasses debounce
+b42fe29 remove(scripts): delete one-off library migration script
+ba7642a design(study-library): pagination + fixed-viewport gravity field
+4fdaa22 plan(study-library): pagination + fixed-viewport gravity field implementation
+8eb6396 fix(TopicAccordion): cap session list at 160px with internal scroll
+d46aa19 fix(TopicAccordion): a11y + scroll hygiene for session list
+df7f27a feat(StudyLibrary): paginate topics (10 per page) with dot navigation
+72fb118 fix(StudyLibrary): pagination clamping + dot capping + a11y
+cae5503 feat(StudyLibrary): fixed-height frame layout with internal scroll
+be9a01b feat(GravityField): switch to fixed full-screen overlay with viewport sizing
+e7d700f fix(GravityField): z-40 + hoist maxDist
+2cd3af5 refactor(StudyLibrary): global drag coords for fixed GravityField
+c5fb6c3 refactor(StudyLibrary): remove unused containerRef
+59e3d0f chore: verify pagination + gravity field implementation
+48ededa fix(GravityField): respond to window resize
+061be97 fix(Home): constrain flex row height to viewport for frame layout
+d7aba21 feat(StudyLibrary): pagination at top, 9 topics per page, fixed frame scroll
+2fe8756 fix(SurfaceBackground): fixed positioning so painting stays while scrolling
+d1a5f0a feat: add fable-from-report prompt template
+b05d6a5 fixup! feat: add fable-from-report prompt template
+43bd3ba feat: add llmGenerateFableFromReport IPC types and wiring
+0e27ae2 feat: implement generateFableFromReport backend with tests
+e2acd6a feat: add fable generation UI in StudyLibrary
+49e5525 fix(StudyLibrary): fix stuck spinner, re-render cascade, and dynamic import
+05c90d7 types: add onBootProgress and onBootComplete to IpcApi
+1fe5726 preload: register boot:progress and boot:complete IPC channels
+363139f ipc: expose boot progress helpers
+ca00008 main: defer boot sequence after window creation, emit progress events
+b9d69bf fix(StudyLibrary): replace gray-matter with regex frontmatter strip to avoid Buffer error in renderer
+a7669c3 feat(LoadingScreen): ink-bloom visual with progress-driven CSS elements
+0f2b570 feat(App): integrate LoadingScreen with boot-complete lifecycle
+4f6d9fd debug: add IPC tracing + wait for renderer load before boot sequence
+da1f405 feat(loading-screen): HTML splash for instant visual + smooth progress animation
+d9ba6cc feat: add fable style tags state and userPrompt to types and prompt
+c15ace4 fixup: add missing fableStyleTags/lastFableTags to DEFAULT, correct StateJson field order
+aa69638 feat: pass userPrompt through to generateFableFromReport backend
+26489f8 feat: add fableStyleTags and lastFableTags to store with persistence
+6467382 feat: add FableStyleDialog component for user style preferences
+1b902f9 feat: integrate FableStyleDialog into StudyLibrary fable generation flow
+e34fedb feat(loading-screen): B variant with thicker strokes and re-timed animation
+d8fb79b wip: current working state before public branch
+5acf319 types: add hasDiagram/diagramFile and llmGenerateDiagram IPC
+517eb6c feat(diagram): add generateDiagram backend with tests
+8d40420 feat(ipc): wire llmGenerateDiagram through preload and facade
+1ef8ba1 feat(files): return text/plain mime type for .mmd files
+e69298f feat(renderer): install mermaid and add MermaidRenderer component
+e44de4f feat(viewer): render .mmd files via MermaidRenderer
+0c74ff1 feat(library): replace image with diagram UI, add generate-diagram button
+6b6db12 feat(finalize): trigger diagram generation after archiving
+aa5ef25 fix(library): unify chart button to prevent duplicate buttons per row
+582e156 fix(files): scan 学习图表.mmd instead of old 学习配图 pattern
+c059b3e docs: add diagram generation design doc, plan, and prompt
+7e857f7 feat(svg): switch from mermaid to direct LLM SVG generation
+8316bed feat(svg): complete diagram generation with LLM direct SVG
+61b06fe fix(viewer): fix broken image icon by correcting .mmd to .svg condition
+9bfd732 chore: remove personal scripts and docs for public release
+b0c8f44 chore(cleanup): remove orphaned files and commit pending changes
+ad5b808 清理冗余文件
+d90577f design(profile): 卷宗页视觉重设计 spec
+cfdf8f6 feat(profile): redesign read view with art background and overlay panel
+cd30404 feat(profile): redesign edit view with art background and overlay panel
+1c70f6a feat(viewer): add fable regenerate button with style dialog
+ab28f57 feat(profile): constrain panel width with max-w-3xl
+d63046d 新建快捷方式与页面优化方案
+d402a30 新建介绍文件与证件
+0580676 fix(config): remove incorrect gitignore rule for painting manifest
+3f1775c fix(ui): make API key guidance provider-agnostic in fatal error page
+fa2c39e chore(audit): comprehensive stability and robustness improvements
+e55abcf docs(spec): add extension page design document
+2fac678 docs(plan): add extension page implementation plan
+2075d22 feat(store): add 'extension' to Page type
+bf26618 feat(ipc): add getExtensionInfo for library path and painting count
+9fbb04a feat(ui): add GuidePopover component for group help panel
+f67b1b2 feat(page): add Extension page with three guide cards
+b4c3a6c feat(app): register Extension page in router
+c177001 feat(home): add Extension navigation button
+9340322 fix(ui): address code review feedback on GuidePopover
+80e8df4 feat(skill): add study skill (renamed from learner)
+ec4743f feat(skill): add fable skill (renamed from research)
+5395f2f feat(ui): add help button to GroupRibbon with GuidePopover integration
+06ef18c feat(prestudy): add topic filter/sort utility with tests
+46515a4 feat(prestudy): add new/existing topic source toggle
+e424065 assets: add group guide drag demo image
+dea641f feat(prestudy): add existing topic custom session flow
+33861dd test: fix TypeScript warnings in GuidePopover tests
+58359ff feat(skill): add first-use configuration to study/fable skills
+bc7bc2b Merge branch 'feature/custom-old-topic-session'
+8227872 feat(ui): improve GuidePopover content for better clarity
+65d2008 fix(skill,ui): align fable save path with app + update Extension descriptions
+283447e feat(ui): add strategy toggle demo image to GuidePopover
+5fa8a74 feat(ui): add scrollbar to GuidePopover and replace strategy image
+19cb847 feat(ui): add scroll and progress bar to Extension page
+23452ce feat(setup): add first-run setup wizard for zero-config onboarding
+d99c16f chore: commit pending changes from previous sessions
+40f79f0 add Pictures directory with artwork images
+18b0a1e fix(setup): fix first-run boot hanging by switching to pull-based boot model
+9c9e55c fix: crash on PreStudyModal when state.json has null lastUsed
+da4d606 ci: add GitHub Actions release workflow
+7f2b5d0 ci: fix GITHUB_TOKEN permissions for releases
+1515c0f fix(packaging): resolve runtime failures in packaged exe
+582f324 feat: add macOS build and download guide in README
+d97d835 docs: add settings page design spec
+f1bb0ae docs: add settings page implementation plan
+b8d6bbd feat(env): add saveEnv to write AppConfig back to .env
+ef31a4d refactor(env): normalize baseUrl in saveEnv and clean imports
+6a7375f refactor(env): extract DEFAULT_BASE_URL constant
+6718166 feat(ipc): add config:get and config:write handlers
+d4ae994 feat(ipc): expose getConfig and writeConfig in renderer facade
+50ee30d feat(nav): add settings page to router
+2d1ff48 feat(home): add settings button to top-right
+94283ac feat(settings): add settings page with config editing and validation
+3d3e6c5 style(settings): add trailing newline, keep cleanup in tests
+73014a8 refactor(main): use saveEnv in setup wizard to preserve .env comments
+c7a66cc fix(settings): use ember color for verify success, drop idle status
+79e7e7d debug(kimi): log response body on HTTP errors in chatStream/chatNonStream
+7351a55 fix(kimi): force temperature=0.6 for kimi-* models, keep others flexible
+5777060 test(ci): package integrity and release env validation
+537e566 feat: bootstrap observability, packaged resource validation, and env diagnostics
+736d23e chore(release): update Windows installer name, nsis config, and package script
+d576151 chore(release): bump version to 1.0.0
+d14a189 fix(config): store .env under ~/.studyparlor in packaged builds
+e1632f5 chore(release): bump version to 1.0.1
+efb6f73 fix(prompts): 统一对话结束唯一出口为固定归档问句
+85e5c0b fix(prompts): 归档学习报告模板补回 {{transcript}} 占位符
+6e460d7 chore(release): bump version to 1.0.2
+a71cccf feat(llm): DeepSeek thinking 控制并清理未使用的灵感推荐
+1eb7814 fix(session): increase max history pairs from 30 to 100
+d591f51 docs(promotion): add xiaohongshu/douyin post, text cards and reorganize assets
+ceb967c docs: add night briefing feature design spec and visual mockups
+d67e2a2 docs(quotes): add writer quotes feature design spec
+9d9194b docs(briefing): finalize layout C and oil-painting background choice
+b0b81a6 feat(quotes): add curated writer quotes library and tests
+8ebe187 feat(quotes): add Quote component with random and refresh
+70e0148 feat(quotes): add Quote component with random and refresh
+e65906c feat(quotes): insert quote widget on cover page
+7e86b9e feat(quotes): insert quote widget at bottom of home library
+624ea41 types: add wildcardInspiration state and IPC type
+ff8d900 ipc: expose llmWildcardInspiration facade
+33c87ae prompts: add wild-card-v1 recommendation prompt
+83d10f3 feat(llm): add generateWildcardInspiration task
+a30e659 docs(quotes): add writer quotes implementation plan
+adcd7f3 feat(ipc): register llm:wildcardInspiration handler
+1b53571 feat(store): add wildcardInspiration state, persistence and refresh action
+5516549 types(briefing): add DocType, BriefingResult, IpcApi and frontmatter support
+df5d2ba chore(briefing): add built-in digest prompts
+6f62281 feat(ui): add WildCardRecCard component
+33aed08 feat(briefing): add main-process feed fetch, LLM generation and file cache
+1ddf91e feat(ui): add WildCardRecCard component
+4ab4011 feat(store): add briefing page, painting surface and generate action
+3ee3b8f feat(ui): allow briefing surface on background and swap button
+269b0b5 feat(home): render WildCardRecCard above group recommendations
+b0c98c3 feat(cover): add BackToCover component and 夜航简报 entry
+54da2e6 feat(home): add back-to-cover arrow
+44d0f99 feat(briefing): add date formatter and markdown parser with tests
+0654981 test(prompts): add wild-card prompt content tests
+c6105af feat(briefing): add timeline layout page and skeleton
+9b12857 feat(app): render briefing page
+2d44c93 test(llm): add generateWildcardInspiration tests
+ca07a97 test(briefing): add IPC cache and feed-empty tests
+fffcedb test(briefing): verify built-in prompt files
+a199e32 docs: web search feature design and implementation plan
+16bedba types: add external-materials doc type and search IPC types
+a08d77c fixup! types: add external-materials doc type and search IPC types
+6353c29 feat(search): add safeStorage-based Tavily key storage
+479f388 fixup! feat(search): add safeStorage-based Tavily key storage
+12c02c7 fixup! feat(search): add safeStorage-based Tavily key storage
+7a064fa feat(search): add Tavily client and LLM query/brief generation
+a575d77 fixup! feat(search): add Tavily client and LLM query/brief generation
+0d9a8a0 fixup! feat(search): add Tavily client and LLM query/brief generation
+8510702 fix(quotes): responsive cover layout, curly quotes, focus-visible refresh, keep quote on empty pool
+7bc25a7 feat(search): add search IPC handlers with retry logic
+b0284c2 fixup! feat(search): add search IPC handlers with retry logic
+377cbde fixup! feat(search): add search IPC handlers with retry logic
+97af5f8 feat(prompts): inject external materials summary into system prompt
+7a0dc7a feat(llm): pass externalMaterialsSummary through llm:start
+f4fdb00 feat(store): add externalMaterials state and wire through session runtime
+687032b feat(ui): add external materials toggle to PreStudy modal
+db1923f feat(ui): render collapsible external materials card in Study page
+a6c5274 feat(settings): add Tavily API key configuration UI
+2cf6ab1 feat(files): add writeExternalMaterials handler
+44121f6 feat(finalize): archive external materials during progress finalize
+7f29164 feat(review): load historical external materials in review mode
+c03cbd8 test(external-materials): add parser and frontmatter tests; cover setSearchApiKey
+65c95a5 test(settings): mock search IPC and disambiguate duplicate buttons
+c05445a docs: update night briefing spec with 2-stage pipeline, profile injection, deepseek max effort, history drawer
+c1309fe feat(types,preload): add profile to briefingGenerate and expose briefingList
+e2800b2 feat(briefing): two-call pipeline, profile injection, briefingList IPC
+02f3c80 feat(store): pass profile to briefingGenerate and add history loader
+7d14852 feat(briefing): add history drawer component
+b0d4495 feat(briefing): integrate history drawer on briefing page
+88a6411 test(briefing): verify prompts, full suite and production build
+f0fbbf0 restore: recover cleaned commit 0953cfd contents
+2a9b725 feat(search): integrate Tavily web search types, registration and build fixes
+851e619 fix(briefing): skip X builders with missing/empty tweets to avoid crash
+fcbbc24 fix(frontmatter): support external-materials type inference
+cf55057 Merge branch 'worktree-web-search' into main
+725bcfe fix(search): resolve merge conflicts, dedupe preload/types and harden credentials
+f88361c feat(terminology): add Terminology type, defaults and helper
+3f8e4d9 fix(terminology): type DEFAULT_TERMINOLOGY as Required, defer useTerminology
+68bc3e9 fix(terminology): remove wildcardInspiration scope creep and add terminology tests
+70fc973 fix(search/briefing/wild-card): harden JSON parsing, Kimi thinking, abort/timeouts, concurrency and error surfacing
+d39c110 feat(terminology): difficulty/temperature labels accept custom mapping
+11902db feat(terminology): add terminology state and persistence to store
+173c587 feat(terminology): migrate Home page labels to useTerminology
+4251b16 feat(terminology): migrate Study page labels to useTerminology
+3ed190a feat(terminology): migrate Profile page labels to useTerminology
+d0aeab3 feat(terminology): migrate PreStudyModal labels to useTerminology
+3ddf2ee feat(terminology): refactor Extension page with sidebar and language panel
+03b7cdb test(terminology): add fallback and persistence tests, strip undefined in store
+24ef560 chore: sync package-lock version with package.json
+b6f908e chore(deps): add playwright for E2E automation
+91c213b fix(deps): replace playwright with @playwright/test in devDependencies
+a3f941c chore(tests): add Playwright E2E scripts to package.json
+9372465 chore(gitignore): add Playwright E2E artifacts
+1fc7600 e2e(playwright): add Playwright configuration file
+277ca49 e2e(main): support E2E library path override and reserve remote-debugging-port
+27da002 Add data-testid attributes to Home.tsx for Playwright E2E testing
+c235375 test(prestudy): add data-testid attributes for E2E selectors
+5772bf8 test(study): add data-testid attributes for Playwright E2E
+3589442 e2e(selectors): create centralized E2E selector constants
+aa8f7ba e2e(helpers): create test library factory for fixture data
+4c166cd fix(e2e): align test-library seed helpers with app directory layout
+addc1da fix(e2e): use namespace imports for node built-ins in test-library.ts
+fe56494 fix(e2e): harden test-library helpers per code review
+0fd672c e2e(fixtures): create custom Playwright fixture for Electron
+461b5b2 e2e(fixtures): swallow cleanup errors during teardown to avoid masking real test results
+b7ca1a7 feat(e2e): add HomePage page object
+1c42ec2 test(e2e): add topic-card selector and wire HomePage locators
+c1a2c21 feat(e2e): add PreStudyPage page object
+f577da5 fix(e2e): add cancelButton locator and scope selectMode to modal
+be8ed7b feat(e2e): add StudyPage page object
+d65bb95 test(e2e): add stable data-testid attributes to ChatInput and update selectors
+5873f25 test(e2e): add stable data-testid to ChatBubble and update StudyPage selector
+76b36fb test(e2e): add userMessage selector to match ChatBubble data-testid
+82aff72 test(e2e): implement Playwright E2E suite with CDP fixture
+56f1403 docs(spec): sync E2E automation spec with implementation
+df38811 feat(quote): redesign Quote with bilingual text, source, and study surface
+80bc00b test(quote): clarify surface rendering test intent
+0ee076f feat(study): add Quote to top of chat message list
+2b7b28e chore: verify quote display refinement
+90122ff chore(llm): set reasoning_effort to max and sync tests/styles
+c8774d7 docs(quotes): merge second-round quotes and refine selection standards
+2e852cc docs(quotes): add best-of-best collection and quote display design docs
+55c99a9 feat(quotes): regenerate quote pool from curated markdown and add sync test
+c265ba5 docs(CLAUDE.md): add unit/E2E testing layer policy
+1df6455 test(e2e): add quote display and refresh coverage
+aa4bac1 fix(build): add missing Terminology type and default to unblock build
+9b7f53d docs(CLAUDE.md): auto-run unit and E2E tests for UI changes
+9797b0c revert(CLAUDE.md): remove testing-layer policy; approvals come from settings
+ecba31f feat(env): separate .env dir from state.json dir
+7a5a0c0 test(env): verify state dir is independent of config dir
+386dd80 docs(e2e): document isolated .env and state.json
+a85423b docs: archive old prototypes and move quotes draft to plans
+212c8b6 docs(spec): update DIY terminology design with current implementation status
+8c71bc4 docs(plan): add DIY terminology implementation plan
+2e3da39 feat(terminology): add structured Terminology type, defaults and helper
+f1f20a9 feat(terminology): difficulty/temperature labels accept custom mapping
+d043392 feat(terminology): migrate Home page labels
+d171117 feat(terminology): migrate Study page labels
+b32df16 feat(terminology): migrate Profile page labels
+bc6540e feat(terminology): migrate PreStudyModal labels
+eb431f9 feat(terminology): refactor Extension page with sidebar and My Language panel
+363d25c test(terminology): add integration test and verify full suite
+362bbce docs(terminology): mark spec/plan complete; add store persistence tests; remove old plan
+9c3bba7 docs(specs): add 2026-06-27 full E2E coverage design
+5914b3b docs(plans): add 2026-06-27 full E2E coverage implementation plan
+92821f0 test(e2e): extend selectors for full coverage
+86e9665 test(e2e): add data-testid attributes for full coverage
+cb6ca8c test(e2e): add seed factories for multi-session, fable, diagram, groups, state
+1bc180a test(e2e): refactor seed factories to reduce duplication
+c203282 test(e2e): extend CoverPage with briefing navigation
+96519e9 test(e2e): extend HomePage for navigation, unsaved sessions, strategy, group rec
+982a56f test(e2e): extend PreStudyPage for existing topic, suggestions, params
+54aec00 test(e2e): extend StudyPage for archive and stream error states
+c562311 test(e2e): document StudyPage store helpers and add return types
+22745d5 test(e2e): add Profile, Settings, Library, SetupWizard, ArchiveReport page objects
+99331cd test(e2e): clean up page object imports and naming
+a0b9388 test(e2e): add cover, home, pre-study, profile specs
+138850d test(e2e): supplement missing cover/home/pre-study cases
+0e1f40b test(e2e): strengthen assertions in cover/home/pre-study/profile specs
+a275bd6 fix(e2e): add missing SELECTORS import in pre-study spec
+145ab4c test(e2e): add study and library-management specs
+25f61fa test(e2e): clean up study and library-management specs
+37ed54e test(e2e): add settings spec
+5c9e316 test(e2e): strengthen settings spec assertions and paths
+c0c1af0 test(e2e): add onboarding journey and archive edge specs
+6524e9f test(e2e): fix archive-edge fixture and strengthen assertions
+bd02218 chore(e2e): add core/p1/p2 test scripts
+4ec82f6 docs(e2e): document LLM strategy and priority tags
+095567c test(e2e): add seed factories for multi-session, fable, diagram, groups, state
+71c4c68 test(e2e): extend CoverPage with briefing navigation
+5b61940 test(e2e): extend HomePage for navigation, unsaved sessions, strategy, group rec
+e9cc839 test(e2e): extend PreStudyPage for existing topic, suggestions, params
+4b1cf02 test(e2e): extend StudyPage for archive and stream error states
+76dae37 test(e2e): add ProfilePage page object
+e37ad6a test(e2e): add SettingsPage page object
+7adffbc test(e2e): add LibraryPage page object
+4c4cf69 test(e2e): add SetupWizardPage page object
+10dda98 test(e2e): add ArchiveReportPage page object
+c468e96 test(e2e): add cover page spec
+eca890a test(e2e): add home page spec
+91cb335 test(e2e): add pre-study spec
+ccc8e47 test(e2e): add study edge cases spec
+b568a67 test(e2e): add library management spec
+8d95d6f test(e2e): add profile spec
+6b2b92e test(e2e): add settings spec
+b589d77 test(e2e): add onboarding journey spec
+ff7f9c7 test(e2e): add archive edge cases spec
+1c7bb48 chore(e2e): add core/p1/p2 test scripts
+5958fce docs(e2e): document LLM strategy and priority tags
+5d60b23 feat(briefing): add BriefingStage type and IPC progress contract
+96455bc fix(e2e): quote grep pattern for Windows cmd in core script
+4e63a1a feat(briefing): emit progress events, classify errors, record generatedAt
+c70a1f8 feat(briefing): track generation stage in store and subscribe to progress
+08fbc58 feat(cover): restyle briefing button as parchment primary with ember shadow
+7751e2a feat(briefing): add BriefingProgress vertical stepper
+2c7c89d feat(briefing): add classified error component with retry
+ff6c8ea feat(briefing): integrate progress, classified errors, and generated timestamp
+17e5cb8 test(briefing): update handler tests for progress, generatedAt, and error codes
+ec9539d test(briefing): add progress and error component tests
+3d31b33 test(e2e): add briefing progress, retry, and timestamp selectors
+b6416a1 test(e2e): cover briefing button disabled/enabled states
+6ba22ae test(e2e): update briefing specs for timestamp and classified errors
+5205885 untracked files on main: 6ba22ae test(e2e): update briefing specs for timestamp and classified errors
+56a602a index on main: 6ba22ae test(e2e): update briefing specs for timestamp and classified errors
+d607d91 On main: briefing-ui-upgrade WIP 2
+b257696 fix(briefing): address typecheck and test issues
+7ec9558 fix(briefing): add missing briefing layout components
+b4dbf65 fix(e2e): add --no-sandbox to Electron spawn args
+158251f test(e2e): add seedTerminology and seedWildCardInspiration helpers
+a92372c chore(e2e): sync test-library helpers from previous session
+61b2dc8 test(e2e): add ExtensionPage and TerminologyPanel page objects
+fa70801 test(e2e): extend HomePage for wild card
+7f89b2c test(e2e): add Phase 1 specs (terminology, wild card, extension, group guide)
+7b725f6 feat(e2e): add data-testid attributes for Phase 1 test coverage
+fbc153d feat(e2e): Phase 1 complete - terminology, wild card, extension, group guide specs all pass - Added NODE_ENV=test mocks for wildcardInspiration, generateContinueSuggestions, briefing - Added data-testid to TerminologyPanel, WildCardRecCard, GuidePopover, Extension page - Fixed inputForField sync/async pattern in TerminologyPanel page object - Fixed seedWildCardInspiration key to match store (wildcardInspiration)
+ba37a50 feat(e2e): Phase 2 specs + helpers (briefing-generation, external-materials, fable-generation) - Add BriefingPage page object - Extend StudyPage with externalMaterialsCard - Add seedTopicWithoutFable and seedTopicWithoutDiagram helpers - Add briefing auto-generation spec - Add external materials toggle/key spec - Add fable generation spec - Fix briefing test mock to work without force flag
+0d52354 fix(e2e): reposition briefing mock after cache check to preserve existing tests
+4abbaaf test(e2e): fix Phase 2 specs - briefing, external-materials, fable-generation
+550c467 test(e2e): complete Phase 3+4 specs (library, suggestions, diagram, errors, smoke)
+211d57e test(e2e): fix smoke test - use home page assertions instead of surface-background
+638b3f7 fix(e2e): add window.reload() after seed for library-based tests, fix briefing/fable/diagram specs
+8e81ee7 fix(e2e): fix topic-card selectors to use slug (dirName) instead of frontmatter title
+4fe3aa9 feat(e2e): run real briefing and external-materials chains under mocks
+ce38f9c feat(e2e): integrate real-chain specs and finalize feature/e2e-coverage-expansion
+a2c0914 Merge pull request #1 from ook370641-arch/feature/e2e-coverage-expansion
+d066e71 fix(e2e): isolate Chromium userData/cache to prevent dev startup slowdown after tests
+0dc18f9 feat(e2e): real-API test infrastructure and timeout adjustments
+4b65737 test(e2e): add real-API specs for briefing and external materials
+3944cd1 chore(scripts): add real-API test helper scripts
+1816a18 merge feature/e2e-coverage-expansion into main
+c35e2ed docs: add external materials summary panel design spec
+77a1fb0 docs: add external materials summary panel implementation plan
+11bf3b1 feat(search): increase tutor brief limit from 3000 to 5000 chars
+d371403 feat(store): add isExternalSummaryOpen state and actions
+7285464 docs(spec): night briefing UX optimization design
+b198c54 feat(ui): add ExternalSummaryPanel drawer component
+8eb748e docs(spec): add E2E matrix for briefing UX optimization
+504a94f docs(plan): night briefing UX optimization implementation plan
+1c1db0c types: add BriefingFontSize and sourceStatus
+1a2efc7 feat(briefing): add font size constants
+35adcea feat(store): persistent briefing font size
+d0881fa feat(briefing): feed retry and source status
+e7866f2 feat(prompts): longer summaries with beginner explanations
+2b649bf refactor(ui): remove unused panelRef in ExternalSummaryPanel
+65e23d5 feat(briefing): unified header with font size controls
+78e1e43 feat(briefing): academic layout typography and swap painting placement
+ae62bb7 feat(briefing): newspaper layout typography
+f37c547 test(briefing): feed retry and sourceStatus
+7faad3f test(store): briefing font size persistence
+6ceecfb test(briefing): BriefingHeader font size controls
+f0f9a32 feat(ui): add summary panel entry to ExternalMaterialsCard
+a7f18e4 test(prompts): beginner explanation and no masthead rules
+5b99144 test(e2e): add briefing font size and source status selectors
+4432959 feat(ui): integrate ExternalSummaryPanel into Study page
+cfeb71e refactor(ui): remove redundant Escape handler from ExternalSummaryPanel
+a34908f test(e2e): add selectors for external summary panel
+ecf7107 test(e2e): add ExternalSummaryPanel POM methods
+7e0d207 test(e2e): add external materials summary panel specs
+77f0182 test(e2e): add briefing UX optimization smoke specs and harness fixes
+25bab8e refactor(ui): remove message-list transition to avoid layout race
+426ad39 test(e2e): strengthen summary panel specs after review
+27bc5f4 refactor(ui): external summary panel no-backdrop, slide animation, no-occlusion padding
+750176c feat(ui): external materials summary panel
+8907f55 fix(briefing): heading styles, source tooltip, prompt cleanup, and layout tests
+30ec100 Merge branch 'feature/night-briefing-optimization'
+afaa790 fix(briefing): header centering, swap button position, white newspaper bg, larger progress text
+1dc1720 refactor(ui): extract ExternalSummaryContent and use in card/panel
+2e5cade fix(briefing): restore clickable source links and enforce article-body links
+fd52344 fix(briefing): shrink loading progress text and spinner by two sizes
+f88369d feat: external summary panel, briefing font size, and dev/e2e improvements
+6855f7a fix(briefing): hide source status when all ok, use -/+ for font size
+56eb176 feat(external-summary): markdown rendering and font size controls
+4099313 release: v1.1.0
+31b2bea feat(cleanup): extract shared process/port cleanup utilities
+0b562fb feat(dev): preflight orphan cleanup and auto-exit on electron-vite exit
+b6a973b feat(main): isolate dev-mode userData/cache under project root
+2da5059 fix(main): close all webContents and log before-quit on window close
+afb4f07 feat(e2e): age out old test dirs and wait longer before cleanup
+9695eda perf(bootstrap): shorten boot animation delays
+52acca7 docs: ignore dev electron cache and add cleanup notes
+4a18d32 fix(cleanup): use powershell json for process enum, pass pid to killProcessTree, isolate dev cache under node_modules
+f35d283 docs(spec): anthropic blog integration design doc

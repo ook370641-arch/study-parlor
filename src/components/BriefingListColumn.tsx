@@ -35,7 +35,7 @@ export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, tit
       data-testid="briefing-list-column"
       className={`h-full flex flex-col transition-all ${collapsed ? 'w-14' : widthClass} ${themeClasses.bg} ${themeClasses.border} z-[5]`}
     >
-      <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-4 ${themeClasses.headerBorder}`}>
+      <div className={`flex items-center justify-between px-3 py-4 ${themeClasses.headerBorder}`}>
         {!collapsed && <span className={`text-sm font-serif ${themeClasses.headerText}`}>{title}</span>}
         <button
           data-testid="briefing-list-column-toggle"
@@ -46,7 +46,7 @@ export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, tit
           {collapsed ? '▶' : '◀'}
         </button>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
+      {!collapsed && <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>}
     </aside>
   )
 }

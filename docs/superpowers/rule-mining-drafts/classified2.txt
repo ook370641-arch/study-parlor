@@ -1,0 +1,413 @@
+=== ui_components_styling: 153 total | feat:105 fix:16 refactor:5 test:8 ===
+  4c09d34 style    style+feat(ui): tokens, scrollbar, Button ②, Input ②
+  94e85fa feat     feat(ui): cover page + app router + init flow
+  8497fef feat     feat(ui): home with 3-column recommendation + library
+  4b0d835 feat     feat(ui): PreStudy modal with three entry behaviors
+  1933a69 feat     feat(ui): StudyLibrary + SessionViewer components, refactor Home page
+  aab201d feat     feat(migration): add library migration script for old folder structure
+  e707048 feat     feat(ui): archive banner now has dismiss button + matches new state name
+  7dccb10 feat     feat(ui): add ArchiveLoadingOverlay component
+  a26e982 feat     feat(ui): add ArchiveReportModal component
+  fee287a feat     feat(study): integrate archive loading overlay and report modal
+  52296ee feat     feat(groups): add IPC handlers for group CRUD and inject groupId into TopicMeta
+  04b8efd feat     feat(groups): expose group IPC methods in preload and renderer facade
+  4939713 feat     feat(groups): extend store with group state and operations
+  03277a8 feat     feat(groups): add GroupRibbon and GravityField components
+  18f6315 feat     feat(groups): integrate ribbon, gravity field, drag logic and group-aware sorting
+  00f9825 test     test(groups): add sorting, color and distance tests
+  04606b5 feat     feat(groups): study library grouping with ribbon + gravity field drag
+  f2f66f6 fix      fix(groups): fix drag activation deadlock - mousemove now listens from mousedown
+  1368f30 fix      fix(groups): topics orbit gravity centers + fix dragState closure bug in handleMouseUp
+  98cc3fb feat     feat(ui): add ConfirmDialog shared component with tests
+  4ab936f feat     feat(ui): add GroupRecCard component, remove InspirationChip
+  c19d042 feat     feat(home): replace flat inspirations with group-colored rec cards
+  b9abb65 feat     feat(ribbon): add confirm dialog before deleting a group
+  f59f7be feat     feat(library): add session delete button with confirm dialog
+  ef82654 feat     feat(ribbon): hover-reveal × for group delete, keep rename in context menu
+  8eb4ce4 feat     feat(stars): 星辰宇宙交互动效 (StarOrbit/StarParticle + Phase 1-2 集成)
+  e962c25 docs     docs(art): spec + plan for Rothko + Billout 画作背景
+  9e8ea9d feat     feat(art): vite plugin for paintings manifest + dev/build serving
+  1091733 docs     docs(art): document why electron.vite.config.ts uses createRequire
+  8637a8f feat     feat(art): Painting type + pickRandom/formatAttribution with tests
+  f08b38e feat     feat(art): store fields for current paintings + init/swap
+  ba810c1 feat     feat(art): SurfaceBackground + SwapPaintingButton components + globals.css
+  c880f51 feat     feat(art): Cover uses painting pool + swap button
+  5711adc fix      fix(art): z-5 → z-[5] (arbitrary value syntax, real Tailwind output)
+  fbb38de feat     feat(art): Home with painting background + glass panels
+  766a087 feat     feat(art): Study with painting background + glass header/bubbles/input
+  7adf8c4 feat     feat(md): file type detector with frontmatter + filename fallback
+  9e6f6a9 feat     feat(md): MarkdownRenderer foundation with react-markdown integration
+  25c0c4e feat     feat(md): all document type components with Disco Elysium styling
+  1250ee8 feat     feat(md): Shiki syntax highlighting with warm dark theme
+  bd3cd05 test     test(md): Heading section label rendering
+  b91c962 feat     feat(md): complete Markdown renderer with Disco Elysium styling
+  d60b3ed feat     feat(md): add ReportHeader component with type-differentiated rendering
+  8676e83 feat     feat(md): integrate ReportHeader into MarkdownRenderer
+  05606d0 fix      fix(md): add error boundaries and diagnostic logging to MarkdownRenderer
+  0906c7d fix      fix(md): remove async rehypeShiki causing runSync crash
+  6edd985 feat     feat(Home): add StrategyToggle next to inspiration section title
+  d08fec6 fix      fix(md): unconditional frontmatter strip + visible diagnostics
+  b42fe29 other    remove(scripts): delete one-off library migration script
+  ba7642a other    design(study-library): pagination + fixed-viewport gravity field
+  4fdaa22 other    plan(study-library): pagination + fixed-viewport gravity field implementation
+  df7f27a feat     feat(StudyLibrary): paginate topics (10 per page) with dot navigation
+  59e3d0f chore    chore: verify pagination + gravity field implementation
+  061be97 fix      fix(Home): constrain flex row height to viewport for frame layout
+  d7aba21 feat     feat(StudyLibrary): pagination at top, 9 topics per page, fixed frame scroll
+  e2acd6a feat     feat: add fable generation UI in StudyLibrary
+  da1f405 feat     feat(loading-screen): HTML splash for instant visual + smooth progress animation
+  6467382 feat     feat: add FableStyleDialog component for user style preferences
+  e34fedb feat     feat(loading-screen): B variant with thicker strokes and re-timed animation
+  e69298f feat     feat(renderer): install mermaid and add MermaidRenderer component
+
+=== e2e: 107 total | feat:10 fix:11 refactor:0 test:62 ===
+  a3f941c chore    chore(tests): add Playwright E2E scripts to package.json
+  9372465 chore    chore(gitignore): add Playwright E2E artifacts
+  1fc7600 other    e2e(playwright): add Playwright configuration file
+  277ca49 other    e2e(main): support E2E library path override and reserve remote-debugging-port
+  27da002 other    Add data-testid attributes to Home.tsx for Playwright E2E testing
+  3589442 other    e2e(selectors): create centralized E2E selector constants
+  aa8f7ba other    e2e(helpers): create test library factory for fixture data
+  4c166cd fix      fix(e2e): align test-library seed helpers with app directory layout
+  addc1da fix      fix(e2e): use namespace imports for node built-ins in test-library.ts
+  fe56494 fix      fix(e2e): harden test-library helpers per code review
+  0fd672c other    e2e(fixtures): create custom Playwright fixture for Electron
+  461b5b2 other    e2e(fixtures): swallow cleanup errors during teardown to avoid masking real test results
+  b7ca1a7 feat     feat(e2e): add HomePage page object
+  1c42ec2 test     test(e2e): add topic-card selector and wire HomePage locators
+  c1a2c21 feat     feat(e2e): add PreStudyPage page object
+  f577da5 fix      fix(e2e): add cancelButton locator and scope selectMode to modal
+  be8ed7b feat     feat(e2e): add StudyPage page object
+  d65bb95 test     test(e2e): add stable data-testid attributes to ChatInput and update selectors
+  5873f25 test     test(e2e): add stable data-testid to ChatBubble and update StudyPage selector
+  76b36fb test     test(e2e): add userMessage selector to match ChatBubble data-testid
+  82aff72 test     test(e2e): implement Playwright E2E suite with CDP fixture
+  56f1403 docs     docs(spec): sync E2E automation spec with implementation
+  c265ba5 docs     docs(CLAUDE.md): add unit/E2E testing layer policy
+  1df6455 test     test(e2e): add quote display and refresh coverage
+  9b7f53d docs     docs(CLAUDE.md): auto-run unit and E2E tests for UI changes
+  386dd80 docs     docs(e2e): document isolated .env and state.json
+  9c3bba7 docs     docs(specs): add 2026-06-27 full E2E coverage design
+  5914b3b docs     docs(plans): add 2026-06-27 full E2E coverage implementation plan
+  92821f0 test     test(e2e): extend selectors for full coverage
+  86e9665 test     test(e2e): add data-testid attributes for full coverage
+  cb6ca8c test     test(e2e): add seed factories for multi-session, fable, diagram, groups, state
+  1bc180a test     test(e2e): refactor seed factories to reduce duplication
+  c203282 test     test(e2e): extend CoverPage with briefing navigation
+  96519e9 test     test(e2e): extend HomePage for navigation, unsaved sessions, strategy, group rec
+  982a56f test     test(e2e): extend PreStudyPage for existing topic, suggestions, params
+  54aec00 test     test(e2e): extend StudyPage for archive and stream error states
+  c562311 test     test(e2e): document StudyPage store helpers and add return types
+  22745d5 test     test(e2e): add Profile, Settings, Library, SetupWizard, ArchiveReport page objects
+  99331cd test     test(e2e): clean up page object imports and naming
+  a0b9388 test     test(e2e): add cover, home, pre-study, profile specs
+  138850d test     test(e2e): supplement missing cover/home/pre-study cases
+  0e1f40b test     test(e2e): strengthen assertions in cover/home/pre-study/profile specs
+  a275bd6 fix      fix(e2e): add missing SELECTORS import in pre-study spec
+  145ab4c test     test(e2e): add study and library-management specs
+  25f61fa test     test(e2e): clean up study and library-management specs
+  37ed54e test     test(e2e): add settings spec
+  5c9e316 test     test(e2e): strengthen settings spec assertions and paths
+  c0c1af0 test     test(e2e): add onboarding journey and archive edge specs
+  6524e9f test     test(e2e): fix archive-edge fixture and strengthen assertions
+  bd02218 chore    chore(e2e): add core/p1/p2 test scripts
+  4ec82f6 docs     docs(e2e): document LLM strategy and priority tags
+  095567c test     test(e2e): add seed factories for multi-session, fable, diagram, groups, state
+  71c4c68 test     test(e2e): extend CoverPage with briefing navigation
+  5b61940 test     test(e2e): extend HomePage for navigation, unsaved sessions, strategy, group rec
+  e9cc839 test     test(e2e): extend PreStudyPage for existing topic, suggestions, params
+  4b1cf02 test     test(e2e): extend StudyPage for archive and stream error states
+  76dae37 test     test(e2e): add ProfilePage page object
+  e37ad6a test     test(e2e): add SettingsPage page object
+  7adffbc test     test(e2e): add LibraryPage page object
+  4c4cf69 test     test(e2e): add SetupWizardPage page object
+
+=== llm_prompts_session_archive: 59 total | feat:22 fix:19 refactor:1 test:5 ===
+  f646d3d feat     feat(prompts): assembly chain (base → review → difficulty → profile)
+  c7c0a96 feat     feat(archive): pure helpers for filename conflict + review appendix
+  bce78ae feat     feat(llm): Kimi client — probe, non-stream, SSE parser
+  5658ae1 feat     feat(llm): inspiration + finalize tasks with parse fallback
+  69ecf2d feat     feat(prompts): replace placeholder with /learner skill content
+  d0ca81f test     test(prompts): fix order-check assertion to match real learner content
+  1f991d0 feat     feat(finalize): update progress/review finalize flow + auto-save sessions
+  0a25034 fix      fix(auto-save): move save from onLlmChunk to onLlmDone + snapshot history in finalize
+  7da9036 docs     docs(spec): archive trigger redesign — natural-language phrase + edge-counted dismiss
+  d9e61e5 docs     docs(plan): archive trigger redesign — implementation plan
+  8c49f15 feat     feat(prompt): replace 「本轮归档」 token with natural-language 需要存档吗?
+  8ab95f8 refactor refactor(session-runtime): strip '需要存档吗?' (not 「本轮归档」) from LLM history
+  4dfa4b5 fix      fix(prompt): remove conflicting archive instructions from learner-base.md
+  b7cfcb7 other    Merge branch 'feat/archive-trigger-redesign'
+  a10854e fix      fix(stuck): unblock restored review sessions + harden llm:start error path
+  173e61b fix      fix(archive): apply prompts-dir fallback in llm-tasks.ts
+  a18b06f other    spec: session cache and archive flow redesign
+  6a0f184 feat     feat(types): add ArchiveResult type for post-archive display
+  e3879da feat     feat(session-runtime): remove history filtering for archive phrase
+  b86e517 fix      fix(session-persist): conservative orphan cleanup
+  787c398 feat     feat(finalize): set archiveResult instead of immediate reset
+  bc39f4c fix      fix(archive): relax phrase detection + add diagnostics for missing banner
+  7ac7fe4 perf     perf(kimi): disable thinking mode for faster responses
+  516a075 feat     feat(llm): add group-level inspiration generation with prompt
+  363ed95 fix      fix(rec): improve prompt, add JSON cleanup + tests, fix GroupRecCard mount logic
+  0eecaeb fix      fix(rec): systematic debugging — 3 root causes fixed
+  d9bb71c fix      fix(rec): robust JSON extraction + progress_summary cleanup + free hook
+  d462f1b fix      fix(rec): extractJsonObject uses open-quote to avoid non-JSON braces
+  5f056b4 feat     feat(prompt): add description field to archive-progress extraction
+  cd34df3 feat     feat(finalize): pass description to writeProgress, fix fable to use writeFable IPC
+  933eeb4 other    prompts: add 3 group inspiration variants, remove old unified prompt
+  8d98705 feat     feat: add StrategyToggle component for prompt A/B testing
+  751ae90 test     test(llm-tasks): verify strategy parameter selects correct prompt
+  7c9c80c fix      fix(group-inspiration): JSON extraction failures and refresh flicker
+  e687bad fix      fix(group-inspiration): add fallback extraction + stronger prompt constraints
+  8eb6396 fix      fix(TopicAccordion): cap session list at 160px with internal scroll
+  d46aa19 fix      fix(TopicAccordion): a11y + scroll hygiene for session list
+  d1a5f0a feat     feat: add fable-from-report prompt template
+  b05d6a5 fix      fixup! feat: add fable-from-report prompt template
+  6b6db12 feat     feat(finalize): trigger diagram generation after archiving
+  c059b3e docs     docs: add diagram generation design doc, plan, and prompt
+  bc7bc2b other    Merge branch 'feature/custom-old-topic-session'
+  79e7e7d other    debug(kimi): log response body on HTTP errors in chatStream/chatNonStream
+  7351a55 fix      fix(kimi): force temperature=0.6 for kimi-* models, keep others flexible
+  efb6f73 fix      fix(prompts): 统一对话结束唯一出口为固定归档问句
+  85e5c0b fix      fix(prompts): 归档学习报告模板补回 {{transcript}} 占位符
+  a71cccf feat     feat(llm): DeepSeek thinking 控制并清理未使用的灵感推荐
+  1eb7814 fix      fix(session): increase max history pairs from 30 to 100
+  33c87ae other    prompts: add wild-card-v1 recommendation prompt
+  83d10f3 feat     feat(llm): add generateWildcardInspiration task
+  0654981 test     test(prompts): add wild-card prompt content tests
+  2d44c93 test     test(llm): add generateWildcardInspiration tests
+  97af5f8 feat     feat(prompts): inject external materials summary into system prompt
+  7a0dc7a feat     feat(llm): pass externalMaterialsSummary through llm:start
+  44121f6 feat     feat(finalize): archive external materials during progress finalize
+  90122ff chore    chore(llm): set reasoning_effort to max and sync tests/styles
+  a85423b docs     docs: archive old prototypes and move quotes draft to plans
+  e7866f2 feat     feat(prompts): longer summaries with beginner explanations
+  a7f18e4 test     test(prompts): beginner explanation and no masthead rules
+
+=== other: 55 total | feat:11 fix:13 refactor:2 test:2 ===
+  6b4580b fix      fix: add @shared vitest alias + macOS window lifecycle
+  3b01a23 fix      fix(critical): address 3 spec-compliance issues from code review
+  de9bfd5 fix      fix: resolve 3 compile errors from deleted functions
+  014d9f4 docs     docs(comment): update ChatBubble note for 需要存档吗? trigger phrase
+  75e79f4 test     test: update gaps type from string to string[] in type test
+  756804f other    types: add Group, GroupMapping and extend TopicMeta/IpcApi
+  222e662 docs     docs: design spec and implementation plan for rec cards + delete confirm
+  b52e9db other    types: add llmGroupInspiration and deleteArchivedSession to IpcApi
+  42d0bba feat     feat: group-colored rec cards + delete confirm dialogs
+  2d19158 other    deps: add react-markdown, remark-gfm, rehype-raw, @shikijs/rehype, shiki
+  4597335 chore    chore: add .worktrees to .gitignore
+  3ddcf56 feat     feat: ArchiveReportModal uses MarkdownRenderer with ReportHeader
+  b6cea5d other    types: add inspirationStrategy to StateJson and IpcApi
+  bcc1251 fix      fix(GroupRecCard): remove cache-clear on refresh, add loading overlay
+  0408166 fix      fix(GroupRecCard): manual refresh bypasses debounce
+  72fb118 fix      fix(StudyLibrary): pagination clamping + dot capping + a11y
+  cae5503 feat     feat(StudyLibrary): fixed-height frame layout with internal scroll
+  be9a01b feat     feat(GravityField): switch to fixed full-screen overlay with viewport sizing
+  e7d700f fix      fix(GravityField): z-40 + hoist maxDist
+  2cd3af5 refactor refactor(StudyLibrary): global drag coords for fixed GravityField
+  c5fb6c3 refactor refactor(StudyLibrary): remove unused containerRef
+  48ededa fix      fix(GravityField): respond to window resize
+  2fe8756 fix      fix(SurfaceBackground): fixed positioning so painting stays while scrolling
+  0e27ae2 feat     feat: implement generateFableFromReport backend with tests
+  49e5525 fix      fix(StudyLibrary): fix stuck spinner, re-render cascade, and dynamic import
+  05c90d7 other    types: add onBootProgress and onBootComplete to IpcApi
+  ca00008 other    main: defer boot sequence after window creation, emit progress events
+  a7669c3 feat     feat(LoadingScreen): ink-bloom visual with progress-driven CSS elements
+  0f2b570 feat     feat(App): integrate LoadingScreen with boot-complete lifecycle
+  c15ace4 fix      fixup: add missing fableStyleTags/lastFableTags to DEFAULT, correct StateJson field order
+  aa69638 feat     feat: pass userPrompt through to generateFableFromReport backend
+  1b902f9 feat     feat: integrate FableStyleDialog into StudyLibrary fable generation flow
+  ad5b808 other    清理冗余文件
+  d63046d other    新建快捷方式与页面优化方案
+  d402a30 other    新建介绍文件与证件
+  0580676 fix      fix(config): remove incorrect gitignore rule for painting manifest
+  fa2c39e chore    chore(audit): comprehensive stability and robustness improvements
+  ec4743f feat     feat(skill): add fable skill (renamed from research)
+  e424065 other    assets: add group guide drag demo image
+  33861dd test     test: fix TypeScript warnings in GuidePopover tests
+  d99c16f chore    chore: commit pending changes from previous sessions
+  40f79f0 other    add Pictures directory with artwork images
+  d591f51 docs     docs(promotion): add xiaohongshu/douyin post, text cards and reorganize assets
+  7f29164 feat     feat(review): load historical external materials in review mode
+  f0fbbf0 other    restore: recover cleaned commit 0953cfd contents
+  9797b0c revert   revert(CLAUDE.md): remove testing-layer policy; approvals come from settings
+  212c8b6 docs     docs(spec): update DIY terminology design with current implementation status
+  8c71bc4 docs     docs(plan): add DIY terminology implementation plan
+  3944cd1 chore    chore(scripts): add real-API test helper scripts
+  c35e2ed docs     docs: add external materials summary panel design spec
+  77a1fb0 docs     docs: add external materials summary panel implementation plan
+  1c1db0c other    types: add BriefingFontSize and sourceStatus
+  2da5059 fix      fix(main): close all webContents and log before-quit on window close
+  9695eda perf     perf(bootstrap): shorten boot animation delays
+  f35d283 docs     docs(spec): anthropic blog integration design doc
+
+=== ipc_state_store: 45 total | feat:25 fix:5 refactor:1 test:1 ===
+  b333c32 feat     feat(types): shared IPC + domain types
+  c33d77e feat     feat(state): atomic JSON write with .bak rollback
+  242b6a2 feat     feat(ipc): wire files/state/llm handlers + preload bridge
+  bc7f752 feat     feat(store): zustand store + typed ipc facade
+  e285f40 fix      fix(test): remove redundant expect(state).toBeDefined() assertion
+  984ada9 feat     feat: fable generation, expose IPC, update store
+  3d91d7d fix      fix(critical): wire up session persistence IPC (C1) + improve fable prompt (I2)
+  995c2fe chore    chore(baseline): cumulative state before archive-trigger-redesign tasks
+  25d97f1 refactor refactor(store): suggestEnd → archivePending with edge detection + dismiss
+  305c5e4 feat     feat(store): per-message archive detection, refresh unsaved after save
+  031fb77 feat     feat(ipc): add files:deleteArchivedSession handler with test
+  ac40a10 feat     feat(store): add deleteArchivedSession action
+  f7ddf32 other    types: add DocType, description field, and writeFable IPC
+  7c2a77f feat     feat(ipc): add description to writeProgress, frontmatter to review/transcript, new writeFable handler
+  d094994 other    state: default inspirationStrategy to v2
+  b0e7c2e other    ipc: pass inspiration strategy through to prompt selection
+  280c430 other    store: add inspirationStrategy state with setter and persistence
+  43bd3ba feat     feat: add llmGenerateFableFromReport IPC types and wiring
+  1fe5726 other    preload: register boot:progress and boot:complete IPC channels
+  363139f other    ipc: expose boot progress helpers
+  4f6d9fd other    debug: add IPC tracing + wait for renderer load before boot sequence
+  d9ba6cc feat     feat: add fable style tags state and userPrompt to types and prompt
+  26489f8 feat     feat: add fableStyleTags and lastFableTags to store with persistence
+  d8fb79b other    wip: current working state before public branch
+  5acf319 other    types: add hasDiagram/diagramFile and llmGenerateDiagram IPC
+  8d40420 feat     feat(ipc): wire llmGenerateDiagram through preload and facade
+  2075d22 feat     feat(store): add 'extension' to Page type
+  bf26618 feat     feat(ipc): add getExtensionInfo for library path and painting count
+  9c9e55c fix      fix: crash on PreStudyModal when state.json has null lastUsed
+  6718166 feat     feat(ipc): add config:get and config:write handlers
+  d4ae994 feat     feat(ipc): expose getConfig and writeConfig in renderer facade
+  d14a189 fix      fix(config): store .env under ~/.studyparlor in packaged builds
+  624ea41 other    types: add wildcardInspiration state and IPC type
+  ff8d900 other    ipc: expose llmWildcardInspiration facade
+  adcd7f3 feat     feat(ipc): register llm:wildcardInspiration handler
+  1b53571 feat     feat(store): add wildcardInspiration state, persistence and refresh action
+  4ab4011 feat     feat(store): add briefing page, painting surface and generate action
+  16bedba other    types: add external-materials doc type and search IPC types
+  a08d77c fix      fixup! types: add external-materials doc type and search IPC types
+  f4fdb00 feat     feat(store): add externalMaterials state and wire through session runtime
+  c1309fe feat     feat(types,preload): add profile to briefingGenerate and expose briefingList
+  02f3c80 feat     feat(store): pass profile to briefingGenerate and add history loader
+  d371403 feat     feat(store): add isExternalSummaryOpen state and actions
+  35adcea feat     feat(store): persistent briefing font size
+  7faad3f test     test(store): briefing font size persistence
+
+=== briefing: 45 total | feat:19 fix:9 refactor:0 test:7 ===
+  ceb967c docs     docs: add night briefing feature design spec and visual mockups
+  9d9194b docs     docs(briefing): finalize layout C and oil-painting background choice
+  5516549 other    types(briefing): add DocType, BriefingResult, IpcApi and frontmatter support
+  df5d2ba chore    chore(briefing): add built-in digest prompts
+  33aed08 feat     feat(briefing): add main-process feed fetch, LLM generation and file cache
+  44d0f99 feat     feat(briefing): add date formatter and markdown parser with tests
+  c6105af feat     feat(briefing): add timeline layout page and skeleton
+  9b12857 feat     feat(app): render briefing page
+  ca07a97 test     test(briefing): add IPC cache and feed-empty tests
+  fffcedb test     test(briefing): verify built-in prompt files
+  c05445a docs     docs: update night briefing spec with 2-stage pipeline, profile injection, deepseek max effort, history drawer
+  e2800b2 feat     feat(briefing): two-call pipeline, profile injection, briefingList IPC
+  7d14852 feat     feat(briefing): add history drawer component
+  b0d4495 feat     feat(briefing): integrate history drawer on briefing page
+  88a6411 test     test(briefing): verify prompts, full suite and production build
+  851e619 fix      fix(briefing): skip X builders with missing/empty tweets to avoid crash
+  70fc973 fix      fix(search/briefing/wild-card): harden JSON parsing, Kimi thinking, abort/timeouts, concurrency and error surfacing
+  5d60b23 feat     feat(briefing): add BriefingStage type and IPC progress contract
+  4e63a1a feat     feat(briefing): emit progress events, classify errors, record generatedAt
+  c70a1f8 feat     feat(briefing): track generation stage in store and subscribe to progress
+  7751e2a feat     feat(briefing): add BriefingProgress vertical stepper
+  2c7c89d feat     feat(briefing): add classified error component with retry
+  ff6c8ea feat     feat(briefing): integrate progress, classified errors, and generated timestamp
+  17e5cb8 test     test(briefing): update handler tests for progress, generatedAt, and error codes
+  ec9539d test     test(briefing): add progress and error component tests
+  d607d91 other    On main: briefing-ui-upgrade WIP 2
+  b257696 fix      fix(briefing): address typecheck and test issues
+  7ec9558 fix      fix(briefing): add missing briefing layout components
+  7285464 docs     docs(spec): night briefing UX optimization design
+  8eb748e docs     docs(spec): add E2E matrix for briefing UX optimization
+  504a94f docs     docs(plan): night briefing UX optimization implementation plan
+  1a2efc7 feat     feat(briefing): add font size constants
+  d0881fa feat     feat(briefing): feed retry and source status
+  65e23d5 feat     feat(briefing): unified header with font size controls
+  78e1e43 feat     feat(briefing): academic layout typography and swap painting placement
+  ae62bb7 feat     feat(briefing): newspaper layout typography
+  f37c547 test     test(briefing): feed retry and sourceStatus
+  6ceecfb test     test(briefing): BriefingHeader font size controls
+  8907f55 fix      fix(briefing): heading styles, source tooltip, prompt cleanup, and layout tests
+  30ec100 other    Merge branch 'feature/night-briefing-optimization'
+  afaa790 fix      fix(briefing): header centering, swap button position, white newspaper bg, larger progress text
+  2e5cade fix      fix(briefing): restore clickable source links and enforce article-body links
+  fd52344 fix      fix(briefing): shrink loading progress text and spinner by two sizes
+  f88369d feat     feat: external summary panel, briefing font size, and dev/e2e improvements
+  6855f7a fix      fix(briefing): hide source status when all ok, use -/+ for font size
+
+=== build_dev_cleanup: 36 total | feat:9 fix:6 refactor:3 test:2 ===
+  30ff271 chore    chore: bootstrap electron-vite + react + tailwind skeleton
+  561d882 feat     feat(env): load and validate .env into AppConfig
+  551ac8f chore    chore(env): update STUDY_LIBRARY_PATH to new 学习库 directory
+  c644ede fix      fix(dev): add ELECTRON_RUN_AS_NODE workaround wrapper
+  c93d12b chore    chore(cleanup): plan typo + de-flake date-bound test
+  47d86ba other    cleanup: remove recoveryDump type and unused custom-scrollbar class
+  9bfd732 chore    chore: remove personal scripts and docs for public release
+  b0c8f44 chore    chore(cleanup): remove orphaned files and commit pending changes
+  23452ce feat     feat(setup): add first-run setup wizard for zero-config onboarding
+  18b0a1e fix      fix(setup): fix first-run boot hanging by switching to pull-based boot model
+  da4d606 other    ci: add GitHub Actions release workflow
+  7f2b5d0 other    ci: fix GITHUB_TOKEN permissions for releases
+  1515c0f fix      fix(packaging): resolve runtime failures in packaged exe
+  582f324 feat     feat: add macOS build and download guide in README
+  b8d6bbd feat     feat(env): add saveEnv to write AppConfig back to .env
+  ef31a4d refactor refactor(env): normalize baseUrl in saveEnv and clean imports
+  6a7375f refactor refactor(env): extract DEFAULT_BASE_URL constant
+  73014a8 refactor refactor(main): use saveEnv in setup wizard to preserve .env comments
+  5777060 test     test(ci): package integrity and release env validation
+  537e566 feat     feat: bootstrap observability, packaged resource validation, and env diagnostics
+  736d23e chore    chore(release): update Windows installer name, nsis config, and package script
+  d576151 chore    chore(release): bump version to 1.0.0
+  e1632f5 chore    chore(release): bump version to 1.0.1
+  6e460d7 chore    chore(release): bump version to 1.0.2
+  24ef560 chore    chore: sync package-lock version with package.json
+  b6f908e chore    chore(deps): add playwright for E2E automation
+  91c213b fix      fix(deps): replace playwright with @playwright/test in devDependencies
+  aa4bac1 fix      fix(build): add missing Terminology type and default to unblock build
+  ecba31f feat     feat(env): separate .env dir from state.json dir
+  7a5a0c0 test     test(env): verify state dir is independent of config dir
+  4099313 other    release: v1.1.0
+  31b2bea feat     feat(cleanup): extract shared process/port cleanup utilities
+  0b562fb feat     feat(dev): preflight orphan cleanup and auto-exit on electron-vite exit
+  b6a973b feat     feat(main): isolate dev-mode userData/cache under project root
+  52acca7 docs     docs: ignore dev electron cache and add cleanup notes
+  4a18d32 fix      fix(cleanup): use powershell json for process enum, pass pid to killProcessTree, isolate dev cache under node_modules
+
+=== files_frontmatter: 18 total | feat:7 fix:8 refactor:0 test:1 ===
+  baa385c feat     feat(frontmatter): parse/serialize with gray-matter and defaults
+  0661111 feat     feat(recommend): pick continue/review pair from frontmatter
+  396d024 fix      fix(frontmatter): fallback to filename-derived title when frontmatter missing
+  c5f4cbf fix      fix(frontmatter): address code review feedback
+  9748b2a other    types: add SessionMeta, TopicMeta, update Frontmatter and IpcApi
+  3d6fc3c feat     feat(files): rewrite scan for nested topic/session structure
+  6b5a426 fix      fix(files-scan): read session_number from frontmatter, export helpers for tests
+  c16961a fix      fix(files-scan): address 2 critical issues from code review
+  24fd964 feat     feat(files): update handlers for nested structure (writeProgress, readAnchor, writeReview, writeTranscript, readSessionFile)
+  69e2879 fix      fix(files,types): address 5 code-review issues from Tasks 3-6
+  f0b04a7 docs     docs: frontmatter unified display design spec
+  1e6c407 feat     feat(frontmatter): type-aware schema with ordered serialization and backward compat
+  b9d69bf fix      fix(StudyLibrary): replace gray-matter with regex frontmatter strip to avoid Buffer error in renderer
+  1ef8ba1 feat     feat(files): return text/plain mime type for .mmd files
+  582e156 fix      fix(files): scan 学习图表.mmd instead of old 学习配图 pattern
+  2cf6ab1 feat     feat(files): add writeExternalMaterials handler
+  c03cbd8 test     test(external-materials): add parser and frontmatter tests; cover setSearchApiKey
+  fcbbc24 fix      fix(frontmatter): support external-materials type inference
+
+=== external_search: 17 total | feat:8 fix:7 refactor:0 test:0 ===
+  517eb6c feat     feat(diagram): add generateDiagram backend with tests
+  7e857f7 feat     feat(svg): switch from mermaid to direct LLM SVG generation
+  8316bed feat     feat(svg): complete diagram generation with LLM direct SVG
+  a199e32 docs     docs: web search feature design and implementation plan
+  6353c29 feat     feat(search): add safeStorage-based Tavily key storage
+  479f388 fix      fixup! feat(search): add safeStorage-based Tavily key storage
+  12c02c7 fix      fixup! feat(search): add safeStorage-based Tavily key storage
+  7a064fa feat     feat(search): add Tavily client and LLM query/brief generation
+  a575d77 fix      fixup! feat(search): add Tavily client and LLM query/brief generation
+  0d9a8a0 fix      fixup! feat(search): add Tavily client and LLM query/brief generation
+  7bc25a7 feat     feat(search): add search IPC handlers with retry logic
+  b0284c2 fix      fixup! feat(search): add search IPC handlers with retry logic
+  377cbde fix      fixup! feat(search): add search IPC handlers with retry logic
+  2a9b725 feat     feat(search): integrate Tavily web search types, registration and build fixes
+  cf55057 other    Merge branch 'worktree-web-search' into main
+  725bcfe fix      fix(search): resolve merge conflicts, dedupe preload/types and harden credentials
+  11bf3b1 feat     feat(search): increase tutor brief limit from 3000 to 5000 chars
+

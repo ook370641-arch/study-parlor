@@ -12,7 +12,6 @@ import { DEFAULT_JOB_BRIEFING_CONFIG } from '../lib/job-briefing'
 import { registerSearchIpc } from './search'
 import { registerAnthropicIpc } from './anthropic'
 import { registerArticleAssistantIpc } from './article-assistant'
-import { registerAnnotationsIpc } from './annotations'
 import { registerAppIpc } from './app'
 
 export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
@@ -26,6 +25,5 @@ export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   registerSearchIpc(cfg)
   registerAnthropicIpc(cfg)
   registerArticleAssistantIpc(cfg)
-  registerAnnotationsIpc(cfg)
   registerAppIpc()
 }

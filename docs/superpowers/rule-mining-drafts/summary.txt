@@ -1,0 +1,240 @@
+=== First commit per domain ===
+briefing: ceb967c docs: add night briefing feature design spec and visual mockups
+build_dev_cleanup: 30ff271 chore: bootstrap electron-vite + react + tailwind skeleton
+e2e: a3f941c chore(tests): add Playwright E2E scripts to package.json
+external_search: 517eb6c feat(diagram): add generateDiagram backend with tests
+files_frontmatter: baa385c feat(frontmatter): parse/serialize with gray-matter and defaults
+ipc_state_store: b333c32 feat(types): shared IPC + domain types
+llm_prompts_session_archive: f646d3d feat(prompts): assembly chain (base → review → difficulty → profile)
+other: 6b4580b fix: add @shared vitest alias + macOS window lifecycle
+ui_components_styling: 4c09d34 style+feat(ui): tokens, scrollbar, Button ②, Input ②
+
+=== Reverts ===
+9797b0c revert(CLAUDE.md): remove testing-layer policy; approvals come from settings
+
+=== Fixup commits ===
+b05d6a5 llm_prompts_session_archive fixup! feat: add fable-from-report prompt template
+c15ace4 other fixup: add missing fableStyleTags/lastFableTags to DEFAULT, correct StateJson field order
+a08d77c ipc_state_store fixup! types: add external-materials doc type and search IPC types
+479f388 external_search fixup! feat(search): add safeStorage-based Tavily key storage
+12c02c7 external_search fixup! feat(search): add safeStorage-based Tavily key storage
+a575d77 external_search fixup! feat(search): add Tavily client and LLM query/brief generation
+0d9a8a0 external_search fixup! feat(search): add Tavily client and LLM query/brief generation
+b0284c2 external_search fixup! feat(search): add search IPC handlers with retry logic
+377cbde external_search fixup! feat(search): add search IPC handlers with retry logic
+
+=== Fix/refactor/test per domain ===
+
+--- briefing (16) ---
+  ca07a97 test     test(briefing): add IPC cache and feed-empty tests
+  fffcedb test     test(briefing): verify built-in prompt files
+  88a6411 test     test(briefing): verify prompts, full suite and production build
+  851e619 fix      fix(briefing): skip X builders with missing/empty tweets to avoid crash
+  70fc973 fix      fix(search/briefing/wild-card): harden JSON parsing, Kimi thinking, abort/timeouts, concurrency and error surfacing
+  17e5cb8 test     test(briefing): update handler tests for progress, generatedAt, and error codes
+  ec9539d test     test(briefing): add progress and error component tests
+  b257696 fix      fix(briefing): address typecheck and test issues
+  7ec9558 fix      fix(briefing): add missing briefing layout components
+  f37c547 test     test(briefing): feed retry and sourceStatus
+  6ceecfb test     test(briefing): BriefingHeader font size controls
+  8907f55 fix      fix(briefing): heading styles, source tooltip, prompt cleanup, and layout tests
+  afaa790 fix      fix(briefing): header centering, swap button position, white newspaper bg, larger progress text
+  2e5cade fix      fix(briefing): restore clickable source links and enforce article-body links
+  fd52344 fix      fix(briefing): shrink loading progress text and spinner by two sizes
+  6855f7a fix      fix(briefing): hide source status when all ok, use -/+ for font size
+
+--- build_dev_cleanup (14) ---
+  c644ede fix      fix(dev): add ELECTRON_RUN_AS_NODE workaround wrapper
+  0580676 fix      fix(config): remove incorrect gitignore rule for painting manifest
+  18b0a1e fix      fix(setup): fix first-run boot hanging by switching to pull-based boot model
+  1515c0f fix      fix(packaging): resolve runtime failures in packaged exe
+  ef31a4d refactor refactor(env): normalize baseUrl in saveEnv and clean imports
+  6a7375f refactor refactor(env): extract DEFAULT_BASE_URL constant
+  73014a8 refactor refactor(main): use saveEnv in setup wizard to preserve .env comments
+  5777060 test     test(ci): package integrity and release env validation
+  d14a189 fix      fix(config): store .env under ~/.studyparlor in packaged builds
+  91c213b fix      fix(deps): replace playwright with @playwright/test in devDependencies
+  aa4bac1 fix      fix(build): add missing Terminology type and default to unblock build
+  7a5a0c0 test     test(env): verify state dir is independent of config dir
+  2da5059 fix      fix(main): close all webContents and log before-quit on window close
+  4a18d32 fix      fix(cleanup): use powershell json for process enum, pass pid to killProcessTree, isolate dev cache under node_modules
+
+--- e2e (73) ---
+  4c166cd fix      fix(e2e): align test-library seed helpers with app directory layout
+  addc1da fix      fix(e2e): use namespace imports for node built-ins in test-library.ts
+  fe56494 fix      fix(e2e): harden test-library helpers per code review
+  1c42ec2 test     test(e2e): add topic-card selector and wire HomePage locators
+  f577da5 fix      fix(e2e): add cancelButton locator and scope selectMode to modal
+  d65bb95 test     test(e2e): add stable data-testid attributes to ChatInput and update selectors
+  5873f25 test     test(e2e): add stable data-testid to ChatBubble and update StudyPage selector
+  76b36fb test     test(e2e): add userMessage selector to match ChatBubble data-testid
+  82aff72 test     test(e2e): implement Playwright E2E suite with CDP fixture
+  1df6455 test     test(e2e): add quote display and refresh coverage
+  92821f0 test     test(e2e): extend selectors for full coverage
+  86e9665 test     test(e2e): add data-testid attributes for full coverage
+  cb6ca8c test     test(e2e): add seed factories for multi-session, fable, diagram, groups, state
+  1bc180a test     test(e2e): refactor seed factories to reduce duplication
+  c203282 test     test(e2e): extend CoverPage with briefing navigation
+  96519e9 test     test(e2e): extend HomePage for navigation, unsaved sessions, strategy, group rec
+  982a56f test     test(e2e): extend PreStudyPage for existing topic, suggestions, params
+  54aec00 test     test(e2e): extend StudyPage for archive and stream error states
+  c562311 test     test(e2e): document StudyPage store helpers and add return types
+  22745d5 test     test(e2e): add Profile, Settings, Library, SetupWizard, ArchiveReport page objects
+  99331cd test     test(e2e): clean up page object imports and naming
+  a0b9388 test     test(e2e): add cover, home, pre-study, profile specs
+  138850d test     test(e2e): supplement missing cover/home/pre-study cases
+  0e1f40b test     test(e2e): strengthen assertions in cover/home/pre-study/profile specs
+  a275bd6 fix      fix(e2e): add missing SELECTORS import in pre-study spec
+  145ab4c test     test(e2e): add study and library-management specs
+  25f61fa test     test(e2e): clean up study and library-management specs
+  37ed54e test     test(e2e): add settings spec
+  5c9e316 test     test(e2e): strengthen settings spec assertions and paths
+  c0c1af0 test     test(e2e): add onboarding journey and archive edge specs
+  6524e9f test     test(e2e): fix archive-edge fixture and strengthen assertions
+  095567c test     test(e2e): add seed factories for multi-session, fable, diagram, groups, state
+  71c4c68 test     test(e2e): extend CoverPage with briefing navigation
+  5b61940 test     test(e2e): extend HomePage for navigation, unsaved sessions, strategy, group rec
+  e9cc839 test     test(e2e): extend PreStudyPage for existing topic, suggestions, params
+  4b1cf02 test     test(e2e): extend StudyPage for archive and stream error states
+  76dae37 test     test(e2e): add ProfilePage page object
+  e37ad6a test     test(e2e): add SettingsPage page object
+  7adffbc test     test(e2e): add LibraryPage page object
+  4c4cf69 test     test(e2e): add SetupWizardPage page object
+  10dda98 test     test(e2e): add ArchiveReportPage page object
+  c468e96 test     test(e2e): add cover page spec
+  eca890a test     test(e2e): add home page spec
+  91cb335 test     test(e2e): add pre-study spec
+  ccc8e47 test     test(e2e): add study edge cases spec
+  b568a67 test     test(e2e): add library management spec
+  8d95d6f test     test(e2e): add profile spec
+  6b2b92e test     test(e2e): add settings spec
+  b589d77 test     test(e2e): add onboarding journey spec
+  ff7f9c7 test     test(e2e): add archive edge cases spec
+  96455bc fix      fix(e2e): quote grep pattern for Windows cmd in core script
+  3d31b33 test     test(e2e): add briefing progress, retry, and timestamp selectors
+  b6416a1 test     test(e2e): cover briefing button disabled/enabled states
+  6ba22ae test     test(e2e): update briefing specs for timestamp and classified errors
+  b4dbf65 fix      fix(e2e): add --no-sandbox to Electron spawn args
+  158251f test     test(e2e): add seedTerminology and seedWildCardInspiration helpers
+  61b2dc8 test     test(e2e): add ExtensionPage and TerminologyPanel page objects
+  fa70801 test     test(e2e): extend HomePage for wild card
+  7f89b2c test     test(e2e): add Phase 1 specs (terminology, wild card, extension, group guide)
+  0d52354 fix      fix(e2e): reposition briefing mock after cache check to preserve existing tests
+  4abbaaf test     test(e2e): fix Phase 2 specs - briefing, external-materials, fable-generation
+  550c467 test     test(e2e): complete Phase 3+4 specs (library, suggestions, diagram, errors, smoke)
+  211d57e test     test(e2e): fix smoke test - use home page assertions instead of surface-background
+  638b3f7 fix      fix(e2e): add window.reload() after seed for library-based tests, fix briefing/fable/diagram specs
+  8e81ee7 fix      fix(e2e): fix topic-card selectors to use slug (dirName) instead of frontmatter title
+  d066e71 fix      fix(e2e): isolate Chromium userData/cache to prevent dev startup slowdown after tests
+  4b65737 test     test(e2e): add real-API specs for briefing and external materials
+  5b99144 test     test(e2e): add briefing font size and source status selectors
+  a34908f test     test(e2e): add selectors for external summary panel
+  ecf7107 test     test(e2e): add ExternalSummaryPanel POM methods
+  7e0d207 test     test(e2e): add external materials summary panel specs
+  77f0182 test     test(e2e): add briefing UX optimization smoke specs and harness fixes
+  426ad39 test     test(e2e): strengthen summary panel specs after review
+
+--- external_search (7) ---
+  479f388 fix      fixup! feat(search): add safeStorage-based Tavily key storage
+  12c02c7 fix      fixup! feat(search): add safeStorage-based Tavily key storage
+  a575d77 fix      fixup! feat(search): add Tavily client and LLM query/brief generation
+  0d9a8a0 fix      fixup! feat(search): add Tavily client and LLM query/brief generation
+  b0284c2 fix      fixup! feat(search): add search IPC handlers with retry logic
+  377cbde fix      fixup! feat(search): add search IPC handlers with retry logic
+  725bcfe fix      fix(search): resolve merge conflicts, dedupe preload/types and harden credentials
+
+--- files_frontmatter (7) ---
+  396d024 fix      fix(frontmatter): fallback to filename-derived title when frontmatter missing
+  c5f4cbf fix      fix(frontmatter): address code review feedback
+  6b5a426 fix      fix(files-scan): read session_number from frontmatter, export helpers for tests
+  c16961a fix      fix(files-scan): address 2 critical issues from code review
+  582e156 fix      fix(files): scan 学习图表.mmd instead of old 学习配图 pattern
+  c03cbd8 test     test(external-materials): add parser and frontmatter tests; cover setSearchApiKey
+  fcbbc24 fix      fix(frontmatter): support external-materials type inference
+
+--- ipc_state_store (7) ---
+  e285f40 fix      fix(test): remove redundant expect(state).toBeDefined() assertion
+  69e2879 fix      fix(files,types): address 5 code-review issues from Tasks 3-6
+  3d91d7d fix      fix(critical): wire up session persistence IPC (C1) + improve fable prompt (I2)
+  25d97f1 refactor refactor(store): suggestEnd → archivePending with edge detection + dismiss
+  9c9e55c fix      fix: crash on PreStudyModal when state.json has null lastUsed
+  a08d77c fix      fixup! types: add external-materials doc type and search IPC types
+  7faad3f test     test(store): briefing font size persistence
+
+--- llm_prompts_session_archive (24) ---
+  d0ca81f test     test(prompts): fix order-check assertion to match real learner content
+  0a25034 fix      fix(auto-save): move save from onLlmChunk to onLlmDone + snapshot history in finalize
+  8ab95f8 refactor refactor(session-runtime): strip '需要存档吗?' (not 「本轮归档」) from LLM history
+  4dfa4b5 fix      fix(prompt): remove conflicting archive instructions from learner-base.md
+  a10854e fix      fix(stuck): unblock restored review sessions + harden llm:start error path
+  173e61b fix      fix(archive): apply prompts-dir fallback in llm-tasks.ts
+  b86e517 fix      fix(session-persist): conservative orphan cleanup
+  bc39f4c fix      fix(archive): relax phrase detection + add diagnostics for missing banner
+  7ac7fe4 perf     perf(kimi): disable thinking mode for faster responses
+  363ed95 fix      fix(rec): improve prompt, add JSON cleanup + tests, fix GroupRecCard mount logic
+  0eecaeb fix      fix(rec): systematic debugging — 3 root causes fixed
+  d9bb71c fix      fix(rec): robust JSON extraction + progress_summary cleanup + free hook
+  d462f1b fix      fix(rec): extractJsonObject uses open-quote to avoid non-JSON braces
+  751ae90 test     test(llm-tasks): verify strategy parameter selects correct prompt
+  7c9c80c fix      fix(group-inspiration): JSON extraction failures and refresh flicker
+  e687bad fix      fix(group-inspiration): add fallback extraction + stronger prompt constraints
+  b05d6a5 fix      fixup! feat: add fable-from-report prompt template
+  7351a55 fix      fix(kimi): force temperature=0.6 for kimi-* models, keep others flexible
+  efb6f73 fix      fix(prompts): 统一对话结束唯一出口为固定归档问句
+  85e5c0b fix      fix(prompts): 归档学习报告模板补回 {{transcript}} 占位符
+  1eb7814 fix      fix(session): increase max history pairs from 30 to 100
+  0654981 test     test(prompts): add wild-card prompt content tests
+  2d44c93 test     test(llm): add generateWildcardInspiration tests
+  a7f18e4 test     test(prompts): beginner explanation and no masthead rules
+
+--- other (7) ---
+  6b4580b fix      fix: add @shared vitest alias + macOS window lifecycle
+  3b01a23 fix      fix(critical): address 3 spec-compliance issues from code review
+  de9bfd5 fix      fix: resolve 3 compile errors from deleted functions
+  75e79f4 test     test: update gaps type from string to string[] in type test
+  c15ace4 fix      fixup: add missing fableStyleTags/lastFableTags to DEFAULT, correct StateJson field order
+  33861dd test     test: fix TypeScript warnings in GuidePopover tests
+  9695eda perf     perf(bootstrap): shorten boot animation delays
+
+--- ui_components_styling (41) ---
+  00f9825 test     test(groups): add sorting, color and distance tests
+  f2f66f6 fix      fix(groups): fix drag activation deadlock - mousemove now listens from mousedown
+  1368f30 fix      fix(groups): topics orbit gravity centers + fix dragState closure bug in handleMouseUp
+  5711adc fix      fix(art): z-5 → z-[5] (arbitrary value syntax, real Tailwind output)
+  bd3cd05 test     test(md): Heading section label rendering
+  05606d0 fix      fix(md): add error boundaries and diagnostic logging to MarkdownRenderer
+  0906c7d fix      fix(md): remove async rehypeShiki causing runSync crash
+  bcc1251 fix      fix(GroupRecCard): remove cache-clear on refresh, add loading overlay
+  d08fec6 fix      fix(md): unconditional frontmatter strip + visible diagnostics
+  0408166 fix      fix(GroupRecCard): manual refresh bypasses debounce
+  8eb6396 fix      fix(TopicAccordion): cap session list at 160px with internal scroll
+  d46aa19 fix      fix(TopicAccordion): a11y + scroll hygiene for session list
+  72fb118 fix      fix(StudyLibrary): pagination clamping + dot capping + a11y
+  e7d700f fix      fix(GravityField): z-40 + hoist maxDist
+  2cd3af5 refactor refactor(StudyLibrary): global drag coords for fixed GravityField
+  c5fb6c3 refactor refactor(StudyLibrary): remove unused containerRef
+  48ededa fix      fix(GravityField): respond to window resize
+  061be97 fix      fix(Home): constrain flex row height to viewport for frame layout
+  2fe8756 fix      fix(SurfaceBackground): fixed positioning so painting stays while scrolling
+  49e5525 fix      fix(StudyLibrary): fix stuck spinner, re-render cascade, and dynamic import
+  b9d69bf fix      fix(StudyLibrary): replace gray-matter with regex frontmatter strip to avoid Buffer error in renderer
+  aa5ef25 fix      fix(library): unify chart button to prevent duplicate buttons per row
+  61b06fe fix      fix(viewer): fix broken image icon by correcting .mmd to .svg condition
+  3f1775c fix      fix(ui): make API key guidance provider-agnostic in fatal error page
+  9340322 fix      fix(ui): address code review feedback on GuidePopover
+  65d2008 fix      fix(skill,ui): align fable save path with app + update Extension descriptions
+  c7a66cc fix      fix(settings): use ember color for verify success, drop idle status
+  8510702 fix      fix(quotes): responsive cover layout, curly quotes, focus-visible refresh, keep quote on empty pool
+  65c95a5 test     test(settings): mock search IPC and disambiguate duplicate buttons
+  3f8e4d9 fix      fix(terminology): type DEFAULT_TERMINOLOGY as Required, defer useTerminology
+  68bc3e9 fix      fix(terminology): remove wildcardInspiration scope creep and add terminology tests
+  03b7cdb test     test(terminology): add fallback and persistence tests, strip undefined in store
+  c235375 test     test(prestudy): add data-testid attributes for E2E selectors
+  5772bf8 test     test(study): add data-testid attributes for Playwright E2E
+  80bc00b test     test(quote): clarify surface rendering test intent
+  363d25c test     test(terminology): add integration test and verify full suite
+  2b649bf refactor refactor(ui): remove unused panelRef in ExternalSummaryPanel
+  cfeb71e refactor refactor(ui): remove redundant Escape handler from ExternalSummaryPanel
+  25bab8e refactor refactor(ui): remove message-list transition to avoid layout race
+  27bc5f4 refactor refactor(ui): external summary panel no-backdrop, slide animation, no-occlusion padding
+  1dc1720 refactor refactor(ui): extract ExternalSummaryContent and use in card/panel

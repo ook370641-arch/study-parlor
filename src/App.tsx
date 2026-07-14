@@ -80,7 +80,13 @@ export function App() {
   }
 
   const handleBootComplete = async () => {
-    // LoadingScreen 淡出后，初始化 store
+    // 在 boot 期间预加载首屏页面（Cover），并在关闭 LoadingScreen 前
+    // 确保 chunk 已就绪。Cover 是 React.lazy 的，若模块未就绪时触发
+    // 重渲染，Suspense 会渲染 fallback=null，露出棕色背景。
+    // 宁可 LoadingScreen 多停片刻，也不让用户看到棕色闪屏。
+    const coverReady = import('@/pages/Cover')
+
+    // 与 Cover 加载并行执行 store 初始化
     try {
       await init()
     } catch (err: any) {
@@ -99,6 +105,8 @@ export function App() {
       }
     }).catch(() => { /* 网络失败,推迟到首次调用 */ })
 
+    // 确保 Cover chunk 已就绪再关闭 LoadingScreen，杜绝棕色闪屏
+    await coverReady
     setIsBooting(false)
   }
 

@@ -77,7 +77,6 @@ export function Study() {
   const [isExiting, setIsExiting] = useState(false)
   const archiveResult = useStore(s => s.archiveResult)
   const clearArchiveResult = useStore(s => s.clearArchiveResult)
-  const isExternalSummaryOpen = useStore(s => s.isExternalSummaryOpen)
   const closeExternalSummary = useStore(s => s.closeExternalSummary)
 
   // ESC = 返回(等同左上箭头); 若外部资料摘要面板打开则优先关闭面板
@@ -105,8 +104,6 @@ export function Study() {
   }, [session?.abortId])
 
   if (!session) return null
-
-  const pageShift = isExternalSummaryOpen ? 'max-w-[calc(100vw-760px)] transition-all duration-300 ease-out' : 'transition-all duration-300 ease-out'
 
   const onSend = (text: string) => sendOrInterrupt(text).catch(err =>
     useStore.getState().showToast('发送失败:' + err.message))
@@ -182,7 +179,7 @@ export function Study() {
 
       <ExternalSummaryPanel />
 
-      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''} ${pageShift}`}>
+      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''}`}>
       <SurfaceBackground surface="study" />
       {isExiting && (
         <div className="fixed inset-0 z-40 pointer-events-none">

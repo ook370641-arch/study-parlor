@@ -233,13 +233,4 @@ export const SELECTORS = {
     cancelButton: '[data-testid="fable-cancel-button"]',
   },
   toast: '[data-testid="toast-message"]',
-  annotations: {
-    ghostPen: '[data-testid="anno-ghost-pen"]',
-    noteCard: '[data-testid="anno-note-card"]',
-    noteTextarea: '[data-testid="anno-note-textarea"]',
-    saveButton: '[data-testid="anno-save-button"]',
-    deleteButton: '[data-testid="anno-delete-button"]',
-    markerPen: '[data-testid="anno-marker-pen"]',
-    markedText: '[data-testid="anno-marked-text"]',
-  },
 } as const

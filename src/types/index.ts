@@ -126,15 +126,6 @@ export type ArticleAssistantErrorCode =
   | 'CHAT_TIMEOUT'
   | 'SAVE_ERROR'
 
-export type ArticleAnnotation = {
-  id: string
-  selectedText: string
-  note: string
-  paragraphIndex: number
-  createdAt: string
-  updatedAt: string
-}
-
 export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'article-assistant' | 'job-briefing'
 
 export type Profile = {
@@ -517,10 +508,6 @@ export type IpcApi = {
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
   anthropicCancelImport: () => Promise<void>
-
-  // Annotations
-  annotationsRead: (articlePath: string) => Promise<ArticleAnnotation[]>
-  annotationsWrite: (articlePath: string, annotations: ArticleAnnotation[]) => Promise<void>
 
   // Article assistant
   articleAssistantGenerateGuide: (args: {
