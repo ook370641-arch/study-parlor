@@ -38,17 +38,34 @@ describe('AnthropicArticleRow', () => {
     expect(screen.queryByText('阅读')).not.toBeInTheDocument()
   })
 
+  it('does not render saved/unsaved text badges', () => {
+    render(<AnthropicArticleRow article={article({ isSaved: true, filePath: '/tmp/x.md' })} theme="academic" />)
+    expect(screen.queryByText('已保存')).not.toBeInTheDocument()
+    expect(screen.queryByText('导入阅读')).not.toBeInTheDocument()
+  })
+
+  it('applies ember left border when article is saved', () => {
+    render(<AnthropicArticleRow article={article({ isSaved: true, filePath: '/tmp/x.md' })} theme="academic" />)
+    const row = screen.getByTestId('anthropic-article-row')
+    expect(row).toHaveClass('border-l-ember')
+  })
+
+  it('applies subtle left border when article is unsaved', () => {
+    render(<AnthropicArticleRow article={article({ isSaved: false })} theme="academic" />)
+    const row = screen.getByTestId('anthropic-article-row')
+    expect(row.className).toContain('border-l-[rgba(232,213,183,0.12)]')
+  })
+
+  it('does not render article summary', () => {
+    render(<AnthropicArticleRow article={article({ summary: 'A great article about AI' })} theme="academic" />)
+    expect(screen.queryByText('A great article about AI')).not.toBeInTheDocument()
+  })
+
   it('truncates title by default and removes line-clamp on hover', () => {
     render(<AnthropicArticleRow article={article()} theme="academic" />)
     const title = screen.getByTestId('anthropic-article-title')
     expect(title).toHaveClass('line-clamp-1')
     fireEvent.mouseEnter(screen.getByTestId('anthropic-article-row'))
     expect(title).not.toHaveClass('line-clamp-1')
-  })
-
-  it('shows saved badge when isSaved is true', () => {
-    render(<AnthropicArticleRow article={article({ isSaved: true, filePath: '/tmp/x.md' })} theme="academic" />)
-    expect(screen.getByText('已保存')).toBeInTheDocument()
-    expect(screen.queryByText('导入阅读')).not.toBeInTheDocument()
   })
 })
