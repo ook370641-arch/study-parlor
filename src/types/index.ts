@@ -126,7 +126,7 @@ export type ArticleAssistantErrorCode =
   | 'CHAT_TIMEOUT'
   | 'SAVE_ERROR'
 
-export interface ArticleAnnotation {
+export type ArticleAnnotation = {
   id: string
   selectedText: string
   note: string
