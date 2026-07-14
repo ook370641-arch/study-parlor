@@ -63,8 +63,12 @@ test.describe('Anthropic 博客 UI 优化 (v1.2)', () => {
     await reader.waitFor({ state: 'visible', timeout: 120000 })
 
     // 导入完成后，回到列表 — 文章应显示 ember 左边框（已保存状态）
-    // 注意：阅读器打开后，列表仍可见；文章行应出现 saved testid
-    await expect(unsavedRow.locator(SELECTORS.briefing.anthropicArticleSaved)).toBeVisible({ timeout: 10000 })
+    // 注意：unsavedRow 是 hasNot(saved) 过滤的 locator，导入后它会解析到另一篇未保存文章，
+    // 所以不能用它来检查 saved indicator。需要重新查询带 saved indicator 的行。
+    const savedRow = window.locator(SELECTORS.briefing.anthropicArticleRow)
+      .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      .first()
+    await expect(savedRow).toBeVisible({ timeout: 10000 })
   })
 
   test('E2E-7: 自动检测新文章并显示刷新提示', {

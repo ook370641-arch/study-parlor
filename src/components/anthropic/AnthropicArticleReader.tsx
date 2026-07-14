@@ -214,6 +214,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
 
               <article
                 ref={articleBodyRef}
+                data-testid="anthropic-reader-article"
                 className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}
               >
                 <ArticleBodyChunks

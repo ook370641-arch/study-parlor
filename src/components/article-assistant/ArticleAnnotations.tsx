@@ -42,6 +42,8 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
         return num > max ? num : max
       }, 0)
       nextIdRef.current = maxId + 1
+    }).catch((err) => {
+      console.error('[anno] failed to read annotations:', err)
     })
   }, [articlePath])
 
@@ -97,6 +99,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       wrap.style.display = 'inline'
 
       const textSpan = document.createElement('span')
+      textSpan.setAttribute('data-testid', 'anno-marked-text')
       textSpan.className = 'anno-text'
       textSpan.style.background = isAcademic ? 'rgba(217,119,87,0.13)' : 'rgba(217,119,87,0.08)'
       textSpan.style.borderRadius = '2px'
@@ -105,6 +108,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       textSpan.textContent = match
 
       const pen = document.createElement('span')
+      pen.setAttribute('data-testid', 'anno-marker-pen')
       pen.className = `anno-pen${anno.note ? ' has-note' : ''}`
       pen.setAttribute('data-anno-id', anno.id)
       pen.style.position = 'absolute'
@@ -151,10 +155,13 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
   }
 
   useEffect(() => {
-    // Apply markers after a tick to let the DOM settle
+    // Re-apply markers when DOM settles.
+    // No dependency array: runs after every render because sibling components
+    // (ArticleBodyChunks) can imperatively replace the article's inner HTML
+    // without this component's props changing, destroying injected markers.
     const timer = setTimeout(applyMarkers, 100)
     return () => clearTimeout(timer)
-  }, [applyMarkers])
+  })
 
   // --- Handle pen click ---
   function handlePenClick(annoId: string, penEl: HTMLElement) {
@@ -171,6 +178,53 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       })
     }
   }
+
+  // --- E2E helper: bypass DOM event system for reliable ghost pen triggering ---
+  useEffect(() => {
+    const container = articleRef.current
+    if (!container) return
+
+    ;(window as any).__e2e_triggerGhostPen = (paraEl: Element, startOffset: number, endOffset: number) => {
+      const firstText = Array.from(paraEl.childNodes).find(
+        (n): n is Text => n.nodeType === Node.TEXT_NODE && (n.textContent?.length ?? 0) > 0,
+      )
+      if (!firstText) return
+
+      const range = document.createRange()
+      range.setStart(firstText, Math.min(startOffset, firstText.textContent?.length ?? 0))
+      range.setEnd(firstText, Math.min(endOffset, firstText.textContent?.length ?? 0))
+
+      const sel = window.getSelection()
+      if (!sel) return
+      sel.removeAllRanges()
+      sel.addRange(range)
+
+      const text = sel.toString().trim()
+      if (text.length < 2) return
+
+      const endRange = range.cloneRange()
+      endRange.collapse(false)
+      const endRect = endRange.getBoundingClientRect()
+      const contRect = container.getBoundingClientRect()
+
+      const paras = Array.from(container.querySelectorAll('p'))
+      const paraIndex = paras.indexOf(paraEl as HTMLParagraphElement) + 1
+
+      setOpenAnnoId(null)
+      setCardPos(null)
+      setCardAnchorEl(null)
+      setGhost({
+        text,
+        paraIndex,
+        left: endRect.right - contRect.left + container.scrollLeft + 2,
+        top: endRect.top - contRect.top + container.scrollTop - 14,
+      })
+    }
+
+    return () => {
+      delete (window as any).__e2e_triggerGhostPen
+    }
+  }, [articleRef])
 
   // --- Handle text selection (ghost pen) ---
   useEffect(() => {
@@ -226,9 +280,13 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       if (ghostRef.current && !ghostRef.current.contains(e.target as Node)) {
         setGhost(null)
       }
-      // Close card if clicking outside
+      // Close card if clicking outside BOTH the marker pen and the note card
       const anchorEl = cardAnchorElRef.current
-      if (anchorEl && !anchorEl.contains(e.target as Node) && !(e.target as HTMLElement).closest('.anno-note-textarea')) {
+      if (
+        anchorEl &&
+        !anchorEl.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest('[data-testid="anno-note-card"]')
+      ) {
         doSaveAndClose()
       }
     }
@@ -321,6 +379,31 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     ipc.annotationsWrite(articlePath, updated)
   }
 
+  // --- E2E helpers for save/delete: bypass DOM event system ---
+  useEffect(() => {
+    ;(window as any).__e2e_saveAnnotation = () => {
+      const ta = document.querySelector('.anno-note-textarea') as HTMLTextAreaElement | null
+      const noteText = ta?.value?.trim() ?? ''
+      if (!openAnnoId) return
+      const currentAnno = annotations.find((a) => a.id === openAnnoId)
+      if (currentAnno && noteText !== currentAnno.note) {
+        handleSaveNote(openAnnoId, noteText)
+      }
+      setOpenAnnoId(null)
+      setCardPos(null)
+      setCardAnchorEl(null)
+    }
+    ;(window as any).__e2e_deleteAnnotation = (annoId?: string) => {
+      const id = annoId ?? openAnnoIdRef.current
+      if (!id) return
+      handleDeleteAnnotation(id)
+    }
+    return () => {
+      delete (window as any).__e2e_saveAnnotation
+      delete (window as any).__e2e_deleteAnnotation
+    }
+  })
+
   const openAnno = annotations.find((a) => a.id === openAnnoId)
 
   // Card colors by theme
@@ -335,6 +418,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       {ghost && (
         <div
           ref={ghostRef}
+          data-testid="anno-ghost-pen"
           onClick={handleGhostClick}
           style={{
             position: 'absolute',
@@ -363,6 +447,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       {/* Note card */}
       {openAnnoId && openAnno && cardPos && (
         <div
+          data-testid="anno-note-card"
           style={{
             position: 'absolute',
             left: cardPos.left,
@@ -400,6 +485,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
           <textarea
             autoFocus
+            data-testid="anno-note-textarea"
             className="anno-note-textarea"
             defaultValue={openAnno.note}
             placeholder="写下你的想法…"
@@ -425,6 +511,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
           <div style={{ marginTop: '8px', fontSize: '10px', color: cardMuted, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>{openAnno.createdAt ? `${openAnno.createdAt} · §${openAnno.paragraphIndex}` : '新备注'}</span>
             <button
+              data-testid="anno-save-button"
               onClick={() => {
                 doSaveAndClose()
               }}
@@ -444,6 +531,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
             </button>
             {openAnno.note && (
               <button
+                data-testid="anno-delete-button"
                 onClick={() => handleDeleteAnnotation(openAnnoId)}
                 style={{
                   background: 'none',
