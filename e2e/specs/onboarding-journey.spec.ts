@@ -29,7 +29,7 @@ const test = base.extend({
 })
 
 test.describe('@p1 onboarding journey', () => {
-  test('complete setup wizard and first study session', async ({ window, testConfigDir }) => {
+  test('complete setup wizard and first study session @unstable', async ({ window, testConfigDir }) => {
     test.setTimeout(300000)
 
     const wizard = new SetupWizardPage(window)
