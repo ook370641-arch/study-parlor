@@ -19,6 +19,8 @@ function loadApiKeyFromRootEnv(): string {
 
 const test = base.extend({
   // Onboarding requires an empty config dir (no .env) so the setup wizard appears.
+  // We must also clear inherited KIMI_API_KEY / KIMI_MODEL from the parent process,
+  // otherwise loadEnv() succeeds and the app boots past the wizard into Cover.
   testConfigDir: async ({}, use, testInfo) => {
     const dir = path.join(process.cwd(), 'e2e', '.test-config', `${Date.now()}-${randomUUID()}`)
     fs.mkdirSync(dir, { recursive: true })
@@ -26,10 +28,13 @@ const test = base.extend({
     const failed = testInfo.status === 'failed' || testInfo.status === 'timedOut'
     await cleanupTestConfigDir(dir, failed)
   },
+  extraEnv: async ({}, use) => {
+    await use({ KIMI_API_KEY: '', KIMI_MODEL: '', KIMI_BASE_URL: '' })
+  },
 })
 
 test.describe('@p1 onboarding journey', () => {
-  test('complete setup wizard and first study session @unstable', async ({ window, testConfigDir }) => {
+  test('complete setup wizard and first study session', async ({ window, testConfigDir }) => {
     test.setTimeout(300000)
 
     const wizard = new SetupWizardPage(window)

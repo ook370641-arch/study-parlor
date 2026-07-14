@@ -7,7 +7,7 @@ import * as path from 'node:path'
 function listMdFiles(dir: string): string[] {
   const out: string[] = []
   for (const entry of fs.readdirSync(dir, { withFileTypes: true, recursive: true })) {
-    if (entry.isFile() && entry.name.endsWith('.md')) {
+    if (entry.isFile() && entry.name.endsWith('.md') && !entry.name.includes('.assistant.')) {
       out.push(path.join((entry as any).parentPath || dir, entry.name))
     }
   }
