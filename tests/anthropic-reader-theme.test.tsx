@@ -42,4 +42,9 @@ describe('AnthropicArticleReader theme', () => {
     const reader = screen.getByTestId('anthropic-article-reader')
     expect(reader).toHaveClass('bg-white')
   })
+
+  it('renders exactly one swap painting button', () => {
+    render(<AnthropicArticleReader filePath="/tmp/test.md" theme="academic" />)
+    expect(screen.getAllByTestId('anthropic-swap-painting-button')).toHaveLength(1)
+  })
 })

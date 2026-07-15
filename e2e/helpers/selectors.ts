@@ -123,6 +123,7 @@ export const SELECTORS = {
     generatedAt: '[data-testid="briefing-generated-at"]',
     cacheWriteFailedBadge: '[data-testid="briefing-cache-write-failed"]',
     swapPaintingButton: '[data-testid="briefing-swap-painting-button"]',
+    anthropicSwapPaintingButton: '[data-testid="anthropic-swap-painting-button"]',
     surfaceBackground: '[data-testid="surface-background"]',
     markdownBody: '[data-testid="briefing-markdown-body"]',
     sourceSidebar: '[data-testid="briefing-source-sidebar"]',

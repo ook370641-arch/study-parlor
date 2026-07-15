@@ -17,6 +17,7 @@ vi.mock('@/lib/ipc', () => ({
 vi.mock('@/lib/paintings', () => ({
   manifest: [],
   pickRandom: vi.fn(() => null),
+  formatAttribution: vi.fn(() => ''),
 }))
 
 import { useStore } from '@/store'
@@ -50,6 +51,11 @@ describe('AnthropicBlogPanel', () => {
   it('renders BriefingListColumn shell', () => {
     render(<AnthropicBlogPanel theme="academic" />)
     expect(screen.getByTestId('briefing-list-column')).toBeInTheDocument()
+  })
+
+  it('renders the swap painting button in the empty state (no article open)', () => {
+    render(<AnthropicBlogPanel theme="academic" />)
+    expect(screen.getByTestId('anthropic-swap-painting-button')).toBeInTheDocument()
   })
 
   it('toggles collapsed rail and shows thumbnails', () => {

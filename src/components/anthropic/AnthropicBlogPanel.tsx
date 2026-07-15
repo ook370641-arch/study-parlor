@@ -5,6 +5,7 @@ import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { findNewArticleUrls } from '@/lib/anthropic-articles'
 import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
@@ -270,7 +271,17 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             theme={theme}
           />
         ) : (
-          <div className={`flex-1 flex flex-col items-center justify-center px-6 ${themeClasses.muted}`}>
+          <div className={`relative flex-1 flex flex-col items-center justify-center px-6 ${themeClasses.muted}`}>
+            {/* 空态下保留换画按钮 — 全局 Chrome 不依赖内容状态；文章打开时由 Reader 渲染自己的按钮 */}
+            {isAcademic && (
+              <div className="absolute top-4 right-4 z-20">
+                <SwapPaintingButton
+                  surface="briefing"
+                  data-testid="anthropic-swap-painting-button"
+                  className="text-parchment/70 hover:text-parchment"
+                />
+              </div>
+            )}
             <svg
               className={`w-12 h-12 mb-4 ${themeClasses.emptyIcon}`}
               fill="none"

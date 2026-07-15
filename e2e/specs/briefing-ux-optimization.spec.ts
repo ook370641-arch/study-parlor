@@ -168,7 +168,8 @@ test('surface background and swap button are visible in anthropic source @smoke'
   const coverPage = new CoverPage(window)
   await coverPage.gotoBriefing()
   await expect(window.locator(SELECTORS.briefing.surfaceBackground)).toBeVisible()
-  await expect(window.locator(SELECTORS.briefing.swapPaintingButton)).toBeVisible()
+  // 页面级换画按钮已移除；anthropic 源的按钮由 AnthropicBlogPanel（空态）/ Reader（文章打开时）渲染。
+  await expect(window.locator(SELECTORS.briefing.anthropicSwapPaintingButton)).toBeVisible()
 })
 
 test('anthropic article reader uses translucent academic background @smoke', async () => {
