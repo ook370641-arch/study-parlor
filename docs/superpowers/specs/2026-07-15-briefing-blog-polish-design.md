@@ -96,7 +96,8 @@ const handleMouseUp = () => {
 3. 高亮层在以下时机清除：
    - 点击幽灵笔 → 创建标注 → 高亮转为正式 marker
    - 点击高亮区域外 → 解散选区
-   - 按 Escape → 解散选区
+
+> **实现期修订**：初版还列了"按 Escape → 解散选区"，实现时判定为未经用户要求的附加交互（YAGNI），已移除。另外实现发现坐标系需以 article 的 offsetParent（reader 的 relative 内容容器）为原点，而非 article 自身——详见对应 commit。
 
 ```tsx
 {selectionRects.map((rect, i) => (
@@ -375,7 +376,7 @@ const [resizing, setResizing] = useState(false)
 
 - [ ] 已导入博客文章左橙 + 三边棕（两个主题均正确）
 - [ ] 选中文字后🖊出现 + 高亮保持
-- [ ] 高亮在点击区域外或 Esc 时解散
+- [ ] 高亮在点击区域外时解散
 - [ ] 🔍 按钮 toggle 有视觉差异，不立即发送
 - [ ] 搜索开关跨消息持久化
 - [ ] 仅一个换画按钮，位置固定不随滚动消失
