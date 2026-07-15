@@ -72,7 +72,9 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
       borderClass = 'border-l-[3px] border-l-[#1a1a1a]'
     }
   } else if (article.isSaved) {
-    borderClass = isAcademic ? 'border-l-[3px] border-l-ember' : 'border-l-[3px] border-l-[#1a1a1a]'
+    borderClass = isAcademic
+      ? 'border-l-[3px] border-l-ember border-t-[rgba(232,213,183,0.12)] border-r-[rgba(232,213,183,0.12)] border-b-[rgba(232,213,183,0.12)]'
+      : 'border-l-[3px] border-l-[#1a1a1a] border-t-[#c9c3b8]/30 border-r-[#c9c3b8]/30 border-b-[#c9c3b8]/30'
   } else {
     borderClass = isAcademic
       ? 'border-l-[3px] border-l-[rgba(232,213,183,0.12)]'

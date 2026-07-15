@@ -44,10 +44,22 @@ describe('AnthropicArticleRow', () => {
     expect(screen.queryByText('导入阅读')).not.toBeInTheDocument()
   })
 
-  it('applies ember left border when article is saved', () => {
+  it('applies ember left border and brown top/right/bottom borders when article is saved (academic)', () => {
     render(<AnthropicArticleRow article={article({ isSaved: true, filePath: '/tmp/x.md' })} theme="academic" />)
     const row = screen.getByTestId('anthropic-article-row')
+    // 左边框保持橙色
     expect(row).toHaveClass('border-l-ember')
+    // 上/右/下边框为未导入文章左边框同色
+    expect(row.className).toContain('border-t-[rgba(232,213,183,0.12)]')
+    expect(row.className).toContain('border-r-[rgba(232,213,183,0.12)]')
+    expect(row.className).toContain('border-b-[rgba(232,213,183,0.12)]')
+  })
+
+  it('applies dark left border and brown other borders when article is saved (newspaper)', () => {
+    render(<AnthropicArticleRow article={article({ isSaved: true, filePath: '/tmp/x.md' })} theme="newspaper" />)
+    const row = screen.getByTestId('anthropic-article-row')
+    expect(row.className).toContain('border-l-[#1a1a1a]')
+    expect(row.className).toContain('border-t-[#c9c3b8]/30')
   })
 
   it('applies subtle left border when article is unsaved', () => {
