@@ -148,92 +148,95 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   return (
     <div
       data-testid="anthropic-article-reader"
-      className={`relative flex h-full overflow-hidden ${themeClasses.bg} ${themeClasses.text}`}
+      className={`relative flex h-full ${themeClasses.bg} ${themeClasses.text}`}
     >
-      <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
-        <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
-        <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24">
-          <div className="absolute top-4 right-4 z-10">
-            <SwapPaintingButton
-              surface="briefing"
-              data-testid="anthropic-swap-painting-button"
-              className="text-parchment/70 hover:text-parchment"
-            />
-          </div>
-          {loading && (
-            <div className="space-y-4">
-              <div className={`h-8 w-3/4 rounded animate-pulse ${themeClasses.skeleton}`} />
-              <div className={`h-4 w-1/2 rounded animate-pulse ${themeClasses.skeleton}`} />
-              <div className={`h-32 rounded animate-pulse mt-6 ${themeClasses.skeleton}`} />
-            </div>
-          )}
+      <div className="relative flex-1 min-w-0 flex flex-col">
+        {/* 固定换画按钮 — 位于文章区右上角、不随文章滚动 */}
+        <div className="absolute top-4 right-4 z-20">
+          <SwapPaintingButton
+            surface="briefing"
+            data-testid="anthropic-swap-painting-button"
+            className="text-parchment/70 hover:text-parchment"
+          />
+        </div>
+        <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
+          <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
+          <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24">
+            {loading && (
+              <div className="space-y-4">
+                <div className={`h-8 w-3/4 rounded animate-pulse ${themeClasses.skeleton}`} />
+                <div className={`h-4 w-1/2 rounded animate-pulse ${themeClasses.skeleton}`} />
+                <div className={`h-32 rounded animate-pulse mt-6 ${themeClasses.skeleton}`} />
+              </div>
+            )}
 
-          {!loading && error && (
-            <AnthropicErrorMessage
-              error={{ code: 'unknown', message: error.message }}
-              onRetry={() => window.location.reload()}
-              theme={theme}
-            />
-          )}
+            {!loading && error && (
+              <AnthropicErrorMessage
+                error={{ code: 'unknown', message: error.message }}
+                onRetry={() => window.location.reload()}
+                theme={theme}
+              />
+            )}
 
-          {!loading && frontmatter && (
-            <>
-              <header className={`mb-8 pb-8 border-b ${themeClasses.headerBorder}`}>
-                <h1 data-testid="anthropic-reader-title" className={`text-3xl font-serif leading-tight mb-4 ${themeClasses.title}`}>
-                  {frontmatter.title}
-                </h1>
-                <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${themeClasses.meta}`}>
-                  {frontmatter.source_url && (
-                    <button
-                      type="button"
-                      onClick={() => ipc.openExternal(frontmatter.source_url!)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-colors ${themeClasses.pillBorder} ${themeClasses.pillBg} ${themeClasses.link} ${themeClasses.pillHover}`}
-                    >
-                      <span>Anthropic Engineering</span>
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M7 17L17 7M17 7H9M17 7V15" />
-                      </svg>
-                    </button>
-                  )}
-                  {frontmatter.published_at && (
-                    <span>发布：{formatDate(frontmatter.published_at)}</span>
-                  )}
-                  {frontmatter.imported_at && (
-                    <span>导入：{formatDate(frontmatter.imported_at)}</span>
-                  )}
-                  {frontmatter.authors && frontmatter.authors.length > 0 && (
-                    <span>作者：{frontmatter.authors.join(', ')}</span>
-                  )}
-                </div>
-                {frontmatter.summary && (
-                  <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
-                    {frontmatter.summary}
+            {!loading && frontmatter && (
+              <>
+                <header className={`mb-8 pb-8 border-b ${themeClasses.headerBorder}`}>
+                  <h1 data-testid="anthropic-reader-title" className={`text-3xl font-serif leading-tight mb-4 ${themeClasses.title}`}>
+                    {frontmatter.title}
+                  </h1>
+                  <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${themeClasses.meta}`}>
+                    {frontmatter.source_url && (
+                      <button
+                        type="button"
+                        onClick={() => ipc.openExternal(frontmatter.source_url!)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-colors ${themeClasses.pillBorder} ${themeClasses.pillBg} ${themeClasses.link} ${themeClasses.pillHover}`}
+                      >
+                        <span>Anthropic Engineering</span>
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M7 17L17 7M17 7H9M17 7V15" />
+                        </svg>
+                      </button>
+                    )}
+                    {frontmatter.published_at && (
+                      <span>发布：{formatDate(frontmatter.published_at)}</span>
+                    )}
+                    {frontmatter.imported_at && (
+                      <span>导入：{formatDate(frontmatter.imported_at)}</span>
+                    )}
+                    {frontmatter.authors && frontmatter.authors.length > 0 && (
+                      <span>作者：{frontmatter.authors.join(', ')}</span>
+                    )}
                   </div>
-                )}
-              </header>
+                  {frontmatter.summary && (
+                    <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
+                      {frontmatter.summary}
+                    </div>
+                  )}
+                </header>
 
-              <article
-                ref={articleBodyRef}
-                data-testid="anthropic-reader-article"
-                className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}
-              >
-                <ArticleBodyChunks
-                  content={body}
-                  chunks={guideChunks}
-                  fileName={frontmatter.title ?? 'article.md'}
-                  theme={theme}
-                  terms={terms}
-                />
-              </article>
-              {body && (
-                <ArticleAnnotations
-                  articlePath={filePath}
-                  articleRef={articleBodyRef}
-                  theme={theme}
-                />
-              )}
-            </>
-          )}
+                <article
+                  ref={articleBodyRef}
+                  data-testid="anthropic-reader-article"
+                  className={`prose max-w-none ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}
+                >
+                  <ArticleBodyChunks
+                    content={body}
+                    chunks={guideChunks}
+                    fileName={frontmatter.title ?? 'article.md'}
+                    theme={theme}
+                    terms={terms}
+                  />
+                </article>
+                {body && (
+                  <ArticleAnnotations
+                    articlePath={filePath}
+                    articleRef={articleBodyRef}
+                    theme={theme}
+                  />
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
       {!loading && frontmatter && body && (

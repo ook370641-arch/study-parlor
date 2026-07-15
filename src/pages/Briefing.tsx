@@ -120,8 +120,9 @@ export function Briefing() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Digest renders the swap button inside the article body (AcademicBriefingLayout);
-            other academic sources (anthropic, job-briefing) keep the page-level one. */}
-        {isAcademic && source !== 'digest' && (
+            anthropic renders its own inside AnthropicArticleReader;
+            only job-briefing keeps the page-level one. */}
+        {isAcademic && source !== 'digest' && source !== 'anthropic' && (
           <div className="absolute top-24 right-4 z-10">
             <SwapPaintingButton
               surface="briefing"

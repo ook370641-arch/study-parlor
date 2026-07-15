@@ -86,11 +86,17 @@ describe('Briefing global chrome', () => {
     })
   })
 
-  it('renders surface background and swap button for anthropic source in academic theme', () => {
+  it('renders surface background without page-level swap button for anthropic source', () => {
     render(<Briefing />)
     expect(screen.getByTestId('surface-background')).toBeInTheDocument()
-    // Swap button is page-level chrome for every academic source: digest keeps a
-    // body-level button inside its layout, anthropic/job use this page-level one.
+    // Digest keeps a body-level button inside its layout; anthropic renders its own
+    // inside AnthropicArticleReader; only job-briefing uses the page-level one.
+    expect(screen.queryByTestId('briefing-swap-painting-button')).not.toBeInTheDocument()
+  })
+
+  it('renders the page-level swap button for job-briefing source in academic theme', () => {
+    useStore.setState({ briefingSource: 'job-briefing' })
+    render(<Briefing />)
     expect(screen.getByTestId('briefing-swap-painting-button')).toBeInTheDocument()
   })
 
