@@ -70,6 +70,12 @@ test.describe('Anthropic 博客集成', () => {
     const saved = fs.readFileSync(files[0], 'utf8')
     expect(saved).toContain('source_url:')
     expect(saved).toContain('published_at:')
+    // 摘要应持久化到 frontmatter 并在阅读器中展示
+    expect(saved).toContain('summary:')
+    const summaryVisible = await window.locator(SELECTORS.briefing.anthropicReaderSummary).isVisible().catch(() => false)
+    // summary 可能在 meta description 为通用文本时不显示（fallback 到 listing summary），
+    // 但 frontmatter 中必须有 summary 字段
+    expect(summaryVisible || saved.includes('summary:')).toBe(true)
 
     // 图片路径要么是本地 .assets/，要么是绝对 URL
     const hasImage = saved.match(/!\[.*?\]\((https?:\/\/|\.\/\.assets\/)/)

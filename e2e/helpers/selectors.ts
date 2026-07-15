@@ -140,6 +140,7 @@ export const SELECTORS = {
     anthropicArticleSaved: '[data-testid="anthropic-article-saved"]',
     anthropicArticleReader: '[data-testid="anthropic-article-reader"]',
     anthropicReaderTitle: '[data-testid="anthropic-reader-title"]',
+    anthropicReaderSummary: '[data-testid="anthropic-reader-summary"]',
     anthropicErrorMessage: '[data-testid="anthropic-error-message"]',
     anthropicReaderImage: '[data-testid="anthropic-article-reader"] [data-testid="md-image"]',
     anthropicNewArticlesPrompt: '[data-testid="anthropic-new-articles-prompt"]',

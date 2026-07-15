@@ -206,7 +206,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                   )}
                 </div>
                 {frontmatter.summary && (
-                  <div className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
+                  <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
                     {frontmatter.summary}
                   </div>
                 )}
