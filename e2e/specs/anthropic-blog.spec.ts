@@ -103,4 +103,64 @@ test.describe('Anthropic 博客集成', () => {
       await expect(panel.locator(SELECTORS.briefing.anthropicListCheckError)).toBeVisible({ timeout: 20000 })
     })
   })
+
+  test('E2E-9: 摘要持久化与展示 — 导入后阅读器展示摘要，再次打开仍存在', async ({
+    window,
+    testLibraryPath,
+  }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await expect(window.locator(SELECTORS.briefing.listColumn)).toBeVisible()
+
+    // 处理新文章检测提示
+    const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+    await prompt.waitFor({ timeout: 120000 }).catch(() => {})
+    const promptVisible = await prompt.isVisible().catch(() => false)
+    if (promptVisible) await prompt.click()
+
+    const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+    await rows.first().waitFor({ timeout: 120000 })
+
+    // 导入第一篇未保存文章
+    const firstRow = rows.first()
+    const articleTitle = await firstRow.locator(SELECTORS.briefing.anthropicArticleTitle).textContent()
+    await firstRow.click()
+
+    // 阅读器加载
+    const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
+    await reader.waitFor({ state: 'visible', timeout: 120000 })
+
+    // ① 摘要在阅读器中可见且非空
+    const summaryBlock = window.locator(SELECTORS.briefing.anthropicReaderSummary)
+    await expect(summaryBlock).toBeVisible({ timeout: 15000 })
+    const summaryText = await summaryBlock.textContent()
+    expect(summaryText?.trim().length).toBeGreaterThan(10)
+
+    // ② 摘要持久化到 .md 文件
+    const anthropicDir = path.join(testLibraryPath, 'Anthropic博客')
+    const files = listMdFiles(anthropicDir)
+    expect(files.length).toBeGreaterThan(0)
+    const saved = fs.readFileSync(files[0], 'utf8')
+    expect(saved).toContain('summary:')
+
+    // ③ 切源再切回，重新打开同一篇文章，摘要仍然存在
+    await window.locator(SELECTORS.briefing.sourceDigestButton).click()
+    await window.waitForTimeout(1000)
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await expect(window.locator(SELECTORS.briefing.listColumn)).toBeVisible()
+
+    const savedRow = window
+      .locator(SELECTORS.briefing.anthropicArticleRow)
+      .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      .first()
+    await expect(savedRow).toBeVisible({ timeout: 10000 })
+    await savedRow.click()
+
+    await reader.waitFor({ state: 'visible', timeout: 30000 })
+    const reopenedSummary = window.locator(SELECTORS.briefing.anthropicReaderSummary)
+    await expect(reopenedSummary).toBeVisible({ timeout: 15000 })
+    await expect(reopenedSummary).toHaveText(summaryText!)
+  })
 })
