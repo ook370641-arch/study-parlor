@@ -102,6 +102,29 @@ describe('store article assistant', () => {
     })
   })
 
+  describe('toggleAssistantSearch', () => {
+    it('initializes searchEnabled to false and toggles it on/off', async () => {
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/d.md',
+        contextType: 'briefing',
+        articleContent: 'body'
+      })
+      await flush()
+      expect(useStore.getState().assistantSession?.searchEnabled).toBe(false)
+
+      useStore.getState().toggleAssistantSearch()
+      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
+
+      useStore.getState().toggleAssistantSearch()
+      expect(useStore.getState().assistantSession?.searchEnabled).toBe(false)
+    })
+
+    it('is a no-op when there is no session', () => {
+      useStore.getState().toggleAssistantSearch()
+      expect(useStore.getState().assistantSession).toBeNull()
+    })
+  })
+
   describe('setArticleAssistantGuideWidth', () => {
     it('clamps below 200 up to 200', () => {
       useStore.getState().setArticleAssistantGuideWidth(50)

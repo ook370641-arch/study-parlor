@@ -13,6 +13,7 @@ export function ChatWindow() {
   const retryAssistantMessage = useStore((s) => s.retryAssistantMessage)
   const abortAssistantStream = useStore((s) => s.abortAssistantStream)
   const toggleAssistantOpen = useStore((s) => s.toggleAssistantOpen)
+  const toggleAssistantSearch = useStore((s) => s.toggleAssistantSearch)
 
   const [input, setInput] = useState('')
   const [size, setSize] = useState({ width: DEFAULT_W, height: DEFAULT_H })
@@ -22,10 +23,10 @@ export function ChatWindow() {
 
   if (!session || !session.isOpen) return null
 
-  const handleSend = (useSearch: boolean) => {
+  const handleSend = () => {
     const text = input.trim()
     if (!text && !session.pendingSelection) return
-    sendAssistantMessage(text, useSearch)
+    sendAssistantMessage(text, session.searchEnabled)
     setInput('')
     // scroll to bottom after render
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 50)
@@ -148,11 +149,15 @@ export function ChatWindow() {
       <div className="p-2 border-t border-parchment/10 flex items-center gap-1.5 shrink-0">
         <button
           data-testid="article-assistant-search-btn"
-          className="px-1.5 py-1 text-parchment/70 hover:text-ember disabled:opacity-30 disabled:cursor-not-allowed text-sm"
-          onClick={() => handleSend(true)}
+          className={`px-1.5 py-1 rounded text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${
+            session.searchEnabled
+              ? 'bg-ember text-white'
+              : 'text-parchment/70 hover:text-ember'
+          }`}
+          onClick={toggleAssistantSearch}
           disabled={session.streaming || session.searchLoading}
-          aria-label="联网搜索"
-          title="联网搜索"
+          aria-label={session.searchEnabled ? '搜索已开启' : '搜索已关闭'}
+          title={session.searchEnabled ? '搜索已开启 — 发送时将联网搜索' : '搜索已关闭 — 点击开启联网搜索'}
         >
           {session.searchLoading ? '⏳' : '🔍'}
         </button>
@@ -165,7 +170,7 @@ export function ChatWindow() {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()
-              handleSend(false)
+              handleSend()
             }
           }}
         />
@@ -181,7 +186,7 @@ export function ChatWindow() {
           <button
             data-testid="article-assistant-send-btn"
             className="text-xs text-parchment/80 hover:text-ember whitespace-nowrap px-1"
-            onClick={() => handleSend(false)}
+            onClick={() => handleSend()}
           >
             发送
           </button>

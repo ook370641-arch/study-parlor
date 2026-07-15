@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import type { AssistantSession } from '@/store'
 import * as storeModule from '@/store'
 import { ChatWindow } from '@/components/article-assistant/ChatWindow'
@@ -13,6 +13,7 @@ const actions = {
   retryAssistantMessage: vi.fn(),
   abortAssistantStream: vi.fn(),
   toggleAssistantOpen: vi.fn(),
+  toggleAssistantSearch: vi.fn(),
 }
 
 function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSession {
@@ -28,6 +29,7 @@ function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSessio
     streaming: false,
     abortId: 'abort-1',
     searchLoading: false,
+    searchEnabled: false,
     searchError: null,
     chatError: null,
     retryContext: null,
@@ -109,5 +111,35 @@ describe('ChatWindow', () => {
     )
     render(<ChatWindow />)
     expect(screen.getByText('已搜索 3 个来源')).toBeInTheDocument()
+  })
+
+  it('renders search button in off state without ember background', () => {
+    mockStore(baseSession({ searchEnabled: false }))
+    render(<ChatWindow />)
+    const btn = screen.getByTestId('article-assistant-search-btn')
+    expect(btn.className).not.toContain('bg-ember')
+  })
+
+  it('renders search button in on state with ember background', () => {
+    mockStore(baseSession({ searchEnabled: true }))
+    render(<ChatWindow />)
+    const btn = screen.getByTestId('article-assistant-search-btn')
+    expect(btn.className).toContain('bg-ember')
+  })
+
+  it('clicking search button toggles search mode without sending', () => {
+    mockStore(baseSession({ searchEnabled: false }))
+    render(<ChatWindow />)
+    fireEvent.click(screen.getByTestId('article-assistant-search-btn'))
+    expect(actions.toggleAssistantSearch).toHaveBeenCalledTimes(1)
+    expect(actions.sendAssistantMessage).not.toHaveBeenCalled()
+  })
+
+  it('sending uses the current searchEnabled state', () => {
+    mockStore(baseSession({ searchEnabled: true }))
+    render(<ChatWindow />)
+    fireEvent.change(screen.getByTestId('article-assistant-input'), { target: { value: '问题' } })
+    fireEvent.click(screen.getByTestId('article-assistant-send-btn'))
+    expect(actions.sendAssistantMessage).toHaveBeenCalledWith('问题', true)
   })
 })

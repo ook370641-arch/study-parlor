@@ -28,6 +28,7 @@ export type AssistantSession = {
   streaming: boolean
   abortId: string
   searchLoading: boolean
+  searchEnabled: boolean
   searchError: 'NO_RESULTS' | 'SEARCH_ERROR' | null
   chatError: ArticleAssistantErrorCode | null
   retryContext: { text: string; useSearch: boolean } | null
@@ -253,6 +254,7 @@ type AppStore = {
   openAssistantSession: (args: { contextId: string; contextType: 'briefing' | 'anthropic-article'; articleTitle?: string; articleContent: string; autoGenerateGuide?: boolean }) => void
   closeAssistantSession: () => void
   toggleAssistantOpen: () => void
+  toggleAssistantSearch: () => void
   setAssistantSelection: (text: string) => void
   loadAssistantGuide: () => Promise<void>
   loadAssistantSession: () => Promise<void>
@@ -957,7 +959,7 @@ export const useStore = create<AppStore>((set, get) => ({
         articleContent: args.articleContent,
         guide: null, guideLoading: false, guideError: null,
         messages: [], streaming: false, abortId: '',
-        searchLoading: false, searchError: null, chatError: null,
+        searchLoading: false, searchEnabled: false, searchError: null, chatError: null,
         retryContext: null, pendingSelection: undefined, isOpen: false,
         activeChunkIndex: null,
       },
@@ -985,6 +987,12 @@ export const useStore = create<AppStore>((set, get) => ({
     const s = get().assistantSession
     if (!s) return
     set({ assistantSession: { ...s, isOpen: !s.isOpen } })
+  },
+
+  toggleAssistantSearch: () => {
+    const s = get().assistantSession
+    if (!s) return
+    set({ assistantSession: { ...s, searchEnabled: !s.searchEnabled } })
   },
 
   setAssistantSelection: (text) => {
