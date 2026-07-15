@@ -152,7 +152,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
     >
       <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
         <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
-        <div className="relative w-[90%] max-w-[1250px] min-w-[520px] mx-auto px-6 py-10 pb-24">
+        <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24">
           <div className="absolute top-4 right-4 z-10">
             <SwapPaintingButton
               surface="briefing"

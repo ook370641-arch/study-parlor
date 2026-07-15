@@ -28,7 +28,7 @@ export function AcademicBriefingLayout({
       data-testid="briefing-academic-layout"
       className="relative z-[5] flex-1 overflow-y-auto"
     >
-      <div className="w-[90%] max-w-[1250px] min-w-[520px] mx-auto px-4 py-6 relative">
+      <div className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative">
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
         <header className="text-center mb-8">
           <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2">{result.title}</h1>

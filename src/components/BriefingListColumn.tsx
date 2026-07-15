@@ -4,7 +4,7 @@ interface Props {
   collapsed: boolean
   onToggle: () => void
   theme: BriefingTheme
-  width?: 64 | 80 // px rail width in tailwind units; 64 for dates, 80 for blog list
+  width?: 64 | 80 // Tailwind spacing units (w-64=256px, w-80=320px); 64 for dates, 80 for blog list
   title: string
   children: React.ReactNode
 }
