@@ -132,6 +132,13 @@ async function bootstrap() {
   }
   console.log('[bootstrap] window created', bootTs())
 
+  // Timing instrumentation — renderer sends fire-and-forget timings;
+  // handler must be registered before loadURL so the first logTiming
+  // calls (during module evaluation) are received.
+  ipcMain.on('log:timing', (_event, label: string, elapsed: number) => {
+    console.log(`[renderer] ${label}  +${Math.round(elapsed)}ms`)
+  })
+
   mainWindow.webContents.on('did-start-loading', () => {
     console.log('[bootstrap] renderer did-start-loading', bootTs())
   })

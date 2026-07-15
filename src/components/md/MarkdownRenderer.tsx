@@ -1,10 +1,9 @@
-import matter from 'gray-matter'
 import './markdown.css'
 import { detectDocType } from './fileType'
 import { MarkdownContent } from './MarkdownContent'
 import { reportComponents, fableComponents, dialogueComponents, briefingComponents } from './components'
 import { ReportHeader } from './ReportHeader'
-import { parseFrontmatter } from '@electron/lib/frontmatter'
+import { matter, parseFrontmatterSafe } from '@/lib/frontmatter-safe'
 import React from 'react'
 import type { DocType } from './fileType'
 import type { Frontmatter } from '@shared/index'
@@ -83,7 +82,7 @@ export function MarkdownRenderer({ content, fileName, briefingStyle, hideHeader,
 
   // Structured frontmatter parsing (for ReportHeader)
   try {
-    const parsedFm = parseFrontmatter(safeContent, { filename: fileName })
+    const parsedFm = parseFrontmatterSafe(safeContent, { filename: fileName })
     frontmatter = parsedFm.frontmatter
   } catch (e) {
     console.error('[MD] parseFrontmatter failed:', e)
@@ -102,7 +101,7 @@ export function MarkdownRenderer({ content, fileName, briefingStyle, hideHeader,
       body = parsed.content
     }
   } catch (e) {
-    console.error('[MD] matter() failed:', e)
+    console.warn('[MD] matter body extraction fallback failed:', e)
   }
 
   const docType = detectDocType(content, fileName)

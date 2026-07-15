@@ -111,6 +111,9 @@ const api: IpcApi = {
 
   openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
 
+  // Timing instrumentation — fire-and-forget so renderer doesn't await
+  logTiming: (label, elapsed) => ipcRenderer.send('log:timing', label, elapsed),
+
   onBriefingProgress: (cb) => {
     const handler = (_: unknown, stage: BriefingStage, detail?: string) => cb(stage, detail)
     ipcRenderer.on('briefing:progress', handler)

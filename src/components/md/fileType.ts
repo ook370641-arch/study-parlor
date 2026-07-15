@@ -1,12 +1,11 @@
-import matter from 'gray-matter'
+import { extractFrontmatterField } from '@/lib/frontmatter-safe'
 
 export type DocType = 'report' | 'fable' | 'dialogue'
 
 export function detectDocType(content: string, fileName: string): DocType {
   // Priority 1: frontmatter type field
   try {
-    const { data } = matter(content)
-    const type = data?.type
+    const type = extractFrontmatterField(content, 'type')
     if (type === 'progress' || type === 'review' || type === 'anthropic-article' || type === 'job-briefing') return 'report'
     if (type === 'fable') return 'fable'
     if (type === 'article-assistant') return 'dialogue'

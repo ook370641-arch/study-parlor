@@ -573,6 +573,9 @@ export type IpcApi = {
 
   // App shell
   openExternal: (url: string) => Promise<void>
+
+  // Timing instrumentation (renderer → main, fire-and-forget)
+  logTiming: (label: string, elapsed: number) => void
 }
 
 export type Painting = {

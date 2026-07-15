@@ -30,7 +30,11 @@ export function App() {
   const [isBooting, setIsBooting] = useState(true)
 
   useEffect(() => {
+    const tMount = performance.now()
+    window.api?.logTiming('App mounted', tMount)
+
     Promise.all([ipc.bootFatal(), ipc.bootNeedsSetup()]).then(([f, ns]) => {
+      window.api?.logTiming('App boot checks resolved', performance.now())
       if (f) {
         setFatal(f)
         setIsBooting(false)
@@ -80,6 +84,9 @@ export function App() {
   }
 
   const handleBootComplete = async () => {
+    const tBoot = performance.now()
+    window.api?.logTiming('App boot:complete received', tBoot)
+
     // 在 boot 期间预加载首屏页面（Cover），并在关闭 LoadingScreen 前
     // 确保 chunk 已就绪。Cover 是 React.lazy 的，若模块未就绪时触发
     // 重渲染，Suspense 会渲染 fallback=null，露出棕色背景。
@@ -87,8 +94,10 @@ export function App() {
     const coverReady = import('@/pages/Cover')
 
     // 与 Cover 加载并行执行 store 初始化
+    window.api?.logTiming('App store.init start', performance.now())
     try {
       await init()
+      window.api?.logTiming('App store.init done', performance.now())
     } catch (err: any) {
       console.error('init failed', err)
       useStore.getState().showToast('初始化失败:' + err.message)
@@ -107,6 +116,7 @@ export function App() {
 
     // 确保 Cover chunk 已就绪再关闭 LoadingScreen，杜绝棕色闪屏
     await coverReady
+    window.api?.logTiming('App Cover chunk ready', performance.now())
     setIsBooting(false)
   }
 

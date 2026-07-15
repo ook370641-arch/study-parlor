@@ -94,25 +94,32 @@ const LISTING_SCRIPT = `(() => {
   const results = []
   const datePattern = /\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2},?\\s+\\d{4}\\b/
 
-  const findCardDate = (a) => {
+  // Find the card container for an <a> element, then extract all metadata
+  // from the container. This avoids the bug where the first <a> (often an
+  // image-only link) "wins" the per-URL dedup and blocks the title-bearing
+  // <a> from contributing its data.
+  const extractCard = (a) => {
     let container = a.closest('[class*="ArticleList"], article, li')
     if (!container) container = a.parentElement
-    const dateEl = container?.querySelector('[class*="__date"]')
-    if (dateEl) return dateEl.textContent?.trim() || null
-    let el = a
-    for (let i = 0; i < 4 && el; i++) {
-      const match = el.textContent?.match(datePattern)
-      if (match) return match[0]
-      el = el.parentElement
-    }
-    return null
-  }
 
-  const findCardImage = (a) => {
-    let container = a.closest('[class*="ArticleList"], article, li')
-    if (!container) container = a.parentElement
+    const href = a.getAttribute('href')
+    const url = href.startsWith('http') ? href : 'https://www.anthropic.com' + href
+
+    const titleEl = container?.querySelector('h2, h3, h4, [class*="__title"], [class*="title"]')
+    const title = titleEl?.textContent?.trim() || a.textContent?.trim() || null
+
+    const summaryEl = container?.querySelector('[class*="__summary"]')
+    const summary = summaryEl?.textContent?.trim() || null
+
+    const dateEl = container?.querySelector('[class*="__date"]')
+    const dateText = dateEl?.textContent?.trim()
+      || container?.textContent?.match(datePattern)?.[0]
+      || null
+
     const img = container?.querySelector('img')
-    return img?.getAttribute('src') || img?.getAttribute('data-src') || null
+    const imageUrl = img?.getAttribute('src') || img?.getAttribute('data-src') || null
+
+    return { url, title, summary, dateText, imageUrl }
   }
 
   document.querySelectorAll('a[href^="/engineering/"]').forEach((a) => {
@@ -121,11 +128,7 @@ const LISTING_SCRIPT = `(() => {
     const url = href.startsWith('http') ? href : 'https://www.anthropic.com' + href
     if (seen.has(url)) return
     seen.add(url)
-    const title =
-      a.querySelector('h2, h3, h4, [class*="__title"], [class*="title"]')?.textContent?.trim()
-      || a.textContent?.trim()
-    const summary = a.querySelector('[class*="__summary"]')?.textContent?.trim() || null
-    results.push({ url, title, summary, dateText: findCardDate(a), imageUrl: findCardImage(a) })
+    results.push(extractCard(a))
   })
 
   return results
