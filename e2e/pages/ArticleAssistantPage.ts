@@ -115,6 +115,30 @@ export class ArticleAssistantPage {
     await this.page.mouse.up()
   }
 
+  /**
+   * Read the rendered width of the guide sidebar container (the divider's next
+   * sibling — it has no testid of its own; ArticleAssistantPanel drives its
+   * width inline from the store).
+   */
+  async guideSidebarWidth(): Promise<number> {
+    return this.page.evaluate((dividerSel) => {
+      const divider = document.querySelector(dividerSel)
+      const sidebar = divider?.nextElementSibling as HTMLElement | null
+      return sidebar ? sidebar.getBoundingClientRect().width : -1
+    }, SELECTORS.articleAssistant.divider)
+  }
+
+  /**
+   * E2E only: read-only count of assistant session messages from the store
+   * (window.useStore is the E2E automation hook exposed by src/store). Used to
+   * assert that UI toggles do NOT send messages.
+   */
+  async messageCount(): Promise<number> {
+    return this.page.evaluate(
+      () => (window as any).useStore?.getState()?.assistantSession?.messages?.length ?? 0
+    )
+  }
+
   async expectBodyChunks(count: number) {
     await expect(this.bodyChunks).toHaveCount(count)
   }

@@ -111,6 +111,17 @@ test.describe('文章标注 (Article Annotations)', () => {
     console.log(`[anno-position] highlight y=${hlBox!.y} para y=${paraBox!.y} delta=${Math.abs(hlBox!.y - paraBox!.y)}`)
     expect(Math.abs(hlBox!.y - paraBox!.y)).toBeLessThan(60)
 
+    // --- 第 2.5 步：高亮消隐 — 点击正文他处，高亮与幽灵笔应一并消失 ---
+    // （高亮驻留已由上方断言覆盖：mouseup 之后、点击他处之前高亮持续可见）
+    await window.locator('article p').last().click()
+    await expect(window.locator(SELECTORS.annotations.selectionHighlight)).toHaveCount(0)
+    await expect(ghostPen).toBeHidden()
+
+    // 重新触发同一选区，恢复原有流程（后续步骤保持不变）
+    await selectTextInArticle(window, 0, 15)
+    await expect(ghostPen).toBeVisible({ timeout: 5000 })
+    await expect(highlight).toBeVisible()
+
     // --- 第三步：点击幽灵笔，打开备注卡片 ---
     await ghostPen.click({ force: true })
 

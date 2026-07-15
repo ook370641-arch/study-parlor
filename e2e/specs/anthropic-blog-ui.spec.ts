@@ -71,6 +71,72 @@ test.describe('Anthropic 博客 UI 优化 (v1.2)', () => {
     await expect(savedRow).toBeVisible({ timeout: 10000 })
   })
 
+  test('已保存文章行使用左橙+三边棕边框', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
+
+    // 切换到 Anthropic 来源
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await expect(window.locator(SELECTORS.briefing.listColumn)).toBeVisible()
+
+    // 等待文章列表加载（处理新文章检测提示）
+    const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+    await prompt.waitFor({ timeout: 120000 }).catch(() => {})
+    const promptVisible = await prompt.isVisible().catch(() => false)
+    if (promptVisible) await prompt.click()
+
+    const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+    await rows.first().waitFor({ timeout: 120000 })
+
+    // 测试库是全新隔离的，通常没有已保存文章 — 若没有则先导入第一篇
+    const savedRow = rows
+      .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      .first()
+    if (!(await savedRow.isVisible().catch(() => false))) {
+      await rows.first().click()
+      await window
+        .locator(SELECTORS.briefing.anthropicArticleReader)
+        .waitFor({ state: 'visible', timeout: 120000 })
+    }
+    await expect(savedRow).toBeVisible({ timeout: 10000 })
+
+    // 已保存状态（academic 主题默认）：左边框 ember 橙，上/右/下为半透明棕
+    await expect(savedRow).toHaveClass(/border-l-ember/)
+    await expect(savedRow).toHaveClass(/border-t-\[rgba\(232,213,183,0\.12\)\]/)
+    await expect(savedRow).toHaveClass(/border-r-\[rgba\(232,213,183,0\.12\)\]/)
+    await expect(savedRow).toHaveClass(/border-b-\[rgba\(232,213,183,0\.12\)\]/)
+  })
+
+  test('文章内容区使用加宽后的 95%/1600px', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
+
+    // 切换到 Anthropic 来源并打开一篇文章
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+    await prompt.waitFor({ timeout: 120000 }).catch(() => {})
+    const promptVisible = await prompt.isVisible().catch(() => false)
+    if (promptVisible) await prompt.click()
+
+    const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+    await rows.first().waitFor({ timeout: 120000 })
+    await rows.first().click()
+
+    const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
+    await reader.waitFor({ state: 'visible', timeout: 120000 })
+
+    // 阅读器内容容器带加宽后的宽度类（CSS 类名中的方括号需转义）
+    const content = window.locator(
+      `${SELECTORS.briefing.anthropicArticleReader} .max-w-\\[1600px\\]`,
+    )
+    await expect(content).toBeVisible()
+    await expect(content).toHaveClass(/w-\[95%\]/)
+  })
+
   test('E2E-7: 自动检测新文章并显示刷新提示', {
     tag: '@unstable',
   }, async ({ window }) => {

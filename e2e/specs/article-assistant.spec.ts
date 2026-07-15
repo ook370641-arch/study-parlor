@@ -90,4 +90,48 @@ test.describe('@p1 article assistant', () => {
     expect(raw).toContain('parent_type: briefing')
   })
 
+  test('搜索按钮为持久开关，点击不发送消息', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigestArticle(window, testLibraryPath)
+    await assistant.openChat()
+
+    // 初始：关闭态（无 ember 底色，aria-pressed=false）
+    await expect(assistant.searchBtn).toBeVisible()
+    await expect(assistant.searchBtn).toHaveAttribute('aria-pressed', 'false')
+    await expect(assistant.searchBtn).not.toHaveClass(/bg-ember/)
+    expect(await assistant.messageCount()).toBe(0)
+
+    // 点击 → 开启态；开关本身不应发送任何消息
+    await assistant.clickSearch()
+    await expect(assistant.searchBtn).toHaveAttribute('aria-pressed', 'true')
+    await expect(assistant.searchBtn).toHaveClass(/bg-ember/)
+    expect(await assistant.messageCount()).toBe(0)
+
+    // 再次点击 → 回到关闭态
+    await assistant.clickSearch()
+    await expect(assistant.searchBtn).toHaveAttribute('aria-pressed', 'false')
+    await expect(assistant.searchBtn).not.toHaveClass(/bg-ember/)
+    expect(await assistant.messageCount()).toBe(0)
+  })
+
+  test('导读折叠箭头可点击（真实点击，pointer-capture 回归）', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigestArticle(window, testLibraryPath)
+    await expect(assistant.divider).toBeVisible()
+
+    const toggle = assistant.dividerToggle
+    await expect(toggle).toBeVisible()
+    // 初始：展开态（glyph ▶，导读栏有宽度）
+    await expect(toggle).toHaveText('▶')
+    expect(await assistant.guideSidebarWidth()).toBeGreaterThan(0)
+
+    // 真实点击（非 dispatchEvent）——回归：divider 的 setPointerCapture 曾吞掉按钮 click
+    await toggle.click()
+    await expect(toggle).toHaveText('◀')
+    await expect.poll(() => assistant.guideSidebarWidth()).toBe(0)
+
+    // 再次点击 → 重新展开
+    await toggle.click()
+    await expect(toggle).toHaveText('▶')
+    await expect.poll(() => assistant.guideSidebarWidth()).toBeGreaterThan(100)
+  })
+
 })
