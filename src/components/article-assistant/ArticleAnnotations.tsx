@@ -20,6 +20,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
   const [annotations, setAnnotations] = useState<ArticleAnnotation[]>([])
   const [openAnnoId, setOpenAnnoId] = useState<string | null>(null)
   const [ghost, setGhost] = useState<GhostData | null>(null)
+  const [selectionHighlights, setSelectionHighlights] = useState<Array<{ left: number; top: number; width: number; height: number }>>([])
   const [cardPos, setCardPos] = useState<{ left: number; top: number } | null>(null)
   const [cardAnchorEl, setCardAnchorEl] = useState<HTMLElement | null>(null)
   const ghostRef = useRef<HTMLDivElement | null>(null)
@@ -207,12 +208,21 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       const endRect = endRange.getBoundingClientRect()
       const contRect = container.getBoundingClientRect()
 
+      // Mirror handleMouseUp: persistent highlight overlay rects
+      const rects = Array.from(range.getClientRects()).map((r) => ({
+        left: r.left - contRect.left + container.scrollLeft,
+        top: r.top - contRect.top + container.scrollTop,
+        width: r.width,
+        height: r.height,
+      }))
+
       const paras = Array.from(container.querySelectorAll('p'))
       const paraIndex = paras.indexOf(paraEl as HTMLParagraphElement) + 1
 
       setOpenAnnoId(null)
       setCardPos(null)
       setCardAnchorEl(null)
+      setSelectionHighlights(rects)
       setGhost({
         text,
         paraIndex,
@@ -232,53 +242,74 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     if (!container) return
 
     const handleMouseUp = () => {
-      setTimeout(() => {
-        // Clean up old ghost
-        setGhost(null)
+      // rAF + setTimeout(0) lets the browser settle the selection before we read it
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          // Clean up old ghost + highlight overlay (a new selection replaces them)
+          setGhost(null)
+          setSelectionHighlights([])
 
-        const sel = window.getSelection()
-        if (!sel || sel.isCollapsed || !sel.rangeCount) return
-        const range = sel.getRangeAt(0)
-        if (!container.contains(range.commonAncestorContainer)) return
-        const text = sel.toString().trim()
-        if (text.length < 2) return
+          const sel = window.getSelection()
+          if (!sel || sel.isCollapsed || !sel.rangeCount) return
+          const range = sel.getRangeAt(0)
+          if (!container.contains(range.commonAncestorContainer)) return
+          const text = sel.toString().trim()
+          if (text.length < 2) return
 
-        // Close any open card
-        setOpenAnnoId(null)
-        setCardPos(null)
-        setCardAnchorEl(null)
+          // Close any open card
+          setOpenAnnoId(null)
+          setCardPos(null)
+          setCardAnchorEl(null)
 
-        // Get position at end of selection
-        const endRange = range.cloneRange()
-        endRange.collapse(false)
-        const endRect = endRange.getBoundingClientRect()
-        const contRect = container.getBoundingClientRect()
+          // Get position at end of selection
+          const endRange = range.cloneRange()
+          endRange.collapse(false)
+          const endRect = endRange.getBoundingClientRect()
+          const contRect = container.getBoundingClientRect()
 
-        // Find paragraph index
-        let paraIndex = 1
-        let node: Node | null = range.commonAncestorContainer
-        while (node && node !== container) {
-          if (node.nodeName === 'P') {
-            const paras = Array.from(container.querySelectorAll('p'))
-            paraIndex = paras.indexOf(node as HTMLParagraphElement) + 1
-            break
+          // Persistent highlight overlay: one rect per selected line
+          const rects = Array.from(range.getClientRects()).map((r) => ({
+            left: r.left - contRect.left + container.scrollLeft,
+            top: r.top - contRect.top + container.scrollTop,
+            width: r.width,
+            height: r.height,
+          }))
+          setSelectionHighlights(rects)
+
+          // Find paragraph index
+          let paraIndex = 1
+          let node: Node | null = range.commonAncestorContainer
+          while (node && node !== container) {
+            if (node.nodeName === 'P') {
+              const paras = Array.from(container.querySelectorAll('p'))
+              paraIndex = paras.indexOf(node as HTMLParagraphElement) + 1
+              break
+            }
+            node = node.parentNode
           }
-          node = node.parentNode
-        }
 
-        setGhost({
-          text,
-          paraIndex,
-          left: endRect.right - contRect.left + container.scrollLeft + 2,
-          top: endRect.top - contRect.top + container.scrollTop - 14,
-        })
-      }, 10)
+          setGhost({
+            text,
+            paraIndex,
+            left: endRect.right - contRect.left + container.scrollLeft + 2,
+            top: endRect.top - contRect.top + container.scrollTop - 14,
+          })
+        }, 0)
+      })
     }
 
     const handleMouseDown = (e: MouseEvent) => {
-      // Hide ghost if clicking outside it
-      if (ghostRef.current && !ghostRef.current.contains(e.target as Node)) {
-        setGhost(null)
+      const target = e.target as HTMLElement
+      // Clear ghost + highlights only when the click is outside the ghost pen
+      // and not on an existing annotation marker
+      if (ghostRef.current && !ghostRef.current.contains(target)) {
+        if (!target.closest('.anno-wrap')) {
+          setGhost(null)
+          setSelectionHighlights([])
+        }
+      } else if (!ghostRef.current) {
+        // No ghost pen — clicking anywhere dismisses any leftover highlight
+        setSelectionHighlights([])
       }
       // Close card if clicking outside BOTH the marker pen and the note card
       const anchorEl = cardAnchorElRef.current
@@ -317,6 +348,8 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     const updated = [...annotations, newAnno]
     setAnnotations(updated)
     setGhost(null)
+    // Temporary overlay is replaced by the permanent marker (anno-text span)
+    setSelectionHighlights([])
 
     // Apply marker for the new annotation
     setTimeout(() => {
@@ -414,6 +447,25 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
   return (
     <>
+      {/* Persistent selection highlight overlay (same coordinate space as the ghost pen) */}
+      {selectionHighlights.map((rect, i) => (
+        <div
+          key={`hl-${i}`}
+          data-testid="anno-selection-highlight"
+          style={{
+            position: 'absolute',
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+            background: isAcademic ? 'rgba(217,119,87,0.13)' : 'rgba(217,119,87,0.08)',
+            borderRadius: '2px',
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        />
+      ))}
+
       {/* Ghost pen */}
       {ghost && (
         <div
