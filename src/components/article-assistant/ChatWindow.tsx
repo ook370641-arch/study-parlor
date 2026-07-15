@@ -151,11 +151,12 @@ export function ChatWindow() {
           data-testid="article-assistant-search-btn"
           className={`px-1.5 py-1 rounded text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${
             session.searchEnabled
-              ? 'bg-ember text-white'
+              ? 'bg-ember'
               : 'text-parchment/70 hover:text-ember'
           }`}
           onClick={toggleAssistantSearch}
-          disabled={session.streaming || session.searchLoading}
+          disabled={session.searchLoading}
+          aria-pressed={session.searchEnabled}
           aria-label={session.searchEnabled ? '搜索已开启' : '搜索已关闭'}
           title={session.searchEnabled ? '搜索已开启 — 发送时将联网搜索' : '搜索已关闭 — 点击开启联网搜索'}
         >

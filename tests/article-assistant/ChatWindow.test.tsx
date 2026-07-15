@@ -79,6 +79,12 @@ describe('ChatWindow', () => {
     expect(screen.getByTestId('article-assistant-search-btn')).toBeDisabled()
   })
 
+  it('keeps the search button enabled while streaming', () => {
+    mockStore(baseSession({ streaming: true }))
+    render(<ChatWindow />)
+    expect(screen.getByTestId('article-assistant-search-btn')).not.toBeDisabled()
+  })
+
   it('shows the send button (not stop) when not streaming', () => {
     mockStore(baseSession({ streaming: false }))
     render(<ChatWindow />)

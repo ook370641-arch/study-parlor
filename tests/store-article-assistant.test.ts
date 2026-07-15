@@ -9,6 +9,7 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantGenerateGuide: vi.fn(),
     articleAssistantReadSession: vi.fn(),
     articleAssistantWriteSession: vi.fn(),
+    articleAssistantSendMessage: vi.fn(),
     articleAssistantAbort: vi.fn()
   }
 }))
@@ -35,6 +36,7 @@ describe('store article assistant', () => {
     vi.mocked(ipc.articleAssistantReadSession).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantGenerateGuide).mockResolvedValue(guideFixture as any)
     vi.mocked(ipc.articleAssistantWriteGuide).mockResolvedValue({ filePath: '/guide.json' })
+    vi.mocked(ipc.articleAssistantSendMessage).mockResolvedValue(undefined)
   })
 
   describe('openAssistantSession', () => {
@@ -122,6 +124,24 @@ describe('store article assistant', () => {
     it('is a no-op when there is no session', () => {
       useStore.getState().toggleAssistantSearch()
       expect(useStore.getState().assistantSession).toBeNull()
+    })
+
+    it('keeps searchEnabled true after a full send cycle', async () => {
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/e.md',
+        contextType: 'briefing',
+        articleContent: 'body'
+      })
+      await flush()
+
+      useStore.getState().toggleAssistantSearch()
+      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
+
+      await useStore.getState().sendAssistantMessage('q', true)
+      useStore.getState().finishAssistantStreaming()
+
+      expect(useStore.getState().assistantSession?.streaming).toBe(false)
+      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
     })
   })
 
