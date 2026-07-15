@@ -93,47 +93,49 @@ git commit -m "fix(ui): add brown top/right/bottom borders to saved Anthropic ar
 
 ---
 
-### Task 2: 修复 BriefingListColumn 宽度 bug + 文章区加宽
+### Task 2: 修正 BriefingListColumn 注释 + 文章区加宽（实现期修订）
+
+> **修订说明**：原 Step 1 把 `w-80`(320px) 判定为 bug 并要求改为 `w-[80px]`。实现期检查发现 320px 是有意宽度（博客列表需容纳 80px 缩略图 + 标题 + 搜索框），该改动已取消，仅修正误导性注释。最大宽度按用户决定为 **1600px**（非初版 1400px）。
 
 **Files:**
-- Modify: `src/components/BriefingListColumn.tsx:31`
+- Modify: `src/components/BriefingListColumn.tsx:7`（仅注释）
 - Modify: `src/components/anthropic/AnthropicArticleReader.tsx:155`
 - Modify: `src/components/briefing/AcademicBriefingLayout.tsx:31`
 - Modify: `src/components/briefing/NewspaperBriefingLayout.tsx:31`
 
-- [ ] **Step 1: 修复 BriefingListColumn 的 Tailwind 类名 bug**
+- [x] **Step 1: 修正 BriefingListColumn 的误导性注释（宽度类不变）**
 
-编辑 `BriefingListColumn.tsx:31`：
+编辑 `BriefingListColumn.tsx:7`：
 
 ```diff
-- const widthClass = width === 80 ? 'w-80' : 'w-64'
-+ const widthClass = width === 80 ? 'w-[80px]' : 'w-[64px]'
+- width?: 64 | 80 // px rail width in tailwind units; 64 for dates, 80 for blog list
++ width?: 64 | 80 // Tailwind spacing units (w-64=256px, w-80=320px); 64 for dates, 80 for blog list
 ```
 
-- [ ] **Step 2: 加宽文章内容区**
+- [x] **Step 2: 加宽文章内容区**
 
 `AnthropicArticleReader.tsx:155`：
 
 ```diff
 - <div className="relative w-[90%] max-w-[1250px] min-w-[520px] mx-auto px-6 py-10 pb-24">
-+ <div className="relative w-[95%] max-w-[1400px] min-w-[520px] mx-auto px-6 py-10 pb-24">
++ <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24">
 ```
 
 `AcademicBriefingLayout.tsx:31`：
 
 ```diff
 - <div className="w-[90%] max-w-[1250px] min-w-[520px] mx-auto px-4 py-6 relative">
-+ <div className="w-[95%] max-w-[1400px] min-w-[520px] mx-auto px-4 py-6 relative">
++ <div className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative">
 ```
 
 `NewspaperBriefingLayout.tsx:31`：
 
 ```diff
 - <article className="w-[90%] max-w-[1250px] min-w-[520px] mx-auto px-4 py-6 relative">
-+ <article className="w-[95%] max-w-[1400px] min-w-[520px] mx-auto px-4 py-6 relative">
++ <article className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative">
 ```
 
-- [ ] **Step 3: 运行现有测试确保无回归**
+- [x] **Step 3: 运行现有测试确保无回归**
 
 ```bash
 npx vitest run tests/briefing-layout.test.tsx tests/briefing-page.test.tsx
@@ -141,11 +143,11 @@ npx vitest run tests/briefing-layout.test.tsx tests/briefing-page.test.tsx
 
 Expected: All PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/BriefingListColumn.tsx src/components/anthropic/AnthropicArticleReader.tsx src/components/briefing/AcademicBriefingLayout.tsx src/components/briefing/NewspaperBriefingLayout.tsx
-git commit -m "fix(ui): fix BriefingListColumn w-80→w-[80px] width bug, widen article area to 95%/1400px"
+git commit -m "fix(ui): widen article content area to 95%/1600px, clarify BriefingListColumn width comment"
 ```
 
 ---
@@ -185,8 +187,8 @@ git commit -m "fix(ui): fix BriefingListColumn w-80→w-[80px] width bug, widen 
 +   </div>
     <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
       <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
--     <div className="relative w-[95%] max-w-[1400px] min-w-[520px] mx-auto px-6 py-10 pb-24">
-+     <div className="relative w-[95%] max-w-[1400px] min-w-[520px] mx-auto px-6 py-10 pb-24">
+-     <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24">
++     <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24">
         {/* 删除此处原有的 SwapPaintingButton */}
 -       <div className="absolute top-4 right-4 z-10">
 -         <SwapPaintingButton
@@ -630,7 +632,7 @@ test('E2E-12: 已保存文章左橙 + 三边棕色边框', async ({ window }) =>
   await expect(savedRow).toHaveClass(/border-l-ember/)
 })
 
-test('E2E-13: 文章列表展开宽度为 80px（非 320px bug）', async ({ window }) => {
+test('E2E-13: 文章内容区使用加宽后的 95%/1600px 宽度', async ({ window }) => {
   const cover = new CoverPage(window)
   await cover.enterName('E2E 测试员')
   await cover.goToBriefing()
@@ -639,8 +641,20 @@ test('E2E-13: 文章列表展开宽度为 80px（非 320px bug）', async ({ win
   await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
   const listColumn = window.locator(SELECTORS.briefing.listColumn)
   await expect(listColumn).toBeVisible()
-  // 展开状态不应为 w-80（320px bug 修复后使用 w-[80px]）
-  await expect(listColumn).not.toHaveClass(/w-80/)
+
+  // 打开一篇文章后，阅读器内容容器应使用加宽后的宽度类
+  const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+  await prompt.waitFor({ timeout: 120000 }).catch(() => {})
+  if (await prompt.isVisible().catch(() => false)) await prompt.click()
+
+  const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+  await rows.first().waitFor({ timeout: 120000 })
+  await rows.first().click()
+
+  const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
+  await reader.waitFor({ state: 'visible', timeout: 120000 })
+  const contentBox = reader.locator('.max-w-\\[1600px\\]').first()
+  await expect(contentBox).toBeVisible()
 })
 ```
 
@@ -772,8 +786,8 @@ Task 7 (E2E) ──── 最后（依赖所有功能变更）
 - [ ] 仅一个换画按钮，位置固定不随滚动
 - [ ] 导读箭头可点击折叠/展开
 - [ ] 拖拽导读 divider 实时变化宽度
-- [ ] BriefingListColumn 展开宽度 80px（非 320px）
-- [ ] 文章内容区 `max-w-[1400px]` `w-[95%]`
+- [ ] BriefingListColumn 宽度类保持 `w-80`/`w-64`，仅注释修正
+- [ ] 文章内容区 `max-w-[1600px]` `w-[95%]`
 - [ ] 单元测试全部通过
 - [ ] E2E 测试全部通过
 - [ ] 报刊主题无回归

@@ -15,7 +15,7 @@
 | 3 | 搜索按钮无开关状态，点击即发送 | 无 toggle state，`handleSend(true)` 直接发送 | 交互 |
 | 4 | 换画按钮重复（页级 + 文章内各一个） | Briefing.tsx 和 AnthropicArticleReader 各渲染一个 | 去重 |
 | 5 | 导读左箭头无法点击 + resize 不实时 | 父容器 `overflow-hidden` 裁剪 + CSS transition 延迟 | Bug |
-| 6 | 文章文字区域过窄（27寸不到一半屏宽） | BriefingListColumn `w-80`=320px bug + `w-[90%]` + `max-w-[1250px]` | Bug |
+| 6 | 文章文字区域过窄（27寸不到一半屏宽） | 内容区 `w-[90%]` + `max-w-[1250px]` 封顶（详见 Issue 6 勘误） | Bug |
 | 7 | E2E 测试覆盖 | — | 质量 |
 
 ---
@@ -275,39 +275,40 @@ const [resizing, setResizing] = useState(false)
 
 ### 当前状态
 
-三层宽度挤压：
-1. `BriefingListColumn.tsx:31` — `w-80` = **320px**（bug：本意是 80px）
-2. 文章内容 `w-[90%]` — 再打九折
-3. `max-w-[1250px]` — 宽屏封顶
+两层宽度限制：
+1. 文章内容 `w-[90%]` — 内容区打九折
+2. `max-w-[1250px]` — 宽屏封顶（2560px 屏上文章仅占 ~49%）
+
+> **勘误（实现期修订）**：spec 初版把 `BriefingListColumn.tsx:31` 的 `w-80`(320px) 判定为 bug（"本意 80px"）。实现期检查发现 320px 是**有意为之**——博客列表要容纳 80px 缩略图 + 标题 + 搜索框，80px 字面宽度装不下。该"修复"已取消，仅修正误导性注释。
 
 ### 目标
 
-修复 bug + 适度加宽，让 27 寸全屏下文章占主要空间。
+修复内容区过窄，让 27 寸全屏下文章占主要空间，同时保持行长可读。
 
 ### 实现
 
-#### 6a. 修复 BriefingListColumn 宽度
+#### 6a. 修正 BriefingListColumn 注释（原"宽度修复"取消）
 
 ```diff
-- const widthClass = width === 80 ? 'w-80' : 'w-64'
-+ const widthClass = width === 80 ? 'w-[80px]' : 'w-[64px]'
+- width?: 64 | 80 // px rail width in tailwind units; 64 for dates, 80 for blog list
++ width?: 64 | 80 // Tailwind spacing units (w-64=256px, w-80=320px); 64 for dates, 80 for blog list
 ```
 
-#### 6b. 加宽内容区
+#### 6b. 加宽内容区（用户选定 1600px 上限）
 
 `AnthropicArticleReader.tsx:155`、`AcademicBriefingLayout.tsx:31`、`NewspaperBriefingLayout.tsx:31`：
 
 ```diff
 - w-[90%] max-w-[1250px] min-w-[520px]
-+ w-[95%] max-w-[1400px] min-w-[520px]
++ w-[95%] max-w-[1600px] min-w-[520px]
 ```
 
 ### 预期效果
 
-| 屏幕 | 修复前（展开列表） | 修复后 |
-|------|------------------|--------|
-| 1920px | ~979px (51%) | ~1610px (84%) |
-| 2560px | ~1250px (49%) | ~2060px (80%) |
+| 屏幕 | 修复前 | 修复后 |
+|------|--------|--------|
+| 1920px | ~979px (51%) | ~1230px (64%，受 95% 限制) |
+| 2560px | ~1250px (49%) | ~1600px (62%，受上限限制) |
 
 **改动文件**: `BriefingListColumn.tsx`、`AnthropicArticleReader.tsx`、`AcademicBriefingLayout.tsx`、`NewspaperBriefingLayout.tsx`
 
