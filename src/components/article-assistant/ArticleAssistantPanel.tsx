@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { GuideSidebar } from './GuideSidebar'
 import { ChatWindow } from './ChatWindow'
@@ -26,6 +26,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
   const setArticleAssistantGuideCollapsed = useStore((s) => s.setArticleAssistantGuideCollapsed)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPath = useRef<string | null>(null)
+  const [resizing, setResizing] = useState(false)
 
   // Open session when parentPath changes (or on first mount)
   useEffect(() => {
@@ -81,9 +82,11 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
                 setArticleAssistantGuideWidth(Math.min(width, maxWidth))
               }
             }}
+            onResizeStart={() => setResizing(true)}
+            onResizeEnd={() => setResizing(false)}
             theme={theme}
           />
-          <div className="h-full overflow-hidden transition-[width] duration-150 ease-out" style={{ width: sidebarWidth }}>
+          <div className={`h-full overflow-hidden ${resizing ? '' : 'transition-[width] duration-150 ease-out'}`} style={{ width: sidebarWidth }}>
             <GuideSidebar theme={theme} />
           </div>
         </>

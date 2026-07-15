@@ -4,14 +4,20 @@ interface Props {
   collapsed: boolean
   onToggleCollapse: () => void
   onResize: (newWidth: number) => void
+  onResizeStart?: () => void
+  onResizeEnd?: () => void
   theme?: 'academic' | 'newspaper'
 }
 
-export function ArticleDivider({ collapsed, onToggleCollapse, onResize, theme = 'academic' }: Props) {
+export function ArticleDivider({ collapsed, onToggleCollapse, onResize, onResizeStart, onResizeEnd, theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
   const dragging = useRef<{ startX: number; containerWidth: number; sidebarWidth: number } | null>(null)
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    // pointerdown on the toggle button must not start a drag / capture the pointer,
+    // otherwise the capture swallows the button's click event
+    if ((e.target as HTMLElement).closest('[data-testid="article-assistant-divider-toggle"]')) return
+    onResizeStart?.()
     const target = e.currentTarget
     target.setPointerCapture(e.pointerId)
     const container = target.parentElement
@@ -32,6 +38,7 @@ export function ArticleDivider({ collapsed, onToggleCollapse, onResize, theme = 
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       dragging.current = null
+      onResizeEnd?.()
     }
 
     window.addEventListener('pointermove', onMove)
