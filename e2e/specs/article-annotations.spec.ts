@@ -17,8 +17,9 @@ async function selectTextInArticle(
   length: number,
 ) {
   // Use the E2E helper exposed by ArticleAnnotations to reliably trigger the ghost pen.
-  // The synthetic dispatchEvent approach is unreliable because the component uses
-  // setTimeout(fn, 10) inside a native mouseup handler to check window.getSelection().
+  // The synthetic dispatchEvent approach is unreliable because the component defers
+  // reading window.getSelection() via requestAnimationFrame + setTimeout(0) inside
+  // a native mouseup handler.
   await window.evaluate(
     ({ start, len }: { start: number; len: number }) => {
       const article = document.querySelector('[data-testid="anthropic-reader-article"]')
@@ -88,6 +89,27 @@ test.describe('文章标注 (Article Annotations)', () => {
     // 幽灵笔应出现
     const ghostPen = window.locator(SELECTORS.annotations.ghostPen)
     await expect(ghostPen).toBeVisible({ timeout: 5000 })
+
+    // 位置校验：幽灵笔应紧邻选区末尾（回归：坐标系错位会让它渲染到 header 上方）
+    const penBox = await ghostPen.boundingBox()
+    const selEnd = await window.evaluate(() => {
+      const sel = window.getSelection()!
+      const range = sel.getRangeAt(0).cloneRange()
+      range.collapse(false)
+      const r = range.getBoundingClientRect()
+      return { x: r.right, y: r.top }
+    })
+    expect(penBox).not.toBeNull()
+    console.log(`[anno-position] pen y=${penBox!.y} selEnd y=${selEnd.y} delta=${Math.abs(penBox!.y - selEnd.y)}`)
+    expect(Math.abs(penBox!.y - selEnd.y)).toBeLessThan(50)
+
+    // 高亮 overlay 应覆盖在选中段落上
+    const highlight = window.locator(SELECTORS.annotations.selectionHighlight).first()
+    await expect(highlight).toBeVisible()
+    const hlBox = await highlight.boundingBox()
+    const paraBox = await window.locator('article p').first().boundingBox()
+    console.log(`[anno-position] highlight y=${hlBox!.y} para y=${paraBox!.y} delta=${Math.abs(hlBox!.y - paraBox!.y)}`)
+    expect(Math.abs(hlBox!.y - paraBox!.y)).toBeLessThan(60)
 
     // --- 第三步：点击幽灵笔，打开备注卡片 ---
     await ghostPen.click({ force: true })

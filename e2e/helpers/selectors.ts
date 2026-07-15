@@ -237,6 +237,7 @@ export const SELECTORS = {
   toast: '[data-testid="toast-message"]',
   annotations: {
     ghostPen: '[data-testid="anno-ghost-pen"]',
+    selectionHighlight: '[data-testid="anno-selection-highlight"]',
     noteCard: '[data-testid="anno-note-card"]',
     noteTextarea: '[data-testid="anno-note-textarea"]',
     saveButton: '[data-testid="anno-save-button"]',

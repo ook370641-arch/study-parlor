@@ -172,10 +172,13 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     const container = articleRef.current
     if (container) {
       const penRect = penEl.getBoundingClientRect()
-      const contRect = container.getBoundingClientRect()
+      // 绝对定位的锚点是 reader 的 relative 内容容器（article 的 offsetParent），
+      // 不是 article 本身 —— article 上方还有 header，两者原点不同
+      const origin = (container.offsetParent as HTMLElement | null) ?? container
+      const originRect = origin.getBoundingClientRect()
       setCardPos({
-        left: penRect.left - contRect.left + container.scrollLeft - 4,
-        top: penRect.top - contRect.top + container.scrollTop - 10,
+        left: penRect.left - originRect.left - 4,
+        top: penRect.top - originRect.top - 10,
       })
     }
   }
@@ -206,12 +209,15 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       const endRange = range.cloneRange()
       endRange.collapse(false)
       const endRect = endRange.getBoundingClientRect()
-      const contRect = container.getBoundingClientRect()
+      // 绝对定位的锚点是 reader 的 relative 内容容器（article 的 offsetParent），
+      // 不是 article 本身 —— article 上方还有 header，两者原点不同
+      const origin = (container.offsetParent as HTMLElement | null) ?? container
+      const originRect = origin.getBoundingClientRect()
 
       // Mirror handleMouseUp: persistent highlight overlay rects
       const rects = Array.from(range.getClientRects()).map((r) => ({
-        left: r.left - contRect.left + container.scrollLeft,
-        top: r.top - contRect.top + container.scrollTop,
+        left: r.left - originRect.left,
+        top: r.top - originRect.top,
         width: r.width,
         height: r.height,
       }))
@@ -226,8 +232,8 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       setGhost({
         text,
         paraIndex,
-        left: endRect.right - contRect.left + container.scrollLeft + 2,
-        top: endRect.top - contRect.top + container.scrollTop - 14,
+        left: endRect.right - originRect.left + 2,
+        top: endRect.top - originRect.top - 14,
       })
     }
 
@@ -265,12 +271,16 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
           const endRange = range.cloneRange()
           endRange.collapse(false)
           const endRect = endRange.getBoundingClientRect()
-          const contRect = container.getBoundingClientRect()
+          // 绝对定位的锚点是 reader 的 relative 内容容器（article 的 offsetParent），
+          // 不是 article 本身 —— article 上方还有 header，两者原点不同。
+          // 坐标 = 视口坐标 - 原点视口坐标（两者同帧测量，滚动自然抵消）
+          const origin = (container.offsetParent as HTMLElement | null) ?? container
+          const originRect = origin.getBoundingClientRect()
 
           // Persistent highlight overlay: one rect per selected line
           const rects = Array.from(range.getClientRects()).map((r) => ({
-            left: r.left - contRect.left + container.scrollLeft,
-            top: r.top - contRect.top + container.scrollTop,
+            left: r.left - originRect.left,
+            top: r.top - originRect.top,
             width: r.width,
             height: r.height,
           }))
@@ -291,8 +301,8 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
           setGhost({
             text,
             paraIndex,
-            left: endRect.right - contRect.left + container.scrollLeft + 2,
-            top: endRect.top - contRect.top + container.scrollTop - 14,
+            left: endRect.right - originRect.left + 2,
+            top: endRect.top - originRect.top - 14,
           })
         }, 0)
       })
