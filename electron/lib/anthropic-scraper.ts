@@ -409,6 +409,8 @@ export async function importArticle(
       published_at: publishedAt,
       imported_at: new Date().toISOString(),
       authors: article.authors,
+      summary: article.summary || undefined,
+      description: article.summary || undefined,
     },
     markdownWithLocalImages
   )

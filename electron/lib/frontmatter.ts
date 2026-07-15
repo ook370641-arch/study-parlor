@@ -12,7 +12,7 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   transcript: ['session_number'],
   briefing: [],
   'external-materials': ['session_number', 'topic', 'summary', 'sources'],
-  'anthropic-article': ['source_url', 'published_at', 'imported_at', 'authors'],
+  'anthropic-article': ['source_url', 'published_at', 'imported_at', 'authors', 'summary'],
   'article-assistant': ['parent_path', 'parent_type', 'created_at', 'updated_at'],
   'job-briefing': ['date', 'generated_at', 'role_keywords', 'cities', 'companies', 'job_sources'],
 }
