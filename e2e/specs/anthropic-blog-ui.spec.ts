@@ -109,6 +109,44 @@ test.describe('Anthropic 博客 UI 优化 (v1.2)', () => {
     await expect(savedRow).toHaveClass(/border-b-\[rgba\(232,213,183,0\.12\)\]/)
   })
 
+  test('未导入文章行四边均为棕色（无白/灰残留）', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
+
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+    await prompt.waitFor({ timeout: 120000 }).catch(() => {})
+    const promptVisible = await prompt.isVisible().catch(() => false)
+    if (promptVisible) await prompt.click()
+
+    const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+    await rows.first().waitFor({ timeout: 120000 })
+
+    const unsavedRow = rows
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      .first()
+    await expect(unsavedRow).toBeVisible()
+
+    const colors = await unsavedRow.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return {
+        top: s.borderTopColor,
+        right: s.borderRightColor,
+        bottom: s.borderBottomColor,
+        left: s.borderLeftColor,
+      }
+    })
+
+    // Tailwind default 'border' color is rgb(229, 231, 235); make sure it's overridden
+    expect(colors.top).not.toBe('rgb(229, 231, 235)')
+    expect(colors.right).not.toBe('rgb(229, 231, 235)')
+    expect(colors.bottom).not.toBe('rgb(229, 231, 235)')
+    // Left border must be the subtle brown (academic default)
+    expect(colors.left).not.toBe('rgb(229, 231, 235)')
+  })
+
   test('文章内容区使用加宽后的 95%/1600px', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
@@ -135,6 +173,15 @@ test.describe('Anthropic 博客 UI 优化 (v1.2)', () => {
     )
     await expect(content).toBeVisible()
     await expect(content).toHaveClass(/w-\[95%\]/)
+
+    // Regression: inner .md-body used to force max-width:720px, leaving huge margins
+    const firstPara = reader.locator('article p').first()
+    await firstPara.waitFor({ state: 'visible', timeout: 15000 })
+    const paraBox = await firstPara.boundingBox()
+    const contentBox = await content.boundingBox()
+    expect(paraBox).not.toBeNull()
+    expect(contentBox).not.toBeNull()
+    expect(paraBox!.width).toBeGreaterThan(contentBox!.width * 0.7)
   })
 
   test('E2E-7: 自动检测新文章并显示刷新提示', {

@@ -231,3 +231,60 @@ test.describe('文章标注 (Article Annotations)', () => {
       .not.toContain(noteText)
   })
 })
+
+test.describe('真实选区交互', () => {
+  test('E2E-A3: 创建选区后幽灵笔与高亮出现并可解散', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
+
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+    await prompt.waitFor({ timeout: 120000 }).catch(() => {})
+    const promptVisible = await prompt.isVisible().catch(() => false)
+    if (promptVisible) await prompt.click()
+
+    const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+    await rows.first().waitFor({ timeout: 120000 })
+    await rows.first().click()
+
+    const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
+    await reader.waitFor({ state: 'visible', timeout: 120000 })
+
+    const p = window.locator('article p').first()
+    await p.waitFor({ state: 'visible', timeout: 15000 })
+
+    // Electron/Playwright drag/triple-click text selection is unreliable in the
+    // E2E environment, so we create the range via the renderer and dispatch a
+    // real mouseup to exercise the production handleMouseUp handler.
+    await window.evaluate(() => {
+      const article = document.querySelector('[data-testid="anthropic-reader-article"]')
+      const p = article?.querySelector('p')
+      if (!p) throw new Error('no paragraph')
+      const firstText = Array.from(p.childNodes).find(
+        (n): n is Text => n.nodeType === Node.TEXT_NODE && (n.textContent?.length ?? 0) > 0,
+      )
+      if (!firstText) throw new Error('no text node')
+      const range = document.createRange()
+      range.setStart(firstText, 0)
+      range.setEnd(firstText, 15)
+      const sel = window.getSelection()
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+      p.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }))
+    })
+
+    const ghostPen = window.locator(SELECTORS.annotations.ghostPen)
+    await expect(ghostPen).toBeVisible({ timeout: 5000 })
+
+    const highlight = window.locator(SELECTORS.annotations.selectionHighlight).first()
+    await expect(highlight).toBeVisible({ timeout: 3000 })
+
+    // Clicking outside the highlight/ghost pen dismisses both
+    const lastP = window.locator('article p').last()
+    await lastP.click()
+    await expect(window.locator(SELECTORS.annotations.selectionHighlight)).toHaveCount(0)
+    await expect(ghostPen).toBeHidden()
+  })
+})

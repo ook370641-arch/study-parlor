@@ -154,4 +154,23 @@ export class ArticleAssistantPage {
   async bodyChunkCount(): Promise<number> {
     return this.bodyChunks.count()
   }
+
+  /**
+   * Drag-select text inside the first article paragraph. Returns the bounding
+   * box of the paragraph for callers that need to assert positions.
+   */
+  async dragSelectFirstParagraph(chars = 120) {
+    const p = this.page.locator('article p').first()
+    await p.waitFor({ state: 'visible', timeout: 15000 })
+    const box = await p.boundingBox()
+    if (!box) throw new Error('article paragraph not found')
+    const startX = box.x + 5
+    const startY = box.y + box.height / 2
+    const endX = Math.min(box.x + chars, box.x + box.width - 5)
+    await this.page.mouse.move(startX, startY)
+    await this.page.mouse.down()
+    await this.page.mouse.move(endX, startY, { steps: 10 })
+    await this.page.mouse.up()
+    return box
+  }
 }
