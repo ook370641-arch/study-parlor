@@ -62,10 +62,22 @@ describe('AnthropicArticleRow', () => {
     expect(row.className).toContain('border-t-[#c9c3b8]/30')
   })
 
-  it('applies subtle left border when article is unsaved', () => {
+  it('applies brown top/right/bottom borders when article is unsaved (academic)', () => {
     render(<AnthropicArticleRow article={article({ isSaved: false })} theme="academic" />)
     const row = screen.getByTestId('anthropic-article-row')
     expect(row.className).toContain('border-l-[rgba(232,213,183,0.12)]')
+    expect(row.className).toContain('border-t-[rgba(232,213,183,0.12)]')
+    expect(row.className).toContain('border-r-[rgba(232,213,183,0.12)]')
+    expect(row.className).toContain('border-b-[rgba(232,213,183,0.12)]')
+  })
+
+  it('applies brown top/right/bottom borders when article is unsaved (newspaper)', () => {
+    render(<AnthropicArticleRow article={article({ isSaved: false })} theme="newspaper" />)
+    const row = screen.getByTestId('anthropic-article-row')
+    expect(row.className).toContain('border-l-[#c9c3b8]/30')
+    expect(row.className).toContain('border-t-[#c9c3b8]/30')
+    expect(row.className).toContain('border-r-[#c9c3b8]/30')
+    expect(row.className).toContain('border-b-[#c9c3b8]/30')
   })
 
   it('does not render article summary', () => {

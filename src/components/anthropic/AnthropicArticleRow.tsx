@@ -62,23 +62,21 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
 
   // Left border by state
   let borderClass: string
-  let borderStyle: React.CSSProperties = {}
+  const borderStyle: React.CSSProperties = importing
+    ? { animation: `borderPulse${isAcademic ? '' : 'Newspaper'} 1s ease-in-out infinite` }
+    : {}
   if (importing) {
-    if (isAcademic) {
-      borderStyle = { animation: 'borderPulse 1s ease-in-out infinite' }
-      borderClass = 'border-l-[3px] border-l-ember'
-    } else {
-      borderStyle = { animation: 'borderPulseNewspaper 1s ease-in-out infinite' }
-      borderClass = 'border-l-[3px] border-l-[#1a1a1a]'
-    }
+    borderClass = isAcademic
+      ? 'border-l-[3px] border-l-ember border-t-[rgba(232,213,183,0.12)] border-r-[rgba(232,213,183,0.12)] border-b-[rgba(232,213,183,0.12)]'
+      : 'border-l-[3px] border-l-[#1a1a1a] border-t-[#c9c3b8]/30 border-r-[#c9c3b8]/30 border-b-[#c9c3b8]/30'
   } else if (article.isSaved) {
     borderClass = isAcademic
       ? 'border-l-[3px] border-l-ember border-t-[rgba(232,213,183,0.12)] border-r-[rgba(232,213,183,0.12)] border-b-[rgba(232,213,183,0.12)]'
       : 'border-l-[3px] border-l-[#1a1a1a] border-t-[#c9c3b8]/30 border-r-[#c9c3b8]/30 border-b-[#c9c3b8]/30'
   } else {
     borderClass = isAcademic
-      ? 'border-l-[3px] border-l-[rgba(232,213,183,0.12)]'
-      : 'border-l-[3px] border-l-[#c9c3b8]/30'
+      ? 'border-l-[3px] border-l-[rgba(232,213,183,0.12)] border-t-[rgba(232,213,183,0.12)] border-r-[rgba(232,213,183,0.12)] border-b-[rgba(232,213,183,0.12)]'
+      : 'border-l-[3px] border-l-[#c9c3b8]/30 border-t-[#c9c3b8]/30 border-r-[#c9c3b8]/30 border-b-[#c9c3b8]/30'
   }
 
   // Spinner SVG for importing state
