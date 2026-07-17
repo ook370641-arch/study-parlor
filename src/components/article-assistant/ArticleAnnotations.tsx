@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { flushSync } from 'react-dom'
 import { ipc } from '@/lib/ipc'
 import type { ArticleAnnotation, BriefingTheme } from '@shared/index'
 
@@ -248,94 +249,86 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     if (!container) return
 
     const handleMouseUp = () => {
-      // rAF + setTimeout(0) lets the browser settle the selection before we read it
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          // Clean up old ghost + highlight overlay (a new selection replaces them)
-          setGhost(null)
-          setSelectionHighlights([])
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed || !sel.rangeCount) return
+      const range = sel.getRangeAt(0)
+      if (!container.contains(range.commonAncestorContainer)) return
+      const text = sel.toString().trim()
+      if (text.length < 2) return
 
-          const sel = window.getSelection()
-          if (!sel || sel.isCollapsed || !sel.rangeCount) return
-          const range = sel.getRangeAt(0)
-          if (!container.contains(range.commonAncestorContainer)) return
-          const text = sel.toString().trim()
-          if (text.length < 2) return
+      // Close any open card
+      setOpenAnnoId(null)
+      setCardPos(null)
+      setCardAnchorEl(null)
 
-          // Close any open card
-          setOpenAnnoId(null)
-          setCardPos(null)
-          setCardAnchorEl(null)
+      // Get position at end of selection
+      const endRange = range.cloneRange()
+      endRange.collapse(false)
+      const endRect = endRange.getBoundingClientRect()
+      const origin = (container.offsetParent as HTMLElement | null) ?? container
+      const originRect = origin.getBoundingClientRect()
 
-          // Get position at end of selection
-          const endRange = range.cloneRange()
-          endRange.collapse(false)
-          const endRect = endRange.getBoundingClientRect()
-          // 绝对定位的锚点是 reader 的 relative 内容容器（article 的 offsetParent），
-          // 不是 article 本身 —— article 上方还有 header，两者原点不同。
-          // 坐标 = 视口坐标 - 原点视口坐标（两者同帧测量，滚动自然抵消）
-          const origin = (container.offsetParent as HTMLElement | null) ?? container
-          const originRect = origin.getBoundingClientRect()
+      const rects = Array.from(range.getClientRects()).map((r) => ({
+        left: r.left - originRect.left,
+        top: r.top - originRect.top,
+        width: r.width,
+        height: r.height,
+      }))
 
-          // Persistent highlight overlay: one rect per selected line
-          const rects = Array.from(range.getClientRects()).map((r) => ({
-            left: r.left - originRect.left,
-            top: r.top - originRect.top,
-            width: r.width,
-            height: r.height,
-          }))
-          setSelectionHighlights(rects)
+      let paraIndex = 1
+      let node: Node | null = range.commonAncestorContainer
+      while (node && node !== container) {
+        if (node.nodeName === 'P') {
+          const paras = Array.from(container.querySelectorAll('p'))
+          paraIndex = paras.indexOf(node as HTMLParagraphElement) + 1
+          break
+        }
+        node = node.parentNode
+      }
 
-          // Find paragraph index
-          let paraIndex = 1
-          let node: Node | null = range.commonAncestorContainer
-          while (node && node !== container) {
-            if (node.nodeName === 'P') {
-              const paras = Array.from(container.querySelectorAll('p'))
-              paraIndex = paras.indexOf(node as HTMLParagraphElement) + 1
-              break
-            }
-            node = node.parentNode
-          }
+      flushSync(() => {
+        setGhost(null)
+        setSelectionHighlights([])
+      })
 
-          setGhost({
-            text,
-            paraIndex,
-            left: endRect.right - originRect.left + 2,
-            top: endRect.top - originRect.top - 14,
-          })
-        }, 0)
+      flushSync(() => {
+        setSelectionHighlights(rects)
+        setGhost({
+          text,
+          paraIndex,
+          left: endRect.right - originRect.left + 2,
+          top: endRect.top - originRect.top - 14,
+        })
       })
     }
 
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      // Clear ghost + highlights only when the click is outside the ghost pen
-      // and not on an existing annotation marker
-      if (ghostRef.current && !ghostRef.current.contains(target)) {
-        if (!target.closest('.anno-wrap')) {
-          setGhost(null)
-          setSelectionHighlights([])
-        }
-      } else if (!ghostRef.current) {
-        // No ghost pen — clicking anywhere dismisses any leftover highlight
+      // Only clear ghost + highlight when clicking truly outside the active selection UI
+      const isInsideGhost = ghostRef.current?.contains(target) ?? false
+      const isInsideHighlight = target.closest('[data-testid="anno-selection-highlight"]') !== null
+      const isInsideMarker = target.closest('.anno-wrap') !== null
+      const isInsideNoteCard = target.closest('[data-testid="anno-note-card"]') !== null
+
+      if (!isInsideGhost && !isInsideHighlight && !isInsideMarker && !isInsideNoteCard) {
+        setGhost(null)
         setSelectionHighlights([])
       }
       // Close card if clicking outside BOTH the marker pen and the note card
       const anchorEl = cardAnchorElRef.current
       if (
         anchorEl &&
-        !anchorEl.contains(e.target as Node) &&
-        !(e.target as HTMLElement).closest('[data-testid="anno-note-card"]')
+        !anchorEl.contains(target) &&
+        !target.closest('[data-testid="anno-note-card"]')
       ) {
         doSaveAndClose()
       }
     }
 
-    container.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('mouseup', handleMouseUp)
     document.addEventListener('mousedown', handleMouseDown)
     return () => {
-      container.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener('mouseup', handleMouseUp)
       document.removeEventListener('mousedown', handleMouseDown)
     }
   }, [articleRef])
