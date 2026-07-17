@@ -28,7 +28,7 @@ export function NewspaperBriefingLayout({
       data-testid="briefing-newspaper-layout"
       className="relative z-[5] flex-1 overflow-y-auto bg-white"
     >
-      <article className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative">
+      <article className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative briefing-article-body">
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
         <header className="border-b-2 border-[#1a1a1a] pb-4 mb-6 text-center">
           <h1 className="text-[28px] font-extrabold font-serif text-[#1a1a1a] mb-1">{result.title}</h1>

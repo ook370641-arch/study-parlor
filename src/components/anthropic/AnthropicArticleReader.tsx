@@ -161,7 +161,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
         </div>
         <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
           <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
-          <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24">
+          <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24 briefing-article-body">
             {loading && (
               <div className="space-y-4">
                 <div className={`h-8 w-3/4 rounded animate-pulse ${themeClasses.skeleton}`} />

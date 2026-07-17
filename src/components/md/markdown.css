@@ -12,6 +12,13 @@
   color: rgba(232, 213, 183, 0.78);
 }
 
+/* In article readers the outer wrapper already centers and caps width,
+   so remove the internal 720px limit so text actually uses the wider area. */
+.briefing-article-body .md-body {
+  max-width: none;
+  margin: 0;
+}
+
 .md-fable {
   max-width: 600px;
 }
