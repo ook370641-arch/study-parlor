@@ -219,7 +219,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       _,
       args: {
         parentPath: string
-        parentType: 'briefing' | 'anthropic-article'
+        parentType: 'briefing' | 'anthropic-article' | 'writing'
         messages: ArticleAssistantMessage[]
       }
     ): Promise<{ filePath: string }> => {

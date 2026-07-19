@@ -165,7 +165,7 @@ export type Frontmatter = {
   imported_at?: string
   authors?: string[]
   parent_path?: string
-  parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing'
+  parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing' | 'writing'
   generated_at?: string
   role_keywords?: string[]
   cities?: string[]
@@ -581,23 +581,23 @@ export type IpcApi = {
 
   articleAssistantReadSession: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article'
+    parentType: 'briefing' | 'anthropic-article' | 'writing'
   }) => Promise<ArticleAssistantSessionFile | null>
 
   articleAssistantWriteSession: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article'
+    parentType: 'briefing' | 'anthropic-article' | 'writing'
     messages: ArticleAssistantMessage[]
   }) => Promise<{ filePath: string }>
 
   articleAssistantReadGuide: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article'
+    parentType: 'briefing' | 'anthropic-article' | 'writing'
   }) => Promise<ArticleAssistantGuideFile | null>
 
   articleAssistantWriteGuide: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article'
+    parentType: 'briefing' | 'anthropic-article' | 'writing'
     guide: ArticleAssistantGuide
   }) => Promise<{ filePath: string }>
 
