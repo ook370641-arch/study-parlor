@@ -157,6 +157,39 @@ describe('store article assistant', () => {
         expect.objectContaining({ socraticMode: false, thinkingEffort: 'max' })
       )
     })
+
+    it('records the pending selection on the user message when sending', async () => {
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/d.md',
+        contextType: 'briefing',
+        articleContent: 'body',
+        articleTitle: 'D',
+      })
+      await flush()
+      useStore.getState().setAssistantSelection('选中的一段原文')
+      await useStore.getState().sendAssistantMessage('这段什么意思')
+
+      const msgs = useStore.getState().assistantSession!.messages
+      const userMsg = msgs.find((m) => m.role === 'user')
+      expect(userMsg?.selection).toBe('选中的一段原文')
+    })
+
+    it('persists selection-only user messages (empty content with selection)', async () => {
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/e.md',
+        contextType: 'briefing',
+        articleContent: 'body',
+        articleTitle: 'E',
+      })
+      await flush()
+      useStore.getState().setAssistantSelection('只有选段')
+      await useStore.getState().sendAssistantMessage('')
+      // 等 mock 流完成（articleAssistantSendMessage 已 mock resolved）
+      await useStore.getState().saveAssistantSession()
+
+      const written = vi.mocked(ipc.articleAssistantWriteSession).mock.calls.at(-1)?.[0]
+      expect(written?.messages.some((m) => m.role === 'user' && m.selection === '只有选段')).toBe(true)
+    })
   })
 
   describe('setArticleAssistantGuideWidth', () => {

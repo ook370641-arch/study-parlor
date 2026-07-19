@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { parseAssistantSessionBody } from '@electron/ipc/article-assistant'
+import { parseAssistantSessionBody, serializeAssistantSessionBody } from '@electron/ipc/article-assistant'
 import { parseFrontmatter, serializeFrontmatter } from '@electron/lib/frontmatter'
 import type { ArticleAssistantMessage } from '@shared/index'
 
@@ -81,5 +81,45 @@ describe('assistant session write/read round-trip', () => {
     expect(frontmatter.created_at).toBe(now)
     expect(frontmatter.updated_at).toBe(now)
     expect(parseAssistantSessionBody(readBody)).toEqual(messages)
+  })
+})
+
+describe('assistant session selection persistence', () => {
+  it('serializes a user selection as a quote line before the content', () => {
+    const out = serializeAssistantSessionBody([
+      { role: 'user', content: '这段什么意思？', selection: '原文中的一段话' },
+    ])
+    expect(out).toContain('## 用户')
+    expect(out).toContain('> 选段：原文中的一段话')
+    expect(out.indexOf('> 选段：')).toBeLessThan(out.indexOf('这段什么意思？'))
+  })
+
+  it('flattens multi-line selections into one line', () => {
+    const out = serializeAssistantSessionBody([
+      { role: 'user', content: '问', selection: '第一行\n第二行' },
+    ])
+    expect(out).toContain('> 选段：第一行 第二行')
+  })
+
+  it('round-trips messages with selections through frontmatter serialize/parse', () => {
+    const messages: ArticleAssistantMessage[] = [
+      { role: 'user', content: '这段什么意思？', selection: '原文中的一段话' },
+      { role: 'assistant', content: '这是对选段的解释。' },
+    ]
+    const raw = serializeFrontmatter(
+      'article-assistant',
+      { title: '旁注记录', created: '2026-07-19T00:00:00.000Z', tags: [] },
+      serializeAssistantSessionBody(messages)
+    )
+    const { body } = parseFrontmatter(raw, { filename: 'x.assistant.md' })
+    expect(parseAssistantSessionBody(body)).toEqual(messages)
+  })
+
+  it('parses legacy sessions without selection lines (selection undefined)', () => {
+    const body = ['## 用户', '', '旧消息', '', '## 助手', '', '旧回复', ''].join('\n')
+    expect(parseAssistantSessionBody(body)).toEqual([
+      { role: 'user', content: '旧消息', selection: undefined },
+      { role: 'assistant', content: '旧回复' },
+    ])
   })
 })

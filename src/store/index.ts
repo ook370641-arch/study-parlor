@@ -1058,7 +1058,9 @@ export const useStore = create<AppStore>((set, get) => ({
   saveAssistantSession: async () => {
     const s = get().assistantSession
     if (!s) return
-    const persistable = s.messages.filter((m) => m.content.trim().length > 0)
+    const persistable = s.messages.filter(
+      (m) => m.content.trim().length > 0 || (m.role === 'user' && !!m.selection)
+    )
     if (persistable.length === 0) return
     try {
       await ipc.articleAssistantWriteSession({ parentPath: s.contextId, parentType: s.contextType, messages: persistable })

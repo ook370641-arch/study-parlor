@@ -22,6 +22,7 @@ import type {
   ArticleAssistantMessage,
   ArticleAssistantSessionFile,
   ArticleAssistantTerm,
+  AssistantThinkingEffort,
   Message,
 } from '@shared/index'
 
@@ -34,7 +35,7 @@ function isE2EMock(): boolean {
   return process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
 }
 
-function toThinkingConfig(effort?: 'off' | 'high' | 'max'): ThinkingConfig {
+function toThinkingConfig(effort?: AssistantThinkingEffort): ThinkingConfig {
   return effort && effort !== 'off' ? { type: 'enabled', reasoning_effort: effort } : { type: 'disabled' }
 }
 
@@ -139,15 +140,36 @@ function assertInsideLibrary(targetPath: string, libraryPath: string): void {
   }
 }
 
+export function serializeAssistantSessionBody(messages: ArticleAssistantMessage[]): string {
+  return messages
+    .map((m) => {
+      const selLine =
+        m.role === 'user' && m.selection?.trim()
+          ? `> 选段：${m.selection.trim().replace(/\s*\n\s*/g, ' ')}\n\n`
+          : ''
+      return `## ${m.role === 'user' ? '用户' : '助手'}\n\n${selLine}${m.content}\n`
+    })
+    .join('\n')
+}
+
 export function parseAssistantSessionBody(body: string): ArticleAssistantMessage[] {
   const messages: ArticleAssistantMessage[] = []
   const sections = body.split(/^## /m).slice(1)
   for (const section of sections) {
     const nl = section.indexOf('\n')
     const heading = (nl === -1 ? section : section.slice(0, nl)).trim()
-    const content = (nl === -1 ? '' : section.slice(nl + 1)).trim()
-    if (heading.startsWith('用户')) messages.push({ role: 'user', content })
-    else if (heading.startsWith('助手')) messages.push({ role: 'assistant', content })
+    let content = (nl === -1 ? '' : section.slice(nl + 1)).trim()
+    if (heading.startsWith('用户')) {
+      let selection: string | undefined
+      if (content.startsWith('> 选段：')) {
+        const lineEnd = content.indexOf('\n')
+        selection = content.slice('> 选段：'.length, lineEnd === -1 ? undefined : lineEnd).trim()
+        content = (lineEnd === -1 ? '' : content.slice(lineEnd + 1)).trim()
+      }
+      messages.push({ role: 'user', content, selection })
+    } else if (heading.startsWith('助手')) {
+      messages.push({ role: 'assistant', content })
+    }
   }
   return messages
 }
@@ -232,9 +254,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       const sessionPath = sessionPathFor(args.parentPath)
       assertInsideLibrary(sessionPath, cfg.libraryPath)
 
-      const body = args.messages
-        .map((m) => `## ${m.role === 'user' ? '用户' : '助手'}\n\n${m.content}\n`)
-        .join('\n')
+      const body = serializeAssistantSessionBody(args.messages)
 
       const now = new Date().toISOString()
       let createdAt = now
@@ -310,7 +330,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         useSearch?: boolean
         guide?: ArticleAssistantGuide | null
         socraticMode?: boolean
-        thinkingEffort?: 'off' | 'high' | 'max'
+        thinkingEffort?: AssistantThinkingEffort
       }
     ): Promise<void> => {
       const send = (channel: string, ...payload: unknown[]) => {
