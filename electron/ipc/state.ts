@@ -3,6 +3,7 @@ import path from 'node:path'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
 import { getStateDir } from '../env'
 import { DEFAULT_JOB_BRIEFING_CONFIG } from '../lib/job-briefing'
+import { DEFAULT_JOB_PROFILE } from '../../src/lib/job-briefing-defaults'
 import type { StateJson } from '@shared/index'
 
 function getStateFile(): string {
@@ -23,6 +24,7 @@ const DEFAULT: StateJson = {
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicBlogLastSeenAt: null,
   jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
+  jobProfile: DEFAULT_JOB_PROFILE,
 }
 
 let currentState: StateJson | null = null

@@ -7,6 +7,7 @@ import {
   mergeAndDedupJobs,
 } from '../electron/lib/job-briefing'
 import type { RawJob } from '../electron/lib/job-briefing'
+import { DEFAULT_JOB_PROFILE, isJobProfileEmpty, normalizeJobProfile, formatJobProfile } from '../src/lib/job-briefing-defaults'
 
 describe('job-briefing config', () => {
   it('normalizes empty config to defaults', () => {
@@ -75,5 +76,42 @@ describe('job-briefing dedup', () => {
 
   it('returns empty array for empty input', () => {
     expect(mergeAndDedupJobs([])).toEqual([])
+  })
+})
+
+describe('job profile defaults', () => {
+  it('default profile is empty', () => {
+    expect(isJobProfileEmpty(DEFAULT_JOB_PROFILE)).toBe(true)
+    expect(DEFAULT_JOB_PROFILE.updatedAt).toBe('')
+  })
+
+  it('normalizes missing/garbage fields', () => {
+    const p = normalizeJobProfile({ targetRoles: ['模型产品经理', 42 as unknown as string], direction: 7 as unknown as string })
+    expect(p.targetRoles).toEqual(['模型产品经理'])
+    expect(p.direction).toBe('')
+    expect(p.skills).toEqual([])
+  })
+
+  it('empty check requires all of targetRoles/direction/experience empty', () => {
+    expect(isJobProfileEmpty(normalizeJobProfile({ direction: '大模型产品' }))).toBe(false)
+    expect(isJobProfileEmpty(normalizeJobProfile({ experience: '某厂实习' }))).toBe(false)
+    expect(isJobProfileEmpty(normalizeJobProfile({ targetRoles: ['AI产品经理'] }))).toBe(false)
+  })
+
+  it('formats filled profile as prompt lines', () => {
+    const text = formatJobProfile(normalizeJobProfile({
+      targetRoles: ['模型产品经理'],
+      direction: '大模型/Agent 产品',
+      skills: ['RAG'],
+      experience: '某厂 AI 实习',
+    }))
+    expect(text).toContain('意向岗位: 模型产品经理')
+    expect(text).toContain('方向: 大模型/Agent 产品')
+    expect(text).toContain('技能: RAG')
+    expect(text).toContain('经历: 某厂 AI 实习')
+  })
+
+  it('formats empty profile as fallback notice', () => {
+    expect(formatJobProfile(DEFAULT_JOB_PROFILE)).toContain('未提供')
   })
 })
