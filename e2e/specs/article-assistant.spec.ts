@@ -94,22 +94,22 @@ test.describe('@p1 article assistant', () => {
     const assistant = await openDigestArticle(window, testLibraryPath)
     await assistant.openChat()
 
-    // 初始：关闭态（无 ember 底色，aria-pressed=false）
+    // 初始：关闭态（灰色，aria-pressed=false）
     await expect(assistant.searchBtn).toBeVisible()
     await expect(assistant.searchBtn).toHaveAttribute('aria-pressed', 'false')
-    await expect(assistant.searchBtn).not.toHaveClass(/bg-ember/)
+    await expect(assistant.searchBtn).toHaveCSS('color', 'rgba(232, 213, 183, 0.4)')
     expect(await assistant.messageCount()).toBe(0)
 
-    // 点击 → 开启态；开关本身不应发送任何消息
+    // 点击 → 开启态（蓝色）；开关本身不应发送任何消息
     await assistant.clickSearch()
     await expect(assistant.searchBtn).toHaveAttribute('aria-pressed', 'true')
-    await expect(assistant.searchBtn).toHaveClass(/bg-ember/)
+    await expect(assistant.searchBtn).toHaveCSS('color', 'rgb(56, 189, 248)')
     expect(await assistant.messageCount()).toBe(0)
 
     // 再次点击 → 回到关闭态
     await assistant.clickSearch()
     await expect(assistant.searchBtn).toHaveAttribute('aria-pressed', 'false')
-    await expect(assistant.searchBtn).not.toHaveClass(/bg-ember/)
+    await expect(assistant.searchBtn).toHaveCSS('color', 'rgba(232, 213, 183, 0.4)')
     expect(await assistant.messageCount()).toBe(0)
   })
 

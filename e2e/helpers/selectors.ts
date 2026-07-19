@@ -92,6 +92,13 @@ export const SELECTORS = {
     bodyChunk: '[data-testid="article-body-chunk"]',
     swapPaintingButton: '[data-testid="briefing-swap-painting-button"]',
     anthropicSwapPaintingButton: '[data-testid="anthropic-swap-painting-button"]',
+    socraticBtn: '[data-testid="article-assistant-socratic-btn"]',
+    thinkingBtn: '[data-testid="article-assistant-thinking-btn"]',
+    pendingSelection: '[data-testid="pending-selection"]',
+    selectionCancelBtn: '[data-testid="selection-cancel-btn"]',
+    chatMessage: '[data-testid="chat-message"]',
+    chatMessageSelection: '[data-testid="chat-message-selection"]',
+    reasoningBlock: '[data-testid="reasoning-block"]',
   },
   quote: {
     text: '[data-testid="quote-text"]',
