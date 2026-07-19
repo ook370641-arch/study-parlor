@@ -14,6 +14,9 @@ const actions = {
   abortAssistantStream: vi.fn(),
   toggleAssistantOpen: vi.fn(),
   toggleAssistantSearch: vi.fn(),
+  toggleAssistantSocratic: vi.fn(),
+  cycleAssistantThinkingEffort: vi.fn(),
+  setAssistantSelection: vi.fn(),
 }
 
 function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSession {
@@ -29,7 +32,6 @@ function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSessio
     streaming: false,
     abortId: 'abort-1',
     searchLoading: false,
-    searchEnabled: false,
     searchError: null,
     chatError: null,
     retryContext: null,
@@ -39,8 +41,15 @@ function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSessio
   }
 }
 
-function mockStore(session: AssistantSession | null) {
-  const fullState = { assistantSession: session, ...actions }
+function mockStore(session: AssistantSession | null, globals: Record<string, unknown> = {}) {
+  const fullState = {
+    assistantSession: session,
+    assistantSearchEnabled: false,
+    assistantSocraticMode: true,
+    assistantThinkingEffort: 'off' as const,
+    ...globals,
+    ...actions,
+  }
   ;(storeModule.useStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     (selector: (s: typeof fullState) => unknown) => selector(fullState)
   )
@@ -73,16 +82,12 @@ describe('ChatWindow', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('disables the search button while a search is loading', () => {
-    mockStore(baseSession({ searchLoading: true }))
-    render(<ChatWindow />)
-    expect(screen.getByTestId('article-assistant-search-btn')).toBeDisabled()
-  })
-
-  it('keeps the search button enabled while streaming', () => {
+  it('disables all three toggle buttons while streaming', () => {
     mockStore(baseSession({ streaming: true }))
     render(<ChatWindow />)
-    expect(screen.getByTestId('article-assistant-search-btn')).not.toBeDisabled()
+    expect(screen.getByTestId('article-assistant-search-btn')).toBeDisabled()
+    expect(screen.getByTestId('article-assistant-socratic-btn')).toBeDisabled()
+    expect(screen.getByTestId('article-assistant-thinking-btn')).toBeDisabled()
   })
 
   it('shows the send button (not stop) when not streaming', () => {
@@ -119,26 +124,43 @@ describe('ChatWindow', () => {
     expect(screen.getByText('已搜索 3 个来源')).toBeInTheDocument()
   })
 
-  it('renders search button in off state without ember background', () => {
-    mockStore(baseSession({ searchEnabled: false }))
+  it('renders search button in off state with gray color', () => {
+    mockStore(baseSession(), { assistantSearchEnabled: false })
     render(<ChatWindow />)
     const btn = screen.getByTestId('article-assistant-search-btn')
-    expect(btn.className).not.toContain('bg-ember')
+    expect(btn.className).toContain('text-parchment/40')
+    expect(btn.className).not.toContain('text-sky-400')
   })
 
-  it('renders search button in on state with ember background', () => {
-    mockStore(baseSession({ searchEnabled: true }))
+  it('renders search button in on state with blue color', () => {
+    mockStore(baseSession(), { assistantSearchEnabled: true })
     render(<ChatWindow />)
     const btn = screen.getByTestId('article-assistant-search-btn')
-    expect(btn.className).toContain('bg-ember')
+    expect(btn.className).toContain('text-sky-400')
   })
 
-  it('clicking search button toggles search mode without sending', () => {
-    mockStore(baseSession({ searchEnabled: false }))
+  it('sending delegates search state to the store (single-argument send)', () => {
+    mockStore(baseSession(), { assistantSearchEnabled: true })
     render(<ChatWindow />)
-    fireEvent.click(screen.getByTestId('article-assistant-search-btn'))
-    expect(actions.toggleAssistantSearch).toHaveBeenCalledTimes(1)
-    expect(actions.sendAssistantMessage).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByTestId('article-assistant-input'), { target: { value: '问题' } })
+    fireEvent.click(screen.getByTestId('article-assistant-send-btn'))
+    expect(actions.sendAssistantMessage).toHaveBeenCalledWith('问题')
+  })
+
+  it('reflects socratic and thinking global state and calls their actions', () => {
+    mockStore(baseSession(), { assistantSocraticMode: false, assistantThinkingEffort: 'max' })
+    render(<ChatWindow />)
+    const socratic = screen.getByTestId('article-assistant-socratic-btn')
+    const thinking = screen.getByTestId('article-assistant-thinking-btn')
+    expect(socratic).toHaveAttribute('aria-pressed', 'false')
+    expect(socratic.className).toContain('text-parchment/40')
+    expect(thinking.className).toContain('text-sky-400')
+    expect(thinking.textContent).toContain('MAX')
+
+    fireEvent.click(socratic)
+    expect(actions.toggleAssistantSocratic).toHaveBeenCalledTimes(1)
+    fireEvent.click(thinking)
+    expect(actions.cycleAssistantThinkingEffort).toHaveBeenCalledTimes(1)
   })
 
   it('clamps dragging so the title bar drag handle never leaves the viewport', () => {
@@ -169,13 +191,5 @@ describe('ChatWindow', () => {
     expect(win.style.left).toBe('-260px')
 
     fireEvent.pointerUp(window)
-  })
-
-  it('sending uses the current searchEnabled state', () => {
-    mockStore(baseSession({ searchEnabled: true }))
-    render(<ChatWindow />)
-    fireEvent.change(screen.getByTestId('article-assistant-input'), { target: { value: '问题' } })
-    fireEvent.click(screen.getByTestId('article-assistant-send-btn'))
-    expect(actions.sendAssistantMessage).toHaveBeenCalledWith('问题', true)
   })
 })

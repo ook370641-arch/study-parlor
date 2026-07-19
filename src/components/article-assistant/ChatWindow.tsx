@@ -13,7 +13,12 @@ export function ChatWindow() {
   const retryAssistantMessage = useStore((s) => s.retryAssistantMessage)
   const abortAssistantStream = useStore((s) => s.abortAssistantStream)
   const toggleAssistantOpen = useStore((s) => s.toggleAssistantOpen)
+  const searchEnabled = useStore((s) => s.assistantSearchEnabled)
+  const socraticMode = useStore((s) => s.assistantSocraticMode)
+  const thinkingEffort = useStore((s) => s.assistantThinkingEffort)
   const toggleAssistantSearch = useStore((s) => s.toggleAssistantSearch)
+  const toggleAssistantSocratic = useStore((s) => s.toggleAssistantSocratic)
+  const cycleAssistantThinkingEffort = useStore((s) => s.cycleAssistantThinkingEffort)
 
   const [input, setInput] = useState('')
   const [size, setSize] = useState({ width: DEFAULT_W, height: DEFAULT_H })
@@ -26,7 +31,7 @@ export function ChatWindow() {
   const handleSend = () => {
     const text = input.trim()
     if (!text && !session.pendingSelection) return
-    sendAssistantMessage(text, session.searchEnabled)
+    sendAssistantMessage(text)
     setInput('')
     // scroll to bottom after render
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 50)
@@ -153,18 +158,48 @@ export function ChatWindow() {
       <div className="p-2 border-t border-parchment/10 flex items-center gap-1.5 shrink-0">
         <button
           data-testid="article-assistant-search-btn"
-          className={`px-1.5 py-1 rounded text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${
-            session.searchEnabled
-              ? 'bg-ember'
-              : 'text-parchment/70 hover:text-ember'
+          className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+            searchEnabled ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
           }`}
           onClick={toggleAssistantSearch}
-          disabled={session.searchLoading}
-          aria-pressed={session.searchEnabled}
-          aria-label={session.searchEnabled ? '搜索已开启' : '搜索已关闭'}
-          title={session.searchEnabled ? '搜索已开启 — 发送时将联网搜索' : '搜索已关闭 — 点击开启联网搜索'}
+          disabled={session.streaming || session.searchLoading}
+          aria-pressed={searchEnabled}
+          aria-label={searchEnabled ? '搜索已开启' : '搜索已关闭'}
+          title={searchEnabled ? '搜索已开启 — 发送时将联网搜索' : '搜索已关闭 — 点击开启联网搜索'}
         >
-          {session.searchLoading ? '⏳' : '🔍'}
+          {session.searchLoading ? (
+            <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin align-middle" />
+          ) : (
+            '🔍'
+          )}
+        </button>
+        <button
+          data-testid="article-assistant-socratic-btn"
+          className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+            socraticMode ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
+          }`}
+          onClick={toggleAssistantSocratic}
+          disabled={session.streaming || session.searchLoading}
+          aria-pressed={socraticMode}
+          aria-label={socraticMode ? '苏格拉底模式已开启' : '苏格拉底模式已关闭'}
+          title="苏格拉底学习模式：关闭后只做信息检索，不再质询"
+        >
+          🎓
+        </button>
+        <button
+          data-testid="article-assistant-thinking-btn"
+          className={`relative px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+            thinkingEffort !== 'off' ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
+          }`}
+          onClick={cycleAssistantThinkingEffort}
+          disabled={session.streaming || session.searchLoading}
+          aria-label={`深度思考：${thinkingEffort === 'off' ? '关闭' : thinkingEffort === 'high' ? '高' : '最高'}`}
+          title={`深度思考：${thinkingEffort === 'off' ? '关闭' : thinkingEffort === 'high' ? '高' : '最高（MAX）'} — 点击切换`}
+        >
+          🧠
+          {thinkingEffort === 'max' && (
+            <span className="absolute -top-1 -right-1 text-[8px] leading-none font-bold">MAX</span>
+          )}
         </button>
         <input
           data-testid="article-assistant-input"
