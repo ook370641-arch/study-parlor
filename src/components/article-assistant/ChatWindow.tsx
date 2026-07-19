@@ -46,9 +46,13 @@ export function ChatWindow() {
 
     const onMove = (ev: PointerEvent) => {
       if (!dragging.current) return
+      const rawX = dragging.current.originX + (ev.clientX - dragging.current.startX)
+      const rawY = dragging.current.originY + (ev.clientY - dragging.current.startY)
+      // 夹取位置，保证标题栏（唯一拖拽把手）始终可达：
+      // top 不允许为负，否则把手滑到原生标题栏上方，窗口永远无法再拖回
       setPosition({
-        x: dragging.current.originX + (ev.clientX - dragging.current.startX),
-        y: dragging.current.originY + (ev.clientY - dragging.current.startY),
+        x: Math.min(Math.max(rawX, -(rect.width - 80)), window.innerWidth - 80),
+        y: Math.min(Math.max(rawY, 0), window.innerHeight - 40),
       })
     }
     const onUp = () => {

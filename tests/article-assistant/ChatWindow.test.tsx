@@ -141,6 +141,36 @@ describe('ChatWindow', () => {
     expect(actions.sendAssistantMessage).not.toHaveBeenCalled()
   })
 
+  it('clamps dragging so the title bar drag handle never leaves the viewport', () => {
+    mockStore(baseSession())
+    const { container } = render(<ChatWindow />)
+    const win = screen.getByTestId('article-assistant-chat-window')
+    vi.spyOn(win, 'getBoundingClientRect').mockReturnValue({
+      left: 400, top: 300, width: 340, height: 260,
+      right: 740, bottom: 560, x: 400, y: 300, toJSON: () => ({}),
+    } as DOMRect)
+    const titleBar = container.querySelector('.cursor-move') as HTMLElement
+    titleBar.setPointerCapture = vi.fn()
+    titleBar.releasePointerCapture = vi.fn()
+
+    fireEvent.pointerDown(titleBar, { clientX: 420, clientY: 320, pointerId: 1 })
+
+    // 向上拖出视口（用户实际场景：拖到 Electron 原生标题栏位置松手）
+    // —— 标题栏是唯一拖拽把手，top 不允许为负，否则永远无法再拖回来
+    fireEvent.pointerMove(window, { clientX: 420, clientY: -100 })
+    expect(win.style.top).toBe('0px')
+
+    // 向下拖出视口 —— 至少保留标题栏可点
+    fireEvent.pointerMove(window, { clientX: 420, clientY: 3000 })
+    expect(win.style.top).toBe(`${window.innerHeight - 40}px`)
+
+    // 向左拖出视口 —— 保留 80px 可抓取区域（窗口宽 340 → 最小 left = -260）
+    fireEvent.pointerMove(window, { clientX: -500, clientY: 320 })
+    expect(win.style.left).toBe('-260px')
+
+    fireEvent.pointerUp(window)
+  })
+
   it('sending uses the current searchEnabled state', () => {
     mockStore(baseSession({ searchEnabled: true }))
     render(<ChatWindow />)
