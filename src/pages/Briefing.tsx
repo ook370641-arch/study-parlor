@@ -12,6 +12,8 @@ import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { JobBriefingRenderer } from '@/components/job-briefing'
+import { WritingListColumn } from '@/components/writing/WritingListColumn'
+import { WritingBoard } from '@/components/writing/WritingBoard'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
@@ -118,7 +120,7 @@ export function Briefing() {
         {/* Digest renders the swap button inside the article body (AcademicBriefingLayout);
             anthropic renders its own inside AnthropicArticleReader;
             only job-briefing keeps the page-level one. */}
-        {isAcademic && source !== 'digest' && source !== 'anthropic' && (
+        {isAcademic && source !== 'digest' && source !== 'anthropic' && source !== 'writing' && (
           <div className="absolute top-24 right-4 z-10">
             <SwapPaintingButton
               surface="briefing"
@@ -128,7 +130,7 @@ export function Briefing() {
           </div>
         )}
         <BriefingHeader
-          displayDate={source === 'anthropic' ? 'Anthropic Engineering' : isJob ? jobDisplayDate : displayDate}
+          displayDate={source === 'writing' ? '写作' : source === 'anthropic' ? 'Anthropic Engineering' : isJob ? jobDisplayDate : displayDate}
           timeString={
             source === 'digest' && result?.generatedAt
               ? formatGeneratedAt(result.generatedAt, result.date)
@@ -194,8 +196,24 @@ export function Briefing() {
             </BriefingListColumn>
           )}
 
+          {source === 'writing' && (
+            <BriefingListColumn
+              collapsed={dateColumnCollapsed}
+              onToggle={() => setDateColumnCollapsed((c) => !c)}
+              theme={theme}
+              width={64}
+              title="文章"
+            >
+              <WritingListColumn />
+            </BriefingListColumn>
+          )}
+
           <div className="flex-1 flex flex-col min-w-0">
-            {source === 'anthropic' ? (
+            {source === 'writing' ? (
+              <main className="relative z-[5] flex-1">
+                <WritingBoard />
+              </main>
+            ) : source === 'anthropic' ? (
               <AnthropicBlogPanel theme={theme} />
             ) : isJob ? (
               jobEmptyState ? (
@@ -325,6 +343,14 @@ export function Briefing() {
           articleContent={jobResult.content ?? ''}
           showGuide={false}
         />
+      )}
+      {source === 'writing' && (
+        <div
+          className="w-6 bg-ember text-white text-xs flex items-center justify-center cursor-pointer shrink-0"
+          style={{ writingMode: 'vertical-rl' }}
+        >
+          AI 助手 ▸
+        </div>
       )}
     </div>
   )

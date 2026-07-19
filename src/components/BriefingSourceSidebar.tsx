@@ -94,6 +94,12 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
 
   const navItems = [
     {
+      id: 'writing',
+      label: '写作',
+      icon: () => <span>✍️</span>,
+      testId: 'briefing-source-writing',
+    },
+    {
       id: 'digest',
       label: 'AI 日报',
       icon: DigestIcon,

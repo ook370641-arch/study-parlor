@@ -413,7 +413,7 @@ export type StateJson = {
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
   externalSummaryFontSize?: BriefingFontSize
-  briefingSource?: 'digest' | 'anthropic' | 'job-briefing'
+  briefingSource?: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
   jobBriefingConfig?: JobBriefingConfig
   anthropicBlogCache?: AnthropicBlogCache
   anthropicBlogLastSeenAt?: string | null

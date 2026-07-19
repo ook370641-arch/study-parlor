@@ -117,11 +117,11 @@ type AppStore = {
   briefingStage: BriefingStage | null
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
-  briefingSource: 'digest' | 'anthropic' | 'job-briefing'
+  briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
   anthropicBlogCache: AnthropicBlogCache
   anthropicReaderFilePath: string | null
   anthropicBlogLastSeenAt: string | null
-  setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing') => Promise<void>
+  setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing' | 'writing') => Promise<void>
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
   ) => Promise<
@@ -385,7 +385,7 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
       externalSummaryFontSize: normalizeSummaryFontSize(state.externalSummaryFontSize),
-      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' ? state.briefingSource : 'digest',
+      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' || state.briefingSource === 'writing' ? state.briefingSource : 'digest',
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null }
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
