@@ -284,6 +284,7 @@ type AppStore = {
   writingListTab: 'articles' | 'repository'
   writingAssistantWidth: number
   writingAssistantOpen: boolean
+  writingEditorAction: ((fn: (ctx: any) => void) => void) | null
   lastWritingFile: string | null
   assistantSearchEnabled: boolean
   assistantThinkingEffort: 'off' | 'high' | 'max'
@@ -296,6 +297,7 @@ type AppStore = {
   setWritingListTab: (tab: 'articles' | 'repository') => void
   setWritingAssistantWidth: (width: number) => void
   setWritingAssistantOpen: (open: boolean) => void
+  setWritingEditorAction: (action: ((fn: (ctx: any) => void) => void) | null) => void
   setLastWritingFile: (file: string | null) => void
   setAssistantSearchEnabled: (enabled: boolean) => void
   setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
@@ -366,6 +368,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingListTab: 'articles',
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
+  writingEditorAction: null,
   lastWritingFile: null,
   assistantSearchEnabled: false,
   assistantThinkingEffort: 'off',
@@ -1256,6 +1259,7 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ writingAssistantOpen: open })
     ipc.patchState({ writingAssistantOpen: open } as Partial<StateJson>)
   },
+  setWritingEditorAction: (action) => set({ writingEditorAction: action }),
   setLastWritingFile: (file) => {
     set({ lastWritingFile: file })
     ipc.patchState({ lastWritingFile: file } as Partial<StateJson>)

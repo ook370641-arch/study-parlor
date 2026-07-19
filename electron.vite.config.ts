@@ -106,6 +106,15 @@ export default defineConfig(({ command }) => ({
         'remark-gfm',
         'unified',
         'unist-util-visit',
+        '@milkdown/core',
+        '@milkdown/ctx',
+        '@milkdown/react',
+        '@milkdown/preset-commonmark',
+        '@milkdown/preset-gfm',
+        '@milkdown/plugin-listener',
+        '@milkdown/plugin-history',
+        '@milkdown/plugin-clipboard',
+        '@milkdown/utils',
       ],
       // 让启动扫描覆盖懒加载页面入口，未来新增的页面级裸依赖也能在
       // 启动时被发现，而不是运行时触发 re-optimization。
