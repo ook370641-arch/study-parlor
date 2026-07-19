@@ -3,7 +3,6 @@ import {
   DEFAULT_JOB_BRIEFING_CONFIG,
   normalizeJobBriefingConfig,
   buildOfficialPageQueries,
-  buildTavilyQueries,
   mergeAndDedupJobs,
   JOB_COMMUNITY_DOMAINS,
   buildEventQueries,
@@ -51,17 +50,6 @@ describe('job-briefing config', () => {
     expect(qs).toContain('字节跳动 careers AI product manager')
   })
 
-  it('builds Tavily queries with enabled companies only', () => {
-    const config = normalizeJobBriefingConfig({
-      companies: [
-        { name: '字节跳动', priority: 1, enabled: true },
-        { name: '禁用公司', priority: 2, enabled: false },
-      ],
-    })
-    const qs = buildTavilyQueries(config)
-    expect(qs.some((q) => q.includes('字节跳动'))).toBe(true)
-    expect(qs.some((q) => q.includes('禁用公司'))).toBe(false)
-  })
 })
 
 describe('job-briefing dedup', () => {

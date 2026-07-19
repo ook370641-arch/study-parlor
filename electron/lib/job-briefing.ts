@@ -76,19 +76,6 @@ export function companyNameMatches(a: string, b: string): boolean {
   return a === b || a.includes(b) || b.includes(a)
 }
 
-export function buildTavilyQueries(config: JobBriefingConfig): string[] {
-  const rolePart = config.roleKeywords.join(' / ')
-  const companyPart = config.companies.filter(c => c.enabled).map(c => c.name).join(' / ')
-  const cityPart = config.cities.join(' ')
-  const queries: string[] = [
-    `${rolePart} 招聘 ${cityPart} 2026`,
-    `${companyPart} 产品经理 招聘 最新`,
-    `2026 AI产品 技能要求 招聘趋势`,
-    `AI产品经理 薪资 2026`,
-  ]
-  return queries
-}
-
 export type RawJob = {
   title: string
   city: string
@@ -277,26 +264,6 @@ export async function extractJobsFromHtml(
       source: args.source,
       company: args.company,
     }))
-}
-
-export async function searchJobsForCompany(
-  cfg: AppConfig,
-  company: string,
-  config: JobBriefingConfig,
-  opts: { apiKey: string; signal?: AbortSignal }
-): Promise<RawJob[]> {
-  const query = `${company} ${config.roleKeywords.join(' ')} 招聘 ${config.cities.join(' ')}`
-  const results = await searchWeb({ query, apiKey: opts.apiKey, maxResults: 5, signal: opts.signal })
-  const jobs: RawJob[] = []
-  for (const r of results) {
-    try {
-      const extracted = await extractJobsFromHtml(cfg, { html: r.content, company, url: r.url, source: 'tavily' })
-      jobs.push(...extracted)
-    } catch (err) {
-      console.warn(`[job-briefing] extraction failed for Tavily result ${r.url}`, err)
-    }
-  }
-  return jobs
 }
 
 function normalizeEventType(raw: unknown): JobEventType {
@@ -517,6 +484,7 @@ export async function discoverQuestions(
 export async function generateJobBriefing(
   cfg: AppConfig,
   config: JobBriefingConfig,
+  profile: JobProfile,
   date: string,
   opts: {
     emitProgress?: (stage: JobBriefingStage, detail?: string) => void
@@ -528,78 +496,93 @@ export async function generateJobBriefing(
     throw Object.assign(new Error('MISSING_SEARCH_KEY'), { code: 'MISSING_SEARCH_KEY' as JobErrorCode })
   }
 
-  const sourceStatus: JobBriefingSourceStatus = { tavily: 'ok', official: {} }
-  const allJobs: RawJob[] = []
-
-  opts.emitProgress?.('discovering')
-
+  const sourceStatus: JobBriefingSourceStatus = { events: 'ok', jobs: 'ok', questions: 'ok', official: {} }
   const enabledCompanies = config.companies
     .filter(c => c.enabled)
     .sort((a, b) => a.priority - b.priority)
 
-  // Official pages scrape
-  for (const company of enabledCompanies) {
-    if (opts.signal?.aborted) break
-    opts.emitProgress?.('scraping', company.name)
-
-    if (!company.careerPageUrl) {
-      sourceStatus.official[company.name] = 'failed'
-      continue
-    }
-
-    try {
-      const html = await fetchPageHtml(company.careerPageUrl, { signal: opts.signal, useBrowserFallback: true })
-      const jobs = await extractJobsFromHtml(cfg, { html, company: company.name, url: company.careerPageUrl, source: 'official' })
-      allJobs.push(...jobs)
-      sourceStatus.official[company.name] = 'ok'
-    } catch (err) {
-      console.warn(`[job-briefing] official page failed for ${company.name}`, err)
-      sourceStatus.official[company.name] = 'failed'
-      // Fallback to Tavily for this company
-      try {
-        const fallback = await searchJobsForCompany(cfg, company.name, config, { apiKey, signal: opts.signal })
-        allJobs.push(...fallback)
-      } catch (fallbackErr) {
-        console.warn(`[job-briefing] Tavily fallback failed for ${company.name}`, fallbackErr)
-      }
-    }
+  // ── Level 1: 新动态 ──
+  opts.emitProgress?.('scanning-events')
+  let events: JobEvent[] = []
+  try {
+    events = await discoverEvents(cfg, config, { apiKey, signal: opts.signal })
+  } catch (err) {
+    console.warn('[job-briefing] event discovery failed', err)
+    sourceStatus.events = 'failed'
   }
 
-  // Tavily broad search
-  opts.emitProgress?.('searching')
-  const queries = buildTavilyQueries(config)
-  for (const query of queries) {
+  // ── Level 2: 焦点岗位 ──
+  opts.emitProgress?.('digging-jobs')
+  const focus = selectFocusCompanies(events, config)
+  const allJobs: RawJob[] = []
+  for (const f of focus) {
     if (opts.signal?.aborted) break
+    const companyCfg = enabledCompanies.find(c => c.name === f.name)
+    if (companyCfg?.careerPageUrl) {
+      try {
+        const html = await fetchPageHtml(companyCfg.careerPageUrl, { signal: opts.signal, useBrowserFallback: true })
+        const jobs = await extractJobsFromHtml(cfg, { html, company: f.name, url: companyCfg.careerPageUrl, source: 'official' })
+        allJobs.push(...jobs)
+        sourceStatus.official[f.name] = 'ok'
+      } catch (err) {
+        console.warn(`[job-briefing] official page failed for ${f.name}`, err)
+        sourceStatus.official[f.name] = 'failed'
+      }
+    }
     try {
-      const results = await searchWeb({ query, apiKey, maxResults: 5, signal: opts.signal })
+      const query = buildFocusJobQuery(f.name, profile, config)
+      const results = await searchWeb({ query, apiKey, maxResults: 5, days: 30, signal: opts.signal })
       for (const r of results) {
         try {
-          const jobs = await extractJobsFromHtml(cfg, { html: r.content, company: '其他', url: r.url, source: 'tavily' })
+          const jobs = await extractJobsFromHtml(cfg, { html: r.content, company: f.name, url: r.url, source: 'tavily' })
           allJobs.push(...jobs)
         } catch (e) {
-          console.warn('[job-briefing] Tavily extraction failed for result', e)
+          console.warn('[job-briefing] extraction failed for result', e)
         }
       }
     } catch (err) {
-      console.warn(`[job-briefing] Tavily query failed: ${query}`, err)
-      sourceStatus.tavily = 'failed'
+      console.warn(`[job-briefing] job search failed for ${f.name}`, err)
+    }
+  }
+  const merged = mergeAndDedupJobs(allJobs)
+  let matchedJobs: MatchedJob[] = []
+  if (merged.length === 0) {
+    sourceStatus.jobs = 'failed'
+  } else {
+    try {
+      matchedJobs = await matchJobsToProfile(cfg, merged, profile, focus, { signal: opts.signal })
+    } catch (err) {
+      console.warn('[job-briefing] match-jobs failed, using unranked fallback', err)
+      matchedJobs = merged.slice(0, 10).map(j => ({
+        ...j,
+        matchLevel: 3 as const,
+        matchReason: '',
+        sourceEventTitle: focus.find(f => companyNameMatches(f.name, j.company))?.eventTitle,
+      }))
     }
   }
 
-  const merged = mergeAndDedupJobs(allJobs)
+  // ── Level 3: 面经问题 ──
+  opts.emitProgress?.('aggregating-questions')
+  let questions: InterviewQuestion[] = []
+  try {
+    questions = await discoverQuestions(cfg, focus, profile, config, { apiKey, signal: opts.signal })
+  } catch (err) {
+    console.warn('[job-briefing] question aggregation failed', err)
+  }
+  if (questions.length === 0) sourceStatus.questions = 'failed'
 
-  if (merged.length === 0) {
+  if (events.length === 0 && matchedJobs.length === 0 && questions.length === 0) {
     throw Object.assign(new Error('EMPTY_RESULTS'), { code: 'EMPTY_RESULTS' as JobErrorCode })
   }
 
+  // ── 综合生成 ──
   opts.emitProgress?.('synthesizing')
-
   const synthesisPrompt = readPrompt('synthesize')
-    .replace('{{roleKeywords}}', config.roleKeywords.join('、'))
-    .replace('{{cities}}', config.cities.join('、'))
-    .replace('{{companies}}', config.companies.filter(c => c.enabled).map(c => c.name).join('、'))
-    .replace('{{skillKeywords}}', config.skillKeywords.join('、'))
-    .replace('{{jobsJson}}', JSON.stringify(merged.slice(0, 30), null, 2))
+    .replace('{{profile}}', formatJobProfile(profile))
+    .replace('{{eventsJson}}', JSON.stringify(events, null, 2))
+    .replace('{{jobsJson}}', JSON.stringify(matchedJobs, null, 2))
+    .replace('{{questionsJson}}', JSON.stringify(questions, null, 2))
 
   const content = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: synthesisPrompt } as Message],
@@ -615,8 +598,8 @@ export async function generateJobBriefing(
   const officialSources = enabledCompanies
     .filter(c => c.careerPageUrl)
     .map(c => ({ type: 'official' as const, company: c.name, url: c.careerPageUrl! }))
-  const tavilySources = queries.map(q => ({ type: 'tavily' as const, query: q, url: '' }))
-  const jobSources = [...officialSources, ...tavilySources]
+  const focusSources = focus.map(f => ({ type: 'tavily' as const, query: buildFocusJobQuery(f.name, profile, config), url: '' }))
+  const jobSources = [...officialSources, ...focusSources]
 
   const fm = {
     title: '求职简报',
@@ -625,9 +608,9 @@ export async function generateJobBriefing(
     tags: ['job-briefing', 'ai-product'],
     date,
     generated_at: generatedAt,
-    role_keywords: config.roleKeywords,
+    role_keywords: profile.targetRoles.length ? profile.targetRoles : config.roleKeywords,
     cities: config.cities,
-    companies: config.companies.map(c => c.name),
+    companies: focus.map(f => f.name),
     job_sources: JSON.stringify(jobSources),
   }
 
