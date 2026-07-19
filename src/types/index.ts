@@ -342,15 +342,59 @@ export type JobErrorCode =
   | 'EMPTY_RESULTS'
   | 'CACHE_WRITE_FAILED'
 
+export type JobProfile = {
+  targetRoles: string[]
+  direction: string
+  skills: string[]
+  experience: string
+  additionalNotes: string
+  updatedAt: string
+}
+
+export type JobEventType = '秋招开启' | '新岗位' | '线下活动' | '宣讲会' | '其他'
+
+export type JobEvent = {
+  company: string
+  eventType: JobEventType
+  title: string
+  date: string
+  summary: string
+  url: string
+}
+
+export type MatchedJob = {
+  title: string
+  city: string
+  salary: string
+  requirements: string[]
+  url: string
+  source: 'official' | 'tavily'
+  company: string
+  matchLevel: 1 | 2 | 3 | 4 | 5
+  matchReason: string
+  sourceEventTitle?: string
+}
+
+export type InterviewQuestion = {
+  question: string
+  intent: string
+  prepTip: string
+  frequency: string
+  companies: string[]
+  url: string
+}
+
 export type JobBriefingSourceStatus = {
-  tavily: 'ok' | 'failed'
+  events: 'ok' | 'failed'
+  jobs: 'ok' | 'failed'
+  questions: 'ok' | 'failed'
   official: Record<string, 'ok' | 'failed'>
 }
 
 export type JobBriefingStage =
-  | 'discovering'
-  | 'scraping'
-  | 'searching'
+  | 'scanning-events'
+  | 'digging-jobs'
+  | 'aggregating-questions'
   | 'synthesizing'
   | 'finalizing'
   | 'done'
@@ -385,6 +429,7 @@ export type StateJson = {
   externalSummaryFontSize?: BriefingFontSize
   briefingSource?: 'digest' | 'anthropic' | 'job-briefing'
   jobBriefingConfig?: JobBriefingConfig
+  jobProfile?: JobProfile
   anthropicBlogCache?: AnthropicBlogCache
   anthropicBlogLastSeenAt?: string | null
   articleAssistantGuideWidth?: number
