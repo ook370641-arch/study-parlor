@@ -163,7 +163,7 @@ describe('ChatWindow', () => {
     expect(actions.cycleAssistantThinkingEffort).toHaveBeenCalledTimes(1)
   })
 
-  it('clamps dragging so the title bar drag handle never leaves the viewport', () => {
+  it('moves via transform during drag and commits clamped left/top on pointerup', () => {
     mockStore(baseSession())
     const { container } = render(<ChatWindow />)
     const win = screen.getByTestId('article-assistant-chat-window')
@@ -177,20 +177,15 @@ describe('ChatWindow', () => {
 
     fireEvent.pointerDown(titleBar, { clientX: 420, clientY: 320, pointerId: 1 })
 
-    // 向上拖出视口（用户实际场景：拖到 Electron 原生标题栏位置松手）
-    // —— 标题栏是唯一拖拽把手，top 不允许为负，否则永远无法再拖回来
+    // 拖出视口顶部：originY=300, rawY = 300 + (-100-320) = -120 → clamp y=0 → translate dy=-300
     fireEvent.pointerMove(window, { clientX: 420, clientY: -100 })
+    expect(win.style.transform).toBe('translate(0px, -300px)')
+    expect(win.style.top).toBe('') // 拖拽中不提交 left/top
+
+    fireEvent.pointerUp(window, { clientX: 420, clientY: -100 })
+    expect(win.style.transform).toBe('')
     expect(win.style.top).toBe('0px')
-
-    // 向下拖出视口 —— 至少保留标题栏可点
-    fireEvent.pointerMove(window, { clientX: 420, clientY: 3000 })
-    expect(win.style.top).toBe(`${window.innerHeight - 40}px`)
-
-    // 向左拖出视口 —— 保留 80px 可抓取区域（窗口宽 340 → 最小 left = -260）
-    fireEvent.pointerMove(window, { clientX: -500, clientY: 320 })
-    expect(win.style.left).toBe('-260px')
-
-    fireEvent.pointerUp(window)
+    expect(win.style.left).toBe('400px')
   })
 
   it('lays out user messages right-aligned and assistant messages left-aligned', () => {

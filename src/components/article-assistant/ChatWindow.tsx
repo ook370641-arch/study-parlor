@@ -51,21 +51,32 @@ export function ChatWindow() {
     }
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
 
+    // 拖拽期间只写 transform（不触发 React 重渲），松手时一次性提交 left/top。
+    // clamp：标题栏不拖出视口（上 0 / 下 innerHeight-40 / 左右各留 80px 抓取区）。
+    const clampPos = (x: number, y: number) => ({
+      x: Math.max(-(rect.width - 80), Math.min(x, window.innerWidth - 80)),
+      y: Math.max(0, Math.min(y, window.innerHeight - 40)),
+    })
     const onMove = (ev: PointerEvent) => {
       if (!dragging.current) return
-      const rawX = dragging.current.originX + (ev.clientX - dragging.current.startX)
-      const rawY = dragging.current.originY + (ev.clientY - dragging.current.startY)
-      // 夹取位置，保证标题栏（唯一拖拽把手）始终可达：
-      // top 不允许为负，否则把手滑到原生标题栏上方，窗口永远无法再拖回
-      setPosition({
-        x: Math.min(Math.max(rawX, -(rect.width - 80)), window.innerWidth - 80),
-        y: Math.min(Math.max(rawY, 0), window.innerHeight - 40),
-      })
+      const p = clampPos(
+        dragging.current.originX + (ev.clientX - dragging.current.startX),
+        dragging.current.originY + (ev.clientY - dragging.current.startY)
+      )
+      el.style.transform = `translate(${p.x - dragging.current.originX}px, ${p.y - dragging.current.originY}px)`
     }
-    const onUp = () => {
+    const onUp = (ev: PointerEvent) => {
       ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      if (dragging.current) {
+        const p = clampPos(
+          dragging.current.originX + (ev.clientX - dragging.current.startX),
+          dragging.current.originY + (ev.clientY - dragging.current.startY)
+        )
+        el.style.transform = ''
+        setPosition({ x: p.x, y: p.y })
+      }
       dragging.current = null
     }
     window.addEventListener('pointermove', onMove)
