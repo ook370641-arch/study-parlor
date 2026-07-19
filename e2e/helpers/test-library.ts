@@ -458,6 +458,14 @@ const BASE_STATE = {
   anthropicBlogLastSeenAt: null,
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
+  writingFontSize: 'base',
+  writingTone: 'parchment',
+  writingListTab: 'articles',
+  writingAssistantWidth: 320,
+  writingAssistantOpen: false,
+  lastWritingFile: null,
+  assistantSearchEnabled: false,
+  assistantThinkingEffort: 'off',
 }
 
 export function seedStateJson(
@@ -645,4 +653,98 @@ export function seedContinueSuggestions(
     [topic]: { suggestions, sessionCount },
   }
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2))
+}
+
+// ── Writing feature seeds ──────────────────────────────────────────
+
+/**
+ * Seed a writing directory tree under `libPath/writing/` with three articles
+ * in a nested folder structure, plus an assistant session file for one article.
+ */
+export function seedWritingTree(libPath: string): void {
+  const writingDir = path.join(libPath, 'writing')
+  fs.mkdirSync(path.join(writingDir, '随笔'), { recursive: true })
+  fs.mkdirSync(path.join(writingDir, '技术笔记', '子组'), { recursive: true })
+
+  // Article 1: 随笔/七月夜话.md
+  const f1 = `---\ntype: writing\ntitle: 七月夜话\ncreated: 2026-07-19\nupdated: 2026-07-19\n---\n\n# 七月夜话\n\n这是第一篇写作文章。\n`
+  fs.writeFileSync(path.join(writingDir, '随笔', '七月夜话.md'), f1, 'utf8')
+
+  // Article 2: 技术笔记/分布式随笔.md
+  const f2 = `---\ntype: writing\ntitle: 分布式随笔\ncreated: 2026-07-18\nupdated: 2026-07-19\n---\n\n# 分布式随笔\n\n关于分布式系统的思考。\n`
+  fs.writeFileSync(path.join(writingDir, '技术笔记', '分布式随笔.md'), f2, 'utf8')
+
+  // Article 3: 技术笔记/子组/深度文章.md
+  const f3 = `---\ntype: writing\ntitle: 深度文章\ncreated: 2026-07-17\nupdated: 2026-07-17\n---\n\n深度内容。\n`
+  fs.writeFileSync(path.join(writingDir, '技术笔记', '子组', '深度文章.md'), f3, 'utf8')
+
+  // Assistant session for 七月夜话
+  const sessionContent = `## 用户\n\n帮我看看这篇文章\n\n## 助手\n\n好的，我来分析一下。\n\n> 来源：[repository] 旧随笔.md\n`
+  const sessionFm = `---\ntype: article-assistant\nparent_path: writing/随笔/七月夜话.md\nparent_type: writing\ncreated: 2026-07-19\n---\n\n`
+  fs.writeFileSync(path.join(writingDir, '随笔', '七月夜话.assistant.md'), sessionFm + sessionContent, 'utf8')
+}
+
+/**
+ * Seed repository files under `libPath/repository/` — old blog posts and
+ * loose markdown files with no frontmatter.
+ */
+export function seedRepository(libPath: string): void {
+  const repoDir = path.join(libPath, 'repository', '2023')
+  fs.mkdirSync(repoDir, { recursive: true })
+
+  // Old blog post (no frontmatter)
+  fs.writeFileSync(path.join(repoDir, '旧博客-xxx.md'), '# 旧博客\n\n过去的积累。\n', 'utf8')
+  fs.writeFileSync(path.join(libPath, 'repository', '旧随笔.md'), '没有 frontmatter 的旧文件。\n', 'utf8')
+}
+
+/**
+ * Seed catalog JSON files for both writing and repository directories.
+ * These are used by the catalog system for summaries and metadata.
+ */
+export function seedCatalogJson(libPath: string): void {
+  const writingCatalog = {
+    version: 1,
+    entries: {
+      'writing/随笔/七月夜话.md': { title: '七月夜话', summary: '关于七月的随笔', updatedAt: '2026-07-19' },
+      'writing/技术笔记/分布式随笔.md': { title: '分布式随笔', summary: '分布式系统思考', updatedAt: '2026-07-19' },
+      'writing/技术笔记/子组/深度文章.md': { title: '深度文章', summary: '深度内容', updatedAt: '2026-07-17' },
+    },
+  }
+  fs.mkdirSync(path.join(libPath, 'writing'), { recursive: true })
+  fs.writeFileSync(path.join(libPath, 'writing', '.catalog.json'), JSON.stringify(writingCatalog, null, 2), 'utf8')
+
+  const repoCatalog = {
+    version: 1,
+    entries: {
+      'repository/2023/旧博客-xxx.md': { title: '旧博客', summary: '过去的积累', updatedAt: '2026-07-19' },
+      'repository/旧随笔.md': { title: '旧随笔', summary: '没有元数据的旧文件', updatedAt: '2026-07-19' },
+    },
+  }
+  fs.mkdirSync(path.join(libPath, 'repository'), { recursive: true })
+  fs.writeFileSync(path.join(libPath, 'repository', '.catalog.json'), JSON.stringify(repoCatalog, null, 2), 'utf8')
+}
+
+/**
+ * Seed a .guide.md file for a blog article, used by the assistant to
+ * provide contextual background during Q&A.
+ */
+export function seedGuideFile(articleDir: string, background: string): void {
+  fs.mkdirSync(articleDir, { recursive: true })
+  const guide = `---\ntype: article-assistant\ntitle: 导读\ncreated: 2026-07-19\n---\n\n# 背景\n\n${background}\n`
+  fs.writeFileSync(path.join(articleDir, '文章.guide.md'), guide, 'utf8')
+}
+
+/**
+ * Seed state.json with writing-related fields pre-configured, such as
+ * switching the briefing source to 'writing'.
+ */
+export function seedWritingSourceState(configDir: string): void {
+  seedStateJson(configDir, {
+    briefingSource: 'writing',
+    writingListTab: 'articles',
+    writingAssistantWidth: 320,
+    writingAssistantOpen: false,
+    assistantSearchEnabled: false,
+    assistantThinkingEffort: 'off',
+  })
 }

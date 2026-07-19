@@ -39,7 +39,7 @@ export function WritingBoard() {
 
   if (!file) {
     return (
-      <div className="flex items-center justify-center h-full text-parchment/40 text-sm">
+      <div data-testid="writing-board-empty" className="flex items-center justify-center h-full text-parchment/40 text-sm">
         选择一篇文章开始写作，或点击 ＋ 新建
       </div>
     )
@@ -57,14 +57,14 @@ export function WritingBoard() {
       }}>
       <WritingToolbar />
       {/* Save status indicator */}
-      <div className="flex justify-end px-3 py-0.5 border-b border-parchment/10 shrink-0 text-[10px]">
+      <div data-testid="writing-save-status" className="flex justify-end px-3 py-0.5 border-b border-parchment/10 shrink-0 text-[10px]">
         {file.saving === 'saving' ? <span className="text-parchment/50">保存中…</span>
          : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
          : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span>
          : null}
       </div>
       {/* Editor area */}
-      <div className="flex-1 overflow-y-auto px-8 py-6"
+      <div data-testid="writing-editor" className="flex-1 overflow-y-auto px-8 py-6"
         style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}>
         <WritingEditor
           initial={file.body}

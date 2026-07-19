@@ -72,6 +72,7 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
   return (
     <div>
       <div
+        data-testid="writing-tree-node"
         className={`flex items-center gap-1 px-2 py-1 cursor-pointer text-xs rounded transition-colors select-none
           ${isSelected ? 'bg-ember/10 text-ember' : 'text-parchment/70 hover:text-parchment hover:bg-parchment/5'}
           ${dragOver ? 'ring-1 ring-ember/50' : ''}`}

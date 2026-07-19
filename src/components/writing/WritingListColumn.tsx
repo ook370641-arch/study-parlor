@@ -51,6 +51,7 @@ export function WritingListColumn() {
         {(['articles', 'repository'] as const).map(t => (
           <button
             key={t}
+            data-testid={t === 'articles' ? 'writing-list-tab-articles' : 'writing-list-tab-repository'}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 transition-colors ${tab === t ? 'text-ember border-b-2 border-ember' : 'text-parchment/50 hover:text-parchment/70'}`}
           >
@@ -62,15 +63,15 @@ export function WritingListColumn() {
         {tab === 'articles' ? (
           <div>
             <div className="p-2 flex gap-2 text-xs">
-              <button className="text-ember hover:text-ember/80" onClick={handleCreateFile}>＋ 新建文章</button>
-              <button className="text-parchment/60 hover:text-parchment/80" onClick={handleCreateFolder}>新建分组</button>
+              <button data-testid="writing-new-file" className="text-ember hover:text-ember/80" onClick={handleCreateFile}>＋ 新建文章</button>
+              <button data-testid="writing-new-folder" className="text-parchment/60 hover:text-parchment/80" onClick={handleCreateFolder}>新建分组</button>
             </div>
             <WritingTree root="writing" />
           </div>
         ) : (
           <div>
             <div className="p-2">
-              <button className="text-xs text-ember hover:text-ember/80" onClick={handleImportFiles}>⬆ 导入文件…</button>
+              <button data-testid="writing-import-files" className="text-xs text-ember hover:text-ember/80" onClick={handleImportFiles}>⬆ 导入文件…</button>
             </div>
             <WritingTree root="repository" />
           </div>
