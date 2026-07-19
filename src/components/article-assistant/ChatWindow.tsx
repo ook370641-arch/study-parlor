@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ResizeHandles } from './ResizeHandles'
+import { ChatMessageList } from './ChatMessageList'
 
 const MIN_W = 260
 const MIN_H = 180
@@ -19,6 +20,7 @@ export function ChatWindow() {
   const toggleAssistantSearch = useStore((s) => s.toggleAssistantSearch)
   const toggleAssistantSocratic = useStore((s) => s.toggleAssistantSocratic)
   const cycleAssistantThinkingEffort = useStore((s) => s.cycleAssistantThinkingEffort)
+  const setAssistantSelection = useStore((s) => s.setAssistantSelection)
 
   const [input, setInput] = useState('')
   const [size, setSize] = useState({ width: DEFAULT_W, height: DEFAULT_H })
@@ -105,34 +107,13 @@ export function ChatWindow() {
 
       {/* Messages area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3 text-sm">
-        {!hasMessages && !session.pendingSelection && (
+        {!hasMessages && (
           <div className="text-parchment/40 text-xs text-center mt-8">
             选中文章内容后点击旁注 tab，或直接输入问题
           </div>
         )}
 
-        {session.pendingSelection && (
-          <div className="text-xs border-l-2 border-ember bg-ember/10 p-2 text-parchment/80 rounded-r">
-            <div className="opacity-60 mb-1">你选中了：</div>
-            "{session.pendingSelection}"
-          </div>
-        )}
-
-        {session.messages.map((m, i) => (
-          <div key={i}>
-            <div className={`text-[11px] tracking-wider mb-0.5 ${m.role === 'user' ? 'text-ember' : 'text-parchment/50'}`}>
-              {m.role === 'user' ? '你' : '旁注'}
-            </div>
-            <div className={`leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'text-parchment/80' : 'text-parchment/90'}`}>
-              {m.content || (m.role === 'assistant' && session.streaming ? '…' : '')}
-            </div>
-            {m.searchSources && m.searchSources.length > 0 && (
-              <div className="text-[11px] text-parchment/50 mt-1">
-                已搜索 {m.searchSources.length} 个来源
-              </div>
-            )}
-          </div>
-        ))}
+        <ChatMessageList messages={session.messages} streaming={session.streaming} />
 
         {session.streaming && !session.searchLoading && (
           <div className="text-xs text-parchment/50 animate-pulse">思考中…</div>
@@ -153,6 +134,25 @@ export function ChatWindow() {
           </div>
         )}
       </div>
+
+      {/* Pending selection chip — 挂在历史对话下方、输入框上方 */}
+      {session.pendingSelection && (
+        <div
+          data-testid="pending-selection"
+          className="relative mx-2 mb-1 text-xs border-l-2 border-ember bg-ember/10 p-2 pr-6 text-parchment/80 rounded-r shrink-0"
+        >
+          <div className="opacity-60 mb-1">你选中了：</div>
+          "{session.pendingSelection}"
+          <button
+            data-testid="selection-cancel-btn"
+            aria-label="取消选中"
+            className="absolute top-1 right-1 text-parchment/50 hover:text-ember leading-none"
+            onClick={() => setAssistantSelection('')}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Input area */}
       <div className="p-2 border-t border-parchment/10 flex items-center gap-1.5 shrink-0">

@@ -61,12 +61,12 @@ describe('ChatWindow', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the chat window and selection quote block when open with a pending selection', () => {
+  it('renders the chat window and pending selection chip when open with a pending selection', () => {
     mockStore(baseSession({ pendingSelection: 'selected text' }))
     render(<ChatWindow />)
     expect(screen.getByTestId('article-assistant-chat-window')).toBeInTheDocument()
-    expect(screen.getByText('你选中了：')).toBeInTheDocument()
-    expect(screen.getByText(/selected text/)).toBeInTheDocument()
+    expect(screen.getByTestId('pending-selection')).toHaveTextContent('selected text')
+    expect(screen.getByTestId('pending-selection')).toHaveTextContent('你选中了：')
   })
 
   it('renders nothing when the session is closed', () => {
@@ -191,5 +191,54 @@ describe('ChatWindow', () => {
     expect(win.style.left).toBe('-260px')
 
     fireEvent.pointerUp(window)
+  })
+
+  it('lays out user messages right-aligned and assistant messages left-aligned', () => {
+    mockStore(
+      baseSession({
+        messages: [
+          { role: 'user', content: '我的问题' },
+          { role: 'assistant', content: '我的回答' },
+        ],
+      })
+    )
+    render(<ChatWindow />)
+    const messages = screen.getAllByTestId('chat-message')
+    expect(messages[0].dataset.role).toBe('user')
+    expect(messages[0].className).toContain('justify-end')
+    expect(messages[1].dataset.role).toBe('assistant')
+    expect(messages[1].className).toContain('justify-start')
+  })
+
+  it('shows the historical selection inside a user message with muted styling', () => {
+    mockStore(
+      baseSession({
+        messages: [{ role: 'user', content: '问', selection: '当时选的一段' }],
+      })
+    )
+    render(<ChatWindow />)
+    const sel = screen.getByTestId('chat-message-selection')
+    expect(sel).toHaveTextContent('当时选的一段')
+    expect(sel.className).toContain('border-parchment/40')
+    expect(sel.className).not.toContain('border-ember')
+  })
+
+  it('renders reasoning in a collapsible block above the assistant content', () => {
+    mockStore(
+      baseSession({
+        messages: [{ role: 'assistant', content: '最终答案', reasoning: '思考内容' }],
+      })
+    )
+    render(<ChatWindow />)
+    const block = screen.getByTestId('reasoning-block')
+    expect(block).toHaveTextContent('思考内容')
+    expect(block.tagName.toLowerCase()).toBe('details')
+  })
+
+  it('clears the pending selection via the cancel button', () => {
+    mockStore(baseSession({ pendingSelection: 'selected text' }))
+    render(<ChatWindow />)
+    fireEvent.click(screen.getByTestId('selection-cancel-btn'))
+    expect(actions.setAssistantSelection).toHaveBeenCalledWith('')
   })
 })
