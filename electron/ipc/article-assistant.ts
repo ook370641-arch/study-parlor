@@ -311,7 +311,8 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
           createdAt: frontmatter.created_at ?? frontmatter.created,
           updatedAt: frontmatter.updated_at ?? frontmatter.created,
         }
-      } catch {
+      } catch (err) {
+        console.warn('[article-assistant] readSession failed for', sessionPath, err)
         return null
       }
     }

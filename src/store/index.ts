@@ -284,6 +284,11 @@ type AppStore = {
 
 let wildcardRequestId = 0
 
+/** Ensures sendAssistantMessage waits for history to load before sending, preventing
+ *  the race where a user message lands before loadAssistantSession completes and the
+ *  cur.messages.length === 0 guard discards the loaded history. */
+let historyLoadPromise: Promise<void> | null = null
+
 let guideWidthSaveTimer: ReturnType<typeof setTimeout> | null = null
 function debounceSaveGuideWidth(patch: Partial<StateJson>) {
   if (guideWidthSaveTimer) clearTimeout(guideWidthSaveTimer)
@@ -985,7 +990,7 @@ export const useStore = create<AppStore>((set, get) => ({
         }
       }
     })
-    get().loadAssistantSession()
+    historyLoadPromise = get().loadAssistantSession()
   },
 
   closeAssistantSession: () => {
@@ -1070,6 +1075,12 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   sendAssistantMessage: async (text) => {
+    // Wait for any in-flight history load to settle so we don't discard loaded
+    // messages (the loadAssistantSession guard requires messages.length === 0).
+    if (historyLoadPromise) {
+      await historyLoadPromise
+      historyLoadPromise = null
+    }
     const s = get().assistantSession
     if (!s || s.streaming || s.searchLoading) return
     const content = text.trim()
