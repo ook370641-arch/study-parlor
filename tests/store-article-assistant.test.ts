@@ -31,7 +31,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 describe('store article assistant', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    useStore.setState({ assistantSession: null, articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false })
+    useStore.setState({ assistantSession: null, articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false, assistantSearchEnabled: false, assistantSocraticMode: true, assistantThinkingEffort: 'off' })
     vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantReadSession).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantGenerateGuide).mockResolvedValue(guideFixture as any)
@@ -105,28 +105,24 @@ describe('store article assistant', () => {
   })
 
   describe('toggleAssistantSearch', () => {
-    it('initializes searchEnabled to false and toggles it on/off', async () => {
-      useStore.getState().openAssistantSession({
-        contextId: '/lib/d.md',
-        contextType: 'briefing',
-        articleContent: 'body'
-      })
-      await flush()
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(false)
+    it('initializes assistantSearchEnabled to false and toggles it on/off', async () => {
+      expect(useStore.getState().assistantSearchEnabled).toBe(false)
 
       useStore.getState().toggleAssistantSearch()
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
+      expect(useStore.getState().assistantSearchEnabled).toBe(true)
+      expect(ipc.patchState).toHaveBeenCalledWith({ assistantSearchEnabled: true })
 
       useStore.getState().toggleAssistantSearch()
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(false)
+      expect(useStore.getState().assistantSearchEnabled).toBe(false)
+      expect(ipc.patchState).toHaveBeenCalledWith({ assistantSearchEnabled: false })
     })
 
-    it('is a no-op when there is no session', () => {
+    it('toggles globally without requiring a session', () => {
       useStore.getState().toggleAssistantSearch()
-      expect(useStore.getState().assistantSession).toBeNull()
+      expect(useStore.getState().assistantSearchEnabled).toBe(true)
     })
 
-    it('keeps searchEnabled true after a full send cycle', async () => {
+    it('keeps assistantSearchEnabled true after a full send cycle', async () => {
       useStore.getState().openAssistantSession({
         contextId: '/lib/e.md',
         contextType: 'briefing',
@@ -135,13 +131,64 @@ describe('store article assistant', () => {
       await flush()
 
       useStore.getState().toggleAssistantSearch()
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
+      expect(useStore.getState().assistantSearchEnabled).toBe(true)
 
-      await useStore.getState().sendAssistantMessage('q', true)
+      await useStore.getState().sendAssistantMessage('q')
       useStore.getState().finishAssistantStreaming()
 
       expect(useStore.getState().assistantSession?.streaming).toBe(false)
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
+      expect(useStore.getState().assistantSearchEnabled).toBe(true)
+    })
+  })
+
+  describe('sendAssistantMessage', () => {
+    it('passes global socraticMode and thinkingEffort to the IPC send', async () => {
+      useStore.setState({ assistantSocraticMode: false, assistantThinkingEffort: 'max' })
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/c.md',
+        contextType: 'briefing',
+        articleContent: 'body',
+        articleTitle: 'C',
+      })
+      await flush()
+      await useStore.getState().sendAssistantMessage('问题')
+
+      expect(ipc.articleAssistantSendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ socraticMode: false, thinkingEffort: 'max' })
+      )
+    })
+
+    it('records the pending selection on the user message when sending', async () => {
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/d.md',
+        contextType: 'briefing',
+        articleContent: 'body',
+        articleTitle: 'D',
+      })
+      await flush()
+      useStore.getState().setAssistantSelection('选中的一段原文')
+      await useStore.getState().sendAssistantMessage('这段什么意思')
+
+      const msgs = useStore.getState().assistantSession!.messages
+      const userMsg = msgs.find((m) => m.role === 'user')
+      expect(userMsg?.selection).toBe('选中的一段原文')
+    })
+
+    it('persists selection-only user messages (empty content with selection)', async () => {
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/e.md',
+        contextType: 'briefing',
+        articleContent: 'body',
+        articleTitle: 'E',
+      })
+      await flush()
+      useStore.getState().setAssistantSelection('只有选段')
+      await useStore.getState().sendAssistantMessage('')
+      // 等 mock 流完成（articleAssistantSendMessage 已 mock resolved）
+      await useStore.getState().saveAssistantSession()
+
+      const written = vi.mocked(ipc.articleAssistantWriteSession).mock.calls.at(-1)?.[0]
+      expect(written?.messages.some((m) => m.role === 'user' && m.selection === '只有选段')).toBe(true)
     })
   })
 

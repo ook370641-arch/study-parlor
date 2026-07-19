@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ResizeHandles } from './ResizeHandles'
+import { ChatMessageList } from './ChatMessageList'
 
 const MIN_W = 260
 const MIN_H = 180
@@ -13,7 +14,13 @@ export function ChatWindow() {
   const retryAssistantMessage = useStore((s) => s.retryAssistantMessage)
   const abortAssistantStream = useStore((s) => s.abortAssistantStream)
   const toggleAssistantOpen = useStore((s) => s.toggleAssistantOpen)
+  const searchEnabled = useStore((s) => s.assistantSearchEnabled)
+  const socraticMode = useStore((s) => s.assistantSocraticMode)
+  const thinkingEffort = useStore((s) => s.assistantThinkingEffort)
   const toggleAssistantSearch = useStore((s) => s.toggleAssistantSearch)
+  const toggleAssistantSocratic = useStore((s) => s.toggleAssistantSocratic)
+  const cycleAssistantThinkingEffort = useStore((s) => s.cycleAssistantThinkingEffort)
+  const setAssistantSelection = useStore((s) => s.setAssistantSelection)
 
   const [input, setInput] = useState('')
   const [size, setSize] = useState({ width: DEFAULT_W, height: DEFAULT_H })
@@ -26,7 +33,7 @@ export function ChatWindow() {
   const handleSend = () => {
     const text = input.trim()
     if (!text && !session.pendingSelection) return
-    sendAssistantMessage(text, session.searchEnabled)
+    sendAssistantMessage(text)
     setInput('')
     // scroll to bottom after render
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 50)
@@ -44,21 +51,32 @@ export function ChatWindow() {
     }
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
 
+    // 拖拽期间只写 transform（不触发 React 重渲），松手时一次性提交 left/top。
+    // clamp：标题栏不拖出视口（上 0 / 下 innerHeight-40 / 左右各留 80px 抓取区）。
+    const clampPos = (x: number, y: number) => ({
+      x: Math.max(-(rect.width - 80), Math.min(x, window.innerWidth - 80)),
+      y: Math.max(0, Math.min(y, window.innerHeight - 40)),
+    })
     const onMove = (ev: PointerEvent) => {
       if (!dragging.current) return
-      const rawX = dragging.current.originX + (ev.clientX - dragging.current.startX)
-      const rawY = dragging.current.originY + (ev.clientY - dragging.current.startY)
-      // 夹取位置，保证标题栏（唯一拖拽把手）始终可达：
-      // top 不允许为负，否则把手滑到原生标题栏上方，窗口永远无法再拖回
-      setPosition({
-        x: Math.min(Math.max(rawX, -(rect.width - 80)), window.innerWidth - 80),
-        y: Math.min(Math.max(rawY, 0), window.innerHeight - 40),
-      })
+      const p = clampPos(
+        dragging.current.originX + (ev.clientX - dragging.current.startX),
+        dragging.current.originY + (ev.clientY - dragging.current.startY)
+      )
+      el.style.transform = `translate(${p.x - dragging.current.originX}px, ${p.y - dragging.current.originY}px)`
     }
-    const onUp = () => {
+    const onUp = (ev: PointerEvent) => {
       ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      if (dragging.current) {
+        const p = clampPos(
+          dragging.current.originX + (ev.clientX - dragging.current.startX),
+          dragging.current.originY + (ev.clientY - dragging.current.startY)
+        )
+        el.style.transform = ''
+        setPosition({ x: p.x, y: p.y })
+      }
       dragging.current = null
     }
     window.addEventListener('pointermove', onMove)
@@ -100,34 +118,13 @@ export function ChatWindow() {
 
       {/* Messages area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3 text-sm">
-        {!hasMessages && !session.pendingSelection && (
+        {!hasMessages && (
           <div className="text-parchment/40 text-xs text-center mt-8">
             选中文章内容后点击旁注 tab，或直接输入问题
           </div>
         )}
 
-        {session.pendingSelection && (
-          <div className="text-xs border-l-2 border-ember bg-ember/10 p-2 text-parchment/80 rounded-r">
-            <div className="opacity-60 mb-1">你选中了：</div>
-            "{session.pendingSelection}"
-          </div>
-        )}
-
-        {session.messages.map((m, i) => (
-          <div key={i}>
-            <div className={`text-[11px] tracking-wider mb-0.5 ${m.role === 'user' ? 'text-ember' : 'text-parchment/50'}`}>
-              {m.role === 'user' ? '你' : '旁注'}
-            </div>
-            <div className={`leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'text-parchment/80' : 'text-parchment/90'}`}>
-              {m.content || (m.role === 'assistant' && session.streaming ? '…' : '')}
-            </div>
-            {m.searchSources && m.searchSources.length > 0 && (
-              <div className="text-[11px] text-parchment/50 mt-1">
-                已搜索 {m.searchSources.length} 个来源
-              </div>
-            )}
-          </div>
-        ))}
+        <ChatMessageList messages={session.messages} streaming={session.streaming} />
 
         {session.streaming && !session.searchLoading && (
           <div className="text-xs text-parchment/50 animate-pulse">思考中…</div>
@@ -149,22 +146,71 @@ export function ChatWindow() {
         )}
       </div>
 
+      {/* Pending selection chip — 挂在历史对话下方、输入框上方 */}
+      {session.pendingSelection && (
+        <div
+          data-testid="pending-selection"
+          className="relative mx-2 mb-1 text-xs border-l-2 border-ember bg-ember/10 p-2 pr-6 text-parchment/80 rounded-r shrink-0"
+        >
+          <div className="opacity-60 mb-1">你选中了：</div>
+          "{session.pendingSelection}"
+          <button
+            data-testid="selection-cancel-btn"
+            aria-label="取消选中"
+            className="absolute top-1 right-1 text-parchment/50 hover:text-ember leading-none"
+            onClick={() => setAssistantSelection('')}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="p-2 border-t border-parchment/10 flex items-center gap-1.5 shrink-0">
         <button
           data-testid="article-assistant-search-btn"
-          className={`px-1.5 py-1 rounded text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${
-            session.searchEnabled
-              ? 'bg-ember'
-              : 'text-parchment/70 hover:text-ember'
+          className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+            searchEnabled ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
           }`}
           onClick={toggleAssistantSearch}
-          disabled={session.searchLoading}
-          aria-pressed={session.searchEnabled}
-          aria-label={session.searchEnabled ? '搜索已开启' : '搜索已关闭'}
-          title={session.searchEnabled ? '搜索已开启 — 发送时将联网搜索' : '搜索已关闭 — 点击开启联网搜索'}
+          disabled={session.streaming || session.searchLoading}
+          aria-pressed={searchEnabled}
+          aria-label={searchEnabled ? '搜索已开启' : '搜索已关闭'}
+          title={searchEnabled ? '搜索已开启 — 发送时将联网搜索' : '搜索已关闭 — 点击开启联网搜索'}
         >
-          {session.searchLoading ? '⏳' : '🔍'}
+          {session.searchLoading ? (
+            <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin align-middle" />
+          ) : (
+            '🔍'
+          )}
+        </button>
+        <button
+          data-testid="article-assistant-socratic-btn"
+          className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+            socraticMode ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
+          }`}
+          onClick={toggleAssistantSocratic}
+          disabled={session.streaming || session.searchLoading}
+          aria-pressed={socraticMode}
+          aria-label={socraticMode ? '苏格拉底模式已开启' : '苏格拉底模式已关闭'}
+          title="苏格拉底学习模式：关闭后只做信息检索，不再质询"
+        >
+          🎓
+        </button>
+        <button
+          data-testid="article-assistant-thinking-btn"
+          className={`relative px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+            thinkingEffort !== 'off' ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
+          }`}
+          onClick={cycleAssistantThinkingEffort}
+          disabled={session.streaming || session.searchLoading}
+          aria-label={`深度思考：${thinkingEffort === 'off' ? '关闭' : thinkingEffort === 'high' ? '高' : '最高'}`}
+          title={`深度思考：${thinkingEffort === 'off' ? '关闭' : thinkingEffort === 'high' ? '高' : '最高（MAX）'} — 点击切换`}
+        >
+          🧠
+          {thinkingEffort === 'max' && (
+            <span className="absolute -top-1 -right-1 text-[8px] leading-none font-bold">MAX</span>
+          )}
         </button>
         <input
           data-testid="article-assistant-input"

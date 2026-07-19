@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { probeModel, chatNonStream, parseSseChunk } from '@electron/lib/kimi'
+import { probeModel, chatNonStream, parseSseChunk, buildChatBody } from '@electron/lib/kimi'
 
 const cfg = {
   apiKey: 'sk-test',
@@ -178,5 +178,49 @@ describe('parseSseChunk', () => {
   it('ignores empty / non-data lines', () => {
     expect(parseSseChunk(': keepalive\n')).toEqual({ kind: 'noop' })
     expect(parseSseChunk('\n')).toEqual({ kind: 'noop' })
+  })
+})
+
+describe('parseSseChunk reasoning', () => {
+  it('parses reasoning_content delta into a reasoning event', () => {
+    const line = 'data: {"choices":[{"delta":{"reasoning_content":"让我想想"}}]}'
+    expect(parseSseChunk(line)).toEqual({ kind: 'reasoning', text: '让我想想' })
+  })
+
+  it('still parses content delta into a chunk event', () => {
+    const line = 'data: {"choices":[{"delta":{"content":"你好"}}]}'
+    expect(parseSseChunk(line)).toEqual({ kind: 'chunk', text: '你好' })
+  })
+
+  it('ignores [DONE] and malformed lines', () => {
+    expect(parseSseChunk('data: [DONE]')).toEqual({ kind: 'done' })
+    expect(parseSseChunk('data: {not json')).toEqual({ kind: 'noop' })
+  })
+})
+
+describe('buildChatBody deepseek effort', () => {
+  const dsCfg = { apiKey: 'sk-test', baseUrl: 'https://api.deepseek.com', model: 'deepseek-v4-pro', libraryPath: '/' }
+  const msgs = [{ role: 'user' as const, content: 'hi' }]
+
+  it('off → thinking disabled, no reasoning_effort', () => {
+    const body = buildChatBody(dsCfg, { messages: msgs, temperature: 0.7, stream: true, thinking: { type: 'disabled' } })
+    expect(body.thinking).toEqual({ type: 'disabled' })
+    expect(body.reasoning_effort).toBeUndefined()
+  })
+
+  it('high → enabled + reasoning_effort high', () => {
+    const body = buildChatBody(dsCfg, { messages: msgs, temperature: 0.7, stream: true, thinking: { type: 'enabled', reasoning_effort: 'high' } })
+    expect(body.thinking).toEqual({ type: 'enabled' })
+    expect(body.reasoning_effort).toBe('high')
+  })
+
+  it('max → enabled + reasoning_effort max', () => {
+    const body = buildChatBody(dsCfg, { messages: msgs, temperature: 0.7, stream: true, thinking: { type: 'enabled', reasoning_effort: 'max' } })
+    expect(body.reasoning_effort).toBe('max')
+  })
+
+  it('omitting thinking defaults to disabled', () => {
+    const body = buildChatBody(dsCfg, { messages: msgs, temperature: 0.7, stream: true })
+    expect(body.thinking).toEqual({ type: 'disabled' })
   })
 })

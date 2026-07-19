@@ -1,7 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { ipcMain } from 'electron'
-import { chatNonStream, chatStream } from '../lib/kimi'
+import { chatNonStream, chatStream, buildChatBody } from '../lib/kimi'
+import type { ThinkingConfig } from '../lib/kimi'
 import { searchWeb } from '../lib/search'
 import { getSearchApiKey } from '../lib/credentials'
 import { extractJsonObject } from '../lib/extract-json'
@@ -21,6 +22,7 @@ import type {
   ArticleAssistantMessage,
   ArticleAssistantSessionFile,
   ArticleAssistantTerm,
+  AssistantThinkingEffort,
   Message,
 } from '@shared/index'
 
@@ -31,6 +33,10 @@ const assistantSessions = new Map<string, AbortController>()
 // NODE_ENV=test but no E2E_CONFIG_DIR) on the real code path. See rule e2e.md §1.
 function isE2EMock(): boolean {
   return process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
+}
+
+function toThinkingConfig(effort?: AssistantThinkingEffort): ThinkingConfig {
+  return effort && effort !== 'off' ? { type: 'enabled', reasoning_effort: effort } : { type: 'disabled' }
 }
 
 function typedError(code: ArticleAssistantErrorCode, message: string): Error & { code: ArticleAssistantErrorCode } {
@@ -134,15 +140,36 @@ function assertInsideLibrary(targetPath: string, libraryPath: string): void {
   }
 }
 
+export function serializeAssistantSessionBody(messages: ArticleAssistantMessage[]): string {
+  return messages
+    .map((m) => {
+      const selLine =
+        m.role === 'user' && m.selection?.trim()
+          ? `> 选段：${m.selection.trim().replace(/\s*\n\s*/g, ' ')}\n\n`
+          : ''
+      return `## ${m.role === 'user' ? '用户' : '助手'}\n\n${selLine}${m.content}\n`
+    })
+    .join('\n')
+}
+
 export function parseAssistantSessionBody(body: string): ArticleAssistantMessage[] {
   const messages: ArticleAssistantMessage[] = []
   const sections = body.split(/^## /m).slice(1)
   for (const section of sections) {
     const nl = section.indexOf('\n')
     const heading = (nl === -1 ? section : section.slice(0, nl)).trim()
-    const content = (nl === -1 ? '' : section.slice(nl + 1)).trim()
-    if (heading.startsWith('用户')) messages.push({ role: 'user', content })
-    else if (heading.startsWith('助手')) messages.push({ role: 'assistant', content })
+    let content = (nl === -1 ? '' : section.slice(nl + 1)).trim()
+    if (heading.startsWith('用户')) {
+      let selection: string | undefined
+      if (content.startsWith('> 选段：')) {
+        const lineEnd = content.indexOf('\n')
+        selection = content.slice('> 选段：'.length, lineEnd === -1 ? undefined : lineEnd).trim()
+        content = (lineEnd === -1 ? '' : content.slice(lineEnd + 1)).trim()
+      }
+      messages.push({ role: 'user', content, selection })
+    } else if (heading.startsWith('助手')) {
+      messages.push({ role: 'assistant', content })
+    }
   }
   return messages
 }
@@ -227,9 +254,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       const sessionPath = sessionPathFor(args.parentPath)
       assertInsideLibrary(sessionPath, cfg.libraryPath)
 
-      const body = args.messages
-        .map((m) => `## ${m.role === 'user' ? '用户' : '助手'}\n\n${m.content}\n`)
-        .join('\n')
+      const body = serializeAssistantSessionBody(args.messages)
 
       const now = new Date().toISOString()
       let createdAt = now
@@ -286,7 +311,8 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
           createdAt: frontmatter.created_at ?? frontmatter.created,
           updatedAt: frontmatter.updated_at ?? frontmatter.created,
         }
-      } catch {
+      } catch (err) {
+        console.warn('[article-assistant] readSession failed for', sessionPath, err)
         return null
       }
     }
@@ -304,6 +330,8 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         selection?: string
         useSearch?: boolean
         guide?: ArticleAssistantGuide | null
+        socraticMode?: boolean
+        thinkingEffort?: AssistantThinkingEffort
       }
     ): Promise<void> => {
       const send = (channel: string, ...payload: unknown[]) => {
@@ -317,16 +345,48 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         const ctl = new AbortController()
         assistantSessions.set(args.sessionId, ctl)
         try {
+          // 走真实装配链并落盘最终请求体，供 E2E 做请求级断言（不改变 mock 推送行为）
+          const mockSources = [
+            {
+              title: 'Constitutional AI（测试来源）',
+              url: 'https://arxiv.org/abs/2212.08073',
+              snippet: 'Constitutional AI 的原始论文摘要（E2E mock）。',
+            },
+          ]
+          const searchResults = args.useSearch
+            ? formatSearchResults(mockSources.map((s) => ({ title: s.title, url: s.url, content: s.snippet })))
+            : undefined
+          const userPrompt = buildAssistantUserPrompt({
+            articleContent: args.articleContent,
+            guide: args.guide ?? null,
+            selection: args.selection,
+            messages: args.messages,
+            searchResults,
+            socratic: args.socraticMode,
+          })
+          const requestBody = buildChatBody(cfg, {
+            messages: [
+              { role: 'system', content: buildAssistantSystemPrompt(args.socraticMode ?? true) },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.7,
+            stream: true,
+            thinking: toThinkingConfig(args.thinkingEffort),
+          })
+          fs.writeFileSync(
+            path.join(process.env.E2E_CONFIG_DIR as string, 'last-assistant-request.json'),
+            JSON.stringify(requestBody, null, 2),
+            'utf8'
+          )
+
           if (args.useSearch) {
-            send('articleAssistant:searchDone', args.sessionId, {
-              searchSources: [
-                {
-                  title: 'Constitutional AI（测试来源）',
-                  url: 'https://arxiv.org/abs/2212.08073',
-                  snippet: 'Constitutional AI 的原始论文摘要（E2E mock）。',
-                },
-              ],
-            })
+            send('articleAssistant:searchDone', args.sessionId, { searchSources: mockSources })
+          }
+          if (args.thinkingEffort && args.thinkingEffort !== 'off') {
+            for (const chunk of ['先梳理', '文章结构。']) {
+              if (ctl.signal.aborted) return
+              send('articleAssistant:reasoningChunk', args.sessionId, chunk)
+            }
           }
           for (const chunk of ['这是一段', 'E2E 测试的', '旁注回复。']) {
             if (ctl.signal.aborted) return
@@ -378,9 +438,10 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         selection: args.selection,
         messages: args.messages,
         searchResults,
+        socratic: args.socraticMode,
       })
       const llmMessages: Message[] = [
-        { role: 'system', content: buildAssistantSystemPrompt() },
+        { role: 'system', content: buildAssistantSystemPrompt(args.socraticMode ?? true) },
         { role: 'user', content: userPrompt },
       ]
 
@@ -390,8 +451,9 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       try {
         await chatStream(
           cfg,
-          { messages: llmMessages, temperature: 0.7, signal: ctl.signal },
-          (chunk) => send('llm:chunk', args.sessionId, chunk)
+          { messages: llmMessages, temperature: 0.7, signal: ctl.signal, thinking: toThinkingConfig(args.thinkingEffort) },
+          (chunk) => send('llm:chunk', args.sessionId, chunk),
+          (reasoning) => send('articleAssistant:reasoningChunk', args.sessionId, reasoning)
         )
         send('llm:done', args.sessionId)
       } catch (err) {

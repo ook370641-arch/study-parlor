@@ -20,6 +20,12 @@ export class ArticleAssistantPage {
   readonly bodyChunks: Locator
   readonly swapPaintingButton: Locator
   readonly anthropicSwapPaintingButton: Locator
+  readonly socraticBtn: Locator
+  readonly thinkingBtn: Locator
+  readonly pendingSelection: Locator
+  readonly selectionCancelBtn: Locator
+  readonly chatMessages: Locator
+  readonly reasoningBlock: Locator
 
   constructor(private page: Page) {
     this.tab = page.locator(SELECTORS.articleAssistant.tab)
@@ -34,6 +40,12 @@ export class ArticleAssistantPage {
     this.bodyChunks = page.locator(SELECTORS.articleAssistant.bodyChunk)
     this.swapPaintingButton = page.locator(SELECTORS.articleAssistant.swapPaintingButton)
     this.anthropicSwapPaintingButton = page.locator(SELECTORS.articleAssistant.anthropicSwapPaintingButton)
+    this.socraticBtn = page.locator(SELECTORS.articleAssistant.socraticBtn)
+    this.thinkingBtn = page.locator(SELECTORS.articleAssistant.thinkingBtn)
+    this.pendingSelection = page.locator(SELECTORS.articleAssistant.pendingSelection)
+    this.selectionCancelBtn = page.locator(SELECTORS.articleAssistant.selectionCancelBtn)
+    this.chatMessages = page.locator(SELECTORS.articleAssistant.chatMessage)
+    this.reasoningBlock = page.locator(SELECTORS.articleAssistant.reasoningBlock)
   }
 
   async waitForMounted(timeout = 30000) {
@@ -173,4 +185,15 @@ export class ArticleAssistantPage {
     await this.page.mouse.up()
     return box
   }
+
+  async clickSocratic() { await this.socraticBtn.click() }
+  async clickThinking() { await this.thinkingBtn.click() }
+
+  /** 从默认 off 起，把深度思考循环到目标档位 */
+  async setThinkingEffort(target: 'off' | 'high' | 'max') {
+    const clicks = { off: 0, high: 1, max: 2 }[target]
+    for (let i = 0; i < clicks; i++) await this.clickThinking()
+  }
+
+  async cancelSelection() { await this.selectionCancelBtn.click() }
 }

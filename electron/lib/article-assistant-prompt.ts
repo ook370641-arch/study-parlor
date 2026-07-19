@@ -1,6 +1,15 @@
 import type { ArticleAssistantGuide, ArticleAssistantMessage } from '@shared/index'
 
-export function buildAssistantSystemPrompt(): string {
+export function buildAssistantSystemPrompt(socratic = true): string {
+  if (!socratic) {
+    return `你是一位陪伴用户阅读文章的信息检索助手。
+
+你的职责：
+- 用户正在阅读一篇文章，你在旁边帮助他快速获取信息。
+- 直接、简洁地回答问题，基于文章内容与搜索结果给出结论。
+- 不要反问、不要质询、不要用提问引导用户。
+- 除非用户明确要求用其他语言，一律用中文回答。`
+  }
   return `你是一位陪伴用户阅读文章的苏格拉底式助手。
 
 你的职责：
@@ -17,6 +26,7 @@ export function buildAssistantUserPrompt(args: {
   selection?: string
   messages: ArticleAssistantMessage[]
   searchResults?: string
+  socratic?: boolean
 }): string {
   const sections: string[] = []
 
@@ -48,7 +58,11 @@ export function buildAssistantUserPrompt(args: {
     sections.push(`# 历史对话\n${historyText}`)
   }
 
-  sections.push('请针对用户当前问题或选中文本给出苏格拉底式回复。')
+  sections.push(
+    args.socratic === false
+      ? '请针对用户当前问题或选中文本直接给出简明回答。'
+      : '请针对用户当前问题或选中文本给出苏格拉底式回复。'
+  )
 
   return sections.join('\n\n')
 }

@@ -104,3 +104,36 @@ describe('buildAssistantUserPrompt', () => {
     expect(out).not.toContain('# 历史对话')
   })
 })
+
+describe('buildAssistantSystemPrompt socratic modes', () => {
+  it('socratic mode keeps the questioning stance', () => {
+    const p = buildAssistantSystemPrompt(true)
+    expect(p).toContain('苏格拉底')
+    expect(p).toMatch(/引导/)
+  })
+
+  it('retrieval mode answers directly without questioning', () => {
+    const p = buildAssistantSystemPrompt(false)
+    expect(p).not.toContain('苏格拉底')
+    expect(p).toContain('直接')
+    expect(p).toContain('不要反问')
+  })
+
+  it('defaults to socratic when the argument is omitted', () => {
+    expect(buildAssistantSystemPrompt()).toContain('苏格拉底')
+  })
+})
+
+describe('buildAssistantUserPrompt socratic flag', () => {
+  const base = { articleContent: '正文内容', guide: null, messages: [] }
+
+  it('ends with the socratic instruction by default', () => {
+    expect(buildAssistantUserPrompt(base)).toContain('苏格拉底式回复')
+  })
+
+  it('ends with the direct-answer instruction when socratic is false', () => {
+    const out = buildAssistantUserPrompt({ ...base, socratic: false })
+    expect(out).toContain('直接给出简明回答')
+    expect(out).not.toContain('苏格拉底式回复')
+  })
+})

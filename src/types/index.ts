@@ -96,6 +96,8 @@ export type ArticleAssistantMessage = {
   role: 'user' | 'assistant'
   content: string
   searchSources?: { title: string; url: string; snippet: string }[]
+  selection?: string
+  reasoning?: string
 }
 
 export type ArticleAssistantSessionFile = {
@@ -116,6 +118,8 @@ export type ArticleAssistantGuideFile = {
   guide: ArticleAssistantGuide
   generatedAt: string
 }
+
+export type AssistantThinkingEffort = 'off' | 'high' | 'max'
 
 export type ArticleAssistantErrorCode =
   | 'GUIDE_LLM_ERROR'
@@ -389,6 +393,9 @@ export type StateJson = {
   anthropicBlogLastSeenAt?: string | null
   articleAssistantGuideWidth?: number
   articleAssistantGuideCollapsed?: boolean
+  assistantSearchEnabled?: boolean
+  assistantSocraticMode?: boolean
+  assistantThinkingEffort?: AssistantThinkingEffort
 }
 
 export type IpcApi = {
@@ -432,6 +439,7 @@ export type IpcApi = {
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
   onArticleAssistantSearchDone: (cb: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void) => () => void
+  onArticleAssistantReasoningChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onBriefingProgress: (cb: (stage: BriefingStage, detail?: string) => void) => () => void
   briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
   briefingList: () => Promise<{ date: string; filePath: string }[]>
@@ -537,6 +545,8 @@ export type IpcApi = {
     selection?: string
     useSearch?: boolean
     guide?: ArticleAssistantGuide | null
+    socraticMode?: boolean
+    thinkingEffort?: AssistantThinkingEffort
   }) => Promise<void>
 
   articleAssistantAbort: (args: { sessionId: string }) => Promise<void>

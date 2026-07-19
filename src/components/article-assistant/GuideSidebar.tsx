@@ -10,28 +10,28 @@ interface Props {
 }
 
 export function GuideSidebar({ theme = 'academic' }: Props) {
-  const session = useStore((s) => s.assistantSession)
+  const guide = useStore((s) => s.assistantSession?.guide ?? null)
+  const guideLoading = useStore((s) => s.assistantSession?.guideLoading ?? false)
+  const guideError = useStore((s) => s.assistantSession?.guideError ?? null)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const isAcademic = theme !== 'newspaper'
 
-  if (!session) return null
-
   return (
     <div className={`h-full flex flex-col shrink-0 border-l ${isAcademic ? 'border-parchment/10 bg-ink/40' : 'border-[#1a1a1a]/10 bg-[#f5f2ed]'} `}>
       <div className={`px-4 py-3 text-xs uppercase tracking-widest select-none ${isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}`}>导读</div>
-      {session.guideLoading && (
+      {guideLoading && (
         <div className={`px-4 text-sm ${isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'}`}>生成导读中…</div>
       )}
-      {session.guideError && !session.guide && (
+      {guideError && !guide && (
         <div className="px-4 text-sm text-ember">未能生成导读，可继续阅读原文。</div>
       )}
-      {session.guide && (
+      {guide && (
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
           <div style={{ fontSize: GUIDE_BODY_SIZE }} className={`rounded p-3 leading-relaxed ${isAcademic ? 'bg-ink/60 border border-parchment/10 text-parchment/90' : 'bg-white border border-[#1a1a1a]/10 text-[#1a1a1a]'}`}>
-            <strong className="text-ember">背景</strong>：{session.guide.background}
+            <strong className="text-ember">背景</strong>：{guide.background}
           </div>
-          {session.guide.chunks.map((chunk, i) => {
+          {guide.chunks.map((chunk, i) => {
             const isActive = activeChunkIndex === i
             return (
               <div

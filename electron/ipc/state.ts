@@ -23,6 +23,9 @@ const DEFAULT: StateJson = {
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicBlogLastSeenAt: null,
   jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
+  assistantSearchEnabled: false,
+  assistantSocraticMode: true,
+  assistantThinkingEffort: 'off',
 }
 
 let currentState: StateJson | null = null

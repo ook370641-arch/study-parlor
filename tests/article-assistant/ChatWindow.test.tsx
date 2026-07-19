@@ -14,6 +14,9 @@ const actions = {
   abortAssistantStream: vi.fn(),
   toggleAssistantOpen: vi.fn(),
   toggleAssistantSearch: vi.fn(),
+  toggleAssistantSocratic: vi.fn(),
+  cycleAssistantThinkingEffort: vi.fn(),
+  setAssistantSelection: vi.fn(),
 }
 
 function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSession {
@@ -29,7 +32,6 @@ function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSessio
     streaming: false,
     abortId: 'abort-1',
     searchLoading: false,
-    searchEnabled: false,
     searchError: null,
     chatError: null,
     retryContext: null,
@@ -39,8 +41,15 @@ function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSessio
   }
 }
 
-function mockStore(session: AssistantSession | null) {
-  const fullState = { assistantSession: session, ...actions }
+function mockStore(session: AssistantSession | null, globals: Record<string, unknown> = {}) {
+  const fullState = {
+    assistantSession: session,
+    assistantSearchEnabled: false,
+    assistantSocraticMode: true,
+    assistantThinkingEffort: 'off' as const,
+    ...globals,
+    ...actions,
+  }
   ;(storeModule.useStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     (selector: (s: typeof fullState) => unknown) => selector(fullState)
   )
@@ -52,12 +61,12 @@ describe('ChatWindow', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the chat window and selection quote block when open with a pending selection', () => {
+  it('renders the chat window and pending selection chip when open with a pending selection', () => {
     mockStore(baseSession({ pendingSelection: 'selected text' }))
     render(<ChatWindow />)
     expect(screen.getByTestId('article-assistant-chat-window')).toBeInTheDocument()
-    expect(screen.getByText('你选中了：')).toBeInTheDocument()
-    expect(screen.getByText(/selected text/)).toBeInTheDocument()
+    expect(screen.getByTestId('pending-selection')).toHaveTextContent('selected text')
+    expect(screen.getByTestId('pending-selection')).toHaveTextContent('你选中了：')
   })
 
   it('renders nothing when the session is closed', () => {
@@ -73,16 +82,12 @@ describe('ChatWindow', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('disables the search button while a search is loading', () => {
-    mockStore(baseSession({ searchLoading: true }))
-    render(<ChatWindow />)
-    expect(screen.getByTestId('article-assistant-search-btn')).toBeDisabled()
-  })
-
-  it('keeps the search button enabled while streaming', () => {
+  it('disables all three toggle buttons while streaming', () => {
     mockStore(baseSession({ streaming: true }))
     render(<ChatWindow />)
-    expect(screen.getByTestId('article-assistant-search-btn')).not.toBeDisabled()
+    expect(screen.getByTestId('article-assistant-search-btn')).toBeDisabled()
+    expect(screen.getByTestId('article-assistant-socratic-btn')).toBeDisabled()
+    expect(screen.getByTestId('article-assistant-thinking-btn')).toBeDisabled()
   })
 
   it('shows the send button (not stop) when not streaming', () => {
@@ -119,29 +124,46 @@ describe('ChatWindow', () => {
     expect(screen.getByText('已搜索 3 个来源')).toBeInTheDocument()
   })
 
-  it('renders search button in off state without ember background', () => {
-    mockStore(baseSession({ searchEnabled: false }))
+  it('renders search button in off state with gray color', () => {
+    mockStore(baseSession(), { assistantSearchEnabled: false })
     render(<ChatWindow />)
     const btn = screen.getByTestId('article-assistant-search-btn')
-    expect(btn.className).not.toContain('bg-ember')
+    expect(btn.className).toContain('text-parchment/40')
+    expect(btn.className).not.toContain('text-sky-400')
   })
 
-  it('renders search button in on state with ember background', () => {
-    mockStore(baseSession({ searchEnabled: true }))
+  it('renders search button in on state with blue color', () => {
+    mockStore(baseSession(), { assistantSearchEnabled: true })
     render(<ChatWindow />)
     const btn = screen.getByTestId('article-assistant-search-btn')
-    expect(btn.className).toContain('bg-ember')
+    expect(btn.className).toContain('text-sky-400')
   })
 
-  it('clicking search button toggles search mode without sending', () => {
-    mockStore(baseSession({ searchEnabled: false }))
+  it('sending delegates search state to the store (single-argument send)', () => {
+    mockStore(baseSession(), { assistantSearchEnabled: true })
     render(<ChatWindow />)
-    fireEvent.click(screen.getByTestId('article-assistant-search-btn'))
-    expect(actions.toggleAssistantSearch).toHaveBeenCalledTimes(1)
-    expect(actions.sendAssistantMessage).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByTestId('article-assistant-input'), { target: { value: '问题' } })
+    fireEvent.click(screen.getByTestId('article-assistant-send-btn'))
+    expect(actions.sendAssistantMessage).toHaveBeenCalledWith('问题')
   })
 
-  it('clamps dragging so the title bar drag handle never leaves the viewport', () => {
+  it('reflects socratic and thinking global state and calls their actions', () => {
+    mockStore(baseSession(), { assistantSocraticMode: false, assistantThinkingEffort: 'max' })
+    render(<ChatWindow />)
+    const socratic = screen.getByTestId('article-assistant-socratic-btn')
+    const thinking = screen.getByTestId('article-assistant-thinking-btn')
+    expect(socratic).toHaveAttribute('aria-pressed', 'false')
+    expect(socratic.className).toContain('text-parchment/40')
+    expect(thinking.className).toContain('text-sky-400')
+    expect(thinking.textContent).toContain('MAX')
+
+    fireEvent.click(socratic)
+    expect(actions.toggleAssistantSocratic).toHaveBeenCalledTimes(1)
+    fireEvent.click(thinking)
+    expect(actions.cycleAssistantThinkingEffort).toHaveBeenCalledTimes(1)
+  })
+
+  it('moves via transform during drag and commits clamped left/top on pointerup', () => {
     mockStore(baseSession())
     const { container } = render(<ChatWindow />)
     const win = screen.getByTestId('article-assistant-chat-window')
@@ -155,27 +177,63 @@ describe('ChatWindow', () => {
 
     fireEvent.pointerDown(titleBar, { clientX: 420, clientY: 320, pointerId: 1 })
 
-    // 向上拖出视口（用户实际场景：拖到 Electron 原生标题栏位置松手）
-    // —— 标题栏是唯一拖拽把手，top 不允许为负，否则永远无法再拖回来
+    // 拖出视口顶部：originY=300, rawY = 300 + (-100-320) = -120 → clamp y=0 → translate dy=-300
     fireEvent.pointerMove(window, { clientX: 420, clientY: -100 })
+    expect(win.style.transform).toBe('translate(0px, -300px)')
+    expect(win.style.top).toBe('') // 拖拽中不提交 left/top
+
+    fireEvent.pointerUp(window, { clientX: 420, clientY: -100 })
+    expect(win.style.transform).toBe('')
     expect(win.style.top).toBe('0px')
-
-    // 向下拖出视口 —— 至少保留标题栏可点
-    fireEvent.pointerMove(window, { clientX: 420, clientY: 3000 })
-    expect(win.style.top).toBe(`${window.innerHeight - 40}px`)
-
-    // 向左拖出视口 —— 保留 80px 可抓取区域（窗口宽 340 → 最小 left = -260）
-    fireEvent.pointerMove(window, { clientX: -500, clientY: 320 })
-    expect(win.style.left).toBe('-260px')
-
-    fireEvent.pointerUp(window)
+    expect(win.style.left).toBe('400px')
   })
 
-  it('sending uses the current searchEnabled state', () => {
-    mockStore(baseSession({ searchEnabled: true }))
+  it('lays out user messages right-aligned and assistant messages left-aligned', () => {
+    mockStore(
+      baseSession({
+        messages: [
+          { role: 'user', content: '我的问题' },
+          { role: 'assistant', content: '我的回答' },
+        ],
+      })
+    )
     render(<ChatWindow />)
-    fireEvent.change(screen.getByTestId('article-assistant-input'), { target: { value: '问题' } })
-    fireEvent.click(screen.getByTestId('article-assistant-send-btn'))
-    expect(actions.sendAssistantMessage).toHaveBeenCalledWith('问题', true)
+    const messages = screen.getAllByTestId('chat-message')
+    expect(messages[0].dataset.role).toBe('user')
+    expect(messages[0].className).toContain('justify-end')
+    expect(messages[1].dataset.role).toBe('assistant')
+    expect(messages[1].className).toContain('justify-start')
+  })
+
+  it('shows the historical selection inside a user message with muted styling', () => {
+    mockStore(
+      baseSession({
+        messages: [{ role: 'user', content: '问', selection: '当时选的一段' }],
+      })
+    )
+    render(<ChatWindow />)
+    const sel = screen.getByTestId('chat-message-selection')
+    expect(sel).toHaveTextContent('当时选的一段')
+    expect(sel.className).toContain('border-parchment/40')
+    expect(sel.className).not.toContain('border-ember')
+  })
+
+  it('renders reasoning in a collapsible block above the assistant content', () => {
+    mockStore(
+      baseSession({
+        messages: [{ role: 'assistant', content: '最终答案', reasoning: '思考内容' }],
+      })
+    )
+    render(<ChatWindow />)
+    const block = screen.getByTestId('reasoning-block')
+    expect(block).toHaveTextContent('思考内容')
+    expect(block.tagName.toLowerCase()).toBe('details')
+  })
+
+  it('clears the pending selection via the cancel button', () => {
+    mockStore(baseSession({ pendingSelection: 'selected text' }))
+    render(<ChatWindow />)
+    fireEvent.click(screen.getByTestId('selection-cancel-btn'))
+    expect(actions.setAssistantSelection).toHaveBeenCalledWith('')
   })
 })
