@@ -9,6 +9,7 @@ import { dumpRecovery } from './recovery'
 import { serializeFrontmatter } from './frontmatter'
 import type { AppConfig } from '../env'
 import type {
+  InterviewQuestion,
   JobBriefingConfig,
   JobCompany,
   JobBriefingResult,
@@ -408,6 +409,109 @@ export async function matchJobsToProfile(
     })
   }
   return matched.sort((a, b) => b.matchLevel - a.matchLevel).slice(0, 10)
+}
+
+export type QuestionQuery = { query: string; includeDomains: string[] }
+
+function questionDirection(profile: JobProfile, config: JobBriefingConfig): string {
+  return profile.direction || profile.targetRoles[0] || config.roleKeywords[0] || 'AI产品经理'
+}
+
+export function buildQuestionQueries(
+  focus: FocusCompany[],
+  profile: JobProfile,
+  config: JobBriefingConfig,
+): QuestionQuery[] {
+  const direction = questionDirection(profile, config)
+  return focus.slice(0, 3).map(f => ({
+    query: `${f.name} ${direction} 面经 面试题`,
+    includeDomains: [...JOB_COMMUNITY_DOMAINS],
+  }))
+}
+
+export function buildFallbackQuestionQuery(profile: JobProfile, config: JobBriefingConfig): string {
+  return `${questionDirection(profile, config)} 面经 高频问题`
+}
+
+export function dedupQuestions(questions: InterviewQuestion[]): InterviewQuestion[] {
+  const seen = new Set<string>()
+  const out: InterviewQuestion[] = []
+  for (const q of questions) {
+    const key = q.question.replace(/[\s?？!！。]/g, '')
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(q)
+  }
+  return out
+}
+
+async function runQuestionQuery(
+  cfg: AppConfig,
+  query: string,
+  opts: { apiKey: string; signal?: AbortSignal; includeDomains?: string[] }
+): Promise<InterviewQuestion[]> {
+  const results = await searchWeb({
+    query,
+    apiKey: opts.apiKey,
+    maxResults: 5,
+    days: 90,
+    includeDomains: opts.includeDomains,
+    signal: opts.signal,
+  })
+  const content = results.map(r => `标题: ${r.title}\nURL: ${r.url}\n摘要: ${r.content}`).join('\n\n')
+  const prompt = readPrompt('aggregate-questions')
+    .replace('{{direction}}', query)
+    .replace('{{content}}', content.slice(0, 20_000))
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt } as Message],
+    temperature: 0.3,
+    thinking: { type: 'disabled' },
+    signal: opts.signal,
+  })
+  const extracted = extractJsonObject(text)
+  if (!extracted) return []
+  const obj = JSON.parse(extracted)
+  if (!Array.isArray(obj.questions)) return []
+  const out: InterviewQuestion[] = []
+  for (const item of obj.questions) {
+    if (!item || typeof item.question !== 'string' || !item.question.trim()) continue
+    out.push({
+      question: item.question.trim(),
+      intent: String(item.intent ?? '').trim(),
+      prepTip: String(item.prepTip ?? '').trim(),
+      frequency: String(item.frequency ?? '').trim(),
+      companies: Array.isArray(item.companies) ? item.companies.filter((c: unknown): c is string => typeof c === 'string') : [],
+      url: String(item.url ?? '').trim(),
+    })
+  }
+  return out
+}
+
+export async function discoverQuestions(
+  cfg: AppConfig,
+  focus: FocusCompany[],
+  profile: JobProfile,
+  config: JobBriefingConfig,
+  opts: { apiKey: string; signal?: AbortSignal }
+): Promise<InterviewQuestion[]> {
+  const collected: InterviewQuestion[] = []
+  for (const q of buildQuestionQueries(focus, profile, config)) {
+    if (opts.signal?.aborted) break
+    try {
+      collected.push(...await runQuestionQuery(cfg, q.query, { ...opts, includeDomains: q.includeDomains }))
+    } catch (err) {
+      console.warn(`[job-briefing] question query failed: ${q.query}`, err)
+    }
+  }
+  if (collected.length === 0 && !opts.signal?.aborted) {
+    const fallback = buildFallbackQuestionQuery(profile, config)
+    try {
+      collected.push(...await runQuestionQuery(cfg, fallback, { ...opts, includeDomains: [...JOB_COMMUNITY_DOMAINS] }))
+    } catch (err) {
+      console.warn(`[job-briefing] fallback question query failed: ${fallback}`, err)
+    }
+  }
+  return dedupQuestions(collected).slice(0, 8)
 }
 
 export async function generateJobBriefing(

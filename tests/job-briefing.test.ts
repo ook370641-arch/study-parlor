@@ -11,6 +11,9 @@ import {
   companyNameMatches,
   selectFocusCompanies,
   buildFocusJobQuery,
+  buildQuestionQueries,
+  buildFallbackQuestionQuery,
+  dedupQuestions,
 } from '../electron/lib/job-briefing'
 import type { RawJob } from '../electron/lib/job-briefing'
 import { DEFAULT_JOB_PROFILE, isJobProfileEmpty, normalizeJobProfile, formatJobProfile } from '../src/lib/job-briefing-defaults'
@@ -195,5 +198,38 @@ describe('focus selection', () => {
   it('falls back to roleKeywords when profile targetRoles empty', () => {
     const q = buildFocusJobQuery('腾讯', normalizeJobProfile({}), normalizeJobBriefingConfig({ roleKeywords: ['AI产品经理'] }))
     expect(q).toBe('腾讯 AI产品经理 招聘 校招 2026')
+  })
+})
+
+describe('question lane', () => {
+  const config = normalizeJobBriefingConfig({ roleKeywords: ['AI产品经理'] })
+
+  it('builds at most 3 focus-company queries with community domains', () => {
+    const qs = buildQuestionQueries(
+      [{ name: '腾讯' }, { name: '字节跳动' }, { name: '百度' }, { name: '美团' }],
+      normalizeJobProfile({ direction: '模型产品' }),
+      config,
+    )
+    expect(qs).toHaveLength(3)
+    expect(qs[0].query).toBe('腾讯 模型产品 面经 面试题')
+    expect(qs.every(q => q.includeDomains.every(d => JOB_COMMUNITY_DOMAINS.includes(d)))).toBe(true)
+  })
+
+  it('uses roleKeywords when profile direction and targetRoles empty', () => {
+    const qs = buildQuestionQueries([{ name: '腾讯' }], normalizeJobProfile({}), config)
+    expect(qs[0].query).toBe('腾讯 AI产品经理 面经 面试题')
+  })
+
+  it('builds fallback query from direction', () => {
+    expect(buildFallbackQuestionQuery(normalizeJobProfile({ direction: '模型产品' }), config)).toBe('模型产品 面经 高频问题')
+    expect(buildFallbackQuestionQuery(normalizeJobProfile({}), config)).toBe('AI产品经理 面经 高频问题')
+  })
+
+  it('dedups questions ignoring punctuation/whitespace', () => {
+    const out = dedupQuestions([
+      { question: '如何为多解问题确定评测指标？', intent: '', prepTip: '', frequency: '', companies: [], url: 'u1' },
+      { question: '如何为多解问题确定评测指标', intent: '', prepTip: '', frequency: '', companies: [], url: 'u2' },
+    ])
+    expect(out).toHaveLength(1)
   })
 })
