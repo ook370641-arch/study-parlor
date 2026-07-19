@@ -106,6 +106,18 @@ rm -rf .electron-cache
 - `generateContinueSuggestions` — 根据主题历史生成续谈推荐
 - `generateGroupInspiration` — 根据分组内主题生成分组灵感
 
+### 写作功能 (`electron/lib/writing-tree.ts`, `electron/lib/writing-catalog.ts`, `electron/lib/writing-assistant/`)
+
+夜航简报的第四来源。Typora 式 WYSIWYG Markdown 编辑 + 分组目录树管理 + AI 写作助手。
+
+- **存储**: `<学习库>/writing/` (新写作) + `<学习库>/repository/` (过去积累)，分组 = 嵌套子目录
+- **编辑器**: Milkdown v7 (ProseMirror)，所见即所得，产出纯 `.md`
+- **AI 助手**: 停靠式右栏面板，渐进式披露（`read_local` 单一本地读取工具），网络搜索 + 思考深度开关
+- **主进程模块**: `electron/lib/writing-tree.ts` (CRUD)、`electron/lib/writing-catalog.ts` (摘要)、`electron/lib/writing-assistant/` (工具协议/循环)
+- **IPC**: `electron/ipc/writing.ts` (文件树)、`electron/ipc/writing-assistant.ts` (AI 对话)
+- **渲染组件**: `src/components/writing/` (编辑器/树/工具栏)、`src/components/writing-assistant/` (助手面板)
+- **持久化**: `state.json` 字段 `writingFontSize`/`writingTone`/`assistantSearchEnabled`/`assistantThinkingEffort` 等
+
 ## 关键配置
 
 ### `.env` 必需字段
