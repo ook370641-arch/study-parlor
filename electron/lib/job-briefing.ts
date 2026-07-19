@@ -17,6 +17,8 @@ import type {
   JobBriefingStage,
   JobEvent,
   JobEventType,
+  JobProfile,
+  MatchedJob,
   Message,
 } from '@shared/index'
 
@@ -348,6 +350,64 @@ export async function discoverEvents(
     }
   }
   return dedupEvents(events)
+}
+
+export type FocusCompany = { name: string; eventTitle?: string }
+
+export function selectFocusCompanies(events: JobEvent[], config: JobBriefingConfig): FocusCompany[] {
+  const enabled = config.companies
+    .filter(c => c.enabled)
+    .sort((a, b) => a.priority - b.priority)
+  const withEvents: FocusCompany[] = []
+  for (const c of enabled) {
+    const ev = events.find(e => companyNameMatches(e.company, c.name))
+    if (ev) withEvents.push({ name: c.name, eventTitle: ev.title })
+  }
+  if (withEvents.length > 0) return withEvents
+  return enabled.slice(0, 5).map(c => ({ name: c.name }))
+}
+
+export function buildFocusJobQuery(company: string, profile: JobProfile, config: JobBriefingConfig): string {
+  const roles = profile.targetRoles.length ? profile.targetRoles : config.roleKeywords
+  return `${company} ${roles.join(' ')} 招聘 校招 2026`
+}
+
+export async function matchJobsToProfile(
+  cfg: AppConfig,
+  jobs: RawJob[],
+  profile: JobProfile,
+  focus: FocusCompany[],
+  opts: { signal?: AbortSignal } = {}
+): Promise<MatchedJob[]> {
+  const top = jobs.slice(0, 30)
+  if (top.length === 0) return []
+  const prompt = readPrompt('match-jobs')
+    .replace('{{profile}}', formatJobProfile(profile))
+    .replace('{{jobsJson}}', JSON.stringify(top, null, 2))
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt } as Message],
+    temperature: 0.3,
+    thinking: { type: 'enabled', reasoning_effort: 'high' },
+    signal: opts.signal,
+  })
+  const extracted = extractJsonObject(text)
+  if (!extracted) throw new Error('EXTRACTION_ERROR: match-jobs JSON extraction failed')
+  const obj = JSON.parse(extracted)
+  if (!Array.isArray(obj.jobs)) throw new Error('EXTRACTION_ERROR: match-jobs jobs is not an array')
+  const matched: MatchedJob[] = []
+  for (const m of obj.jobs) {
+    const idx = typeof m.index === 'number' ? m.index : -1
+    const job = top[idx]
+    if (!job) continue
+    const level = Number(m.matchLevel)
+    matched.push({
+      ...job,
+      matchLevel: (level >= 1 && level <= 5 ? level : 3) as MatchedJob['matchLevel'],
+      matchReason: String(m.matchReason ?? '').trim(),
+      sourceEventTitle: focus.find(f => companyNameMatches(f.name, job.company))?.eventTitle,
+    })
+  }
+  return matched.sort((a, b) => b.matchLevel - a.matchLevel).slice(0, 10)
 }
 
 export async function generateJobBriefing(

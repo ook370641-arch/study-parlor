@@ -9,6 +9,8 @@ import {
   buildEventQueries,
   dedupEvents,
   companyNameMatches,
+  selectFocusCompanies,
+  buildFocusJobQuery,
 } from '../electron/lib/job-briefing'
 import type { RawJob } from '../electron/lib/job-briefing'
 import { DEFAULT_JOB_PROFILE, isJobProfileEmpty, normalizeJobProfile, formatJobProfile } from '../src/lib/job-briefing-defaults'
@@ -156,5 +158,42 @@ describe('event lane', () => {
     expect(companyNameMatches('腾讯', '腾讯科技')).toBe(true)
     expect(companyNameMatches('阿里巴巴', '腾讯')).toBe(false)
     expect(companyNameMatches('', '腾讯')).toBe(false)
+  })
+})
+
+describe('focus selection', () => {
+  const config = normalizeJobBriefingConfig({
+    companies: [
+      { name: '字节跳动', priority: 1, enabled: true },
+      { name: '腾讯', priority: 2, enabled: true },
+      { name: '百度', priority: 3, enabled: true },
+      { name: '美团', priority: 4, enabled: true },
+      { name: '阿里', priority: 5, enabled: true },
+      { name: 'MiniMax', priority: 6, enabled: true },
+    ],
+  })
+
+  it('focuses on companies that have fresh events, carrying event title', () => {
+    const focus = selectFocusCompanies(
+      [{ company: '腾讯科技', eventType: '秋招开启', title: '腾讯 2027 届秋招启动', date: '', summary: '', url: '' }],
+      config,
+    )
+    expect(focus).toEqual([{ name: '腾讯', eventTitle: '腾讯 2027 届秋招启动' }])
+  })
+
+  it('falls back to top-5 priority companies when no events', () => {
+    const focus = selectFocusCompanies([], config)
+    expect(focus.map(f => f.name)).toEqual(['字节跳动', '腾讯', '百度', '美团', '阿里'])
+    expect(focus.every(f => f.eventTitle === undefined)).toBe(true)
+  })
+
+  it('builds focus job query with profile targetRoles when filled', () => {
+    const q = buildFocusJobQuery('腾讯', normalizeJobProfile({ targetRoles: ['模型产品经理'] }), config)
+    expect(q).toBe('腾讯 模型产品经理 招聘 校招 2026')
+  })
+
+  it('falls back to roleKeywords when profile targetRoles empty', () => {
+    const q = buildFocusJobQuery('腾讯', normalizeJobProfile({}), normalizeJobBriefingConfig({ roleKeywords: ['AI产品经理'] }))
+    expect(q).toBe('腾讯 AI产品经理 招聘 校招 2026')
   })
 })
