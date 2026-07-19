@@ -6,7 +6,7 @@ export function detectDocType(content: string, fileName: string): DocType {
   // Priority 1: frontmatter type field
   try {
     const type = extractFrontmatterField(content, 'type')
-    if (type === 'progress' || type === 'review' || type === 'anthropic-article' || type === 'job-briefing') return 'report'
+    if (type === 'progress' || type === 'review' || type === 'anthropic-article' || type === 'job-briefing' || type === 'writing') return 'report'
     if (type === 'fable') return 'fable'
     if (type === 'article-assistant') return 'dialogue'
   } catch {

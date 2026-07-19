@@ -23,6 +23,14 @@ const DEFAULT: StateJson = {
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicBlogLastSeenAt: null,
   jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
+  writingFontSize: 'base',
+  writingTone: 'parchment',
+  writingListTab: 'articles',
+  writingAssistantWidth: 320,
+  writingAssistantOpen: false,
+  lastWritingFile: null,
+  assistantSearchEnabled: false,
+  assistantThinkingEffort: 'off',
 }
 
 let currentState: StateJson | null = null

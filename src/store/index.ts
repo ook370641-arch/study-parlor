@@ -10,6 +10,7 @@ import type {
   ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode,
+  WritingTone,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -273,6 +274,24 @@ type AppStore = {
   setAssistantActiveChunk: (index: number | null) => void
   persistAssistantState: () => Promise<void>
   generateAssistantGuide: () => Promise<void>
+
+  // 写作板
+  writingFontSize: BriefingFontSize
+  writingTone: WritingTone
+  writingListTab: 'articles' | 'repository'
+  writingAssistantWidth: number
+  writingAssistantOpen: boolean
+  lastWritingFile: string | null
+  assistantSearchEnabled: boolean
+  assistantThinkingEffort: 'off' | 'high' | 'max'
+  setWritingFontSize: (size: BriefingFontSize) => void
+  setWritingTone: (tone: WritingTone) => void
+  setWritingListTab: (tab: 'articles' | 'repository') => void
+  setWritingAssistantWidth: (width: number) => void
+  setWritingAssistantOpen: (open: boolean) => void
+  setLastWritingFile: (file: string | null) => void
+  setAssistantSearchEnabled: (enabled: boolean) => void
+  setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
 }
 
 let wildcardRequestId = 0
@@ -332,6 +351,14 @@ export const useStore = create<AppStore>((set, get) => ({
   assistantSession: null,
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
+  writingFontSize: 'base',
+  writingTone: 'parchment',
+  writingListTab: 'articles',
+  writingAssistantWidth: 320,
+  writingAssistantOpen: false,
+  lastWritingFile: null,
+  assistantSearchEnabled: false,
+  assistantThinkingEffort: 'off',
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -356,6 +383,14 @@ export const useStore = create<AppStore>((set, get) => ({
       jobBriefingConfig: state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG,
       articleAssistantGuideWidth: state.articleAssistantGuideWidth ?? 320,
       articleAssistantGuideCollapsed: state.articleAssistantGuideCollapsed ?? false,
+      writingFontSize: state.writingFontSize ?? 'base',
+      writingTone: state.writingTone ?? 'parchment',
+      writingListTab: state.writingListTab ?? 'articles',
+      writingAssistantWidth: state.writingAssistantWidth ?? 320,
+      writingAssistantOpen: state.writingAssistantOpen ?? false,
+      lastWritingFile: state.lastWritingFile ?? null,
+      assistantSearchEnabled: state.assistantSearchEnabled ?? false,
+      assistantThinkingEffort: state.assistantThinkingEffort ?? 'off',
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -1188,6 +1223,40 @@ export const useStore = create<AppStore>((set, get) => ({
       if (!cur || cur.contextId !== s.contextId) return
       set({ assistantSession: { ...cur, guideLoading: false, guideError: code } })
     }
+  },
+
+  // 写作板设置持久化
+  setWritingFontSize: (size) => {
+    set({ writingFontSize: size })
+    ipc.patchState({ writingFontSize: size } as Partial<StateJson>)
+  },
+  setWritingTone: (tone) => {
+    set({ writingTone: tone })
+    ipc.patchState({ writingTone: tone } as Partial<StateJson>)
+  },
+  setWritingListTab: (tab) => {
+    set({ writingListTab: tab })
+    ipc.patchState({ writingListTab: tab } as Partial<StateJson>)
+  },
+  setWritingAssistantWidth: (width) => {
+    set({ writingAssistantWidth: width })
+    ipc.patchState({ writingAssistantWidth: width } as Partial<StateJson>)
+  },
+  setWritingAssistantOpen: (open) => {
+    set({ writingAssistantOpen: open })
+    ipc.patchState({ writingAssistantOpen: open } as Partial<StateJson>)
+  },
+  setLastWritingFile: (file) => {
+    set({ lastWritingFile: file })
+    ipc.patchState({ lastWritingFile: file } as Partial<StateJson>)
+  },
+  setAssistantSearchEnabled: (enabled) => {
+    set({ assistantSearchEnabled: enabled })
+    ipc.patchState({ assistantSearchEnabled: enabled } as Partial<StateJson>)
+  },
+  setAssistantThinkingEffort: (effort) => {
+    set({ assistantThinkingEffort: effort })
+    ipc.patchState({ assistantThinkingEffort: effort } as Partial<StateJson>)
   },
 }))
 
