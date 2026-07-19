@@ -5,6 +5,10 @@ import {
   buildOfficialPageQueries,
   buildTavilyQueries,
   mergeAndDedupJobs,
+  JOB_COMMUNITY_DOMAINS,
+  buildEventQueries,
+  dedupEvents,
+  companyNameMatches,
 } from '../electron/lib/job-briefing'
 import type { RawJob } from '../electron/lib/job-briefing'
 import { DEFAULT_JOB_PROFILE, isJobProfileEmpty, normalizeJobProfile, formatJobProfile } from '../src/lib/job-briefing-defaults'
@@ -113,5 +117,44 @@ describe('job profile defaults', () => {
 
   it('formats empty profile as fallback notice', () => {
     expect(formatJobProfile(DEFAULT_JOB_PROFILE)).toContain('未提供')
+  })
+})
+
+describe('event lane', () => {
+  it('builds one query per enabled company plus a community query', () => {
+    const config = normalizeJobBriefingConfig({
+      companies: [
+        { name: '腾讯', priority: 2, enabled: true },
+        { name: '字节跳动', priority: 1, enabled: true },
+        { name: '禁用', priority: 3, enabled: false },
+      ],
+    })
+    const qs = buildEventQueries(config)
+    // 按 priority 排序：字节跳动在前
+    expect(qs[0]).toEqual({ query: expect.stringContaining('字节跳动'), company: '字节跳动' })
+    expect(qs[1]).toEqual({ query: expect.stringContaining('腾讯'), company: '腾讯' })
+    expect(qs.some(q => q.query.includes('禁用'))).toBe(false)
+    // 最后一条是社区定向查询
+    const community = qs[qs.length - 1]
+    expect(community.company).toBeUndefined()
+    expect(community.includeDomains).toBeDefined()
+    expect(community.includeDomains!.every(d => JOB_COMMUNITY_DOMAINS.includes(d))).toBe(true)
+  })
+
+  it('dedups events by company+title', () => {
+    const events = dedupEvents([
+      { company: '腾讯', eventType: '秋招开启', title: '秋招启动', date: '', summary: 'a', url: 'u1' },
+      { company: '腾讯', eventType: '秋招开启', title: '秋招启动', date: '', summary: 'b', url: 'u2' },
+      { company: '百度', eventType: '新岗位', title: '秋招启动', date: '', summary: 'c', url: 'u3' },
+    ])
+    expect(events).toHaveLength(2)
+  })
+
+  it('matches company names leniently', () => {
+    expect(companyNameMatches('腾讯', '腾讯')).toBe(true)
+    expect(companyNameMatches('腾讯科技', '腾讯')).toBe(true)
+    expect(companyNameMatches('腾讯', '腾讯科技')).toBe(true)
+    expect(companyNameMatches('阿里巴巴', '腾讯')).toBe(false)
+    expect(companyNameMatches('', '腾讯')).toBe(false)
   })
 })

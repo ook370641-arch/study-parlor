@@ -15,10 +15,12 @@ import type {
   JobBriefingSourceStatus,
   JobErrorCode,
   JobBriefingStage,
+  JobEvent,
+  JobEventType,
   Message,
 } from '@shared/index'
 
-import { DEFAULT_JOB_BRIEFING_CONFIG } from '../../src/lib/job-briefing-defaults'
+import { DEFAULT_JOB_BRIEFING_CONFIG, formatJobProfile } from '../../src/lib/job-briefing-defaults'
 
 export { DEFAULT_JOB_BRIEFING_CONFIG }
 
@@ -36,6 +38,39 @@ export function buildOfficialPageQueries(company: string): string[] {
     `${company} 官方招聘 AI产品经理`,
     `${company} careers AI product manager`,
   ]
+}
+
+export const JOB_COMMUNITY_DOMAINS = ['nowcoder.com', 'yingjiesheng.com', 'zhihu.com', 'xiaohongshu.com']
+
+export type EventQuery = { query: string; company?: string; includeDomains?: string[] }
+
+export function buildEventQueries(config: JobBriefingConfig): EventQuery[] {
+  const queries: EventQuery[] = config.companies
+    .filter(c => c.enabled)
+    .sort((a, b) => a.priority - b.priority)
+    .map(c => ({ query: `${c.name} 秋招 校招 开启 宣讲会 线下活动 招聘`, company: c.name }))
+  queries.push({
+    query: 'AI产品 秋招开启 校招 汇总',
+    includeDomains: ['nowcoder.com', 'yingjiesheng.com'],
+  })
+  return queries
+}
+
+export function dedupEvents(events: JobEvent[]): JobEvent[] {
+  const seen = new Set<string>()
+  const out: JobEvent[] = []
+  for (const e of events) {
+    const key = `${e.company}|${e.title}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(e)
+  }
+  return out
+}
+
+export function companyNameMatches(a: string, b: string): boolean {
+  if (!a || !b) return false
+  return a === b || a.includes(b) || b.includes(a)
 }
 
 export function buildTavilyQueries(config: JobBriefingConfig): string[] {
@@ -259,6 +294,60 @@ export async function searchJobsForCompany(
     }
   }
   return jobs
+}
+
+function normalizeEventType(raw: unknown): JobEventType {
+  const valid: JobEventType[] = ['秋招开启', '新岗位', '线下活动', '宣讲会', '其他']
+  return valid.includes(raw as JobEventType) ? (raw as JobEventType) : '其他'
+}
+
+export async function discoverEvents(
+  cfg: AppConfig,
+  config: JobBriefingConfig,
+  opts: { apiKey: string; signal?: AbortSignal }
+): Promise<JobEvent[]> {
+  const events: JobEvent[] = []
+  for (const q of buildEventQueries(config)) {
+    if (opts.signal?.aborted) break
+    try {
+      const results = await searchWeb({
+        query: q.query,
+        apiKey: opts.apiKey,
+        maxResults: 5,
+        days: 7,
+        includeDomains: q.includeDomains,
+        signal: opts.signal,
+      })
+      const content = results.map(r => `标题: ${r.title}\nURL: ${r.url}\n摘要: ${r.content}`).join('\n\n')
+      const prompt = readPrompt('extract-events')
+        .replace('{{company}}', q.company ?? '全部关注公司')
+        .replace('{{content}}', content.slice(0, 20_000))
+      const text = await chatNonStream(cfg, {
+        messages: [{ role: 'user', content: prompt } as Message],
+        temperature: 0.3,
+        thinking: { type: 'disabled' },
+        signal: opts.signal,
+      })
+      const extracted = extractJsonObject(text)
+      if (!extracted) continue
+      const obj = JSON.parse(extracted)
+      if (!Array.isArray(obj.events)) continue
+      for (const e of obj.events) {
+        if (!e || typeof e.title !== 'string' || !e.title.trim()) continue
+        events.push({
+          company: String(e.company ?? q.company ?? '').trim(),
+          eventType: normalizeEventType(e.eventType),
+          title: e.title.trim(),
+          date: String(e.date ?? '').trim(),
+          summary: String(e.summary ?? '').trim(),
+          url: String(e.url ?? '').trim(),
+        })
+      }
+    } catch (err) {
+      console.warn(`[job-briefing] event query failed: ${q.query}`, err)
+    }
+  }
+  return dedupEvents(events)
 }
 
 export async function generateJobBriefing(
