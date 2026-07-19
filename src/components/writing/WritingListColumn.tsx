@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
+import { WritingTree } from './WritingTree'
 
 export function WritingListColumn() {
   const tab = useStore(s => s.writingListTab)
@@ -23,7 +24,9 @@ export function WritingListColumn() {
   }, [tree, selectWritingFile])
 
   const handleCreateFile = async () => {
-    const r = await ipc.writingCreateFile({ root: 'writing', dir: '', name: '新文章.md' })
+    const name = window.prompt('文章名称:')
+    if (!name) return
+    const r = await ipc.writingCreateFile({ root: 'writing', dir: '', name })
     if (r.ok) {
       await loadWritingTree()
       selectWritingFile(r.value.path)
@@ -31,12 +34,14 @@ export function WritingListColumn() {
   }
 
   const handleCreateFolder = async () => {
-    const r = await ipc.writingCreateFolder({ root: 'writing', dir: '', name: '新分组' })
+    const name = window.prompt('分组名称:')
+    if (!name) return
+    const r = await ipc.writingCreateFolder({ root: 'writing', dir: '', name })
     if (r.ok) await loadWritingTree()
   }
 
   const handleImportFiles = async () => {
-    const r = await ipc.writingImportFiles({ targetDir: '' })
+    const r = await ipc.writingImportFiles({ targetDir: 'repository' })
     if (r.ok) await loadWritingTree()
   }
 
@@ -58,16 +63,16 @@ export function WritingListColumn() {
           <div>
             <div className="p-2 flex gap-2 text-xs">
               <button className="text-ember hover:text-ember/80" onClick={handleCreateFile}>＋ 新建文章</button>
-              <button className="text-parchment/60 hover:text-parchment/80" onClick={handleCreateFolder}>🗀 新建分组</button>
+              <button className="text-parchment/60 hover:text-parchment/80" onClick={handleCreateFolder}>新建分组</button>
             </div>
-            <div className="px-3 py-2 text-xs text-parchment/40">树组件将在 Task 6 实现</div>
+            <WritingTree root="writing" />
           </div>
         ) : (
           <div>
             <div className="p-2">
               <button className="text-xs text-ember hover:text-ember/80" onClick={handleImportFiles}>⬆ 导入文件…</button>
             </div>
-            <div className="px-3 py-2 text-xs text-parchment/40">repository 树将在 Task 6 实现</div>
+            <WritingTree root="repository" />
           </div>
         )}
       </div>
