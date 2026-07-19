@@ -14,6 +14,8 @@
 | 2026-07-11 | 第二次 | Task 9：Vite watch 排除 `.electron-cache`、`dev:clean` 同时清理新旧缓存路径 | 防御性加固，避免旧缓存目录落入 watcher |
 | 2026-07-14 | 第三次 | Task 10：SWC 替代 Babel + Vite warmup + Cover 预加载 | **冷启动 21s → 2.9s**，消除 boot 后棕色闪屏 |
 | 2026-07-19 | 第四次 | Task 11：optimizeDeps 覆盖懒加载链 + warmup 全页面 + 主进程 dev 外部化 + LoadingScreen 守卫 | 消除 re-optimization 整页 reload（棕色闪屏 + 二次加载）；主进程构建 15.5s → 0.4s |
+| 2026-07-19 | 第五次 | Task 12：看门狗 HMR 误报修复 + 输出英文化 + Fast Refresh 组件导出规范 | 区分「HMR 原地重挂载」与「异常重复」；GBK 终端不再乱码 |
+| 2026-07-19 | 第六次 | Task 13：启动健康 E2E（dev-server 模式断言 + 负向验证） | 启动回归从「人看日志」变为自动化断言，调试闭环 |
 
 ---
 
@@ -250,6 +252,116 @@ npm run build     # 生产构建正常，main 仍 136 模块全量内联
 **相关提交：** 本次工作树改动（electron.vite.config.ts、LoadingScreen.tsx、startup-watchdog.ts、main.ts、tests/startup-watchdog.test.ts、build-dev.md §10）
 
 **对修订历史的影响：** 已追加第四行。Task 9 的「已知限制」（每次 dev 都是冷启动）仍然成立，但冷启动的预热范围从 eager 链扩展到全页面图。
+
+---
+
+### Task 12 (2026-07-19) — 看门狗 HMR 误报 + 输出乱码 + Fast Refresh 导出规范
+
+**问题描述：** Task 11 交付后首次真实使用，启动本身完全健康（1.3s / 0 reload / HEALTHY），但用户连续编辑 `GuideSidebar.tsx` 等文件后终端出现两条看门狗 ⚠ 报警：
+
+```
+[vite] hmr invalidate /src/pages/Briefing.tsx Could not Fast Refresh
+       ("formatDisplayDate" export is incompatible)
+[renderer] App mounted  +3709403ms          ← App 原地重挂载，无 did-start-loading
+[startup-watchdog] ⚠ "App mounted" 第 2 次出现——store.init / files:scan 可能重复执行
+```
+
+同时发现看门狗的中文/制表符输出在 GBK 代码页的 PowerShell 中全是乱码（`鈹€鈹€ 鍚姩鍋ュ悍鎽樿`）。
+
+**根因分析（三个独立问题，归属不同）：**
+
+**为什么 Task 11 的修复没防住：** Task 11 的看门狗只在「全新启动」路径上验证过（单测 + 一次性 dev run），验证矩阵里没有「启动后继续编辑代码」这个场景——而 HMR 原地重挂载正是第一个真实使用日就踩到的盲区。教训：**观测类代码的验证矩阵必须覆盖被观测系统的全部正常行为**（启动、reload、HMR 重挂载），否则会把正常行为当异常报警，比没有观测更糟（狼来了效应）。
+
+1. **看门狗误报（看门狗自身缺陷）**：重复检测假设「timing 标签在同一页面加载内重复 = 异常」，漏掉了 **React Fast Refresh 原地重挂载**这个合法场景——HMR 失效边界推到 App 时，整棵树重挂载但**没有** `did-start-loading`，`App mounted` 等标签自然重复。这不是 LoadingScreen 守卫被破坏，报警指向了错误病因。
+2. **`Briefing.tsx` 非组件导出（代码规范问题，触发源）**：该文件除组件外还 `export function formatDisplayDate`。Fast Refresh 要求组件文件只导出组件，否则无法局部热替换 → `hmr invalidate` 沿 import 链推到 App → 每次编辑 Briefing 链都整树重挂载（所有组件状态丢失）。
+3. **看门狗输出乱码（看门狗自身缺陷）**：中文 + `──`/`⚠`/`✓` 在 GBK 控制台变 mojibake。项目现有日志约定（`[bootstrap]`、`[dev]`）为英文正是这个原因；自检日志不可读等于没有。
+
+另注：同一次日志中第二次启动 imports resolved +6.2s、Cover +15.5s 但仍判 HEALTHY——原因为上一轮 Ctrl+C 残留的 5 个 orphan 进程被 preflight 清理时的磁盘/CPU 竞争，属系统级抖动，非代码回归，阈值判定正确。
+
+**修复方案：**
+
+- **Step 12.1: 看门狗区分「HMR 重挂载」与「异常重复」**
+  - 文件：`electron/lib/startup-watchdog.ts`、`tests/startup-watchdog.test.ts`
+  - 改动：`App mounted` 重复时识别为 Fast Refresh 原地重挂载——输出 `[info]` 级说明、重置标签计数、不计入异常；摘要新增 `in-place remounts (HMR)` 信息行。其余标签的重复检测保持严格。
+  - 原因：重挂载后 LoadingScreen/boot 流程会合法地再走一遍，标签必然重复；只有无重挂载前提下的重复才是 Task 11 Step 11.4 要防的异常
+  - **为什么这个改动能生效（信号可区分性）**：页面 reload 必然伴随 `did-start-loading`（浏览器重新导航）；没有 `did-start-loading` 而 `App mounted` 重复，只可能是 React 层的原地重挂载（Fast Refresh）——两类事件在信号层面互斥，所以用「`App mounted` 重复」作重挂载标记不会与真异常混淆，也不会漏报 reload。
+
+- **Step 12.2: 看门狗输出英文化**
+  - 文件：`electron/lib/startup-watchdog.ts`、`electron.vite.config.ts`（customLogger 提示语）
+  - 改动：全部输出改为英文/ASCII（`[WARN]`/`OK`/`FAIL`/`--`）
+  - 原因：GBK 控制台渲染 UTF-8 中文与制表符为乱码；与 `[bootstrap]` 日志约定一致
+
+- **Step 12.3: `Briefing.tsx` 移除非组件导出**
+  - 文件：`src/lib/format-briefing-date.ts`、`src/pages/Briefing.tsx`、`tests/briefing.test.ts`
+  - 改动：`formatDisplayDate` 移入 `src/lib/format-briefing-date.ts`（与 `formatBriefingDate` 同处），页面与测试改为从 lib 导入。注：第一版只去掉 `export`，随即被 `tests/briefing.test.ts` 的引用打脸——**移动导出前必须同时搜 `src/` 和 `tests/`**。
+  - 原因：恢复 Fast Refresh 局部热替换，编辑 Briefing 链不再整树重挂载
+
+- **Step 12.4: 代码规范沉淀**
+  - 文件：`.claude/rules/ui-styling.md` 新增 §10
+  - 改动：组件文件只导出组件；helper/常量移到 `src/lib/`；vite 日志出现 `hmr invalidate ... Could not Fast Refresh` 时按导出名定位移出
+
+**验证：**
+
+```
+npx vitest run tests/startup-watchdog.test.ts   # 8/8（新增 HMR 重挂载用例：info 级、不计异常、HEALTHY）
+npm run test                                    # 67 files, 491 tests 全过
+npx tsc --noEmit                                # 零错误
+npm run dev                                     # 摘要英文输出（GBK 终端安全），HEALTHY，无误报
+```
+
+**防复发机制：**
+
+- 看门狗现在能区分三类「重复」：页面 reload（`did-start-loading`）、HMR 重挂载（`App mounted` 重复 → info）、真异常（其余标签重复 → WARN）
+- 编辑代码后若 vite 日志出现 `hmr invalidate ... Could not Fast Refresh`，即为违反 ui-styling §10 的信号
+- 未来新增组件文件时规则 §10 在流程上拦截非组件导出
+
+**相关提交：** 本次工作树改动（startup-watchdog.ts、tests/startup-watchdog.test.ts、electron.vite.config.ts、Briefing.tsx、format-briefing-date.ts、tests/briefing.test.ts、ui-styling.md §10）
+
+**对修订历史的影响：** 已追加第五行。
+
+---
+
+### Task 13 (2026-07-19) — 启动健康 E2E：自动调试闭环
+
+**问题描述：** Task 11/12 的修复效果依赖人工观察 dev 日志确认，没有自动化回归。未来新增懒加载依赖再次引入 re-optimization 时，只能靠用户察觉变慢、贴日志、再排查一轮——Task 11 的「防复发机制」里写着验证信号，但信号靠人盯就不构成回归测试。
+
+**为什么之前的方式没生效：** Task 11 的防复发是「观测」不是「断言」——信号写在日志里，但没有任何机制保证异常出现时有人看、看得懂。本 Task 把全部验证信号固化成 E2E 断言，失败信息自带本文档路径，调试从「读懂日志」变成「点失败链接」。
+
+**方案：** `e2e/specs/startup-health.spec.ts`——唯一一条通过 **dev server 模式**（而非生产构建）启动的 E2E。它守护的失败模式（依赖 re-optimization、warmup 覆盖、重复 init）只存在于 dev server，生产构建路径覆盖不到。断言分两层：
+
+- **结构不变量（确定性）**：`did-start-loading` 恰 1 次；无 `new dependencies optimized`；`store.init start` 恰 1 次；无看门狗四类异常签名；`verdict: HEALTHY`；Cover UI 冒烟可见
+- **时间预算（宽容）**：首次加载 < 20s，只拦截灾难级回归，避免机器差异抖动
+- **可解释性**：每条断言的失败信息自带本文档路径；失败时自动把 dev server 完整输出作为 `dev-server-output` 附件存进测试报告，排查不需要复现
+
+**为什么这个方案能生效：**
+
+- 断言的信号与 Task 11 看门狗检测的是**同一套**，E2E 只是把人工判读变成机器断言——看门狗继续负责 dev 日常，E2E 负责回归门禁
+- **负向验证证明它能抓住 bug**：临时移除 `optimizeDeps.include` 的 `react-dom` + `entries` → 首轮即失败且报出指引；只移除 `include` 保留 `entries` → 通过（顺带证明 `entries` 扫描构成第二道防线，能从页面文件发现 `react-dom`）
+
+**建设过程中踩到的四个坑（对未来 E2E 作者重要）：**
+
+1. **不能 spawn `scripts/dev.js`**：其 preflight `cleanupProjectOrphans` 按「命令行含项目根」匹配 node 进程，Playwright runner 也匹配 → runner 被误杀，测试无声死亡（exit 1、无报告）。改为直接 spawn `node_modules/electron-vite/bin/electron-vite.js`。
+2. **preflight 只能按端口清理**：同样因为命令行匹配会杀 runner/worker（worker 的 `process.pid` 不是 runner 主进程 pid，排除不完），只能用 `findPortListeners(5173/9222)` + `killProcessTree` 按端口释放。
+3. **`retries` 必须为 0**：vite deps 缓存会「自愈」——首次运行发现缺失依赖后写入缓存，重试时异常不复现，真实回归被误判 flaky。
+4. **不能断言「无任何 [WARN]」**：配置变更后 `Re-optimizing dependencies` 是一次性正常事件（customLogger 会提示），只能断言四类具体异常签名 + verdict。
+
+**验证：**
+
+```
+npx playwright test --config e2e/playwright.config.ts startup-health
+# 连续 3 次通过（~19s/次）；负向验证 2 轮（见上）
+npm run test   # 67 files, 491 tests 全过（无回归）
+```
+
+**防复发机制：**
+
+- 启动回归门禁自动化：`@p1` 标签，纳入 `test:e2e:core`
+- CLAUDE.md 新增「启动问题排查」入口节（看门狗摘要 → 本文档 → E2E → dev:clean），未来会话自动导航到本文档
+- `e2e/README.md` 记录 dev-server 路径的两个硬约束（不 spawn dev.js、0 重试）
+
+**相关提交：** 本次工作树改动（startup-health.spec.ts、process-cleanup.ts、main.ts `E2E_STARTUP_WATCHDOG` 开关、CLAUDE.md、e2e/README.md、build-dev.md §10）
+
+**对修订历史的影响：** 已追加第六行。
 
 ---
 

@@ -62,9 +62,12 @@ const isDev = !!process.env.ELECTRON_RENDERER_URL
 const isE2ESilent = process.env.E2E_SILENT === '1'
 
 // Dev-only 启动健康看门狗：把整页 reload、init 重复、冷转换过慢、boot 卡死
-// 等启动异常从隐晦日志信号变成显式报警 + 健康摘要。E2E 静默模式下关闭，
-// 避免干扰基于日志的测试断言。
-const watchdog = createStartupWatchdog({ enabled: isDev && !isE2ESilent })
+// 等启动异常从隐晦日志信号变成显式报警 + 健康摘要。E2E 静默模式下默认关闭，
+// 避免干扰基于日志的测试断言；启动健康 E2E（startup-health.spec.ts）通过
+// E2E_STARTUP_WATCHDOG=1 显式开启并直接断言看门狗输出。
+const watchdog = createStartupWatchdog({
+  enabled: isDev && (!isE2ESilent || process.env.E2E_STARTUP_WATCHDOG === '1'),
+})
 
 if (isDev) {
   app.commandLine.appendSwitch('remote-debugging-port', '9222')

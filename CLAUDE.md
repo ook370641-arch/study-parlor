@@ -131,10 +131,18 @@ STUDY_LIBRARY_PATH=...            # 学习库根目录
 - Tailwind 自定义颜色在 `tailwind.config.ts` 中定义（`parchment`, `ember`, `wine`, `ink`, `slate` 等）
 - 页面路由：`cover` → `home` → (`study` | `profile`)，`preStudy` 是模态层
 
+## 启动问题排查
+
+遇到启动慢 / 二次加载 / 棕色闪屏 / 端口占用，入口顺序：
+
+1. `npm run dev` 看 `[startup-watchdog]` 健康摘要（HEALTHY / UNHEALTHY），⚠ 报警行自带病因与修复指引
+2. 长期跟踪文档（历次启动问题的根因、修复与诊断命令）：`docs/superpowers/plans/2026-07-10-fix-dev-hang-and-orphan-processes.md`
+3. 自动化回归：`npx playwright test --config e2e/playwright.config.ts startup-health`
+4. 一键恢复：`npm run dev:clean`
+
 ## 测试
 
 测试文件在 `tests/` 目录，覆盖：
-
 - `env.test.ts` — `.env` 加载与校验
 - `frontmatter.test.ts` — gray-matter 解析与序列化
 - `prompts.test.ts` — 系统 prompt 装配链

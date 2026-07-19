@@ -69,6 +69,15 @@ e2e/
 
 当前运行环境带有 `ELECTRON_RUN_AS_NODE=1`，会导致 Playwright 的 `_electron.launch()` 把 Electron 当作 Node 启动，无法正确初始化 `electron.app`。因此 fixture 采用手动 `spawn` + `--remote-debugging-port=0` + `chromium.connectOverCDP()` 的方式连接渲染进程。
 
+## 启动健康测试（dev-server 路径）
+
+`specs/startup-health.spec.ts` 是唯一不走生产构建的 E2E：直接 spawn `electron-vite dev`，断言 dev 模式特有的启动失败模式（整页 reload、依赖 re-optimization、init 重复）。两个硬约束：
+
+- 不 spawn `scripts/dev.js`、不用 `cleanupProjectOrphans`（按命令行匹配会误杀 Playwright runner）；preflight 只按端口 5173/9222 清理。
+- 必须 0 重试（vite deps 缓存自愈会让重试必过，真实回归被误判 flaky）。
+
+排查入口：`docs/superpowers/plans/2026-07-10-fix-dev-hang-and-orphan-processes.md` Task 13。
+
 ## 调试
 
 失败时会在 `e2e-results/` 保留截图、视频和 trace：
