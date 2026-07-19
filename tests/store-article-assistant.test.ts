@@ -31,7 +31,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 describe('store article assistant', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    useStore.setState({ assistantSession: null, articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false, assistantSearchEnabled: false })
+    useStore.setState({ assistantSession: null, articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false, assistantSearchEnabled: false, assistantSocraticMode: true, assistantThinkingEffort: 'off' })
     vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantReadSession).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantGenerateGuide).mockResolvedValue(guideFixture as any)
@@ -138,6 +138,24 @@ describe('store article assistant', () => {
 
       expect(useStore.getState().assistantSession?.streaming).toBe(false)
       expect(useStore.getState().assistantSearchEnabled).toBe(true)
+    })
+  })
+
+  describe('sendAssistantMessage', () => {
+    it('passes global socraticMode and thinkingEffort to the IPC send', async () => {
+      useStore.setState({ assistantSocraticMode: false, assistantThinkingEffort: 'max' })
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/c.md',
+        contextType: 'briefing',
+        articleContent: 'body',
+        articleTitle: 'C',
+      })
+      await flush()
+      await useStore.getState().sendAssistantMessage('问题')
+
+      expect(ipc.articleAssistantSendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ socraticMode: false, thinkingEffort: 'max' })
+      )
     })
   })
 

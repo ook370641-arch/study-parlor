@@ -1,44 +1,39 @@
 import { ipc } from '@/lib/ipc'
 import { useStore } from '@/store'
 import type { ArticleAssistantErrorCode } from '@shared/index'
+import {
+  appendToContentBuffer,
+  appendToReasoningBuffer,
+  clearFlushTimer,
+  drainContentBuffer,
+  drainReasoningBuffer,
+  hasFlushTimer,
+  setFlushTimer,
+} from '@/lib/assistant-stream-buffers'
+
+export { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
 
 let attached = false
-let contentBuffer = ''
-let reasoningBuffer = ''
-let flushTimer: ReturnType<typeof setTimeout> | null = null
 
 const FLUSH_MS = 50
 
-export function resetAssistantStreamBuffers() {
-  if (flushTimer) {
-    clearTimeout(flushTimer)
-    flushTimer = null
-  }
-  contentBuffer = ''
-  reasoningBuffer = ''
-}
-
 function flushBuffers() {
-  if (flushTimer) {
-    clearTimeout(flushTimer)
-    flushTimer = null
-  }
+  clearFlushTimer()
   const state = useStore.getState()
-  if (contentBuffer) {
-    const text = contentBuffer
-    contentBuffer = ''
-    state.appendAssistantChunk(text)
+  const content = drainContentBuffer()
+  if (content) {
+    state.appendAssistantChunk(content)
   }
-  if (reasoningBuffer) {
-    const text = reasoningBuffer
-    reasoningBuffer = ''
-    state.appendAssistantReasoning(text)
+  const reasoning = drainReasoningBuffer()
+  if (reasoning) {
+    state.appendAssistantReasoning(reasoning)
   }
 }
 
+// 固定窗口节流（非 debounce）：首个 chunk 开窗，窗口内 chunk 合并；连续 token 流不会饿死 UI。
 function scheduleFlush() {
-  if (flushTimer) return
-  flushTimer = setTimeout(flushBuffers, FLUSH_MS)
+  if (hasFlushTimer()) return
+  setFlushTimer(setTimeout(flushBuffers, FLUSH_MS))
 }
 
 export function attachAssistantSessionListeners() {
@@ -47,7 +42,7 @@ export function attachAssistantSessionListeners() {
   ipc.onLlmChunk((sid, text) => {
     const s = useStore.getState().assistantSession
     if (!s || s.abortId !== sid) return
-    contentBuffer += text
+    appendToContentBuffer(text)
     scheduleFlush()
   })
   ipc.onLlmDone((sid) => {
@@ -70,7 +65,7 @@ export function attachAssistantSessionListeners() {
   ipc.onArticleAssistantReasoningChunk((sid, text) => {
     const s = useStore.getState().assistantSession
     if (!s || s.abortId !== sid) return
-    reasoningBuffer += text
+    appendToReasoningBuffer(text)
     scheduleFlush()
   })
   ipc.onArticleAssistantSearchDone((sid, payload) => {

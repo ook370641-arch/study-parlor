@@ -20,6 +20,7 @@ vi.mock('@/lib/paintings', () => ({
 
 import { ipc } from '@/lib/ipc'
 import { attachAssistantSessionListeners } from '@/lib/assistant-session-runtime'
+import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
 import { useStore } from '@/store'
 import type { AssistantSession } from '@/store'
 
@@ -48,6 +49,7 @@ function makeSession(overrides: Partial<AssistantSession> = {}): AssistantSessio
 const chunkCb = () => vi.mocked(ipc.onLlmChunk).mock.calls[0][0]
 const doneCb = () => vi.mocked(ipc.onLlmDone).mock.calls[0][0]
 const reasoningCb = () => vi.mocked(ipc.onArticleAssistantReasoningChunk).mock.calls[0][0]
+const errorCb = () => vi.mocked(ipc.onLlmError).mock.calls[0][0]
 
 describe('assistant session runtime', () => {
   beforeAll(() => {
@@ -55,6 +57,7 @@ describe('assistant session runtime', () => {
   })
 
   beforeEach(() => {
+    resetAssistantStreamBuffers()
     useStore.setState({ assistantSession: makeSession() })
   })
 
@@ -101,6 +104,16 @@ describe('assistant session runtime', () => {
     chunkCb()('other-session', 'x')
     vi.advanceTimersByTime(60)
     expect(useStore.getState().assistantSession!.messages.at(-1)!.content).toBe('')
+  })
+
+  it('flushes buffered content before surfacing an error', () => {
+    vi.useFakeTimers()
+    chunkCb()('s1', '部分内容')
+    errorCb()('s1', { code: 'CHAT_NETWORK_ERROR', message: 'boom' })
+    const s = useStore.getState().assistantSession!
+    expect(s.messages.at(-1)!.content).toBe('部分内容')
+    expect(s.streaming).toBe(false)
+    expect(s.chatError).toBe('CHAT_NETWORK_ERROR')
   })
 
   it('drops buffered text when the stream is aborted', () => {

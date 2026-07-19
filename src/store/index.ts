@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
 import { mergeNewArticles } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
-import { resetAssistantStreamBuffers } from '@/lib/assistant-session-runtime'
+import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
