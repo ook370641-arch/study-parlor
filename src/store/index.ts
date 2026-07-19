@@ -2,13 +2,14 @@
 import { create } from 'zustand'
 import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
 import { mergeNewArticles } from '@/lib/anthropic-articles'
+import { nextThinkingEffort } from '@/lib/assistant-settings'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
   Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache,
   ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
-  AnthropicArticleMeta, AnthropicError,
+  AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
@@ -28,7 +29,6 @@ export type AssistantSession = {
   streaming: boolean
   abortId: string
   searchLoading: boolean
-  searchEnabled: boolean
   searchError: 'NO_RESULTS' | 'SEARCH_ERROR' | null
   chatError: ArticleAssistantErrorCode | null
   retryContext: { text: string; useSearch: boolean } | null
@@ -251,6 +251,11 @@ type AppStore = {
 
   // 文章旁注助手
   assistantSession: AssistantSession | null
+  assistantSearchEnabled: boolean
+  assistantSocraticMode: boolean
+  assistantThinkingEffort: AssistantThinkingEffort
+  toggleAssistantSocratic: () => void
+  cycleAssistantThinkingEffort: () => void
   openAssistantSession: (args: { contextId: string; contextType: 'briefing' | 'anthropic-article'; articleTitle?: string; articleContent: string; autoGenerateGuide?: boolean }) => void
   closeAssistantSession: () => void
   toggleAssistantOpen: () => void
@@ -259,7 +264,7 @@ type AppStore = {
   loadAssistantGuide: () => Promise<void>
   loadAssistantSession: () => Promise<void>
   saveAssistantSession: () => Promise<void>
-  sendAssistantMessage: (text: string, useSearch: boolean) => Promise<void>
+  sendAssistantMessage: (text: string) => Promise<void>
   retryAssistantMessage: () => Promise<void>
   runAssistantStream: (history: ArticleAssistantMessage[], useSearch: boolean) => Promise<void>
   applyAssistantSearchResult: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void
@@ -330,6 +335,9 @@ export const useStore = create<AppStore>((set, get) => ({
   jobBriefingHistory: { list: [], loading: false, error: null },
   jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
   assistantSession: null,
+  assistantSearchEnabled: false,
+  assistantSocraticMode: true,
+  assistantThinkingEffort: 'off',
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
 
@@ -356,6 +364,9 @@ export const useStore = create<AppStore>((set, get) => ({
       jobBriefingConfig: state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG,
       articleAssistantGuideWidth: state.articleAssistantGuideWidth ?? 320,
       articleAssistantGuideCollapsed: state.articleAssistantGuideCollapsed ?? false,
+      assistantSearchEnabled: state.assistantSearchEnabled ?? false,
+      assistantSocraticMode: state.assistantSocraticMode ?? true,
+      assistantThinkingEffort: state.assistantThinkingEffort ?? 'off',
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -959,7 +970,7 @@ export const useStore = create<AppStore>((set, get) => ({
         articleContent: args.articleContent,
         guide: null, guideLoading: false, guideError: null,
         messages: [], streaming: false, abortId: '',
-        searchLoading: false, searchEnabled: false, searchError: null, chatError: null,
+        searchLoading: false, searchError: null, chatError: null,
         retryContext: null, pendingSelection: undefined, isOpen: false,
         activeChunkIndex: null,
       },
@@ -990,9 +1001,21 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   toggleAssistantSearch: () => {
-    const s = get().assistantSession
-    if (!s) return
-    set({ assistantSession: { ...s, searchEnabled: !s.searchEnabled } })
+    const next = !get().assistantSearchEnabled
+    set({ assistantSearchEnabled: next })
+    ipc.patchState({ assistantSearchEnabled: next })
+  },
+
+  toggleAssistantSocratic: () => {
+    const next = !get().assistantSocraticMode
+    set({ assistantSocraticMode: next })
+    ipc.patchState({ assistantSocraticMode: next })
+  },
+
+  cycleAssistantThinkingEffort: () => {
+    const next = nextThinkingEffort(get().assistantThinkingEffort)
+    set({ assistantThinkingEffort: next })
+    ipc.patchState({ assistantThinkingEffort: next })
   },
 
   setAssistantSelection: (text) => {
@@ -1042,12 +1065,13 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  sendAssistantMessage: async (text, useSearch) => {
+  sendAssistantMessage: async (text) => {
     const s = get().assistantSession
     if (!s || s.streaming || s.searchLoading) return
     const content = text.trim()
     if (!content && !s.pendingSelection) return
-    const userMessage: ArticleAssistantMessage = { role: 'user', content }
+    const useSearch = get().assistantSearchEnabled
+    const userMessage: ArticleAssistantMessage = { role: 'user', content, selection: s.pendingSelection }
     const history = [...s.messages, userMessage]
     set({ assistantSession: { ...s, messages: history, retryContext: { text, useSearch } } })
     await get().runAssistantStream(history, useSearch)

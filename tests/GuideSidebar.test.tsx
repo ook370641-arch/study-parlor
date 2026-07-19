@@ -37,7 +37,6 @@ function sessionWithGuide(): AssistantSession {
     streaming: false,
     abortId: 'abort-1',
     searchLoading: false,
-    searchEnabled: false,
     searchError: null,
     chatError: null,
     retryContext: null,

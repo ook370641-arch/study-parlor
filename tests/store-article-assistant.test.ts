@@ -31,7 +31,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 describe('store article assistant', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    useStore.setState({ assistantSession: null, articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false })
+    useStore.setState({ assistantSession: null, articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false, assistantSearchEnabled: false })
     vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantReadSession).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantGenerateGuide).mockResolvedValue(guideFixture as any)
@@ -105,28 +105,24 @@ describe('store article assistant', () => {
   })
 
   describe('toggleAssistantSearch', () => {
-    it('initializes searchEnabled to false and toggles it on/off', async () => {
-      useStore.getState().openAssistantSession({
-        contextId: '/lib/d.md',
-        contextType: 'briefing',
-        articleContent: 'body'
-      })
-      await flush()
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(false)
+    it('initializes assistantSearchEnabled to false and toggles it on/off', async () => {
+      expect(useStore.getState().assistantSearchEnabled).toBe(false)
 
       useStore.getState().toggleAssistantSearch()
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
+      expect(useStore.getState().assistantSearchEnabled).toBe(true)
+      expect(ipc.patchState).toHaveBeenCalledWith({ assistantSearchEnabled: true })
 
       useStore.getState().toggleAssistantSearch()
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(false)
+      expect(useStore.getState().assistantSearchEnabled).toBe(false)
+      expect(ipc.patchState).toHaveBeenCalledWith({ assistantSearchEnabled: false })
     })
 
-    it('is a no-op when there is no session', () => {
+    it('toggles globally without requiring a session', () => {
       useStore.getState().toggleAssistantSearch()
-      expect(useStore.getState().assistantSession).toBeNull()
+      expect(useStore.getState().assistantSearchEnabled).toBe(true)
     })
 
-    it('keeps searchEnabled true after a full send cycle', async () => {
+    it('keeps assistantSearchEnabled true after a full send cycle', async () => {
       useStore.getState().openAssistantSession({
         contextId: '/lib/e.md',
         contextType: 'briefing',
@@ -135,13 +131,13 @@ describe('store article assistant', () => {
       await flush()
 
       useStore.getState().toggleAssistantSearch()
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
+      expect(useStore.getState().assistantSearchEnabled).toBe(true)
 
-      await useStore.getState().sendAssistantMessage('q', true)
+      await useStore.getState().sendAssistantMessage('q')
       useStore.getState().finishAssistantStreaming()
 
       expect(useStore.getState().assistantSession?.streaming).toBe(false)
-      expect(useStore.getState().assistantSession?.searchEnabled).toBe(true)
+      expect(useStore.getState().assistantSearchEnabled).toBe(true)
     })
   })
 

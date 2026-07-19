@@ -458,6 +458,9 @@ const BASE_STATE = {
   anthropicBlogLastSeenAt: null,
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
+  assistantSearchEnabled: false,
+  assistantSocraticMode: true,
+  assistantThinkingEffort: 'off',
 }
 
 export function seedStateJson(

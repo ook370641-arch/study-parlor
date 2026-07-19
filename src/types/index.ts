@@ -96,6 +96,8 @@ export type ArticleAssistantMessage = {
   role: 'user' | 'assistant'
   content: string
   searchSources?: { title: string; url: string; snippet: string }[]
+  selection?: string
+  reasoning?: string
 }
 
 export type ArticleAssistantSessionFile = {
@@ -116,6 +118,8 @@ export type ArticleAssistantGuideFile = {
   guide: ArticleAssistantGuide
   generatedAt: string
 }
+
+export type AssistantThinkingEffort = 'off' | 'high' | 'max'
 
 export type ArticleAssistantErrorCode =
   | 'GUIDE_LLM_ERROR'
@@ -389,6 +393,9 @@ export type StateJson = {
   anthropicBlogLastSeenAt?: string | null
   articleAssistantGuideWidth?: number
   articleAssistantGuideCollapsed?: boolean
+  assistantSearchEnabled?: boolean
+  assistantSocraticMode?: boolean
+  assistantThinkingEffort?: AssistantThinkingEffort
 }
 
 export type IpcApi = {
