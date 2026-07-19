@@ -55,6 +55,11 @@ const api: IpcApi = {
     ipcRenderer.on('articleAssistant:searchDone', handler)
     return () => ipcRenderer.off('articleAssistant:searchDone', handler)
   },
+  onArticleAssistantReasoningChunk: (cb) => {
+    const handler = (_: unknown, sessionId: string, text: string) => cb(sessionId, text)
+    ipcRenderer.on('articleAssistant:reasoningChunk', handler)
+    return () => ipcRenderer.off('articleAssistant:reasoningChunk', handler)
+  },
 
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
   getExtensionInfo: () => ipcRenderer.invoke('files:getExtensionInfo'),
