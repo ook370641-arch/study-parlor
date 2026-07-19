@@ -70,9 +70,13 @@
 2. **🎓 苏格拉底模式**：同样的灰↔蓝切换。title：「苏格拉底学习模式：关闭后只做信息检索，不再质询」。
 3. **🧠 深度思考（三态循环）**：点击循环 关 → 高 → 最高 → 关。关=灰色，高=蓝色，最高=蓝色 + 图标右上角「MAX」微型角标。title 显示当前档位。
 4. **流式中三个开关禁用**（`disabled:opacity-30`），避免 mid-stream 改参数。
-5. **取消选中**：选中引用块（"你选中了："）右上角加 ✕ 小按钮，点击调 `setAssistantSelection('')` 清除。选中保持现有粘滞行为（发送后不自动清）。
-6. **思考过程显示**：消息加 `reasoning?: string` 字段，渲染为正文上方的可折叠区块（灰色小字；流式中展开，完成后默认折叠，标题「思考过程」）。
-7. **历史显示修复后**：打开旁注时消息区自动滚动到底部。
+5. **经典 chatbot 两侧布局**：用户消息靠右（气泡底 `bg-ember/10`，`max-w-[85%]`），AI 消息靠左（无气泡或浅底），替代现在的上下堆叠 + 「你/旁注」标签。角色标签行移除，靠对齐方向区分。
+6. **取消选中**：当前选中块右上角加 ✕ 小按钮，点击调 `setAssistantSelection('')` 清除。选中保持现有粘滞行为（发送后不自动清）。
+7. **选中块位置与历史选段**：
+   - 当前选中块（`pendingSelection`）从消息区顶部移到**消息列表下方、输入框上方**（类似 chatbot 的「引用回复」chip），样式维持 ember 橙色（`border-ember bg-ember/10`）。
+   - 每条用户消息记录发送时的选段（`ArticleAssistantMessage.selection?: string`），历史消息气泡内以**米灰色**引用行显示（`border-parchment/40 bg-parchment/5`）——与当前选中的 ember 橙有区别但同暖调。
+8. **思考过程显示**：消息加 `reasoning?: string` 字段，渲染为正文上方的可折叠区块（灰色小字；流式中展开，完成后默认折叠，标题「思考过程」）。
+9. **历史显示修复后**：打开旁注时消息区自动滚动到底部。
 
 ### 3. IPC 与 LLM 层改动
 
@@ -96,6 +100,12 @@
 - `chatStream` 增加可选 `onReasoning` 回调（主会话不传，零影响）。
 - 主进程 `articleAssistant:sendMessage` 把 reasoning 转发到新事件 `articleAssistant:reasoningChunk`。
 - 新事件五层同步（types → main → preload → facade → `assistant-session-runtime` 监听），并按 ipc-state §1 加启动探测/测试断言。
+
+**选段持久化（会话文件格式扩展）**：
+- `ArticleAssistantMessage` 增加 `selection?: string`；`sendAssistantMessage` 发送时把当前 `pendingSelection` 记到该条用户消息上。
+- 写入 `.assistant.md`：`## 用户` 段内若有选段，正文前加一行 `> 选段：xxx`。
+- `parseAssistantSessionBody` 解析该行（仅用户段）；旧文件无此行 → `selection` 为 undefined，向后兼容。
+- 发给 LLM 的 prompt 仍走现有 `selection` 参数（当前 `pendingSelection`），不变。
 
 **E2E mock 分支改造**（`articleAssistant:sendMessage` 的 `isE2EMock()` 路径）：
 - 不再短路跳过装配，而是走真实装配链（system prompt → user prompt → `buildChatBody`），把最终请求体（model / messages / thinking / reasoning_effort）写到 `E2E_CONFIG_DIR/last-assistant-request.json`。
@@ -127,6 +137,7 @@
 - `parseSseChunk`：含 `reasoning_content` 的 SSE 行 → `{kind:'reasoning', text}`。
 - `buildChatBody` deepseek 三态：`off` → `thinking.type==='disabled'` 且无 `reasoning_effort`；`high`/`max` → enabled + 对应值。（作为请求级断言的补充，失败时区分装配层 vs 传输层）
 - chunk 批处理：fake timers 下 N 次 chunk 只触发 1 次 store 更新；done 时缓冲清空。
+- `parseAssistantSessionBody` round-trip：带 `> 选段：` 行的用户消息 ↔ 序列化；旧格式（无选段行）解析兼容、`selection` 为 undefined。
 - 旧 state.json 缺三个新字段 → 默认值回落，不白屏。
 
 ### E2E（扩展 `e2e/specs/article-assistant.spec.ts`，走 mock 分支）
@@ -145,7 +156,9 @@
 **交互断言**：
 - 三开关渲染、点击切换、`aria-pressed` / computed color（灰↔蓝）断言。
 - 三开关跨重启持久化。
-- ✕ 取消选中后引用块消失。
+- 消息两侧布局：用户消息容器靠右、AI 消息靠左。
+- 当前选中块位于消息列表下方、输入框上方；✕ 点击后消失。
+- 历史用户消息内显示当时选段（米灰色），与当前选中块（橙色）computed color 不同。
 - 二次打开文章历史消息可见。
 - mock 推 reasoning + content → 思考区块出现且可折叠。
 
@@ -161,5 +174,5 @@
 - 不改主会话（session-runtime）的任何流式/思考行为。
 - 不做 low/medium 档（DeepSeek V4 会映射为 high，无实际意义）。
 - 不做按文章记忆开关状态（已确认为全局持久化）。
-- 不把思考过程写入 `.assistant.md`：`reasoning` 字段仅运行时展示，会话文件格式与 `parseAssistantSessionBody` 不变；历史回显只显示问答正文，不显示当时的思考过程。
+- 不把思考过程写入 `.assistant.md`：`reasoning` 字段仅运行时展示；历史回显只显示问答正文与当时选段，不显示当时的思考过程。（选段 `selection` 需要持久化，会话文件格式按「选段持久化」一节扩展。）
 - 不重构 `assistantSession` 状态结构（方案 B 已否决）。
