@@ -2,14 +2,6 @@ let contentBuffer = ''
 let reasoningBuffer = ''
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
-export function getContentBuffer(): string {
-  return contentBuffer
-}
-
-export function getReasoningBuffer(): string {
-  return reasoningBuffer
-}
-
 export function hasFlushTimer(): boolean {
   return flushTimer !== null
 }
