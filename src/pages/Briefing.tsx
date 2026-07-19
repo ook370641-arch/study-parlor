@@ -14,6 +14,7 @@ import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { JobBriefingRenderer } from '@/components/job-briefing'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
+import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
@@ -344,14 +345,7 @@ export function Briefing() {
           showGuide={false}
         />
       )}
-      {source === 'writing' && (
-        <div
-          className="w-6 bg-ember text-white text-xs flex items-center justify-center cursor-pointer shrink-0"
-          style={{ writingMode: 'vertical-rl' }}
-        >
-          AI 助手 ▸
-        </div>
-      )}
+      {source === 'writing' && <WritingAssistantPanel />}
     </div>
   )
 }
