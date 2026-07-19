@@ -41,6 +41,9 @@ export function BriefingHeader({
     blogs: '博客',
     podcasts: '播客',
     tavily: 'Tavily',
+    events: '新动态',
+    jobs: '岗位检索',
+    questions: '面经聚合',
   }
 
   const failedSources = sourceStatus
