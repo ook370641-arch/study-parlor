@@ -28,7 +28,7 @@ export async function probeModel(cfg: AppConfig): Promise<{ ok: boolean; reason?
 }
 
 export type ThinkingConfig =
-  | { type: 'enabled'; reasoning_effort?: 'high' }
+  | { type: 'enabled'; reasoning_effort?: 'high' | 'max' }
   | { type: 'disabled' }
 
 function isKimiModel(model: string): boolean {
@@ -137,6 +137,7 @@ export async function chatNonStream(
 
 export type SseEvent =
   | { kind: 'chunk'; text: string }
+  | { kind: 'reasoning'; text: string }
   | { kind: 'done' }
   | { kind: 'noop' }
 
@@ -146,8 +147,10 @@ export function parseSseChunk(line: string): SseEvent {
   const payload = trimmed.slice(5).trim()
   if (payload === '[DONE]') return { kind: 'done' }
   try {
-    const json = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] }
-    const text = json.choices?.[0]?.delta?.content ?? ''
+    const json = JSON.parse(payload) as { choices?: { delta?: { content?: string; reasoning_content?: string } }[] }
+    const delta = json.choices?.[0]?.delta
+    if (delta?.reasoning_content) return { kind: 'reasoning', text: delta.reasoning_content }
+    const text = delta?.content ?? ''
     return { kind: 'chunk', text }
   } catch {
     return { kind: 'noop' }
@@ -157,7 +160,8 @@ export function parseSseChunk(line: string): SseEvent {
 export async function chatStream(
   cfg: AppConfig,
   args: { messages: Message[]; temperature: number; signal: AbortSignal; thinking?: ThinkingConfig },
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
+  onReasoning?: (text: string) => void
 ): Promise<void> {
   const TIMEOUT_MS = 120_000
   const internalCtl = new AbortController()
@@ -244,6 +248,7 @@ export async function chatStream(
         const line = buffer.slice(0, idx)
         buffer = buffer.slice(idx + 1)
         const ev = parseSseChunk(line)
+        if (ev.kind === 'reasoning' && onReasoning) onReasoning(ev.text)
         if (ev.kind === 'chunk') onChunk(ev.text)
         if (ev.kind === 'done') return
       }
