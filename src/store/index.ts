@@ -10,7 +10,7 @@ import type {
   ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode,
-  WritingTone,
+  WritingTone, WritingTreeNode,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -276,6 +276,9 @@ type AppStore = {
   generateAssistantGuide: () => Promise<void>
 
   // 写作板
+  writingTree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null
+  writingFile: { path: string; body: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
+  writingError: string | null
   writingFontSize: BriefingFontSize
   writingTone: WritingTone
   writingListTab: 'articles' | 'repository'
@@ -284,6 +287,10 @@ type AppStore = {
   lastWritingFile: string | null
   assistantSearchEnabled: boolean
   assistantThinkingEffort: 'off' | 'high' | 'max'
+  loadWritingTree: () => Promise<void>
+  selectWritingFile: (filePath: string | null) => Promise<void>
+  updateWritingBody: (body: string) => void
+  saveWritingFile: () => Promise<void>
   setWritingFontSize: (size: BriefingFontSize) => void
   setWritingTone: (tone: WritingTone) => void
   setWritingListTab: (tab: 'articles' | 'repository') => void
@@ -351,6 +358,9 @@ export const useStore = create<AppStore>((set, get) => ({
   assistantSession: null,
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
+  writingTree: null,
+  writingFile: null,
+  writingError: null,
   writingFontSize: 'base',
   writingTone: 'parchment',
   writingListTab: 'articles',
@@ -1257,6 +1267,32 @@ export const useStore = create<AppStore>((set, get) => ({
   setAssistantThinkingEffort: (effort) => {
     set({ assistantThinkingEffort: effort })
     ipc.patchState({ assistantThinkingEffort: effort } as Partial<StateJson>)
+  },
+
+  // --- 写作板：树、当前文件、保存 ---
+  loadWritingTree: async () => {
+    const r = await ipc.writingScanTree()
+    if (r.ok) set({ writingTree: r.value })
+    else set({ writingError: r.message })
+  },
+
+  selectWritingFile: async (filePath: string | null) => {
+    if (!filePath) return set({ writingFile: null })
+    const cur = get().writingFile
+    if (cur?.dirty) await get().saveWritingFile()
+    const r = await ipc.writingRead({ path: filePath })
+    if (r.ok) set({ writingFile: { path: filePath, body: r.value.body, dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+    else set({ writingError: r.message })
+  },
+
+  updateWritingBody: (body: string) => set(s => s.writingFile ? { writingFile: { ...s.writingFile, body, dirty: true } } : {}),
+
+  saveWritingFile: async () => {
+    const f = get().writingFile
+    if (!f || !f.dirty) return
+    set({ writingFile: { ...f, saving: 'saving' as const } })
+    const r = await ipc.writingWrite({ path: f.path, body: f.body })
+    set({ writingFile: { ...get().writingFile!, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })
   },
 }))
 

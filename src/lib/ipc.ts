@@ -89,5 +89,24 @@ export const ipc = {
   get articleAssistantReadGuide() { return ensure().articleAssistantReadGuide },
   get articleAssistantWriteGuide() { return ensure().articleAssistantWriteGuide },
 
-  get openExternal() { return ensure().openExternal }
+  get openExternal() { return ensure().openExternal },
+
+  // Writing feature
+  get writingScanTree() { return ensure().writingScanTree },
+  get writingCreateFile() { return ensure().writingCreateFile },
+  get writingCreateFolder() { return ensure().writingCreateFolder },
+  get writingRename() { return ensure().writingRename },
+  get writingMove() { return ensure().writingMove },
+  get writingDelete() { return ensure().writingDelete },
+  get writingRead() { return ensure().writingRead },
+  get writingWrite() { return ensure().writingWrite },
+  get writingImportFiles() { return ensure().writingImportFiles },
+  get writingAssistantSendMessage() { return ensure().writingAssistantSendMessage },
+  get writingAssistantAbort() { return ensure().writingAssistantAbort },
+  get onWritingAssistantTool() { return ensure().onWritingAssistantTool },
+  get onWritingAssistantReasoningChunk() { return ensure().onWritingAssistantReasoningChunk },
+
+  // Timing instrumentation
+  get logTiming() { return ensure().logTiming },
+  get bootStart() { return ensure().bootStart },
 }
