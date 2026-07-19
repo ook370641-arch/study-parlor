@@ -13,7 +13,7 @@ import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { JobBriefingRenderer } from '@/components/job-briefing'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
-import { formatBriefingDate } from '@/lib/format-briefing-date'
+import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
 import {
   ACADEMIC_BODY_STYLES,
@@ -22,12 +22,8 @@ import {
   NEWSPAPER_HEADING_STYLES,
 } from '@/lib/briefing-font-size'
 
-export function formatDisplayDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  if ([y, m, d].some((n) => Number.isNaN(n))) return dateStr
-  return `${y} 年 ${m} 月 ${d} 日`
-}
-
+// 非组件导出会破坏 React Fast Refresh（hmr invalidate 一路推到 App 整树重挂载），
+// 日期 helper 统一放在 @/lib/format-briefing-date（ui-styling §10）。
 function formatGeneratedAt(iso: string, date: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''

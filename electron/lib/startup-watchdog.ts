@@ -1,13 +1,20 @@
-// Dev-only 启动健康看门狗。
+// Dev-only startup health watchdog.
 //
-// 动机：启动慢不是单一 bug，而是一类共享同一症状的独立根因（orphan 进程、
-// watcher 污染、eager 链膨胀、依赖 re-optimization……）。每次排查都依赖
-// 散落在日志里的隐晦信号（第二次 did-start-loading、"new dependencies
-// optimized"、双份 store.init）。本模块把这些信号变成显式异常检测：
-// 异常发生时立即报警并给出最可能原因与修复指引，boot 完成后再输出一段
-// HEALTHY / UNHEALTHY 摘要，让下次 debug 直接从结论开始。
+// Motivation: slow startup is not a single bug but a family of independent
+// root causes sharing one symptom (orphan processes, watcher pollution,
+// eager-chain growth, dependency re-optimization...). Each past investigation
+// relied on obscure signals scattered through the log (a second
+// did-start-loading, "new dependencies optimized", duplicated store.init).
+// This module turns those signals into explicit anomaly detection: alerts
+// fire the moment an anomaly occurs, with the most likely cause and a fix
+// pointer, and a HEALTHY / UNHEALTHY summary is printed after boot.
 //
-// 历史背景：docs/superpowers/plans/2026-07-10-fix-dev-hang-and-orphan-processes.md
+// Output is intentionally English/ASCII-only: the Windows console codepage
+// (GBK) mangles UTF-8 Chinese/box-drawing into mojibake, and a watchdog whose
+// output cannot be read is no watchdog at all. Project log convention
+// ([bootstrap], [dev]) is English for the same reason.
+//
+// History: docs/superpowers/plans/2026-07-10-fix-dev-hang-and-orphan-processes.md
 
 export interface StartupWatchdog {
   onDidStartLoading(): void
@@ -18,21 +25,27 @@ export interface StartupWatchdog {
 
 export interface StartupWatchdogOptions {
   enabled: boolean
-  // 输出函数，测试时注入；默认 console.log
+  // Output sink, injected by tests; defaults to console.log
   out?: (line: string) => void
   now?: () => number
 }
 
-// renderer 首次加载（did-start-loading → did-finish-load）超过该阈值视为冷转换过慢。
-// 健康基线：热缓存 ~1.5s，deps 重建 ~3s；Task 11 前的故障值是 14s。
+// First renderer load (did-start-loading → did-finish-load) beyond this is a
+// cold-transform slowdown. Healthy baseline: ~1.5s warm, ~3s with deps rebuild;
+// the Task 11 failure mode was 14s.
 const SLOW_LOAD_THRESHOLD_MS = 8000
-// did-finish-load 后 boot:complete 未在该时间内到达，视为 boot 序列卡死
-// （通常是 probe model 网络挂起或 IPC 未注册）。
+// boot:complete not arriving within this window after did-finish-load means
+// the boot sequence is stalled (usually model probe hang or missing IPC).
 const BOOT_STALL_THRESHOLD_MS = 30_000
-// boot 完成后延迟输出健康摘要，给 Cover chunk 与潜在晚期异常留出窗口。
+// Delay before printing the health summary, leaving room for the Cover chunk
+// and late anomalies.
 const SUMMARY_DELAY_MS = 12_000
 
 const DOC_REF = 'docs/superpowers/plans/2026-07-10-fix-dev-hang-and-orphan-processes.md'
+
+// 'App mounted' repeating within one page load means React Fast Refresh
+// remounted the tree in place (HMR) — legitimate dev behavior, not an anomaly.
+const REMOUNT_LABEL = 'App mounted'
 
 export function createStartupWatchdog(opts: StartupWatchdogOptions): StartupWatchdog {
   const out = opts.out ?? ((line: string) => console.log(line))
@@ -45,6 +58,7 @@ export function createStartupWatchdog(opts: StartupWatchdogOptions): StartupWatc
   let firstLoadDuration: number | null = null
   let labelsSeen = new Set<string>()
   let dupCount = 0
+  let remountCount = 0
   let coverElapsed: number | null = null
   let bootDone = false
   let summaryScheduled = false
@@ -52,7 +66,7 @@ export function createStartupWatchdog(opts: StartupWatchdogOptions): StartupWatc
   let stallTimer: ReturnType<typeof setTimeout> | null = null
 
   const unref = (t: ReturnType<typeof setTimeout>) => {
-    // 看门狗定时器不得阻止进程退出
+    // Watchdog timers must not keep the process alive
     ;(t as unknown as { unref?: () => void }).unref?.()
     return t
   }
@@ -68,17 +82,19 @@ export function createStartupWatchdog(opts: StartupWatchdogOptions): StartupWatc
 
   function printSummary() {
     const ok = anomalies.length === 0
-    const load = firstLoadDuration !== null ? `${(firstLoadDuration / 1000).toFixed(1)}s` : '未知'
+    const load = firstLoadDuration !== null ? `${(firstLoadDuration / 1000).toFixed(1)}s` : 'unknown'
+    const loadOk = firstLoadDuration !== null && firstLoadDuration <= SLOW_LOAD_THRESHOLD_MS
     emit([
-      '── 启动健康摘要 ──────────────────────',
-      `  首次加载: ${load}${firstLoadDuration !== null && firstLoadDuration > SLOW_LOAD_THRESHOLD_MS ? ' ✗ 过慢' : ' ✓'}`,
-      `  页面 reload: ${Math.max(0, loadCount - 1)} 次${loadCount > 1 ? ' ✗' : ' ✓'}`,
-      `  init 事件重复: ${dupCount} 次${dupCount > 0 ? ' ✗' : ' ✓'}`,
-      `  Cover 就绪: ${coverElapsed !== null ? `+${(coverElapsed / 1000).toFixed(1)}s` : '未收到'}`,
+      '-- startup health summary --------------------',
+      `  first load: ${load} ${loadOk ? 'OK' : 'TOO SLOW'}`,
+      `  page reloads: ${Math.max(0, loadCount - 1)} ${loadCount > 1 ? 'FAIL' : 'OK'}`,
+      `  in-place remounts (HMR): ${remountCount} (informational)`,
+      `  duplicate init events: ${dupCount} ${dupCount > 0 ? 'FAIL' : 'OK'}`,
+      `  Cover ready: ${coverElapsed !== null ? `+${(coverElapsed / 1000).toFixed(1)}s` : 'not received'}`,
       ok
         ? '  verdict: HEALTHY'
-        : `  verdict: UNHEALTHY — ${anomalies.join('；')}`,
-      ...(ok ? [] : [`  排查入口: ${DOC_REF}`]),
+        : `  verdict: UNHEALTHY - ${anomalies.join('; ')}`,
+      ...(ok ? [] : [`  investigation entry: ${DOC_REF}`]),
     ])
   }
 
@@ -91,18 +107,18 @@ export function createStartupWatchdog(opts: StartupWatchdogOptions): StartupWatc
         return
       }
       if (loadCount === 2) {
-        anomalies.push('renderer 整页 reload')
+        anomalies.push('full page reload')
         emit([
-          '⚠ 检测到 renderer 第二次加载（整页 reload）——用户会看到棕色闪屏 + 二次加载动画',
-          '  最常见原因：Vite 运行时发现懒加载链上的新裸依赖并 re-optimize。',
-          '  → 向上翻找 "new dependencies optimized: <pkg>"，把 <pkg> 加入',
-          '    electron.vite.config.ts 的 renderer.optimizeDeps.include',
-          '  若你刚修改过 .env / vite 配置 / 刚完成 setup 向导，此次 reload 属预期，可忽略。',
-          `  参考: ${DOC_REF} Task 11`,
+          '[WARN] renderer loaded a 2nd time (full page reload) - user sees a brown flash + loading screen twice',
+          '  Most common cause: Vite discovered a new bare dependency mid-session and re-optimized.',
+          '  -> scroll up for "new dependencies optimized: <pkg>" and add <pkg> to',
+          '     electron.vite.config.ts renderer.optimizeDeps.include',
+          '  If you just edited .env / vite config or finished the setup wizard, this reload is expected.',
+          `  Ref: ${DOC_REF} Task 11`,
         ])
       } else {
-        anomalies.push(`renderer 第 ${loadCount} 次加载`)
-        emit([`⚠ renderer 第 ${loadCount} 次加载，启动链路可能存在循环 reload`])
+        anomalies.push(`renderer loaded ${loadCount}x`)
+        emit([`[WARN] renderer loaded ${loadCount} times - possible reload loop`])
       }
     },
 
@@ -110,22 +126,22 @@ export function createStartupWatchdog(opts: StartupWatchdogOptions): StartupWatc
       if (loadCount === 1 && firstLoadDuration === null) {
         firstLoadDuration = now() - firstLoadStart
         if (firstLoadDuration > SLOW_LOAD_THRESHOLD_MS) {
-          anomalies.push('首次加载过慢')
+          anomalies.push('slow first load')
           emit([
-            `⚠ renderer 首次加载 ${(firstLoadDuration / 1000).toFixed(1)}s（阈值 ${SLOW_LOAD_THRESHOLD_MS / 1000}s）`,
-            '  → Vite 冷转换过慢。检查 warmup.clientFiles 是否覆盖新增的页面入口；',
-            '    node_modules/.vite 是否被删除；是否有安全软件扫描 node_modules。',
-            `  参考: ${DOC_REF} Task 9/10/11`,
+            `[WARN] first renderer load took ${(firstLoadDuration / 1000).toFixed(1)}s (threshold ${SLOW_LOAD_THRESHOLD_MS / 1000}s)`,
+            '  -> Vite cold transform too slow. Check warmup.clientFiles covers new page entries,',
+            '     node_modules/.vite is not being deleted, antivirus is not scanning node_modules.',
+            `  Ref: ${DOC_REF} Task 9/10/11`,
           ])
         }
-        // boot 卡死检测（boot:complete 到达时清除）
+        // Boot-stall detection (cleared when boot:complete arrives)
         stallTimer = unref(setTimeout(() => {
           if (bootDone) return
-          anomalies.push('boot 序列卡死')
+          anomalies.push('boot sequence stalled')
           emit([
-            `⚠ boot 序列疑似卡死：did-finish-load 后 ${BOOT_STALL_THRESHOLD_MS / 1000}s 仍未收到 boot:complete`,
-            '  → 向上翻找最后一条 [bootstrap] stage 日志定位卡住阶段；',
-            '    常见为 probe model 网络挂起或 IPC handler 未注册。',
+            `[WARN] boot sequence may be stalled: no boot:complete within ${BOOT_STALL_THRESHOLD_MS / 1000}s of did-finish-load`,
+            '  -> find the last [bootstrap] stage log to locate the stuck stage;',
+            '     commonly a model-probe network hang or an unregistered IPC handler.',
           ])
         }, BOOT_STALL_THRESHOLD_MS))
       }
@@ -133,11 +149,24 @@ export function createStartupWatchdog(opts: StartupWatchdogOptions): StartupWatc
 
     onRendererTiming(label: string, elapsed: number) {
       if (labelsSeen.has(label)) {
+        if (label === REMOUNT_LABEL) {
+          // React Fast Refresh remounted the tree in place (no page reload).
+          // Legitimate dev behavior: timing labels will repeat for the new
+          // mount, so reset tracking instead of alerting.
+          remountCount++
+          labelsSeen = new Set([REMOUNT_LABEL])
+          emit([
+            '[info] App remounted in-place (React Fast Refresh / HMR) - timing counters reset.',
+            '  Expected after edits that break Fast Refresh (e.g. non-component exports);',
+            '  if unintended, scroll up for "hmr invalidate" to find the offending file.',
+          ])
+          return
+        }
         dupCount++
-        anomalies.push(`"${label}" 重复`)
+        anomalies.push(`"${label}" duplicated`)
         emit([
-          `⚠ 同一页面加载内 "${label}" 第 2 次出现——store.init / files:scan 可能重复执行`,
-          '  → 检查 LoadingScreen finish() 一次性守卫是否被破坏（Task 11 Step 11.4）',
+          `[WARN] "${label}" fired twice within one page load - store.init / files:scan may run twice`,
+          '  -> check the LoadingScreen finish() once-only guard (Task 11 Step 11.4)',
         ])
       } else {
         labelsSeen.add(label)

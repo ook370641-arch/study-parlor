@@ -7,9 +7,11 @@ import { createRequire } from 'node:module'
 // module and break its internal `require('node:fs')` calls under esbuild's ESM bundling.
 const paintingsPlugin = createRequire(import.meta.url)('./scripts/vite-paintings-plugin.cjs')
 
-// 启动故障的关键信号（"new dependencies optimized"、"Re-optimizing"）原本只是
-// 一闪而过的普通日志。包一层 logger，在这些消息出现当场附上处置指引，
-// 让下次排查直接从结论开始。详见 startup 跟踪文档 Task 11。
+// The key signals of startup trouble ("new dependencies optimized",
+// "Re-optimizing") used to flash by as ordinary log lines. Wrap the logger so
+// those messages come with remediation guidance attached, letting the next
+// investigation start from the conclusion. English/ASCII only — see
+// startup-watchdog.ts for why. See the startup tracking doc, Task 11.
 function createWatchdogLogger(): Logger {
   const logger = createLogger()
   const info = logger.info.bind(logger)
@@ -17,13 +19,14 @@ function createWatchdogLogger(): Logger {
     info(msg, opts)
     if (msg.includes('new dependencies optimized')) {
       logger.warn(
-        '[startup-watchdog] 运行时发现新依赖。若随后发生整页 reload（棕色闪屏 + 二次加载），' +
-        '把该依赖加入 electron.vite.config.ts 的 optimizeDeps.include（rules build-dev §10）'
+        '[startup-watchdog] new dependency discovered mid-session. If a full page reload follows ' +
+        '(brown flash + loading screen twice), add the dependency to optimizeDeps.include ' +
+        'in electron.vite.config.ts (rules build-dev §10)'
       )
     } else if (msg.includes('Re-optimizing dependencies')) {
       logger.warn(
-        '[startup-watchdog] deps 缓存失效重建（一次性成本）。若每次启动都出现，' +
-        '检查 node_modules/.vite 是否被清理脚本删除'
+        '[startup-watchdog] deps cache invalidated and rebuilt (one-time cost). If this appears on ' +
+        'every startup, check whether node_modules/.vite is being deleted by a cleanup script'
       )
     }
   }
