@@ -5,6 +5,8 @@ import type { AppConfig } from '../env'
 import type { WritingErrorCode, WritingRoot } from '../../src/types'
 import * as tree from '../lib/writing-tree'
 import { ensureRoots } from '../lib/writing-tree'
+import { updateEntry, removeEntry, migrateEntry } from '../lib/writing-catalog'
+import { generateWritingSummary } from '../lib/llm-tasks'
 
 const KNOWN_CODES: WritingErrorCode[] = ['WRITING_PATH_FORBIDDEN', 'WRITING_NOT_FOUND', 'WRITING_NAME_CONFLICT']
 
@@ -24,6 +26,10 @@ function parseTargetDir(rel: string): { root: WritingRoot; dir: string } {
   return { root: rel.slice(0, idx) as WritingRoot, dir: rel.slice(idx + 1) }
 }
 
+function rootFromPath(p: string): WritingRoot {
+  return p.startsWith('writing/') || p === 'writing' ? 'writing' : 'repository'
+}
+
 export function registerWritingIpc(cfg: AppConfig): void {
   const lib = cfg.libraryPath
   ensureRoots(lib)
@@ -37,20 +43,47 @@ export function registerWritingIpc(cfg: AppConfig): void {
   ipcMain.handle('writing:createFolder', (_, a: { root: 'writing' | 'repository'; dir: string; name: string }) =>
     wrapWriting(() => ({ path: tree.createFolder(lib, a.root, a.dir, a.name) })))
 
-  ipcMain.handle('writing:rename', (_, a: { path: string; newName: string }) =>
-    wrapWriting(() => ({ path: tree.renameNode(lib, a.path, a.newName) })))
+  ipcMain.handle('writing:rename', async (_, a: { path: string; newName: string }) => {
+    const result = await wrapWriting(() => ({ path: tree.renameNode(lib, a.path, a.newName) }))
+    if (result.ok) {
+      try { migrateEntry(lib, rootFromPath(a.path), a.path, result.value.path) } catch { /* silent */ }
+    }
+    return result
+  })
 
-  ipcMain.handle('writing:move', (_, a: { path: string; targetDir: string }) =>
-    wrapWriting(() => ({ path: tree.moveNode(lib, a.path, a.targetDir) })))
+  ipcMain.handle('writing:move', async (_, a: { path: string; targetDir: string }) => {
+    const result = await wrapWriting(() => ({ path: tree.moveNode(lib, a.path, a.targetDir) }))
+    if (result.ok) {
+      try { migrateEntry(lib, rootFromPath(a.path), a.path, result.value.path) } catch { /* silent */ }
+    }
+    return result
+  })
 
-  ipcMain.handle('writing:delete', (_, a: { path: string }) =>
-    wrapWriting(() => { tree.deleteNode(lib, a.path); return null }))
+  ipcMain.handle('writing:delete', async (_, a: { path: string }) => {
+    const result = await wrapWriting(() => { tree.deleteNode(lib, a.path); return null })
+    if (result.ok) {
+      try { removeEntry(lib, rootFromPath(a.path), a.path) } catch { /* silent */ }
+    }
+    return result
+  })
 
   ipcMain.handle('writing:read', (_, a: { path: string }) =>
     wrapWriting(() => tree.readWritingFile(lib, a.path)))
 
-  ipcMain.handle('writing:write', (_, a: { path: string; body: string }) =>
-    wrapWriting(() => { tree.writeWritingFile(lib, a.path, a.body); return null }))
+  ipcMain.handle('writing:write', async (_, a: { path: string; body: string }) => {
+    const result = await wrapWriting(() => { tree.writeWritingFile(lib, a.path, a.body); return null })
+    if (result.ok) {
+      // fire-and-forget: generate summary and update catalog
+      setTimeout(async () => {
+        try {
+          const { body } = tree.readWritingFile(lib, a.path)
+          const summary = await generateWritingSummary(cfg, path.basename(a.path, '.md'), body)
+          if (summary) updateEntry(lib, rootFromPath(a.path), a.path, { title: path.basename(a.path, '.md'), summary, updatedAt: new Date().toISOString().slice(0, 10) })
+        } catch { /* silent */ }
+      }, 0)
+    }
+    return result
+  })
 
   ipcMain.handle('writing:importFiles', async (event, a: { targetDir: string }) =>
     wrapWriting(async () => {
@@ -72,6 +105,19 @@ export function registerWritingIpc(cfg: AppConfig): void {
         fs.copyFileSync(src, path.join(lib, destRel))
         imported.push(destRel)
       }
+
+      // fire-and-forget: generate summaries for imported files
+      const destRoot = root
+      setTimeout(async () => {
+        for (const destRel of imported) {
+          try {
+            const { body } = tree.readWritingFile(lib, destRel)
+            const summary = await generateWritingSummary(cfg, path.basename(destRel, '.md'), body)
+            if (summary) updateEntry(lib, destRoot, destRel, { title: path.basename(destRel, '.md'), summary, updatedAt: new Date().toISOString().slice(0, 10) })
+          } catch { /* silent */ }
+        }
+      }, 0)
+
       return { imported }
     }))
 }

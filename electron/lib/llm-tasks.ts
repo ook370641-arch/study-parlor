@@ -337,3 +337,18 @@ export async function generateGroupInspiration(
     throw new Error(`JSON parse failed after extraction. Debug written to: ${debugFile}`)
   }
 }
+
+export async function generateWritingSummary(cfg: AppConfig, title: string, body: string): Promise<string> {
+  try {
+    const content = await chatNonStream(cfg, {
+      messages: [
+        { role: 'system', content: '为文章写一句话中文摘要（≤40字）。只输出摘要本身：禁止引号、禁止markdown、禁止"本文"开头、禁止换行。' },
+        { role: 'user', content: `标题：${title}\n\n${body.slice(0, 2000)}` },
+      ],
+      temperature: 0.3,
+    })
+    return content.trim().replace(/\n[\s\S]*$/, '').slice(0, 80)
+  } catch {
+    return '' // silent fail — caller skips empty
+  }
+}
