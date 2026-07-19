@@ -4,9 +4,9 @@ import { Button } from '@/components/Button'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ipc } from '@/lib/ipc'
-import { DEFAULT_JOB_BRIEFING_CONFIG } from '@/lib/job-briefing-defaults'
+import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE } from '@/lib/job-briefing-defaults'
 import type { AppConfig } from '@electron/env'
-import type { JobBriefingConfig, JobCompany } from '@shared/index'
+import type { JobBriefingConfig, JobCompany, JobProfile } from '@shared/index'
 
 const DEFAULT_BASE_URL = 'https://api.kimi.com/coding/v1'
 const DEFAULT_MODEL = 'kimi-k2.6'
@@ -33,6 +33,8 @@ export function Settings() {
   const [searchConfigured, setSearchConfigured] = useState(false)
   const [jobConfig, setJobConfig] = useState<JobBriefingConfig>(DEFAULT_JOB_BRIEFING_CONFIG)
   const [jobConfigSaving, setJobConfigSaving] = useState(false)
+  const [jobProfile, setJobProfile] = useState<JobProfile>(DEFAULT_JOB_PROFILE)
+  const [jobProfileSaving, setJobProfileSaving] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -50,7 +52,11 @@ export function Settings() {
       .then(({ configured }) => { if (mounted) setSearchConfigured(configured) })
       .catch(err => { if (mounted) setError(err.message || '读取搜索配置失败') })
     ipc.getState()
-      .then(state => { if (mounted) setJobConfig(state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG) })
+      .then(state => {
+        if (!mounted) return
+        setJobConfig(state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG)
+        setJobProfile(state.jobProfile ?? DEFAULT_JOB_PROFILE)
+      })
       .catch(err => { if (mounted) setError(err.message || '读取求职简报配置失败') })
     return () => { mounted = false }
   }, [])
@@ -171,6 +177,18 @@ export function Settings() {
       setError(err.message || '保存求职简报配置失败')
     } finally {
       setJobConfigSaving(false)
+    }
+  }
+
+  const handleSaveJobProfile = async () => {
+    setJobProfileSaving(true)
+    try {
+      await useStore.getState().updateJobProfile(jobProfile)
+      showToast('求职档案已保存')
+    } catch (err: any) {
+      setError(err.message || '保存求职档案失败')
+    } finally {
+      setJobProfileSaving(false)
     }
   }
 
@@ -344,6 +362,76 @@ export function Settings() {
                     >
                       选择目录
                     </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 求职档案 */}
+              <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
+                <h3 className="text-ember font-semibold mb-4">求职档案</h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-[11px] text-parchment/60 font-sans mb-1">意向岗位（逗号分隔）</div>
+                    <input
+                      data-testid="settings-jobprofile-target-roles"
+                      type="text"
+                      value={jobProfile.targetRoles.join('，')}
+                      onChange={e => setJobProfile(prev => ({ ...prev, targetRoles: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
+                      placeholder="模型产品经理，AI产品经理"
+                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-parchment/60 font-sans mb-1">方向描述（如：大模型/Agent 产品，偏评测与平台）</div>
+                    <input
+                      data-testid="settings-jobprofile-direction"
+                      type="text"
+                      value={jobProfile.direction}
+                      onChange={e => setJobProfile(prev => ({ ...prev, direction: e.target.value }))}
+                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-parchment/60 font-sans mb-1">技能清单（逗号分隔）</div>
+                    <input
+                      data-testid="settings-jobprofile-skills"
+                      type="text"
+                      value={jobProfile.skills.join('，')}
+                      onChange={e => setJobProfile(prev => ({ ...prev, skills: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
+                      placeholder="提示词工程，RAG，数据分析"
+                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-parchment/60 font-sans mb-1">经历摘要（项目 / 实习 / 学历）</div>
+                    <textarea
+                      data-testid="settings-jobprofile-experience"
+                      rows={4}
+                      value={jobProfile.experience}
+                      onChange={e => setJobProfile(prev => ({ ...prev, experience: e.target.value }))}
+                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-parchment/60 font-sans mb-1">补充说明（如：只要北上深）</div>
+                    <textarea
+                      data-testid="settings-jobprofile-notes"
+                      rows={2}
+                      value={jobProfile.additionalNotes}
+                      onChange={e => setJobProfile(prev => ({ ...prev, additionalNotes: e.target.value }))}
+                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <Button data-testid="settings-jobprofile-save" onClick={handleSaveJobProfile} disabled={jobProfileSaving}>
+                      保存求职档案
+                    </Button>
                   </div>
                 </div>
               </div>
