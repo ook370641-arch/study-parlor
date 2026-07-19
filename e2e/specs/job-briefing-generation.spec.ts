@@ -26,10 +26,14 @@ test.describe('@p1 job briefing generation', () => {
     await receiveButton.waitFor({ state: 'visible', timeout: 15000 })
     await receiveButton.click()
 
-    // Mock pipeline returns one job card, two skill rows, and a trends section.
+    // Mock pipeline returns one event, one job card, one question, and a trends section.
     await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
+    await expect(window.locator(SELECTORS.briefing.jobEvent)).toHaveCount(1)
     await expect(window.locator(SELECTORS.briefing.jobCard)).toHaveCount(1)
-    await expect(window.locator(SELECTORS.briefing.jobSkillRow)).toHaveCount(2)
+    await expect(window.locator(SELECTORS.briefing.jobQuestion)).toHaveCount(1)
+    await expect(window.getByText('今日新动态')).toBeVisible()
+    await expect(window.getByText('与你最适配的岗位')).toBeVisible()
+    await expect(window.getByText('高频考察问题')).toBeVisible()
     await expect(window.getByText('趋势解读')).toBeVisible()
 
     // Cache file is written under {library}/求职简报/.
