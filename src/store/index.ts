@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
 import { mergeNewArticles } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
+import { resetAssistantStreamBuffers } from '@/lib/assistant-session-runtime'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
@@ -269,6 +270,7 @@ type AppStore = {
   runAssistantStream: (history: ArticleAssistantMessage[], useSearch: boolean) => Promise<void>
   applyAssistantSearchResult: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void
   appendAssistantChunk: (text: string) => void
+  appendAssistantReasoning: (text: string) => void
   finishAssistantStreaming: () => void
   abortAssistantStream: () => void
   articleAssistantGuideWidth: number
@@ -1090,6 +1092,7 @@ export const useStore = create<AppStore>((set, get) => ({
   runAssistantStream: async (history, useSearch) => {
     const s = get().assistantSession
     if (!s) return
+    resetAssistantStreamBuffers()
     const abortId = `article-assistant-${Date.now()}`
     const placeholder: ArticleAssistantMessage = { role: 'assistant', content: '' }
     set({
@@ -1113,6 +1116,8 @@ export const useStore = create<AppStore>((set, get) => ({
         selection: s.pendingSelection,
         useSearch,
         guide: s.guide,
+        socraticMode: get().assistantSocraticMode,
+        thinkingEffort: get().assistantThinkingEffort,
       })
     } catch (err) {
       const code: ArticleAssistantErrorCode = (err as Error & { code?: string })?.code === 'CHAT_NETWORK_ERROR' ? 'CHAT_NETWORK_ERROR'
@@ -1146,6 +1151,16 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ assistantSession: { ...s, messages: updated } })
   },
 
+  appendAssistantReasoning: (text) => {
+    const s = get().assistantSession
+    if (!s || !s.streaming) return
+    const last = s.messages.at(-1)
+    if (!last || last.role !== 'assistant') return
+    const updated = s.messages.slice(0, -1)
+    updated.push({ ...last, reasoning: (last.reasoning ?? '') + text })
+    set({ assistantSession: { ...s, messages: updated } })
+  },
+
   finishAssistantStreaming: () => {
     const s = get().assistantSession
     if (!s) return
@@ -1156,6 +1171,7 @@ export const useStore = create<AppStore>((set, get) => ({
   abortAssistantStream: () => {
     const s = get().assistantSession
     if (!s || !s.streaming) return
+    resetAssistantStreamBuffers()
     ipc.articleAssistantAbort({ sessionId: s.abortId })
     set({ assistantSession: { ...s, streaming: false, searchLoading: false } })
     get().saveAssistantSession()
