@@ -13,6 +13,7 @@
 | 2026-07-10 | 初版 | Task 1–8：进程清理基础设施、dev cache 隔离、boot 动画缩短、E2E 残留清理 | 孤儿进程泄漏大幅降低，有 `dev:clean` 一键恢复 |
 | 2026-07-11 | 第二次 | Task 9：Vite watch 排除 `.electron-cache`、`dev:clean` 同时清理新旧缓存路径 | 防御性加固，避免旧缓存目录落入 watcher |
 | 2026-07-14 | 第三次 | Task 10：SWC 替代 Babel + Vite warmup + Cover 预加载 | **冷启动 21s → 2.9s**，消除 boot 后棕色闪屏 |
+| 2026-07-19 | 第四次 | Task 11：optimizeDeps 覆盖懒加载链 + warmup 全页面 + 主进程 dev 外部化 + LoadingScreen 守卫 | 消除 re-optimization 整页 reload（棕色闪屏 + 二次加载）；主进程构建 15.5s → 0.4s |
 
 ---
 
@@ -167,9 +168,98 @@ npm run dev
 
 ---
 
+### Task 11 (2026-07-19) — Vite 运行时 re-optimization 触发整页 reload ⭐
+
+**问题描述：** `npm run dev` 再次出现完整慢启动链：终端慢（主进程构建 15.5s）→ LoadingScreen 持续 14s+ → 加载动画结束后露出棕色背景 → LoadingScreen **第二次出现**（重复加载）。日志关键行：
+
+```
+[renderer] main.tsx imports resolved  +14197ms
+[renderer] App Cover chunk ready  +29326ms
+[vite] ✨ new dependencies optimized: react-dom
+[vite] optimized dependencies changed. reloading
+[bootstrap] renderer did-start-loading [+45719ms]        ← 第二次
+[renderer] App boot:complete received ×2                 ← 以下全部双份
+[renderer] App store.init start ×2 / [files:scan] ×2
+```
+
+**为什么问题重复出现：** 启动慢不是单一问题，而是**多个独立根因共享同一症状**——orphan 进程（Task 1–8）、watcher 污染（Task 9）、eager 链膨胀 + Babel（Task 10）。每修掉一个，症状消失，下一个随代码增长浮出。本次与 orphan 进程无关（日志中 preflight 未杀到任何进程），是 Task 10 修复的盲区浮出：Task 10 把 eager 链压到 2.9s，但**懒加载链完全没有防御**——07-11～07-15 的 article-assistant / anthropic 功能给懒加载的 Briefing 链引入了新的裸依赖，成为新的瓶颈路径。
+
+**根因分析（三个独立根因）：**
+
+1. **懒加载链上的裸依赖触发运行时 re-optimization**（棕色闪屏 + 重复加载的元凶）：`ArticleAnnotations.tsx` 引用 `flushSync`（裸 `react-dom`，非 `react-dom/client`），只通过 React.lazy 的 Briefing 页可达，Vite 启动扫描（index.html → eager 图）发现不了它。boot 完成后 App 的 idle 预取拉取 Briefing 链 → Vite 才发现 `react-dom` → 重新优化 deps → **整页 reload**。reload 后 `isBooting` 复位 → LoadingScreen 二次出现；刷新间隙只剩棕色 body 背景。**这个失败模式是无界的：任何新增在懒加载页面里的裸依赖都会引爆它。**
+2. **主进程 dev 构建随 electron/ 增长变慢**：136 模块全量内联（gray-matter/turndown/dotenv），本次 15.5s。
+3. **LoadingScreen 双路径触发 onComplete**：reload 后 `onBootComplete` 事件与 `bootStart()` 返回的 `alreadyCompleted` 同时命中 → `store.init` / `files:scan` 双份执行。
+
+**修复方案：**
+
+- **Step 11.1: optimizeDeps 显式预打包 + 扫描覆盖页面**
+  - 文件：`electron.vite.config.ts` (renderer)
+  - 改动：`optimizeDeps.include` 加入 `react / react-dom / react-dom/client / zustand / react-markdown / remark-gfm / unified / unist-util-visit`；`entries: ['index.html', 'src/pages/**/*.tsx']`
+  - 原因：deps 在 server 启动时一次打包，「运行时发现 → re-optimization → reload」链路被彻底切断；entries 保证未来新增的页面级裸依赖在启动扫描时被发现，而不是运行时引爆
+
+- **Step 11.2: warmup 扩展到全部 7 个页面入口**
+  - 文件：`electron.vite.config.ts` (renderer)
+  - 改动：`warmup.clientFiles` 从 `main.tsx` 一项扩展到 7 个页面
+  - 原因：懒页面（尤其首屏 Cover）不再等浏览器请求才冷转换（Cover chunk 此前 12.6s）
+
+- **Step 11.3: 主进程 dev 构建外部化 node_modules**
+  - 文件：`electron.vite.config.ts` (main)
+  - 改动：配置改为函数形式，`command === 'serve'` 时启用 `externalizeDepsPlugin()`
+  - 原因：dev 下 gray-matter/turndown/dotenv 走运行时 require，构建 136 → 32 模块；打包构建（build）保持全量内联，asar 行为不变（已验证生产构建仍 136 模块）
+
+- **Step 11.4: LoadingScreen 完成路径一次性守卫**
+  - 文件：`src/components/LoadingScreen.tsx`
+  - 改动：`completed` 标志使 `finish()` 幂等
+  - 原因：根治 `store.init` / `files:scan` 双执行——即使未来再出现任何 reload 场景也不会双跑
+
+- **Step 11.5: 启动健康看门狗（可解释性加固）**
+  - 文件：`electron/lib/startup-watchdog.ts`（新建）、`electron/main.ts`、`electron.vite.config.ts`、`tests/startup-watchdog.test.ts`（新建，7 个用例）
+  - 改动：主进程看门狗把本次排查依赖的三类隐晦信号变成显式检测——第二次 `did-start-loading`（整页 reload）、同一页面加载内 timing 标签重复（init 双执行）、首次加载 >8s（冷转换过慢）、boot 30s 未完成（卡死），异常发生当场报警并附最可能原因 + 修复指引；boot 完成 12s 后输出 `HEALTHY / UNHEALTHY` 启动健康摘要。vite `customLogger` 拦截 `new dependencies optimized` / `Re-optimizing dependencies` 消息并当场附处置指引。dev-only，E2E 静默模式下关闭。
+  - 原因：启动慢是多根因共享同一症状的问题类，无法保证不再复发；让日志下次自己说出病因，跳过人工推理环节
+
+**验证：**
+
+```
+# 冷启动（含 vite 配置变更导致的 deps 全量重建，最不利情况）
+主进程构建:                15.52s  → 0.41s
+main.tsx imports resolved: +14197ms → +2022ms
+Cover chunk ready:         +29326ms → +5743ms
+did-start-loading:         2 次 → 1 次（无 reload）
+store.init / files:scan:   ×2 → ×1
+
+# 热缓存第二轮（常态）
+主进程构建 0.42s；imports resolved +1560ms；Cover ready +4638ms
+
+# 看门狗（Step 11.5）第三轮
+启动健康摘要输出 HEALTHY，零误报；vite customLogger 透传无损
+
+# 回归
+npm run test      # 66 files, 488 tests 全过（含 7 个新增看门狗测试 tests/startup-watchdog.test.ts）
+npm run build     # 生产构建正常，main 仍 136 模块全量内联
+```
+
+**对"每次重启后启动慢"的覆盖说明：** 该问题在 Task 9「已知限制」中已记录（Vite 转换缓存纯内存，每次 dev server 重启都是冷启动），Task 10 用 SWC+warmup 把它压到 2.9s。但 Task 10 只覆盖 eager 链：懒加载页面仍在浏览器请求时才转换，deps 运行时发现在重启后的首次启动**必然**引爆 reload（idle 预取在 boot 完成后立即执行）。本 Task 把 warmup 和 optimizeDeps 扩展到整个懒加载图后，重启冷启动路径被完整覆盖：deps 缓存（`node_modules/.vite`）跨重启持久，源码转换由 warmup 并行预热。重启固有的 OS 磁盘缓存 / esbuild 二进制冷加载成本（秒级）无法消除，但不会再出现 15s+14s+reload 级别的退化。
+
+**防复发机制：**
+
+- `.claude/rules/build-dev.md` §10：新增懒加载裸依赖必须同步 `include`（流程防线）
+- 验证信号写入规则：dev 日志出现第二条 `did-start-loading`、`new dependencies optimized` 或重复 `store.init start` 即为复发
+- `entries` 用 glob 覆盖页面目录：新增页面自动进入启动扫描，无需手工登记
+- `startup-watchdog`（Step 11.5）：上述信号全部自动化检测，异常当场给出原因与修复指引，启动结束输出 HEALTHY / UNHEALTHY 摘要
+
+**相关提交：** 本次工作树改动（electron.vite.config.ts、LoadingScreen.tsx、startup-watchdog.ts、main.ts、tests/startup-watchdog.test.ts、build-dev.md §10）
+
+**对修订历史的影响：** 已追加第四行。Task 9 的「已知限制」（每次 dev 都是冷启动）仍然成立，但冷启动的预热范围从 eager 链扩展到全页面图。
+
+---
+
 ## 诊断命令速查
 
 ```bash
+# 首先看启动健康摘要（Task 11 起，boot 完成 12s 后自动输出）
+# [startup-watchdog] verdict: HEALTHY / UNHEALTHY — UNHEALTHY 时上方必有 ⚠ 报警说明病因
+npm run dev
+
 # 冷启动计时（清除 Vite 缓存）
 rm -rf node_modules/.vite/deps && npm run dev
 # 观察日志: [bootstrap] renderer did-finish-load [+XXXXXms]
@@ -194,6 +284,7 @@ wmic process where "name='node.exe' or name='electron.exe'" get ProcessId,Comman
 2. **Vite 转换缓存不持久化**：这是 Vite 的设计决定，我们不绕过它。通过 SWC + warmup 让每次冷启动足够快（<3s）来容忍它。
 3. **React.lazy 页面只减首次加载，不减冷启动**：Vite 仍需转换 `main.tsx` → `App.tsx` → `store` → … 的 eager 依赖链。减少 eager import 数量才能降冷启动成本。
 4. **Cover 预热时机必须在 `setIsBooting(false)` 之前**：之后才发 `import()` 已经晚了——React 已经开始渲染，Suspense 会触发 fallback。
+5. **懒加载链与 eager 链同等纳入冷启动防御**（Task 11 起）：`warmup.clientFiles` 覆盖全部页面入口、`optimizeDeps.include` 覆盖懒加载链裸依赖。否则 Vite 运行时发现新依赖会 re-optimize → 整页 reload，比冷转换本身更伤。
 
 ---
 

@@ -1,13 +1,41 @@
-import { defineConfig } from 'electron-vite'
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react-swc'
+import { createLogger, type Logger } from 'vite'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 // createRequire: this config is ESM; the plugin is CJS. Static `import` would inline the
 // module and break its internal `require('node:fs')` calls under esbuild's ESM bundling.
 const paintingsPlugin = createRequire(import.meta.url)('./scripts/vite-paintings-plugin.cjs')
 
-export default defineConfig({
+// 启动故障的关键信号（"new dependencies optimized"、"Re-optimizing"）原本只是
+// 一闪而过的普通日志。包一层 logger，在这些消息出现当场附上处置指引，
+// 让下次排查直接从结论开始。详见 startup 跟踪文档 Task 11。
+function createWatchdogLogger(): Logger {
+  const logger = createLogger()
+  const info = logger.info.bind(logger)
+  logger.info = (msg, opts) => {
+    info(msg, opts)
+    if (msg.includes('new dependencies optimized')) {
+      logger.warn(
+        '[startup-watchdog] 运行时发现新依赖。若随后发生整页 reload（棕色闪屏 + 二次加载），' +
+        '把该依赖加入 electron.vite.config.ts 的 optimizeDeps.include（rules build-dev §10）'
+      )
+    } else if (msg.includes('Re-optimizing dependencies')) {
+      logger.warn(
+        '[startup-watchdog] deps 缓存失效重建（一次性成本）。若每次启动都出现，' +
+        '检查 node_modules/.vite 是否被清理脚本删除'
+      )
+    }
+  }
+  return logger
+}
+
+export default defineConfig(({ command }) => ({
   main: {
+    // dev 模式下把 node_modules 依赖（gray-matter/turndown/dotenv）外部化，
+    // 主进程 SSR 构建从 ~15s 降到 ~1s。打包构建（command === 'build'）保持
+    // 全量内联 —— asar 内资源解析已按现状验证，不动。
+    plugins: command === 'serve' ? [externalizeDepsPlugin()] : [],
     build: {
       rollupOptions: {
         input: path.resolve(__dirname, 'electron/main.ts'),
@@ -28,6 +56,7 @@ export default defineConfig({
   },
   renderer: {
     root: '.',
+    customLogger: createWatchdogLogger(),
     server: {
       watch: {
         ignored: [
@@ -46,9 +75,38 @@ export default defineConfig({
       // 预转换入口模块图：dev server 启动后立即并行转换 main.tsx
       // 及其全部 eager import 依赖链。避免浏览器串行请求→发现→再请求
       // 的级联延迟。Windows 上 esbuild 管线慢 3-5×，预转换收益尤为明显。
+      // 7 个懒加载页面入口也一并预热——否则首屏 Cover chunk 要冷转换 ~12s。
       warmup: {
-        clientFiles: ['./src/main.tsx'],
+        clientFiles: [
+          './src/main.tsx',
+          './src/pages/Cover.tsx',
+          './src/pages/Home.tsx',
+          './src/pages/Study.tsx',
+          './src/pages/Profile.tsx',
+          './src/pages/Extension.tsx',
+          './src/pages/Settings.tsx',
+          './src/pages/Briefing.tsx',
+        ],
       },
+    },
+    // 懒加载页面（React.lazy）独有的裸依赖不在 index.html 初始扫描路径上。
+    // 运行时才被发现（如 ArticleAnnotations 的 `react-dom`）会触发
+    // "new dependencies optimized" → 整页 reload，表现为加载动画结束后
+    // 棕色闪屏 + 二次加载。显式 include 在 server 启动时一次打包，彻底杜绝。
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'zustand',
+        'react-markdown',
+        'remark-gfm',
+        'unified',
+        'unist-util-visit',
+      ],
+      // 让启动扫描覆盖懒加载页面入口，未来新增的页面级裸依赖也能在
+      // 启动时被发现，而不是运行时触发 re-optimization。
+      entries: ['index.html', 'src/pages/**/*.tsx'],
     },
     build: {
       rollupOptions: { input: 'index.html' },
@@ -63,4 +121,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))

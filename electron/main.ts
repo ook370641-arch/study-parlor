@@ -8,6 +8,7 @@ import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
 import { patchState } from './ipc/state'
 import { resolveAppPaths } from './lib/app-paths'
+import { createStartupWatchdog } from './lib/startup-watchdog'
 
 // In packaged builds cwd is not writable for our config — macOS launches the
 // .app with cwd=/ (read-only system volume → EROFS), Windows uses the install
@@ -59,6 +60,11 @@ function bootTs(): string {
 
 const isDev = !!process.env.ELECTRON_RENDERER_URL
 const isE2ESilent = process.env.E2E_SILENT === '1'
+
+// Dev-only 启动健康看门狗：把整页 reload、init 重复、冷转换过慢、boot 卡死
+// 等启动异常从隐晦日志信号变成显式报警 + 健康摘要。E2E 静默模式下关闭，
+// 避免干扰基于日志的测试断言。
+const watchdog = createStartupWatchdog({ enabled: isDev && !isE2ESilent })
 
 if (isDev) {
   app.commandLine.appendSwitch('remote-debugging-port', '9222')
@@ -137,13 +143,16 @@ async function bootstrap() {
   // calls (during module evaluation) are received.
   ipcMain.on('log:timing', (_event, label: string, elapsed: number) => {
     console.log(`[renderer] ${label}  +${Math.round(elapsed)}ms`)
+    watchdog.onRendererTiming(label, elapsed)
   })
 
   mainWindow.webContents.on('did-start-loading', () => {
     console.log('[bootstrap] renderer did-start-loading', bootTs())
+    watchdog.onDidStartLoading()
   })
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('[bootstrap] renderer did-finish-load', bootTs())
+    watchdog.onDidFinishLoad()
   })
 
   if (process.env.ELECTRON_RENDERER_URL) {
@@ -276,6 +285,7 @@ async function bootstrap() {
     if (bootCompleted) {
       console.log('[bootstrap] boot already completed, sending boot:complete on reload', bootTs())
       mainWindow.webContents.send('boot:complete')
+      watchdog.onBootComplete()
       return { alreadyCompleted: true }
     }
     const cfg = pendingBootCfg
@@ -285,6 +295,7 @@ async function bootstrap() {
     await runBootSequence(cfg, mainWindow)
     bootCompleted = true
     console.log('[bootstrap] boot sequence complete', bootTs())
+    watchdog.onBootComplete()
     return { alreadyCompleted: false }
   })
 

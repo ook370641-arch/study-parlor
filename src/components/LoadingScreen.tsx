@@ -46,11 +46,13 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
   useEffect(() => {
     // 使用 window.api 直接调用，避免依赖 ipc 模块（store 尚未初始化）
     if (!window.api) return
-    const unsubProgress = window.api.onBootProgress((s, p) => {
-      setStage(s)
-      setProgress(p)
-    })
-    const unsubComplete = window.api.onBootComplete(() => {
+    // boot:complete 事件与 bootStart() 返回的 alreadyCompleted 是两条独立路径，
+    // reload 场景下会同时命中。守卫确保 onComplete 只触发一次，
+    // 否则 store.init / files:scan 会重复执行。
+    let completed = false
+    const finish = () => {
+      if (completed) return
+      completed = true
       setProgress(100)
       setStage('就绪')
       setExiting(true)
@@ -58,20 +60,17 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
         setVisible(false)
         onCompleteRef.current?.()
       }, 700)
+    }
+    const unsubProgress = window.api.onBootProgress((s, p) => {
+      setStage(s)
+      setProgress(p)
     })
+    const unsubComplete = window.api.onBootComplete(finish)
     // Signal main process that we're ready to receive boot events
     window.api.bootStart().then((result) => {
       // If boot already completed before this renderer mounted (e.g. after reload),
       // trigger completion locally to avoid relying on a race-prone event.
-      if (result?.alreadyCompleted) {
-        setProgress(100)
-        setStage('就绪')
-        setExiting(true)
-        setTimeout(() => {
-          setVisible(false)
-          onCompleteRef.current?.()
-        }, 700)
-      }
+      if (result?.alreadyCompleted) finish()
     })
     return () => {
       unsubProgress()
