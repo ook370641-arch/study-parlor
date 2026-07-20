@@ -55,15 +55,9 @@ test.describe('@p2 writing-repository', () => {
     await window.locator(SELECTORS.writing.listTabRepository).click()
     await window.waitForTimeout(500)
 
-    // Expand the 2023 dir if present, or find the loose file
-    const dirNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /2023/ }).first()
-    if (await dirNode.isVisible().catch(() => false)) {
-      await dirNode.click()
-      await window.waitForTimeout(500)
-    }
-
-    // Click on a seeded repo file
-    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /旧博客/ }).first()
+    // Click on a seeded repo file at root level (旧随笔.md — no frontmatter)
+    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /旧随笔/ }).first()
+    await expect(fileNode).toBeVisible({ timeout: 3000 })
     await fileNode.click()
     await window.waitForTimeout(1000)
 
