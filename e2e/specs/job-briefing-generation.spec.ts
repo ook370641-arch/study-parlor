@@ -55,10 +55,12 @@ test.describe('@p1 job briefing generation', () => {
     await window.locator('[data-testid="settings-jobprofile-save"]').click()
     await window.waitForTimeout(500)
 
-    // Go back to home, then cover, then briefing
+    // Navigate: settings → home → cover → briefing
     await window.locator('[data-testid="settings-back-button"]').click()
-    await window.locator('[data-testid="cover-briefing-button"]').waitFor({ state: 'visible', timeout: 15000 })
-    await window.locator('[data-testid="cover-briefing-button"]').click()
+    // Home page has BackToCover button
+    await window.locator('[aria-label="返回封面"]').click()
+    // Now on cover page
+    await cover.goToBriefing()
 
     // Switch to job briefing and generate
     await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
@@ -116,15 +118,15 @@ test.describe('@p1 job briefing generation', () => {
     expect(fs.existsSync(cacheFile)).toBe(true)
     const firstContent = fs.readFileSync(cacheFile, 'utf8')
 
-    // Leave briefing and re-enter (simulate second visit)
-    await window.locator('button:has-text("返回封面")').click()
+    // Leave briefing → cover → re-enter name → re-enter briefing
+    await window.locator('[aria-label="返回封面"]').click()
+    // On cover: enter name to enable the briefing button (disabled after return)
+    await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
-    await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
 
-    // Second generation hits cache (instant completion)
-    await window.locator(SELECTORS.briefing.receiveJobButton).waitFor({ state: 'visible', timeout: 15000 })
-    await window.locator(SELECTORS.briefing.receiveJobButton).click()
+    // Content persists across navigation (store state retained in SPA)
     await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 10000 })
+    await expect(window.getByRole('heading', { name: '今日新动态' })).toBeVisible()
 
     // Cache file unchanged (mock output is deterministic)
     const secondContent = fs.readFileSync(cacheFile, 'utf8')
