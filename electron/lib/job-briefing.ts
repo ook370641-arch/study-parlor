@@ -51,9 +51,9 @@ export function buildEventQueries(config: JobBriefingConfig): EventQuery[] {
   const queries: EventQuery[] = config.companies
     .filter(c => c.enabled)
     .sort((a, b) => a.priority - b.priority)
-    .map(c => ({ query: `${c.name} 秋招 校招 开启 宣讲会 线下活动 招聘`, company: c.name }))
+    .map(c => ({ query: `${c.name} 2026秋招 2027届 校招 宣讲会 AI产品 招聘`, company: c.name }))
   queries.push({
-    query: 'AI产品 秋招开启 校招 汇总',
+    query: 'AI产品 2026秋招 2027届 校招 汇总',
     includeDomains: ['nowcoder.com', 'yingjiesheng.com'],
   })
   return queries
@@ -276,6 +276,7 @@ export async function discoverEvents(
   config: JobBriefingConfig,
   opts: { apiKey: string; signal?: AbortSignal }
 ): Promise<JobEvent[]> {
+  const today = new Date().toISOString().slice(0, 10)
   const events: JobEvent[] = []
   for (const q of buildEventQueries(config)) {
     if (opts.signal?.aborted) break
@@ -290,6 +291,7 @@ export async function discoverEvents(
       })
       const content = results.map(r => `标题: ${r.title}\nURL: ${r.url}\n摘要: ${r.content}`).join('\n\n')
       const prompt = readPrompt('extract-events')
+        .replace('{{today}}', today)
         .replace('{{company}}', q.company ?? '全部关注公司')
         .replace('{{content}}', content.slice(0, 20_000))
       const text = await chatNonStream(cfg, {
@@ -317,7 +319,32 @@ export async function discoverEvents(
       console.warn(`[job-briefing] event query failed: ${q.query}`, err)
     }
   }
-  return dedupEvents(events)
+  return filterAndCapEvents(dedupEvents(events), config, today)
+}
+
+/** Post-extraction filter: keep only watchlist companies, drop clearly stale events, cap at 20. */
+export function filterAndCapEvents(events: JobEvent[], config: JobBriefingConfig, today: string): JobEvent[] {
+  // 1. Only keep companies in the enabled watchlist
+  const enabled = config.companies.filter(c => c.enabled)
+  events = events.filter(e => enabled.some(c => companyNameMatches(c.name, e.company)))
+
+  // 2. Drop events with explicit dates older than 90 days
+  const cutoff = new Date(today)
+  cutoff.setDate(cutoff.getDate() - 90)
+  events = events.filter(e => {
+    if (!e.date) return true // keep if date unknown (LLM couldn't extract it)
+    const d = new Date(e.date)
+    return !isNaN(d.getTime()) && d >= cutoff
+  })
+
+  // 3. Sort by date descending (unknown dates last), cap at 20
+  events.sort((a, b) => {
+    if (!a.date && !b.date) return 0
+    if (!a.date) return 1
+    if (!b.date) return -1
+    return b.date.localeCompare(a.date)
+  })
+  return events.slice(0, 20)
 }
 
 export type FocusCompany = { name: string; eventTitle?: string }
@@ -560,6 +587,20 @@ export async function generateJobBriefing(
         sourceEventTitle: focus.find(f => companyNameMatches(f.name, j.company))?.eventTitle,
       }))
     }
+  }
+
+  // Diversity: cap same-company jobs at 3 to avoid single-company dominance
+  if (matchedJobs.length > 0) {
+    const diversified: MatchedJob[] = []
+    const companyCount = new Map<string, number>()
+    const MAX_PER_COMPANY = 3
+    for (const job of matchedJobs) {
+      const count = companyCount.get(job.company) ?? 0
+      if (count >= MAX_PER_COMPANY) continue
+      diversified.push(job)
+      companyCount.set(job.company, count + 1)
+    }
+    matchedJobs = diversified.slice(0, 10)
   }
 
   // ── Level 3: 面经问题 ──

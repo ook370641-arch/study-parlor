@@ -13,6 +13,7 @@ import {
   buildQuestionQueries,
   buildFallbackQuestionQuery,
   dedupQuestions,
+  filterAndCapEvents,
 } from '../electron/lib/job-briefing'
 import type { RawJob } from '../electron/lib/job-briefing'
 import { DEFAULT_JOB_PROFILE, isJobProfileEmpty, normalizeJobProfile, formatJobProfile } from '../src/lib/job-briefing-defaults'
@@ -219,5 +220,64 @@ describe('question lane', () => {
       { question: '如何为多解问题确定评测指标', intent: '', prepTip: '', frequency: '', companies: [], url: 'u2' },
     ])
     expect(out).toHaveLength(1)
+  })
+})
+
+describe('event filter and cap', () => {
+  const config = normalizeJobBriefingConfig({})
+
+  it('filters out events from non-watchlist companies', () => {
+    const events = [
+      { company: '腾讯', eventType: '秋招开启' as const, title: 'T1', date: '2026-07-15', summary: '', url: '' },
+      { company: '安踏集团', eventType: '秋招开启' as const, title: 'T2', date: '2026-07-15', summary: '', url: '' },
+    ]
+    const out = filterAndCapEvents(events, config, '2026-07-20')
+    expect(out).toHaveLength(1)
+    expect(out[0].company).toBe('腾讯')
+  })
+
+  it('drops events with dates older than 90 days', () => {
+    const events = [
+      { company: '腾讯', eventType: '秋招开启' as const, title: 'T1', date: '2026-07-15', summary: '', url: '' },
+      { company: '字节跳动', eventType: '宣讲会' as const, title: 'T2', date: '2023-09-12', summary: '', url: '' },
+    ]
+    const out = filterAndCapEvents(events, config, '2026-07-20')
+    expect(out).toHaveLength(1)
+    expect(out[0].company).toBe('腾讯')
+  })
+
+  it('keeps events with unknown dates', () => {
+    const events = [
+      { company: '腾讯', eventType: '秋招开启' as const, title: 'T1', date: '', summary: '', url: '' },
+    ]
+    const out = filterAndCapEvents(events, config, '2026-07-20')
+    expect(out).toHaveLength(1)
+  })
+
+  it('caps at 20 events, sorted by date descending', () => {
+    const events = Array.from({ length: 25 }, (_, i) => ({
+      company: '腾讯',
+      eventType: '秋招开启' as const,
+      title: `Event ${i}`,
+      date: `2026-07-${String(i + 1).padStart(2, '0')}`,
+      summary: '',
+      url: '',
+    }))
+    const out = filterAndCapEvents(events, config, '2026-07-20')
+    expect(out.length).toBeLessThanOrEqual(20)
+    // Sorted by date descending: most recent first (future dates within 90d are not filtered)
+    expect(out[0].date).toBe('2026-07-25')
+    expect(out[19].date).toBe('2026-07-06')
+  })
+})
+
+describe('event query year anchors', () => {
+  it('includes 2026 and 2027届 in per-company queries', () => {
+    const queries = buildEventQueries(normalizeJobBriefingConfig({}))
+    const companyQueries = queries.filter(q => q.company)
+    for (const q of companyQueries) {
+      expect(q.query).toMatch(/2026秋招/)
+      expect(q.query).toMatch(/2027届/)
+    }
   })
 })

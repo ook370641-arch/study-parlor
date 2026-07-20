@@ -27,3 +27,8 @@
 4. 若候选人背景标注为「未提供」，按通用 AI 产品求职者评估岗位含金量，matchReason 改写为该岗位的「岗位亮点」。
 5. 只评估输入中存在的岗位，index 必须在输入范围内；不要编造新岗位。
 6. 覆盖所有输入岗位，不要遗漏。
+7. 优先使用来自招聘官网或直投页面的 url（域名含 zhaopin、jobs、career、campus、hire、mokahr 等）。
+   若某岗位输入中的所有 url 均为新闻报道或论坛帖子（如 finance.sina.com.cn、zhuanlan.zhihu.com、
+   nowcoder.com/discuss、leetcode.cn/discuss），仍使用该 url 但在 matchReason 末尾追加一句：
+   「⚠️ 来源为媒体报道，建议前往公司招聘官网确认最新投递入口」。
+8. 每个公司最多评估 3 个岗位；超出部分可以不输出。
