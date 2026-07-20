@@ -309,7 +309,23 @@ type TavilySearchOptions = {
 
 ## 附录 A · 真实链路验证迭代记录
 
-（实现后填写。每轮格式：）
+验证手段：`tests/job-briefing-real.test.ts`（`REAL_API=1` 开启真实生成；`REAL_TEST_REPLAY=1` 用最近生成的 fixture 零成本回放断言）。fixture 快照存于 `tests/fixtures/job-briefing-real-{filled,empty}.md`。
+
+### 迭代 1（2026-07-20）
+
+- **输入档案**：targetRoles=[AI产品经理, 模型产品经理]，direction=大模型/Agent 产品偏评测与平台，skills=[RAG, 提示词工程, 数据分析, 评测体系]，experience=AI 产品实习 + RAG 评测项目；另跑一轮空档案回退。
+- **管道结果**：三级车道全部 `{"events":"ok","jobs":"ok","questions":"ok"}`。filled 13,611 字符 / empty 13,285 字符。真实信号质量高：美团 AI 产品经理提前批、腾讯 AI 产品经理培训生、字节 2027 届 AI PM 早鸟、阿里星&T-Star 计划、百度 AI 大模型评估产品经理专岗、智谱 AI Agent 产品经理校招；高频问题来自牛客/知乎真实面经（Agent 流程、Skill/MCP 封装、RAG 链路、多 Agent 协作），含考察意图与准备要点。
+- **发现的问题**：
+  1. **新动态含明显过期事件**（2020-2024 年的宣讲会/往届校招被当作"新动态"）——Tavily `days=7` 只限制索引时间，不限事件本身日期。
+  2. **LLM 输出契约抖动**：filled 轮事件条目省略 `- ` 列表符、岗位「源自」省略（今日新动态）后缀——渲染器按 mock 格式的严格解析会漏解析事件、溯源不高亮。
+  3. **空档案轮仍输出星级**（prompt 期望 `[推荐]` 标签）——轻微 prompt 遵从偏差，渲染器两种都支持，不阻断。
+  4. 测试侧两个 bug：`split('## ')` 误切 `### ` 子标题；多行模式下 `$` 与懒惰匹配组合导致板块提取只取首行。
+- **调整**：
+  1. `extract-events.md` 增加时效过滤规则（丢弃明显过期事件，按毕业届别与当前时间关系判断）。
+  2. 渲染器 `parseEvents` 列表符改为可选；`originIsToday` 增加 `[事件类型]` 前缀启发式。
+  3. 测试 `extractSection` 改索引定位法；新增两个渲染器容错单测（无列表符事件、无后缀溯源）。
+- **结果**：渲染器单测 7/7；真实输出 fixture 回放断言 12/12；全量单测 510 passed + 12 skipped（真实链路默认 opt-in）。
+- **待后续迭代观察**：时效过滤 prompt 的实际过滤效果（下一轮真实生成对照）；空档案 `[推荐]` 标签遵从率；综合 prompt 是否需要在「源自」行强制输出（今日新动态）后缀。
 
 ```
 ### 迭代 N（YYYY-MM-DD）
@@ -318,3 +334,4 @@ type TavilySearchOptions = {
 - 调整：...
 - 结果：...
 ```
+
