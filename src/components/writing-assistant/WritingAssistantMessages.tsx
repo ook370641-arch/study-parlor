@@ -19,6 +19,7 @@ function SourceChips({ sources, streaming }: { sources: WritingSource[]; streami
       {sources.map((src) => (
         <span
           key={`${src.type}-${src.id}`}
+          data-testid="writing-source-chip"
           className={`inline-flex items-center text-[10px] bg-ember/10 text-ember/80 rounded px-1.5 py-0.5 ${
             streaming ? 'animate-pulse' : ''
           }`}
