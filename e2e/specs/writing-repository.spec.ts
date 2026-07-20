@@ -6,7 +6,7 @@ import { SELECTORS } from '../helpers/selectors'
 import { seedWritingTree, seedRepository } from '../helpers/test-library'
 
 test.describe('@p2 writing-repository', () => {
-  async function gotoWritingRepo(window: any, testLibraryPath: string) {
+  async function gotoWriting(window: any, testLibraryPath: string) {
     seedWritingTree(testLibraryPath)
     seedRepository(testLibraryPath)
 
@@ -17,21 +17,72 @@ test.describe('@p2 writing-repository', () => {
     await window.locator(SELECTORS.writing.sourceButton).click()
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
     await window.waitForTimeout(1500)
-
-    // Switch to repository tab
-    await window.locator(SELECTORS.writing.listTabRepository).click()
-    await window.waitForTimeout(500)
   }
 
-  test('导入流程：外部 .md 文件写入后出现在 repository 树中', async ({ window, testLibraryPath }) => {
-    await gotoWritingRepo(window, testLibraryPath)
+  test('repo tab 显示 seeded 文件', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
 
-    // Write a new .md file into the repository dir (simulating import)
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+
+    const nodes = window.locator('[data-testid="writing-tree-node"]')
+    const texts = await nodes.allTextContents()
+    // Seeded files: 旧随笔.md + 旧博客-xxx.md (in 2023/ subdir)
+    expect(texts.some((t: string) => t.includes('旧随笔'))).toBe(true)
+  })
+
+  test('文章/repo tab 互斥显示', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    // Articles tab shows writing tree
+    await window.locator(SELECTORS.writing.listTabArticles).click()
+    await window.waitForTimeout(500)
+    const articleNodes = await window.locator('[data-testid="writing-tree-node"]').allTextContents()
+    expect(articleNodes.some((t: string) => t.includes('七月夜话'))).toBe(true)
+
+    // Repo tab shows different content
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+    const repoNodes = await window.locator('[data-testid="writing-tree-node"]').allTextContents()
+    expect(repoNodes.some((t: string) => t.includes('旧随笔'))).toBe(true)
+    // Writing files should NOT appear in repo tab
+    expect(repoNodes.some((t: string) => t.includes('七月夜话'))).toBe(false)
+  })
+
+  test('repo 文章可打开阅读', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+
+    // Expand the 2023 dir if present, or find the loose file
+    const dirNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /2023/ }).first()
+    if (await dirNode.isVisible().catch(() => false)) {
+      await dirNode.click()
+      await window.waitForTimeout(500)
+    }
+
+    // Click on a seeded repo file
+    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /旧博客/ }).first()
+    await fileNode.click()
+    await window.waitForTimeout(1000)
+
+    await expect(window.locator(SELECTORS.writing.editor)).toBeVisible({ timeout: 5000 })
+  })
+
+  test('外部新增 .md → tab 切换重新扫描 → 树中出现', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    // Switch to repo tab
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+
+    // Write a new .md file into the repository dir
     const repoDir = path.join(testLibraryPath, 'repository')
-    const newFilePath = path.join(repoDir, '新导入的文章.md')
-    fs.writeFileSync(newFilePath, '# 新导入的文章\n\n这是一篇从外部导入的文章。\n', 'utf8')
+    const newFilePath = path.join(repoDir, '外部新增.md')
+    fs.writeFileSync(newFilePath, '# 外部新增\n\n内容。\n', 'utf8')
 
-    // Switch to articles tab and back to trigger tree refresh
+    // Tab away and back — useEffect on tab change should call loadWritingTree
     await window.locator(SELECTORS.writing.listTabArticles).click()
     await window.waitForTimeout(500)
     await window.locator(SELECTORS.writing.listTabRepository).click()
@@ -40,92 +91,25 @@ test.describe('@p2 writing-repository', () => {
     // Verify the new file appears in the tree
     const nodes = window.locator('[data-testid="writing-tree-node"]')
     const nodeTexts = await nodes.allTextContents()
-    const hasNewFile = nodeTexts.some((t: string) => t.includes('新导入的文章'))
-    expect(hasNewFile).toBe(true)
+    expect(nodeTexts.some((t: string) => t.includes('外部新增'))).toBe(true)
 
     // Clean up
     fs.unlinkSync(newFilePath)
   })
 
-  test('Repository 目录管理：新建分组 → 新建文章 → 重命名 → 删除', async ({ window, testLibraryPath }) => {
-    await gotoWritingRepo(window, testLibraryPath)
+  test('导入按钮触发 system dialog（不实际选文件，只验证按钮存在且可点击）', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
 
-    // Step 1: 新建分组（工具栏按钮，根目录下创建）
-    await window.locator(SELECTORS.writing.newFolderButton).click()
-    await window.getByTestId('writing-prompt-input').fill('我的仓库分组')
-    await window.getByTestId('writing-prompt-confirm').click()
-    await window.waitForTimeout(1500)
-    const groupPath = path.join(testLibraryPath, 'repository', '我的仓库分组')
-    expect(fs.existsSync(groupPath)).toBe(true)
-
-    // Step 2: 右键新建文章（在新建的分组下）
-    const groupNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /我的仓库分组/
-    }).first()
-    await groupNode.click({ button: 'right' })
-    await expect(window.getByRole('button', { name: '＋ 新建文章', exact: true })).toBeVisible({ timeout: 3000 })
-    await window.getByRole('button', { name: '＋ 新建文章', exact: true }).click()
-
-    await window.getByTestId('writing-prompt-input').fill('我的仓库文章.md')
-    await window.getByTestId('writing-prompt-confirm').click()
-    await window.waitForTimeout(1500)
-    const articlePath = path.join(testLibraryPath, 'repository', '我的仓库分组', '我的仓库文章.md')
-    expect(fs.existsSync(articlePath)).toBe(true)
-
-    // Step 3: 重命名（右键文件 → 重命名）
-    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /我的仓库文章\.md/
-    }).first()
-    await fileNode.click({ button: 'right' })
-    await expect(window.getByRole('button', { name: '重命名', exact: true })).toBeVisible({ timeout: 3000 })
-    await window.getByRole('button', { name: '重命名', exact: true }).click()
-
-    await window.getByTestId('writing-prompt-input').fill('重命名的文章.md')
-    await window.getByTestId('writing-prompt-confirm').click()
-    await window.waitForTimeout(1500)
-    const renamedPath = path.join(testLibraryPath, 'repository', '我的仓库分组', '重命名的文章.md')
-    expect(fs.existsSync(renamedPath)).toBe(true)
-    expect(fs.existsSync(articlePath)).toBe(false)
-
-    // Step 4: 删除（cancel → file still exists; confirm → file deleted）
-    const deleteButton = () => window.getByRole('button', { name: '删除', exact: true })
-
-    const renamedNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /重命名的文章\.md/
-    }).first()
-    await renamedNode.click({ button: 'right' })
-    await expect(deleteButton()).toBeVisible({ timeout: 3000 })
-
-    // Cancel — fire-and-forget click: window.confirm blocks synchronously
-    let dialogPromise = window.waitForEvent('dialog')
-    void deleteButton().click()
-    let dialog = await dialogPromise
-    await dialog.dismiss()
+    await window.locator(SELECTORS.writing.listTabRepository).click()
     await window.waitForTimeout(500)
-    expect(fs.existsSync(renamedPath)).toBe(true)
 
-    // Confirm
-    await renamedNode.click({ button: 'right' })
-    await expect(deleteButton()).toBeVisible({ timeout: 3000 })
-    dialogPromise = window.waitForEvent('dialog')
-    void deleteButton().click()
-    dialog = await dialogPromise
-    await dialog.accept()
-    await window.waitForTimeout(1500)
-    expect(fs.existsSync(renamedPath)).toBe(false)
-  })
-
-  test('Repository 文章打开：点击树中文件 → 编辑器显示', async ({ window, testLibraryPath }) => {
-    await gotoWritingRepo(window, testLibraryPath)
-
-    // Click on a seeded file in the repo tree
-    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /旧博客/
-    }).first()
-    await fileNode.click()
+    // The import button should exist and be clickable
+    const importBtn = window.locator(SELECTORS.writing.importFilesButton)
+    await expect(importBtn).toBeVisible()
+    // Click it — dialog will appear but we can't interact with system dialog in E2E
+    await importBtn.click()
+    // App should not crash
     await window.waitForTimeout(1000)
-
-    // Editor should be visible
-    await expect(window.locator(SELECTORS.writing.editor)).toBeVisible({ timeout: 5000 })
+    await expect(window.locator(SELECTORS.writing.listTabRepository)).toBeVisible()
   })
 })

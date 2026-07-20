@@ -21,6 +21,9 @@ export function WritingListColumn() {
 
   useEffect(() => { loadWritingTree() }, [loadWritingTree])
 
+  // Re-scan on tab switch to pick up externally-added files
+  useEffect(() => { loadWritingTree() }, [tab, loadWritingTree])
+
   useEffect(() => {
     if (tree?.writing?.[0]) {
       const first = tree.writing[0]
