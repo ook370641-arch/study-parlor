@@ -12,6 +12,7 @@ import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { JobBriefingRenderer } from '@/components/job-briefing'
+import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
@@ -57,6 +58,9 @@ export function Briefing() {
   const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? [])
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const jobProfile = useStore((s) => s.jobProfile)
+  const goto = useStore((s) => s.goto)
+  const [profileHintDismissed, setProfileHintDismissed] = useState(false)
 
   const today = formatBriefingDate(new Date())
 
@@ -140,7 +144,7 @@ export function Briefing() {
             source === 'digest'
               ? result?.sourceStatus
               : isJob && jobResult
-                ? { ...jobResult.sourceStatus.official, tavily: jobResult.sourceStatus.tavily }
+                ? { ...jobResult.sourceStatus.official, events: jobResult.sourceStatus.events, jobs: jobResult.sourceStatus.jobs, questions: jobResult.sourceStatus.questions }
                 : undefined
           }
           cacheWriteFailed={
@@ -236,6 +240,31 @@ export function Briefing() {
                 </main>
               ) : jobResult ? (
                 <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6">
+                  {isJobProfileEmpty(jobProfile) && !profileHintDismissed && (
+                    <div
+                      data-testid="job-briefing-profile-hint"
+                      className={`max-w-3xl mx-auto mb-6 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${
+                        isAcademic ? 'border-ember/40 bg-ember/10 text-parchment' : 'border-[#d97757]/40 bg-[#d97757]/10 text-[#1a1a1a]'
+                      }`}
+                    >
+                      <span className="flex-1">完善求职档案（意向岗位、方向、经历）以获得个性化岗位适配与高频问题。</span>
+                      <button
+                        data-testid="job-briefing-profile-hint-goto"
+                        onClick={() => goto('settings')}
+                        className="shrink-0 px-3 py-1 rounded bg-ember text-white text-xs hover:bg-ember/90"
+                      >
+                        去设置
+                      </button>
+                      <button
+                        data-testid="job-briefing-profile-hint-dismiss"
+                        onClick={() => setProfileHintDismissed(true)}
+                        className="shrink-0 text-xs opacity-60 hover:opacity-100"
+                        aria-label="关闭提示"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                   <JobBriefingRenderer content={jobResult.content} theme={theme} fontSize={fontSize} />
                 </main>
               ) : null

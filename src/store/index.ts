@@ -11,11 +11,11 @@ import type {
   Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache,
   ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
-  JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode,
+  JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
-import { DEFAULT_JOB_BRIEFING_CONFIG } from '@/lib/job-briefing-defaults'
+import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE } from '@/lib/job-briefing-defaults'
 import type { Painting } from '@shared/index'
 
 export type AssistantSession = {
@@ -156,6 +156,8 @@ type AppStore = {
     error: string | null
   }
   jobBriefingConfig: JobBriefingConfig
+  jobProfile: JobProfile
+  updateJobProfile: (profile: JobProfile) => Promise<void>
   generateJobBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadJobBriefingHistory: () => Promise<void>
   setJobBriefingConfig: (config: JobBriefingConfig) => Promise<void>
@@ -341,6 +343,7 @@ export const useStore = create<AppStore>((set, get) => ({
   jobBriefing: { result: null, loading: false, error: null },
   jobBriefingHistory: { list: [], loading: false, error: null },
   jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
+  jobProfile: DEFAULT_JOB_PROFILE,
   assistantSession: null,
   assistantSearchEnabled: false,
   assistantSocraticMode: true,
@@ -369,6 +372,7 @@ export const useStore = create<AppStore>((set, get) => ({
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
       anthropicBlogLastSeenAt: state.anthropicBlogLastSeenAt ?? null,
       jobBriefingConfig: state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG,
+      jobProfile: state.jobProfile ?? DEFAULT_JOB_PROFILE,
       articleAssistantGuideWidth: state.articleAssistantGuideWidth ?? 320,
       articleAssistantGuideCollapsed: state.articleAssistantGuideCollapsed ?? false,
       assistantSearchEnabled: state.assistantSearchEnabled ?? false,
@@ -541,7 +545,7 @@ export const useStore = create<AppStore>((set, get) => ({
   generateJobBriefing: async (date, opts) => {
     const s = get()
     if (s.jobBriefing.loading) return
-    set({ jobBriefing: { result: null, loading: true, error: null }, briefingStage: 'discovering' })
+    set({ jobBriefing: { result: null, loading: true, error: null }, briefingStage: 'scanning-events' })
     const unsubscribe = ipc.onBriefingProgress((stage) => set({ briefingStage: stage }))
     try {
       const result = await ipc.jobBriefingGenerate({ date, force: opts?.force })
@@ -574,6 +578,12 @@ export const useStore = create<AppStore>((set, get) => ({
   setJobBriefingConfig: async (config) => {
     set({ jobBriefingConfig: config })
     await ipc.patchState({ jobBriefingConfig: config } as Partial<StateJson>)
+  },
+
+  updateJobProfile: async (profile) => {
+    const stamped = { ...profile, updatedAt: new Date().toISOString() }
+    set({ jobProfile: stamped })
+    await ipc.patchState({ jobProfile: stamped } as Partial<StateJson>)
   },
 
   discoverJobBriefingPages: async () => {

@@ -11,6 +11,8 @@ import {
 } from '../lib/job-briefing'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { getSearchApiKey } from '../lib/credentials'
+import { getCurrentState } from './state'
+import { normalizeJobProfile } from '../../src/lib/job-briefing-defaults'
 
 function validateDate(date: string): void {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -39,7 +41,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
         throw new Error(errorMatch[1])
       }
 
-      let sourceStatus = { tavily: 'ok' as const, official: {} as Record<string, 'ok' | 'failed'> }
+      let sourceStatus: JobBriefingResult['sourceStatus'] = { events: 'ok', jobs: 'ok', questions: 'ok', official: {} }
       try {
         const parsed = JSON.parse(frontmatter.job_sources ?? '[]')
         const official: Record<string, 'ok' | 'failed'> = {}
@@ -48,7 +50,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
             official[s.company] = fs.existsSync(filePath) ? 'ok' : 'failed'
           }
         }
-        sourceStatus = { tavily: 'ok', official }
+        sourceStatus = { ...sourceStatus, official }
       } catch { /* ignore */ }
 
       return {
@@ -68,12 +70,36 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       process.env.E2E_CONFIG_DIR &&
       process.env.E2E_JOB_BRIEFING_DISABLE_MOCK !== '1'
     ) {
-      emitProgress('discovering', 'MOCK')
-      emitProgress('scraping', 'MOCK')
-      emitProgress('searching', 'MOCK')
+      emitProgress('scanning-events', 'MOCK')
+      emitProgress('digging-jobs', 'MOCK')
+      emitProgress('aggregating-questions', 'MOCK')
       emitProgress('synthesizing', 'MOCK')
       emitProgress('finalizing', 'MOCK')
-      const mockContent = `## 优先岗位\n\n### [OFFICIAL] 腾讯 · AI产品经理培训生\n- **城市**: 深圳\n- **薪资**: 年薪 40W+\n- **难度**: ★★★★☆\n- **JD 要点**: 大模型应用、Agent设计\n- **来源**: [原文链接](https://example.com/job)\n\n> 💭 **默会知识**: 需要理解 LLM 能力边界。\n\n## 技能雷达\n\n| 技能 | 频次 |\n|---|---|\n| 大模型 / LLM | 92% |\n| Agent 设计 | 78% |\n\n## 趋势解读\n\n当前市场对 AI 产品经理的要求集中在 LLM 应用落地能力。`
+      const mockContent = `## 今日新动态
+
+- **[秋招开启] 腾讯** · 2026-07-19 — 2027 届秋招正式启动，AI 产品线首批放出模型产品经理等岗位。
+  [原文链接](https://example.com/event)
+
+## 与你最适配的岗位
+
+### [★★★★★] 腾讯 · 模型产品经理（校招）
+- **城市**: 深圳
+- **源自**: [秋招开启] 腾讯 · 2027 届秋招正式启动（今日新动态）
+- **JD 要点**: 大模型应用、评测体系搭建
+- **为什么适合你**: 你的 RAG 项目经历直接对应 JD 要求。
+- **来源**: [投递链接](https://example.com/job)
+
+> 💭 **准备建议**: 复习 RAG 链路拆解。
+
+## 高频考察问题
+
+1. **如何为多解问题确定评测指标？**（高频 · 腾讯模型产品面经 · [原文](https://example.com/mianjing)）
+   - 考察意图: 评估候选人的评测体系设计能力。
+   - 准备要点: 准备标注一致性方案。
+
+## 趋势解读
+
+腾讯秋招开启释放信号：模型产品岗强调评测体系能力。`
       const fm = serializeFrontmatter('job-briefing', {
         title: '求职简报',
         type: 'job-briefing',
@@ -98,16 +124,17 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
         filePath,
         cached: false,
         generatedAt: new Date().toISOString(),
-        sourceStatus: { tavily: 'ok', official: { 腾讯: 'ok' } },
+        sourceStatus: { events: 'ok', jobs: 'ok', questions: 'ok', official: { 腾讯: 'ok' } },
       }
     }
 
     const config = getConfig()
+    const profile = normalizeJobProfile(getCurrentState().jobProfile)
     const llmCtl = new AbortController()
     const llmTimeout = setTimeout(() => llmCtl.abort(), 300_000)
 
     try {
-      const result = await generateJobBriefing(cfg, config, date, {
+      const result = await generateJobBriefing(cfg, config, profile, date, {
         emitProgress: (stage, detail) => emitProgress(stage, detail),
         signal: llmCtl.signal,
       })

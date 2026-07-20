@@ -12,6 +12,8 @@ export type TavilySearchOptions = {
   baseUrl?: string
   maxResults?: number
   signal?: AbortSignal
+  days?: number
+  includeDomains?: string[]
 }
 
 export type TavilyResult = {
@@ -46,7 +48,9 @@ export async function searchWeb(opts: TavilySearchOptions): Promise<TavilyResult
         query: opts.query,
         search_depth: 'basic',
         max_results: opts.maxResults ?? 5,
-        include_answer: false
+        include_answer: false,
+        ...(opts.days !== undefined ? { days: opts.days } : {}),
+        ...(opts.includeDomains?.length ? { include_domains: opts.includeDomains } : {})
       })
     })
     if (!res.ok) {

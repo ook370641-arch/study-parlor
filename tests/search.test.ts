@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { searchWeb, generateSearchQueries, generateTutorBrief } from '../electron/lib/search'
 
 vi.stubGlobal('fetch', vi.fn())
@@ -150,5 +150,45 @@ describe('generateTutorBrief', () => {
     expect(body.temperature).toBe(0.3)
     expect(body.messages[0].content).toContain('[1]')
     expect(body.messages[0].content).toContain('https://a.com')
+  })
+})
+
+function mockFetchOk() {
+  return vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ results: [{ title: 't', url: 'https://a.com', content: 'c' }] }),
+  })
+}
+
+describe('searchWeb options', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  it('includes days and include_domains in request body when provided', async () => {
+    const fetchMock = mockFetchOk()
+    vi.stubGlobal('fetch', fetchMock)
+    await searchWeb({ query: 'q', apiKey: 'k', days: 7, includeDomains: ['nowcoder.com'] })
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.days).toBe(7)
+    expect(body.include_domains).toEqual(['nowcoder.com'])
+  })
+
+  it('omits days/include_domains when not provided', async () => {
+    const fetchMock = mockFetchOk()
+    vi.stubGlobal('fetch', fetchMock)
+    await searchWeb({ query: 'q', apiKey: 'k' })
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect('days' in body).toBe(false)
+    expect('include_domains' in body).toBe(false)
+  })
+
+  it('omits include_domains for empty array', async () => {
+    const fetchMock = mockFetchOk()
+    vi.stubGlobal('fetch', fetchMock)
+    await searchWeb({ query: 'q', apiKey: 'k', includeDomains: [] })
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect('include_domains' in body).toBe(false)
   })
 })

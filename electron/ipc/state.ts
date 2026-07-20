@@ -3,6 +3,7 @@ import path from 'node:path'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
 import { getStateDir } from '../env'
 import { DEFAULT_JOB_BRIEFING_CONFIG } from '../lib/job-briefing'
+import { DEFAULT_JOB_PROFILE } from '../../src/lib/job-briefing-defaults'
 import type { StateJson } from '@shared/index'
 
 function getStateFile(): string {
@@ -26,6 +27,7 @@ const DEFAULT: StateJson = {
   assistantSearchEnabled: false,
   assistantSocraticMode: true,
   assistantThinkingEffort: 'off',
+  jobProfile: DEFAULT_JOB_PROFILE,
 }
 
 let currentState: StateJson | null = null

@@ -10,9 +10,9 @@ const DIGEST_STAGES: { key: BriefingStage; label: string }[] = [
 ]
 
 const JOB_STAGES: { key: BriefingStage; label: string }[] = [
-  { key: 'discovering', label: '正在发现招聘页…' },
-  { key: 'scraping', label: '正在抓取官方招聘页…' },
-  { key: 'searching', label: '正在检索全网岗位…' },
+  { key: 'scanning-events', label: '正在扫描今日新动态…' },
+  { key: 'digging-jobs', label: '正在深挖焦点岗位…' },
+  { key: 'aggregating-questions', label: '正在聚合面经高频问题…' },
   { key: 'synthesizing', label: '正在综合生成求职简报…' },
   { key: 'finalizing', label: '正在归档…' },
 ]
