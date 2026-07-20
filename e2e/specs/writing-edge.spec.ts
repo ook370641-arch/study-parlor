@@ -3,6 +3,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
+import { seedWritingSourceState } from '../helpers/test-library'
 
 test.describe('@p2 writing-edge', () => {
   test('空 writing/ + 空 repository/ → 空态提示，不报错', async ({ window, testLibraryPath }) => {
@@ -48,8 +49,10 @@ test.describe('@p2 writing-edge', () => {
     expect(fs.existsSync(repoDir)).toBe(true)
   })
 
-  // FIXME: skip — cover→briefing flow timing requires seedStateJson with briefingSource:'writing'
-  test.skip('外部删除打开的文件 → 应用不白屏', async ({ window, testLibraryPath }) => {
+  test('外部删除打开的文件 → 应用不白屏', async ({ window, testLibraryPath, testConfigDir }) => {
+    // Seed state to land directly on writing source, avoiding cover→briefing timing issues
+    seedWritingSourceState(testConfigDir)
+
     // Create a file then delete it externally BEFORE the app tries to open it
     const writingDir = path.join(testLibraryPath, 'writing')
     fs.mkdirSync(writingDir, { recursive: true })
@@ -60,8 +63,7 @@ test.describe('@p2 writing-edge', () => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
-    await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
-    await window.locator(SELECTORS.writing.sourceButton).click()
+    // With briefingSource:'writing' seeded, the writing source loads without clicking sidebar button
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
     await window.waitForTimeout(1500)
 
