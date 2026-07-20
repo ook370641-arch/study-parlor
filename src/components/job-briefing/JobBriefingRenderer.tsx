@@ -57,7 +57,7 @@ function parseEvents(lines: string[]): JobEventItem[] {
   let current: JobEventItem | null = null
   for (const raw of lines) {
     const line = raw.trim()
-    const head = line.match(/^-\s*\*\*\[(.+?)\]\s*(.+?)\*\*\s*(.*)$/)
+    const head = line.match(/^(?:-\s*)?\*\*\[(.+?)\]\s*(.+?)\*\*\s*(.*)$/)
     if (head) {
       if (current) items.push(current)
       const rest = head[3]
@@ -109,7 +109,11 @@ function parseJobs(lines: string[]): JobCardData[] {
       if (name.includes('城市')) current.city = value.trim()
       else if (name.includes('源自')) {
         current.origin = value.trim()
-        current.originIsToday = value.includes('今日新动态')
+        // 两种都视为「来自今日新动态」：显式标注（今日新动态），或事件类型前缀 [秋招开启]/[新岗位] 等
+        // （LLM 有时会省略 prompt 要求的（今日新动态）后缀，但事件类型方括号只会出现在新动态溯源中）
+        current.originIsToday =
+          value.includes('今日新动态') ||
+          /\[(秋招开启|新岗位|线下活动|宣讲会|其他)\]/.test(value)
       } else if (name.includes('JD 要点') || name.includes('JD要点')) {
         current.points.push(value.trim())
       } else if (name.includes('为什么适合你') || name.includes('岗位亮点')) {

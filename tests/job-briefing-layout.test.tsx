@@ -94,4 +94,55 @@ describe('JobBriefingRenderer four sections', () => {
     renderAcademic('## 今日新动态\n\n本期暂无\n\n## 与你最适配的岗位\n\n本期暂无\n\n## 高频考察问题\n\n本期暂无\n\n## 趋势解读\n\n本期暂无')
     expect(screen.getAllByText('本期暂无').length).toBeGreaterThan(0)
   })
+
+  it('tolerates events without leading bullet (real LLM output variant)', () => {
+    // 真实生成中 LLM 有时省略 `- ` 列表符（2026-07-20 filled-profile 真实输出）
+    renderAcademic(`## 今日新动态
+
+**[新岗位] 阿里巴巴** · — 阿里资产部门招聘AI产品经理。
+  [原文链接](https://example.com/e1)
+
+## 与你最适配的岗位
+
+本期暂无
+
+## 高频考察问题
+
+本期暂无
+
+## 趋势解读
+
+本期暂无`)
+    const events = screen.getAllByTestId('job-briefing-event')
+    expect(events).toHaveLength(1)
+    expect(events[0]).toHaveTextContent('新岗位')
+    expect(events[0]).toHaveTextContent('阿里巴巴')
+    expect(events[0].querySelector('a')).toHaveAttribute('href', 'https://example.com/e1')
+  })
+
+  it('highlights origin with bracketed event type even without （今日新动态） suffix', () => {
+    // 真实生成中 LLM 有时省略（今日新动态）后缀，但保留 [事件类型] 前缀
+    renderAcademic(`## 今日新动态
+
+本期暂无
+
+## 与你最适配的岗位
+
+### [★★★★☆] 百度 · AI大模型评估产品经理
+- **城市**: 北京
+- **源自**: [宣讲会] 百度 · 百度2022校园招聘宣讲活动
+- **JD 要点**: 评估标准制定
+- **为什么适合你**: 评测经验直接对应。
+- **来源**: [投递链接](https://example.com/j1)
+
+## 高频考察问题
+
+本期暂无
+
+## 趋势解读
+
+本期暂无`)
+    const origin = screen.getByTestId('job-card-origin')
+    expect(origin).toHaveAttribute('data-today', 'true')
+  })
 })
