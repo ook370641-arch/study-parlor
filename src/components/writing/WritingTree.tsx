@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import type { WritingTreeNode, WritingRoot } from '@shared/index'
+import { PromptDialog } from './PromptDialog'
+
+interface PromptState {
+  title: string
+  defaultValue?: string
+  onSubmit: (value: string) => void
+}
 
 function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number; root: WritingRoot }) {
   const selectedPath = useStore(s => s.writingFile?.path)
@@ -11,6 +18,7 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
   const [open, setOpen] = useState(depth === 0)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [prompt, setPrompt] = useState<PromptState | null>(null)
 
   const isSelected = selectedPath === node.path
   const isDir = node.kind === 'dir'
@@ -35,12 +43,17 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
 
   const closeMenu = () => setMenu(null)
 
-  const doRename = async () => {
+  const doRename = () => {
     closeMenu()
-    const newName = window.prompt('新名称:', node.name)
-    if (!newName || newName === node.name) return
-    await ipc.writingRename({ path: node.path, newName })
-    await loadWritingTree()
+    setPrompt({
+      title: '新名称:',
+      defaultValue: node.name,
+      onSubmit: async (newName) => {
+        if (newName === node.name) return
+        await ipc.writingRename({ path: node.path, newName })
+        await loadWritingTree()
+      },
+    })
   }
 
   const doDelete = async () => {
@@ -50,23 +63,33 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
     if (r.ok) await loadWritingTree()
   }
 
-  const doNewFile = async () => {
+  const doNewFile = () => {
     closeMenu()
-    const name = window.prompt('文章名称:')
-    if (!name) return
-    await ipc.writingCreateFile({ root, dir: node.path, name })
-    await loadWritingTree()
-    // Auto-expand to show new child
-    if (!open) setOpen(true)
+    setPrompt({
+      title: '文章名称:',
+      onSubmit: async (name) => {
+        // node.path includes the root prefix (e.g. 'writing/随笔'); the IPC
+        // expects dir relative to root, so strip it.
+        const dir = node.path.slice(root.length + 1)
+        await ipc.writingCreateFile({ root, dir, name })
+        await loadWritingTree()
+        // Auto-expand to show new child
+        if (!open) setOpen(true)
+      },
+    })
   }
 
-  const doNewFolder = async () => {
+  const doNewFolder = () => {
     closeMenu()
-    const name = window.prompt('分组名称:')
-    if (!name) return
-    await ipc.writingCreateFolder({ root, dir: node.path, name })
-    await loadWritingTree()
-    if (!open) setOpen(true)
+    setPrompt({
+      title: '分组名称:',
+      onSubmit: async (name) => {
+        const dir = node.path.slice(root.length + 1)
+        await ipc.writingCreateFolder({ root, dir, name })
+        await loadWritingTree()
+        if (!open) setOpen(true)
+      },
+    })
   }
 
   return (
@@ -143,6 +166,18 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
             删除
           </button>
         </div>
+      )}
+
+      {prompt && (
+        <PromptDialog
+          title={prompt.title}
+          defaultValue={prompt.defaultValue}
+          onSubmit={(value) => {
+            setPrompt(null)
+            prompt.onSubmit(value)
+          }}
+          onCancel={() => setPrompt(null)}
+        />
       )}
     </div>
   )

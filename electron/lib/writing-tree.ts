@@ -133,7 +133,8 @@ export function createFile(lib: string, root: WritingRoot, dir: string, name: st
   const absDir = assertInsideRoots(lib, relDir)
   createDir(absDir)
 
-  const safeName = uniqueName(absDir, name)
+  const fileName = name.endsWith('.md') ? name : `${name}.md`
+  const safeName = uniqueName(absDir, fileName)
   const absPath = path.join(absDir, safeName)
   const frontmatter = { type: 'writing' as const }
   const content = matter.stringify('', frontmatter)

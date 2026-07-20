@@ -1,7 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { WritingTree } from './WritingTree'
+import { PromptDialog } from './PromptDialog'
+
+interface PromptState {
+  title: string
+  defaultValue?: string
+  onSubmit: (value: string) => void
+}
 
 export function WritingListColumn() {
   const tab = useStore(s => s.writingListTab)
@@ -9,6 +16,8 @@ export function WritingListColumn() {
   const loadWritingTree = useStore(s => s.loadWritingTree)
   const selectWritingFile = useStore(s => s.selectWritingFile)
   const tree = useStore(s => s.writingTree)
+
+  const [prompt, setPrompt] = useState<PromptState | null>(null)
 
   useEffect(() => { loadWritingTree() }, [loadWritingTree])
 
@@ -23,21 +32,27 @@ export function WritingListColumn() {
     }
   }, [tree, selectWritingFile])
 
-  const handleCreateFile = async () => {
-    const name = window.prompt('文章名称:')
-    if (!name) return
-    const r = await ipc.writingCreateFile({ root: 'writing', dir: '', name })
-    if (r.ok) {
-      await loadWritingTree()
-      selectWritingFile(r.value.path)
-    }
+  const handleCreateFile = () => {
+    setPrompt({
+      title: '文章名称:',
+      onSubmit: async (name) => {
+        const r = await ipc.writingCreateFile({ root: 'writing', dir: '', name })
+        if (r.ok) {
+          await loadWritingTree()
+          selectWritingFile(r.value.path)
+        }
+      },
+    })
   }
 
-  const handleCreateFolder = async () => {
-    const name = window.prompt('分组名称:')
-    if (!name) return
-    const r = await ipc.writingCreateFolder({ root: 'writing', dir: '', name })
-    if (r.ok) await loadWritingTree()
+  const handleCreateFolder = () => {
+    setPrompt({
+      title: '分组名称:',
+      onSubmit: async (name) => {
+        const r = await ipc.writingCreateFolder({ root: 'writing', dir: '', name })
+        if (r.ok) await loadWritingTree()
+      },
+    })
   }
 
   const handleImportFiles = async () => {
@@ -77,6 +92,17 @@ export function WritingListColumn() {
           </div>
         )}
       </div>
+      {prompt && (
+        <PromptDialog
+          title={prompt.title}
+          defaultValue={prompt.defaultValue}
+          onSubmit={(value) => {
+            setPrompt(null)
+            prompt.onSubmit(value)
+          }}
+          onCancel={() => setPrompt(null)}
+        />
+      )}
     </div>
   )
 }
