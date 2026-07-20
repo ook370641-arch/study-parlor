@@ -34,8 +34,10 @@ export function registerWritingIpc(cfg: AppConfig): void {
   const lib = cfg.libraryPath
   ensureRoots(lib)
 
-  ipcMain.handle('writing:scanTree', () =>
-    wrapWriting(() => ({ writing: tree.scanRoot(lib, 'writing'), repository: tree.scanRoot(lib, 'repository') })))
+  ipcMain.handle('writing:scanTree', () => {
+    ensureRoots(lib)
+    return wrapWriting(() => ({ writing: tree.scanRoot(lib, 'writing'), repository: tree.scanRoot(lib, 'repository') }))
+  })
 
   ipcMain.handle('writing:createFile', (_, a: { root: 'writing' | 'repository'; dir: string; name: string }) =>
     wrapWriting(() => ({ path: tree.createFile(lib, a.root, a.dir, a.name) })))
