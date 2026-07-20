@@ -139,7 +139,7 @@ export type ArticleAnnotation = {
   updatedAt: string
 }
 
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'article-assistant' | 'job-briefing'
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'article-assistant' | 'job-briefing' | 'writing'
 
 export type Profile = {
   name: string
@@ -169,7 +169,7 @@ export type Frontmatter = {
   imported_at?: string
   authors?: string[]
   parent_path?: string
-  parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing'
+  parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing' | 'writing'
   generated_at?: string
   role_keywords?: string[]
   cities?: string[]
@@ -414,6 +414,36 @@ export type JobBriefingResult = {
   sourceStatus: JobBriefingSourceStatus
 }
 
+export type WritingRoot = 'writing' | 'repository'
+export type WritingErrorCode = 'WRITING_IO_ERROR' | 'WRITING_PATH_FORBIDDEN' | 'WRITING_NOT_FOUND' | 'WRITING_NAME_CONFLICT'
+export type WritingResult<T> = { ok: true; value: T } | { ok: false; code: WritingErrorCode; message: string }
+export type WritingTreeNode = {
+  name: string
+  path: string
+  kind: 'dir' | 'file'
+  children?: WritingTreeNode[]
+}
+export type WritingTone = 'parchment' | 'plain' | 'ink'
+export type WritingSourceType = 'study' | 'blog' | 'digest' | 'job' | 'repository' | 'writing' | 'web'
+export type WritingSource = { type: WritingSourceType; id: string; label: string }
+export type WritingAssistantMessage = {
+  role: 'user' | 'assistant'
+  content: string
+  reasoning?: string
+  sources?: WritingSource[]
+}
+export type WritingToolEvent = {
+  sessionId: string
+  phase: 'start' | 'done' | 'error'
+  tool: 'read_local' | 'web_search' | 'insert_into_article'
+  ids?: string[]
+  query?: string
+  markdown?: string
+  error?: string
+}
+export type WritingCatalogEntry = { title: string; summary: string; updatedAt: string }
+export type WritingCatalog = { version: 1; entries: Record<string, WritingCatalogEntry> }
+
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
 export type StateJson = {
@@ -431,7 +461,7 @@ export type StateJson = {
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
   externalSummaryFontSize?: BriefingFontSize
-  briefingSource?: 'digest' | 'anthropic' | 'job-briefing'
+  briefingSource?: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
   jobBriefingConfig?: JobBriefingConfig
   jobProfile?: JobProfile
   anthropicBlogCache?: AnthropicBlogCache
@@ -598,23 +628,23 @@ export type IpcApi = {
 
   articleAssistantReadSession: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article'
+    parentType: 'briefing' | 'anthropic-article' | 'writing'
   }) => Promise<ArticleAssistantSessionFile | null>
 
   articleAssistantWriteSession: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article'
+    parentType: 'briefing' | 'anthropic-article' | 'writing'
     messages: ArticleAssistantMessage[]
   }) => Promise<{ filePath: string }>
 
   articleAssistantReadGuide: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article'
+    parentType: 'briefing' | 'anthropic-article' | 'writing'
   }) => Promise<ArticleAssistantGuideFile | null>
 
   articleAssistantWriteGuide: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article'
+    parentType: 'briefing' | 'anthropic-article' | 'writing'
     guide: ArticleAssistantGuide
   }) => Promise<{ filePath: string }>
 
@@ -631,6 +661,28 @@ export type IpcApi = {
 
   // Timing instrumentation (renderer → main, fire-and-forget)
   logTiming: (label: string, elapsed: number) => void
+
+  // Writing feature
+  writingScanTree: () => Promise<WritingResult<{ writing: WritingTreeNode[]; repository: WritingTreeNode[] }>>
+  writingCreateFile: (a: { root: WritingRoot; dir: string; name: string }) => Promise<WritingResult<{ path: string }>>
+  writingCreateFolder: (a: { root: WritingRoot; dir: string; name: string }) => Promise<WritingResult<{ path: string }>>
+  writingRename: (a: { path: string; newName: string }) => Promise<WritingResult<{ path: string }>>
+  writingMove: (a: { path: string; targetDir: string }) => Promise<WritingResult<{ path: string }>>
+  writingDelete: (a: { path: string }) => Promise<WritingResult<null>>
+  writingRead: (a: { path: string }) => Promise<WritingResult<{ frontmatter: Record<string, unknown>; body: string }>>
+  writingWrite: (a: { path: string; body: string }) => Promise<WritingResult<null>>
+  writingImportFiles: (a: { targetDir: string }) => Promise<WritingResult<{ imported: string[] }>>
+  writingAssistantSendMessage: (a: {
+    sessionId: string
+    articlePath: string | null
+    articleContent: string
+    messages: WritingAssistantMessage[]
+    useSearch: boolean
+    thinkingEffort: 'off' | 'high' | 'max'
+  }) => Promise<void>
+  writingAssistantAbort: (a: { sessionId: string }) => Promise<void>
+  onWritingAssistantTool: (cb: (e: WritingToolEvent) => void) => () => void
+  onWritingAssistantReasoningChunk: (cb: (sessionId: string, text: string) => void) => () => void
 }
 
 export type Painting = {

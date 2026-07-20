@@ -4,6 +4,7 @@ import { app, ipcMain } from 'electron'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { generateContinueSuggestions, readTopicReportSummaries } from '../lib/llm-tasks'
 import { patchState } from './state'
+import { ensureRoots } from '../lib/writing-tree'
 import type { AppConfig } from '../env'
 import type { TopicMeta, SessionMeta, Group, GroupMapping, TopicContinueCache, SearchSource } from '@shared/index'
 
@@ -197,6 +198,8 @@ function parseExternalMaterialsBody(body: string): { summary: string; sources: S
 export { parseExternalMaterialsBody }
 
 export function registerFilesIpc(cfg: AppConfig) {
+  ensureRoots(cfg.libraryPath)
+
   // Promise 队列：串行化 updateContinueSuggestions 调用，避免并发覆盖
   let _suggestionQueue: Promise<void> = Promise.resolve()
   function enqueueSuggestion(task: () => Promise<void>): void {
@@ -281,6 +284,7 @@ export function registerFilesIpc(cfg: AppConfig) {
 
     const results: TopicMeta[] = []
     for (const td of topicDirs) {
+      if (['writing', 'repository'].includes(td)) continue
       const topicPath = path.join(root, td)
       try {
         const meta = getTopicMeta(topicPath)

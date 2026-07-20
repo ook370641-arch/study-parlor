@@ -10,7 +10,9 @@ const TYPE_LABELS: Record<DocType, string> = {
   'anthropic-article': 'Anthropic 博客',
   'article-assistant': '旁注记录',
   'job-briefing': '求职简报',
+  writing: '写作',
 }
+
 
 const TYPE_BADGE_STYLES: Record<DocType, string> = {
   progress: 'bg-ember text-ink',
@@ -22,6 +24,7 @@ const TYPE_BADGE_STYLES: Record<DocType, string> = {
   'anthropic-article': 'bg-ember/80 text-ink',
   'article-assistant': 'bg-ink/60 text-parchment/60',
   'job-briefing': 'bg-slate text-parchment',
+  writing: 'bg-ember text-ink',
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {

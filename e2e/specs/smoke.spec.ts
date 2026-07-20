@@ -23,4 +23,34 @@ test.describe('@smoke', () => {
     await expect(home.greeting).toBeVisible()
     await expect(home.librarySection).toBeVisible()
   })
+
+  test('writing API methods are exposed on window.api', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterIfNeeded()
+    const home = new HomePage(window)
+    await home.waitForLoaded()
+
+    // Verify writing-related IPC methods are available
+    const methods = await window.evaluate(() => {
+      const api = (window as any).api
+      const writingMethods = [
+        'writingScanTree',
+        'writingCreateFile',
+        'writingCreateFolder',
+        'writingRename',
+        'writingMove',
+        'writingDelete',
+        'writingRead',
+        'writingWrite',
+        'writingImportFiles',
+        'writingAssistantSendMessage',
+        'writingAssistantAbort',
+      ]
+      return writingMethods.map(m => ({ method: m, exists: typeof api?.[m] === 'function' }))
+    })
+
+    for (const { method, exists } of methods) {
+      expect(exists, `${method} should be a function`).toBe(true)
+    }
+  })
 })

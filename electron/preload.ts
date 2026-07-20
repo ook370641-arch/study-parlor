@@ -141,6 +141,29 @@ const api: IpcApi = {
   loadSessions: () => ipcRenderer.invoke('sessions:load'),
   saveSession: (s) => ipcRenderer.invoke('sessions:save', s),
   deleteSession: (id) => ipcRenderer.invoke('sessions:delete', id),
+
+  // Writing feature
+  writingScanTree: () => ipcRenderer.invoke('writing:scanTree'),
+  writingCreateFile: (a) => ipcRenderer.invoke('writing:createFile', a),
+  writingCreateFolder: (a) => ipcRenderer.invoke('writing:createFolder', a),
+  writingRename: (a) => ipcRenderer.invoke('writing:rename', a),
+  writingMove: (a) => ipcRenderer.invoke('writing:move', a),
+  writingDelete: (a) => ipcRenderer.invoke('writing:delete', a),
+  writingRead: (a) => ipcRenderer.invoke('writing:read', a),
+  writingWrite: (a) => ipcRenderer.invoke('writing:write', a),
+  writingImportFiles: (a) => ipcRenderer.invoke('writing:importFiles', a),
+  writingAssistantSendMessage: (a) => ipcRenderer.invoke('writingAssistant:sendMessage', a),
+  writingAssistantAbort: (a) => ipcRenderer.invoke('writingAssistant:abort', a),
+  onWritingAssistantTool: (cb) => {
+    const handler = (_: unknown, payload: any) => cb(payload)
+    ipcRenderer.on('writingAssistant:tool', handler)
+    return () => ipcRenderer.removeListener('writingAssistant:tool', handler)
+  },
+  onWritingAssistantReasoningChunk: (cb) => {
+    const handler = (_: unknown, sessionId: string, text: string) => cb(sessionId, text)
+    ipcRenderer.on('writingAssistant:reasoningChunk', handler)
+    return () => ipcRenderer.removeListener('writingAssistant:reasoningChunk', handler)
+  },
 }
 
 contextBridge.exposeInMainWorld('api', api)

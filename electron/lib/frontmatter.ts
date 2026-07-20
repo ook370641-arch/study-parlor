@@ -15,6 +15,7 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   'anthropic-article': ['source_url', 'published_at', 'imported_at', 'authors', 'summary'],
   'article-assistant': ['parent_path', 'parent_type', 'created_at', 'updated_at'],
   'job-briefing': ['date', 'generated_at', 'role_keywords', 'cities', 'companies', 'job_sources'],
+  writing: [],
 }
 
 function extractTitleFromFilename(name: string): string | undefined {

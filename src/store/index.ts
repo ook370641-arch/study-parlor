@@ -12,6 +12,7 @@ import type {
   ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
+  WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -117,11 +118,11 @@ type AppStore = {
   briefingStage: BriefingStage | null
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
-  briefingSource: 'digest' | 'anthropic' | 'job-briefing'
+  briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
   anthropicBlogCache: AnthropicBlogCache
   anthropicReaderFilePath: string | null
   anthropicBlogLastSeenAt: string | null
-  setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing') => Promise<void>
+  setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing' | 'writing') => Promise<void>
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
   ) => Promise<
@@ -282,6 +283,48 @@ type AppStore = {
   setAssistantActiveChunk: (index: number | null) => void
   persistAssistantState: () => Promise<void>
   generateAssistantGuide: () => Promise<void>
+
+  // 写作板
+  writingTree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null
+  writingFile: { path: string; body: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
+  writingError: string | null
+  writingFontSize: BriefingFontSize
+  writingTone: WritingTone
+  writingListTab: 'articles' | 'repository'
+  writingAssistantWidth: number
+  writingAssistantOpen: boolean
+  writingEditorAction: ((fn: (ctx: any) => void) => void) | null
+  lastWritingFile: string | null
+
+  // 写作助手
+  writingAssistant: {
+    sessionId: string
+    articlePath: string | null
+    messages: WritingAssistantMessage[]
+    streaming: boolean
+    error: ArticleAssistantErrorCode | null
+  } | null
+  sendWritingAssistantMessage: (text: string) => Promise<void>
+  appendWritingAssistantChunk: (text: string) => void
+  appendWritingAssistantReasoning: (text: string) => void
+  applyWritingAssistantToolEvent: (e: WritingToolEvent) => void
+  finishWritingAssistantStreaming: () => void
+  abortWritingAssistant: () => void
+  loadWritingAssistantSession: (articlePath: string) => Promise<void>
+
+  loadWritingTree: () => Promise<void>
+  selectWritingFile: (filePath: string | null) => Promise<void>
+  updateWritingBody: (body: string) => void
+  saveWritingFile: () => Promise<void>
+  setWritingFontSize: (size: BriefingFontSize) => void
+  setWritingTone: (tone: WritingTone) => void
+  setWritingListTab: (tab: 'articles' | 'repository') => void
+  setWritingAssistantWidth: (width: number) => void
+  setWritingAssistantOpen: (open: boolean) => void
+  setWritingEditorAction: (action: ((fn: (ctx: any) => void) => void) | null) => void
+  setLastWritingFile: (file: string | null) => void
+  setAssistantSearchEnabled: (enabled: boolean) => void
+  setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
 }
 
 let wildcardRequestId = 0
@@ -350,6 +393,17 @@ export const useStore = create<AppStore>((set, get) => ({
   assistantThinkingEffort: 'off',
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
+  writingTree: null,
+  writingFile: null,
+  writingError: null,
+  writingFontSize: 'base',
+  writingTone: 'parchment',
+  writingListTab: 'articles',
+  writingAssistantWidth: 320,
+  writingAssistantOpen: false,
+  writingEditorAction: null,
+  lastWritingFile: null,
+  writingAssistant: null,
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -366,7 +420,7 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
       externalSummaryFontSize: normalizeSummaryFontSize(state.externalSummaryFontSize),
-      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' ? state.briefingSource : 'digest',
+      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' || state.briefingSource === 'writing' ? state.briefingSource : 'digest',
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null }
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
@@ -1251,6 +1305,209 @@ export const useStore = create<AppStore>((set, get) => ({
       if (!cur || cur.contextId !== s.contextId) return
       set({ assistantSession: { ...cur, guideLoading: false, guideError: code } })
     }
+  },
+
+  // 写作板设置持久化
+  setWritingFontSize: (size) => {
+    set({ writingFontSize: size })
+    ipc.patchState({ writingFontSize: size } as Partial<StateJson>)
+  },
+  setWritingTone: (tone) => {
+    set({ writingTone: tone })
+    ipc.patchState({ writingTone: tone } as Partial<StateJson>)
+  },
+  setWritingListTab: (tab) => {
+    set({ writingListTab: tab })
+    ipc.patchState({ writingListTab: tab } as Partial<StateJson>)
+  },
+  setWritingAssistantWidth: (width) => {
+    set({ writingAssistantWidth: width })
+    ipc.patchState({ writingAssistantWidth: width } as Partial<StateJson>)
+  },
+  setWritingAssistantOpen: (open) => {
+    set({ writingAssistantOpen: open })
+    ipc.patchState({ writingAssistantOpen: open } as Partial<StateJson>)
+  },
+  setWritingEditorAction: (action) => set({ writingEditorAction: action }),
+  setLastWritingFile: (file) => {
+    set({ lastWritingFile: file })
+    ipc.patchState({ lastWritingFile: file } as Partial<StateJson>)
+  },
+  setAssistantSearchEnabled: (enabled) => {
+    set({ assistantSearchEnabled: enabled })
+    ipc.patchState({ assistantSearchEnabled: enabled } as Partial<StateJson>)
+  },
+  setAssistantThinkingEffort: (effort) => {
+    set({ assistantThinkingEffort: effort })
+    ipc.patchState({ assistantThinkingEffort: effort } as Partial<StateJson>)
+  },
+
+  // --- 写作助手 ---
+  sendWritingAssistantMessage: async (text: string) => {
+    const f = get().writingFile
+    const sessionId = `writing-assistant-${Date.now()}`
+    const messages: WritingAssistantMessage[] = [
+      ...(get().writingAssistant?.messages ?? []),
+      { role: 'user' as const, content: text },
+    ]
+    set({
+      writingAssistant: {
+        sessionId,
+        articlePath: f?.path ?? null,
+        messages,
+        streaming: true,
+        error: null,
+      },
+    })
+    try {
+      await ipc.writingAssistantSendMessage({
+        sessionId,
+        articlePath: f?.path ?? null,
+        articleContent: f?.body ?? '',
+        messages,
+        useSearch: get().assistantSearchEnabled,
+        thinkingEffort: get().assistantThinkingEffort,
+      })
+    } catch (err) {
+      const code: ArticleAssistantErrorCode =
+        (err as Error & { code?: string })?.code === 'CHAT_NETWORK_ERROR' ? 'CHAT_NETWORK_ERROR'
+        : (err as Error & { code?: string })?.code === 'CHAT_TIMEOUT' ? 'CHAT_TIMEOUT'
+        : 'CHAT_LLM_ERROR'
+      const cur = get().writingAssistant
+      if (!cur || cur.sessionId !== sessionId) return
+      set({ writingAssistant: { ...cur, streaming: false, error: code } })
+    }
+  },
+
+  appendWritingAssistantChunk: (text: string) => {
+    const s = get().writingAssistant
+    if (!s || !s.streaming) return
+    const msgs = s.messages.slice()
+    const last = msgs[msgs.length - 1]
+    if (last && last.role === 'assistant') {
+      msgs[msgs.length - 1] = { ...last, content: last.content + text }
+    } else {
+      msgs.push({ role: 'assistant', content: text })
+    }
+    set({ writingAssistant: { ...s, messages: msgs } })
+  },
+
+  appendWritingAssistantReasoning: (text: string) => {
+    const s = get().writingAssistant
+    if (!s || !s.streaming) return
+    const msgs = s.messages.slice()
+    const last = msgs[msgs.length - 1]
+    if (last && last.role === 'assistant') {
+      msgs[msgs.length - 1] = { ...last, reasoning: (last.reasoning ?? '') + text }
+    } else {
+      msgs.push({ role: 'assistant', content: '', reasoning: text })
+    }
+    set({ writingAssistant: { ...s, messages: msgs } })
+  },
+
+  applyWritingAssistantToolEvent: (e: WritingToolEvent) => {
+    const s = get().writingAssistant
+    if (!s || s.sessionId !== e.sessionId) return
+    const msgs = s.messages.slice()
+    const last = msgs[msgs.length - 1]
+    if (!last || last.role !== 'assistant') return
+
+    if (e.phase === 'start') {
+      const label = e.tool === 'read_local' && e.ids
+        ? `> 读取：${e.ids.map(id => `\`${id}\``).join('、')}`
+        : e.tool === 'web_search' && e.query
+        ? `> 搜索：${e.query}`
+        : e.tool === 'insert_into_article'
+        ? `> 插入到文章`
+        : `> ${e.tool}`
+      const content = last.content + `\n${label}\n`
+      const sources = [...(last.sources ?? [])]
+      if (e.ids) {
+        for (const id of e.ids) {
+          if (!sources.some(src => src.id === id)) {
+            const type = id.includes(':') ? id.split(':')[0] as WritingToolEvent['tool'] extends 'read_local' ? string : never : 'repository'
+            sources.push({ type: type as any, id, label: id })
+          }
+        }
+      }
+      msgs[msgs.length - 1] = { ...last, content, sources }
+    } else if (e.phase === 'done') {
+      const marker = e.ids && e.ids.length > 0
+        ? `\n> 来源：[${e.tool}] ${e.ids.join(', ')}\n`
+        : e.tool === 'insert_into_article' && e.markdown
+        ? `\n> 已插入：\n> ${e.markdown.split('\n').join('\n> ')}\n`
+        : e.tool === 'web_search'
+        ? `\n> 搜索完成\n`
+        : `\n> ${e.tool} 完成\n`
+      msgs[msgs.length - 1] = { ...last, content: last.content + marker }
+    } else if (e.phase === 'error') {
+      msgs[msgs.length - 1] = { ...last, content: last.content + `\n> ${e.tool} 失败：${e.error ?? '未知错误'}\n` }
+    }
+    set({ writingAssistant: { ...s, messages: msgs } })
+  },
+
+  finishWritingAssistantStreaming: () => {
+    const s = get().writingAssistant
+    if (!s) return
+    set({ writingAssistant: { ...s, streaming: false } })
+  },
+
+  abortWritingAssistant: () => {
+    const s = get().writingAssistant
+    if (!s || !s.streaming) return
+    ipc.writingAssistantAbort({ sessionId: s.sessionId })
+    set({ writingAssistant: { ...s, streaming: false } })
+  },
+
+  loadWritingAssistantSession: async (articlePath: string) => {
+    const file = await ipc.articleAssistantReadSession({
+      parentPath: articlePath,
+      parentType: 'writing',
+    })
+    if (!file?.messages.length) return
+    set({
+      writingAssistant: {
+        sessionId: '',
+        articlePath,
+        messages: file.messages.map(m => ({
+          role: m.role,
+          content: m.content,
+          sources: m.searchSources?.map(s => ({
+            type: 'web' as const,
+            id: s.url,
+            label: s.title,
+          })),
+        })),
+        streaming: false,
+        error: null,
+      },
+    })
+  },
+
+  // --- 写作板：树、当前文件、保存 ---
+  loadWritingTree: async () => {
+    const r = await ipc.writingScanTree()
+    if (r.ok) set({ writingTree: r.value })
+    else set({ writingError: r.message })
+  },
+
+  selectWritingFile: async (filePath: string | null) => {
+    if (!filePath) return set({ writingFile: null })
+    const cur = get().writingFile
+    if (cur?.dirty) await get().saveWritingFile()
+    const r = await ipc.writingRead({ path: filePath })
+    if (r.ok) set({ writingFile: { path: filePath, body: r.value.body, dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+    else set({ writingError: r.message })
+  },
+
+  updateWritingBody: (body: string) => set(s => s.writingFile ? { writingFile: { ...s.writingFile, body, dirty: true } } : {}),
+
+  saveWritingFile: async () => {
+    const f = get().writingFile
+    if (!f || !f.dirty) return
+    set({ writingFile: { ...f, saving: 'saving' as const } })
+    const r = await ipc.writingWrite({ path: f.path, body: f.body })
+    set({ writingFile: { ...get().writingFile!, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })
   },
 }))
 
