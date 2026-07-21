@@ -4,6 +4,7 @@ import { Toast } from '@/components/Toast'
 import { PreStudyModal } from '@/components/PreStudyModal'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { SetupWizard } from '@/components/SetupWizard'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ipc } from '@/lib/ipc'
 import { attachAssistantSessionListeners } from '@/lib/assistant-session-runtime'
 import { attachWritingAssistantListeners } from '@/lib/writing-assistant-runtime'
@@ -215,15 +216,17 @@ export function App() {
     <div className="h-full">
       {isBooting && <LoadingScreen onComplete={handleBootComplete} />}
       {!isBooting && (
-        <Suspense fallback={null}>
-          {page === 'cover' && <Cover />}
-          {page === 'home' && <Home />}
-          {page === 'study' && <Study />}
-          {page === 'profile' && <Profile />}
-          {page === 'extension' && <Extension />}
-          {page === 'settings' && <Settings />}
-          {page === 'briefing' && <Briefing />}
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            {page === 'cover' && <Cover />}
+            {page === 'home' && <Home />}
+            {page === 'study' && <Study />}
+            {page === 'profile' && <Profile />}
+            {page === 'extension' && <Extension />}
+            {page === 'settings' && <Settings />}
+            {page === 'briefing' && <Briefing />}
+          </Suspense>
+        </ErrorBoundary>
       )}
       {modal === 'preStudy' && <PreStudyModal />}
       <Toast />
