@@ -104,6 +104,10 @@ npx playwright show-trace e2e-results/<trace-file>.zip
 > `buildAssistantUserPrompt` / `buildChatBody`）并把最终请求体写入
 > `$E2E_CONFIG_DIR/last-assistant-request.json`，供 `article-assistant-controls.spec.ts`
 > 做请求级断言（system prompt 内容、thinking 配置、reasoning_effort 等）。
+>
+> 求职简报的失败路径通过 `seedJobBriefing(libPath, date, '## Error\nJOB_XXX')`
+> 注入——主进程命中缓存错误 rethrow 分支（`electron/ipc/job-briefing.ts`），
+> 无需关闭 mock 即可确定性覆盖错误 UI/重试链路（见 `job-briefing-error.spec.ts`）。
 
 ## 标记
 
