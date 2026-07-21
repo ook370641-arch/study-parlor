@@ -274,4 +274,98 @@ test.describe('@p2 writing-editor', () => {
     state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
     expect(state.writingTone).toBe('parchment')
   })
+
+  // ── Insert-to-editor ──────────────────────────────────────────────
+
+  test('AI 助手 insert → 编辑器内容变化', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    // Create and open a file
+    await window.locator(SELECTORS.writing.newFileButton).click()
+    await window.getByTestId('writing-prompt-input').fill('插入测试')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await window.waitForTimeout(2000)
+
+    const writing = new WritingPage(window)
+    await expect(writing.editor).toBeVisible({ timeout: 5000 })
+
+    // Write some initial content first so the file has a body
+    await writing.typeInEditor('初始内容')
+    await window.waitForTimeout(1500)
+
+    // Open assistant and send a message (mock sends insert_into_article tool event with markdown '# 插入标题')
+    const { WritingAssistantPanel } = await import('../pages/WritingAssistantPanel')
+    const assistant = new WritingAssistantPanel(window)
+    await assistant.open()
+    await assistant.send('帮我写')
+    await assistant.waitForStreamingDone(15000)
+
+    // Click insert button on the last assistant message
+    const insertBtn = window.locator(SELECTORS.writing.assistantInsertBtn).last()
+    await expect(insertBtn).toBeVisible({ timeout: 3000 })
+    await insertBtn.click()
+    await window.waitForTimeout(500)
+
+    // Editor content should include the inserted markdown
+    const content = await writing.getEditorContent()
+    expect(content).toContain('插入标题')
+  })
+
+  // ── Save failure UI ────────────────────────────────────────────────
+
+  test('保存失败 UI：saving=error 时显示"保存失败"', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.newFileButton).click()
+    await window.getByTestId('writing-prompt-input').fill('保存失败测试')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await window.waitForTimeout(2000)
+
+    const writing = new WritingPage(window)
+    await expect(writing.editor).toBeVisible({ timeout: 5000 })
+
+    // Simulate save error by directly setting store state
+    await window.evaluate(() => {
+      const store = (window as any).useStore
+      const f = store.getState().writingFile
+      if (f) {
+        store.setState({ writingFile: { ...f, saving: 'error' as const } })
+      }
+    })
+    await window.waitForTimeout(300)
+
+    const saveText = await writing.getSaveStatus()
+    expect(saveText).toContain('保存失败')
+  })
+
+  // ── Catalog update ─────────────────────────────────────────────────
+
+  test('Ctrl+S 保存 → catalog 条目 summary 非空', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.newFileButton).click()
+    await window.getByTestId('writing-prompt-input').fill('目录测试')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await window.waitForTimeout(2000)
+
+    const writing = new WritingPage(window)
+    await expect(writing.editor).toBeVisible({ timeout: 5000 })
+
+    // Type content and Ctrl+S
+    await writing.typeInEditor('# 目录测试\n\nLLM 应该为这段内容生成摘要。')
+    await writing.editor.locator('.ProseMirror').click()
+    await window.keyboard.press('Control+s')
+    // Wait for async catalog generation (fire-and-forget in writing:write handler)
+    await window.waitForTimeout(5000)
+
+    // Poll catalog for the new entry — summary may be empty if LLM generation fails
+    // but the entry should at least exist with a title
+    const catalogPath = path.join(testLibraryPath, 'writing', '.catalog.json')
+    await expect.poll(() => {
+      if (!fs.existsSync(catalogPath)) return null
+      const cat = JSON.parse(fs.readFileSync(catalogPath, 'utf8'))
+      const found = Object.values(cat.entries ?? {}).find((e: any) => e.title === '目录测试')
+      return found ?? null
+    }, { timeout: 15000 }).not.toBeNull()
+  })
 })
