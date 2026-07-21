@@ -607,6 +607,7 @@ export const useStore = create<AppStore>((set, get) => ({
     } catch (err: any) {
       const raw = err.message || String(err)
       const error = raw.includes('MISSING_SEARCH_KEY') ? 'MISSING_SEARCH_KEY'
+        : raw.includes('TIMEOUT') ? 'TIMEOUT'
         : raw.includes('NETWORK_ERROR') ? 'NETWORK_ERROR'
         : raw.includes('OFFICIAL_PAGE_FAILED') ? 'OFFICIAL_PAGE_FAILED'
         : raw.includes('EXTRACTION_ERROR') ? 'EXTRACTION_ERROR'

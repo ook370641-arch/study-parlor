@@ -9,6 +9,7 @@ import {
   jobBriefingFilePath,
   jobBriefingDir,
 } from '../lib/job-briefing'
+import { toJobErrorCode } from '../lib/job-error-codes'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { getSearchApiKey } from '../lib/credentials'
 import { getCurrentState } from './state'
@@ -36,7 +37,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
     if (!args.force && fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, 'utf8')
       const { frontmatter, body } = parseFrontmatter(raw, { filename: path.basename(filePath) })
-      const errorMatch = body.trim().match(/^##\s*Error\s*\n\s*(JOB_(MISSING_SEARCH_KEY|NETWORK_ERROR|OFFICIAL_PAGE_FAILED|EXTRACTION_ERROR|EMPTY_RESULTS|CACHE_WRITE_FAILED))$/)
+      const errorMatch = body.trim().match(/^##\s*Error\s*\n\s*(JOB_(MISSING_SEARCH_KEY|NETWORK_ERROR|OFFICIAL_PAGE_FAILED|EXTRACTION_ERROR|EMPTY_RESULTS|CACHE_WRITE_FAILED|TIMEOUT))$/)
       if (errorMatch) {
         throw new Error(errorMatch[1])
       }
@@ -130,20 +131,16 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
 
     const config = getConfig()
     const profile = normalizeJobProfile(getCurrentState().jobProfile)
-    const llmCtl = new AbortController()
-    const llmTimeout = setTimeout(() => llmCtl.abort(), 300_000)
 
+    // 不再使用 300s 总预算 signal：各阶段自带超时与降级（chatNonStream 300s、
+    // Tavily/页面抓取各自超时），综合生成有独立 300s 计时。总预算曾在长综合
+    // 阶段误杀请求，冒出 DOMException code=20（即用户看到的 "JOB_20"）。
     try {
-      const result = await generateJobBriefing(cfg, config, profile, date, {
+      return await generateJobBriefing(cfg, config, profile, date, {
         emitProgress: (stage, detail) => emitProgress(stage, detail),
-        signal: llmCtl.signal,
       })
-      return result
     } catch (err: any) {
-      const code = err?.code || 'NETWORK_ERROR'
-      throw new Error(`JOB_${code}`)
-    } finally {
-      clearTimeout(llmTimeout)
+      throw new Error(`JOB_${toJobErrorCode(err)}`)
     }
   })
 

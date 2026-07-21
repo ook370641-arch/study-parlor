@@ -23,6 +23,7 @@ import type {
   Message,
 } from '@shared/index'
 
+import { toJobErrorCode } from './job-error-codes'
 import { DEFAULT_JOB_BRIEFING_CONFIG, formatJobProfile } from '../../src/lib/job-briefing-defaults'
 
 export { DEFAULT_JOB_BRIEFING_CONFIG }
@@ -625,12 +626,24 @@ export async function generateJobBriefing(
     .replace('{{jobsJson}}', JSON.stringify(matchedJobs, null, 2))
     .replace('{{questionsJson}}', JSON.stringify(questions, null, 2))
 
-  const content = await chatNonStream(cfg, {
-    messages: [{ role: 'user', content: synthesisPrompt } as Message],
-    temperature: 0.5,
-    thinking: { type: 'enabled', reasoning_effort: 'high' },
-    signal: opts.signal,
-  })
+  // 独立 300s 计时，不与其他阶段共享总预算：reasoning_effort:'high' 常跑数分钟，
+  // 共享预算曾在此阶段误 abort，DOMException code=20 以 "JOB_20" 冒泡给用户。
+  const synthesisCtl = new AbortController()
+  const synthesisTimeout = setTimeout(() => synthesisCtl.abort(), 300_000)
+  let content: string
+  try {
+    content = await chatNonStream(cfg, {
+      messages: [{ role: 'user', content: synthesisPrompt } as Message],
+      temperature: 0.5,
+      thinking: { type: 'enabled', reasoning_effort: 'high' },
+      signal: synthesisCtl.signal,
+    })
+  } catch (err) {
+    const code = toJobErrorCode(err)
+    throw Object.assign(new Error(code), { code: code as JobErrorCode })
+  } finally {
+    clearTimeout(synthesisTimeout)
+  }
 
   opts.emitProgress?.('finalizing')
 
