@@ -165,56 +165,13 @@ export function ChatWindow() {
         </div>
       )}
 
-      {/* Input area */}
+      {/* Input area：input(min-w-0) 可收缩，发送(shrink-0) 常驻，
+          三控件在小窗(<320px)整体隐藏（size.width 是组件内 state，
+          Tailwind 视口断点无效，必须用阈值类名）。 */}
       <div className="p-2 border-t border-parchment/10 flex items-center gap-1.5 shrink-0">
-        <button
-          data-testid="article-assistant-search-btn"
-          className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
-            searchEnabled ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
-          }`}
-          onClick={toggleAssistantSearch}
-          disabled={session.streaming || session.searchLoading}
-          aria-pressed={searchEnabled}
-          aria-label={searchEnabled ? '搜索已开启' : '搜索已关闭'}
-          title={searchEnabled ? '搜索已开启 — 发送时将联网搜索' : '搜索已关闭 — 点击开启联网搜索'}
-        >
-          {session.searchLoading ? (
-            <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin align-middle" />
-          ) : (
-            '🔍'
-          )}
-        </button>
-        <button
-          data-testid="article-assistant-socratic-btn"
-          className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
-            socraticMode ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
-          }`}
-          onClick={toggleAssistantSocratic}
-          disabled={session.streaming || session.searchLoading}
-          aria-pressed={socraticMode}
-          aria-label={socraticMode ? '苏格拉底模式已开启' : '苏格拉底模式已关闭'}
-          title="苏格拉底学习模式：关闭后只做信息检索，不再质询"
-        >
-          🎓
-        </button>
-        <button
-          data-testid="article-assistant-thinking-btn"
-          className={`relative px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
-            thinkingEffort !== 'off' ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
-          }`}
-          onClick={cycleAssistantThinkingEffort}
-          disabled={session.streaming || session.searchLoading}
-          aria-label={`深度思考：${thinkingEffort === 'off' ? '关闭' : thinkingEffort === 'high' ? '高' : '最高'}`}
-          title={`深度思考：${thinkingEffort === 'off' ? '关闭' : thinkingEffort === 'high' ? '高' : '最高（MAX）'} — 点击切换`}
-        >
-          🧠
-          {thinkingEffort === 'max' && (
-            <span className="absolute -top-1 -right-1 text-[8px] leading-none font-bold">MAX</span>
-          )}
-        </button>
         <input
           data-testid="article-assistant-input"
-          className="flex-1 bg-[#0c0806] border border-parchment/20 rounded px-2 py-1 text-sm text-parchment/90 placeholder:text-parchment/40 outline-none focus:border-ember/50"
+          className="flex-1 min-w-0 bg-[#0c0806] border border-parchment/20 rounded px-2 py-1 text-sm text-parchment/90 placeholder:text-parchment/40 outline-none focus:border-ember/50"
           placeholder="问点什么……"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -225,10 +182,60 @@ export function ChatWindow() {
             }
           }}
         />
+        <div
+          data-testid="assistant-extras"
+          className={`items-center gap-1.5 ${size.width < 320 ? 'hidden' : 'flex'}`}
+        >
+          <button
+            data-testid="article-assistant-search-btn"
+            className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+              searchEnabled ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
+            }`}
+            onClick={toggleAssistantSearch}
+            disabled={session.streaming || session.searchLoading}
+            aria-pressed={searchEnabled}
+            aria-label={searchEnabled ? '搜索已开启' : '搜索已关闭'}
+            title={searchEnabled ? '搜索已开启 — 发送时将联网搜索' : '搜索已关闭 — 点击开启联网搜索'}
+          >
+            {session.searchLoading ? (
+              <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin align-middle" />
+            ) : (
+              '🔍'
+            )}
+          </button>
+          <button
+            data-testid="article-assistant-socratic-btn"
+            className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+              socraticMode ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
+            }`}
+            onClick={toggleAssistantSocratic}
+            disabled={session.streaming || session.searchLoading}
+            aria-pressed={socraticMode}
+            aria-label={socraticMode ? '苏格拉底模式已开启' : '苏格拉底模式已关闭'}
+            title="苏格拉底学习模式：关闭后只做信息检索，不再质询"
+          >
+            🎓
+          </button>
+          <button
+            data-testid="article-assistant-thinking-btn"
+            className={`relative px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+              thinkingEffort !== 'off' ? 'text-sky-400' : 'text-parchment/40 hover:text-parchment/70'
+            }`}
+            onClick={cycleAssistantThinkingEffort}
+            disabled={session.streaming || session.searchLoading}
+            aria-label={`深度思考：${thinkingEffort === 'off' ? '关闭' : thinkingEffort === 'high' ? '高' : '最高'}`}
+            title={`深度思考：${thinkingEffort === 'off' ? '关闭' : thinkingEffort === 'high' ? '高' : '最高（MAX）'} — 点击切换`}
+          >
+            🧠
+            {thinkingEffort === 'max' && (
+              <span className="absolute -top-1 -right-1 text-[8px] leading-none font-bold">MAX</span>
+            )}
+          </button>
+        </div>
         {session.streaming ? (
           <button
             data-testid="article-assistant-stop-btn"
-            className="text-xs text-ember hover:text-ember/80 whitespace-nowrap px-1"
+            className="shrink-0 text-xs text-ember hover:text-ember/80 whitespace-nowrap px-1"
             onClick={abortAssistantStream}
           >
             停止
@@ -236,7 +243,7 @@ export function ChatWindow() {
         ) : (
           <button
             data-testid="article-assistant-send-btn"
-            className="text-xs text-parchment/80 hover:text-ember whitespace-nowrap px-1"
+            className="shrink-0 text-xs text-parchment/80 hover:text-ember whitespace-nowrap px-1"
             onClick={() => handleSend()}
           >
             发送
