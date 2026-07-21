@@ -14,17 +14,23 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
 
   const setAction = useStore(s => s.setWritingEditorAction)
 
-  // Capture initial at editor‑create time so the markdownUpdated callback can
-  // compare md against it.  Milkdown fires markdownUpdated when defaultValueCtx
-  // is applied; if we let that through to onChange → updateWritingBody → store
-  // set → initial ref changes → useEditor re‑initializes → infinite loop
-  // (React error #185).  Skipping the emission when the markdown value equals
-  // the captured initial value breaks the loop.
-  const initRef = useRef(initial)
-  initRef.current = initial
+  // Milkdown fires markdownUpdated when defaultValueCtx is applied during
+  // editor creation.  If we let that through to onChange → updateWritingBody →
+  // store set → initial ref changes → useEditor re-initializes → infinite loop
+  // (React error #185).
+  //
+  // loadedRef gates the callback during initialization (sync gate, reset every
+  // time initial changes — which triggers editor re-creation).  Once useEditor's
+  // loading transitions to false, the editor is stable and we open the gate so
+  // genuine user edits can flow through.
+  const loadedRef = useRef(false)
+  const prevInitial = useRef(initial)
+  if (prevInitial.current !== initial) {
+    prevInitial.current = initial
+    loadedRef.current = false
+  }
 
   const { loading, get } = useEditor((root) => {
-    const capturedInit = initRef.current
     return Editor.make()
       .use(commonmark)
       .use(gfm)
@@ -33,8 +39,8 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .use(clipboard)
       .config(ctx => {
         ctx.set(rootCtx, root)
-        ctx.set(defaultValueCtx, capturedInit)
-        ctx.get(listenerCtx).markdownUpdated((_, md) => { if (md !== capturedInit) ref.current(md) })
+        ctx.set(defaultValueCtx, initial)
+        ctx.get(listenerCtx).markdownUpdated((_, md) => { if (loadedRef.current) ref.current(md) })
       })
   }, [initial])
 
@@ -42,6 +48,7 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
   // can call editor commands (bold, table, heading, etc.).
   useEffect(() => {
     if (!loading) {
+      loadedRef.current = true
       const editor = get()
       if (editor) {
         setAction((fn: any) => editor.action(fn))
