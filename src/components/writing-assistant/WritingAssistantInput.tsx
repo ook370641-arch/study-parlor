@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 
 export function WritingAssistantInput() {
   const [input, setInput] = useState('')
+  const writingFile = useStore((s) => s.writingFile)
   const streaming = useStore((s) => s.writingAssistant?.streaming ?? false)
   const searchEnabled = useStore((s) => s.assistantSearchEnabled)
   const thinkingEffort = useStore((s) => s.assistantThinkingEffort)
@@ -10,6 +11,8 @@ export function WritingAssistantInput() {
   const setThinkingEffort = useStore((s) => s.setAssistantThinkingEffort)
   const sendMessage = useStore((s) => s.sendWritingAssistantMessage)
   const abort = useStore((s) => s.abortWritingAssistant)
+
+  const noArticle = !writingFile
 
   const handleSend = () => {
     const text = input.trim()
@@ -72,12 +75,12 @@ export function WritingAssistantInput() {
         <textarea
           data-testid="writing-assistant-input"
           className="flex-1 bg-transparent border border-parchment/20 rounded px-3 py-2 text-sm text-parchment resize-none placeholder:text-parchment/40 outline-none focus:border-ember/50"
-          placeholder="问点什么…"
+          placeholder={noArticle ? "请先选择或新建一篇文章" : "问点什么…"}
           rows={2}
-          value={input}
+          value={noArticle ? "" : input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={streaming}
+          disabled={noArticle || streaming}
         />
         {streaming ? (
           <button
@@ -92,7 +95,7 @@ export function WritingAssistantInput() {
             data-testid="writing-assistant-send-btn"
             className="text-xs text-parchment/80 hover:text-ember whitespace-nowrap px-2 py-1 shrink-0 disabled:opacity-30"
             onClick={handleSend}
-            disabled={input.trim().length === 0}
+            disabled={noArticle || input.trim().length === 0}
           >
             ↑
           </button>
