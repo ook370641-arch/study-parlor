@@ -423,6 +423,8 @@ export type WritingTreeNode = {
   path: string
   kind: 'dir' | 'file'
   children?: WritingTreeNode[]
+  summary?: string
+  catalogUpdatedAt?: string
 }
 export type WritingTone = 'parchment' | 'plain' | 'ink'
 export type WritingSourceType = 'study' | 'blog' | 'digest' | 'job' | 'repository' | 'writing' | 'web'
