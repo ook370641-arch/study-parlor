@@ -3,7 +3,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedWritingTree, seedRepository } from '../helpers/test-library'
+import { seedWritingTree, seedRepository, seedCatalogJson } from '../helpers/test-library'
 
 /**
  * Tree tests. Uses exact text matching for tree nodes to avoid
@@ -13,6 +13,7 @@ test.describe('@p2 writing-tree', () => {
   async function gotoWriting(window: any, testLibraryPath: string) {
     seedWritingTree(testLibraryPath)
     seedRepository(testLibraryPath)
+    seedCatalogJson(testLibraryPath)
 
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
@@ -117,5 +118,38 @@ test.describe('@p2 writing-tree', () => {
     const allNodes = window.locator('[data-testid="writing-tree-node"]')
     const texts = await allNodes.allTextContents()
     expect(texts.some((t: string) => t.includes('.assistant'))).toBe(false)
+  })
+
+  test('拖拽移动文件到另一目录：磁盘位置变化 + 树更新', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    // Verify source file exists initially
+    const srcPath = path.join(testLibraryPath, 'writing', '技术笔记', '子组', '深度文章.md')
+    expect(fs.existsSync(srcPath)).toBe(true)
+
+    // Use Playwright dragTo: drag "深度文章" node onto "随笔" directory node
+    const srcNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '深度文章' }).first()
+    const targetDir = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔$/ }).first()
+
+    await srcNode.dragTo(targetDir)
+    await window.waitForTimeout(1500)
+
+    // File should have moved
+    const newPath = path.join(testLibraryPath, 'writing', '随笔', '深度文章.md')
+    expect(fs.existsSync(newPath)).toBe(true)
+    expect(fs.existsSync(srcPath)).toBe(false)
+  })
+
+  test('hover 文件节点 → 显示 catalog 摘要', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    // seedWritingTree + seedCatalogJson ensure 七月夜话 has a summary
+    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
+    await fileNode.hover()
+    await window.waitForTimeout(500)
+
+    // Summary text should appear (seeded catalog entry: "关于七月的随笔")
+    const nodeText = await fileNode.textContent()
+    expect(nodeText).toContain('关于七月的随笔')
   })
 })
