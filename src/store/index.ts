@@ -116,6 +116,7 @@ type AppStore = {
   briefingFontSize: BriefingFontSize
   externalSummaryFontSize: BriefingFontSize
   briefingStage: BriefingStage | null
+  jobBriefingStage: BriefingStage | null
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
   briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
@@ -329,6 +330,10 @@ type AppStore = {
 
 let wildcardRequestId = 0
 
+// selectWritingFile 的单调序号：并发/交错的文件选中后写先赢时，丢弃过期的
+// writingRead 结果（rules general §7）。
+let writingSelectSeq = 0
+
 /** Ensures sendAssistantMessage waits for history to load before sending, preventing
  *  the race where a user message lands before loadAssistantSession completes and the
  *  cur.messages.length === 0 guard discards the loaded history. */
@@ -379,6 +384,7 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingFontSize: 'base',
   externalSummaryFontSize: 'base',
   briefingStage: null,
+  jobBriefingStage: null,
   briefingSource: 'digest',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicReaderFilePath: null,
@@ -432,6 +438,12 @@ export const useStore = create<AppStore>((set, get) => ({
       assistantSearchEnabled: state.assistantSearchEnabled ?? false,
       assistantSocraticMode: state.assistantSocraticMode ?? true,
       assistantThinkingEffort: state.assistantThinkingEffort ?? 'off',
+      writingFontSize: state.writingFontSize ?? 'base',
+      writingTone: state.writingTone ?? 'parchment',
+      writingListTab: state.writingListTab ?? 'articles',
+      writingAssistantWidth: state.writingAssistantWidth ?? 320,
+      writingAssistantOpen: state.writingAssistantOpen ?? false,
+      lastWritingFile: state.lastWritingFile ?? null,
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -599,11 +611,11 @@ export const useStore = create<AppStore>((set, get) => ({
   generateJobBriefing: async (date, opts) => {
     const s = get()
     if (s.jobBriefing.loading) return
-    set({ jobBriefing: { result: null, loading: true, error: null }, briefingStage: 'scanning-events' })
-    const unsubscribe = ipc.onBriefingProgress((stage) => set({ briefingStage: stage }))
+    set({ jobBriefing: { result: null, loading: true, error: null }, jobBriefingStage: 'scanning-events' })
+    const unsubscribe = ipc.onBriefingProgress((stage) => set({ jobBriefingStage: stage }))
     try {
       const result = await ipc.jobBriefingGenerate({ date, force: opts?.force })
-      set({ jobBriefing: { result, loading: false, error: null }, briefingStage: null })
+      set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null })
     } catch (err: any) {
       const raw = err.message || String(err)
       const error = raw.includes('MISSING_SEARCH_KEY') ? 'MISSING_SEARCH_KEY'
@@ -1493,11 +1505,13 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   selectWritingFile: async (filePath: string | null) => {
+    const seq = ++writingSelectSeq
     if (!filePath) return set({ writingFile: null })
     const cur = get().writingFile
     if (cur?.dirty) await get().saveWritingFile()
     const r = await ipc.writingRead({ path: filePath })
-    if (r.ok) set({ writingFile: { path: filePath, body: r.value.body, dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+    if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
+    if (r.ok) set({ writingFile: { path: filePath, body: r.value.body ?? '', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
     else set({ writingError: r.message })
   },
 
@@ -1508,7 +1522,9 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!f || !f.dirty) return
     set({ writingFile: { ...f, saving: 'saving' as const } })
     const r = await ipc.writingWrite({ path: f.path, body: f.body })
-    set({ writingFile: { ...get().writingFile!, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })
+    const cur = get().writingFile
+    if (!cur || cur.path !== f.path) return // 保存期间文件已切换/关闭，丢弃过期结果
+    set({ writingFile: { ...cur, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })
   },
 }))
 

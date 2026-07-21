@@ -461,6 +461,12 @@ const BASE_STATE = {
   assistantSearchEnabled: false,
   assistantSocraticMode: true,
   assistantThinkingEffort: 'off',
+  writingFontSize: 'base',
+  writingTone: 'parchment',
+  writingListTab: 'articles',
+  writingAssistantWidth: 320,
+  writingAssistantOpen: false,
+  lastWritingFile: null,
 }
 
 export function seedStateJson(

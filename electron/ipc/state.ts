@@ -28,6 +28,12 @@ const DEFAULT: StateJson = {
   assistantSocraticMode: true,
   assistantThinkingEffort: 'off',
   jobProfile: DEFAULT_JOB_PROFILE,
+  writingFontSize: 'base',
+  writingTone: 'parchment',
+  writingListTab: 'articles',
+  writingAssistantWidth: 320,
+  writingAssistantOpen: false,
+  lastWritingFile: null,
 }
 
 let currentState: StateJson | null = null

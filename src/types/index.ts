@@ -472,6 +472,12 @@ export type StateJson = {
   assistantSearchEnabled?: boolean
   assistantSocraticMode?: boolean
   assistantThinkingEffort?: AssistantThinkingEffort
+  writingFontSize?: BriefingFontSize
+  writingTone?: WritingTone
+  writingListTab?: 'articles' | 'repository'
+  writingAssistantWidth?: number
+  writingAssistantOpen?: boolean
+  lastWritingFile?: string | null
 }
 
 export type IpcApi = {
