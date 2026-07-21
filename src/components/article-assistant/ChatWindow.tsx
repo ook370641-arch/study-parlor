@@ -245,9 +245,12 @@ export function ChatWindow() {
       </div>
 
       <ResizeHandles
-        onResize={(delta) =>
-          setSize({ width: Math.max(MIN_W, delta.width), height: Math.max(MIN_H, delta.height) })
-        }
+        minWidth={MIN_W}
+        minHeight={MIN_H}
+        onResize={(next) => {
+          setSize({ width: next.width, height: next.height })
+          setPosition({ x: next.x, y: next.y })
+        }}
       />
     </div>
   )
