@@ -233,4 +233,53 @@ test.describe('@p2 writing-assistant', () => {
     expect(raw).toContain('## 用户')
     expect(raw).toContain('## 助手')
   })
+
+  // ── NEW: 4. 多轮对话 ────────────────────────────────────
+  test('多轮对话：3 条消息产生 6 条记录，回复引用用户问题', async ({ window, testLibraryPath }) => {
+    const assistant = await setupAssistant(window, testLibraryPath)
+    await selectArticle(window, '七月夜话')
+    await assistant.open()
+
+    // Round 1
+    await assistant.send('第一轮问题')
+    await assistant.waitForStreamingDone(15000)
+
+    // Round 2
+    await assistant.send('第二轮问题')
+    await assistant.waitForStreamingDone(15000)
+
+    // Round 3
+    await assistant.send('第三轮问题')
+    await assistant.waitForStreamingDone(15000)
+
+    // Verify 6 messages total (3 user + 3 assistant)
+    const messages = await window.evaluate(() => {
+      const state = (window as any).useStore?.getState()?.writingAssistant
+      return state ? state.messages.map((m: any) => ({ role: m.role, content: m.content })) : []
+    })
+    expect(messages.length).toBe(6)
+    expect(messages.filter((m: any) => m.role === 'user').length).toBe(3)
+    expect(messages.filter((m: any) => m.role === 'assistant').length).toBe(3)
+
+    // Assistant replies should reference user questions (M3 mock enhancement from Phase 2)
+    const assistantReplies = messages.filter((m: any) => m.role === 'assistant')
+    expect(assistantReplies.some((m: any) => m.content.includes('第一轮'))).toBe(true)
+  })
+
+  // ── NEW: 5. 空文章保护 ──────────────────────────────────
+  test('空文章保护：未打开文章时输入框 disabled', async ({ window, testLibraryPath }) => {
+    const assistant = await setupAssistant(window, testLibraryPath)
+    // Do NOT select any article
+    await assistant.open()
+
+    // Input should be disabled
+    const input = window.locator(SELECTORS.writing.assistantInput)
+    await expect(input).toBeDisabled()
+
+    // Placeholder should indicate user needs to select an article
+    await expect(input).toHaveAttribute('placeholder', '请先选择或新建一篇文章')
+
+    // Send button should also be disabled
+    await expect(assistant.sendBtn).toBeDisabled()
+  })
 })
