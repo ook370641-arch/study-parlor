@@ -14,22 +14,6 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
 
   const setAction = useStore(s => s.setWritingEditorAction)
 
-  // Milkdown fires markdownUpdated when defaultValueCtx is applied during
-  // editor creation.  If we let that through to onChange → updateWritingBody →
-  // store set → initial ref changes → useEditor re-initializes → infinite loop
-  // (React error #185).
-  //
-  // loadedRef gates the callback during initialization (sync gate, reset every
-  // time initial changes — which triggers editor re-creation).  Once useEditor's
-  // loading transitions to false, the editor is stable and we open the gate so
-  // genuine user edits can flow through.
-  const loadedRef = useRef(false)
-  const prevInitial = useRef(initial)
-  if (prevInitial.current !== initial) {
-    prevInitial.current = initial
-    loadedRef.current = false
-  }
-
   const { loading, get } = useEditor((root) => {
     return Editor.make()
       .use(commonmark)
@@ -40,27 +24,21 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .config(ctx => {
         ctx.set(rootCtx, root)
         ctx.set(defaultValueCtx, initial)
-        ctx.get(listenerCtx).markdownUpdated((_, md) => { if (loadedRef.current) ref.current(md) })
+        ctx.get(listenerCtx).markdownUpdated((_, md) => ref.current(md))
       })
   }, [initial])
 
   // Register editor action proxy once the editor is created, so the toolbar
   // can call editor commands (bold, table, heading, etc.).
-  // get() is a new function each render; stabilize via ref so the effect
-  // only reruns when loading actually changes, not on every re-render.
-  const getRef = useRef(get)
-  getRef.current = get
-
   useEffect(() => {
     if (!loading) {
-      loadedRef.current = true
-      // setAction 闭包不捕获 editor 实例——每次工具栏调用时实时从
-      // getRef 取最新 editor，避免 editor 重建后旧闭包指向已销毁实例
-      // → "Context 'commands' not found"。
-      setAction((fn: any) => { getRef.current()?.action(fn) })
+      const editor = get()
+      if (editor) {
+        setAction((fn: any) => editor.action(fn))
+      }
     }
     return () => { setAction(null) }
-  }, [loading, setAction])
+  }, [loading, get, setAction])
 
   return <Milkdown />
 }
