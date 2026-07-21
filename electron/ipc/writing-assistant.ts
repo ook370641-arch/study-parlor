@@ -76,6 +76,7 @@ export function registerWritingAssistantIpc(cfg: AppConfig): void {
           fs.mkdirSync(e2eDir, { recursive: true })
           fs.writeFileSync(path.join(e2eDir, 'last-writing-request.json'), JSON.stringify({
             articlePath: args.articlePath,
+            articleContent: args.articleContent,
             useSearch: args.useSearch,
             thinkingEffort: args.thinkingEffort,
             messageCount: args.messages.length,
