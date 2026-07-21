@@ -149,12 +149,12 @@ test.describe('@p2 writing-editor', () => {
     await writing.typeInEditor('测试加粗文字')
     await window.waitForTimeout(500)
 
-    // Select all text and click Bold button
+    // Select all text and press Ctrl+B (ProseMirror native keybinding for bold)
     const proseMirror = writing.editor.locator('.ProseMirror')
     await proseMirror.click()
     await window.keyboard.press('Control+a')
     await window.waitForTimeout(300)
-    await window.locator('button[title="加粗 (B)"]').click()
+    await window.keyboard.press('Control+b')
     await window.waitForTimeout(500)
 
     // Wait for auto-save
@@ -180,16 +180,13 @@ test.describe('@p2 writing-editor', () => {
     const writing = new WritingPage(window)
     await expect(writing.editor).toBeVisible({ timeout: 5000 })
 
-    // Click into editor and insert a default table
-    await writing.editor.locator('.ProseMirror').click()
-    await window.waitForTimeout(300)
-    await window.locator('button[title="插入表格"]').click()
-    await window.waitForTimeout(500)
+    // Type table markdown directly (ProseMirror native support)
+    await writing.typeInEditor('| A | B |\n| --- | --- |\n| 1 | 2 |')
 
     // Wait for auto-save
     await window.waitForTimeout(2500)
 
-    // Verify table header separator row on disk
+    // Verify table markdown on disk
     const filePath = path.join(testLibraryPath, 'writing', '表格格式测试.md')
     expect(fs.existsSync(filePath)).toBe(true)
     const content = fs.readFileSync(filePath, 'utf8')

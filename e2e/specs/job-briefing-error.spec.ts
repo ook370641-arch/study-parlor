@@ -47,7 +47,7 @@ test.describe('@p1 job-briefing 失败路径', () => {
     await expect(window.locator(SELECTORS.briefing.errorDisplay)).toBeVisible({ timeout: 15000 })
 
     await window.locator(SELECTORS.briefing.retryButton).click()
-    await expect(window.locator('text=今日新动态')).toBeVisible({ timeout: 30000 })
+    await expect(window.getByRole('heading', { name: '今日新动态' })).toBeVisible({ timeout: 30000 })
     await expect(window.locator(SELECTORS.briefing.errorDisplay)).toHaveCount(0)
   })
 
