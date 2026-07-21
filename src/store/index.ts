@@ -140,6 +140,7 @@ type AppStore = {
   closeAnthropicReader: () => void
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
+  deleteBriefings: (filePaths: string[]) => Promise<void>
   setBriefingTheme: (theme: BriefingTheme) => Promise<void>
   increaseBriefingFontSize: () => Promise<void>
   decreaseBriefingFontSize: () => Promise<void>
@@ -162,6 +163,7 @@ type AppStore = {
   updateJobProfile: (profile: JobProfile) => Promise<void>
   generateJobBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadJobBriefingHistory: () => Promise<void>
+  deleteJobBriefings: (filePaths: string[]) => Promise<void>
   setJobBriefingConfig: (config: JobBriefingConfig) => Promise<void>
   discoverJobBriefingPages: () => Promise<{ ok: true; companies: JobCompany[] } | { ok: false; error: JobErrorCode | string; message: string }>
 

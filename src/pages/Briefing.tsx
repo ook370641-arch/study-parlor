@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@/store'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import type { BriefingHistoryItem } from '@/components/BriefingDateColumn'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { BriefingDateColumn } from '@/components/BriefingDateColumn'
@@ -65,6 +67,9 @@ export function Briefing() {
   const jobProfile = useStore((s) => s.jobProfile)
   const goto = useStore((s) => s.goto)
   const [profileHintDismissed, setProfileHintDismissed] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<BriefingHistoryItem[] | null>(null)
+  const deleteBriefings = useStore((s) => s.deleteBriefings)
+  const deleteJobBriefings = useStore((s) => s.deleteJobBriefings)
 
   const today = formatBriefingDate(new Date())
 
@@ -177,6 +182,7 @@ export function Briefing() {
                 today={today}
                 onSelect={(date) => generateBriefing(date)}
                 onReceiveToday={() => generateBriefing(today)}
+                onDelete={(items) => setPendingDelete(items)}
                 theme={theme}
               />
             </BriefingListColumn>
@@ -197,6 +203,7 @@ export function Briefing() {
                 today={today}
                 onSelect={(date) => generateJobBriefing(date)}
                 onReceiveToday={() => generateJobBriefing(today)}
+                onDelete={(items) => setPendingDelete(items)}
                 todayLabel="生成简报"
                 theme={theme}
               />
@@ -377,6 +384,32 @@ export function Briefing() {
         />
       )}
       {source === 'writing' && <WritingAssistantPanel />}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="删除简报"
+        icon="trash"
+        confirmLabel="删除"
+        confirmVariant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          const items = pendingDelete ?? []
+          setPendingDelete(null)
+          const paths = items.map((i) => i.filePath)
+          if (source === 'job-briefing') {
+            void deleteJobBriefings(paths)
+          } else {
+            void deleteBriefings(paths)
+          }
+        }}
+      >
+        <p>即将删除 {pendingDelete?.length ?? 0} 篇简报：</p>
+        <ul className="list-disc pl-5 mt-2">
+          {(pendingDelete ?? []).map((i) => (
+            <li key={i.date}>{i.date}</li>
+          ))}
+        </ul>
+        <p className="mt-2">删除「今天」的简报后，再次点击今天将重新生成。</p>
+      </ConfirmDialog>
     </div>
   )
 }
