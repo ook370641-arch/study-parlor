@@ -184,7 +184,7 @@ export const test = base.extend<E2EFixtures>({
     }
   },
 
-  window: async ({ electronProcess }, use) => {
+  window: async ({ electronProcess }, use, testInfo) => {
     const portMatch = electronProcess.cdpUrl.match(/ws:\/\/127\.0\.0\.1:(\d+)/)
     const port = portMatch ? parseInt(portMatch[1], 10) : 9222
     const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 60000 })
@@ -193,8 +193,29 @@ export const test = base.extend<E2EFixtures>({
       if (!context) throw new Error('No browser context available')
 
       const page = await getAppPage(context, 30000)
+
+      // 渲染进程诊断采集：此前 fixture 只转发主进程 stdout，渲染进程的
+      // uncaught error / unhandledrejection 完全不可见（写作棕屏调查因此
+      // 拿不到异常栈）。每个测试都会带上这份附件，失败时可直接定位。
+      const consoleLines: string[] = []
+      page.on('console', (msg) => {
+        if (msg.type() === 'error' || msg.type() === 'warning') {
+          consoleLines.push(`[console.${msg.type()}] ${msg.text()}`)
+        }
+      })
+      page.on('pageerror', (err) => {
+        consoleLines.push(`[pageerror] ${err.stack ?? err.message}`)
+      })
+
       await page.waitForLoadState('domcontentloaded')
       await use(page)
+
+      if (consoleLines.length > 0) {
+        await testInfo.attach('renderer-console', {
+          body: consoleLines.join('\n'),
+          contentType: 'text/plain',
+        })
+      }
     } finally {
       await browser.close()
     }
