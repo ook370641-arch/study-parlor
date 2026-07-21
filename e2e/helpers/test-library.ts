@@ -518,6 +518,30 @@ export function seedWildCardInspiration(
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2))
 }
 
+/**
+ * Seed 一份求职简报缓存文件（`<libPath>/求职简报/求职简报-<date>.md`）。
+ * body 传 `## Error\nJOB_XXX` 时命中主进程失败注入口
+ * （electron/ipc/job-briefing.ts 的缓存错误 rethrow 分支），用于确定性
+ * 覆盖失败路径——mock fast path 永远成功，失败分支此前零执行。
+ */
+export function seedJobBriefing(libPath: string, date: string, content: string): void {
+  const dir = path.join(libPath, '求职简报')
+  fs.mkdirSync(dir, { recursive: true })
+  const filePath = path.join(dir, `求职简报-${date}.md`)
+  const fm = `---
+title: 求职简报
+type: job-briefing
+created: '${new Date().toISOString()}'
+tags:
+  - job-briefing
+  - ai-product
+date: '${date}'
+---
+
+`
+  fs.writeFileSync(filePath, fm + content, 'utf8')
+}
+
 export function seedBriefing(libPath: string, date: string, content?: string, generatedAt?: string): void {
   const dir = path.join(libPath, '夜航简报')
   fs.mkdirSync(dir, { recursive: true })
