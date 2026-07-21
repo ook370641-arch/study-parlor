@@ -54,10 +54,10 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
   useEffect(() => {
     if (!loading) {
       loadedRef.current = true
-      const editor = getRef.current()
-      if (editor) {
-        setAction((fn: any) => editor.action(fn))
-      }
+      // setAction 闭包不捕获 editor 实例——每次工具栏调用时实时从
+      // getRef 取最新 editor，避免 editor 重建后旧闭包指向已销毁实例
+      // → "Context 'commands' not found"。
+      setAction((fn: any) => { getRef.current()?.action(fn) })
     }
     return () => { setAction(null) }
   }, [loading, setAction])
