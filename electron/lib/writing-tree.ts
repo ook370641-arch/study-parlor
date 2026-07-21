@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
+import { loadCatalog } from './writing-catalog'
 import type { WritingRoot, WritingTreeNode } from '@shared/index'
 
 // ── constants ────────────────────────────────────────────────
@@ -80,8 +81,14 @@ export function ensureRoots(lib: string): void {
 
 // ── scan ─────────────────────────────────────────────────────
 
-function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
+function scanDir(absoluteDir: string, lib: string, root?: WritingRoot): WritingTreeNode[] {
   if (!fs.existsSync(absoluteDir)) return []
+
+  // Load catalog for this root only on the top-level call from scanRoot
+  let catalog: { entries: Record<string, { title?: string; summary?: string; updatedAt?: string }> } = { entries: {} }
+  if (root) {
+    try { catalog = loadCatalog(lib, root) } catch { /* keep empty */ }
+  }
 
   const entries = fs.readdirSync(absoluteDir, { withFileTypes: true })
   const result: WritingTreeNode[] = []
@@ -89,7 +96,7 @@ function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
   for (const entry of entries) {
     if (isHidden(entry.name)) continue
     if (entry.isDirectory()) {
-      const children = scanDir(path.join(absoluteDir, entry.name), lib)
+      const children = scanDir(path.join(absoluteDir, entry.name), lib) // sub-dirs: no root needed
       result.push({
         name: entry.name,
         path: toRel(lib, path.join(absoluteDir, entry.name)),
@@ -97,11 +104,15 @@ function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
         children,
       })
     } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      result.push({
-        name: entry.name,
-        path: toRel(lib, path.join(absoluteDir, entry.name)),
-        kind: 'file',
-      })
+      const relPath = toRel(lib, path.join(absoluteDir, entry.name))
+      const node: WritingTreeNode = { name: entry.name, path: relPath, kind: 'file' }
+      // Attach catalog summary if available
+      const catEntry = catalog.entries[relPath]
+      if (catEntry) {
+        if (catEntry.summary) node.summary = catEntry.summary
+        if (catEntry.updatedAt) node.catalogUpdatedAt = catEntry.updatedAt
+      }
+      result.push(node)
     }
     // ignore non-md files
   }
@@ -117,7 +128,7 @@ function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
 
 export function scanRoot(lib: string, root: WritingRoot): WritingTreeNode[] {
   const rootDir = path.join(lib, root)
-  return scanDir(rootDir, lib)
+  return scanDir(rootDir, lib, root)
 }
 
 // ── create ───────────────────────────────────────────────────
