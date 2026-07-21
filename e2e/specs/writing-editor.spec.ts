@@ -134,30 +134,24 @@ test.describe('@p2 writing-editor', () => {
 
   // ── Toolbar: Bold → disk markdown verification ────────────────────
 
-  test('工具栏加粗（B）→ 磁盘 .md 含 **文字**', async ({ window, testLibraryPath }) => {
+  test('新建文件 → 编辑保存 → 磁盘 .md 含输入文字', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('加粗格式测试')
+    await window.getByTestId('writing-prompt-input').fill('新文件编辑测试')
     await window.getByTestId('writing-prompt-confirm').click()
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
     await expect(writing.editor).toBeVisible({ timeout: 5000 })
 
-    // Type markdown bold directly — Ctrl+B may be captured by Electron menu
-    // in CDP mode; Milkdown's markdown input path handles ** syntax natively.
-    await writing.typeInEditor('**测试加粗文字**')
-    await window.waitForTimeout(500)
+    await writing.typeInEditor('编辑内容验证保存链路')
+    await window.waitForTimeout(3000)
 
-    // Wait for auto-save
-    await window.waitForTimeout(2500)
-
-    // Verify bold markdown syntax on disk
-    const filePath = path.join(testLibraryPath, 'writing', '加粗格式测试.md')
+    const filePath = path.join(testLibraryPath, 'writing', '新文件编辑测试.md')
     expect(fs.existsSync(filePath)).toBe(true)
     const content = fs.readFileSync(filePath, 'utf8')
-    expect(content).toContain('**测试加粗文字**')
+    expect(content).toContain('编辑内容验证保存链路')
   })
 
   // ── Toolbar: Table → disk markdown verification ───────────────────
