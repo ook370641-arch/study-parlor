@@ -157,6 +157,20 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
     return list.sort((a, b) => b.date.localeCompare(a.date))
   })
 
+  ipcMain.handle('job-briefing:delete', async (_, args: { filePath: string }) => {
+    try {
+      const dir = path.resolve(jobBriefingDir(cfg))
+      const abs = path.resolve(args.filePath)
+      if (!abs.startsWith(dir + path.sep) || !fs.existsSync(abs)) {
+        return { ok: false as const, message: '文件不存在或路径非法' }
+      }
+      fs.rmSync(abs)
+      return { ok: true as const }
+    } catch (err: any) {
+      return { ok: false as const, message: err.message || String(err) }
+    }
+  })
+
   ipcMain.handle('job-briefing:discover-pages', async (): Promise<
     | { ok: true; companies: JobCompany[] }
     | { ok: false; code: JobErrorCode; message: string }

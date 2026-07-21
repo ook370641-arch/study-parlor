@@ -517,4 +517,18 @@ export function registerBriefingIpc(cfg: AppConfig) {
     }
     return list.sort((a, b) => b.date.localeCompare(a.date))
   })
+
+  ipcMain.handle('briefing:delete', async (_, args: { filePath: string }) => {
+    try {
+      const dir = path.resolve(briefingDir(cfg))
+      const abs = path.resolve(args.filePath)
+      if (!abs.startsWith(dir + path.sep) || !fs.existsSync(abs)) {
+        return { ok: false as const, message: '文件不存在或路径非法' }
+      }
+      fs.rmSync(abs)
+      return { ok: true as const }
+    } catch (err: any) {
+      return { ok: false as const, message: err.message || String(err) }
+    }
+  })
 }

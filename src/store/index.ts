@@ -189,6 +189,7 @@ type AppStore = {
   initPaintings: () => void
   swapPainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => void
   goto: (p: Page) => void
+  settingsReturnTo: Page | null
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
   closePreStudy: () => void
   startSession: (a: {
@@ -361,6 +362,7 @@ export const useStore = create<AppStore>((set, get) => ({
   draggingTopic: null,
   session: null,
   currentPage: 'cover',
+  settingsReturnTo: null,
   archiveResult: null,
   groupInspirations: {},
   inspirationStrategy: 'v2',
@@ -487,7 +489,11 @@ export const useStore = create<AppStore>((set, get) => ({
     }))
   },
 
-  goto: (p) => set({ currentPage: p }),
+  // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。
+  goto: (p) => set((s) => ({
+    currentPage: p,
+    settingsReturnTo: p === 'settings' ? s.currentPage : s.settingsReturnTo,
+  })),
   openPreStudy: (a) => set({ modal: 'preStudy', preStudyArgs: a }),
   closePreStudy: () => set({ modal: null, preStudyArgs: null }),
 
@@ -608,6 +614,17 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
+  deleteBriefings: async (filePaths: string[]) => {
+    const current = get().briefing.result?.filePath
+    for (const p of filePaths) {
+      await ipc.briefingDelete({ filePath: p })
+    }
+    if (current && filePaths.includes(current)) {
+      set({ briefing: { result: null, loading: false, error: null } })
+    }
+    await get().loadBriefingHistory()
+  },
+
   generateJobBriefing: async (date, opts) => {
     const s = get()
     if (s.jobBriefing.loading) return
@@ -640,6 +657,17 @@ export const useStore = create<AppStore>((set, get) => ({
     } catch (err: any) {
       set({ jobBriefingHistory: { ...get().jobBriefingHistory, loading: false, error: err.message || String(err) } })
     }
+  },
+
+  deleteJobBriefings: async (filePaths: string[]) => {
+    const current = get().jobBriefing.result?.filePath
+    for (const p of filePaths) {
+      await ipc.jobBriefingDelete({ filePath: p })
+    }
+    if (current && filePaths.includes(current)) {
+      set({ jobBriefing: { result: null, loading: false, error: null } })
+    }
+    await get().loadJobBriefingHistory()
   },
 
   setJobBriefingConfig: async (config) => {
