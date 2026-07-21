@@ -94,10 +94,12 @@ const api: IpcApi = {
 
   briefingGenerate: (args) => ipcRenderer.invoke('briefing:generate', args),
   briefingList: () => ipcRenderer.invoke('briefing:list'),
+  briefingDelete: (args) => ipcRenderer.invoke('briefing:delete', args),
 
   jobBriefingGenerate: (args) => ipcRenderer.invoke('job-briefing:generate', args),
   jobBriefingList: () => ipcRenderer.invoke('job-briefing:list'),
   jobBriefingDiscoverPages: () => ipcRenderer.invoke('job-briefing:discover-pages'),
+  jobBriefingDelete: (args) => ipcRenderer.invoke('job-briefing:delete', args),
 
   anthropicDiscover: () => ipcRenderer.invoke('anthropic:discover'),
   anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
