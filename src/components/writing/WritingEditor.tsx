@@ -46,16 +46,21 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
 
   // Register editor action proxy once the editor is created, so the toolbar
   // can call editor commands (bold, table, heading, etc.).
+  // get() is a new function each render; stabilize via ref so the effect
+  // only reruns when loading actually changes, not on every re-render.
+  const getRef = useRef(get)
+  getRef.current = get
+
   useEffect(() => {
     if (!loading) {
       loadedRef.current = true
-      const editor = get()
+      const editor = getRef.current()
       if (editor) {
         setAction((fn: any) => editor.action(fn))
       }
     }
     return () => { setAction(null) }
-  }, [loading, get, setAction])
+  }, [loading, setAction])
 
   return <Milkdown />
 }
