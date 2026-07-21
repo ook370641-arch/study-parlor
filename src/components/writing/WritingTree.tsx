@@ -18,6 +18,7 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
   const [open, setOpen] = useState(depth === 0)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [hovered, setHovered] = useState(false)
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
   const isSelected = selectedPath === node.path
@@ -102,6 +103,8 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.setData('text/writing-path', node.path)
@@ -124,7 +127,25 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
         }}
       >
         <span className="w-4 text-center shrink-0">{isDir ? (open ? '▾' : '▸') : '·'}</span>
-        <span className="truncate">{node.name}</span>
+        <div className="min-w-0 flex-1">
+          <span className="truncate block">{node.name}</span>
+          {!isDir && node.summary && hovered && (
+            <div
+              className="text-[10px] text-parchment/50 mt-0.5"
+              style={{
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {node.summary}
+              {node.catalogUpdatedAt && (
+                <span className="text-parchment/30 ml-2">{node.catalogUpdatedAt}</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {isDir && open && node.children?.map(child => (
