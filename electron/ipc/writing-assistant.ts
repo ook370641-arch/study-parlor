@@ -29,9 +29,24 @@ export function registerWritingAssistantIpc(cfg: AppConfig): void {
 
     // E2E deterministic mock
     if (isE2EMock()) {
+      // M1: Error injection via env var
+      if (process.env.E2E_WRITING_ASSISTANT_ERROR) {
+        const ctl = new AbortController()
+        writingSessions.set(args.sessionId, ctl)
+        send('llm:error', args.sessionId, {
+          code: process.env.E2E_WRITING_ASSISTANT_ERROR,
+          message: `E2E injected error: ${process.env.E2E_WRITING_ASSISTANT_ERROR}`,
+        })
+        writingSessions.delete(args.sessionId)
+        return
+      }
       const ctl = new AbortController()
       writingSessions.set(args.sessionId, ctl)
       try {
+        // M2: Reasoning chunk (opt-in via env)
+        if (process.env.E2E_WRITING_ASSISTANT_REASONING === '1') {
+          send('writingAssistant:reasoningChunk', args.sessionId, '先梳理文章结构，确认论述逻辑……')
+        }
         send('writingAssistant:tool', {
           sessionId: args.sessionId, phase: 'start', tool: 'read_local' as const,
           ids: ['repository:旧随笔.md']
@@ -40,7 +55,11 @@ export function registerWritingAssistantIpc(cfg: AppConfig): void {
           sessionId: args.sessionId, phase: 'done', tool: 'read_local' as const,
           ids: ['repository:旧随笔.md']
         })
-        for (const chunk of ['这是一段', 'E2E 测试的', '写作助手回复。']) {
+        // M3: Multi-turn — include last user message reference in reply
+        const lastUser = args.messages.filter((m: any) => m.role === 'user').at(-1)
+        const userRef = lastUser ? `关于「${(lastUser as any).content.slice(0, 30)}」的分析：` : ''
+
+        for (const chunk of ['这是一段', userRef, 'E2E 测试的', '写作助手回复。']) {
           if (ctl.signal.aborted) return
           send('llm:chunk', args.sessionId, chunk)
         }
