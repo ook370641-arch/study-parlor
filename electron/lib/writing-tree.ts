@@ -81,13 +81,18 @@ export function ensureRoots(lib: string): void {
 
 // ── scan ─────────────────────────────────────────────────────
 
-function scanDir(absoluteDir: string, lib: string, root?: WritingRoot): WritingTreeNode[] {
+function scanDir(
+  absoluteDir: string,
+  lib: string,
+  root?: WritingRoot,
+  catalog?: { entries: Record<string, { title?: string; summary?: string; updatedAt?: string }> },
+): WritingTreeNode[] {
   if (!fs.existsSync(absoluteDir)) return []
 
   // Load catalog for this root only on the top-level call from scanRoot
-  let catalog: { entries: Record<string, { title?: string; summary?: string; updatedAt?: string }> } = { entries: {} }
+  let effectiveCatalog = catalog ?? { entries: {} }
   if (root) {
-    try { catalog = loadCatalog(lib, root) } catch { /* keep empty */ }
+    try { effectiveCatalog = loadCatalog(lib, root) } catch { /* keep empty */ }
   }
 
   const entries = fs.readdirSync(absoluteDir, { withFileTypes: true })
@@ -96,7 +101,7 @@ function scanDir(absoluteDir: string, lib: string, root?: WritingRoot): WritingT
   for (const entry of entries) {
     if (isHidden(entry.name)) continue
     if (entry.isDirectory()) {
-      const children = scanDir(path.join(absoluteDir, entry.name), lib) // sub-dirs: no root needed
+      const children = scanDir(path.join(absoluteDir, entry.name), lib, undefined, effectiveCatalog)
       result.push({
         name: entry.name,
         path: toRel(lib, path.join(absoluteDir, entry.name)),
@@ -107,7 +112,7 @@ function scanDir(absoluteDir: string, lib: string, root?: WritingRoot): WritingT
       const relPath = toRel(lib, path.join(absoluteDir, entry.name))
       const node: WritingTreeNode = { name: entry.name, path: relPath, kind: 'file' }
       // Attach catalog summary if available
-      const catEntry = catalog.entries[relPath]
+      const catEntry = effectiveCatalog.entries[relPath]
       if (catEntry) {
         if (catEntry.summary) node.summary = catEntry.summary
         if (catEntry.updatedAt) node.catalogUpdatedAt = catEntry.updatedAt
