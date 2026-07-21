@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
+import { writingTreeContainsPath } from '@/lib/writing-tree-utils'
 import { WritingTree } from './WritingTree'
 import { PromptDialog } from './PromptDialog'
 
@@ -24,7 +25,11 @@ export function WritingListColumn() {
   // Re-scan on tab switch to pick up externally-added files
   useEffect(() => { loadWritingTree() }, [tab, loadWritingTree])
 
+  // 只在「没有选中文件」或「当前文件已不在树里」（被外部删除）时自动选中第一篇。
+  // 否则新建文章后的 tree 刷新会把编辑器从新文件抢走（时序竞争）。
   useEffect(() => {
+    const current = useStore.getState().writingFile
+    if (current && writingTreeContainsPath(tree, current.path)) return
     if (tree?.writing?.[0]) {
       const first = tree.writing[0]
       if (first.kind === 'file') {
