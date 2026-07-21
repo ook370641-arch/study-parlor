@@ -136,6 +136,7 @@ export function Briefing() {
           </div>
         )}
         <BriefingHeader
+          showJobProfileEntry={isJob}
           displayDate={source === 'writing' ? '写作' : source === 'anthropic' ? 'Anthropic Engineering' : isJob ? jobDisplayDate : displayDate}
           timeString={
             source === 'digest' && result?.generatedAt

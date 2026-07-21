@@ -8,6 +8,8 @@ interface Props {
   timeString?: string
   sourceStatus?: Record<string, 'ok' | 'failed'>
   cacheWriteFailed?: boolean
+  /** 求职简报源下在 Header 右侧显示常驻「求职档案」入口 */
+  showJobProfileEntry?: boolean
 }
 
 export function BriefingHeader({
@@ -15,11 +17,13 @@ export function BriefingHeader({
   timeString,
   sourceStatus,
   cacheWriteFailed,
+  showJobProfileEntry,
 }: Props) {
   const theme = useStore((s) => s.briefingTheme)
   const fontSize = useStore((s) => s.briefingFontSize)
   const increase = useStore((s) => s.increaseBriefingFontSize)
   const decrease = useStore((s) => s.decreaseBriefingFontSize)
+  const goto = useStore((s) => s.goto)
 
   const isAcademic = theme === 'academic'
 
@@ -83,6 +87,17 @@ export function BriefingHeader({
         </div>
       </div>
       <div className="flex items-center gap-1 ml-auto">
+        {showJobProfileEntry && (
+          <Button
+            variant="ghost"
+            data-testid="job-briefing-profile-entry"
+            onClick={() => goto('settings')}
+            className={ghostOverride}
+            title="编辑求职档案（意向岗位、方向、经历）"
+          >
+            档案
+          </Button>
+        )}
         <Button
           variant="ghost"
           onClick={decrease}

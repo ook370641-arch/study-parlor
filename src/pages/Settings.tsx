@@ -18,6 +18,7 @@ type VerifyStatus =
 
 export function Settings() {
   const goto = useStore(s => s.goto)
+  const settingsReturnTo = useStore(s => s.settingsReturnTo)
   const showToast = useStore(s => s.showToast)
 
   const [initialConfig, setInitialConfig] = useState<AppConfig | null>(null)
@@ -219,7 +220,7 @@ export function Settings() {
               <h2 className="text-2xl font-serif font-semibold">设置 · 仪器调校</h2>
               <button
                 data-testid="settings-back-button"
-                onClick={() => goto('home')}
+                onClick={() => goto(settingsReturnTo ?? 'home')}
                 className="text-parchment/70 hover:text-parchment text-sm bg-transparent border-none cursor-pointer font-sans"
               >
                 返回夜话
