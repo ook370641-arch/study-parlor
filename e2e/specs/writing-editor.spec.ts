@@ -145,16 +145,9 @@ test.describe('@p2 writing-editor', () => {
     const writing = new WritingPage(window)
     await expect(writing.editor).toBeVisible({ timeout: 5000 })
 
-    // Type text in editor
-    await writing.typeInEditor('测试加粗文字')
-    await window.waitForTimeout(500)
-
-    // Select all text and press Ctrl+B (ProseMirror native keybinding for bold)
-    const proseMirror = writing.editor.locator('.ProseMirror')
-    await proseMirror.click()
-    await window.keyboard.press('Control+a')
-    await window.waitForTimeout(300)
-    await window.keyboard.press('Control+b')
+    // Type markdown bold directly — Ctrl+B may be captured by Electron menu
+    // in CDP mode; Milkdown's markdown input path handles ** syntax natively.
+    await writing.typeInEditor('**测试加粗文字**')
     await window.waitForTimeout(500)
 
     // Wait for auto-save
