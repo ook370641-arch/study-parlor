@@ -69,7 +69,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
   const sidebarWidth = !showGuide || guideCollapsed ? 0 : Math.max(200, Math.min(guideWidth, viewportWidth * 0.45))
 
   return (
-    <div ref={containerRef} className="relative flex h-full shrink-0">
+    <div ref={containerRef} data-testid="article-assistant-panel" className="relative z-[5] flex h-full shrink-0">
       {showGuide && (
         <>
           <ArticleDivider

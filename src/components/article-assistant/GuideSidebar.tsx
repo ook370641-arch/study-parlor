@@ -54,7 +54,7 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
                     {chunk.terms.map((t, ti) => (
                       <div key={`${i}-${ti}`} data-testid="guide-term" style={{ fontSize: GUIDE_TERM_SIZE }} className={`leading-relaxed ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
                         <span className="text-ember font-medium">{t.term}</span>
-                        <span className="text-parchment/50 mx-1">·</span>
+                        <span className={`mx-1 ${isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]/60'}`}>·</span>
                         <span>{t.translation}</span>
                         {t.explanation && <div className={`mt-0.5 ${isAcademic ? 'text-parchment/50' : 'text-[#999]'}`}>{t.explanation}</div>}
                       </div>
