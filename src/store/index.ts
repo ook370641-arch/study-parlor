@@ -637,13 +637,15 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null })
     } catch (err: any) {
       const raw = err.message || String(err)
-      const error = raw.includes('MISSING_SEARCH_KEY') ? 'MISSING_SEARCH_KEY'
-        : raw.includes('TIMEOUT') ? 'TIMEOUT'
-        : raw.includes('NETWORK_ERROR') ? 'NETWORK_ERROR'
-        : raw.includes('OFFICIAL_PAGE_FAILED') ? 'OFFICIAL_PAGE_FAILED'
-        : raw.includes('EXTRACTION_ERROR') ? 'EXTRACTION_ERROR'
-        : raw.includes('EMPTY_RESULTS') ? 'EMPTY_RESULTS'
-        : raw.includes('CACHE_WRITE_FAILED') ? 'CACHE_WRITE_FAILED'
+      // job-briefing IPC throws JOB_${code}; preserve the JOB_ prefix so
+      // BriefingError.MESSAGES picks up the correct job-specific text.
+      const error = raw.includes('JOB_MISSING_SEARCH_KEY') ? 'JOB_MISSING_SEARCH_KEY'
+        : raw.includes('JOB_NETWORK_ERROR') ? 'JOB_NETWORK_ERROR'
+        : raw.includes('JOB_OFFICIAL_PAGE_FAILED') ? 'JOB_OFFICIAL_PAGE_FAILED'
+        : raw.includes('JOB_EXTRACTION_ERROR') ? 'JOB_EXTRACTION_ERROR'
+        : raw.includes('JOB_EMPTY_RESULTS') ? 'JOB_EMPTY_RESULTS'
+        : raw.includes('JOB_CACHE_WRITE_FAILED') ? 'JOB_CACHE_WRITE_FAILED'
+        : raw.includes('JOB_TIMEOUT') ? 'JOB_TIMEOUT'
         : raw
       set({ jobBriefing: { result: null, loading: false, error }, jobBriefingStage: null })
     } finally {
