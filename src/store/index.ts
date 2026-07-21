@@ -314,6 +314,7 @@ type AppStore = {
   applyWritingAssistantToolEvent: (e: WritingToolEvent) => void
   finishWritingAssistantStreaming: () => void
   abortWritingAssistant: () => void
+  retryWritingAssistantMessage: () => Promise<void>
   loadWritingAssistantSession: (articlePath: string) => Promise<void>
 
   loadWritingTree: () => Promise<void>
@@ -1502,6 +1503,27 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!s || !s.streaming) return
     ipc.writingAssistantAbort({ sessionId: s.sessionId })
     set({ writingAssistant: { ...s, streaming: false } })
+  },
+
+  retryWritingAssistantMessage: async () => {
+    const s = get().writingAssistant
+    if (!s || s.streaming) return
+    const msgs = s.messages.slice()
+    // 移除最后一条空的 assistant 消息
+    const last = msgs[msgs.length - 1]
+    if (last && last.role === 'assistant' && last.content.trim() === '') {
+      msgs.pop()
+    }
+    // 找到最后一条 user 消息
+    const lastUser = msgs.filter(m => m.role === 'user').at(-1)
+    if (!lastUser) return
+    const text = lastUser.content
+    // 再移除那条 user 消息（sendWritingAssistantMessage 会重新添加它）
+    const userIdx = msgs.lastIndexOf(lastUser)
+    if (userIdx !== -1) msgs.splice(userIdx, 1)
+    set({ writingAssistant: { ...s, messages: msgs, error: null } })
+    // 重新发送
+    await get().sendWritingAssistantMessage(text)
   },
 
   loadWritingAssistantSession: async (articlePath: string) => {
