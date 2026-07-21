@@ -46,6 +46,8 @@ function ReasoningBlock({ reasoning, streaming }: { reasoning: string; streaming
 
 export function WritingAssistantMessages() {
   const assistant = useStore((s) => s.writingAssistant)
+  const error = useStore((s) => s.writingAssistant?.error ?? null)
+  const retryWritingAssistantMessage = useStore((s) => s.retryWritingAssistantMessage)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const messages = assistant?.messages ?? []
@@ -128,6 +130,23 @@ export function WritingAssistantMessages() {
       {streaming && messages.length > 0 && (
         <div className="text-xs text-parchment/50 animate-pulse">思考中…</div>
       )}
+
+      {error && !streaming && messages.length > 0 && (() => {
+        const lastMsg = messages[messages.length - 1]
+        const showError = lastMsg?.role === 'assistant' && lastMsg.content.trim() === ''
+        if (!showError) return null
+        return (
+          <div className="text-xs text-ember/80 px-3 pb-2">
+            回复失败
+            <button
+              className="ml-2 underline hover:text-ember"
+              onClick={() => retryWritingAssistantMessage()}
+            >
+              重试
+            </button>
+          </div>
+        )
+      })()}
     </div>
   )
 }
