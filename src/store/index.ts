@@ -626,7 +626,7 @@ export const useStore = create<AppStore>((set, get) => ({
         : raw.includes('EMPTY_RESULTS') ? 'EMPTY_RESULTS'
         : raw.includes('CACHE_WRITE_FAILED') ? 'CACHE_WRITE_FAILED'
         : raw
-      set({ jobBriefing: { result: null, loading: false, error }, briefingStage: null })
+      set({ jobBriefing: { result: null, loading: false, error }, jobBriefingStage: null })
     } finally {
       unsubscribe()
     }

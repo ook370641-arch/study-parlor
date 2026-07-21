@@ -48,6 +48,7 @@ export function Briefing() {
   const fontSize = useStore((s) => s.briefingFontSize)
   const generateBriefing = useStore((s) => s.generateBriefing)
   const stage = useStore((s) => s.briefingStage)
+  const jobStage = useStore((s) => s.jobBriefingStage)
   const source = useStore((s) => s.briefingSource)
   const { list: historyList } = useStore((s) => s.briefingHistory)
   const loadBriefingHistory = useStore((s) => s.loadBriefingHistory)
@@ -242,8 +243,8 @@ export function Briefing() {
                 </main>
               ) : isJobLoading ? (
                 <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
-                  {stage ? (
-                    <BriefingProgress stage={stage} />
+                  {jobStage ? (
+                    <BriefingProgress stage={jobStage} />
                   ) : (
                     <BriefingSkeleton data-testid="briefing-skeleton" />
                   )}

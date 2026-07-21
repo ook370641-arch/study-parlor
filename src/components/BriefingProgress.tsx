@@ -25,7 +25,10 @@ export function BriefingProgress({ stage }: Props) {
   const theme = useStore((s) => s.briefingTheme)
   const source = useStore((s) => s.briefingSource)
   const STAGES = source === 'job-briefing' ? JOB_STAGES : DIGEST_STAGES
-  const currentIndex = STAGES.findIndex((s) => s.key === stage)
+  const foundIndex = STAGES.findIndex((s) => s.key === stage)
+  // 防御：stage key 不属于当前源（跨源串味等历史遗留状态）时显式回退到
+  // 第一阶段激活，不再静默渲染成 5 行全灰（看似「无文字闪烁条」）。
+  const currentIndex = foundIndex === -1 ? 0 : foundIndex
   const isAcademic = theme === 'academic'
   return (
     <div data-testid="briefing-progress" className="flex flex-col items-center justify-center h-full">
