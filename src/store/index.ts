@@ -1547,15 +1547,7 @@ export const useStore = create<AppStore>((set, get) => ({
     else set({ writingError: r.message })
   },
 
-  updateWritingBody: (body: string) => set(s => {
-    if (!s.writingFile) return {}
-    // Milkdown/ProseMirror normalizes content (trailing newlines etc.).
-    // If the body hasn't actually changed, don't update — prevents the
-    // markdownUpdated → updateWritingBody → initial changes → editor
-    // re-creates → markdownUpdated → infinite loop (React error #185).
-    if (s.writingFile.body === body) return {}
-    return { writingFile: { ...s.writingFile, body, dirty: true } }
-  }),
+  updateWritingBody: (body: string) => set(s => s.writingFile ? { writingFile: { ...s.writingFile, body, dirty: true } } : {}),
 
   saveWritingFile: async () => {
     const f = get().writingFile

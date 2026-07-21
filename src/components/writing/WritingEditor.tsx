@@ -14,6 +14,22 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
 
   const setAction = useStore(s => s.setWritingEditorAction)
 
+  // Milkdown fires markdownUpdated when defaultValueCtx is applied during
+  // editor creation.  If we let that through to onChange → updateWritingBody →
+  // store set → initial ref changes → useEditor re-initializes → infinite loop
+  // (React error #185).
+  //
+  // loadedRef gates the callback during initialization (sync gate, reset
+  // every time initial changes — which triggers editor re-creation).  Once
+  // useEditor's loading transitions to false, the editor is stable and we
+  // open the gate so genuine user edits can flow through.
+  const loadedRef = useRef(false)
+  const prevInitial = useRef(initial)
+  if (prevInitial.current !== initial) {
+    prevInitial.current = initial
+    loadedRef.current = false
+  }
+
   const { loading, get } = useEditor((root) => {
     return Editor.make()
       .use(commonmark)
@@ -24,21 +40,26 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .config(ctx => {
         ctx.set(rootCtx, root)
         ctx.set(defaultValueCtx, initial)
-        ctx.get(listenerCtx).markdownUpdated((_, md) => ref.current(md))
+        ctx.get(listenerCtx).markdownUpdated((_, md) => { if (loadedRef.current) ref.current(md) })
       })
   }, [initial])
 
   // Register editor action proxy once the editor is created, so the toolbar
   // can call editor commands (bold, table, heading, etc.).
+  // get() is a new function each render; stabilize via ref so the effect
+  // only re-runs when loading actually changes, not on every re-render.
+  const getRef = useRef(get)
+  getRef.current = get
+
   useEffect(() => {
     if (!loading) {
-      const editor = get()
-      if (editor) {
-        setAction((fn: any) => editor.action(fn))
-      }
+      loadedRef.current = true
+      // 实时取 getRef.current() 避免闭包捕获已销毁的旧 editor 实例
+      // → toolbar 调用时拿到当前活跃 editor
+      setAction((fn: any) => { getRef.current()?.action(fn) })
     }
     return () => { setAction(null) }
-  }, [loading, get, setAction])
+  }, [loading, setAction])
 
   return <Milkdown />
 }
