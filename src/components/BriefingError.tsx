@@ -21,10 +21,12 @@ const MESSAGES: Record<string, { text: string; showRetry: boolean }> = {
   JOB_EXTRACTION_ERROR: { text: '岗位信息提取失败，请重试。', showRetry: true },
   JOB_EMPTY_RESULTS: { text: '今日暂无岗位信息，请稍后重试。', showRetry: true },
   JOB_CACHE_WRITE_FAILED: { text: '简报已生成，但缓存写入失败。', showRetry: false },
+  TIMEOUT: { text: '生成超时，请重试。', showRetry: true },
+  JOB_TIMEOUT: { text: '生成超时，请重试。', showRetry: true },
 }
 
 export function BriefingError({ code, onRetry }: Props) {
-  const { text, showRetry } = MESSAGES[code] ?? { text: `简报生成失败：${code}`, showRetry: true }
+  const { text, showRetry } = MESSAGES[code] ?? { text: '简报生成失败，请重试。', showRetry: true }
   return (
     <div data-testid="briefing-error-display" className="text-center space-y-4">
       <p>{text}</p>

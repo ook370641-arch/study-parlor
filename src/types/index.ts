@@ -345,6 +345,7 @@ export type JobErrorCode =
   | 'EXTRACTION_ERROR'
   | 'EMPTY_RESULTS'
   | 'CACHE_WRITE_FAILED'
+  | 'TIMEOUT'
 
 export type JobProfile = {
   targetRoles: string[]
