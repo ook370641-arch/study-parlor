@@ -719,7 +719,11 @@ export function seedRepository(libPath: string): void {
 
   // Old blog post (no frontmatter)
   fs.writeFileSync(path.join(repoDir, '旧博客-xxx.md'), '# 旧博客\n\n过去的积累。\n', 'utf8')
-  fs.writeFileSync(path.join(libPath, 'repository', '旧随笔.md'), '没有 frontmatter 的旧文件。\n', 'utf8')
+  fs.writeFileSync(
+    path.join(libPath, 'repository', '旧随笔.md'),
+    '---\ntype: writing\ntitle: 旧随笔\ncreated: 2026-07-20\nupdated: 2026-07-20\n---\n\n没有 frontmatter 的旧文件。\n',
+    'utf8'
+  )
 }
 
 /**

@@ -49,14 +49,12 @@ test.describe('@p2 writing-repository', () => {
     expect(repoNodes.some((t: string) => t.includes('七月夜话'))).toBe(false)
   })
 
-  // FIXME: repo file read path — selectWritingFile may fail on files without type:writing frontmatter
-  test.skip('repo 文章可打开阅读', async ({ window, testLibraryPath }) => {
+  test('repo 文章可打开阅读', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.listTabRepository).click()
     await window.waitForTimeout(500)
 
-    // Click on a seeded repo file at root level (旧随笔.md — no frontmatter)
     const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /旧随笔/ }).first()
     await expect(fileNode).toBeVisible({ timeout: 3000 })
     await fileNode.click()
@@ -106,5 +104,56 @@ test.describe('@p2 writing-repository', () => {
     // App should not crash
     await window.waitForTimeout(1000)
     await expect(window.locator(SELECTORS.writing.listTabRepository)).toBeVisible()
+  })
+
+  test('repo 文件编辑保存 → 磁盘内容变化', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+
+    // Open the seeded repo file (now has type:writing frontmatter from Step 1)
+    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /旧随笔/ }).first()
+    await fileNode.click()
+    await window.locator(SELECTORS.writing.editor).waitFor({ state: 'visible', timeout: 5000 })
+
+    // Edit via ProseMirror editor
+    const newContent = 'E2E 编辑的 repo 内容-' + Date.now()
+    await window.locator(SELECTORS.writing.editor + ' .ProseMirror').click()
+    await window.locator(SELECTORS.writing.editor + ' .ProseMirror').fill(newContent)
+    await window.waitForTimeout(2500)
+
+    // Verify disk content changed
+    const filePath = path.join(testLibraryPath, 'repository', '旧随笔.md')
+    const diskContent = fs.readFileSync(filePath, 'utf8')
+    expect(diskContent).toContain('E2E 编辑的 repo 内容')
+  })
+
+  test('手动放置 .md 到 repo → 切换 tab 重新扫描 → 树中出现', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+
+    // Manually place a file in repository dir (simulating import result)
+    const repoDir = path.join(testLibraryPath, 'repository')
+    const newFilePath = path.join(repoDir, '导入测试文件.md')
+    fs.writeFileSync(newFilePath,
+      '---\ntype: writing\ntitle: 导入测试文件\ncreated: 2026-07-22\nupdated: 2026-07-22\n---\n\n# 导入测试\n\n外部导入的内容。\n',
+      'utf8')
+
+    // Tab away and back to trigger rescan
+    await window.locator(SELECTORS.writing.listTabArticles).click()
+    await window.waitForTimeout(500)
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(1000)
+
+    // Verify the new file appears in the tree
+    const nodes = window.locator('[data-testid="writing-tree-node"]')
+    const nodeTexts = await nodes.allTextContents()
+    expect(nodeTexts.some((t: string) => t.includes('导入测试文件'))).toBe(true)
+
+    // Cleanup
+    fs.unlinkSync(newFilePath)
   })
 })
