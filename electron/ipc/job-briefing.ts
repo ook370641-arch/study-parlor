@@ -13,7 +13,7 @@ import { toJobErrorCode } from '../lib/job-error-codes'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { getSearchApiKey } from '../lib/credentials'
 import { getCurrentState } from './state'
-import { normalizeJobProfile } from '../../src/lib/job-briefing-defaults'
+import { normalizeJobProfile, formatJobProfile } from '../../src/lib/job-briefing-defaults'
 
 function validateDate(date: string): void {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -117,6 +117,32 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       try {
         fs.writeFileSync(filePath, fm, 'utf8')
       } catch { /* ignore */ }
+      // Write last-job-request.json for E2E request-level assertions
+      const e2eDir = process.env.E2E_CONFIG_DIR
+      if (e2eDir) {
+        const profile = normalizeJobProfile(getCurrentState().jobProfile)
+        const profileText = formatJobProfile(profile)
+        // Read the synthesize prompt template and inject profile
+        const promptsDir = path.join(process.cwd(), 'electron', 'prompts', 'job-briefing')
+        let synthPrompt = ''
+        try {
+          synthPrompt = fs.readFileSync(
+            path.join(promptsDir, 'synthesize.md'), 'utf8'
+          ).replace('{{profile}}', profileText)
+        } catch {
+          synthPrompt = '(prompt template not found)'
+        }
+        fs.mkdirSync(e2eDir, { recursive: true })
+        fs.writeFileSync(
+          path.join(e2eDir, 'last-job-request.json'),
+          JSON.stringify({
+            profile: profileText,
+            promptTemplate: synthPrompt,
+            hasProfile: profileText.length > 0 && !profileText.includes('未设置'),
+          }),
+          'utf8'
+        )
+      }
       emitProgress('done')
       return {
         title: '求职简报',

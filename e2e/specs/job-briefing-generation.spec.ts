@@ -160,6 +160,44 @@ test.describe('@p1 job briefing generation', () => {
     expect(state.jobProfile.additionalNotes).toContain('北上深杭')
     expect(state.jobProfile.updatedAt).toBeTruthy()
   })
+
+  test('求职背景注入请求：profile 字段出现在 last-job-request.json', async ({ window, testConfigDir, testLibraryPath }) => {
+    const cover = new CoverPage(window)
+    await cover.enterApp('E2E 测试员')
+    await window.locator('[data-testid="home-settings-button"]').click()
+    await window.locator('[data-testid="settings-api-key-input"]').waitFor({ state: 'visible', timeout: 15000 })
+
+    // Fill distinctive profile
+    await window.locator('[data-testid="settings-jobprofile-target-roles"]').fill('AI产品经理，模型产品经理')
+    await window.locator('[data-testid="settings-jobprofile-direction"]').fill('大模型/Agent 产品方向')
+    await window.locator('[data-testid="settings-jobprofile-experience"]').fill('RAG 评测项目实习经历')
+    await window.locator('[data-testid="settings-jobprofile-save"]').click()
+    await window.waitForTimeout(500)
+
+    // Delete today's cached briefing so generation hits the E2E mock block
+    // (not the cache-return path which runs before the mock guard)
+    const today = localToday()
+    const cachePath = path.join(testLibraryPath, '求职简报', `求职简报-${today}.md`)
+    if (fs.existsSync(cachePath)) fs.rmSync(cachePath)
+
+    // Navigate to job briefing
+    await window.locator('[data-testid="settings-back-button"]').click()
+    await window.locator('[aria-label="返回封面"]').click()
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
+    await window.locator(SELECTORS.briefing.receiveJobButton).waitFor({ state: 'visible', timeout: 15000 })
+    await window.locator(SELECTORS.briefing.receiveJobButton).click()
+    await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
+
+    // Read the request dump
+    const requestPath = path.join(testConfigDir, 'last-job-request.json')
+    expect(fs.existsSync(requestPath)).toBe(true)
+    const req = JSON.parse(fs.readFileSync(requestPath, 'utf8'))
+    expect(req.profile).toContain('AI产品经理')
+    expect(req.profile).toContain('大模型/Agent')
+    expect(req.profile).toContain('RAG 评测')
+    expect(req.hasProfile).toBe(true)
+  })
 })
 
 test.describe('@real @unstable job briefing real API', () => {
