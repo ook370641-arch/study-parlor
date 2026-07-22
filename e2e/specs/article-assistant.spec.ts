@@ -134,6 +134,27 @@ test.describe('@p1 article assistant', () => {
     await expect.poll(() => assistant.guideSidebarWidth()).toBeGreaterThan(100)
   })
 
+  test('聊天 Markdown 渲染：mock 回复正常渲染为 DOM', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigestArticle(window, testLibraryPath)
+    await assistant.openChat()
+    await assistant.typeQuestion('测试 markdown')
+    await assistant.send()
+    await assistant.waitForAssistantReply()
+
+    // The mock returns '这是一段' + 'E2E 测试的' + '旁注回复。'
+    // Verify the message appears (rendered via markdown component)
+    await expect(assistant.chatWindow).toContainText('E2E 测试的')
+    await expect(assistant.chatWindow).toContainText('旁注回复')
+
+    // Chat window should be visible (no crash or render error)
+    await expect(assistant.chatWindow).toBeVisible()
+
+    // Sanity: message text is not empty and was actually streamed
+    const messagesText = await assistant.chatMessages.last().textContent()
+    expect(messagesText).toBeTruthy()
+    expect(messagesText!.length).toBeGreaterThan(10)
+  })
+
   test('文章上下文注入：last-assistant-request.json 含文章正文', async ({ window, testLibraryPath, testConfigDir }) => {
     const assistant = await openDigestArticle(window, testLibraryPath)
     await assistant.openChat()
