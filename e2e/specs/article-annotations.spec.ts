@@ -4,6 +4,11 @@ import { SELECTORS } from '../helpers/selectors'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
+function localToday(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 /**
  * Simulate a text selection on a <p> element inside the article body.
  * Selects `length` characters starting at `startOffset` within the first
@@ -229,6 +234,56 @@ test.describe('文章标注 (Article Annotations)', () => {
         return fs.readFileSync(annoPath, 'utf8')
       })
       .not.toContain(noteText)
+  })
+
+  test('E2E-A4: digest 简报划线标注', async ({ window, testLibraryPath }) => {
+    const today = localToday()
+    const { seedBriefing } = await import('../helpers/test-library')
+    seedBriefing(testLibraryPath, today)
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+
+    // Wait for article body
+    await window.locator('[data-testid="briefing-markdown-body"]').waitFor({ state: 'visible', timeout: 15000 })
+
+    // Wait for ArticleAnnotations to mount and register the E2E helper
+    await window.waitForFunction(() => (window as any).__e2e_triggerGhostPen != null, null, { timeout: 10000 })
+
+    // Use E2E helper to trigger ghost pen on first paragraph
+    await window.evaluate(() => {
+      const body = document.querySelector('[data-testid="briefing-markdown-body"]')
+      const p = body?.querySelector('p')
+      if (!p || !p.textContent) throw new Error('no paragraph')
+      const helper = (window as any).__e2e_triggerGhostPen as
+        | ((paraEl: Element, start: number, end: number) => void)
+        | undefined
+      if (!helper) throw new Error('__e2e_triggerGhostPen not found')
+      helper(p, 0, Math.min(15, p.textContent.length))
+    })
+
+    const ghostPen = window.locator(SELECTORS.annotations.ghostPen)
+    await expect(ghostPen).toBeVisible({ timeout: 5000 })
+
+    await ghostPen.click({ force: true })
+    await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible({ timeout: 5000 })
+
+    const noteText = 'Digest标注E2E'
+    await window.locator(SELECTORS.annotations.noteTextarea).fill(noteText)
+    await window.evaluate(() => (window as any).__e2e_saveAnnotation())
+    await expect(window.locator(SELECTORS.annotations.noteCard)).toBeHidden({ timeout: 5000 })
+
+    // Verify marker and file
+    await expect(window.locator(SELECTORS.annotations.markerPen).first()).toBeVisible({ timeout: 5000 })
+    const briefingDir = path.join(testLibraryPath, '夜航简报')
+    await expect.poll(() => {
+      const files = fs.readdirSync(briefingDir).filter((f: string) => f.endsWith('.annotations.md'))
+      if (files.length === 0) return ''
+      return fs.readFileSync(path.join(briefingDir, files[0] as string), 'utf8')
+    }).toContain(noteText)
   })
 })
 

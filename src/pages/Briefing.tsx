@@ -341,6 +341,7 @@ export function Briefing() {
                     displayDate={displayDate}
                     terms={terms}
                     chunks={guideChunks}
+                    filePath={result.filePath}
                     swapButton={
                       <SwapPaintingButton
                         surface="briefing"
@@ -356,6 +357,7 @@ export function Briefing() {
                     displayDate={displayDate}
                     terms={terms}
                     chunks={guideChunks}
+                    filePath={result.filePath}
                   />
                 )}
               </>

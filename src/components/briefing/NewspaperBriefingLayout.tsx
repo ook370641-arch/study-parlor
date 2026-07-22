@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
+import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
 import type { ArticleAssistantChunk } from '@shared/index'
 import type { TermDef } from '@/components/md/rehypeTermHighlight'
 import { BriefingSourceItem } from './BriefingSourceItem'
@@ -13,6 +14,7 @@ export function NewspaperBriefingLayout({
   terms,
   chunks,
   swapButton,
+  filePath,
 }: {
   result: BriefingResult
   parsed: ParsedBriefing
@@ -20,15 +22,17 @@ export function NewspaperBriefingLayout({
   terms?: TermDef[]
   chunks?: ArticleAssistantChunk[]
   swapButton?: React.ReactNode
+  filePath?: string
 }) {
   const [expandedSources, setExpandedSources] = useState(false)
+  const articleBodyRef = useRef<HTMLElement>(null)
 
   return (
     <main
       data-testid="briefing-newspaper-layout"
       className="relative z-[5] flex-1 overflow-y-auto bg-white"
     >
-      <article className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative briefing-article-body">
+      <article ref={articleBodyRef} className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative briefing-article-body">
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
         <header className="border-b-2 border-[#1a1a1a] pb-4 mb-6 text-center">
           <h1 className="text-[28px] font-extrabold font-serif text-[#1a1a1a] mb-1">{result.title}</h1>
@@ -74,6 +78,13 @@ export function NewspaperBriefingLayout({
           </div>
         )}
       </article>
+      {filePath && (
+        <ArticleAnnotations
+          articlePath={filePath}
+          articleRef={articleBodyRef}
+          theme="newspaper"
+        />
+      )}
     </main>
   )
 }
