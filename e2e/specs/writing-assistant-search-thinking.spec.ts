@@ -196,3 +196,37 @@ test.describe('@p2 writing-assistant-search-thinking', () => {
     expect(afterState.assistantThinkingEffort).toBe('max')
   })
 })
+
+test.describe('@p2 writing-assistant reasoning', () => {
+  test.use({
+    extraEnv: { E2E_WRITING_ASSISTANT_REASONING: '1' },
+  })
+
+  test('Reasoning 块展示：含"思考过程"和思考文本', async ({ window, testLibraryPath }) => {
+    // Replicate the setup inline (the shared helper doesn't accept extraEnv overrides)
+    seedWritingTree(testLibraryPath)
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
+    await window.locator(SELECTORS.writing.sourceButton).click()
+    await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
+    await window.waitForTimeout(1500)
+
+    // Select article
+    const node = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '七月夜话' })
+    await node.click()
+    await window.locator(SELECTORS.writing.editor).waitFor({ state: 'visible', timeout: 5000 })
+
+    const assistant = new WritingAssistantPanel(window)
+    await assistant.open()
+    await assistant.send('测试 reasoning')
+    await assistant.waitForStreamingDone(15000)
+
+    // Reasoning should appear in messages
+    const messagesText = await assistant.messages.textContent()
+    expect(messagesText).toContain('思考过程')
+    expect(messagesText).toContain('先梳理文章结构')
+  })
+})
