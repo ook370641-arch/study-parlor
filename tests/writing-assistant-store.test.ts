@@ -317,6 +317,38 @@ describe('writing assistant store', () => {
       useStore.getState().finishWritingAssistantStreaming()
       expect(useStore.getState().writingAssistant).toBeNull()
     })
+
+    it('calls articleAssistantWriteSession when articlePath is set', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [
+            { role: 'user', content: '你好' },
+            { role: 'assistant', content: '回复内容' },
+          ],
+          streaming: true,
+          error: null,
+        },
+      })
+
+      // finishWritingAssistantStreaming calls saveWritingAssistantSession which is async
+      useStore.getState().finishWritingAssistantStreaming()
+
+      expect(useStore.getState().writingAssistant!.streaming).toBe(false)
+
+      // Wait for the async save to settle
+      await vi.waitFor(() => {
+        expect(ipc.articleAssistantWriteSession).toHaveBeenCalledWith({
+          parentPath: 'writing/a.md',
+          parentType: 'writing',
+          messages: [
+            { role: 'user', content: '你好' },
+            { role: 'assistant', content: '回复内容' },
+          ],
+        })
+      })
+    })
   })
 
   describe('abortWritingAssistant', () => {
@@ -351,6 +383,232 @@ describe('writing assistant store', () => {
       useStore.getState().abortWritingAssistant()
 
       expect(ipc.writingAssistantAbort).not.toHaveBeenCalled()
+    })
+
+    it('calls articleAssistantWriteSession when streaming with articlePath set', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [
+            { role: 'user', content: '你好' },
+            { role: 'assistant', content: '部分回复' },
+          ],
+          streaming: true,
+          error: null,
+        },
+      })
+
+      useStore.getState().abortWritingAssistant()
+
+      expect(ipc.writingAssistantAbort).toHaveBeenCalledWith({ sessionId: 'wa-001' })
+      expect(useStore.getState().writingAssistant!.streaming).toBe(false)
+
+      await vi.waitFor(() => {
+        expect(ipc.articleAssistantWriteSession).toHaveBeenCalledWith({
+          parentPath: 'writing/a.md',
+          parentType: 'writing',
+          messages: [
+            { role: 'user', content: '你好' },
+            { role: 'assistant', content: '部分回复' },
+          ],
+        })
+      })
+    })
+  })
+
+  describe('saveWritingAssistantSession', () => {
+    it('calls articleAssistantWriteSession with filtered messages', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [
+            { role: 'user', content: '你好' },
+            { role: 'assistant', content: '' },
+            { role: 'user', content: '另一个问题' },
+            { role: 'assistant', content: '回答' },
+          ],
+          streaming: false,
+          error: null,
+        },
+      })
+
+      await useStore.getState().saveWritingAssistantSession()
+
+      // Empty assistant message should be filtered out
+      expect(ipc.articleAssistantWriteSession).toHaveBeenCalledWith({
+        parentPath: 'writing/a.md',
+        parentType: 'writing',
+        messages: [
+          { role: 'user', content: '你好' },
+          { role: 'user', content: '另一个问题' },
+          { role: 'assistant', content: '回答' },
+        ],
+      })
+    })
+
+    it('skips when articlePath is null', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: null,
+          messages: [{ role: 'user', content: '你好' }],
+          streaming: false,
+          error: null,
+        },
+      })
+
+      await useStore.getState().saveWritingAssistantSession()
+
+      expect(ipc.articleAssistantWriteSession).not.toHaveBeenCalled()
+    })
+
+    it('skips when writingAssistant is null', async () => {
+      await useStore.getState().saveWritingAssistantSession()
+
+      expect(ipc.articleAssistantWriteSession).not.toHaveBeenCalled()
+    })
+
+    it('skips when all messages are empty', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [
+            { role: 'assistant', content: '' },
+            { role: 'assistant', content: '   ' },
+          ],
+          streaming: false,
+          error: null,
+        },
+      })
+
+      await useStore.getState().saveWritingAssistantSession()
+
+      expect(ipc.articleAssistantWriteSession).not.toHaveBeenCalled()
+    })
+
+    it('shows toast on write failure', async () => {
+      vi.mocked(ipc.articleAssistantWriteSession).mockRejectedValueOnce(new Error('IO error'))
+
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [{ role: 'user', content: '你好' }],
+          streaming: false,
+          error: null,
+        },
+      })
+
+      await useStore.getState().saveWritingAssistantSession()
+
+      expect(useStore.getState().toast).toEqual({ message: '助手对话暂存失败', ts: expect.any(Number) })
+    })
+  })
+
+  describe('setWritingAssistantOpen', () => {
+    beforeEach(() => {
+      // Reset toast for assertions
+      useStore.setState({ toast: null as any })
+    })
+
+    it('saves session when closing panel with messages present', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [
+            { role: 'user', content: '你好' },
+            { role: 'assistant', content: '回复' },
+          ],
+          streaming: false,
+          error: null,
+        },
+        writingAssistantOpen: true,
+      })
+
+      useStore.getState().setWritingAssistantOpen(false)
+
+      expect(useStore.getState().writingAssistantOpen).toBe(false)
+
+      await vi.waitFor(() => {
+        expect(ipc.articleAssistantWriteSession).toHaveBeenCalledWith({
+          parentPath: 'writing/a.md',
+          parentType: 'writing',
+          messages: [
+            { role: 'user', content: '你好' },
+            { role: 'assistant', content: '回复' },
+          ],
+        })
+      })
+      expect(ipc.patchState).toHaveBeenCalledWith({ writingAssistantOpen: false } as any)
+    })
+
+    it('does not save when opening panel', () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [{ role: 'user', content: '你好' }],
+          streaming: false,
+          error: null,
+        },
+        writingAssistantOpen: false,
+      })
+
+      useStore.getState().setWritingAssistantOpen(true)
+
+      expect(useStore.getState().writingAssistantOpen).toBe(true)
+      expect(ipc.articleAssistantWriteSession).not.toHaveBeenCalled()
+    })
+
+    it('does not save when streaming', () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [{ role: 'user', content: '你好' }],
+          streaming: true,
+          error: null,
+        },
+        writingAssistantOpen: true,
+      })
+
+      useStore.getState().setWritingAssistantOpen(false)
+
+      expect(useStore.getState().writingAssistantOpen).toBe(false)
+      expect(ipc.articleAssistantWriteSession).not.toHaveBeenCalled()
+    })
+
+    it('does not save when no messages', () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-001',
+          articlePath: 'writing/a.md',
+          messages: [],
+          streaming: false,
+          error: null,
+        },
+        writingAssistantOpen: true,
+      })
+
+      useStore.getState().setWritingAssistantOpen(false)
+
+      expect(useStore.getState().writingAssistantOpen).toBe(false)
+      expect(ipc.articleAssistantWriteSession).not.toHaveBeenCalled()
+    })
+
+    it('does not save when writingAssistant is null', () => {
+      useStore.setState({
+        writingAssistantOpen: true,
+      })
+
+      useStore.getState().setWritingAssistantOpen(false)
+
+      expect(useStore.getState().writingAssistantOpen).toBe(false)
+      expect(ipc.articleAssistantWriteSession).not.toHaveBeenCalled()
     })
   })
 
