@@ -311,6 +311,35 @@ test.describe('@p2 writing-assistant', () => {
     expect(restored.some((m: any) => m.role === 'user' && m.content.includes('测试保存的消息'))).toBe(true)
   })
 
+  // ── NEW: E7 .assistant.md 损坏恢复 ──────────────────────────────
+  test('损坏 .assistant.md 恢复：malformed 文件不导致白屏', async ({ window, testLibraryPath }) => {
+    const assistant = await setupAssistant(window, testLibraryPath)
+
+    // Corrupt the .assistant.md file
+    const sessionPath = path.join(testLibraryPath, 'writing', '随笔', '七月夜话.assistant.md')
+    fs.writeFileSync(sessionPath, 'this is not valid frontmatter\n---\nbroken: [unclosed\n## garbage\n', 'utf8')
+
+    // Select article
+    await selectArticle(window, '七月夜话')
+
+    // Open assistant — should not crash
+    await assistant.open()
+    await expect(assistant.panel).toBeVisible()
+
+    // Load session should handle malformed file gracefully
+    await window.evaluate(async () => {
+      const store = (window as any).useStore
+      await store.getState().loadWritingAssistantSession('writing/随笔/七月夜话.md')
+    })
+    await window.waitForTimeout(500)
+
+    // Panel should still be functional — typing enables the send button
+    await expect(assistant.input).toBeVisible()
+    await expect(assistant.input).toBeEnabled()
+    await assistant.input.fill('测试输入')
+    await expect(assistant.sendBtn).toBeEnabled()
+  })
+
   // ── NEW: 6. 空文章保护 ──────────────────────────────────
   test('空文章保护：未打开文章时输入框 disabled', async ({ window, testLibraryPath }) => {
     const assistant = await setupAssistant(window, testLibraryPath)
