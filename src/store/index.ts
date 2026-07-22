@@ -9,7 +9,7 @@ import type {
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
   Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache,
-  ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
+  ArticleAnnotation, ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent,
@@ -1232,11 +1232,19 @@ export const useStore = create<AppStore>((set, get) => ({
       },
     })
     try {
+      // Read annotations for context injection
+      let annotations: ArticleAnnotation[] | undefined
+      try {
+        const annoList = await ipc.annotationsRead(s.contextId)
+        if (annoList.length > 0) annotations = annoList
+      } catch { /* annotationsRead returns [] for missing file */ }
+
       await ipc.articleAssistantSendMessage({
         sessionId: abortId,
         articleContent: s.articleContent,
         articleType: s.contextType,
         messages: history,
+        annotations,
         selection: s.pendingSelection,
         useSearch,
         guide: s.guide,

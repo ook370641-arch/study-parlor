@@ -210,3 +210,42 @@ test.describe('@p1 article assistant controls UI', () => {
     expect(pendingColor).toBe('rgb(217, 119, 87)') // ember #d97757
   })
 })
+
+test.describe('@p1 annotation context injection', () => {
+	test('标注注入上下文：创建标注后聊天请求含标注内容', async ({ window, testLibraryPath, testConfigDir }) => {
+		const today = localToday()
+		const assistant = await openDigestArticle(window, testLibraryPath)
+
+		// Write annotation file directly to disk
+		const briefingDir = path.join(testLibraryPath, '夜航简报')
+		const annoPath = path.join(briefingDir, `夜航简报-${today}.annotations.md`)
+		const annoContent = `---
+title: Article Annotations
+type: article-assistant
+parent_path: 夜航简报/夜航简报-${today}.md
+---
+
+## a1
+
+**选中文字：** 测试选段文字
+**备注：** E2E测试标注内容-唯一标识
+**段落：** §1
+**创建：** 2026-07-22
+**更新：** 2026-07-22
+
+---
+`
+		fs.mkdirSync(briefingDir, { recursive: true })
+		fs.writeFileSync(annoPath, annoContent, 'utf8')
+
+		await assistant.openChat()
+		await sendAndWait(assistant, '讨论标注')
+
+		const requestPath = path.join(testConfigDir, 'last-assistant-request.json')
+		expect(fs.existsSync(requestPath)).toBe(true)
+		const req = JSON.parse(fs.readFileSync(requestPath, 'utf8'))
+		const userContent = req.messages[1]?.content ?? ''
+		expect(userContent).toContain('用户对文章的标注')
+		expect(userContent).toContain('E2E测试标注内容-唯一标识')
+	})
+})

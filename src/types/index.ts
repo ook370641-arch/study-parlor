@@ -627,6 +627,7 @@ export type IpcApi = {
     articleContent: string
     articleType: 'briefing' | 'anthropic-article'
     messages: ArticleAssistantMessage[]
+    annotations?: ArticleAnnotation[]
     selection?: string
     useSearch?: boolean
     guide?: ArticleAssistantGuide | null

@@ -1,4 +1,4 @@
-import type { ArticleAssistantGuide, ArticleAssistantMessage } from '@shared/index'
+import type { ArticleAssistantGuide, ArticleAssistantMessage, ArticleAnnotation } from '@shared/index'
 
 export function buildAssistantSystemPrompt(socratic = true): string {
   if (!socratic) {
@@ -23,6 +23,7 @@ export function buildAssistantSystemPrompt(socratic = true): string {
 export function buildAssistantUserPrompt(args: {
   articleContent: string
   guide: ArticleAssistantGuide | null
+  annotations?: ArticleAnnotation[]
   selection?: string
   messages: ArticleAssistantMessage[]
   searchResults?: string
@@ -41,6 +42,13 @@ export function buildAssistantUserPrompt(args: {
       .map((c) => `## ${c.heading}\n${c.summary}`)
       .join('\n\n')
     sections.push(`# 文章摘要\n${summaryText}`)
+  }
+
+  if (args.annotations && args.annotations.length > 0) {
+    const annoText = args.annotations
+      .map((a) => `- §${a.paragraphIndex}：「${a.selectedText}」\n  备注：${a.note || '（无备注）'}`)
+      .join('\n')
+    sections.push(`# 用户对文章的标注\n${annoText}`)
   }
 
   if (args.selection && args.selection.trim()) {

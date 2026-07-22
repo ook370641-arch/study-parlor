@@ -15,6 +15,7 @@ import {
 } from '../lib/article-assistant-prompt'
 import type { AppConfig } from '../env'
 import type {
+  ArticleAnnotation,
   ArticleAssistantChunk,
   ArticleAssistantErrorCode,
   ArticleAssistantGuide,
@@ -327,6 +328,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         articleContent: string
         articleType: 'briefing' | 'anthropic-article'
         messages: ArticleAssistantMessage[]
+        annotations?: ArticleAnnotation[]
         selection?: string
         useSearch?: boolean
         guide?: ArticleAssistantGuide | null
@@ -359,6 +361,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
           const userPrompt = buildAssistantUserPrompt({
             articleContent: args.articleContent,
             guide: args.guide ?? null,
+            annotations: args.annotations,
             selection: args.selection,
             messages: args.messages,
             searchResults,
@@ -435,6 +438,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       const userPrompt = buildAssistantUserPrompt({
         articleContent: args.articleContent,
         guide: args.guide ?? null,
+        annotations: args.annotations,
         selection: args.selection,
         messages: args.messages,
         searchResults,
