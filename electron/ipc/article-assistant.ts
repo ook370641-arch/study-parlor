@@ -72,14 +72,20 @@ function isValidGuide(value: unknown): value is ArticleAssistantGuide {
   return !!o && typeof o.background === 'string' && Array.isArray(o.chunks) && o.chunks.every(isValidChunk)
 }
 
-function sessionPathFor(parentPath: string): string {
+function sessionPathFor(parentPath: string, libraryPath?: string): string {
   const parsed = path.parse(parentPath)
-  return path.join(parsed.dir, `${parsed.name}.assistant.md`)
+  const base = libraryPath && !path.isAbsolute(parentPath) ? libraryPath : ''
+  return path.join(base, parsed.dir, `${parsed.name}.assistant.md`)
 }
 
-function guidePathFor(parentPath: string): string {
+function guidePathFor(parentPath: string, libraryPath?: string): string {
   const parsed = path.parse(parentPath)
-  return path.join(parsed.dir, `${parsed.name}.guide.md`)
+  const base = libraryPath && !path.isAbsolute(parentPath) ? libraryPath : ''
+  return path.join(base, parsed.dir, `${parsed.name}.guide.md`)
+}
+
+function resolveParentPath(parentPath: string, libraryPath: string): string {
+  return path.isAbsolute(parentPath) ? parentPath : path.join(libraryPath, parentPath)
 }
 
 export function serializeGuide(guide: ArticleAssistantGuide): string {
@@ -251,8 +257,8 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         messages: ArticleAssistantMessage[]
       }
     ): Promise<{ filePath: string }> => {
-      const parsed = path.parse(args.parentPath)
-      const sessionPath = sessionPathFor(args.parentPath)
+      const parsed = path.parse(resolveParentPath(args.parentPath, cfg.libraryPath))
+      const sessionPath = sessionPathFor(args.parentPath, cfg.libraryPath)
       assertInsideLibrary(sessionPath, cfg.libraryPath)
 
       const body = serializeAssistantSessionBody(args.messages)
@@ -299,7 +305,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       _,
       args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' }
     ): Promise<ArticleAssistantSessionFile | null> => {
-      const sessionPath = sessionPathFor(args.parentPath)
+      const sessionPath = sessionPathFor(args.parentPath, cfg.libraryPath)
       if (!fs.existsSync(sessionPath)) return null
 
       try {
@@ -485,8 +491,8 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       _,
       args: { parentPath: string; parentType: 'briefing' | 'anthropic-article'; guide: ArticleAssistantGuide }
     ): Promise<{ filePath: string }> => {
-      const parsed = path.parse(args.parentPath)
-      const guidePath = guidePathFor(args.parentPath)
+      const parsed = path.parse(resolveParentPath(args.parentPath, cfg.libraryPath))
+      const guidePath = guidePathFor(args.parentPath, cfg.libraryPath)
       assertInsideLibrary(guidePath, cfg.libraryPath)
 
       const now = new Date().toISOString()
@@ -521,7 +527,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       _,
       args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' }
     ): Promise<ArticleAssistantGuideFile | null> => {
-      const guidePath = guidePathFor(args.parentPath)
+      const guidePath = guidePathFor(args.parentPath, cfg.libraryPath)
       if (!fs.existsSync(guidePath)) return null
 
       try {
