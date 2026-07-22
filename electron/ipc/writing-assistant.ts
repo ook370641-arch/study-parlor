@@ -47,6 +47,13 @@ export function registerWritingAssistantIpc(cfg: AppConfig): void {
         if (process.env.E2E_WRITING_ASSISTANT_REASONING === '1') {
           send('writingAssistant:reasoningChunk', args.sessionId, '先梳理文章结构，确认论述逻辑……')
         }
+        // M3: Multi-turn — include last user message reference in reply
+        const lastUser = args.messages.filter((m: any) => m.role === 'user').at(-1)
+        const userRef = lastUser ? `关于「${(lastUser as any).content.slice(0, 30)}」的分析：` : ''
+
+        // Send first chunk to create the assistant message before tool events arrive
+        if (!ctl.signal.aborted) send('llm:chunk', args.sessionId, '这是一段')
+
         send('writingAssistant:tool', {
           sessionId: args.sessionId, phase: 'start', tool: 'read_local' as const,
           ids: ['repository:旧随笔.md']
@@ -55,11 +62,8 @@ export function registerWritingAssistantIpc(cfg: AppConfig): void {
           sessionId: args.sessionId, phase: 'done', tool: 'read_local' as const,
           ids: ['repository:旧随笔.md']
         })
-        // M3: Multi-turn — include last user message reference in reply
-        const lastUser = args.messages.filter((m: any) => m.role === 'user').at(-1)
-        const userRef = lastUser ? `关于「${(lastUser as any).content.slice(0, 30)}」的分析：` : ''
 
-        for (const chunk of ['这是一段', userRef, 'E2E 测试的', '写作助手回复。']) {
+        for (const chunk of [userRef, 'E2E 测试的', '写作助手回复。']) {
           if (ctl.signal.aborted) return
           send('llm:chunk', args.sessionId, chunk)
         }
