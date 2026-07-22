@@ -266,7 +266,52 @@ test.describe('@p2 writing-assistant', () => {
     expect(assistantReplies.some((m: any) => m.content.includes('第一轮'))).toBe(true)
   })
 
-  // ── NEW: 5. 空文章保护 ──────────────────────────────────
+  // ── NEW: 5. 会话保存：新建对话 → 切换文章 → 切回 → 消息恢复
+  test('会话保存：新建对话 → 切换文章 → 切回 → 消息恢复', async ({ window, testLibraryPath }) => {
+    seedWritingTree(testLibraryPath)
+    // Remove pre-seeded .assistant.md to test fresh save
+    const sessionPath = path.join(testLibraryPath, 'writing', '随笔', '七月夜话.assistant.md')
+    if (fs.existsSync(sessionPath)) fs.unlinkSync(sessionPath)
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
+    await window.locator(SELECTORS.writing.sourceButton).click()
+    await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
+    await window.waitForTimeout(1500)
+
+    await selectArticle(window, '七月夜话')
+
+    const assistant = new WritingAssistantPanel(window)
+    await assistant.open()
+    await assistant.send('测试保存的消息')
+    await assistant.waitForStreamingDone(15000)
+
+    // Switch to article B
+    await selectArticle(window, '分布式随笔')
+    await window.waitForTimeout(500)
+
+    // Switch back to article A
+    await selectArticle(window, '七月夜话')
+    await window.waitForTimeout(500)
+
+    // Reload session from disk — verifies saveWritingAssistantSession wrote the file
+    await window.evaluate(async () => {
+      const store = (window as any).useStore
+      await store.getState().loadWritingAssistantSession('writing/随笔/七月夜话.md')
+    })
+    await window.waitForTimeout(500)
+
+    const restored = await window.evaluate(() => {
+      const state = (window as any).useStore?.getState()?.writingAssistant
+      return state ? state.messages.map((m: any) => ({ role: m.role, content: m.content })) : []
+    })
+    expect(restored.length).toBeGreaterThan(0)
+    expect(restored.some((m: any) => m.role === 'user' && m.content.includes('测试保存的消息'))).toBe(true)
+  })
+
+  // ── NEW: 6. 空文章保护 ──────────────────────────────────
   test('空文章保护：未打开文章时输入框 disabled', async ({ window, testLibraryPath }) => {
     const assistant = await setupAssistant(window, testLibraryPath)
     // Do NOT select any article

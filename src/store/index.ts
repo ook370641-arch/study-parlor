@@ -315,6 +315,7 @@ type AppStore = {
   finishWritingAssistantStreaming: () => void
   abortWritingAssistant: () => void
   retryWritingAssistantMessage: () => Promise<void>
+  saveWritingAssistantSession: () => Promise<void>
   loadWritingAssistantSession: (articlePath: string) => Promise<void>
 
   loadWritingTree: () => Promise<void>
@@ -1371,6 +1372,12 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ writingAssistantWidth: width } as Partial<StateJson>)
   },
   setWritingAssistantOpen: (open) => {
+    if (!open) {
+      const s = get().writingAssistant
+      if (s && s.messages.length > 0 && !s.streaming) {
+        get().saveWritingAssistantSession()
+      }
+    }
     set({ writingAssistantOpen: open })
     ipc.patchState({ writingAssistantOpen: open } as Partial<StateJson>)
   },
@@ -1496,6 +1503,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const s = get().writingAssistant
     if (!s) return
     set({ writingAssistant: { ...s, streaming: false } })
+    get().saveWritingAssistantSession()
   },
 
   abortWritingAssistant: () => {
@@ -1503,6 +1511,7 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!s || !s.streaming) return
     ipc.writingAssistantAbort({ sessionId: s.sessionId })
     set({ writingAssistant: { ...s, streaming: false } })
+    get().saveWritingAssistantSession()
   },
 
   retryWritingAssistantMessage: async () => {
@@ -1524,6 +1533,24 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ writingAssistant: { ...s, messages: msgs, error: null } })
     // 重新发送
     await get().sendWritingAssistantMessage(text)
+  },
+
+  saveWritingAssistantSession: async () => {
+    const s = get().writingAssistant
+    if (!s || !s.articlePath) return
+    const persistable = s.messages.filter(
+      (m) => m.content.trim().length > 0
+    )
+    if (persistable.length === 0) return
+    try {
+      await ipc.articleAssistantWriteSession({
+        parentPath: s.articlePath,
+        parentType: 'writing' as const,
+        messages: persistable,
+      })
+    } catch (_err) {
+      get().showToast('助手对话暂存失败')
+    }
   },
 
   loadWritingAssistantSession: async (articlePath: string) => {
