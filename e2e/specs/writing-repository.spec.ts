@@ -156,4 +156,25 @@ test.describe('@p2 writing-repository', () => {
     // Cleanup
     fs.unlinkSync(newFilePath)
   })
+
+  test('repo 新建分组：顶部按钮创建 → 磁盘目录存在 → 树中出现', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+
+    await window.locator('[data-testid="writing-repo-new-folder"]').click()
+    await window.getByTestId('writing-prompt-input').fill('repo新组')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await window.waitForTimeout(1500)
+
+    const repoDir = path.join(testLibraryPath, 'repository', 'repo新组')
+    expect(fs.existsSync(repoDir)).toBe(true)
+
+    const nodes = window.locator('[data-testid="writing-tree-node"]')
+    const nodeTexts = await nodes.allTextContents()
+    expect(nodeTexts.some((t: string) => t.includes('repo新组'))).toBe(true)
+
+    fs.rmdirSync(repoDir)
+  })
 })

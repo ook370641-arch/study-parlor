@@ -63,6 +63,16 @@ export function WritingListColumn() {
     })
   }
 
+  const handleCreateRepoFolder = () => {
+    setPrompt({
+      title: '分组名称:',
+      onSubmit: async (name) => {
+        const r = await ipc.writingCreateFolder({ root: 'repository', dir: '', name })
+        if (r.ok) await loadWritingTree()
+      },
+    })
+  }
+
   const handleImportFiles = async () => {
     const r = await ipc.writingImportFiles({ targetDir: 'repository' })
     if (r.ok) await loadWritingTree()
@@ -93,8 +103,9 @@ export function WritingListColumn() {
           </div>
         ) : (
           <div>
-            <div className="p-2">
-              <button data-testid="writing-import-files" className="text-xs text-ember hover:text-ember/80" onClick={handleImportFiles}>⬆ 导入文件…</button>
+            <div className="p-2 flex gap-2 text-xs">
+              <button data-testid="writing-import-files" className="text-ember hover:text-ember/80" onClick={handleImportFiles}>⬆ 导入文件…</button>
+              <button data-testid="writing-repo-new-folder" className="text-parchment/60 hover:text-parchment/80" onClick={handleCreateRepoFolder}>新建分组</button>
             </div>
             <WritingTree root="repository" />
           </div>
