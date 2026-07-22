@@ -368,4 +368,105 @@ test.describe('@p2 writing-editor', () => {
       return found ?? null
     }, { timeout: 15000 }).not.toBeNull()
   })
+
+  // ── E5 全流程串联 ─────────────────────────────────────────────────
+
+  test('全流程串联：新建→编辑→AI聊天→插入→保存→reload→双路恢复', async ({ window, testLibraryPath }) => {
+    // Ensure empty writing dir (no seed)
+    const writingDir = path.join(testLibraryPath, 'writing')
+    fs.mkdirSync(writingDir, { recursive: true })
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
+    await window.locator(SELECTORS.writing.sourceButton).click()
+    await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
+    await window.waitForTimeout(1500)
+
+    // 1. Create new article
+    const writing = new WritingPage(window)
+    await writing.newFileButton.click()
+    await window.getByTestId('writing-prompt-input').fill('全流程测试')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await expect(writing.editor).toBeVisible({ timeout: 10000 })
+
+    // 2. Type content
+    await writing.typeInEditor('# 开头\n\n这是第一段内容。')
+    await window.waitForTimeout(2500)
+    await expect(writing.saveStatus).toContainText('已保存', { timeout: 5000 })
+
+    // 3. Open AI assistant → send message
+    const { WritingAssistantPanel } = await import('../pages/WritingAssistantPanel')
+    const assistant = new WritingAssistantPanel(window)
+    await assistant.open()
+    await assistant.send('扩写第一段')
+    await assistant.waitForStreamingDone(15000)
+
+    // 4. Click insert button
+    const insertBtn = window.locator(SELECTORS.writing.assistantInsertBtn).last()
+    await expect(insertBtn).toBeVisible({ timeout: 3000 })
+    await insertBtn.click()
+    await window.waitForTimeout(500)
+
+    // 5. Verify editor includes inserted content
+    const editorContent = await writing.getEditorContent()
+    expect(editorContent).toContain('插入标题')
+
+    // 6. Ctrl+S
+    await writing.editor.locator('.ProseMirror').click()
+    await window.keyboard.press('Control+s')
+    await window.waitForTimeout(1000)
+    await expect(writing.saveStatus).toContainText('已保存')
+
+    // 7. Wait for async save
+    await window.waitForTimeout(500)
+
+    // 8. Reload
+    await window.reload()
+    await window.waitForLoadState('domcontentloaded')
+
+    // 9. Navigate back to writing
+    // NOTE: enterName (not enterIfNeeded) — after reload the profile is
+    // not persisted because enterName in step 1 only fills the input
+    // without submitting; goToBriefing navigates without saving.
+    const cover2 = new CoverPage(window)
+    await cover2.enterName('E2E 测试员')
+    await cover2.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
+    await window.locator(SELECTORS.writing.sourceButton).click()
+    await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
+    await window.waitForTimeout(1500)
+
+    // 10. Select article
+    const writing2 = new WritingPage(window)
+    await writing2.selectFile('全流程测试')
+    await window.waitForTimeout(1000)
+    await expect(writing2.editor).toBeVisible()
+
+    // 11. Verify editor content restored
+    const restoredContent = await writing2.getEditorContent()
+    expect(restoredContent).toContain('第一段内容')
+    expect(restoredContent).toContain('插入标题')
+
+    // 12. Open AI assistant → verify conversation restored
+    const assistant2 = new WritingAssistantPanel(window)
+    const panelAlreadyOpen = await assistant2.panel.isVisible().catch(() => false)
+    if (!panelAlreadyOpen) {
+      await assistant2.open()
+    }
+    await window.evaluate(async () => {
+      const store = (window as any).useStore
+      await store.getState().loadWritingAssistantSession('writing/全流程测试.md')
+    })
+    await window.waitForTimeout(500)
+
+    const restored = await window.evaluate(() => {
+      const state = (window as any).useStore?.getState()?.writingAssistant
+      return state ? state.messages.map((m: any) => ({ role: m.role, content: m.content })) : []
+    })
+    expect(restored.length).toBeGreaterThan(0)
+    expect(restored.some((m: any) => m.role === 'user' && m.content.includes('扩写第一段'))).toBe(true)
+    expect(restored.some((m: any) => m.role === 'assistant')).toBe(true)
+  })
 })
