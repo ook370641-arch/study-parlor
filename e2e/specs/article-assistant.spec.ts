@@ -134,4 +134,21 @@ test.describe('@p1 article assistant', () => {
     await expect.poll(() => assistant.guideSidebarWidth()).toBeGreaterThan(100)
   })
 
+  test('文章上下文注入：last-assistant-request.json 含文章正文', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openDigestArticle(window, testLibraryPath)
+    await assistant.openChat()
+    await assistant.typeQuestion('这篇文章讲了什么')
+    await assistant.send()
+    await assistant.waitForAssistantReply()
+
+    const requestPath = path.join(testConfigDir, 'last-assistant-request.json')
+    expect(fs.existsSync(requestPath)).toBe(true)
+    const req = JSON.parse(fs.readFileSync(requestPath, 'utf8'))
+
+    // The user message (messages[1]) should contain the article body
+    const userContent = req.messages[1]?.content ?? ''
+    expect(userContent).toContain('文章全文')
+    expect(userContent.length).toBeGreaterThan(200) // article body is substantial
+  })
+
 })
