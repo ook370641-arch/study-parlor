@@ -133,7 +133,8 @@ export function WritingAssistantMessages() {
 
       {error && !streaming && messages.length > 0 && (() => {
         const lastMsg = messages[messages.length - 1]
-        const showError = lastMsg?.role === 'assistant' && lastMsg.content.trim() === ''
+        const showError = (lastMsg?.role === 'assistant' && lastMsg.content.trim() === '')
+          || lastMsg?.role === 'user'
         if (!showError) return null
         return (
           <div className="text-xs text-ember/80 px-3 pb-2">
