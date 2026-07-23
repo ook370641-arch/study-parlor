@@ -85,6 +85,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
 
 ### [★★★★★] 腾讯 · 模型产品经理（校招）
 - **城市**: 深圳
+- **薪资**: 25-40K·16薪
 - **源自**: [秋招开启] 腾讯 · 2027 届秋招正式启动（今日新动态）
 - **JD 要点**: 大模型应用、评测体系搭建
 - **为什么适合你**: 你的 RAG 项目经历直接对应 JD 要求。

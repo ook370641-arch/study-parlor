@@ -464,16 +464,6 @@ export function Settings() {
                     />
                   </div>
 
-                  <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">关注技能（逗号分隔，用于雷达）</div>
-                    <input
-                      data-testid="settings-job-skills"
-                      type="text"
-                      value={jobConfig.skillKeywords.join('，')}
-                      onChange={e => setJobConfig(prev => ({ ...prev, skillKeywords: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
-                    />
-                  </div>
 
                   <div>
                     <div className="text-[11px] text-parchment/60 font-sans mb-1">关注公司</div>

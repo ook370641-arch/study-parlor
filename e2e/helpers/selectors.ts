@@ -99,6 +99,7 @@ export const SELECTORS = {
     chatMessage: '[data-testid="chat-message"]',
     chatMessageSelection: '[data-testid="chat-message-selection"]',
     reasoningBlock: '[data-testid="reasoning-block"]',
+    searchErrorBanner: '[data-testid="assistant-search-error"]',
   },
   quote: {
     text: '[data-testid="quote-text"]',

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ResizeHandles } from './ResizeHandles'
 import { ChatMessageList } from './ChatMessageList'
@@ -23,6 +23,9 @@ export function ChatWindow() {
   const setAssistantSelection = useStore((s) => s.setAssistantSelection)
 
   const [input, setInput] = useState('')
+  const searchError = session?.searchError ?? null
+  const [searchErrorDismissed, setSearchErrorDismissed] = useState(false)
+  useEffect(() => { if (searchError) setSearchErrorDismissed(false) }, [searchError])
   const [size, setSize] = useState({ width: DEFAULT_W, height: DEFAULT_H })
   const [position, setPosition] = useState<{ x?: number; y?: number }>({})
   const dragging = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null)
@@ -115,6 +118,13 @@ export function ChatWindow() {
           ✕
         </button>
       </div>
+
+      {searchError && !searchErrorDismissed && (
+        <div data-testid="assistant-search-error" className="mx-2 mt-2 flex items-center gap-2 rounded border border-ember/40 bg-ember/10 px-2 py-1 text-xs text-parchment/80 shrink-0">
+          <span className="flex-1">网络搜索失败，本次回复未联网</span>
+          <button data-testid="assistant-search-error-dismiss" aria-label="关闭搜索失败提示" className="text-parchment/50 hover:text-ember leading-none" onClick={() => setSearchErrorDismissed(true)}>✕</button>
+        </div>
+      )}
 
       {/* Messages area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3 text-sm">

@@ -287,3 +287,20 @@ test.describe('@p1 selection lifecycle', () => {
     await expect(assistant.pendingSelection).toHaveCount(0)
   })
 })
+
+test.describe('@p1 search error visibility', () => {
+  test('搜索失败提示条可见且可关闭', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigestArticle(window, testLibraryPath)
+    await assistant.openChat()
+    await sendAndWait(assistant, 'Q1')
+    await window.evaluate(() => {
+      const store = (window as any).useStore; const s = store.getState().assistantSession
+      store.setState({ assistantSession: { ...s, searchError: 'SEARCH_ERROR' } })
+    })
+    const banner = window.locator(SELECTORS.articleAssistant.searchErrorBanner)
+    await expect(banner).toBeVisible()
+    await expect(banner).toContainText('未联网')
+    await window.locator('[data-testid="assistant-search-error-dismiss"]').click()
+    await expect(banner).toHaveCount(0)
+  })
+})
