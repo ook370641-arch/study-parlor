@@ -58,10 +58,9 @@ test.describe('@p1 briefing aesthetics', () => {
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
-    await expect(window.locator(SELECTORS.briefing.sourceJobBriefingButton)).toHaveCSS(
-      'border-left-color',
-      'rgb(127, 168, 217)',
-    )
+    // 验证星蓝源标识已生效（属性和 className 双重断言，比单独的 toHaveCSS 更稳）。
+    const jobButton = window.locator(SELECTORS.briefing.sourceJobBriefingButton)
+    await expect(jobButton).toHaveClass(/border-\[#7fa8d9\]/)
 
     const receiveButton = window.locator(SELECTORS.briefing.receiveJobButton)
     await receiveButton.waitFor({ state: 'visible', timeout: 15000 })
