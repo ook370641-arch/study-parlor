@@ -136,4 +136,21 @@ describe('BriefingDateColumn', () => {
     const todayMini = screen.getByTestId('briefing-date-today-mini')
     expect(todayMini.className).toContain('#7fa8d9')
   })
+
+  it('tints the expanded active-item star-blue when job source is active', () => {
+    useStore.setState({ briefingSource: 'job-briefing' })
+    render(
+      <BriefingDateColumn
+        collapsed={false}
+        history={[{ date: '2026-07-23', filePath: '/x.md' }]}
+        currentDate="2026-07-23"
+        today="2026-07-23"
+        onSelect={() => {}}
+        onReceiveToday={() => {}}
+        theme="academic"
+      />
+    )
+    const activeItem = screen.getByTestId('briefing-date-item-2026-07-23')
+    expect(activeItem.className).toContain('#7fa8d9')
+  })
 })
