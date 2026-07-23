@@ -49,12 +49,13 @@ export const JOB_COMMUNITY_DOMAINS = ['nowcoder.com', 'yingjiesheng.com', 'zhihu
 export type EventQuery = { query: string; company?: string; includeDomains?: string[] }
 
 export function buildEventQueries(config: JobBriefingConfig): EventQuery[] {
+  const cities = config.cities.join(' ')
   const queries: EventQuery[] = config.companies
     .filter(c => c.enabled)
     .sort((a, b) => a.priority - b.priority)
-    .map(c => ({ query: `${c.name} 2026秋招 2027届 校招 宣讲会 AI产品 招聘`, company: c.name }))
+    .map(c => ({ query: `${c.name} 2026秋招 2027届 校招 宣讲会 AI产品 招聘 ${cities}`.trim(), company: c.name }))
   queries.push({
-    query: 'AI产品 2026秋招 2027届 校招 汇总',
+    query: `AI产品 2026秋招 2027届 校招 汇总 ${cities}`.trim(),
     includeDomains: ['nowcoder.com', 'yingjiesheng.com'],
   })
   return queries
@@ -365,7 +366,8 @@ export function selectFocusCompanies(events: JobEvent[], config: JobBriefingConf
 
 export function buildFocusJobQuery(company: string, profile: JobProfile, config: JobBriefingConfig): string {
   const roles = profile.targetRoles.length ? profile.targetRoles : config.roleKeywords
-  return `${company} ${roles.join(' ')} 招聘 校招 2026`
+  const cities = config.cities.join(' ')
+  return `${company} ${roles.join(' ')} 招聘 校招 2026 ${cities}`.trim()
 }
 
 export async function matchJobsToProfile(

@@ -181,12 +181,12 @@ describe('focus selection', () => {
 
   it('builds focus job query with profile targetRoles when filled', () => {
     const q = buildFocusJobQuery('腾讯', normalizeJobProfile({ targetRoles: ['模型产品经理'] }), config)
-    expect(q).toBe('腾讯 模型产品经理 招聘 校招 2026')
+    expect(q).toBe('腾讯 模型产品经理 招聘 校招 2026 北京 上海 杭州 深圳')
   })
 
   it('falls back to roleKeywords when profile targetRoles empty', () => {
     const q = buildFocusJobQuery('腾讯', normalizeJobProfile({}), normalizeJobBriefingConfig({ roleKeywords: ['AI产品经理'] }))
-    expect(q).toBe('腾讯 AI产品经理 招聘 校招 2026')
+    expect(q).toBe('腾讯 AI产品经理 招聘 校招 2026 北京 上海 杭州 深圳')
   })
 })
 
