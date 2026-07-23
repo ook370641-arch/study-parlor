@@ -116,7 +116,9 @@ type AppStore = {
   briefingFontSize: BriefingFontSize
   externalSummaryFontSize: BriefingFontSize
   briefingStage: BriefingStage | null
+  briefingStageDetail: string | null
   jobBriefingStage: BriefingStage | null
+  jobBriefingStageDetail: string | null
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
   briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
@@ -390,7 +392,9 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingFontSize: 'base',
   externalSummaryFontSize: 'base',
   briefingStage: null,
+  briefingStageDetail: null,
   jobBriefingStage: null,
+  jobBriefingStageDetail: null,
   briefingSource: 'digest',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicReaderFilePath: null,
@@ -578,8 +582,8 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingStage: 'fetching',
     })
 
-    const unsubscribe = ipc.onBriefingProgress((stage) => {
-      set({ briefingStage: stage })
+    const unsubscribe = ipc.onBriefingProgress((stage, detail) => {
+      set({ briefingStage: stage, briefingStageDetail: detail ?? null })
     })
 
     try {
@@ -587,6 +591,7 @@ export const useStore = create<AppStore>((set, get) => ({
       set({
         briefing: { result, loading: false, error: null },
         briefingStage: null,
+        briefingStageDetail: null,
       })
     } catch (err: any) {
       const raw = err.message || String(err)
@@ -602,6 +607,7 @@ export const useStore = create<AppStore>((set, get) => ({
       set({
         briefing: { result: null, loading: false, error },
         briefingStage: null,
+        briefingStageDetail: null,
       })
     } finally {
       unsubscribe()
@@ -633,10 +639,10 @@ export const useStore = create<AppStore>((set, get) => ({
     const s = get()
     if (s.jobBriefing.loading) return
     set({ jobBriefing: { result: null, loading: true, error: null }, jobBriefingStage: 'scanning-events' })
-    const unsubscribe = ipc.onBriefingProgress((stage) => set({ jobBriefingStage: stage }))
+    const unsubscribe = ipc.onBriefingProgress((stage, detail) => set({ jobBriefingStage: stage, jobBriefingStageDetail: detail ?? null }))
     try {
       const result = await ipc.jobBriefingGenerate({ date, force: opts?.force })
-      set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null })
+      set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null, jobBriefingStageDetail: null })
     } catch (err: any) {
       const raw = err.message || String(err)
       // job-briefing IPC throws JOB_${code}; preserve the JOB_ prefix so
@@ -649,7 +655,7 @@ export const useStore = create<AppStore>((set, get) => ({
         : raw.includes('JOB_CACHE_WRITE_FAILED') ? 'JOB_CACHE_WRITE_FAILED'
         : raw.includes('JOB_TIMEOUT') ? 'JOB_TIMEOUT'
         : raw
-      set({ jobBriefing: { result: null, loading: false, error }, jobBriefingStage: null })
+      set({ jobBriefing: { result: null, loading: false, error }, jobBriefingStage: null, jobBriefingStageDetail: null })
     } finally {
       unsubscribe()
     }

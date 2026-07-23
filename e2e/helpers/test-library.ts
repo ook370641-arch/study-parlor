@@ -454,6 +454,8 @@ const BASE_STATE = {
   archiveResult: null,
   terminology: {},
   briefingSource: 'digest',
+  briefingStageDetail: null,
+  jobBriefingStageDetail: null,
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicBlogLastSeenAt: null,
   articleAssistantGuideWidth: 320,

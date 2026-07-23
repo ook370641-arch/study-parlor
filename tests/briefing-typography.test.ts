@@ -18,3 +18,12 @@ describe('briefing academic typography', () => {
     expect(markdownCss).toMatch(/\.briefing-body-academic \.md-body p\s*\{[^}]*line-height:\s*1\.9/)
   })
 })
+
+describe('constellation motion fallbacks', () => {
+  it('globals.css defines wellPulse keyframes and a reduced-motion opt-out', () => {
+    const globals = fs.readFileSync(path.join(process.cwd(), 'src/styles/globals.css'), 'utf8')
+    expect(globals).toContain('@keyframes wellPulse')
+    expect(globals).toContain('prefers-reduced-motion')
+    expect(globals).toContain('.constellation-animated')
+  })
+})
