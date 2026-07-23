@@ -58,10 +58,17 @@ e2e/
 │   ├── PreStudyPage.ts      # PreStudy 弹窗
 │   └── StudyPage.ts         # Study 页
 ├── specs/
+│   ├── briefing-aesthetics.spec.ts    (来源 spec: docs/superpowers/specs/2026-07-23-briefing-ui-design.md, mock 链路, @p1)
+│   ├── briefing-generation.spec.ts
+│   ├── briefing-real-api.spec.ts
+│   ├── briefing-real-generation.spec.ts
+│   ├── briefing-ux-optimization.spec.ts
+│   ├── briefing.spec.ts
 │   ├── smoke.spec.ts
 │   ├── new-topic-progress.spec.ts
 │   ├── continue-topic.spec.ts
-│   └── review-topic.spec.ts
+│   ├── review-topic.spec.ts
+│   └── …
 └── playwright.config.ts
 ```
 
