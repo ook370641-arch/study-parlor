@@ -61,9 +61,10 @@ export function BriefingConstellation({ stage }: Props) {
 
   return (
     <div
-      data-testid="briefing-constellation"
+      data-testid="briefing-progress"
       className="constellation-animated relative h-full w-full overflow-hidden"
     >
+      <div data-testid="briefing-constellation" className="absolute inset-0">
       {/* 引力线：卫星驻留位 → 井心 */}
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
         {stations.map((s, i) => (
@@ -130,6 +131,8 @@ export function BriefingConstellation({ stage }: Props) {
             style={{
               left: `${posts[i].x}%`,
               top: `${posts[i].y}%`,
+              // 右列驻留位（x > 50）的胶囊向左延伸，避免窄宽度下被 overflow-hidden 裁切。
+              transform: posts[i].x > 50 ? 'translateX(-100%)' : undefined,
               background: isAcademic ? 'rgba(26,21,18,0.92)' : 'rgba(255,255,255,0.92)',
               border: `1px solid ${done || active ? accent : isAcademic ? 'rgba(232,213,183,0.2)' : 'rgba(26,26,26,0.2)'}`,
               color: done ? accent : active ? inkStrong : dimText,
@@ -158,6 +161,7 @@ export function BriefingConstellation({ stage }: Props) {
         <div className="pointer-events-auto">
           <Quote surface="briefing" />
         </div>
+      </div>
       </div>
     </div>
   )

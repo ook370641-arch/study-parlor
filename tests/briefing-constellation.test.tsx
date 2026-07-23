@@ -22,6 +22,19 @@ describe('BriefingConstellation', () => {
     }
   })
 
+  it('exposes the legacy briefing-progress testid as an alias', () => {
+    render(<BriefingConstellation stage="fetching" />)
+    expect(screen.getByTestId('briefing-progress')).toBeInTheDocument()
+    expect(screen.getByTestId('briefing-constellation')).toBeInTheDocument()
+  })
+
+  it('extends right-column satellites leftward to avoid clipping', () => {
+    render(<BriefingConstellation stage="assembling" />)
+    // 右列驻留位（x=81）向左延伸；左列（x=10）不施加 transform。
+    expect(screen.getByTestId('briefing-progress-step-finalizing').style.transform).toContain('translateX(-100%)')
+    expect(screen.getByTestId('briefing-progress-step-fetching').style.transform).toBe('')
+  })
+
   it('marks earlier stations done and the current one active with its full label', () => {
     render(<BriefingConstellation stage="assembling" />)
     expect(screen.getByTestId('briefing-progress-step-fetching').dataset.state).toBe('done')
