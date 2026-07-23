@@ -20,7 +20,7 @@ export function Quote({ surface }: Props) {
 
   if (surface === 'briefing') {
     return (
-      <div className="group max-w-[480px] text-center" data-testid="quote-band">
+      <div className="group max-w-[480px] mx-auto text-center" data-testid="quote-band">
         <div className="border-t border-b border-ember/35 px-4 py-2.5">
           <div
             data-testid="quote-text"
