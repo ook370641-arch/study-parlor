@@ -6,7 +6,7 @@ import { BriefingThemeToggle } from './briefing/BriefingThemeToggle'
 interface Props {
   displayDate: string
   timeString?: string
-  sourceStatus?: Record<string, 'ok' | 'failed'>
+  sourceStatus?: Record<string, 'ok' | 'failed' | 'empty'>
   cacheWriteFailed?: boolean
   /** 求职简报源下在 Header 右侧显示常驻「求职档案」入口 */
   showJobProfileEntry?: boolean
@@ -62,6 +62,12 @@ export function BriefingHeader({
     ? `来源获取失败：${failedSources.join('、')}`
     : '全部来源获取成功'
 
+  const emptySources = sourceStatus
+    ? Object.entries(sourceStatus)
+        .filter(([, status]) => status === 'empty')
+        .map(([key]) => knownLabels[key] ?? key)
+    : []
+
   return (
     <header className={`${headerBase} ${headerTheme}`}>
       <BackToCover className={backOverride} />
@@ -77,6 +83,15 @@ export function BriefingHeader({
               title={sourceStatusTitle}
             >
               {failedSources.join('、')} 获取失败
+            </span>
+          )}
+          {sourceStatus && emptySources.length > 0 && (
+            <span
+              className={`ml-2 ${isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'}`}
+              data-testid="briefing-source-empty"
+              title={`来源暂无更新：${emptySources.join('、')}`}
+            >
+              {emptySources.join('、')} 暂无更新
             </span>
           )}
           {cacheWriteFailed && (

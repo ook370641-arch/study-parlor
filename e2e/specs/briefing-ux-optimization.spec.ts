@@ -187,3 +187,25 @@ test('anthropic article reader uses translucent academic background @smoke', asy
   await expect(reader).toBeVisible()
   await expect(reader).toHaveClass(/bg-transparent/)
 })
+
+test('theme toggle persists across restart @smoke', async () => {
+  const today = localToday()
+  seedBriefing(testLibraryPath, today)
+  const coverPage = new CoverPage(window)
+  await coverPage.gotoBriefing()
+  await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+  await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+
+  await window.locator(SELECTORS.briefing.themeToggle).click()
+  await expect(window.locator(SELECTORS.briefing.newspaperLayout)).toBeVisible()
+
+  await stopApp(electronApp)
+  const result = await startApp({ testLibraryPath, testConfigDir })
+  electronApp = result.electronApp
+  window = result.window
+
+  const coverPage2 = new CoverPage(window)
+  await coverPage2.gotoBriefing()
+  await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+  await expect(window.locator(SELECTORS.briefing.newspaperLayout)).toBeVisible({ timeout: 15000 })
+})

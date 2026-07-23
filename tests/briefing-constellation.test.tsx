@@ -74,4 +74,17 @@ describe('BriefingConstellation', () => {
     render(<BriefingConstellation stage="assembling" />)
     expect(screen.getByTestId('briefing-constellation-well').textContent).toContain('2 / 4 已归位')
   })
+
+  it('renders every station without crash (station/post array invariant)', () => {
+    // 防御：如果有人给 DIGEST_STATIONS 加了一个站点但忘了在 POSTS_4 补坐标，
+    // 这个测试会因为 posts[i].x → TypeError 而崩溃。
+    render(<BriefingConstellation stage="fetching" />)
+    const satellites = document.querySelectorAll('[data-testid^="briefing-progress-step-"]')
+    expect(satellites.length).toBe(4)
+    cleanup()
+    useStore.setState({ briefingSource: 'job-briefing' })
+    render(<BriefingConstellation stage="scanning-events" />)
+    const jobSatellites = document.querySelectorAll('[data-testid^="briefing-progress-step-"]')
+    expect(jobSatellites.length).toBe(5)
+  })
 })

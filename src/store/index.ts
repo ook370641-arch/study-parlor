@@ -143,6 +143,7 @@ type AppStore = {
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
   deleteBriefings: (filePaths: string[]) => Promise<void>
+  cancelBriefing: () => void
   setBriefingTheme: (theme: BriefingTheme) => Promise<void>
   increaseBriefingFontSize: () => Promise<void>
   decreaseBriefingFontSize: () => Promise<void>
@@ -166,6 +167,13 @@ type AppStore = {
   generateJobBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadJobBriefingHistory: () => Promise<void>
   deleteJobBriefings: (filePaths: string[]) => Promise<void>
+  cancelJobBriefing: () => void
+  transferArticleToWriting: (args: {
+    name: string
+    content: string
+    sourceType: 'digest' | 'anthropic'
+    sourcePath: string
+  }) => Promise<void>
   setJobBriefingConfig: (config: JobBriefingConfig) => Promise<void>
   discoverJobBriefingPages: () => Promise<{ ok: true; companies: JobCompany[] } | { ok: false; error: JobErrorCode | string; message: string }>
 
@@ -276,7 +284,7 @@ type AppStore = {
   saveAssistantSession: () => Promise<void>
   sendAssistantMessage: (text: string) => Promise<void>
   retryAssistantMessage: () => Promise<void>
-  runAssistantStream: (history: ArticleAssistantMessage[], useSearch: boolean) => Promise<void>
+  runAssistantStream: (history: ArticleAssistantMessage[], useSearch: boolean, selection?: string) => Promise<void>
   applyAssistantSearchResult: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void
   appendAssistantChunk: (text: string) => void
   appendAssistantReasoning: (text: string) => void
@@ -595,6 +603,7 @@ export const useStore = create<AppStore>((set, get) => ({
       })
     } catch (err: any) {
       const raw = err.message || String(err)
+      if (raw.includes('BRIEFING_ABORTED')) return
       const error = raw.includes('FEED_EMPTY')
         ? 'FEED_EMPTY'
         : raw.includes('NETWORK_ERROR')
@@ -635,6 +644,12 @@ export const useStore = create<AppStore>((set, get) => ({
     await get().loadBriefingHistory()
   },
 
+  cancelBriefing: () => {
+    if (!get().briefing.loading) return
+    ipc.briefingAbort()
+    set({ briefing: { result: null, loading: false, error: null }, briefingStage: null })
+  },
+
   generateJobBriefing: async (date, opts) => {
     const s = get()
     if (s.jobBriefing.loading) return
@@ -645,6 +660,7 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null, jobBriefingStageDetail: null })
     } catch (err: any) {
       const raw = err.message || String(err)
+      if (raw.includes('JOB_ABORTED')) return
       // job-briefing IPC throws JOB_${code}; preserve the JOB_ prefix so
       // BriefingError.MESSAGES picks up the correct job-specific text.
       const error = raw.includes('JOB_MISSING_SEARCH_KEY') ? 'JOB_MISSING_SEARCH_KEY'
@@ -680,6 +696,48 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ jobBriefing: { result: null, loading: false, error: null } })
     }
     await get().loadJobBriefingHistory()
+  },
+
+  cancelJobBriefing: () => {
+    if (!get().jobBriefing.loading) return
+    ipc.jobBriefingAbort()
+    set({ jobBriefing: { result: null, loading: false, error: null }, jobBriefingStage: null })
+  },
+
+  transferArticleToWriting: async (args) => {
+    const sanitize = (n: string) =>
+      n.replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim() || '未命名'
+    const base = sanitize(args.name)
+    const fm = `---\ntitle: ${base}\nsource_type: ${args.sourceType}\nsource_path: ${args.sourcePath}\n---\n\n`
+    const body = fm + args.content
+
+    const tryCreate = async (name: string): Promise<string | null> => {
+      const r = await ipc.writingCreateFile({ root: 'writing', dir: '', name })
+      if (r.ok) return r.value.path
+      if (r.code === 'WRITING_NAME_CONFLICT') return null
+      throw new Error(r.message)
+    }
+
+    try {
+      let filePath = await tryCreate(base)
+      if (!filePath) {
+        const now = new Date()
+        const suffix = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
+        filePath = await tryCreate(`${base}-${suffix}`)
+      }
+      if (!filePath) {
+        get().showToast('转入写作失败：文件名冲突')
+        return
+      }
+      const w = await ipc.writingWrite({ path: filePath, body })
+      if (!w.ok) {
+        get().showToast('转入写作失败')
+        return
+      }
+      get().showToast('已转入写作')
+    } catch {
+      get().showToast('转入写作失败')
+    }
   },
 
   setJobBriefingConfig: async (config) => {
@@ -1203,10 +1261,13 @@ export const useStore = create<AppStore>((set, get) => ({
     const content = text.trim()
     if (!content && !s.pendingSelection) return
     const useSearch = get().assistantSearchEnabled
-    const userMessage: ArticleAssistantMessage = { role: 'user', content, selection: s.pendingSelection }
+    // 发送即消费选段：chip 随之清除，下一条消息不再重复注入同一选段。
+    // 选段值必须显式传给 runAssistantStream——它会重新 get()，读不到快照里的值。
+    const selection = s.pendingSelection
+    const userMessage: ArticleAssistantMessage = { role: 'user', content, selection }
     const history = [...s.messages, userMessage]
-    set({ assistantSession: { ...s, messages: history, retryContext: { text, useSearch } } })
-    await get().runAssistantStream(history, useSearch)
+    set({ assistantSession: { ...s, messages: history, retryContext: { text, useSearch }, pendingSelection: undefined } })
+    await get().runAssistantStream(history, useSearch, selection)
   },
 
   retryAssistantMessage: async () => {
@@ -1215,11 +1276,12 @@ export const useStore = create<AppStore>((set, get) => ({
     let msgs = s.messages
     const last = msgs.at(-1)
     if (last && last.role === 'assistant' && last.content.trim() === '') msgs = msgs.slice(0, -1)
+    const lastUser = [...msgs].reverse().find((m) => m.role === 'user')
     set({ assistantSession: { ...s, messages: msgs, chatError: null } })
-    await get().runAssistantStream(msgs, s.retryContext.useSearch)
+    await get().runAssistantStream(msgs, s.retryContext.useSearch, lastUser?.selection)
   },
 
-  runAssistantStream: async (history, useSearch) => {
+  runAssistantStream: async (history, useSearch, selection) => {
     const s = get().assistantSession
     if (!s) return
     resetAssistantStreamBuffers()
@@ -1251,7 +1313,7 @@ export const useStore = create<AppStore>((set, get) => ({
         articleType: s.contextType,
         messages: history,
         annotations,
-        selection: s.pendingSelection,
+        selection,
         useSearch,
         guide: s.guide,
         socraticMode: get().assistantSocraticMode,

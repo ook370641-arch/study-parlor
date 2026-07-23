@@ -20,7 +20,7 @@ async function openDigestArticle(window: Page, libPath: string): Promise<Article
   seedBriefing(libPath, today)
 
   const cover = new CoverPage(window)
-  await cover.enterIfNeeded('E2E 测试员')
+  await cover.enterName('E2E 测试员')
   await cover.goToBriefing()
 
   await window.locator(SELECTORS.briefing.receiveDigestButton).click()
@@ -248,4 +248,59 @@ parent_path: 夜航简报/夜航简报-${today}.md
 		expect(userContent).toContain('用户对文章的标注')
 		expect(userContent).toContain('E2E测试标注内容-唯一标识')
 	})
+})
+
+test.describe('@p1 selection lifecycle', () => {
+  test('选段 chip 发送后清除，第二条消息不再携带旧选段', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openDigestArticle(window, testLibraryPath)
+    await assistant.openChat()
+    // E2E only：store 后门注入选段（真实鼠标选段路径由「取消选段」用例覆盖）
+    await window.evaluate(() => {
+      ;(window as any).useStore.getState().setAssistantSelection('E2E选段标记-唯一')
+    })
+    await expect(assistant.pendingSelection).toBeVisible()
+    await sendAndWait(assistant, 'Q1')
+    await expect(assistant.pendingSelection).toHaveCount(0)
+    let req = readLastRequest(testConfigDir)
+    expect(req.messages[1].content).toContain('E2E选段标记-唯一')
+
+    await sendAndWait(assistant, 'Q2')
+    req = readLastRequest(testConfigDir)
+    expect(req.messages[1].content).not.toContain('E2E选段标记-唯一')
+  })
+
+  test('聊天窗内选中文字不产生文章选段 chip', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigestArticle(window, testLibraryPath)
+    await assistant.openChat()
+    await sendAndWait(assistant, '先产生一条回复')
+
+    // 在聊天窗消息文本上拖选
+    const msg = assistant.chatMessages.first()
+    const box = await msg.boundingBox()
+    if (!box) throw new Error('no chat message to select')
+    await window.mouse.move(box.x + 5, box.y + box.height / 2)
+    await window.mouse.down()
+    await window.mouse.move(box.x + Math.min(120, box.width - 10), box.y + box.height / 2, { steps: 8 })
+    await window.mouse.up()
+    await window.waitForTimeout(300)
+
+    await expect(assistant.pendingSelection).toHaveCount(0)
+  })
+})
+
+test.describe('@p1 search error visibility', () => {
+  test('搜索失败提示条可见且可关闭', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigestArticle(window, testLibraryPath)
+    await assistant.openChat()
+    await sendAndWait(assistant, 'Q1')
+    await window.evaluate(() => {
+      const store = (window as any).useStore; const s = store.getState().assistantSession
+      store.setState({ assistantSession: { ...s, searchError: 'SEARCH_ERROR' } })
+    })
+    const banner = window.locator(SELECTORS.articleAssistant.searchErrorBanner)
+    await expect(banner).toBeVisible()
+    await expect(banner).toContainText('未联网')
+    await window.locator('[data-testid="assistant-search-error-dismiss"]').click()
+    await expect(banner).toHaveCount(0)
+  })
 })

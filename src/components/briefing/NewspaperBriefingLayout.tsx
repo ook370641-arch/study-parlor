@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useStore } from '@/store'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
@@ -6,6 +7,8 @@ import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnota
 import type { ArticleAssistantChunk } from '@shared/index'
 import type { TermDef } from '@/components/md/rehypeTermHighlight'
 import { BriefingSourceItem } from './BriefingSourceItem'
+import { TransferToWritingButton } from './TransferToWritingButton'
+import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 
 export function NewspaperBriefingLayout({
   result,
@@ -26,6 +29,9 @@ export function NewspaperBriefingLayout({
 }) {
   const [expandedSources, setExpandedSources] = useState(false)
   const articleBodyRef = useRef<HTMLElement>(null)
+  const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
+  const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
 
   return (
     <main
@@ -41,6 +47,18 @@ export function NewspaperBriefingLayout({
             <span>|</span>
             <span>{displayDate}</span>
           </div>
+          {filePath && (
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <TransferToWritingButton
+                name={articleName}
+                content={result.content}
+                sourceType="digest"
+                sourcePath={filePath}
+                theme="newspaper"
+              />
+              <AnnotationListButton articlePath={filePath} theme="newspaper" />
+            </div>
+          )}
         </header>
 
         <div
@@ -54,6 +72,9 @@ export function NewspaperBriefingLayout({
             fileName="briefing.md"
             theme="newspaper"
             terms={terms}
+            activeChunkIndex={activeChunkIndex}
+            onChunkEnter={(i) => setAssistantActiveChunk(i)}
+            onChunkLeave={() => setAssistantActiveChunk(null)}
           />
         </div>
 

@@ -5,8 +5,20 @@ import matter from 'gray-matter'
 import { chatNonStream } from '../lib/kimi'
 import { dumpRecovery } from '../lib/recovery'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
+import { classifyFeed, resolveFeedOutcome, type FeedStatus } from '../lib/feed-status'
+import { deleteSiblingFiles } from '../lib/sibling-files'
 import type { AppConfig } from '../env'
 import type { BriefingResult, BriefingSource, BriefingSourceStatus, BriefingStage, Message, Profile } from '@shared/index'
+
+function bumpMockCounter(dir: string, name: string): void {
+  try {
+    const p = path.join(dir, name)
+    let n = 0
+    if (fs.existsSync(p)) { n = Number(JSON.parse(fs.readFileSync(p, 'utf8')).count ?? 0) || 0 }
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(p, JSON.stringify({ count: n + 1 }), 'utf8')
+  } catch { /* best-effort */ }
+}
 
 const DEFAULT_FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json'
 const DEFAULT_FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json'
@@ -135,14 +147,6 @@ type FeedBlogs = {
     url: string
     publishedAt?: string | null
   }>
-}
-
-function hasAnyContent(feedX: FeedX | null, feedPodcasts: FeedPodcasts | null, feedBlogs: FeedBlogs | null): boolean {
-  return (
-    (feedX?.x?.length ?? 0) > 0 ||
-    (feedPodcasts?.podcasts?.length ?? 0) > 0 ||
-    (feedBlogs?.blogs?.length ?? 0) > 0
-  )
 }
 
 function buildSources(args: {
@@ -295,6 +299,8 @@ function parseStructuredJson(raw: string): unknown {
   }
 }
 
+let activeGenerateAbort: AbortController | null = null
+
 export function registerBriefingIpc(cfg: AppConfig) {
   ipcMain.handle('briefing:generate', async (event, args: { date: string; profile: Profile; force?: boolean }): Promise<BriefingResult> => {
     const sender = event.sender
@@ -352,6 +358,10 @@ export function registerBriefingIpc(cfg: AppConfig) {
       }
     }
 
+    const genCtl = new AbortController()
+    activeGenerateAbort = genCtl
+
+    try {
     // E2E fast path: return mock briefing without hitting feeds/LLM when no cache.
     // Set E2E_BRIEFING_DISABLE_MOCK=1 to exercise the real fetch/LLM generation chain.
     // Also require E2E_CONFIG_DIR so unit tests (NODE_ENV=test) do not take this path.
@@ -361,6 +371,13 @@ export function registerBriefingIpc(cfg: AppConfig) {
       process.env.E2E_BRIEFING_DISABLE_MOCK !== '1'
     ) {
       emitProgress('fetching', 'MOCK')
+      const delayMs = Number(process.env.E2E_BRIEFING_MOCK_DELAY_MS ?? 0)
+      if (delayMs > 0) {
+        await new Promise<void>((resolve, reject) => {
+          const t = setTimeout(resolve, delayMs)
+          genCtl.signal.addEventListener('abort', () => { clearTimeout(t); reject(new Error('BRIEFING_ABORTED')) })
+        })
+      }
       emitProgress('extracting', 'MOCK')
       emitProgress('assembling', 'MOCK')
       emitProgress('finalizing', 'MOCK')
@@ -372,6 +389,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
       } catch {
         // cache write can fail silently
       }
+      if (process.env.E2E_CONFIG_DIR) bumpMockCounter(process.env.E2E_CONFIG_DIR, 'briefing-mock-count.json')
       emitProgress('done')
       return {
         title: '夜航简报',
@@ -401,16 +419,26 @@ export function registerBriefingIpc(cfg: AppConfig) {
       }),
     ])
 
+    if (genCtl.signal.aborted) throw new Error('BRIEFING_ABORTED')
     emitProgress('fetching')
 
-    if (!hasAnyContent(feedX, feedPodcasts, feedBlogs)) {
+    const feedStatuses: FeedStatus[] = [
+      classifyFeed(feedX, (f) => (f.x?.length ?? 0) > 0),
+      classifyFeed(feedPodcasts, (f) => (f.podcasts?.length ?? 0) > 0),
+      classifyFeed(feedBlogs, (f) => (f.blogs?.length ?? 0) > 0),
+    ]
+    const outcome = resolveFeedOutcome(feedStatuses)
+    if (outcome === 'network-error') {
+      throw new Error('NETWORK_ERROR: all feeds unreachable')
+    }
+    if (outcome === 'feed-empty') {
       throw new Error('FEED_EMPTY')
     }
 
     const sourceStatus: BriefingSourceStatus = {
-      x: feedX?.x?.length ? 'ok' : 'failed',
-      podcasts: feedPodcasts?.podcasts?.length ? 'ok' : 'failed',
-      blogs: feedBlogs?.blogs?.length ? 'ok' : 'failed',
+      x: feedStatuses[0],
+      podcasts: feedStatuses[1],
+      blogs: feedStatuses[2],
     }
 
     const prompts = readPrompts()
@@ -424,6 +452,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
     })
 
     const llmCtl = new AbortController()
+    genCtl.signal.addEventListener('abort', () => llmCtl.abort())
     const llmTimeout = setTimeout(() => llmCtl.abort(), 300_000)
     let cacheWriteFailed = false
 
@@ -438,6 +467,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
           signal: llmCtl.signal,
         })
       } catch (err) {
+        if (genCtl.signal.aborted) throw new Error('BRIEFING_ABORTED')
         throw new Error(`LLM_ERROR: ${err instanceof Error ? err.message : String(err)}`)
       }
 
@@ -463,6 +493,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
           signal: llmCtl.signal,
         })
       } catch (err) {
+        if (genCtl.signal.aborted) throw new Error('BRIEFING_ABORTED')
         throw new Error(`LLM_ERROR: ${err instanceof Error ? err.message : String(err)}`)
       }
 
@@ -502,6 +533,9 @@ export function registerBriefingIpc(cfg: AppConfig) {
     } finally {
       clearTimeout(llmTimeout)
     }
+    } finally {
+      if (activeGenerateAbort === genCtl) activeGenerateAbort = null
+    }
   })
 
   ipcMain.handle('briefing:list', async (): Promise<{ date: string; filePath: string }[]> => {
@@ -526,9 +560,12 @@ export function registerBriefingIpc(cfg: AppConfig) {
         return { ok: false as const, message: '文件不存在或路径非法' }
       }
       fs.rmSync(abs)
+      deleteSiblingFiles(abs)
       return { ok: true as const }
     } catch (err: any) {
       return { ok: false as const, message: err.message || String(err) }
     }
   })
+
+  ipcMain.handle('briefing:abort', async () => { activeGenerateAbort?.abort() })
 }

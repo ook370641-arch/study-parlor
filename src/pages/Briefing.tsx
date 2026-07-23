@@ -70,6 +70,8 @@ export function Briefing() {
   const [pendingDelete, setPendingDelete] = useState<BriefingHistoryItem[] | null>(null)
   const deleteBriefings = useStore((s) => s.deleteBriefings)
   const deleteJobBriefings = useStore((s) => s.deleteJobBriefings)
+  const cancelBriefing = useStore((s) => s.cancelBriefing)
+  const cancelJobBriefing = useStore((s) => s.cancelJobBriefing)
 
   const today = formatBriefingDate(new Date())
 
@@ -235,7 +237,7 @@ export function Briefing() {
               ) : isJobLoading ? (
                 <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
                   {jobStage ? (
-                    <BriefingProgress stage={jobStage} />
+                    <BriefingProgress stage={jobStage} onCancel={cancelJobBriefing} />
                   ) : (
                     <BriefingSkeleton data-testid="briefing-skeleton" />
                   )}
@@ -289,7 +291,7 @@ export function Briefing() {
             ) : isDigestLoading ? (
               <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
                 {stage ? (
-                  <BriefingProgress stage={stage} />
+                  <BriefingProgress stage={stage} onCancel={cancelBriefing} />
                 ) : (
                   <BriefingSkeleton data-testid="briefing-skeleton" />
                 )}
@@ -382,6 +384,7 @@ export function Briefing() {
           ))}
         </ul>
         <p className="mt-2">删除「今天」的简报后，再次点击今天将重新生成。</p>
+        <p className="mt-2">将同时删除所选简报的旁注对话、标注与导读。</p>
       </ConfirmDialog>
     </div>
   )

@@ -10,16 +10,29 @@ import {
   jobBriefingDir,
 } from '../lib/job-briefing'
 import { toJobErrorCode } from '../lib/job-error-codes'
+import { deleteSiblingFiles } from '../lib/sibling-files'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { getSearchApiKey } from '../lib/credentials'
 import { getCurrentState } from './state'
 import { normalizeJobProfile, formatJobProfile } from '../../src/lib/job-briefing-defaults'
+
+function bumpMockCounter(dir: string, name: string): void {
+  try {
+    const p = path.join(dir, name)
+    let n = 0
+    if (fs.existsSync(p)) { n = Number(JSON.parse(fs.readFileSync(p, 'utf8')).count ?? 0) || 0 }
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(p, JSON.stringify({ count: n + 1 }), 'utf8')
+  } catch { /* best-effort */ }
+}
 
 function validateDate(date: string): void {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw new Error('Invalid job briefing date format')
   }
 }
+
+let activeJobAbort: AbortController | null = null
 
 export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBriefingConfig) {
   ipcMain.handle('job-briefing:generate', async (event, args: { date: string; force?: boolean }): Promise<JobBriefingResult> => {
@@ -65,6 +78,10 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       }
     }
 
+    const genCtl = new AbortController()
+    activeJobAbort = genCtl
+
+    try {
     // E2E fast path
     if (
       process.env.NODE_ENV === 'test' &&
@@ -72,6 +89,13 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       process.env.E2E_JOB_BRIEFING_DISABLE_MOCK !== '1'
     ) {
       emitProgress('scanning-events', 'MOCK')
+      const delayMs = Number(process.env.E2E_JOB_BRIEFING_MOCK_DELAY_MS ?? 0)
+      if (delayMs > 0) {
+        await new Promise<void>((resolve, reject) => {
+          const t = setTimeout(resolve, delayMs)
+          genCtl.signal.addEventListener('abort', () => { clearTimeout(t); reject(new Error('JOB_ABORTED')) })
+        })
+      }
       emitProgress('digging-jobs', 'MOCK')
       emitProgress('aggregating-questions', 'MOCK')
       emitProgress('synthesizing', 'MOCK')
@@ -85,6 +109,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
 
 ### [★★★★★] 腾讯 · 模型产品经理（校招）
 - **城市**: 深圳
+- **薪资**: 25-40K·16薪
 - **源自**: [秋招开启] 腾讯 · 2027 届秋招正式启动（今日新动态）
 - **JD 要点**: 大模型应用、评测体系搭建
 - **为什么适合你**: 你的 RAG 项目经历直接对应 JD 要求。
@@ -119,6 +144,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       } catch { /* ignore */ }
       // Write last-job-request.json for E2E request-level assertions
       const e2eDir = process.env.E2E_CONFIG_DIR
+      if (e2eDir) bumpMockCounter(e2eDir, 'job-briefing-mock-count.json')
       if (e2eDir) {
         const profile = normalizeJobProfile(getCurrentState().jobProfile)
         const profileText = formatJobProfile(profile)
@@ -164,9 +190,14 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
     try {
       return await generateJobBriefing(cfg, config, profile, date, {
         emitProgress: (stage, detail) => emitProgress(stage, detail),
+        signal: genCtl.signal,
       })
     } catch (err: any) {
+      if (genCtl.signal.aborted) throw new Error('JOB_ABORTED')
       throw new Error(`JOB_${toJobErrorCode(err)}`)
+    }
+    } finally {
+      if (activeJobAbort === genCtl) activeJobAbort = null
     }
   })
 
@@ -191,6 +222,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
         return { ok: false as const, message: '文件不存在或路径非法' }
       }
       fs.rmSync(abs)
+      deleteSiblingFiles(abs)
       return { ok: true as const }
     } catch (err: any) {
       return { ok: false as const, message: err.message || String(err) }
@@ -230,4 +262,6 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       return { ok: false, code: 'NETWORK_ERROR', message: err.message || String(err) }
     }
   })
+
+  ipcMain.handle('job-briefing:abort', async () => { activeJobAbort?.abort() })
 }

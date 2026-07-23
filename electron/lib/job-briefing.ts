@@ -49,12 +49,13 @@ export const JOB_COMMUNITY_DOMAINS = ['nowcoder.com', 'yingjiesheng.com', 'zhihu
 export type EventQuery = { query: string; company?: string; includeDomains?: string[] }
 
 export function buildEventQueries(config: JobBriefingConfig): EventQuery[] {
+  const cities = config.cities.join(' ')
   const queries: EventQuery[] = config.companies
     .filter(c => c.enabled)
     .sort((a, b) => a.priority - b.priority)
-    .map(c => ({ query: `${c.name} 2026秋招 2027届 校招 宣讲会 AI产品 招聘`, company: c.name }))
+    .map(c => ({ query: `${c.name} 2026秋招 2027届 校招 宣讲会 AI产品 招聘 ${cities}`.trim(), company: c.name }))
   queries.push({
-    query: 'AI产品 2026秋招 2027届 校招 汇总',
+    query: `AI产品 2026秋招 2027届 校招 汇总 ${cities}`.trim(),
     includeDomains: ['nowcoder.com', 'yingjiesheng.com'],
   })
   return queries
@@ -365,7 +366,8 @@ export function selectFocusCompanies(events: JobEvent[], config: JobBriefingConf
 
 export function buildFocusJobQuery(company: string, profile: JobProfile, config: JobBriefingConfig): string {
   const roles = profile.targetRoles.length ? profile.targetRoles : config.roleKeywords
-  return `${company} ${roles.join(' ')} 招聘 校招 2026`
+  const cities = config.cities.join(' ')
+  return `${company} ${roles.join(' ')} 招聘 校招 2026 ${cities}`.trim()
 }
 
 export async function matchJobsToProfile(
@@ -629,6 +631,9 @@ export async function generateJobBriefing(
   // 独立 300s 计时，不与其他阶段共享总预算：reasoning_effort:'high' 常跑数分钟，
   // 共享预算曾在此阶段误 abort，DOMException code=20 以 "JOB_20" 冒泡给用户。
   const synthesisCtl = new AbortController()
+  if (opts.signal?.aborted) throw new Error('ABORTED')
+  const onOuterAbort = () => synthesisCtl.abort()
+  opts.signal?.addEventListener('abort', onOuterAbort)
   const synthesisTimeout = setTimeout(() => synthesisCtl.abort(), 300_000)
   let content: string
   try {
@@ -639,10 +644,12 @@ export async function generateJobBriefing(
       signal: synthesisCtl.signal,
     })
   } catch (err) {
+    if (opts.signal?.aborted) throw new Error('ABORTED')
     const code = toJobErrorCode(err)
     throw Object.assign(new Error(code), { code: code as JobErrorCode })
   } finally {
     clearTimeout(synthesisTimeout)
+    opts.signal?.removeEventListener('abort', onOuterAbort)
   }
 
   opts.emitProgress?.('finalizing')

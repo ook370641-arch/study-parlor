@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
+import { seedBriefing } from '../helpers/test-library'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
@@ -342,4 +343,38 @@ test.describe('真实选区交互', () => {
     await expect(window.locator(SELECTORS.annotations.selectionHighlight)).toHaveCount(0)
     await expect(ghostPen).toBeHidden()
   })
+})
+
+test('E2E-A6: 标注跨 renderer reload 恢复', async ({ window, testLibraryPath }) => {
+  const today = localToday()
+  seedBriefing(testLibraryPath, today)
+
+  const openDigest = async () => {
+    const cover = new CoverPage(window)
+    await cover.enterIfNeeded('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+    await window.locator(SELECTORS.briefing.markdownBody).waitFor({ state: 'visible', timeout: 15000 })
+  }
+
+  await openDigest()
+  await window.evaluate(() => {
+    const body = document.querySelector('[data-testid="briefing-markdown-body"]')
+    const p = body?.querySelector('p')
+    if (!p || !p.textContent) throw new Error('no paragraph')
+    const helper = (window as any).__e2e_triggerGhostPen as | ((paraEl: Element, start: number, end: number) => void) | undefined
+    if (!helper) throw new Error('__e2e_triggerGhostPen not found')
+    helper(p, 0, Math.min(15, p.textContent.length))
+  })
+  await expect(window.locator(SELECTORS.annotations.ghostPen)).toBeVisible({ timeout: 5000 })
+  await window.locator(SELECTORS.annotations.ghostPen).click({ force: true })
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible({ timeout: 5000 })
+  await window.locator(SELECTORS.annotations.noteTextarea).fill('跨重启标注-唯一标识')
+  await window.evaluate(() => (window as any).__e2e_saveAnnotation())
+  await expect(window.locator(SELECTORS.annotations.markerPen).first()).toBeVisible({ timeout: 5000 })
+
+  await window.reload()
+  await openDigest()
+  await expect(window.locator(SELECTORS.annotations.markerPen).first()).toBeVisible({ timeout: 15000 })
 })

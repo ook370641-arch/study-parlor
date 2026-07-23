@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
 
-test.describe('Anthropic 博客 UI 优化 (v1.2)', () => {
+test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
   test('E2E-6: 列表收起与展开', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')

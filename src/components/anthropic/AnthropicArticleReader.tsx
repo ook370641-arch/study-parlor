@@ -7,6 +7,8 @@ import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
 import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
 import { Quote } from '@/components/Quote'
+import { TransferToWritingButton } from '@/components/briefing/TransferToWritingButton'
+import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 import type { Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -60,6 +62,8 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<{ code: string; message: string } | null>(null)
   const articleBodyRef = useRef<HTMLElement | null>(null)
+  const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
+  const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
 
   useEffect(() => {
     let cancelled = false
@@ -208,6 +212,16 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                       <span>作者：{frontmatter.authors.join(', ')}</span>
                     )}
                   </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <TransferToWritingButton
+                      name={frontmatter.title ?? 'article'}
+                      content={body}
+                      sourceType="anthropic"
+                      sourcePath={filePath}
+                      theme={theme}
+                    />
+                    <AnnotationListButton articlePath={filePath} theme={theme} />
+                  </div>
                   {frontmatter.summary && (
                     <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
                       {frontmatter.summary}
@@ -231,6 +245,9 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                     fileName={frontmatter.title ?? 'article.md'}
                     theme={theme}
                     terms={terms}
+                    activeChunkIndex={activeChunkIndex}
+                    onChunkEnter={(i) => setAssistantActiveChunk(i)}
+                    onChunkLeave={() => setAssistantActiveChunk(null)}
                   />
                 </article>
                 {body && (

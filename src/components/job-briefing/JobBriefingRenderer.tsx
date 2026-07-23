@@ -29,6 +29,7 @@ type JobCardData = {
   company: string
   title: string
   city?: string
+  salary?: string
   origin?: string
   originIsToday: boolean
   points: string[]
@@ -108,6 +109,7 @@ function parseJobs(lines: string[]): JobCardData[] {
       const name = field[1]
       const value = field[2]
       if (name.includes('城市')) current.city = value.trim()
+      else if (name.includes('薪资')) current.salary = value.trim()
       else if (name.includes('源自')) {
         current.origin = value.trim()
         // 两种都视为「来自今日新动态」：显式标注（今日新动态），或事件类型前缀 [秋招开启]/[新岗位] 等
@@ -287,6 +289,7 @@ export function JobBriefingRenderer({ content, theme, fontSize }: Props) {
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-80 mb-3">
                         {job.city && <span>城市：{job.city}</span>}
+                        {job.salary && <span>薪资：{job.salary}</span>}
                       </div>
                       {job.origin && (
                         <div

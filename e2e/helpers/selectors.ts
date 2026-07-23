@@ -99,6 +99,7 @@ export const SELECTORS = {
     chatMessage: '[data-testid="chat-message"]',
     chatMessageSelection: '[data-testid="chat-message-selection"]',
     reasoningBlock: '[data-testid="reasoning-block"]',
+    searchErrorBanner: '[data-testid="assistant-search-error"]',
   },
   quote: {
     text: '[data-testid="quote-text"]',
@@ -131,6 +132,7 @@ export const SELECTORS = {
     constellationWell: '[data-testid="briefing-constellation-well"]',
     progress: '[data-testid="briefing-progress"]',
     progressStep: (key: string) => `[data-testid="briefing-progress-step-${key}"]`,
+    cancelButton: '[data-testid="briefing-cancel-button"]',
     generatedAt: '[data-testid="briefing-generated-at"]',
     cacheWriteFailedBadge: '[data-testid="briefing-cache-write-failed"]',
     swapPaintingButton: '[data-testid="briefing-swap-painting-button"]',
@@ -142,6 +144,7 @@ export const SELECTORS = {
     sourceDigestButton: '[data-testid="briefing-source-digest"]',
     sourceAnthropicButton: '[data-testid="briefing-source-anthropic"]',
     sourceJobBriefingButton: '[data-testid="briefing-source-job-briefing"]',
+    transferToWriting: '[data-testid="transfer-to-writing"]',
     receiveJobButton: '[data-testid="briefing-receive-job-button"]',
     jobProfileEntry: '[data-testid="job-briefing-profile-entry"]',
     deleteModeToggle: '[data-testid="briefing-delete-mode-toggle"]',
@@ -262,6 +265,8 @@ export const SELECTORS = {
     deleteButton: '[data-testid="anno-delete-button"]',
     markerPen: '[data-testid="anno-marker-pen"]',
     markedText: '[data-testid="anno-marked-text"]',
+    listButton: '[data-testid="annotation-list-button"]',
+    listItem: '[data-testid="annotation-list-item"]',
   },
   writing: {
     sourceButton: '[data-testid="briefing-source-writing"]',
