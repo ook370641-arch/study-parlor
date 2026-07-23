@@ -16,8 +16,8 @@ describe('BriefingError', () => {
     expect(onRetry).toHaveBeenCalledOnce()
   })
 
-  it('falls back to raw error code for unknown errors', () => {
+  it('falls back to generic message for unknown errors', () => {
     render(<BriefingError code="UNKNOWN_CODE" onRetry={vi.fn()} />)
-    expect(screen.getByText('简报生成失败：UNKNOWN_CODE')).toBeInTheDocument()
+    expect(screen.getByText('简报生成失败，请重试。')).toBeInTheDocument()
   })
 })
