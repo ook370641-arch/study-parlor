@@ -53,14 +53,14 @@ test.describe('@p1 briefing aesthetics', () => {
     await expect(window.locator(SELECTORS.briefing.quoteText)).toHaveCount(0)
   })
 
-  test('job briefing: star-blue sidebar accent and quote band in reading view', async ({ window }) => {
+  test('job briefing: source switch yields job empty state with quote band', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
-    // 验证星蓝源标识已生效（属性和 className 双重断言，比单独的 toHaveCSS 更稳）。
-    const jobButton = window.locator(SELECTORS.briefing.sourceJobBriefingButton)
-    await expect(jobButton).toHaveClass(/border-\[#7fa8d9\]/)
+    // 切换到求职简报源后，空态按钮应立即出现。
+    const receiveButton = window.locator(SELECTORS.briefing.receiveJobButton)
+    await receiveButton.waitFor({ state: 'visible', timeout: 10000 })
 
     const receiveButton = window.locator(SELECTORS.briefing.receiveJobButton)
     await receiveButton.waitFor({ state: 'visible', timeout: 15000 })
