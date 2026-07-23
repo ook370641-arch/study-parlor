@@ -411,6 +411,7 @@ export function Briefing() {
           ))}
         </ul>
         <p className="mt-2">删除「今天」的简报后，再次点击今天将重新生成。</p>
+        <p className="mt-2">将同时删除所选简报的旁注对话、标注与导读。</p>
       </ConfirmDialog>
     </div>
   )

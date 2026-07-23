@@ -6,6 +6,7 @@ import { chatNonStream } from '../lib/kimi'
 import { dumpRecovery } from '../lib/recovery'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { classifyFeed, resolveFeedOutcome, type FeedStatus } from '../lib/feed-status'
+import { deleteSiblingFiles } from '../lib/sibling-files'
 import type { AppConfig } from '../env'
 import type { BriefingResult, BriefingSource, BriefingSourceStatus, BriefingStage, Message, Profile } from '@shared/index'
 
@@ -528,6 +529,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
         return { ok: false as const, message: '文件不存在或路径非法' }
       }
       fs.rmSync(abs)
+      deleteSiblingFiles(abs)
       return { ok: true as const }
     } catch (err: any) {
       return { ok: false as const, message: err.message || String(err) }

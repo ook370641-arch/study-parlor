@@ -10,6 +10,7 @@ import {
   jobBriefingDir,
 } from '../lib/job-briefing'
 import { toJobErrorCode } from '../lib/job-error-codes'
+import { deleteSiblingFiles } from '../lib/sibling-files'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { getSearchApiKey } from '../lib/credentials'
 import { getCurrentState } from './state'
@@ -192,6 +193,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
         return { ok: false as const, message: '文件不存在或路径非法' }
       }
       fs.rmSync(abs)
+      deleteSiblingFiles(abs)
       return { ok: true as const }
     } catch (err: any) {
       return { ok: false as const, message: err.message || String(err) }
