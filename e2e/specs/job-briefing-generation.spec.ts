@@ -40,6 +40,9 @@ test.describe('@p1 job briefing generation', () => {
     const today = localToday()
     const file = path.join(testLibraryPath, '求职简报', `求职简报-${today}.md`)
     expect(fs.existsSync(file)).toBe(true)
+
+    // Salary rendered on job card
+    await expect(window.locator(SELECTORS.briefing.jobCard).first()).toContainText('25-40K')
   })
 
   test('profile fill removes hint banner and persists to state.json', async ({ window, testConfigDir }) => {

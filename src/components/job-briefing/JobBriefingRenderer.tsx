@@ -278,6 +278,7 @@ export function JobBriefingRenderer({ content, theme, fontSize }: Props) {
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-80 mb-3">
                         {job.city && <span>城市：{job.city}</span>}
+                        {job.salary && <span>薪资：{job.salary}</span>}
                       </div>
                       {job.origin && (
                         <div
