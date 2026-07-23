@@ -139,6 +139,7 @@ export const SELECTORS = {
     sourceDigestButton: '[data-testid="briefing-source-digest"]',
     sourceAnthropicButton: '[data-testid="briefing-source-anthropic"]',
     sourceJobBriefingButton: '[data-testid="briefing-source-job-briefing"]',
+    transferToWriting: '[data-testid="transfer-to-writing"]',
     receiveJobButton: '[data-testid="briefing-receive-job-button"]',
     jobProfileEntry: '[data-testid="job-briefing-profile-entry"]',
     deleteModeToggle: '[data-testid="briefing-delete-mode-toggle"]',

@@ -164,6 +164,12 @@ type AppStore = {
   generateJobBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadJobBriefingHistory: () => Promise<void>
   deleteJobBriefings: (filePaths: string[]) => Promise<void>
+  transferArticleToWriting: (args: {
+    name: string
+    content: string
+    sourceType: 'digest' | 'anthropic'
+    sourcePath: string
+  }) => Promise<void>
   setJobBriefingConfig: (config: JobBriefingConfig) => Promise<void>
   discoverJobBriefingPages: () => Promise<{ ok: true; companies: JobCompany[] } | { ok: false; error: JobErrorCode | string; message: string }>
 
@@ -674,6 +680,42 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ jobBriefing: { result: null, loading: false, error: null } })
     }
     await get().loadJobBriefingHistory()
+  },
+
+  transferArticleToWriting: async (args) => {
+    const sanitize = (n: string) =>
+      n.replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim() || '未命名'
+    const base = sanitize(args.name)
+    const fm = `---\ntitle: ${base}\nsource_type: ${args.sourceType}\nsource_path: ${args.sourcePath}\n---\n\n`
+    const body = fm + args.content
+
+    const tryCreate = async (name: string): Promise<string | null> => {
+      const r = await ipc.writingCreateFile({ root: 'writing', dir: '', name })
+      if (r.ok) return r.value.path
+      if (r.code === 'WRITING_NAME_CONFLICT') return null
+      throw new Error(r.message)
+    }
+
+    try {
+      let filePath = await tryCreate(base)
+      if (!filePath) {
+        const now = new Date()
+        const suffix = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
+        filePath = await tryCreate(`${base}-${suffix}`)
+      }
+      if (!filePath) {
+        get().showToast('转入写作失败：文件名冲突')
+        return
+      }
+      const w = await ipc.writingWrite({ path: filePath, body })
+      if (!w.ok) {
+        get().showToast('转入写作失败')
+        return
+      }
+      get().showToast('已转入写作')
+    } catch {
+      get().showToast('转入写作失败')
+    }
   },
 
   setJobBriefingConfig: async (config) => {

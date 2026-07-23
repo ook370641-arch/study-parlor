@@ -6,6 +6,7 @@ import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
 import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
+import { TransferToWritingButton } from '@/components/briefing/TransferToWritingButton'
 import type { Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -206,6 +207,15 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                     {frontmatter.authors && frontmatter.authors.length > 0 && (
                       <span>作者：{frontmatter.authors.join(', ')}</span>
                     )}
+                  </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <TransferToWritingButton
+                      name={frontmatter.title ?? 'article'}
+                      content={body}
+                      sourceType="anthropic"
+                      sourcePath={filePath}
+                      theme={theme}
+                    />
                   </div>
                   {frontmatter.summary && (
                     <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>

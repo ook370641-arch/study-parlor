@@ -6,6 +6,7 @@ import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnota
 import type { ArticleAssistantChunk } from '@shared/index'
 import type { TermDef } from '@/components/md/rehypeTermHighlight'
 import { BriefingSourceItem } from './BriefingSourceItem'
+import { TransferToWritingButton } from './TransferToWritingButton'
 
 export function NewspaperBriefingLayout({
   result,
@@ -26,6 +27,7 @@ export function NewspaperBriefingLayout({
 }) {
   const [expandedSources, setExpandedSources] = useState(false)
   const articleBodyRef = useRef<HTMLElement>(null)
+  const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
 
   return (
     <main
@@ -41,6 +43,17 @@ export function NewspaperBriefingLayout({
             <span>|</span>
             <span>{displayDate}</span>
           </div>
+          {filePath && (
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <TransferToWritingButton
+                name={articleName}
+                content={result.content}
+                sourceType="digest"
+                sourcePath={filePath}
+                theme="newspaper"
+              />
+            </div>
+          )}
         </header>
 
         <div
