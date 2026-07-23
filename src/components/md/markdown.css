@@ -527,6 +527,20 @@
 
 
 .article-term-highlight {
-  border-bottom: 1px dashed #d97757;
+  border-bottom: 1px dotted #d97757;
+  color: #d97757;
   cursor: help;
+}
+
+/* ===== Academic section heading ornament (学者夜话 ◆ 菱标) ===== */
+.briefing-body-academic .md-body h2::before {
+  content: '◆ ';
+  color: #d97757;
+  font-size: 0.62em;
+  vertical-align: 2px;
+}
+
+/* ===== Academic body rhythm ===== */
+.briefing-body-academic .md-body p {
+  line-height: 1.9;
 }

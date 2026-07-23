@@ -18,7 +18,7 @@ import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
-import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
+import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil } from '@/components/briefing'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
 import {
@@ -115,12 +115,7 @@ export function Briefing() {
       style={pageStyle}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
-      {isAcademic && (
-        <div
-          className="fixed inset-0 z-[1] bg-[#0c0806]/[0.72] pointer-events-none"
-          aria-hidden="true"
-        />
-      )}
+      {isAcademic && <BriefingVeil />}
       <BriefingSourceSidebar
         theme={theme}
         collapsed={sidebarCollapsed}
