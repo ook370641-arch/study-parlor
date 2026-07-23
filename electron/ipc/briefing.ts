@@ -289,6 +289,8 @@ function parseStructuredJson(raw: string): unknown {
   }
 }
 
+let activeGenerateAbort: AbortController | null = null
+
 export function registerBriefingIpc(cfg: AppConfig) {
   ipcMain.handle('briefing:generate', async (event, args: { date: string; profile: Profile; force?: boolean }): Promise<BriefingResult> => {
     const sender = event.sender
@@ -346,6 +348,10 @@ export function registerBriefingIpc(cfg: AppConfig) {
       }
     }
 
+    const genCtl = new AbortController()
+    activeGenerateAbort = genCtl
+
+    try {
     // E2E fast path: return mock briefing without hitting feeds/LLM when no cache.
     // Set E2E_BRIEFING_DISABLE_MOCK=1 to exercise the real fetch/LLM generation chain.
     // Also require E2E_CONFIG_DIR so unit tests (NODE_ENV=test) do not take this path.
@@ -355,6 +361,13 @@ export function registerBriefingIpc(cfg: AppConfig) {
       process.env.E2E_BRIEFING_DISABLE_MOCK !== '1'
     ) {
       emitProgress('fetching', 'MOCK')
+      const delayMs = Number(process.env.E2E_BRIEFING_MOCK_DELAY_MS ?? 0)
+      if (delayMs > 0) {
+        await new Promise<void>((resolve, reject) => {
+          const t = setTimeout(resolve, delayMs)
+          genCtl.signal.addEventListener('abort', () => { clearTimeout(t); reject(new Error('BRIEFING_ABORTED')) })
+        })
+      }
       emitProgress('extracting', 'MOCK')
       emitProgress('assembling', 'MOCK')
       emitProgress('finalizing', 'MOCK')
@@ -395,6 +408,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
       }),
     ])
 
+    if (genCtl.signal.aborted) throw new Error('BRIEFING_ABORTED')
     emitProgress('fetching')
 
     const feedStatuses: FeedStatus[] = [
@@ -427,6 +441,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
     })
 
     const llmCtl = new AbortController()
+    genCtl.signal.addEventListener('abort', () => llmCtl.abort())
     const llmTimeout = setTimeout(() => llmCtl.abort(), 300_000)
     let cacheWriteFailed = false
 
@@ -441,6 +456,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
           signal: llmCtl.signal,
         })
       } catch (err) {
+        if (genCtl.signal.aborted) throw new Error('BRIEFING_ABORTED')
         throw new Error(`LLM_ERROR: ${err instanceof Error ? err.message : String(err)}`)
       }
 
@@ -466,6 +482,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
           signal: llmCtl.signal,
         })
       } catch (err) {
+        if (genCtl.signal.aborted) throw new Error('BRIEFING_ABORTED')
         throw new Error(`LLM_ERROR: ${err instanceof Error ? err.message : String(err)}`)
       }
 
@@ -505,6 +522,9 @@ export function registerBriefingIpc(cfg: AppConfig) {
     } finally {
       clearTimeout(llmTimeout)
     }
+    } finally {
+      if (activeGenerateAbort === genCtl) activeGenerateAbort = null
+    }
   })
 
   ipcMain.handle('briefing:list', async (): Promise<{ date: string; filePath: string }[]> => {
@@ -535,4 +555,6 @@ export function registerBriefingIpc(cfg: AppConfig) {
       return { ok: false as const, message: err.message || String(err) }
     }
   })
+
+  ipcMain.handle('briefing:abort', async () => { activeGenerateAbort?.abort() })
 }

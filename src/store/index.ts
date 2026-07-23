@@ -141,6 +141,7 @@ type AppStore = {
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
   deleteBriefings: (filePaths: string[]) => Promise<void>
+  cancelBriefing: () => void
   setBriefingTheme: (theme: BriefingTheme) => Promise<void>
   increaseBriefingFontSize: () => Promise<void>
   decreaseBriefingFontSize: () => Promise<void>
@@ -164,6 +165,7 @@ type AppStore = {
   generateJobBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadJobBriefingHistory: () => Promise<void>
   deleteJobBriefings: (filePaths: string[]) => Promise<void>
+  cancelJobBriefing: () => void
   transferArticleToWriting: (args: {
     name: string
     content: string
@@ -596,6 +598,7 @@ export const useStore = create<AppStore>((set, get) => ({
       })
     } catch (err: any) {
       const raw = err.message || String(err)
+      if (raw.includes('BRIEFING_ABORTED')) return
       const error = raw.includes('FEED_EMPTY')
         ? 'FEED_EMPTY'
         : raw.includes('NETWORK_ERROR')
@@ -635,6 +638,12 @@ export const useStore = create<AppStore>((set, get) => ({
     await get().loadBriefingHistory()
   },
 
+  cancelBriefing: () => {
+    if (!get().briefing.loading) return
+    ipc.briefingAbort()
+    set({ briefing: { result: null, loading: false, error: null }, briefingStage: null })
+  },
+
   generateJobBriefing: async (date, opts) => {
     const s = get()
     if (s.jobBriefing.loading) return
@@ -645,6 +654,7 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null })
     } catch (err: any) {
       const raw = err.message || String(err)
+      if (raw.includes('JOB_ABORTED')) return
       // job-briefing IPC throws JOB_${code}; preserve the JOB_ prefix so
       // BriefingError.MESSAGES picks up the correct job-specific text.
       const error = raw.includes('JOB_MISSING_SEARCH_KEY') ? 'JOB_MISSING_SEARCH_KEY'
@@ -680,6 +690,12 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ jobBriefing: { result: null, loading: false, error: null } })
     }
     await get().loadJobBriefingHistory()
+  },
+
+  cancelJobBriefing: () => {
+    if (!get().jobBriefing.loading) return
+    ipc.jobBriefingAbort()
+    set({ jobBriefing: { result: null, loading: false, error: null }, jobBriefingStage: null })
   },
 
   transferArticleToWriting: async (args) => {

@@ -528,6 +528,7 @@ export type IpcApi = {
   briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
   briefingList: () => Promise<{ date: string; filePath: string }[]>
   briefingDelete: (args: { filePath: string }) => Promise<{ ok: true } | { ok: false; message: string }>
+  briefingAbort: () => Promise<void>
   bootFatal: () => Promise<string | null>
   bootStart: () => Promise<{ alreadyCompleted: boolean }>
   onBootProgress: (cb: (stage: string, progress: number) => void) => () => void
@@ -663,6 +664,7 @@ export type IpcApi = {
   jobBriefingGenerate: (args: { date: string; force?: boolean }) => Promise<JobBriefingResult>
   jobBriefingList: () => Promise<{ date: string; filePath: string }[]>
   jobBriefingDelete: (args: { filePath: string }) => Promise<{ ok: true } | { ok: false; message: string }>
+  jobBriefingAbort: () => Promise<void>
   jobBriefingDiscoverPages: () => Promise<
     | { ok: true; companies: JobCompany[] }
     | { ok: false; code: JobErrorCode; message: string }

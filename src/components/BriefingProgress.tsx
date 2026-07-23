@@ -19,9 +19,10 @@ const JOB_STAGES: { key: BriefingStage; label: string }[] = [
 
 interface Props {
   stage: BriefingStage
+  onCancel?: () => void
 }
 
-export function BriefingProgress({ stage }: Props) {
+export function BriefingProgress({ stage, onCancel }: Props) {
   const theme = useStore((s) => s.briefingTheme)
   const source = useStore((s) => s.briefingSource)
   const STAGES = source === 'job-briefing' ? JOB_STAGES : DIGEST_STAGES
@@ -76,6 +77,17 @@ export function BriefingProgress({ stage }: Props) {
           )
         })}
       </div>
+      {onCancel && (
+        <button
+          data-testid="briefing-cancel-button"
+          onClick={onCancel}
+          className={`mt-8 text-sm underline underline-offset-4 ${
+            isAcademic ? 'text-parchment/50 hover:text-parchment' : 'text-[#6b5d52] hover:text-[#1a1a1a]'
+          }`}
+        >
+          取消生成
+        </button>
+      )}
     </div>
   )
 }

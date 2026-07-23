@@ -128,6 +128,7 @@ export const SELECTORS = {
     retryButton: '[data-testid="briefing-retry-button"]',
     progress: '[data-testid="briefing-progress"]',
     progressStep: (key: string) => `[data-testid="briefing-progress-step-${key}"]`,
+    cancelButton: '[data-testid="briefing-cancel-button"]',
     generatedAt: '[data-testid="briefing-generated-at"]',
     cacheWriteFailedBadge: '[data-testid="briefing-cache-write-failed"]',
     swapPaintingButton: '[data-testid="briefing-swap-painting-button"]',

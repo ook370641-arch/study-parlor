@@ -22,6 +22,8 @@ function validateDate(date: string): void {
   }
 }
 
+let activeJobAbort: AbortController | null = null
+
 export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBriefingConfig) {
   ipcMain.handle('job-briefing:generate', async (event, args: { date: string; force?: boolean }): Promise<JobBriefingResult> => {
     const sender = event.sender
@@ -66,6 +68,10 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       }
     }
 
+    const genCtl = new AbortController()
+    activeJobAbort = genCtl
+
+    try {
     // E2E fast path
     if (
       process.env.NODE_ENV === 'test' &&
@@ -73,6 +79,13 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       process.env.E2E_JOB_BRIEFING_DISABLE_MOCK !== '1'
     ) {
       emitProgress('scanning-events', 'MOCK')
+      const delayMs = Number(process.env.E2E_JOB_BRIEFING_MOCK_DELAY_MS ?? 0)
+      if (delayMs > 0) {
+        await new Promise<void>((resolve, reject) => {
+          const t = setTimeout(resolve, delayMs)
+          genCtl.signal.addEventListener('abort', () => { clearTimeout(t); reject(new Error('JOB_ABORTED')) })
+        })
+      }
       emitProgress('digging-jobs', 'MOCK')
       emitProgress('aggregating-questions', 'MOCK')
       emitProgress('synthesizing', 'MOCK')
@@ -166,9 +179,14 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
     try {
       return await generateJobBriefing(cfg, config, profile, date, {
         emitProgress: (stage, detail) => emitProgress(stage, detail),
+        signal: genCtl.signal,
       })
     } catch (err: any) {
+      if (genCtl.signal.aborted) throw new Error('JOB_ABORTED')
       throw new Error(`JOB_${toJobErrorCode(err)}`)
+    }
+    } finally {
+      if (activeJobAbort === genCtl) activeJobAbort = null
     }
   })
 
@@ -233,4 +251,6 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       return { ok: false, code: 'NETWORK_ERROR', message: err.message || String(err) }
     }
   })
+
+  ipcMain.handle('job-briefing:abort', async () => { activeJobAbort?.abort() })
 }

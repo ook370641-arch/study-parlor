@@ -631,6 +631,9 @@ export async function generateJobBriefing(
   // 独立 300s 计时，不与其他阶段共享总预算：reasoning_effort:'high' 常跑数分钟，
   // 共享预算曾在此阶段误 abort，DOMException code=20 以 "JOB_20" 冒泡给用户。
   const synthesisCtl = new AbortController()
+  if (opts.signal?.aborted) throw new Error('ABORTED')
+  const onOuterAbort = () => synthesisCtl.abort()
+  opts.signal?.addEventListener('abort', onOuterAbort)
   const synthesisTimeout = setTimeout(() => synthesisCtl.abort(), 300_000)
   let content: string
   try {
@@ -641,10 +644,12 @@ export async function generateJobBriefing(
       signal: synthesisCtl.signal,
     })
   } catch (err) {
+    if (opts.signal?.aborted) throw new Error('ABORTED')
     const code = toJobErrorCode(err)
     throw Object.assign(new Error(code), { code: code as JobErrorCode })
   } finally {
     clearTimeout(synthesisTimeout)
+    opts.signal?.removeEventListener('abort', onOuterAbort)
   }
 
   opts.emitProgress?.('finalizing')
