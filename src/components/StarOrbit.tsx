@@ -3,6 +3,7 @@ interface StarOrbitProps {
   radius?: number
   period?: number
   showLines?: boolean
+  tone?: 'night' | 'paper'
 }
 
 export function StarOrbit({
@@ -10,8 +11,10 @@ export function StarOrbit({
   radius = 12,
   period = 2000,
   showLines = false,
+  tone = 'night',
 }: StarOrbitProps) {
   const size = radius * 2 + 8
+  const isNight = tone === 'night'
 
   const stars = Array.from({ length: starCount }, (_, i) => ({
     delay: -(i / starCount) * period,
@@ -34,7 +37,7 @@ export function StarOrbit({
             cx={size / 2}
             cy={size / 2}
             r={radius * 0.7}
-            stroke="rgba(217,119,87,0.1)"
+            stroke={isNight ? 'rgba(217,119,87,0.1)' : 'rgba(26,26,26,0.15)'}
             strokeWidth="0.5"
             fill="none"
             strokeDasharray="4,4"
@@ -44,7 +47,7 @@ export function StarOrbit({
       {stars.map((star, i) => (
         <div
           key={i}
-          className={`absolute w-1.5 h-1.5 rounded-full ${star.isEmber ? 'bg-ember/70' : 'bg-parchment/50'}`}
+          className={`absolute w-1.5 h-1.5 rounded-full ${star.isEmber ? 'bg-ember/70' : isNight ? 'bg-parchment/50' : 'bg-[#1a1a1a]/50'}`}
           style={{
             top: '50%',
             left: '50%',

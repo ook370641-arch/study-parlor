@@ -16,7 +16,7 @@ export function BriefingEmptyState({ hint, buttonLabel, buttonTestId, onReceive 
     <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
       <div className="flex flex-col items-center gap-5 text-center">
         <div data-testid="briefing-empty-orbit">
-          <StarOrbit starCount={2} radius={10} period={2400} showLines />
+          <StarOrbit starCount={2} radius={10} period={2400} showLines tone={isAcademic ? 'night' : 'paper'} />
         </div>
         <Quote surface="briefing" />
         <p className={isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}>{hint}</p>

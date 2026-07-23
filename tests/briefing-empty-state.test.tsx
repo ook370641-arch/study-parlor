@@ -103,6 +103,13 @@ describe('Briefing empty state', () => {
     expect(screen.getByTestId('briefing-empty-orbit')).toBeInTheDocument()
   })
 
+  it('uses ink orbit stars in newspaper theme', () => {
+    useStore.setState({ briefingTheme: 'newspaper' })
+    render(<Briefing />)
+    const orbit = screen.getByTestId('briefing-empty-orbit')
+    expect(orbit.innerHTML).toContain('1a1a1a')
+  })
+
   it('shows quote band and orbit in job empty state', () => {
     useStore.setState({
       briefingSource: 'job-briefing',
