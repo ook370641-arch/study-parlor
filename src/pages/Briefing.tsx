@@ -18,7 +18,7 @@ import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
-import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil } from '@/components/briefing'
+import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil, BriefingEmptyState } from '@/components/briefing'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
 import {
@@ -226,24 +226,12 @@ export function Briefing() {
               <AnthropicBlogPanel theme={theme} />
             ) : isJob ? (
               jobEmptyState ? (
-                <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
-                  <div className="text-center">
-                    <p className={`mb-6 ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
-                      今日求职简报尚未生成
-                    </p>
-                    <button
-                      data-testid="briefing-receive-job-button"
-                      onClick={() => generateJobBriefing(today)}
-                      className={`px-8 py-3 rounded text-[15px] font-serif transition-colors ${
-                        isAcademic
-                          ? 'bg-ember text-white hover:bg-ember/90'
-                          : 'bg-[#1a1a1a] text-white hover:bg-[#333]'
-                      }`}
-                    >
-                      生成求职简报
-                    </button>
-                  </div>
-                </main>
+                <BriefingEmptyState
+                  hint="今日求职简报尚未生成"
+                  buttonLabel="生成求职简报"
+                  buttonTestId="briefing-receive-job-button"
+                  onReceive={() => generateJobBriefing(today)}
+                />
               ) : isJobLoading ? (
                 <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
                   {jobStage ? (
@@ -292,24 +280,12 @@ export function Briefing() {
                 </main>
               ) : null
             ) : emptyState ? (
-              <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
-                <div className="text-center">
-                  <p className={`mb-6 ${isAcademic ? 'text-parchment/70' : 'text-[#6b5d52]'}`}>
-                    今日夜航简报尚未生成
-                  </p>
-                  <button
-                    data-testid="briefing-receive-digest-button"
-                    onClick={() => generateBriefing(today)}
-                    className={`px-8 py-3 rounded text-[15px] font-serif transition-colors ${
-                      isAcademic
-                        ? 'bg-ember text-white hover:bg-ember/90'
-                        : 'bg-[#1a1a1a] text-white hover:bg-[#333]'
-                    }`}
-                  >
-                    查收日报
-                  </button>
-                </div>
-              </main>
+              <BriefingEmptyState
+                hint="今日夜航简报尚未生成"
+                buttonLabel="查收日报"
+                buttonTestId="briefing-receive-digest-button"
+                onReceive={() => generateBriefing(today)}
+              />
             ) : isDigestLoading ? (
               <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
                 {stage ? (

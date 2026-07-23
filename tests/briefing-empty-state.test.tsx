@@ -96,4 +96,21 @@ describe('Briefing empty state', () => {
     render(<Briefing />)
     expect(screen.queryByTestId('briefing-receive-digest-button')).not.toBeInTheDocument()
   })
+
+  it('shows quote band and orbit in digest empty state', () => {
+    render(<Briefing />)
+    expect(screen.getByTestId('quote-text')).toBeInTheDocument()
+    expect(screen.getByTestId('briefing-empty-orbit')).toBeInTheDocument()
+  })
+
+  it('shows quote band and orbit in job empty state', () => {
+    useStore.setState({
+      briefingSource: 'job-briefing',
+      jobBriefing: { result: null, loading: false, error: null },
+    })
+    render(<Briefing />)
+    expect(screen.getByTestId('briefing-receive-job-button')).toBeInTheDocument()
+    expect(screen.getByTestId('quote-text')).toBeInTheDocument()
+    expect(screen.getByTestId('briefing-empty-orbit')).toBeInTheDocument()
+  })
 })
