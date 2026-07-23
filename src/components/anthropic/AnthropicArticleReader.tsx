@@ -7,6 +7,7 @@ import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
 import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
 import { TransferToWritingButton } from '@/components/briefing/TransferToWritingButton'
+import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 import type { Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -216,6 +217,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                       sourcePath={filePath}
                       theme={theme}
                     />
+                    <AnnotationListButton articlePath={filePath} theme={theme} />
                   </div>
                   {frontmatter.summary && (
                     <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>

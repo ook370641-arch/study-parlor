@@ -260,6 +260,8 @@ export const SELECTORS = {
     deleteButton: '[data-testid="anno-delete-button"]',
     markerPen: '[data-testid="anno-marker-pen"]',
     markedText: '[data-testid="anno-marked-text"]',
+    listButton: '[data-testid="annotation-list-button"]',
+    listItem: '[data-testid="annotation-list-item"]',
   },
   writing: {
     sourceButton: '[data-testid="briefing-source-writing"]',

@@ -7,6 +7,7 @@ import type { ArticleAssistantChunk } from '@shared/index'
 import type { TermDef } from '@/components/md/rehypeTermHighlight'
 import { BriefingSourceItem } from './BriefingSourceItem'
 import { TransferToWritingButton } from './TransferToWritingButton'
+import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 
 export function AcademicBriefingLayout({
   result,
@@ -48,6 +49,7 @@ export function AcademicBriefingLayout({
                 sourcePath={filePath}
                 theme="academic"
               />
+              <AnnotationListButton articlePath={filePath} theme="academic" />
             </div>
           )}
         </header>
