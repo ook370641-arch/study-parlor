@@ -274,7 +274,7 @@ type AppStore = {
   saveAssistantSession: () => Promise<void>
   sendAssistantMessage: (text: string) => Promise<void>
   retryAssistantMessage: () => Promise<void>
-  runAssistantStream: (history: ArticleAssistantMessage[], useSearch: boolean) => Promise<void>
+  runAssistantStream: (history: ArticleAssistantMessage[], useSearch: boolean, selection?: string) => Promise<void>
   applyAssistantSearchResult: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void
   appendAssistantChunk: (text: string) => void
   appendAssistantReasoning: (text: string) => void
@@ -1197,10 +1197,13 @@ export const useStore = create<AppStore>((set, get) => ({
     const content = text.trim()
     if (!content && !s.pendingSelection) return
     const useSearch = get().assistantSearchEnabled
-    const userMessage: ArticleAssistantMessage = { role: 'user', content, selection: s.pendingSelection }
+    // 发送即消费选段：chip 随之清除，下一条消息不再重复注入同一选段。
+    // 选段值必须显式传给 runAssistantStream——它会重新 get()，读不到快照里的值。
+    const selection = s.pendingSelection
+    const userMessage: ArticleAssistantMessage = { role: 'user', content, selection }
     const history = [...s.messages, userMessage]
-    set({ assistantSession: { ...s, messages: history, retryContext: { text, useSearch } } })
-    await get().runAssistantStream(history, useSearch)
+    set({ assistantSession: { ...s, messages: history, retryContext: { text, useSearch }, pendingSelection: undefined } })
+    await get().runAssistantStream(history, useSearch, selection)
   },
 
   retryAssistantMessage: async () => {
@@ -1209,11 +1212,12 @@ export const useStore = create<AppStore>((set, get) => ({
     let msgs = s.messages
     const last = msgs.at(-1)
     if (last && last.role === 'assistant' && last.content.trim() === '') msgs = msgs.slice(0, -1)
+    const lastUser = [...msgs].reverse().find((m) => m.role === 'user')
     set({ assistantSession: { ...s, messages: msgs, chatError: null } })
-    await get().runAssistantStream(msgs, s.retryContext.useSearch)
+    await get().runAssistantStream(msgs, s.retryContext.useSearch, lastUser?.selection)
   },
 
-  runAssistantStream: async (history, useSearch) => {
+  runAssistantStream: async (history, useSearch, selection) => {
     const s = get().assistantSession
     if (!s) return
     resetAssistantStreamBuffers()
@@ -1245,7 +1249,7 @@ export const useStore = create<AppStore>((set, get) => ({
         articleType: s.contextType,
         messages: history,
         annotations,
-        selection: s.pendingSelection,
+        selection,
         useSearch,
         guide: s.guide,
         socraticMode: get().assistantSocraticMode,

@@ -47,9 +47,11 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
     }
   }, [parentPath]) // intentionally narrow deps — only remount on path change
 
-  // Listen for text selection in the document
+  // Listen for text selection — 仅文章容器（.briefing-article-body）内的选区
+  // 算「文章选段」；聊天窗/导读栏内的选字不触发 pendingSelection。
   useEffect(() => {
-    const onMouseUp = () => {
+    const onMouseUp = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement | null)?.closest?.('.briefing-article-body')) return
       // Small delay to let the selection settle
       setTimeout(() => {
         const sel = window.getSelection()?.toString().trim()
