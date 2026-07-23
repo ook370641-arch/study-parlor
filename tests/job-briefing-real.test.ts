@@ -3,14 +3,12 @@
  *
  * @vitest-environment node
  *
- * 默认跳过（真实 API 调用耗时 ~8-15 分钟且消耗配额），显式开启：
- *   REAL_API=1 npx vitest run tests/job-briefing-real.test.ts
+ * 默认运行（真实 API 调用耗时 ~8-15 分钟且消耗配额）。
+ * 需要项目根目录 .env 配置 KIMI_API_KEY 与 TAVILY_API_KEY（非占位符）。
  *
  * 断言迭代零成本回放（使用最近一次真实生成的 fixture）：
- *   REAL_API=1 REAL_TEST_REPLAY=1 npx vitest run tests/job-briefing-real.test.ts
+ *   REAL_TEST_REPLAY=1 npx vitest run tests/job-briefing-real.test.ts
  *   REAL_TEST_REPLAY 也接受 filled / empty 只回放对应一次生成。
- *
- * 运行条件：项目根目录 .env 须配置 KIMI_API_KEY 与 TAVILY_API_KEY（非占位符）。
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
@@ -21,8 +19,6 @@ import { loadEnv, type AppConfig } from '../electron/env'
 import { generateJobBriefing, normalizeJobBriefingConfig } from '../electron/lib/job-briefing'
 import { normalizeJobProfile, DEFAULT_JOB_PROFILE } from '../src/lib/job-briefing-defaults'
 import type { JobBriefingResult } from '../src/types'
-
-const skip = process.env.REAL_API !== '1'
 
 function readDotEnv(): Record<string, string> {
   const envPath = path.resolve(process.cwd(), '.env')
@@ -95,7 +91,7 @@ beforeAll(async () => {
   fs.mkdirSync(cfg.libraryPath, { recursive: true })
 }, 30_000)
 
-describe.skipIf(skip)('job briefing real API pipeline', () => {
+describe('job briefing real API pipeline', () => {
   const FILLED_PROFILE = normalizeJobProfile({
     targetRoles: ['AI产品经理', '模型产品经理'],
     direction: '大模型/Agent 产品，偏评测与平台',
