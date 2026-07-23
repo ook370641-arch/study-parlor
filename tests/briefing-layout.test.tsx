@@ -183,3 +183,31 @@ describe('Briefing layout redesign', () => {
     expect(screen.getByRole('link', { name: 'link' })).toBeInTheDocument()
   })
 })
+
+describe('BriefingLayout quote band', () => {
+  beforeEach(() => cleanup())
+
+  const quoteResult = {
+    title: 'Test',
+    date: '2026-07-11',
+    content: 'Body text with [link](https://example.com).',
+    sources: [],
+    filePath: '/x.md',
+    cached: false,
+    generatedAt: new Date().toISOString(),
+    sourceStatus: { x: 'ok', podcasts: 'ok', blogs: 'ok' },
+  } as const
+
+  const quoteParsed = {
+    sections: [{ title: 'X / Twitter', body: 'Body text with [link](https://example.com).' }],
+    sources: [{ title: 'X', items: ['[tweet](https://example.com)'] }],
+  }
+
+  it('academic layout shows the quote band; newspaper does not', () => {
+    render(<AcademicBriefingLayout result={quoteResult as any} parsed={quoteParsed} displayDate="2026 年 07 月 11 日" />)
+    expect(screen.getByTestId('quote-text')).toBeInTheDocument()
+    cleanup()
+    render(<NewspaperBriefingLayout result={quoteResult as any} parsed={quoteParsed} displayDate="2026 年 07 月 11 日" />)
+    expect(screen.queryByTestId('quote-text')).not.toBeInTheDocument()
+  })
+})

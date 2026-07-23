@@ -6,6 +6,7 @@ import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnota
 import type { ArticleAssistantChunk } from '@shared/index'
 import type { TermDef } from '@/components/md/rehypeTermHighlight'
 import { BriefingSourceItem } from './BriefingSourceItem'
+import { Quote } from '@/components/Quote'
 
 export function AcademicBriefingLayout({
   result,
@@ -37,6 +38,9 @@ export function AcademicBriefingLayout({
         <header className="text-center mb-8">
           <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2">{result.title}</h1>
           <p className="text-sm text-[#e8d5b7]/60">{displayDate}</p>
+          <div className="mt-5 flex justify-center">
+            <Quote surface="briefing" />
+          </div>
         </header>
 
         <div

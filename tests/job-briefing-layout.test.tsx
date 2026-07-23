@@ -146,3 +146,25 @@ describe('JobBriefingRenderer four sections', () => {
     expect(origin).toHaveAttribute('data-today', 'true')
   })
 })
+
+describe('JobBriefingRenderer quote band and ornaments', () => {
+  afterEach(cleanup)
+
+  it('shows the quote band at top in academic theme', () => {
+    renderAcademic()
+    expect(screen.getByTestId('quote-text')).toBeInTheDocument()
+  })
+
+  it('hides the quote band in newspaper theme', () => {
+    render(<JobBriefingRenderer content={CONTENT} theme="newspaper" fontSize="base" />)
+    expect(screen.queryByTestId('quote-text')).not.toBeInTheDocument()
+  })
+
+  it('decorates academic section titles with an aria-hidden amber diamond', () => {
+    renderAcademic()
+    const heading = screen.getByRole('heading', { name: '今日新动态' })
+    const ornament = heading.querySelector('span[aria-hidden="true"]')
+    expect(ornament).not.toBeNull()
+    expect(ornament!.textContent).toBe('◆')
+  })
+})

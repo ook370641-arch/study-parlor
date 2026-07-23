@@ -8,6 +8,7 @@ import {
   ACADEMIC_HEADING_STYLES,
   NEWSPAPER_HEADING_STYLES,
 } from '@/lib/briefing-font-size'
+import { Quote } from '@/components/Quote'
 
 interface Props {
   content: string
@@ -213,6 +214,11 @@ export function JobBriefingRenderer({ content, theme, fontSize }: Props) {
       className={`text-2xl mb-6 border-b pb-2 ${sectionTitle}`}
       style={{ fontSize: headingStyle.size, fontWeight: headingStyle.weight }}
     >
+      {isAcademic && (
+        <span aria-hidden="true" className="mr-2" style={{ color: '#d97757', fontSize: '0.62em', verticalAlign: '2px' }}>
+          ◆
+        </span>
+      )}
       {title}
     </h2>
   )
@@ -222,6 +228,11 @@ export function JobBriefingRenderer({ content, theme, fontSize }: Props) {
       className={`max-w-3xl mx-auto space-y-8 ${pageClass}`}
       style={{ fontSize: bodyStyle.size, fontWeight: bodyStyle.weight }}
     >
+      {isAcademic && (
+        <div className="flex justify-center">
+          <Quote surface="briefing" />
+        </div>
+      )}
       {sections.map((section, idx) => {
         if (section.kind === 'events') {
           return (

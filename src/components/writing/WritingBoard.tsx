@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { WritingToolbar } from './WritingToolbar'
 import { ACADEMIC_BODY_STYLES } from '@/lib/briefing-font-size'
+import { Quote } from '@/components/Quote'
 
 const TONE_COLORS = {
   parchment: '#e8d5b7',
@@ -65,6 +66,9 @@ export function WritingBoard() {
       {/* Editor area */}
       <div data-testid="writing-editor" className="flex-1 overflow-y-auto px-8 py-6"
         style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}>
+        <div className="flex justify-center mb-4">
+          <Quote surface="briefing" />
+        </div>
         <WritingEditor
           initial={file.body}
           onChange={(md) => updateWritingBody(md)}

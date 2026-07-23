@@ -40,7 +40,7 @@
 ### 语录带落位（四处）
 
 1. **digest 阅读态**：`AcademicBriefingLayout` header 区，`displayDate` 之下、正文之上
-2. **求职阅读态**：`JobBriefingRenderer` 容器顶部（profile-hint 之上）
+2. **求职阅读态**：`JobBriefingRenderer` 容器顶部（位于 profile-hint 之下；hint 仅在档案为空时出现，不值得为它把语录带拉进页面层）
 3. **Anthropic 阅读页**：文章 meta 之下、正文之上（挂在阅读器容器内，列表态不显示）
 4. **写作页**：Milkdown 工具栏之下、编辑区之上；随编辑区滚动，不占固定高度；助手面板展开时随编辑区同宽收缩
 

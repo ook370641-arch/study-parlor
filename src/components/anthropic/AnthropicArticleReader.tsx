@@ -6,6 +6,7 @@ import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
 import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
+import { Quote } from '@/components/Quote'
 import type { Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -210,6 +211,11 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                   {frontmatter.summary && (
                     <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
                       {frontmatter.summary}
+                    </div>
+                  )}
+                  {isAcademic && (
+                    <div className="mt-6 flex justify-center">
+                      <Quote surface="briefing" />
                     </div>
                   )}
                 </header>
