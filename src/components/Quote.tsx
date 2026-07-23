@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { pickRandomQuote, type Quote as QuoteType } from '@/lib/quotes'
 
 type Props = {
-  surface: 'cover' | 'home' | 'study'
+  surface: 'cover' | 'home' | 'study' | 'briefing'
 }
 
 export function Quote({ surface }: Props) {
@@ -17,6 +17,41 @@ export function Quote({ surface }: Props) {
   if (!quote) return null
 
   const isCover = surface === 'cover'
+
+  if (surface === 'briefing') {
+    return (
+      <div className="group max-w-[480px] text-center" data-testid="quote-band">
+        <div className="border-t border-b border-ember/35 px-4 py-2.5">
+          <div
+            data-testid="quote-text"
+            className="font-serif italic text-[13px] leading-relaxed text-parchment"
+            style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}
+          >
+            “{quote.text}”
+          </div>
+          <div className="mt-1 inline-flex items-center gap-2 font-sans text-[10px] text-parchment/50">
+            <span data-testid="quote-meta">
+              — {quote.author}
+              {quote.source && (
+                <>
+                  <span className="mx-1 text-parchment/30">·</span>
+                  {quote.source}
+                </>
+              )}
+            </span>
+            <button
+              onClick={refresh}
+              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-parchment/40 hover:text-ember transition-opacity"
+              data-testid="quote-refresh-button"
+              title="换一句"
+            >
+              ↻
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
