@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useStore } from '@/store'
 
 export type BriefingHistoryItem = {
   date: string
@@ -26,6 +27,8 @@ function formatLabel(date: string): string {
 
 export function BriefingDateColumn({ collapsed, history, currentDate, today, onSelect, onReceiveToday, theme, todayLabel = '查收日报', onDelete }: Props) {
   const isAcademic = theme !== 'newspaper'
+  const source = useStore((s) => s.briefingSource)
+  const jobBlue = isAcademic && source === 'job-briefing'
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
@@ -33,7 +36,9 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
     ? 'text-parchment/70 hover:bg-parchment/10 hover:text-parchment'
     : 'text-[#6b5d52] hover:bg-black/5 hover:text-[#1a1a1a]'
   const activeItem = isAcademic
-    ? 'bg-ember/20 text-ember border border-ember/40'
+    ? jobBlue
+      ? 'bg-[#7fa8d9]/20 text-[#7fa8d9] border border-[#7fa8d9]/40'
+      : 'bg-ember/20 text-ember border border-ember/40'
     : 'bg-[#1a1a1a] text-white'
 
   // Today is always rendered as the synthetic top entry, so drop any history
@@ -64,7 +69,7 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
           data-testid="briefing-date-today-mini"
           onClick={onReceiveToday}
           title={todayLabel}
-          className={`w-8 h-8 rounded flex items-center justify-center ${isAcademic ? 'bg-ember/20 text-ember' : 'bg-[#1a1a1a] text-white'}`}
+          className={`w-8 h-8 rounded flex items-center justify-center ${isAcademic ? (jobBlue ? 'bg-[#7fa8d9]/20 text-[#7fa8d9]' : 'bg-ember/20 text-ember') : 'bg-[#1a1a1a] text-white'}`}
         >
           今
         </button>

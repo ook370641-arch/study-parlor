@@ -76,7 +76,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         border: 'border-r border-[rgba(232,213,183,0.18)]',
         headerText: 'text-parchment',
         toggle: 'text-parchment/60 hover:text-parchment',
-        active: 'bg-[rgba(232,213,183,0.1)] text-parchment border-[#d97757]',
+        active: 'bg-[rgba(232,213,183,0.1)] text-parchment',
         inactive: 'text-parchment/70 hover:bg-[rgba(232,213,183,0.06)]',
         headerBorder: 'border-b border-[rgba(232,213,183,0.18)]',
       }
@@ -85,7 +85,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         border: 'border-r border-[#c9c3b8]',
         headerText: 'text-[#2a1f1a]',
         toggle: 'text-[#2a1f1a]/60 hover:text-[#2a1f1a]',
-        active: 'bg-[rgba(0,0,0,0.06)] text-[#2a1f1a] border-[#1a1a1a]',
+        active: 'bg-[rgba(0,0,0,0.06)] text-[#2a1f1a]',
         inactive: 'text-[#2a1f1a]/70 hover:bg-[rgba(0,0,0,0.04)]',
         headerBorder: 'border-b border-[#c9c3b8]',
       }
@@ -147,7 +147,13 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
                 setSource(item.id)
                 if (collapsed) onToggle()
               }}
-              className={`${base} ${isActive ? `rounded-none border-l-[3px] ${themeClasses.active}` : themeClasses.inactive}`}
+              className={`${base} ${isActive ? `${themeClasses.active} ${
+                isAcademic
+                  ? source === 'job-briefing'
+                    ? 'border-[#7fa8d9] rounded-none border-l-[3px]'
+                    : 'border-[#d97757] rounded-none border-l-[3px]'
+                  : 'border-[#1a1a1a] rounded-none border-l-[3px]'
+              }` : themeClasses.inactive}`}
               title={item.label}
             >
               <Icon />

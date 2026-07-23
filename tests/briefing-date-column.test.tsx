@@ -4,6 +4,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 vi.mock('@/lib/ipc', () => ({ ipc: { patchState: vi.fn(), getState: vi.fn() } }))
 vi.mock('@/lib/paintings', () => ({ manifest: [], pickRandom: vi.fn(() => null) }))
 
+import { useStore } from '@/store'
 import { BriefingDateColumn } from '@/components/BriefingDateColumn'
 
 describe('BriefingDateColumn', () => {
@@ -117,5 +118,22 @@ describe('BriefingDateColumn', () => {
       />
     )
     expect(screen.getByText('暂无往期简报')).toBeInTheDocument()
+  })
+
+  it('tints the today entry star-blue when job source is active', () => {
+    useStore.setState({ briefingSource: 'job-briefing' })
+    render(
+      <BriefingDateColumn
+        collapsed={true}
+        history={[]}
+        currentDate={undefined}
+        today="2026-07-23"
+        onSelect={() => {}}
+        onReceiveToday={() => {}}
+        theme="academic"
+      />
+    )
+    const todayMini = screen.getByTestId('briefing-date-today-mini')
+    expect(todayMini.className).toContain('#7fa8d9')
   })
 })

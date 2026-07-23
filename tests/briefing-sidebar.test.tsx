@@ -101,6 +101,20 @@ describe('BriefingSourceSidebar', () => {
     expect(useStore.getState().briefingSource).toBe('anthropic')
   })
 
+  it('uses star-blue left border for the active job source under academic theme', () => {
+    useStore.setState({ briefingSource: 'job-briefing' })
+    render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
+    const jobButton = screen.getByTestId('briefing-source-job-briefing')
+    expect(jobButton.className).toContain('border-[#7fa8d9]')
+  })
+
+  it('keeps ember left border for the active digest source under academic theme', () => {
+    useStore.setState({ briefingSource: 'digest' })
+    render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
+    const digestButton = screen.getByTestId('briefing-source-digest')
+    expect(digestButton.className).toContain('border-[#d97757]')
+  })
+
   it('has z-index above surface background', () => {
     render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
     const aside = screen.getByTestId('briefing-source-sidebar')
