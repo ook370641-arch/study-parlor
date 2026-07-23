@@ -58,10 +58,7 @@ test.describe('@p1 briefing aesthetics', () => {
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
-    // 切换到求职简报源后，空态按钮应立即出现。
-    const receiveButton = window.locator(SELECTORS.briefing.receiveJobButton)
-    await receiveButton.waitFor({ state: 'visible', timeout: 10000 })
-
+    // 切换到求职简报源后，空态按钮应立即出现（证明 store briefingSource 已更新）。
     const receiveButton = window.locator(SELECTORS.briefing.receiveJobButton)
     await receiveButton.waitFor({ state: 'visible', timeout: 15000 })
     await receiveButton.click()
