@@ -61,6 +61,8 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<{ code: string; message: string } | null>(null)
   const articleBodyRef = useRef<HTMLElement | null>(null)
+  const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
+  const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
 
   useEffect(() => {
     let cancelled = false
@@ -237,6 +239,9 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                     fileName={frontmatter.title ?? 'article.md'}
                     theme={theme}
                     terms={terms}
+                    activeChunkIndex={activeChunkIndex}
+                    onChunkEnter={(i) => setAssistantActiveChunk(i)}
+                    onChunkLeave={() => setAssistantActiveChunk(null)}
                   />
                 </article>
                 {body && (

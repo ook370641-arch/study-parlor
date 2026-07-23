@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useStore } from '@/store'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
@@ -28,6 +29,8 @@ export function NewspaperBriefingLayout({
 }) {
   const [expandedSources, setExpandedSources] = useState(false)
   const articleBodyRef = useRef<HTMLElement>(null)
+  const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
+  const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
 
   return (
@@ -69,6 +72,9 @@ export function NewspaperBriefingLayout({
             fileName="briefing.md"
             theme="newspaper"
             terms={terms}
+            activeChunkIndex={activeChunkIndex}
+            onChunkEnter={(i) => setAssistantActiveChunk(i)}
+            onChunkLeave={() => setAssistantActiveChunk(null)}
           />
         </div>
 
