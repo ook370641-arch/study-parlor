@@ -108,6 +108,8 @@ npx playwright show-trace e2e-results/<trace-file>.zip
 > 求职简报的失败路径通过 `seedJobBriefing(libPath, date, '## Error\nJOB_XXX')`
 > 注入——主进程命中缓存错误 rethrow 分支（`electron/ipc/job-briefing.ts`），
 > 无需关闭 mock 即可确定性覆盖错误 UI/重试链路（见 `job-briefing-error.spec.ts`）。
+>
+> `anthropic-blog.spec.ts` / `anthropic-blog-ui.spec.ts` 打真实 anthropic.com，已标记 `@real`，不在 core 套件（`@p0|@p1`）内；确定性变体见 `anthropic-blog-image.spec.ts`。
 
 ## 标记
 

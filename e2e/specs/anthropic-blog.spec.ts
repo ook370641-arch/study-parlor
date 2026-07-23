@@ -14,7 +14,7 @@ function listMdFiles(dir: string): string[] {
   return out
 }
 
-test.describe('Anthropic 博客集成', () => {
+test.describe('@real Anthropic 博客集成', () => {
   test('E2E-1/2/3/4: 列表发现、首次导入、重复打开、侧边栏折叠', async ({
     window,
     testLibraryPath,
@@ -90,7 +90,7 @@ test.describe('Anthropic 博客集成', () => {
     await reader.waitFor({ state: 'visible', timeout: 10000 })
   })
 
-  test.describe('离线场景', () => {
+  test.describe('@real 离线场景', () => {
     test.use({ extraEnv: { E2E_ANTHROPIC_OFFLINE: '1' } })
     test('E2E-5: 离线错误链路', async ({ window }) => {
       const cover = new CoverPage(window)
