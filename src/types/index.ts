@@ -288,7 +288,7 @@ export type BriefingFontSize =
   | '6xl'
   | '7xl'
 
-export type BriefingSourceStatus = Record<string, 'ok' | 'failed'>
+export type BriefingSourceStatus = Record<string, 'ok' | 'failed' | 'empty'>
 
 export type BriefingStage =
   | 'fetching'

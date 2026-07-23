@@ -5,6 +5,7 @@ import matter from 'gray-matter'
 import { chatNonStream } from '../lib/kimi'
 import { dumpRecovery } from '../lib/recovery'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
+import { classifyFeed, resolveFeedOutcome, type FeedStatus } from '../lib/feed-status'
 import type { AppConfig } from '../env'
 import type { BriefingResult, BriefingSource, BriefingSourceStatus, BriefingStage, Message, Profile } from '@shared/index'
 
@@ -135,14 +136,6 @@ type FeedBlogs = {
     url: string
     publishedAt?: string | null
   }>
-}
-
-function hasAnyContent(feedX: FeedX | null, feedPodcasts: FeedPodcasts | null, feedBlogs: FeedBlogs | null): boolean {
-  return (
-    (feedX?.x?.length ?? 0) > 0 ||
-    (feedPodcasts?.podcasts?.length ?? 0) > 0 ||
-    (feedBlogs?.blogs?.length ?? 0) > 0
-  )
 }
 
 function buildSources(args: {
@@ -403,14 +396,23 @@ export function registerBriefingIpc(cfg: AppConfig) {
 
     emitProgress('fetching')
 
-    if (!hasAnyContent(feedX, feedPodcasts, feedBlogs)) {
+    const feedStatuses: FeedStatus[] = [
+      classifyFeed(feedX, (f) => (f.x?.length ?? 0) > 0),
+      classifyFeed(feedPodcasts, (f) => (f.podcasts?.length ?? 0) > 0),
+      classifyFeed(feedBlogs, (f) => (f.blogs?.length ?? 0) > 0),
+    ]
+    const outcome = resolveFeedOutcome(feedStatuses)
+    if (outcome === 'network-error') {
+      throw new Error('NETWORK_ERROR: all feeds unreachable')
+    }
+    if (outcome === 'feed-empty') {
       throw new Error('FEED_EMPTY')
     }
 
     const sourceStatus: BriefingSourceStatus = {
-      x: feedX?.x?.length ? 'ok' : 'failed',
-      podcasts: feedPodcasts?.podcasts?.length ? 'ok' : 'failed',
-      blogs: feedBlogs?.blogs?.length ? 'ok' : 'failed',
+      x: feedStatuses[0],
+      podcasts: feedStatuses[1],
+      blogs: feedStatuses[2],
     }
 
     const prompts = readPrompts()
