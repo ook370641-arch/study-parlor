@@ -20,7 +20,7 @@ async function openDigestArticle(window: Page, libPath: string): Promise<Article
   seedBriefing(libPath, today)
 
   const cover = new CoverPage(window)
-  await cover.enterIfNeeded('E2E 测试员')
+  await cover.enterName('E2E 测试员')
   await cover.goToBriefing()
 
   await window.locator(SELECTORS.briefing.receiveDigestButton).click()
