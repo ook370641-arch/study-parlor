@@ -39,23 +39,6 @@ test.describe('@p1 briefing aesthetics', () => {
     }
   })
 
-  test('constellation appears during generation when not cached', async ({ window }) => {
-    const cover = new CoverPage(window)
-    await cover.enterName('E2E 测试员')
-    await cover.goToBriefing()
-    const receiveButton = window.locator(SELECTORS.briefing.receiveDigestButton)
-    if (await receiveButton.isVisible().catch(() => false)) {
-      await receiveButton.click()
-    }
-    const constellation = window.locator(SELECTORS.briefing.constellation)
-    // mock 管线可能极快完成：星图或成品版面出现其一即可
-    await expect(constellation.or(window.locator(SELECTORS.briefing.academicLayout))).toBeVisible({ timeout: 15000 })
-    if (await constellation.isVisible().catch(() => false)) {
-      await expect(window.locator(SELECTORS.briefing.constellationWell)).toBeVisible()
-      await expect(window.locator(SELECTORS.briefing.progressStep('fetching'))).toBeVisible()
-    }
-  })
-
   test('newspaper theme hides veil and quote band', async ({ window, testLibraryPath }) => {
     const today = localToday()
     seedBriefing(testLibraryPath, today)
@@ -85,6 +68,28 @@ test.describe('@p1 briefing aesthetics', () => {
     await receiveButton.click()
     await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
     await expect(window.locator(SELECTORS.briefing.quoteText).first()).toBeVisible()
+  })
+})
+
+// 给 mock 管线注入 stage 间延迟，使星图中间态可被 Playwright 捕获。
+// 生产环境不受影响：此 env 仅通过 E2E fixture 的 extraEnv 传递到本次启动的 Electron 主进程。
+test.describe('@p1 briefing constellation with mock delay', () => {
+  test.use({ extraEnv: { E2E_BRIEFING_MOCK_DELAY_MS: '800' } })
+
+  test('constellation renders each station during generation', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    const receiveButton = window.locator(SELECTORS.briefing.receiveDigestButton)
+    await receiveButton.click()
+    // 800ms × 4 stations = 3.2s；第一站应在点击后立即可见。
+    const constellation = window.locator(SELECTORS.briefing.constellation)
+    await expect(constellation).toBeVisible({ timeout: 5000 })
+    await expect(window.locator(SELECTORS.briefing.constellationWell)).toBeVisible()
+    // 第一站 fetching 应该是 active 态。
+    await expect(window.locator(SELECTORS.briefing.progressStep('fetching'))).toBeVisible()
+    // 等待完成以避免与其他 spec 共享的 Electron 实例状态冲突。
+    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
   })
 })
 
