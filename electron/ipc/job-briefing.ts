@@ -16,6 +16,16 @@ import { getSearchApiKey } from '../lib/credentials'
 import { getCurrentState } from './state'
 import { normalizeJobProfile, formatJobProfile } from '../../src/lib/job-briefing-defaults'
 
+function bumpMockCounter(dir: string, name: string): void {
+  try {
+    const p = path.join(dir, name)
+    let n = 0
+    if (fs.existsSync(p)) { n = Number(JSON.parse(fs.readFileSync(p, 'utf8')).count ?? 0) || 0 }
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(p, JSON.stringify({ count: n + 1 }), 'utf8')
+  } catch { /* best-effort */ }
+}
+
 function validateDate(date: string): void {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw new Error('Invalid job briefing date format')
@@ -134,6 +144,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       } catch { /* ignore */ }
       // Write last-job-request.json for E2E request-level assertions
       const e2eDir = process.env.E2E_CONFIG_DIR
+      if (e2eDir) bumpMockCounter(e2eDir, 'job-briefing-mock-count.json')
       if (e2eDir) {
         const profile = normalizeJobProfile(getCurrentState().jobProfile)
         const profileText = formatJobProfile(profile)

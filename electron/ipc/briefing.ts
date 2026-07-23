@@ -10,6 +10,16 @@ import { deleteSiblingFiles } from '../lib/sibling-files'
 import type { AppConfig } from '../env'
 import type { BriefingResult, BriefingSource, BriefingSourceStatus, BriefingStage, Message, Profile } from '@shared/index'
 
+function bumpMockCounter(dir: string, name: string): void {
+  try {
+    const p = path.join(dir, name)
+    let n = 0
+    if (fs.existsSync(p)) { n = Number(JSON.parse(fs.readFileSync(p, 'utf8')).count ?? 0) || 0 }
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(p, JSON.stringify({ count: n + 1 }), 'utf8')
+  } catch { /* best-effort */ }
+}
+
 const DEFAULT_FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json'
 const DEFAULT_FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json'
 const DEFAULT_FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json'
@@ -379,6 +389,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
       } catch {
         // cache write can fail silently
       }
+      if (process.env.E2E_CONFIG_DIR) bumpMockCounter(process.env.E2E_CONFIG_DIR, 'briefing-mock-count.json')
       emitProgress('done')
       return {
         title: '夜航简报',

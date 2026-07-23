@@ -104,7 +104,7 @@ test.describe('@p1 job briefing generation', () => {
     await expect(window.getByRole('heading', { name: '趋势解读' })).toBeVisible()
   })
 
-  test('reuses cached briefing on second generation', async ({ window, testLibraryPath }) => {
+  test('reuses cached briefing on second generation', async ({ window, testLibraryPath, testConfigDir }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
@@ -134,6 +134,10 @@ test.describe('@p1 job briefing generation', () => {
     // Cache file unchanged (mock output is deterministic)
     const secondContent = fs.readFileSync(cacheFile, 'utf8')
     expect(secondContent).toBe(firstContent)
+
+    // Counter: mock was invoked only once (cache hit on second visit)
+    const counter = JSON.parse(fs.readFileSync(path.join(testConfigDir, 'job-briefing-mock-count.json'), 'utf8'))
+    expect(counter.count).toBe(1)
   })
 
   test('saves job profile settings and verifies in state.json', async ({ window, testConfigDir }) => {
