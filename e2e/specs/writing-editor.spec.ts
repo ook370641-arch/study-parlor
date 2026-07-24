@@ -469,4 +469,151 @@ test.describe('@p2 writing-editor', () => {
     expect(restored.some((m: any) => m.role === 'user' && m.content.includes('扩写第一段'))).toBe(true)
     expect(restored.some((m: any) => m.role === 'assistant')).toBe(true)
   })
+
+  // ── Toolbar: format button presence (testid registration) ──────────
+
+  test('工具栏加粗 B 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+    await expect(window.locator(SELECTORS.writing.toolbarBold)).toBeVisible({ timeout: 3000 })
+  })
+
+  test('工具栏斜体 I 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+    await expect(window.locator(SELECTORS.writing.toolbarItalic)).toBeVisible({ timeout: 3000 })
+  })
+
+  test('工具栏删除线 S 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+    await expect(window.locator(SELECTORS.writing.toolbarStrikethrough)).toBeVisible({ timeout: 3000 })
+  })
+
+  test('工具栏引用 ❝ 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+    await expect(window.locator(SELECTORS.writing.toolbarBlockquote)).toBeVisible({ timeout: 3000 })
+  })
+
+  test('工具栏无序列表 • 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+    await expect(window.locator(SELECTORS.writing.toolbarBulletList)).toBeVisible({ timeout: 3000 })
+  })
+
+  test('工具栏有序列表 1. 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+    await expect(window.locator(SELECTORS.writing.toolbarOrderedList)).toBeVisible({ timeout: 3000 })
+  })
+
+  test('工具栏分割线 — 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+    await expect(window.locator(SELECTORS.writing.toolbarHr)).toBeVisible({ timeout: 3000 })
+  })
+
+  test('工具栏表格 ▦ 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+    await expect(window.locator(SELECTORS.writing.toolbarTable)).toBeVisible({ timeout: 3000 })
+  })
+
+  // ── Toolbar: Font size A+/A- → state.json ──────────────────────────
+
+  test('工具栏字号 A+/A- → state.json writingFontSize changes', async ({ window, testLibraryPath, testConfigDir }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+
+    const statePath = path.join(testConfigDir, 'state.json')
+
+    await window.locator(SELECTORS.writing.toolbarFontIncrease).click()
+    await window.waitForTimeout(500)
+    let state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    expect(state.writingFontSize).not.toBe('base')
+
+    await window.locator(SELECTORS.writing.toolbarFontDecrease).click()
+    await window.waitForTimeout(500)
+    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    expect(state.writingFontSize).toBe('base')
+  })
+
+  // ── Toolbar: Tone cycle → state.json ───────────────────────────────
+
+  test('工具栏配色 🎨 → state.json writingTone cycles', async ({ window, testLibraryPath, testConfigDir }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+
+    const statePath = path.join(testConfigDir, 'state.json')
+    const toneBtn = window.locator(SELECTORS.writing.toolbarTone)
+    await expect(toneBtn).toBeVisible({ timeout: 3000 })
+
+    await toneBtn.click()
+    await window.waitForTimeout(500)
+    let state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    expect(state.writingTone).toBe('plain')
+
+    await toneBtn.click()
+    await window.waitForTimeout(500)
+    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    expect(state.writingTone).toBe('ink')
+
+    await toneBtn.click()
+    await window.waitForTimeout(500)
+    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    expect(state.writingTone).toBe('parchment')
+  })
+
+  // ── Toolbar: All buttons visible ───────────────────────────────────
+
+  test('工具栏全部按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+
+    const buttons = [
+      SELECTORS.writing.toolbarBold,
+      SELECTORS.writing.toolbarItalic,
+      SELECTORS.writing.toolbarStrikethrough,
+      SELECTORS.writing.toolbarBlockquote,
+      SELECTORS.writing.toolbarBulletList,
+      SELECTORS.writing.toolbarOrderedList,
+      SELECTORS.writing.toolbarHr,
+      SELECTORS.writing.toolbarTable,
+      SELECTORS.writing.toolbarFontDecrease,
+      SELECTORS.writing.toolbarFontIncrease,
+      SELECTORS.writing.toolbarTone,
+      SELECTORS.writing.toolbarFontSize,
+      SELECTORS.writing.toolbarToneLabel,
+    ]
+
+    for (const sel of buttons) {
+      await expect(window.locator(sel)).toBeVisible({ timeout: 3000 })
+    }
+  })
 })
