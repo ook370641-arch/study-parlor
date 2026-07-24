@@ -147,6 +147,32 @@ function assertInsideLibrary(targetPath: string, libraryPath: string): void {
   }
 }
 
+function splitSessionSections(body: string): string[] {
+  const sections: string[] = []
+  let inSnapshot = false
+  let current = ''
+  for (const line of body.split('\n')) {
+    if (line.trim() === '<!-- snapshot:start -->') {
+      inSnapshot = true
+      current += line + '\n'
+      continue
+    }
+    if (line.trim() === '<!-- snapshot:end -->') {
+      inSnapshot = false
+      current += line + '\n'
+      continue
+    }
+    if (!inSnapshot && /^## (用户|助手)/.test(line)) {
+      if (current.trim()) sections.push(current.trimEnd())
+      current = line.slice(3) + '\n'
+      continue
+    }
+    current += line + '\n'
+  }
+  if (current.trim()) sections.push(current.trimEnd())
+  return sections
+}
+
 export function serializeAssistantSessionBody(messages: ArticleAssistantMessage[]): string {
   return messages
     .map((m) => {
@@ -154,26 +180,41 @@ export function serializeAssistantSessionBody(messages: ArticleAssistantMessage[
         m.role === 'user' && m.selection?.trim()
           ? `> 选段：${m.selection.trim().replace(/\s*\n\s*/g, ' ')}\n\n`
           : ''
-      return `## ${m.role === 'user' ? '用户' : '助手'}\n\n${selLine}${m.content}\n`
+      const snapshotBlock =
+        m.role === 'user' && m.snapshot?.trim()
+          ? `<!-- snapshot:start -->\n${m.snapshot.trim()}\n<!-- snapshot:end -->\n\n`
+          : ''
+      return `## ${m.role === 'user' ? '用户' : '助手'}\n\n${selLine}${snapshotBlock}${m.content}\n`
     })
     .join('\n')
 }
 
 export function parseAssistantSessionBody(body: string): ArticleAssistantMessage[] {
   const messages: ArticleAssistantMessage[] = []
-  const sections = body.split(/^## /m).slice(1)
+  const sections = splitSessionSections(body)
   for (const section of sections) {
     const nl = section.indexOf('\n')
     const heading = (nl === -1 ? section : section.slice(0, nl)).trim()
     let content = (nl === -1 ? '' : section.slice(nl + 1)).trim()
     if (heading.startsWith('用户')) {
       let selection: string | undefined
+      let snapshot: string | undefined
       if (content.startsWith('> 选段：')) {
         const lineEnd = content.indexOf('\n')
         selection = content.slice('> 选段：'.length, lineEnd === -1 ? undefined : lineEnd).trim()
         content = (lineEnd === -1 ? '' : content.slice(lineEnd + 1)).trim()
       }
-      messages.push({ role: 'user', content, selection })
+      if (content.startsWith('<!-- snapshot:start -->')) {
+        const startTagEnd = content.indexOf('\n')
+        const afterStart = content.slice(startTagEnd + 1)
+        const endIdx = afterStart.indexOf('\n<!-- snapshot:end -->')
+        if (endIdx !== -1) {
+          snapshot = afterStart.slice(0, endIdx).trim()
+          const afterEnd = afterStart.slice(endIdx + '\n<!-- snapshot:end -->'.length)
+          content = afterEnd.trim()
+        }
+      }
+      messages.push({ role: 'user', content, selection, snapshot })
     } else if (heading.startsWith('助手')) {
       messages.push({ role: 'assistant', content })
     }

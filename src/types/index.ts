@@ -98,6 +98,7 @@ export type ArticleAssistantMessage = {
   searchSources?: { title: string; url: string; snippet: string }[]
   selection?: string
   reasoning?: string
+  snapshot?: string
 }
 
 export type ArticleAssistantSessionFile = {
@@ -434,6 +435,7 @@ export type WritingAssistantMessage = {
   content: string
   reasoning?: string
   sources?: WritingSource[]
+  snapshot?: string
 }
 export type WritingToolEvent = {
   sessionId: string

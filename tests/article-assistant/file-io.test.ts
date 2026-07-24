@@ -123,3 +123,34 @@ describe('assistant session selection persistence', () => {
     ])
   })
 })
+
+describe('snapshot round-trip', () => {
+  it('serializes and parses user message snapshots', () => {
+    const messages: ArticleAssistantMessage[] = [
+      { role: 'user', content: '这段怎么样？', snapshot: '# 草稿\n\n## 小节\n\n正文' },
+      { role: 'assistant', content: '不错。' },
+    ]
+    const body = serializeAssistantSessionBody(messages)
+    expect(body).toContain('<!-- snapshot:start -->')
+    expect(body).toContain('<!-- snapshot:end -->')
+    const parsed = parseAssistantSessionBody(body)
+    expect(parsed).toHaveLength(2)
+    expect(parsed[0].snapshot).toBe('# 草稿\n\n## 小节\n\n正文')
+  })
+
+  it('parses old sessions without snapshots unchanged', () => {
+    const body = '## 用户\n\n问题\n\n## 助手\n\n回答\n'
+    const parsed = parseAssistantSessionBody(body)
+    expect(parsed[0].content).toBe('问题')
+    expect(parsed[0].snapshot).toBeUndefined()
+  })
+
+  it('keeps selection and snapshot together', () => {
+    const messages: ArticleAssistantMessage[] = [
+      { role: 'user', content: '什么意思？', selection: '被选文字', snapshot: '草稿v1' },
+    ]
+    const parsed = parseAssistantSessionBody(serializeAssistantSessionBody(messages))
+    expect(parsed[0].selection).toBe('被选文字')
+    expect(parsed[0].snapshot).toBe('草稿v1')
+  })
+})

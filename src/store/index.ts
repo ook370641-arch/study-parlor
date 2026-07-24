@@ -1506,7 +1506,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const sessionId = `writing-assistant-${Date.now()}`
     const messages: WritingAssistantMessage[] = [
       ...(get().writingAssistant?.messages ?? []),
-      { role: 'user' as const, content: text },
+      { role: 'user' as const, content: text, snapshot: f?.body?.trim() ? f.body : undefined },
     ]
     set({
       writingAssistant: {
