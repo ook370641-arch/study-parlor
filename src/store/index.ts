@@ -315,6 +315,7 @@ type AppStore = {
   writingAssistantOpen: boolean
   writingEditorAction: ((fn: (ctx: any) => void) => void) | null
   lastWritingFile: string | null
+  writingOrder: Record<string, string[]>
 
   // 写作助手
   writingAssistant: {
@@ -348,6 +349,7 @@ type AppStore = {
   setLastWritingFile: (file: string | null) => void
   setAssistantSearchEnabled: (enabled: boolean) => void
   setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
+  reorderWritingSibling: (args: { dir: string; src: string; target: string; position: 'before' | 'after'; siblings: string[] }) => void
 }
 
 let wildcardRequestId = 0
@@ -436,6 +438,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingAssistantOpen: false,
   writingEditorAction: null,
   lastWritingFile: null,
+  writingOrder: {},
   writingAssistant: null,
 
   init: async () => {
@@ -471,6 +474,7 @@ export const useStore = create<AppStore>((set, get) => ({
       writingAssistantWidth: state.writingAssistantWidth ?? 320,
       writingAssistantOpen: state.writingAssistantOpen ?? false,
       lastWritingFile: state.lastWritingFile ?? null,
+      writingOrder: state.writingOrder ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -1707,6 +1711,16 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   // --- 写作板：树、当前文件、保存 ---
+  reorderWritingSibling: ({ dir, src, target, position, siblings }) => {
+    const rest = siblings.filter((p) => p !== src)
+    const idx = rest.indexOf(target)
+    if (idx === -1 || src === target) return
+    const next = [...rest.slice(0, position === 'before' ? idx : idx + 1), src, ...rest.slice(position === 'before' ? idx : idx + 1)]
+    const writingOrder = { ...get().writingOrder, [dir]: next }
+    set({ writingOrder })
+    ipc.patchState({ writingOrder } as Partial<StateJson>)
+  },
+
   loadWritingTree: async () => {
     const r = await ipc.writingScanTree()
     if (r.ok) set({ writingTree: r.value })

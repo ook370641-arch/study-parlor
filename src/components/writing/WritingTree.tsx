@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
+import { sortNodesByOrder } from '@/lib/writing-tree-utils'
 import type { WritingTreeNode, WritingRoot } from '@shared/index'
 import { PromptDialog } from './PromptDialog'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -11,15 +12,21 @@ interface PromptState {
   onSubmit: (value: string) => void
 }
 
-function TreeNode({ node, depth, root, theme = 'academic' }: { node: WritingTreeNode; depth: number; root: WritingRoot; theme?: 'academic' | 'newspaper' }) {
+function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academic' }: {
+  node: WritingTreeNode; depth: number; root: WritingRoot; parentDir: string; siblingPaths: string[];
+  theme?: 'academic' | 'newspaper'
+}) {
   const isAcademic = theme !== 'newspaper'
   const selectedPath = useStore(s => s.writingFile?.path)
   const selectWritingFile = useStore(s => s.selectWritingFile)
   const loadWritingTree = useStore(s => s.loadWritingTree)
+  const writingOrder = useStore(s => s.writingOrder)
+  const reorderWritingSibling = useStore(s => s.reorderWritingSibling)
 
   const [open, setOpen] = useState(depth === 0)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [dropPos, setDropPos] = useState<'before' | 'after' | null>(null)
   const [hovered, setHovered] = useState(false)
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
@@ -102,7 +109,9 @@ function TreeNode({ node, depth, root, theme = 'academic' }: { node: WritingTree
           ${isSelected
             ? isAcademic ? 'bg-ember/10 text-ember' : 'bg-[#1a1a1a]/10 text-[#1a1a1a]'
             : isAcademic ? 'text-parchment/70 hover:text-parchment hover:bg-parchment/5' : 'text-[#6b5d52] hover:text-[#2a1f1a] hover:bg-black/5'}
-          ${dragOver ? 'ring-1 ring-ember/50' : ''}`}
+          ${dragOver ? 'ring-1 ring-ember/50' : ''}
+          ${dropPos === 'before' ? 'border-t-2 border-ember' : ''}
+          ${dropPos === 'after' ? 'border-b-2 border-ember' : ''}`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
@@ -113,20 +122,28 @@ function TreeNode({ node, depth, root, theme = 'academic' }: { node: WritingTree
           e.dataTransfer.setData('text/writing-path', node.path)
         }}
         onDragOver={(e) => {
-          if (isDir) {
-            e.preventDefault()
-            setDragOver(true)
-          }
+          e.preventDefault()
+          if (isDir) { setDragOver(true); return }
+          const rect = e.currentTarget.getBoundingClientRect()
+          setDropPos(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after')
         }}
-        onDragLeave={() => setDragOver(false)}
+        onDragLeave={() => { setDragOver(false); setDropPos(null) }}
         onDrop={async (e) => {
           e.preventDefault()
           setDragOver(false)
           const src = e.dataTransfer.getData('text/writing-path')
-          if (src && src !== node.path) {
+          setDropPos(null)
+          if (!src || src === node.path) return
+          if (isDir) {
             await ipc.writingMove({ path: src, targetDir: node.path })
             await loadWritingTree()
+            return
           }
+          reorderWritingSibling({
+            dir: parentDir, src, target: node.path,
+            position: dropPos ?? 'after',
+            siblings: siblingPaths,
+          })
         }}
       >
         <span className="w-4 text-center shrink-0">{isDir ? (open ? '▾' : '▸') : '·'}</span>
@@ -151,9 +168,12 @@ function TreeNode({ node, depth, root, theme = 'academic' }: { node: WritingTree
         </div>
       </div>
 
-      {isDir && open && node.children?.map(child => (
-        <TreeNode key={child.path} node={child} depth={depth + 1} root={root} theme={theme} />
-      ))}
+      {isDir && open && (() => {
+        const sorted = sortNodesByOrder(node.children ?? [], writingOrder[node.path])
+        return sorted.map(child => (
+          <TreeNode key={child.path} node={child} depth={depth + 1} root={root} parentDir={node.path} siblingPaths={sorted.map(n => n.path)} theme={theme} />
+        ))
+      })()}
 
       {/* Context menu */}
       {menu && (
@@ -228,9 +248,11 @@ function TreeNode({ node, depth, root, theme = 'academic' }: { node: WritingTree
 export function WritingTree({ root, theme = 'academic' }: { root: WritingRoot; theme?: 'academic' | 'newspaper' }) {
   const isAcademic = theme !== 'newspaper'
   const tree = useStore(s => s.writingTree)
+  const writingOrder = useStore(s => s.writingOrder)
   const nodes = tree?.[root] ?? []
+  const sorted = sortNodesByOrder(nodes, writingOrder[root])
 
-  if (nodes.length === 0) {
+  if (sorted.length === 0) {
     return (
       <div className={`px-3 py-4 text-xs text-center ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]/60'}`}>
         {root === 'writing' ? '还没有文章，点击上方 ＋ 新建' : '还没有导入文件，点击上方 ⬆ 导入'}
@@ -240,8 +262,8 @@ export function WritingTree({ root, theme = 'academic' }: { root: WritingRoot; t
 
   return (
     <div className="py-1">
-      {nodes.map(n => (
-        <TreeNode key={n.path} node={n} depth={0} root={root} theme={theme} />
+      {sorted.map(n => (
+        <TreeNode key={n.path} node={n} depth={0} root={root} parentDir={root} siblingPaths={sorted.map(x => x.path)} theme={theme} />
       ))}
     </div>
   )

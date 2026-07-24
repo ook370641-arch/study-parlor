@@ -34,6 +34,7 @@ const DEFAULT: StateJson = {
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
   lastWritingFile: null,
+  writingOrder: {},
 }
 
 let currentState: StateJson | null = null

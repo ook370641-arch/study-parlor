@@ -6,6 +6,21 @@ export function countFiles(nodes: WritingTreeNode[] | undefined): number {
   return nodes.reduce((sum, n) => sum + (n.kind === 'file' ? 1 : countFiles(n.children)), 0)
 }
 
+/** Sort nodes by a recorded order array. Nodes in the order list appear first in
+ *  recorded sequence; nodes not in the list appear last in their original scan order. */
+export function sortNodesByOrder<T extends { path: string }>(nodes: T[], order: string[] | undefined): T[] {
+  if (!order || order.length === 0) return nodes
+  const rank = new Map(order.map((p, i) => [p, i]))
+  return [...nodes].sort((a, b) => {
+    const ra = rank.get(a.path)
+    const rb = rank.get(b.path)
+    if (ra === undefined && rb === undefined) return 0
+    if (ra === undefined) return 1
+    if (rb === undefined) return -1
+    return ra - rb
+  })
+}
+
 /** 判断 path 是否仍存在于写作树（writing 或 repository 任意深度）。 */
 export function writingTreeContainsPath(
   tree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null,

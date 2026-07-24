@@ -482,6 +482,7 @@ export type StateJson = {
   writingAssistantWidth?: number
   writingAssistantOpen?: boolean
   lastWritingFile?: string | null
+  writingOrder?: Record<string, string[]>
 }
 
 export type IpcApi = {
