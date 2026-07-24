@@ -374,6 +374,14 @@ function debounceSaveGuideWidth(patch: Partial<StateJson>) {
   }, 300)
 }
 
+let assistantWidthSaveTimer: ReturnType<typeof setTimeout> | null = null
+function debounceSaveAssistantWidth(patch: Partial<StateJson>) {
+  if (assistantWidthSaveTimer) clearTimeout(assistantWidthSaveTimer)
+  assistantWidthSaveTimer = setTimeout(() => {
+    ipc.patchState(patch)
+  }, 300)
+}
+
 export const useStore = create<AppStore>((set, get) => ({
   profile: { name: '', profile_text: '', preferred_topics: [] },
   lastUsed: { difficulty: 'mid', temperature: 0.7 },
@@ -475,7 +483,7 @@ export const useStore = create<AppStore>((set, get) => ({
       writingFontSize: state.writingFontSize ?? 'base',
       writingTone: state.writingTone ?? 'parchment',
       writingListTab: state.writingListTab ?? 'articles',
-      writingAssistantWidth: state.writingAssistantWidth ?? 320,
+      writingAssistantWidth: Math.max(200, Math.min(state.writingAssistantWidth ?? 320, 560)),
       writingAssistantOpen: state.writingAssistantOpen ?? false,
       lastWritingFile: state.lastWritingFile ?? null,
       writingOrder: state.writingOrder ?? {},
@@ -1510,8 +1518,9 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ writingListTab: tab } as Partial<StateJson>)
   },
   setWritingAssistantWidth: (width) => {
-    set({ writingAssistantWidth: width })
-    ipc.patchState({ writingAssistantWidth: width } as Partial<StateJson>)
+    const clamped = Math.max(200, Math.min(width, 1200))
+    set({ writingAssistantWidth: clamped })
+    debounceSaveAssistantWidth({ writingAssistantWidth: clamped })
   },
   setWritingAssistantOpen: (open) => {
     if (!open) {
