@@ -30,10 +30,9 @@ test.describe('@p1 settings', () => {
   })
 
   test('verify connection with real API', async ({ window }) => {
+    // @real：应用从根目录 .env 复制密钥（见 createTestConfigDir），
+    // 密钥缺失/占位符时 verify 失败即测试失败——不许用 skip 掩盖。
     test.setTimeout(120000)
-    if (!process.env.KIMI_API_KEY) {
-      test.skip(!process.env.KIMI_API_KEY, 'KIMI_API_KEY not available')
-    }
 
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()

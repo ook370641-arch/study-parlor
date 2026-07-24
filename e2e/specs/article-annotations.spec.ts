@@ -351,7 +351,9 @@ test('E2E-A6: 标注跨 renderer reload 恢复', async ({ window, testLibraryPat
 
   const openDigest = async () => {
     const cover = new CoverPage(window)
-    await cover.enterIfNeeded('E2E 测试员')
+    // enterName（不点击进入按钮）停留在封面，goToBriefing 的封面简报按钮才可见。
+    // 该路径不写 profile.name，因此 reload 后封面仍是无名变体，同一序列可复用。
+    await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await window.locator(SELECTORS.briefing.receiveDigestButton).click()
     await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })

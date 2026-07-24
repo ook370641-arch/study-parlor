@@ -49,9 +49,7 @@ test.describe('@p2 writing-edge', () => {
     expect(fs.existsSync(repoDir)).toBe(true)
   })
 
-  // SKIP: CoverPage flow timing is fragile with direct writing source state.
-  // The degraded-file-read path is covered by vitest (writing-tree.test.ts error code tests).
-  test.skip('外部删除打开的文件 → 应用不白屏', async ({ window, testLibraryPath, testConfigDir }) => {
+  test('外部删除打开的文件 → 应用不白屏', async ({ window, testLibraryPath, testConfigDir }) => {
     // Seed state to land directly on writing source, avoiding cover→briefing timing issues
     seedWritingSourceState(testConfigDir)
 
@@ -63,7 +61,8 @@ test.describe('@p2 writing-edge', () => {
       '---\ntype: writing\ntitle: 临时\ncreated: 2026-07-20\nupdated: 2026-07-20\n---\n\n# 临时\n\n内容。\n', 'utf8')
 
     const cover = new CoverPage(window)
-    await cover.enterName('E2E 测试员')
+    // seedWritingSourceState 带 profile.name → 封面是回访变体（无 nameInput，
+    // 有 lightButton 与可用的 cover-briefing-button），直接点简报按钮即可。
     await cover.goToBriefing()
     // With briefingSource:'writing' seeded, the writing source loads without clicking sidebar button
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })

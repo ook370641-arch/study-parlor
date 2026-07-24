@@ -30,7 +30,9 @@ test.describe('@p2 writing-editor', () => {
    */
   async function gotoWritingAfterReload(window: any) {
     const cover = new CoverPage(window)
-    await cover.enterIfNeeded('E2E 测试员')
+    // enterName（不点击进入按钮）停留在封面，goToBriefing 的封面简报按钮才可见。
+    // enterIfNeeded 会点进入按钮跳到 home，导致封面按钮永远等不到（fixme 的真正根因）。
+    await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
     await window.locator(SELECTORS.writing.sourceButton).click()
@@ -40,12 +42,7 @@ test.describe('@p2 writing-editor', () => {
 
   // ── Round-trip persistence ────────────────────────────────────────
 
-  // FIXME: Playwright CDP over Electron page.reload() closes the target
-  // context before the new page attaches, causing "Target page, context or
-  // browser has been closed".  The save-before-reload path IS verified in
-  // unit tests (writing-store.test.ts).  Re-enable after migrating to a
-  // page-level navigation helper that reconnects after reload.
-  test.fixme('新建→编辑器输入→自动保存→reload→内容恢复', async ({ window, testLibraryPath }) => {
+  test('新建→编辑器输入→自动保存→reload→内容恢复', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     // Create a new file via PromptDialog
