@@ -11,7 +11,7 @@ Thumbs.db
 painting-analysis-raw.json
 
 # AI assistant tooling (large vendor dirs + nested .git repos)
-.claude/
+.claude/*
 !.claude/skills/
 !.claude/rules/
 .codex/
