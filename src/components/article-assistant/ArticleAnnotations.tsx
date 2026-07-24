@@ -156,14 +156,47 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     }
   }
 
+  // applyMarkers 的最新版本经 ref 暴露给 MutationObserver，避免闭包捕获旧 annotations
+  const applyMarkersRef = useRef(applyMarkers)
+  applyMarkersRef.current = applyMarkers
+  const observerRef = useRef<MutationObserver | null>(null)
+
+  // 执行 applyMarkers 时先断开 observer：
+  // applyMarkers 自身的 DOM 变更若被 observer 记录会再次触发自身（无限循环）
+  const runApplyMarkers = useCallback(() => {
+    const obs = observerRef.current
+    const container = articleRef.current
+    obs?.disconnect()
+    applyMarkersRef.current()
+    if (obs && container) {
+      obs.observe(container, { childList: true, subtree: true })
+    }
+  }, [articleRef])
+
+  // annotations 或文章变化时重放标记（100ms settle 等 ArticleBodyChunks 写完 DOM）
   useEffect(() => {
-    // Re-apply markers when DOM settles.
-    // No dependency array: runs after every render because sibling components
-    // (ArticleBodyChunks) can imperatively replace the article's inner HTML
-    // without this component's props changing, destroying injected markers.
-    const timer = setTimeout(applyMarkers, 100)
+    const timer = setTimeout(runApplyMarkers, 100)
     return () => clearTimeout(timer)
-  })
+  }, [annotations, articlePath, runApplyMarkers])
+
+  // 兄弟组件（ArticleBodyChunks）命令式替换文章 DOM 时重放标记。
+  // 替代原先「每次渲染后全量 TreeWalker」的轮询 —— 那是展开列/滚动/导读拖拽卡顿的主因。
+  useEffect(() => {
+    const container = articleRef.current
+    if (!container) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const observer = new MutationObserver(() => {
+      clearTimeout(timer)
+      timer = setTimeout(runApplyMarkers, 100)
+    })
+    observerRef.current = observer
+    observer.observe(container, { childList: true, subtree: true })
+    return () => {
+      clearTimeout(timer)
+      observer.disconnect()
+      if (observerRef.current === observer) observerRef.current = null
+    }
+  }, [articleRef, articlePath, runApplyMarkers])
 
   // --- Handle pen click ---
   function handlePenClick(annoId: string, penEl: HTMLElement) {
