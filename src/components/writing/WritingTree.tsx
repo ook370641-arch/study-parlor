@@ -11,7 +11,8 @@ interface PromptState {
   onSubmit: (value: string) => void
 }
 
-function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number; root: WritingRoot }) {
+function TreeNode({ node, depth, root, theme = 'academic' }: { node: WritingTreeNode; depth: number; root: WritingRoot; theme?: 'academic' | 'newspaper' }) {
+  const isAcademic = theme !== 'newspaper'
   const selectedPath = useStore(s => s.writingFile?.path)
   const selectWritingFile = useStore(s => s.selectWritingFile)
   const loadWritingTree = useStore(s => s.loadWritingTree)
@@ -98,7 +99,9 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
       <div
         data-testid="writing-tree-node"
         className={`flex items-center gap-1 px-2 py-1 cursor-pointer text-xs rounded transition-colors select-none
-          ${isSelected ? 'bg-ember/10 text-ember' : 'text-parchment/70 hover:text-parchment hover:bg-parchment/5'}
+          ${isSelected
+            ? isAcademic ? 'bg-ember/10 text-ember' : 'bg-[#1a1a1a]/10 text-[#1a1a1a]'
+            : isAcademic ? 'text-parchment/70 hover:text-parchment hover:bg-parchment/5' : 'text-[#6b5d52] hover:text-[#2a1f1a] hover:bg-black/5'}
           ${dragOver ? 'ring-1 ring-ember/50' : ''}`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
@@ -149,7 +152,7 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
       </div>
 
       {isDir && open && node.children?.map(child => (
-        <TreeNode key={child.path} node={child} depth={depth + 1} root={root} />
+        <TreeNode key={child.path} node={child} depth={depth + 1} root={root} theme={theme} />
       ))}
 
       {/* Context menu */}
@@ -222,13 +225,14 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
   )
 }
 
-export function WritingTree({ root }: { root: WritingRoot }) {
+export function WritingTree({ root, theme = 'academic' }: { root: WritingRoot; theme?: 'academic' | 'newspaper' }) {
+  const isAcademic = theme !== 'newspaper'
   const tree = useStore(s => s.writingTree)
   const nodes = tree?.[root] ?? []
 
   if (nodes.length === 0) {
     return (
-      <div className="px-3 py-4 text-xs text-parchment/40 text-center">
+      <div className={`px-3 py-4 text-xs text-center ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]/60'}`}>
         {root === 'writing' ? '还没有文章，点击上方 ＋ 新建' : '还没有导入文件，点击上方 ⬆ 导入'}
       </div>
     )
@@ -237,7 +241,7 @@ export function WritingTree({ root }: { root: WritingRoot }) {
   return (
     <div className="py-1">
       {nodes.map(n => (
-        <TreeNode key={n.path} node={n} depth={0} root={root} />
+        <TreeNode key={n.path} node={n} depth={0} root={root} theme={theme} />
       ))}
     </div>
   )

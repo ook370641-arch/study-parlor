@@ -11,12 +11,17 @@ interface PromptState {
   onSubmit: (value: string) => void
 }
 
-export function WritingListColumn() {
+export function WritingListColumn({ theme = 'academic' }: { theme?: 'academic' | 'newspaper' }) {
+  const isAcademic = theme !== 'newspaper'
   const tab = useStore(s => s.writingListTab)
   const setTab = useStore(s => s.setWritingListTab)
   const loadWritingTree = useStore(s => s.loadWritingTree)
   const selectWritingFile = useStore(s => s.selectWritingFile)
   const tree = useStore(s => s.writingTree)
+
+  const dim = isAcademic ? 'text-parchment/60 hover:text-parchment/80' : 'text-[#6b5d52] hover:text-[#2a1f1a]'
+  const tabIdle = isAcademic ? 'text-parchment/50 hover:text-parchment/70' : 'text-[#6b5d52]/70 hover:text-[#6b5d52]'
+  const borderCol = isAcademic ? 'border-parchment/15' : 'border-[#c9c3b8]'
 
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
@@ -80,15 +85,21 @@ export function WritingListColumn() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex border-b border-parchment/15 text-xs shrink-0">
+      <div className={`flex m-2 rounded-lg border ${borderCol} text-xs shrink-0 overflow-hidden`} role="tablist">
         {(['articles', 'repository'] as const).map(t => (
           <button
             key={t}
+            role="tab"
+            aria-pressed={tab === t}
             data-testid={t === 'articles' ? 'writing-list-tab-articles' : 'writing-list-tab-repository'}
             onClick={() => setTab(t)}
-            className={`flex-1 py-2 transition-colors ${tab === t ? 'text-ember border-b-2 border-ember' : 'text-parchment/50 hover:text-parchment/70'}`}
+            className={`flex-1 py-1.5 transition-colors ${
+              tab === t
+                ? isAcademic ? 'bg-ember/20 text-ember' : 'bg-[#1a1a1a] text-white'
+                : tabIdle
+            }`}
           >
-            {t === 'articles' ? '文章' : 'repository'}
+            {t === 'articles' ? '文章' : '仓库'}
           </button>
         ))}
       </div>
@@ -96,18 +107,18 @@ export function WritingListColumn() {
         {tab === 'articles' ? (
           <div>
             <div className="p-2 flex gap-2 text-xs">
-              <button data-testid="writing-new-file" className="text-ember hover:text-ember/80" onClick={handleCreateFile}>＋ 新建文章</button>
-              <button data-testid="writing-new-folder" className="text-parchment/60 hover:text-parchment/80" onClick={handleCreateFolder}>新建分组</button>
+              <button data-testid="writing-new-file" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleCreateFile}>＋ 新建文章</button>
+              <button data-testid="writing-new-folder" className={dim} onClick={handleCreateFolder}>新建分组</button>
             </div>
-            <WritingTree root="writing" />
+            <WritingTree root="writing" theme={theme} />
           </div>
         ) : (
           <div>
             <div className="p-2 flex gap-2 text-xs">
-              <button data-testid="writing-import-files" className="text-ember hover:text-ember/80" onClick={handleImportFiles}>⬆ 导入文件…</button>
-              <button data-testid="writing-repo-new-folder" className="text-parchment/60 hover:text-parchment/80" onClick={handleCreateRepoFolder}>新建分组</button>
+              <button data-testid="writing-import-files" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleImportFiles}>⬆ 导入文件…</button>
+              <button data-testid="writing-repo-new-folder" className={dim} onClick={handleCreateRepoFolder}>新建分组</button>
             </div>
-            <WritingTree root="repository" />
+            <WritingTree root="repository" theme={theme} />
           </div>
         )}
       </div>
