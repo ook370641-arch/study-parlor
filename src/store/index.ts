@@ -1,5 +1,7 @@
 // src/store/index.ts
 import { create } from 'zustand'
+import { editorViewCtx } from '@milkdown/core'
+import type { Ctx } from '@milkdown/ctx'
 import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
 import { mergeNewArticles } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
@@ -339,6 +341,7 @@ type AppStore = {
   setWritingAssistantWidth: (width: number) => void
   setWritingAssistantOpen: (open: boolean) => void
   setWritingEditorAction: (action: ((fn: (ctx: any) => void) => void) | null) => void
+  insertTextIntoWritingEditor: (text: string) => void
   setLastWritingFile: (file: string | null) => void
   setAssistantSearchEnabled: (enabled: boolean) => void
   setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
@@ -1487,6 +1490,19 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ writingAssistantOpen: open } as Partial<StateJson>)
   },
   setWritingEditorAction: (action) => set({ writingEditorAction: action }),
+
+  insertTextIntoWritingEditor: (text) => {
+    const act = get().writingEditorAction
+    if (!act) return
+    // Use the Milkdown Ctx to get the ProseMirror EditorView and dispatch an
+    // insertText transaction.  After Task 9's editor-freeze fix, the editor
+    // no longer responds to `initial` prop changes, so insert must go through
+    // the ProseMirror view, not through updateWritingBody.
+    act((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx)
+      view.dispatch(view.state.tr.insertText(text, view.state.doc.content.size))
+    })
+  },
   setLastWritingFile: (file) => {
     set({ lastWritingFile: file })
     ipc.patchState({ lastWritingFile: file } as Partial<StateJson>)

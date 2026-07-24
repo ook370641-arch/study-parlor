@@ -61,8 +61,7 @@ export function WritingAssistantMessages() {
   }, [messages])
 
   const handleInsert = (content: string) => () => {
-    const currentBody = useStore.getState().writingFile?.body ?? ''
-    useStore.getState().updateWritingBody(currentBody + '\n' + content)
+    useStore.getState().insertTextIntoWritingEditor('\n' + content)
   }
 
   const isEmpty = messages.length === 0
