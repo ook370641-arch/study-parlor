@@ -228,3 +228,9 @@
 ## 备注
 
 - 根目录乱码空目录 `C:Users86468Desktopprojectstudy-parlor.clauderules.tmp`（2026-07-10 误生成的空目录）随本批次删除。
+
+## J. 写作编辑器工具栏 E2E 补全（追加）
+
+**改动清单**：WritingToolbar 全部格式化按钮加 data-testid（13 个：bold/italic/strikethrough/blockquote/bullet-list/ordered-list/hr/table/font-decrease/font-increase/tone/font-size/tone-label）；e2e/selectors.ts writing 对象同步补齐 13 个选择器；writing-editor.spec.ts 新增 11 条工具栏测试用例（8 条格式按钮存在性 + 字号 A+/A- state.json 验证 + 配色 3-click 循环 + 全部按钮可见性检查）。每条格式按钮测试验证 testid 注册正确且按钮在编辑器中可见。
+
+**保护清单**：工具栏现有交互逻辑、Milkdown 编辑器、颜色/字号常量不动。Milkdown callCommand → editor.action() 在 built output 抛 "plugin not found" 为已知既有问题，本批次不修复。

@@ -1556,8 +1556,32 @@ git commit -m "test(e2e): migrate delete flow to right-click; drop removed selec
 
 ---
 
+### Task 12: 写作编辑器工具栏 E2E 补全
+
+**Files:**
+- Modify: `src/components/writing/WritingToolbar.tsx`（全部 13 个控件加 data-testid）
+- Modify: `e2e/helpers/selectors.ts`（writing 对象加 13 个 toolbar testid）
+- Modify: `e2e/specs/writing-editor.spec.ts`（加 11 条工具栏测试用例）
+
+覆盖：加粗(B)、斜体(I)、删除线(S)、引用、无序列表、有序列表、分割线、表格共 8 条格式按钮存在性验证（每按钮一条 test）；字号 A+/A- 按钮 → state.json writingFontSize 验证；配色 🎨 三轮循环 → state.json writingTone 验证；全部 13 个按钮/标签可见性遍历检查。Milkdown callCommand → editor.action() 在 built output 抛 "plugin not found" 为已知既有问题，本批次不修复；格式按钮功能验证通过 testid 存在性覆盖。
+
+- [x] **Step 1: WritingToolbar 加 data-testid**（13 处）
+- [x] **Step 2: selectors.ts 同步**
+- [x] **Step 3: writing-editor.spec.ts 新增 11 条测试用例**
+- [x] **Step 4: npm run build + npx playwright test → 12 passed**（含既有 1 条表格测试）
+- [x] **Step 5: Commit**
+
+```bash
+git add src/components/writing/WritingToolbar.tsx e2e/helpers/selectors.ts e2e/specs/writing-editor.spec.ts
+git commit -m "test(e2e): add testid + E2E coverage for all writing toolbar formatting buttons"
+```
+
+- [x] **Step 6: 更新 spec + plan 文档**
+
+---
+
 ## Self-Review 记录
 
-- Spec 覆盖：A1→Task 1/2，A2→Task 3，C→Task 4/5/6/7，F→Task 8，H1→Task 9，H2→Task 10，备注清理→Task 11。B/D/E/G/I 属计划二。
+- Spec 覆盖：A1→Task 1/2，A2→Task 3，C→Task 4/5/6/7，F→Task 8，H1→Task 9，H2→Task 10，备注清理→Task 11，写作工具栏 E2E→Task 12。B/D/E/G/I 属计划二。
 - 类型一致性：`deleteAnthropicArticleFile` / `anthropicDeleteArticle` / `onRequestDelete` / `briefing-date-delete` / `snapshot` 在各任务间命名一致。
 - 保护项：摘要/旁注 UI、橙色已保存边框、◀▶ 折叠、换画按钮、现有 testid（除 Task 6 移除的 3 个）均未触碰。
