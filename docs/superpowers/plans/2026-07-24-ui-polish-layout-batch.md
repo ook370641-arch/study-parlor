@@ -1547,7 +1547,7 @@ git commit -m "feat(digest): ❧ plaque chunk headings + grouped source cards wi
 
 **Files:** 视修复面而定。
 
-- [ ] **Step 1: 类型 + 全量单测**
+- [x] **Step 1: 类型 + 全量单测**
 
 ```bash
 npx tsc --noEmit
@@ -1556,7 +1556,7 @@ npm run test
 
 Expected: 全绿。修复所有失败（本批次改动导致的）；历史遗留失败记录不修。
 
-- [ ] **Step 2: e2e 全面排查**
+- [x] **Step 2: e2e 全面排查**
 
 顶栏移除/竖轨改动影响面大，逐个排查引用以下 testid 的 e2e：`briefing-generated-at`、`briefing-source-status`、`briefing-font-size-decrease/increase`、`briefing-sidebar-toggle`、`job-briefing-profile-entry`、`writing-assistant-resize-handle`、`article-chunk-plaque`、`briefing-source-group`：
 
@@ -1566,7 +1566,7 @@ grep -rln "briefing-generated-at\|briefing-font-size\|briefing-sidebar-toggle\|j
 
 对命中 spec 逐个运行 `npx playwright test --config e2e/playwright.config.ts <spec>` 并修复。然后跑一遍 briefing 相关 e2e 子集（startup-health、briefing、annotations、writing、assistant 关键词的 spec）。
 
-- [ ] **Step 3: 目视核对（报告给用户）**
+- [x] **Step 3: 目视核对（报告给用户）**
 
 在最终报告中写明需用户目视确认的点：竖轨玻璃质感 vs 原型 layout-real-v3、收起列两种形态、日报 ❧ 铭牌与来源卡、写作助手拖拽手感、写作页 UI 字号控件。
 
@@ -1579,8 +1579,56 @@ git commit -m "test(e2e): align specs with rail layout, assistant divider, plaqu
 
 ---
 
+### Task 14: E2E 验收补全（布局批新增/变更功能覆盖）
+
+**Files:** `e2e/specs/*.spec.ts`, `e2e/pages/*.ts`, `e2e/helpers/selectors.ts`
+
+**Goal:** 把 spec §K 的 10 条 e2e 验收用例落地为可运行的 Playwright spec，覆盖 B1/B2/D1/D2/D3/D4/D5/E1/E2/G1/I。
+
+- [ ] **Step 1: 选择器补齐**
+  - 把 spec §K 涉及的 testid 加入 `e2e/helpers/selectors.ts`（如 `railControls`, `railFontSizeDecrease`, `railFontSizeIncrease`, `writingCollapsedArticlesCount`, `writingCollapsedRepositoryCount`, `articleChunkPlaque`, `briefingSourceGroup`, `briefingSourceCardLink`, `anthropicListRailThumb` 等）。
+  - 已有 testid 保持原名，避免重复。
+
+- [ ] **Step 2: 新增/扩展 e2e spec**
+
+| 目标文件 | 用例 |
+|---|---|
+| `e2e/specs/briefing-rail-layout.spec.ts`（新建） | B1 竖轨控件布局、B2 玻璃材质 |
+| `e2e/specs/anthropic-blog-ui.spec.ts`（扩展） | B2 博客导读同高、D1 博客收起列密排+橙框 |
+| `e2e/specs/writing-list-column.spec.ts`（新建） | D4/D5 仓库 switch + newspaper 配色、D2 收起列计数 |
+| `e2e/specs/writing-tree-reorder.spec.ts`（新建） | D3 拖拽排序 |
+| `e2e/specs/briefing-font.spec.ts`（新建） | E1/E2 字号联动 |
+| `e2e/specs/writing-assistant-resize.spec.ts`（扩展） | G1 ArticleDivider 折叠/拖拽 |
+| `e2e/specs/briefing-source-cards.spec.ts`（新建） | I ❧ 铭牌 + 来源卡 |
+
+- [ ] **Step 3: mock / seed 策略**
+  - 日报/博客/求职使用确定性 seed 或 fixture，不依赖真实 LLM。
+  - 博客 15 篇文章用 fixture 或 seed helper 生成。
+  - 写作树文件用 `seedWritingTree` helper（若不存在则创建）。
+  - 拖拽排序后通过 `window.location.reload()` 或 state.json 后门验证持久化。
+
+- [ ] **Step 4: 运行并修复**
+
+```bash
+npm run build
+npx playwright test --config e2e/playwright.config.ts briefing-rail-layout anthropic-blog-ui writing-list-column writing-tree-reorder briefing-font writing-assistant-resize briefing-source-cards
+```
+
+Expected: 全绿。
+
+- [ ] **Step 5: 文档同步**
+  - 更新 `e2e/README.md` 目录与标签说明。
+  - 更新本 plan Task 13 Step 4 commit 为包含新增 e2e 的 commit。
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add e2e/specs e2e/pages e2e/helpers/selectors.ts docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md docs/superpowers/plans/2026-07-24-ui-polish-layout-batch.md
+git commit -m "test(e2e): add acceptance specs for rail layout, list columns, source cards, font keys"
+```
+
+---
+
 ## Self-Review 记录
 
-- Spec 覆盖：B1→Task 1/2，B2→Task 3，D1→Task 4，D4/D5→Task 5，D2→Task 6，D3→Task 7，E1→Task 8，E2→Task 9，G1→Task 10，G2→Task 11，I→Task 12，回归→Task 13。
-- 命名一致性：`writingOrder` / `writingUIFontSize` / `WRITING_UI_STYLES` / `BRIEFING_LIST_STYLES` / `BRIEFING_QUOTE_SIZES` / `WRITING_UI_QUOTE_SIZES` / `BriefingMetaLine` / `BriefingSourceCard` / `extractFirstLink` / `article-chunk-plaque` / `briefing-source-card` 各任务间一致。
-- 保护项核对：摘要/旁注位置样式交互未动；橙色已保存边框/◀▶ 折叠/换画按钮/作家语录刷新按钮保留；`writingAssistantOpen/Width` key 语义不变；newspaper 主题仅结构随迁。
+- Spec 覆盖：B1→Task 1/2，B2→Task 3，D1→Task 4，D4/D5→Task 5，D2→Task 6，D3→Task 7，E1→Task 8，E2→Task 9，G1→Task 10，G2→Task 11，I→Task 12，回归→Task 13，E2E 验收补全→Task 14。
