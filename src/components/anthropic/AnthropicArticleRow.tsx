@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
@@ -17,13 +17,12 @@ function formatDate(iso: string | null | undefined) {
   }
 }
 
-export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
+export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
   const openReader = useStore((s) => s.openAnthropicReader)
   const [importing, setImporting] = useState(false)
-  const [hovered, setHovered] = useState(false)
 
   const handleClick = async () => {
     if (importing) {
@@ -100,8 +99,6 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
     <button
       data-testid="anthropic-article-row"
       onClick={handleClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       disabled={false}
       className={`w-full text-left rounded border p-4 transition-colors group relative overflow-hidden ${borderClass} ${bgClass} ${hoverBorder}`}
       style={borderStyle}
@@ -137,8 +134,8 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
         <div className="flex-1 min-w-0">
           <h3
             data-testid="anthropic-article-title"
-            className={`text-base font-serif transition-colors ${
-              hovered && !importing ? '' : 'line-clamp-1'
+            className={`text-base font-serif transition-colors line-clamp-1 ${
+              importing ? '' : 'group-hover:line-clamp-none'
             } ${titleColor} ${titleHover}`}
           >
             {article.title}
@@ -153,4 +150,4 @@ export function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
       {article.isSaved && <span data-testid="anthropic-article-saved" className="sr-only" />}
     </button>
   )
-}
+})

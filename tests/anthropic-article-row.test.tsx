@@ -85,11 +85,19 @@ describe('AnthropicArticleRow', () => {
     expect(screen.queryByText('A great article about AI')).not.toBeInTheDocument()
   })
 
-  it('truncates title by default and removes line-clamp on hover', () => {
+  it('keeps line-clamp-1 on mouseEnter (unclamp is CSS group-hover, not React state)', () => {
     render(<AnthropicArticleRow article={article()} theme="academic" />)
     const title = screen.getByTestId('anthropic-article-title')
     expect(title).toHaveClass('line-clamp-1')
     fireEvent.mouseEnter(screen.getByTestId('anthropic-article-row'))
-    expect(title).not.toHaveClass('line-clamp-1')
+    expect(title).toHaveClass('line-clamp-1')
+    expect(title).toHaveClass('group-hover:line-clamp-none')
+  })
+
+  it('clamps title to one line and unclamps via CSS group-hover (no React hover state)', () => {
+    render(<AnthropicArticleRow article={article()} theme="academic" />)
+    const title = screen.getByTestId('anthropic-article-title')
+    expect(title).toHaveClass('line-clamp-1')
+    expect(title).toHaveClass('group-hover:line-clamp-none')
   })
 })
