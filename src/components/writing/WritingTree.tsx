@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import type { WritingTreeNode, WritingRoot } from '@shared/index'
 import { PromptDialog } from './PromptDialog'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 interface PromptState {
   title: string
@@ -57,11 +58,10 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
     })
   }
 
-  const doDelete = async () => {
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const doDelete = () => {
     closeMenu()
-    if (!window.confirm(`确定删除「${node.name}」？此操作不可撤销。`)) return
-    const r = await ipc.writingDelete({ path: node.path })
-    if (r.ok) await loadWritingTree()
+    setConfirmingDelete(true)
   }
 
   const doNewFile = () => {
@@ -200,6 +200,24 @@ function TreeNode({ node, depth, root }: { node: WritingTreeNode; depth: number;
           onCancel={() => setPrompt(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="删除"
+        icon="trash"
+        confirmLabel="删除"
+        confirmVariant="danger"
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={() => {
+          setConfirmingDelete(false)
+          void (async () => {
+            const r = await ipc.writingDelete({ path: node.path })
+            if (r.ok) await loadWritingTree()
+          })()
+        }}
+      >
+        <p>确定删除「{node.name}」？此操作不可撤销。</p>
+      </ConfirmDialog>
     </div>
   )
 }
