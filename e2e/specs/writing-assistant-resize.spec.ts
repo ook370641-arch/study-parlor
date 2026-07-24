@@ -59,4 +59,19 @@ test.describe('@p2 writing-assistant-resize', () => {
     expect(after.width).toBeLessThan(before.width - 50)
     expect(after.width).toBeGreaterThanOrEqual(200)
   })
+
+  test('divider toggle collapses panel to ember strip', async ({ window, testLibraryPath }) => {
+    await setup(window, testLibraryPath)
+
+    const assistant = new WritingAssistantPanel(window)
+    await assistant.open()
+    await expect(window.locator(SELECTORS.writing.assistantPanel)).toBeVisible()
+
+    // The divider toggle button sits on the shared ArticleDivider.
+    // Use dispatchEvent because the divider captures pointer events.
+    await window.locator(SELECTORS.articleAssistant.dividerToggle).dispatchEvent('click')
+
+    await expect(window.locator(SELECTORS.writing.assistantPanel)).toBeHidden()
+    await expect(window.locator(SELECTORS.writing.assistantCollapsed)).toBeVisible()
+  })
 })

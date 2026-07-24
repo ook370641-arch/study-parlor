@@ -59,11 +59,14 @@ e2e/
 │   └── StudyPage.ts         # Study 页
 ├── specs/
 │   ├── briefing-aesthetics.spec.ts    (来源 spec: docs/superpowers/specs/2026-07-23-briefing-ui-design.md, mock 链路, @p1)
+│   ├── briefing-rail-layout.spec.ts   (来源 spec: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md §K, mock 链路, @p2)
+│   ├── briefing-source-cards.spec.ts  (来源 spec: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md §K, mock 链路, @p2)
 │   ├── briefing-generation.spec.ts
 │   ├── briefing-real-api.spec.ts
 │   ├── briefing-real-generation.spec.ts
 │   ├── briefing-ux-optimization.spec.ts
 │   ├── briefing.spec.ts
+│   ├── writing-list-column.spec.ts    (来源 spec: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md §K, mock 链路, @p2)
 │   ├── smoke.spec.ts
 │   ├── new-topic-progress.spec.ts
 │   ├── continue-topic.spec.ts

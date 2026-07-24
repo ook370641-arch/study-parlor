@@ -225,6 +225,23 @@
 - testid 迁移清单随实现 PR 一并列出。
 - 性能项（A）以人工验证 + 关键路径不掉帧为准，必要时加渲染计数断言。
 
+## K. E2E 验收清单（布局批补充）
+
+以下为本批次新增/变更功能必须在 e2e 中验证的用例；spec 批准后同步写入 plan 的 Task 14。
+
+| 需求组 | e2e 用例 | 关键断言 | 来源 |
+|---|---|---|---|
+| B1 | 竖轨控件布局 | `briefing-rail-controls` 可见；A−/A＋ testid 在左下角；job 源才显示 `job-briefing-profile-entry`；顶栏不再存在 | Task 1 |
+| B1 | 玻璃材质 | academic 下 `briefing-source-sidebar/list-column/content-shell` 含 `backdrop-blur-md`；newspaper 下不含 | Task 2 |
+| B2 | 博客导读同高 | 博客打开文章后 `article-assistant-panel` 在面板根层级；关闭 reader 后消失 | Task 3 |
+| D1 | 博客收起列 | 折叠后 `anthropic-list-rail-thumb` 数量 > 10；已保存 thumb 含 `border-ember` | Task 4 |
+| D4/D5 | 写作列 switch | tab 文案为「仓库」非 repository；aria-pressed 切换；newspaper 下文字深色 | Task 5 |
+| D2 | 写作收起列计数 | 折叠后显示 `writing-collapsed-articles-count`/`writing-collapsed-repository-count` 且与文件数一致；树节点不可见 | Task 6 |
+| D3 | 写作拖拽排序 | 拖放文件节点后顺序持久化（reload 后保持） | Task 7 |
+| E1/E2 | 字号联动 | 点击左下字号按钮后对应 surface 字体大小变化（CSS var / class 断言） | Task 8/9 |
+| G1 | 写作助手 divider | `article-assistant-divider` 可见；拖动改变宽度；toggle 折叠为 `writing-assistant-collapsed` | Task 10 |
+| I | ❧ 铭牌与来源卡 | 展开来源后 `briefing-source-group` 可见且含组标题；`briefing-source-card-link` 链接正确；chunk heading 为 `article-chunk-plaque` 且含 ❧ 不含 § | Task 12 |
+
 ## 备注
 
 - 根目录乱码空目录 `C:Users86468Desktopprojectstudy-parlor.clauderules.tmp`（2026-07-10 误生成的空目录）随本批次删除。

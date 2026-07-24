@@ -109,6 +109,47 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
     await expect(savedRow).toHaveClass(/border-b-\[rgba\(232,213,183,0\.12\)\]/)
   })
 
+  test('collapsed rail shows saved articles with ember border', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
+
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
+    await prompt.waitFor({ timeout: 120000 }).catch(() => {})
+    const promptVisible = await prompt.isVisible().catch(() => false)
+    if (promptVisible) await prompt.click()
+
+    const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+    await rows.first().waitFor({ timeout: 120000 })
+
+    // Import the first article so we have a saved one to check in collapsed rail
+    const savedRow = rows
+      .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      .first()
+    if (!(await savedRow.isVisible().catch(() => false))) {
+      await rows.first().click()
+      await window
+        .locator(SELECTORS.briefing.anthropicArticleReader)
+        .waitFor({ state: 'visible', timeout: 120000 })
+    }
+    await expect(savedRow).toBeVisible({ timeout: 10000 })
+
+    // Collapse the list column
+    await window.locator(SELECTORS.briefing.listColumnToggle).click()
+    const listColumn = window.locator(SELECTORS.briefing.listColumn)
+    await expect(listColumn).toHaveClass(/w-14/)
+
+    const thumbs = window.locator(SELECTORS.briefing.anthropicListRailThumb)
+    await expect(thumbs.first()).toBeVisible()
+
+    // At least one thumb should have the ember border (saved) and one should not (unsaved)
+    const classNames = await thumbs.evaluateAll((els) => els.map((el) => el.className))
+    expect(classNames.some((c) => c.includes('border-ember'))).toBe(true)
+    expect(classNames.some((c) => !c.includes('border-ember'))).toBe(true)
+  })
+
   test('未导入文章行四边均为棕色（无白/灰残留）', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')

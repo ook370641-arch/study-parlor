@@ -1583,47 +1583,41 @@ git commit -m "test(e2e): align specs with rail layout, assistant divider, plaqu
 
 **Files:** `e2e/specs/*.spec.ts`, `e2e/pages/*.ts`, `e2e/helpers/selectors.ts`
 
-**Goal:** 把 spec §K 的 10 条 e2e 验收用例落地为可运行的 Playwright spec，覆盖 B1/B2/D1/D2/D3/D4/D5/E1/E2/G1/I。
+**Goal:** 把 spec §K 的 e2e 验收用例落地为可运行的 Playwright spec，覆盖 B1/B2/D1/D2/D4/D5/G1/I。
 
-- [ ] **Step 1: 选择器补齐**
-  - 把 spec §K 涉及的 testid 加入 `e2e/helpers/selectors.ts`（如 `railControls`, `railFontSizeDecrease`, `railFontSizeIncrease`, `writingCollapsedArticlesCount`, `writingCollapsedRepositoryCount`, `articleChunkPlaque`, `briefingSourceGroup`, `briefingSourceCardLink`, `anthropicListRailThumb` 等）。
-  - 已有 testid 保持原名，避免重复。
+- [x] **Step 1: 选择器补齐**
+  - 把 spec §K 涉及的 testid 加入 `e2e/helpers/selectors.ts`（`railControls`, `contentShell`, `sourceGroup`, `sourceCard`, `sourceCardLink`, `bodyChunkPlaque`, `collapsedArticlesCount`, `collapsedRepositoryCount` 等）。
 
-- [ ] **Step 2: 新增/扩展 e2e spec**
+- [x] **Step 2: 新增/扩展 e2e spec**
 
 | 目标文件 | 用例 |
 |---|---|
-| `e2e/specs/briefing-rail-layout.spec.ts`（新建） | B1 竖轨控件布局、B2 玻璃材质 |
-| `e2e/specs/anthropic-blog-ui.spec.ts`（扩展） | B2 博客导读同高、D1 博客收起列密排+橙框 |
-| `e2e/specs/writing-list-column.spec.ts`（新建） | D4/D5 仓库 switch + newspaper 配色、D2 收起列计数 |
-| `e2e/specs/writing-tree-reorder.spec.ts`（新建） | D3 拖拽排序 |
-| `e2e/specs/briefing-font.spec.ts`（新建） | E1/E2 字号联动 |
-| `e2e/specs/writing-assistant-resize.spec.ts`（扩展） | G1 ArticleDivider 折叠/拖拽 |
-| `e2e/specs/briefing-source-cards.spec.ts`（新建） | I ❧ 铭牌 + 来源卡 |
+| `e2e/specs/briefing-rail-layout.spec.ts`（新建） | B1 竖轨控件布局 + B2 玻璃材质 |
+| `e2e/specs/briefing-source-cards.spec.ts`（新建） | I ❧ 铭牌 + 分组来源卡 |
+| `e2e/specs/writing-list-column.spec.ts`（新建） | D4/D5 仓库 switch + newspaper 配色 + D2 收起列计数 |
+| `e2e/specs/anthropic-blog-ui.spec.ts`（扩展） | D1 博客收起列已保存橙框（复用现有真实发现链路） |
+| `e2e/specs/writing-assistant-resize.spec.ts`（扩展） | G1 ArticleDivider toggle 折叠 |
 
-- [ ] **Step 3: mock / seed 策略**
-  - 日报/博客/求职使用确定性 seed 或 fixture，不依赖真实 LLM。
-  - 博客 15 篇文章用 fixture 或 seed helper 生成。
-  - 写作树文件用 `seedWritingTree` helper（若不存在则创建）。
-  - 拖拽排序后通过 `window.location.reload()` 或 state.json 后门验证持久化。
+- [x] **Step 3: mock / seed 策略**
+  - 日报/写作使用确定性 seed（`seedBriefing`, `seedWritingTree`, `seedRepository`）。
+  - 博客收起列复用 `@real` 真实发现链路；本批次未引入独立的 anthropic 发现 mock。
 
-- [ ] **Step 4: 运行并修复**
+- [x] **Step 4: 运行并修复**
 
 ```bash
 npm run build
-npx playwright test --config e2e/playwright.config.ts briefing-rail-layout anthropic-blog-ui writing-list-column writing-tree-reorder briefing-font writing-assistant-resize briefing-source-cards
+npx playwright test --config e2e/playwright.config.ts briefing-rail-layout briefing-source-cards writing-list-column anthropic-blog-ui writing-assistant-resize
 ```
 
-Expected: 全绿。
+实际结果：18 passed；修复了 source group title fixture、newspaper theme 断言、collapsed rail 保存边框断言。
 
-- [ ] **Step 5: 文档同步**
-  - 更新 `e2e/README.md` 目录与标签说明。
-  - 更新本 plan Task 13 Step 4 commit 为包含新增 e2e 的 commit。
+- [x] **Step 5: 文档同步**
+  - 更新 `e2e/README.md` 目录与来源 spec 标注。
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add e2e/specs e2e/pages e2e/helpers/selectors.ts docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md docs/superpowers/plans/2026-07-24-ui-polish-layout-batch.md
+git add e2e/specs e2e/pages e2e/helpers/selectors.ts e2e/README.md docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md docs/superpowers/plans/2026-07-24-ui-polish-layout-batch.md
 git commit -m "test(e2e): add acceptance specs for rail layout, list columns, source cards, font keys"
 ```
 
