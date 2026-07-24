@@ -149,14 +149,15 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
         <div className="flex-1 min-w-0">
           <h3
             data-testid="anthropic-article-title"
-            className={`text-base font-serif transition-colors line-clamp-1 ${
+            className={`font-serif transition-colors line-clamp-1 ${
               importing ? '' : 'group-hover:line-clamp-none'
             } ${titleColor} ${titleHover}`}
+            style={{ fontSize: 'var(--briefing-list-title-size)' }}
           >
             {article.title}
             {importing && <Spinner />}
           </h3>
-          <p className={`text-xs mt-1 ${mutedText}`}>
+          <p className={`mt-1 ${mutedText}`} style={{ fontSize: 'var(--briefing-list-meta-size)' }}>
             {importing ? '导入中…' : formatDate(article.publishedAt)}
           </p>
         </div>

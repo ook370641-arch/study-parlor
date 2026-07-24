@@ -24,6 +24,7 @@ vi.mock('@/lib/paintings', () => ({
 
 import { useStore } from '@/store'
 import { Briefing } from '@/pages/Briefing'
+import { BRIEFING_LIST_STYLES, BRIEFING_QUOTE_SIZES } from '@/lib/briefing-font-size'
 
 describe('Briefing date column', () => {
   beforeEach(() => {
@@ -105,5 +106,32 @@ describe('Briefing global chrome', () => {
     render(<Briefing />)
     expect(screen.queryByTestId('surface-background')).not.toBeInTheDocument()
     expect(screen.queryByTestId('briefing-swap-painting-button')).not.toBeInTheDocument()
+  })
+})
+
+describe('Briefing font CSS vars', () => {
+  beforeEach(() => {
+    cleanup()
+    useStore.setState({
+      briefing: { result: null, loading: false, error: null },
+      briefingSource: 'digest',
+      briefingTheme: 'academic',
+      briefingHistory: { list: [], loading: false, error: null },
+      briefingFontSize: 'lg',
+      currentPaintings: {
+        briefing: null,
+        cover: null,
+        home: null,
+        study: null,
+      },
+    })
+  })
+
+  it('sets --briefing-list-title-size/--briefing-list-meta-size/--briefing-quote-size vars on the page root', () => {
+    render(<Briefing />)
+    const page = screen.getByTestId('briefing-page')
+    expect(page.style.getPropertyValue('--briefing-list-title-size')).toBe(BRIEFING_LIST_STYLES.lg.title)
+    expect(page.style.getPropertyValue('--briefing-list-meta-size')).toBe(BRIEFING_LIST_STYLES.lg.meta)
+    expect(page.style.getPropertyValue('--briefing-quote-size')).toBe(BRIEFING_QUOTE_SIZES.lg)
   })
 })

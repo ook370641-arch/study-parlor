@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { BRIEFING_FONT_SIZES, BRIEFING_LIST_STYLES, BRIEFING_QUOTE_SIZES } from '@/lib/briefing-font-size'
 
 const markdownCss = fs.readFileSync(path.join(process.cwd(), 'src/components/md/markdown.css'), 'utf8')
 
@@ -25,5 +26,30 @@ describe('constellation motion fallbacks', () => {
     expect(globals).toContain('@keyframes wellPulse')
     expect(globals).toContain('prefers-reduced-motion')
     expect(globals).toContain('.constellation-animated')
+  })
+})
+
+describe('briefing font size extension', () => {
+  it('exposes list title/meta and quote sizes for every font step', () => {
+    for (const size of BRIEFING_FONT_SIZES) {
+      expect(BRIEFING_LIST_STYLES[size].title).toMatch(/px$/)
+      expect(BRIEFING_LIST_STYLES[size].meta).toMatch(/px$/)
+      expect(BRIEFING_QUOTE_SIZES[size]).toMatch(/px$/)
+    }
+  })
+
+  it('list title grows from 13px to 22px across the scale', () => {
+    expect(BRIEFING_LIST_STYLES.sm.title).toBe('13px')
+    expect(BRIEFING_LIST_STYLES['7xl'].title).toBe('22px')
+  })
+
+  it('list meta grows from 10px to 18px across the scale', () => {
+    expect(BRIEFING_LIST_STYLES.sm.meta).toBe('10px')
+    expect(BRIEFING_LIST_STYLES['7xl'].meta).toBe('18px')
+  })
+
+  it('quote size grows from 12px to 21px across the scale', () => {
+    expect(BRIEFING_QUOTE_SIZES.sm).toBe('12px')
+    expect(BRIEFING_QUOTE_SIZES['7xl']).toBe('21px')
   })
 })

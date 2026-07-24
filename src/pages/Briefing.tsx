@@ -25,6 +25,8 @@ import {
   NEWSPAPER_BODY_STYLES,
   ACADEMIC_HEADING_STYLES,
   NEWSPAPER_HEADING_STYLES,
+  BRIEFING_LIST_STYLES,
+  BRIEFING_QUOTE_SIZES,
 } from '@/lib/briefing-font-size'
 
 // 非组件导出会破坏 React Fast Refresh（hmr invalidate 一路推到 App 整树重挂载），
@@ -98,6 +100,9 @@ export function Briefing() {
     '--briefing-body-weight': String(bodyStyle.weight),
     '--briefing-heading-size': headingStyle.size,
     '--briefing-heading-weight': String(headingStyle.weight),
+    '--briefing-list-title-size': BRIEFING_LIST_STYLES[fontSize].title,
+    '--briefing-list-meta-size': BRIEFING_LIST_STYLES[fontSize].meta,
+    '--briefing-quote-size': BRIEFING_QUOTE_SIZES[fontSize],
   } as React.CSSProperties
 
   const isDigestLoading = source === 'digest' && loading

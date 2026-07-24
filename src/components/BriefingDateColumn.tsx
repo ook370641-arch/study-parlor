@@ -81,7 +81,8 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
               e.preventDefault()
               setMenu({ x: e.clientX, y: e.clientY, item })
             }}
-            className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${isCurrent ? activeItem : itemBase}`}>
+            className={`w-full text-left px-3 py-2 rounded transition-colors ${isCurrent ? activeItem : itemBase}`}
+            style={{ fontSize: 'var(--briefing-list-title-size)' }}>
             {entry.isToday ? todayLabel : formatLabel(entry.date)}
           </button>
         )

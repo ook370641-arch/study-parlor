@@ -27,8 +27,8 @@ export function Quote({ surface }: Props) {
         <div className={`border-t border-b ${isAcademic ? 'border-ember/35' : 'border-[#1a1a1a]/25'} px-4 py-2.5`}>
           <div
             data-testid="quote-text"
-            className={`font-serif italic text-[13px] leading-relaxed ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}
-            style={isAcademic ? { textShadow: '0 1px 6px rgba(0,0,0,0.6)' } : undefined}
+            className={`font-serif italic leading-relaxed ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}
+            style={{ fontSize: 'var(--briefing-quote-size)', ...(isAcademic ? { textShadow: '0 1px 6px rgba(0,0,0,0.6)' } : {}) }}
           >
             “{quote.text}”
           </div>
