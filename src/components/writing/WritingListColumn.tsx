@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { writingTreeContainsPath, countFiles } from '@/lib/writing-tree-utils'
+import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 import { WritingTree } from './WritingTree'
 import { PromptDialog } from './PromptDialog'
 
@@ -18,6 +19,7 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   const loadWritingTree = useStore(s => s.loadWritingTree)
   const selectWritingFile = useStore(s => s.selectWritingFile)
   const tree = useStore(s => s.writingTree)
+  const writingUISize = useStore(s => s.writingUIFontSize)
 
   const dim = isAcademic ? 'text-parchment/60 hover:text-parchment/80' : 'text-[#6b5d52] hover:text-[#2a1f1a]'
   const tabIdle = isAcademic ? 'text-parchment/50 hover:text-parchment/70' : 'text-[#6b5d52]/70 hover:text-[#6b5d52]'
@@ -100,7 +102,7 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={{ ['--writing-ui-size' as string]: WRITING_UI_STYLES[writingUISize] }}>
       <div className={`flex m-2 rounded-lg border ${borderCol} text-xs shrink-0 overflow-hidden`} role="tablist">
         {(['articles', 'repository'] as const).map(t => (
           <button
@@ -114,6 +116,7 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
                 ? isAcademic ? 'bg-ember/20 text-ember' : 'bg-[#1a1a1a] text-white'
                 : tabIdle
             }`}
+            style={{ fontSize: 'var(--writing-ui-size)' }}
           >
             {t === 'articles' ? '文章' : '仓库'}
           </button>
@@ -123,16 +126,16 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
         {tab === 'articles' ? (
           <div>
             <div className="p-2 flex gap-2 text-xs">
-              <button data-testid="writing-new-file" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleCreateFile}>＋ 新建文章</button>
-              <button data-testid="writing-new-folder" className={dim} onClick={handleCreateFolder}>新建分组</button>
+              <button data-testid="writing-new-file" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleCreateFile} style={{ fontSize: 'var(--writing-ui-size)' }}>＋ 新建文章</button>
+              <button data-testid="writing-new-folder" className={dim} onClick={handleCreateFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>新建分组</button>
             </div>
             <WritingTree root="writing" theme={theme} />
           </div>
         ) : (
           <div>
             <div className="p-2 flex gap-2 text-xs">
-              <button data-testid="writing-import-files" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleImportFiles}>⬆ 导入文件…</button>
-              <button data-testid="writing-repo-new-folder" className={dim} onClick={handleCreateRepoFolder}>新建分组</button>
+              <button data-testid="writing-import-files" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleImportFiles} style={{ fontSize: 'var(--writing-ui-size)' }}>⬆ 导入文件…</button>
+              <button data-testid="writing-repo-new-folder" className={dim} onClick={handleCreateRepoFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>新建分组</button>
             </div>
             <WritingTree root="repository" theme={theme} />
           </div>

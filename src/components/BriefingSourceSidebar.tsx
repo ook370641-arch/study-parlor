@@ -73,9 +73,14 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const increase = useStore((s) => s.increaseBriefingFontSize)
   const decrease = useStore((s) => s.decreaseBriefingFontSize)
   const fontSize = useStore((s) => s.briefingFontSize)
+  const increaseWritingUI = useStore((s) => s.increaseWritingUIFontSize)
+  const decreaseWritingUI = useStore((s) => s.decreaseWritingUIFontSize)
+  const writingUISize = useStore((s) => s.writingUIFontSize)
   const goto = useStore((s) => s.goto)
   const canDecrease = fontSize !== 'sm'
   const canIncrease = fontSize !== '7xl'
+  const canDecreaseWritingUI = writingUISize !== 'sm'
+  const canIncreaseWritingUI = writingUISize !== '7xl'
 
   const isAcademic = theme !== 'newspaper'
 
@@ -178,26 +183,53 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         className={`flex ${collapsed ? 'flex-col items-center' : 'flex-row items-center'} gap-1 p-2 ${themeClasses.railBorder}`}
       >
         <BackToCover className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'} />
-        <Button
-          variant="ghost"
-          onClick={decrease}
-          disabled={!canDecrease}
-          data-testid="briefing-font-size-decrease"
-          className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
-          title="减小字号"
-        >
-          -
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={increase}
-          disabled={!canIncrease}
-          data-testid="briefing-font-size-increase"
-          className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
-          title="增大字号"
-        >
-          +
-        </Button>
+        {source === 'writing' ? (
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => void decreaseWritingUI()}
+              disabled={!canDecreaseWritingUI}
+              data-testid="writing-ui-font-size-decrease"
+              className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
+              title="减小界面字号"
+            >
+              -
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => void increaseWritingUI()}
+              disabled={!canIncreaseWritingUI}
+              data-testid="writing-ui-font-size-increase"
+              className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
+              title="增大界面字号"
+            >
+              +
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="ghost"
+              onClick={decrease}
+              disabled={!canDecrease}
+              data-testid="briefing-font-size-decrease"
+              className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
+              title="减小字号"
+            >
+              -
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={increase}
+              disabled={!canIncrease}
+              data-testid="briefing-font-size-increase"
+              className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
+              title="增大字号"
+            >
+              +
+            </Button>
+          </>
+        )}
         <BriefingThemeToggle />
         {source === 'job-briefing' && (
           <Button

@@ -483,6 +483,7 @@ export type StateJson = {
   writingAssistantOpen?: boolean
   lastWritingFile?: string | null
   writingOrder?: Record<string, string[]>
+  writingUIFontSize?: BriefingFontSize
 }
 
 export type IpcApi = {

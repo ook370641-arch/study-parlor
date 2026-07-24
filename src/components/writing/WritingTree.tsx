@@ -105,14 +105,14 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
     <div>
       <div
         data-testid="writing-tree-node"
-        className={`flex items-center gap-1 px-2 py-1 cursor-pointer text-xs rounded transition-colors select-none
+        className={`flex items-center gap-1 px-2 py-1 cursor-pointer rounded transition-colors select-none
           ${isSelected
             ? isAcademic ? 'bg-ember/10 text-ember' : 'bg-[#1a1a1a]/10 text-[#1a1a1a]'
             : isAcademic ? 'text-parchment/70 hover:text-parchment hover:bg-parchment/5' : 'text-[#6b5d52] hover:text-[#2a1f1a] hover:bg-black/5'}
           ${dragOver ? 'ring-1 ring-ember/50' : ''}
           ${dropPos === 'before' ? 'border-t-2 border-ember' : ''}
           ${dropPos === 'after' ? 'border-b-2 border-ember' : ''}`}
-        style={{ paddingLeft: `${depth * 16 + 8}px` }}
+        style={{ fontSize: 'var(--writing-ui-size)', paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         onMouseEnter={() => setHovered(true)}

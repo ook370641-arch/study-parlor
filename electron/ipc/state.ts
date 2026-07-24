@@ -35,6 +35,7 @@ const DEFAULT: StateJson = {
   writingAssistantOpen: false,
   lastWritingFile: null,
   writingOrder: {},
+  writingUIFontSize: 'base',
 }
 
 let currentState: StateJson | null = null

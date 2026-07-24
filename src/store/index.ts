@@ -316,6 +316,9 @@ type AppStore = {
   writingEditorAction: ((fn: (ctx: any) => void) => void) | null
   lastWritingFile: string | null
   writingOrder: Record<string, string[]>
+  writingUIFontSize: BriefingFontSize
+  increaseWritingUIFontSize: () => Promise<void>
+  decreaseWritingUIFontSize: () => Promise<void>
 
   // 写作助手
   writingAssistant: {
@@ -439,6 +442,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingEditorAction: null,
   lastWritingFile: null,
   writingOrder: {},
+  writingUIFontSize: 'base',
   writingAssistant: null,
 
   init: async () => {
@@ -475,6 +479,7 @@ export const useStore = create<AppStore>((set, get) => ({
       writingAssistantOpen: state.writingAssistantOpen ?? false,
       lastWritingFile: state.lastWritingFile ?? null,
       writingOrder: state.writingOrder ?? {},
+      writingUIFontSize: state.writingUIFontSize ?? 'base',
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       session_count: state.ui?.session_count ?? 0,
@@ -826,6 +831,24 @@ export const useStore = create<AppStore>((set, get) => ({
     if (prev === current) return
     set({ externalSummaryFontSize: prev })
     await ipc.patchState({ externalSummaryFontSize: prev } as Partial<StateJson>)
+  },
+
+  increaseWritingUIFontSize: async () => {
+    const { nextFontSize } = await import('@/lib/briefing-font-size')
+    const current = get().writingUIFontSize
+    const next = nextFontSize(current)
+    if (next === current) return
+    set({ writingUIFontSize: next })
+    await ipc.patchState({ writingUIFontSize: next } as Partial<StateJson>)
+  },
+
+  decreaseWritingUIFontSize: async () => {
+    const { prevFontSize } = await import('@/lib/briefing-font-size')
+    const current = get().writingUIFontSize
+    const prev = prevFontSize(current)
+    if (prev === current) return
+    set({ writingUIFontSize: prev })
+    await ipc.patchState({ writingUIFontSize: prev } as Partial<StateJson>)
   },
 
   setBriefingStage: (stage) => set({ briefingStage: stage }),

@@ -83,6 +83,13 @@ export const BRIEFING_QUOTE_SIZES: Record<BriefingFontSize, string> = {
   '3xl': '17px', '4xl': '18px', '5xl': '19px', '6xl': '20px', '7xl': '21px',
 }
 
+export const WRITING_UI_STYLES: Record<BriefingFontSize, string> = {
+  sm: '11px', base: '12px', lg: '13px', xl: '14px', '2xl': '15px',
+  '3xl': '16px', '4xl': '17px', '5xl': '18px', '6xl': '19px', '7xl': '20px',
+}
+
+export const WRITING_UI_QUOTE_SIZES: Record<BriefingFontSize, string> = { ...BRIEFING_QUOTE_SIZES }
+
 export function nextFontSize(current: BriefingFontSize): BriefingFontSize {
   const idx = BRIEFING_FONT_SIZES.indexOf(current)
   return BRIEFING_FONT_SIZES[Math.min(idx + 1, BRIEFING_FONT_SIZES.length - 1)]

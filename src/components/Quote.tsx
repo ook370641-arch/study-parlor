@@ -3,7 +3,7 @@ import { pickRandomQuote, type Quote as QuoteType } from '@/lib/quotes'
 import { useStore } from '@/store'
 
 type Props = {
-  surface: 'cover' | 'home' | 'study' | 'briefing'
+  surface: 'cover' | 'home' | 'study' | 'briefing' | 'writing'
 }
 
 export function Quote({ surface }: Props) {
@@ -21,23 +21,24 @@ export function Quote({ surface }: Props) {
 
   const isCover = surface === 'cover'
 
-  if (surface === 'briefing') {
+  if (surface === 'briefing' || surface === 'writing') {
+    const sizeVar = surface === 'writing' ? 'var(--writing-ui-quote-size)' : 'var(--briefing-quote-size)'
     return (
       <div className="group max-w-[480px] mx-auto text-center" data-testid="quote-band">
         <div className={`border-t border-b ${isAcademic ? 'border-ember/35' : 'border-[#1a1a1a]/25'} px-4 py-2.5`}>
           <div
             data-testid="quote-text"
             className={`font-serif italic leading-relaxed ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}
-            style={{ fontSize: 'var(--briefing-quote-size)', ...(isAcademic ? { textShadow: '0 1px 6px rgba(0,0,0,0.6)' } : {}) }}
+            style={{ fontSize: sizeVar, ...(isAcademic ? { textShadow: '0 1px 6px rgba(0,0,0,0.6)' } : {}) }}
           >
-            “{quote.text}”
+            {"“"}{quote.text}{"”"}
           </div>
           <div className={`mt-1 inline-flex items-center gap-2 font-sans text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#1a1a1a]/50'}`}>
             <span data-testid="quote-meta">
-              — {quote.author}
+              {"—"} {quote.author}
               {quote.source && (
                 <>
-                  <span className={`mx-1 ${isAcademic ? 'text-parchment/30' : 'text-[#1a1a1a]/30'}`}>·</span>
+                  <span className={`mx-1 ${isAcademic ? 'text-parchment/30' : 'text-[#1a1a1a]/30'}`}>{"·"}</span>
                   {quote.source}
                 </>
               )}
@@ -48,7 +49,7 @@ export function Quote({ surface }: Props) {
               data-testid="quote-refresh-button"
               title="换一句"
             >
-              ↻
+              {"↻"}
             </button>
           </div>
         </div>
@@ -69,7 +70,7 @@ export function Quote({ surface }: Props) {
         className="font-serif text-[26px] leading-relaxed text-parchment"
         style={{ textShadow: '0 1px 8px rgba(0,0,0,0.75)' }}
       >
-        “{quote.text}”
+        {"“"}{quote.text}{"”"}
       </div>
 
       {quote.original && (
@@ -84,10 +85,10 @@ export function Quote({ surface }: Props) {
 
       <div className="mt-3 inline-flex items-center gap-2 font-sans text-sm text-parchment/80">
         <span data-testid="quote-meta">
-          — {quote.author}
+          {"—"} {quote.author}
           {quote.source && (
             <>
-              <span className="mx-1.5 text-parchment/40">·</span>
+              <span className="mx-1.5 text-parchment/40">{"·"}</span>
               {quote.source}
             </>
           )}
@@ -98,7 +99,7 @@ export function Quote({ surface }: Props) {
           data-testid="quote-refresh-button"
           title="换一句"
         >
-          ↻
+          {"↻"}
         </button>
       </div>
     </div>

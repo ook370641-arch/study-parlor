@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { WritingToolbar } from './WritingToolbar'
-import { ACADEMIC_BODY_STYLES } from '@/lib/briefing-font-size'
+import { ACADEMIC_BODY_STYLES, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
 import { Quote } from '@/components/Quote'
 
 const TONE_COLORS = {
@@ -15,6 +15,7 @@ export function WritingBoard() {
   const file = useStore(s => s.writingFile)
   const fontSize = useStore(s => s.writingFontSize)
   const tone = useStore(s => s.writingTone)
+  const writingUISize = useStore(s => s.writingUIFontSize)
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
 
@@ -54,6 +55,7 @@ export function WritingBoard() {
         ['--writing-body-size' as string]: size.size,
         ['--writing-body-weight' as string]: size.weight,
         ['--writing-tone-color' as string]: color,
+        ['--writing-ui-quote-size' as string]: WRITING_UI_QUOTE_SIZES[writingUISize],
       }}>
       <WritingToolbar />
       {/* Save status indicator */}
@@ -67,7 +69,7 @@ export function WritingBoard() {
       <div data-testid="writing-editor" className="flex-1 overflow-y-auto px-8 py-6"
         style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}>
         <div className="flex justify-center mb-4">
-          <Quote surface="briefing" />
+          <Quote surface="writing" />
         </div>
         <WritingEditor
           key={file.path}
