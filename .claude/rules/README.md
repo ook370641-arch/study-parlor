@@ -8,7 +8,7 @@
 |---|---|---|---|
 | `general.md` | 跨领域 Agent 行为偏差 | 全局 | 8 |
 | `feature-development.md` | 功能开发、外部 API 集成、交付验证 | `src/**`, `electron/**`, `docs/superpowers/specs/**` | 11 |
-| `e2e.md` | E2E 测试、fixtures、page objects、selectors | `e2e/**`, `tests/**/*.test.ts` | 9 |
+| `e2e.md` | E2E 测试、fixtures、page objects、selectors | `e2e/**`, `tests/**/*.test.ts` | 10 |
 | `ipc-state.md` | IPC 契约、状态持久化、frontmatter schema | types/store/ipc/preload/frontmatter/app-paths | 12 |
 | `llm.md` | LLM 调用、prompt、JSON 提取、归档触发 | kimi/llm/prompts/llm-tasks/finalize/session-runtime | 9 |
 | `ui-styling.md` | React/Tailwind、抽屉、动画、markdown 渲染 | `src/components/**`, `src/pages/**`, `tailwind.config.ts` | 11 |
@@ -34,6 +34,7 @@
 
 ## Changelog
 
+- `2026-07-24` e2e 新增 §1c：禁止跳过测试（test.skip/fixme/条件跳过一律不允许；跳过的测试先查根因再解除——多数是测试自身导航/seed bug）；真实 API 密钥一律用应用自己读取的 .env，禁止依赖 runner 环境变量（来自 reload 持久化、外部删除、settings 真实 API 三个跳过测试的解除修复）。
 - `2026-07-23` ui-styling 新增 §11：学者夜话设计语言（夜色底+米色衬线+琥珀点睛；语录/引力/画作三个诗意资产登记制；动效可退化；求职星蓝为例外主色的声明方式）。
 - `2026-07-19` ui-styling 新增 §10：组件文件只导出组件（来自 Briefing.tsx 导出 formatDisplayDate 破坏 Fast Refresh → App 整树 remount → 看门狗误报的排查）。
 - `2026-07-19` build-dev 新增 §10：懒加载链裸依赖必须纳入 `optimizeDeps.include`（来自 react-dom 运行时被 Vite 发现触发 re-optimization → 整页 reload → 棕色闪屏 + 二次加载的复发排查）。
