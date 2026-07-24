@@ -191,7 +191,7 @@ export function Briefing() {
               width={64}
               title="文章"
             >
-              <WritingListColumn theme={theme} />
+              <WritingListColumn theme={theme} collapsed={dateColumnCollapsed} />
             </BriefingListColumn>
           )}
 

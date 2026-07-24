@@ -40,4 +40,21 @@ describe('WritingListColumn', () => {
     render(<WritingListColumn theme="newspaper" />)
     expect(screen.getByTestId('writing-new-file').className).not.toContain('text-parchment')
   })
+
+  it('collapsed shows vertical labels with file counts instead of the tree', () => {
+    useStore.setState({
+      writingListTab: 'articles',
+      writingTree: {
+        writing: [
+          { kind: 'file', name: 'a.md', path: 'writing/a.md' },
+          { kind: 'dir', name: '随笔', path: 'writing/随笔', children: [{ kind: 'file', name: 'b.md', path: 'writing/随笔/b.md' }] },
+        ],
+        repository: [{ kind: 'file', name: 'r.md', path: 'repository/r.md' }],
+      },
+    } as any)
+    render(<WritingListColumn theme="academic" collapsed />)
+    expect(screen.getByTestId('writing-collapsed-articles-count')).toHaveTextContent('2')
+    expect(screen.getByTestId('writing-collapsed-repository-count')).toHaveTextContent('1')
+    expect(screen.queryByTestId('writing-tree-node')).not.toBeInTheDocument()
+  })
 })

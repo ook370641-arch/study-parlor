@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import { writingTreeContainsPath } from '@/lib/writing-tree-utils'
+import { writingTreeContainsPath, countFiles } from '@/lib/writing-tree-utils'
 import { WritingTree } from './WritingTree'
 import { PromptDialog } from './PromptDialog'
 
@@ -11,7 +11,7 @@ interface PromptState {
   onSubmit: (value: string) => void
 }
 
-export function WritingListColumn({ theme = 'academic' }: { theme?: 'academic' | 'newspaper' }) {
+export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: 'academic' | 'newspaper'; collapsed?: boolean }) {
   const isAcademic = theme !== 'newspaper'
   const tab = useStore(s => s.writingListTab)
   const setTab = useStore(s => s.setWritingListTab)
@@ -44,6 +44,22 @@ export function WritingListColumn({ theme = 'academic' }: { theme?: 'academic' |
       }
     }
   }, [tree, selectWritingFile])
+
+  if (collapsed) {
+    return (
+      <div className="flex flex-col items-center py-3 gap-3 h-full">
+        <span className={dim} style={{ writingMode: 'vertical-rl' }}>文章</span>
+        <span data-testid="writing-collapsed-articles-count" className="min-w-[18px] px-1 py-0.5 rounded-full text-[10px] text-center bg-ember text-white">
+          {countFiles(tree?.writing)}
+        </span>
+        <div className="flex-1" />
+        <span className={dim} style={{ writingMode: 'vertical-rl' }}>仓库</span>
+        <span data-testid="writing-collapsed-repository-count" className={`min-w-[18px] px-1 py-0.5 rounded-full text-[10px] text-center ${isAcademic ? 'bg-parchment/20 text-parchment' : 'bg-[#1a1a1a] text-white'}`}>
+          {countFiles(tree?.repository)}
+        </span>
+      </div>
+    )
+  }
 
   const handleCreateFile = () => {
     setPrompt({
