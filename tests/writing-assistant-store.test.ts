@@ -47,7 +47,7 @@ describe('writing assistant store', () => {
       expect(state).not.toBeNull()
       expect(state!.articlePath).toBe('writing/a.md')
       expect(state!.messages).toHaveLength(1)
-      expect(state!.messages[0]).toEqual({ role: 'user', content: '帮我润色这段文字' })
+      expect(state!.messages[0]).toEqual({ role: 'user', content: '帮我润色这段文字', snapshot: '# 文章内容' })
       expect(state!.streaming).toBe(true)
       expect(state!.error).toBeNull()
 
@@ -55,7 +55,7 @@ describe('writing assistant store', () => {
         sessionId: state!.sessionId,
         articlePath: 'writing/a.md',
         articleContent: '# 文章内容',
-        messages: [{ role: 'user', content: '帮我润色这段文字' }],
+        messages: [{ role: 'user', content: '帮我润色这段文字', snapshot: '# 文章内容' }],
         useSearch: false,
         thinkingEffort: 'off',
       })
