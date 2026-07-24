@@ -92,9 +92,8 @@ test.describe('@p1 简报删除', () => {
     await expect(window.locator(SELECTORS.briefing.dateItem('2026-07-20'))).toBeVisible({ timeout: 10000 })
     await expect(window.locator(SELECTORS.briefing.dateItem('2026-07-19'))).toBeVisible()
 
-    await window.locator(SELECTORS.briefing.deleteModeToggle).click()
-    await window.locator(SELECTORS.briefing.deleteCheck('2026-07-19')).click()
-    await window.locator(SELECTORS.briefing.deleteConfirm).click()
+    await window.locator(SELECTORS.briefing.dateItem('2026-07-19')).click({ button: 'right' })
+    await window.locator(SELECTORS.briefing.dateDelete).click()
 
     await expect(window.locator(SELECTORS.briefing.confirmDialog)).toBeVisible()
     await window.locator(SELECTORS.briefing.confirmDialogConfirm).click()
