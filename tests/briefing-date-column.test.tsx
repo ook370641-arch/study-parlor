@@ -153,4 +153,28 @@ describe('BriefingDateColumn', () => {
     const activeItem = screen.getByTestId('briefing-date-item-2026-07-23')
     expect(activeItem.className).toContain('#7fa8d9')
   })
+
+  it('opens delete menu on right-click and calls onDelete with the single item', () => {
+    const onDelete = vi.fn()
+    render(
+      <BriefingDateColumn collapsed={false} history={[{ date: '2026-07-10', filePath: '/x.md' }]}
+        today="2026-07-11" onSelect={vi.fn()} onReceiveToday={vi.fn()} theme="academic" onDelete={onDelete} />
+    )
+    fireEvent.contextMenu(screen.getByTestId('briefing-date-item-2026-07-10'))
+    fireEvent.click(screen.getByTestId('briefing-date-delete'))
+    expect(onDelete).toHaveBeenCalledWith([{ date: '2026-07-10', filePath: '/x.md' }])
+  })
+
+  it('no longer renders the trash toggle', () => {
+    render(<BriefingDateColumn collapsed={false} history={[{ date: '2026-07-10', filePath: '/x.md' }]}
+      today="2026-07-11" onSelect={vi.fn()} onReceiveToday={vi.fn()} theme="academic" onDelete={vi.fn()} />)
+    expect(screen.queryByTestId('briefing-delete-mode-toggle')).not.toBeInTheDocument()
+  })
+
+  it('does not open menu for today entry when its file is absent from history', () => {
+    render(<BriefingDateColumn collapsed={false} history={[]}
+      today="2026-07-11" onSelect={vi.fn()} onReceiveToday={vi.fn()} theme="academic" onDelete={vi.fn()} />)
+    fireEvent.contextMenu(screen.getByTestId('briefing-date-item-2026-07-11'))
+    expect(screen.queryByTestId('briefing-date-menu')).not.toBeInTheDocument()
+  })
 })
