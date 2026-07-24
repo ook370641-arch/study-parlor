@@ -44,8 +44,14 @@ export function ArticleBodyChunks({ content, chunks, fileName, theme = 'academic
             onMouseLeave={() => onChunkLeave?.()}
           >
             {chunk.heading && (
-              <div className="text-xs font-medium mb-2 text-ember">
-                §{i + 1} {chunk.heading}
+              <div data-testid="article-chunk-plaque" className="flex items-center gap-2 mb-2">
+                <span className="text-ember text-sm leading-none">
+                  ❧<span className="text-xs align-top">{i + 1}</span>
+                </span>
+                <span className="text-ember text-sm tracking-[0.2em]" style={{ fontVariant: 'small-caps' }}>
+                  {chunk.heading}
+                </span>
+                <span className="flex-1 border-t border-ember/40" />
               </div>
             )}
             <div className={isAcademic ? 'text-parchment/90' : 'text-[#1a1a1a]'}>

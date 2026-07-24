@@ -6,7 +6,7 @@ import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChu
 import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
 import type { ArticleAssistantChunk } from '@shared/index'
 import type { TermDef } from '@/components/md/rehypeTermHighlight'
-import { BriefingSourceItem } from './BriefingSourceItem'
+import { BriefingSourceCard } from './BriefingSourceCard'
 import { BriefingMetaLine } from './BriefingMetaLine'
 import { Quote } from '@/components/Quote'
 import { TransferToWritingButton } from './TransferToWritingButton'
@@ -101,12 +101,22 @@ export function AcademicBriefingLayout({
               {expandedSources ? '收起来源' : '展开来源'}
             </button>
             {expandedSources && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {parsed.sources.map((group, i) =>
-                  group.items.map((item, j) => (
-                    <BriefingSourceItem key={`${i}-${j}`} item={item} theme="academic" variant="pill" />
-                  ))
-                )}
+              <div className="mt-4 space-y-4">
+                {parsed.sources.map((group, i) => (
+                  <div key={i} data-testid="briefing-source-group">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs tracking-[0.2em] text-ember" style={{ fontVariant: 'small-caps' }}>
+                        {group.title}
+                      </span>
+                      <span className="flex-1 border-t border-ember/30" />
+                    </div>
+                    <div className="space-y-2">
+                      {group.items.map((item, j) => (
+                        <BriefingSourceCard key={j} item={item} theme="academic" />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -125,10 +125,11 @@ describe('BriefingLayout source links', () => {
       </AcademicWrapper>
     )
     fireEvent.click(screen.getByText('展开来源'))
-    const link = screen.getByRole('link', { name: /https:\/\/x\.com\/swyx\/status/ })
-    expect(link).toHaveAttribute('href', 'https://x.com/swyx/status/2074344727202463832')
-    expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    const links = screen.getAllByTestId('briefing-source-card-link')
+    const bareUrlLink = links.find(l => l.getAttribute('href') === 'https://x.com/swyx/status/2074344727202463832')
+    expect(bareUrlLink).toBeTruthy()
+    expect(bareUrlLink!).toHaveAttribute('target', '_blank')
+    expect(bareUrlLink!).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
   it('NewspaperBriefingLayout renders markdown source links as clickable links', () => {
@@ -143,10 +144,11 @@ describe('BriefingLayout source links', () => {
       </NewspaperWrapper>
     )
     fireEvent.click(screen.getByText('展开来源'))
-    const link = screen.getByRole('link', { name: /原文链接/ })
-    expect(link).toHaveAttribute('href', 'https://x.com/swyx/status/2074344727202463832')
-    expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    const links = screen.getAllByTestId('briefing-source-card-link')
+    const markdownLink = links.find(l => l.getAttribute('href') === 'https://x.com/swyx/status/2074344727202463832')
+    expect(markdownLink).toBeTruthy()
+    expect(markdownLink!).toHaveAttribute('target', '_blank')
+    expect(markdownLink!).toHaveAttribute('rel', 'noopener noreferrer')
   })
 })
 
