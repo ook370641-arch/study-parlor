@@ -611,6 +611,9 @@ export type IpcApi = {
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
   anthropicCancelImport: () => Promise<void>
+  anthropicDeleteArticle: (args: { filePath: string }) => Promise<
+    { ok: true } | { ok: false; message: string }
+  >
 
   // Annotations
   annotationsRead: (articlePath: string) => Promise<ArticleAnnotation[]>

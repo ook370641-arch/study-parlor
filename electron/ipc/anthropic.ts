@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { discoverArticles, importArticle } from '../lib/anthropic-scraper'
+import { deleteAnthropicArticleFile } from '../lib/anthropic-delete'
 import { cancelCurrentOperation } from '../lib/anthropic-browser'
 import { patchState, getCurrentState } from './state'
 import type { AppConfig } from '../env'
@@ -81,5 +82,9 @@ export function registerAnthropicIpc(cfg: AppConfig) {
 
   ipcMain.handle('anthropic:cancelImport', async () => {
     cancelCurrentOperation()
+  })
+
+  ipcMain.handle('anthropic:deleteArticle', async (_, args: { filePath: string }) => {
+    return deleteAnthropicArticleFile(cfg.libraryPath, args.filePath)
   })
 }

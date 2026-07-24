@@ -7,7 +7,7 @@ import type { AnthropicArticleMeta } from '@shared/index'
 
 const BASE_URL = 'https://www.anthropic.com'
 const ENGINEERING_URL = `${BASE_URL}/engineering`
-const IMPORT_DIR = 'Anthropic博客'
+export const IMPORT_DIR = 'Anthropic博客'
 
 const turndown = new TurndownService({
   headingStyle: 'atx',

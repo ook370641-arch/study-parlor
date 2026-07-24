@@ -81,6 +81,7 @@ export const ipc = {
   get anthropicDiscover() { return ensure().anthropicDiscover },
   get anthropicImportArticle() { return ensure().anthropicImportArticle },
   get anthropicCancelImport() { return ensure().anthropicCancelImport },
+  get anthropicDeleteArticle() { return ensure().anthropicDeleteArticle },
 
   get annotationsRead() { return ensure().annotationsRead },
   get annotationsWrite() { return ensure().annotationsWrite },
