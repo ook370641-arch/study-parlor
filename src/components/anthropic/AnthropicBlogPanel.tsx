@@ -157,14 +157,16 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                 {newArticleCount}
               </span>
             )}
-            {filtered.slice(0, 10).map((article) => (
+            {filtered.map((article) => (
               <button
                 key={article.url}
                 type="button"
                 data-testid="anthropic-list-rail-thumb"
                 onClick={() => openOrImportArticle(article)}
                 title={article.title}
-                className="shrink-0 rounded overflow-hidden focus:outline-none focus:ring-2 focus:ring-ember/50"
+                className={`shrink-0 rounded overflow-hidden focus:outline-none focus:ring-2 focus:ring-ember/50 ${
+                  article.isSaved ? 'border-2 border-ember' : 'border-2 border-transparent'
+                }`}
               >
                 {article.imageUrl ? (
                   <img

@@ -123,6 +123,38 @@ describe('AnthropicBlogPanel', () => {
     })
   })
 
+  it('collapsed rail renders ALL filtered articles (no 10-item cap)', () => {
+    const articles = Array.from({ length: 15 }, (_, i) => ({
+      url: `https://a/${i}`, title: `T${i}`, publishedAt: null, summary: '',
+      imageUrl: null, isSaved: false, filePath: null,
+    }))
+    useStore.setState({
+      anthropicBlogCache: { articles, loading: false, error: null, lastFetchedAt: null },
+      anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null,
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('briefing-list-column-toggle'))
+    expect(screen.getAllByTestId('anthropic-list-rail-thumb')).toHaveLength(15)
+  })
+
+  it('collapsed rail marks saved articles with ember border', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        articles: [
+          { url: 'https://a/1', title: 'saved', publishedAt: null, summary: '', imageUrl: null, isSaved: true, filePath: '/x.md' },
+          { url: 'https://a/2', title: 'plain', publishedAt: null, summary: '', imageUrl: null, isSaved: false, filePath: null },
+        ],
+        loading: false, error: null, lastFetchedAt: null,
+      },
+      anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null,
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('briefing-list-column-toggle'))
+    const [saved, plain] = screen.getAllByTestId('anthropic-list-rail-thumb')
+    expect(saved.className).toContain('border-ember')
+    expect(plain.className).not.toContain('border-ember')
+  })
+
   it('does not mount ArticleAssistantPanel when no reader is open', () => {
     useStore.setState({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null } as any)
     render(<AnthropicBlogPanel theme="academic" />)
