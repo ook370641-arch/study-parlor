@@ -709,8 +709,24 @@ export const useStore = create<AppStore>((set, get) => ({
     const sanitize = (n: string) =>
       n.replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim() || '未命名'
     const base = sanitize(args.name)
+
+    const parentType = args.sourceType === 'digest' ? 'briefing' as const : 'anthropic-article' as const
+    const annotations = await ipc.annotationsRead(args.sourcePath).catch(() => [] as ArticleAnnotation[])
+    const session = await ipc.articleAssistantReadSession({ parentPath: args.sourcePath, parentType }).catch(() => null)
+
+    const annoSection = annotations.length === 0
+      ? '（无）'
+      : annotations
+          .map((a) => `> 「${a.selectedText}」（§${a.paragraphIndex}）\n>\n> 批注：${a.note?.trim() ? a.note.trim() : '（无批注）'}`)
+          .join('\n\n')
+    const chatSection = !session || session.messages.length === 0
+      ? '（无）'
+      : session.messages
+          .map((m) => `**${m.role === 'user' ? '用户' : '助手'}**：${m.content}`)
+          .join('\n\n')
+
     const fm = `---\ntitle: ${base}\nsource_type: ${args.sourceType}\nsource_path: ${args.sourcePath}\n---\n\n`
-    const body = fm + args.content
+    const body = `${fm}## 标注摘录\n\n${annoSection}\n\n## 旁注对话\n\n${chatSection}\n`
 
     const tryCreate = async (name: string): Promise<string | null> => {
       const r = await ipc.writingCreateFile({ root: 'writing', dir: '', name })
@@ -726,19 +742,11 @@ export const useStore = create<AppStore>((set, get) => ({
         const suffix = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
         filePath = await tryCreate(`${base}-${suffix}`)
       }
-      if (!filePath) {
-        get().showToast('转入写作失败：文件名冲突')
-        return
-      }
+      if (!filePath) { get().showToast('转入写作失败：文件名冲突'); return }
       const w = await ipc.writingWrite({ path: filePath, body })
-      if (!w.ok) {
-        get().showToast('转入写作失败')
-        return
-      }
+      if (!w.ok) { get().showToast('转入写作失败'); return }
       get().showToast('已转入写作')
-    } catch {
-      get().showToast('转入写作失败')
-    }
+    } catch { get().showToast('转入写作失败') }
   },
 
   setJobBriefingConfig: async (config) => {
