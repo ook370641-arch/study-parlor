@@ -100,4 +100,26 @@ describe('AnthropicArticleRow', () => {
     expect(title).toHaveClass('line-clamp-1')
     expect(title).toHaveClass('group-hover:line-clamp-none')
   })
+
+  it('opens delete menu on right-click for saved articles and requests delete', () => {
+    const onRequestDelete = vi.fn()
+    render(
+      <AnthropicArticleRow
+        article={article({ isSaved: true, filePath: '/lib/Anthropic博客/x.md' })}
+        theme="academic"
+        onRequestDelete={onRequestDelete}
+      />
+    )
+    fireEvent.contextMenu(screen.getByTestId('anthropic-article-row'))
+    fireEvent.click(screen.getByTestId('anthropic-row-delete'))
+    expect(onRequestDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/lib/Anthropic博客/x.md' })
+    )
+  })
+
+  it('does not open delete menu for unsaved articles', () => {
+    render(<AnthropicArticleRow article={article()} theme="academic" onRequestDelete={vi.fn()} />)
+    fireEvent.contextMenu(screen.getByTestId('anthropic-article-row'))
+    expect(screen.queryByTestId('anthropic-row-menu')).not.toBeInTheDocument()
+  })
 })

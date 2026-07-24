@@ -6,6 +6,7 @@ import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { findNewArticleUrls } from '@/lib/anthropic-articles'
 import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
@@ -49,6 +50,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const mergeArticles = useStore((s) => s.mergeAnthropicArticles)
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const openReader = useStore((s) => s.openAnthropicReader)
+  const deleteAnthropicArticle = useStore((s) => s.deleteAnthropicArticle)
 
   const [query, setQuery] = useState('')
   const [listCollapsed, setListCollapsed] = useState(false)
@@ -57,6 +59,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [pendingLastFetchedAt, setPendingLastFetchedAt] = useState<string | null>(null)
   const [checkError, setCheckError] = useState<AnthropicError | null>(null)
   const [checkKey, setCheckKey] = useState(0)
+  const [pendingDelete, setPendingDelete] = useState<AnthropicArticleMeta | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -256,7 +259,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
 
               <div className="space-y-3">
                 {filtered.map((article) => (
-                  <AnthropicArticleRow key={article.url} article={article} theme={theme} />
+                  <AnthropicArticleRow key={article.url} article={article} theme={theme} onRequestDelete={setPendingDelete} />
                 ))}
               </div>
             </div>
@@ -299,6 +302,23 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="删除文章"
+        icon="trash"
+        confirmLabel="删除"
+        confirmVariant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          const target = pendingDelete
+          setPendingDelete(null)
+          if (target?.filePath) void deleteAnthropicArticle(target.filePath)
+        }}
+      >
+        <p>即将删除「{pendingDelete?.title}」，文章卡片将从列表移除。</p>
+        <p className="mt-2">将同时删除该文章的旁注对话、标注与导读。</p>
+      </ConfirmDialog>
     </div>
   )
 }

@@ -1,4 +1,5 @@
-import { memo, useState } from 'react'
+import { memo, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
@@ -6,6 +7,7 @@ import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
 interface Props {
   article: AnthropicArticleMeta
   theme?: BriefingTheme
+  onRequestDelete?: (article: AnthropicArticleMeta) => void
 }
 
 function formatDate(iso: string | null | undefined) {
@@ -17,12 +19,20 @@ function formatDate(iso: string | null | undefined) {
   }
 }
 
-export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic' }: Props) {
+export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete }: Props) {
   const isAcademic = theme !== 'newspaper'
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
   const openReader = useStore((s) => s.openAnthropicReader)
   const [importing, setImporting] = useState(false)
+
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  useEffect(() => {
+    if (!menu) return
+    const h = () => setMenu(null)
+    document.addEventListener('click', h)
+    return () => document.removeEventListener('click', h)
+  }, [menu])
 
   const handleClick = async () => {
     if (importing) {
@@ -99,6 +109,11 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
     <button
       data-testid="anthropic-article-row"
       onClick={handleClick}
+      onContextMenu={(e) => {
+        if (!article.isSaved || !article.filePath) return
+        e.preventDefault()
+        setMenu({ x: e.clientX, y: e.clientY })
+      }}
       disabled={false}
       className={`w-full text-left rounded border p-4 transition-colors group relative overflow-hidden ${borderClass} ${bgClass} ${hoverBorder}`}
       style={borderStyle}
@@ -148,6 +163,26 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
       </div>
       {/* Hidden element for E2E selectors — indicates saved state without text badge */}
       {article.isSaved && <span data-testid="anthropic-article-saved" className="sr-only" />}
+      {menu && createPortal(
+        <div
+          data-testid="anthropic-row-menu"
+          className="fixed z-50 bg-ink border border-parchment/20 rounded shadow-lg py-1 text-xs"
+          style={{ left: menu.x, top: menu.y }}
+        >
+          <button
+            type="button"
+            data-testid="anthropic-row-delete"
+            className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-red-400"
+            onClick={() => {
+              setMenu(null)
+              onRequestDelete?.(article)
+            }}
+          >
+            删除
+          </button>
+        </div>,
+        document.body
+      )}
     </button>
   )
 })

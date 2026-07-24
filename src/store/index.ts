@@ -140,6 +140,7 @@ type AppStore = {
   cancelAnthropicImport: () => Promise<void>
   openAnthropicReader: (filePath: string) => Promise<void>
   closeAnthropicReader: () => void
+  deleteAnthropicArticle: (filePath: string) => Promise<void>
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
   deleteBriefings: (filePaths: string[]) => Promise<void>
@@ -896,6 +897,26 @@ export const useStore = create<AppStore>((set, get) => ({
     await ipc.patchState({ anthropicBlogLastSeenAt: now } as Partial<StateJson>)
   },
   closeAnthropicReader: () => set({ anthropicReaderFilePath: null }),
+
+  deleteAnthropicArticle: async (filePath) => {
+    const r = await ipc.anthropicDeleteArticle({ filePath })
+    if (!r.ok) {
+      get().showToast('删除失败：' + r.message)
+      return
+    }
+    const cache = get().anthropicBlogCache
+    set({
+      anthropicBlogCache: {
+        ...cache,
+        articles: cache.articles.map((a) =>
+          a.filePath === filePath ? { ...a, isSaved: false, filePath: undefined } : a
+        ),
+      },
+    })
+    if (get().anthropicReaderFilePath === filePath) {
+      get().closeAnthropicReader()
+    }
+  },
 
   resetSession: () => set({ session: null, currentPage: 'home', externalMaterials: null, isExternalSummaryOpen: false }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
