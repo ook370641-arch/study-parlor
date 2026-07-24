@@ -14,8 +14,8 @@ export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, tit
 
   const themeClasses = isAcademic
     ? {
-        bg: 'bg-ink/50',
-        border: 'border-r border-[rgba(232,213,183,0.18)]',
+        bg: 'bg-ink/45 backdrop-blur-md border border-parchment/15 rounded-xl',
+        border: '',
         headerText: 'text-parchment',
         toggle: 'text-parchment/60 hover:text-parchment',
         headerBorder: 'border-b border-[rgba(232,213,183,0.18)]',

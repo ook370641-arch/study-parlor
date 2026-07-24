@@ -23,6 +23,7 @@ vi.mock('@/lib/paintings', () => ({
 }))
 
 import { useStore } from '@/store'
+import { Briefing } from '@/pages/Briefing'
 import { AcademicBriefingLayout, NewspaperBriefingLayout } from '@/components/briefing'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
@@ -181,6 +182,38 @@ describe('Briefing layout redesign', () => {
     expect(screen.getByText('夜航简报')).toBeInTheDocument()
     expect(screen.getByTestId('briefing-markdown-body')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'link' })).toBeInTheDocument()
+  })
+})
+
+describe('Briefing glass material (academic theme)', () => {
+  beforeEach(() => {
+    cleanup()
+    useStore.setState({
+      briefing: { result: null, loading: false, error: null },
+      briefingSource: 'digest',
+      briefingTheme: 'academic',
+      briefingHistory: { list: [], loading: false, error: null },
+      currentPaintings: {
+        briefing: null,
+        cover: null,
+        home: null,
+        study: null,
+      },
+    })
+  })
+
+  it('applies glass material to rail, list column and content shell in academic theme', () => {
+    useStore.setState({ briefingTheme: 'academic', briefingSource: 'digest' } as any)
+    render(<Briefing />)
+    expect(screen.getByTestId('briefing-source-sidebar').className).toContain('backdrop-blur-md')
+    expect(screen.getByTestId('briefing-list-column').className).toContain('backdrop-blur-md')
+    expect(screen.getByTestId('briefing-content-shell').className).toContain('backdrop-blur-md')
+  })
+
+  it('does not apply glass material in newspaper theme', () => {
+    useStore.setState({ briefingTheme: 'newspaper', briefingSource: 'digest' } as any)
+    render(<Briefing />)
+    expect(screen.getByTestId('briefing-source-sidebar').className).not.toContain('backdrop-blur-md')
   })
 })
 

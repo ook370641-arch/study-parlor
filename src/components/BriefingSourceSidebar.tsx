@@ -81,13 +81,14 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
 
   const themeClasses = isAcademic
     ? {
-        bg: 'bg-ink/70',
-        border: 'border-r border-[rgba(232,213,183,0.18)]',
+        bg: 'bg-ink/45 backdrop-blur-md border border-parchment/15 rounded-xl',
+        border: '',
         headerText: 'text-parchment',
         toggle: 'text-parchment/60 hover:text-parchment',
         active: 'bg-[rgba(232,213,183,0.1)] text-parchment',
         inactive: 'text-parchment/70 hover:bg-[rgba(232,213,183,0.06)]',
         headerBorder: 'border-b border-[rgba(232,213,183,0.18)]',
+        railBorder: 'border-t border-[rgba(232,213,183,0.18)]',
       }
     : {
         bg: 'bg-[#e8e4de]',
@@ -97,6 +98,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         active: 'bg-[rgba(0,0,0,0.06)] text-[#2a1f1a]',
         inactive: 'text-[#2a1f1a]/70 hover:bg-[rgba(0,0,0,0.04)]',
         headerBorder: 'border-b border-[#c9c3b8]',
+        railBorder: 'border-t border-[#c9c3b8]',
       }
 
   const base = `w-full text-left py-2 transition-colors flex items-center gap-3 ${collapsed ? 'justify-center px-2' : 'px-3'} ${collapsed ? '' : 'rounded'}`
@@ -173,7 +175,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
       </nav>
       <div
         data-testid="briefing-rail-controls"
-        className={`flex ${collapsed ? 'flex-col items-center' : 'flex-row items-center'} gap-1 p-2 border-t ${isAcademic ? 'border-[rgba(232,213,183,0.18)]' : 'border-[#c9c3b8]'}`}
+        className={`flex ${collapsed ? 'flex-col items-center' : 'flex-row items-center'} gap-1 p-2 ${themeClasses.railBorder}`}
       >
         <BackToCover className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'} />
         <Button

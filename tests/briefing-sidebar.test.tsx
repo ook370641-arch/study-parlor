@@ -40,8 +40,9 @@ describe('BriefingSourceSidebar', () => {
   it('renders academic theme colors when theme is academic', () => {
     render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
     const aside = screen.getByTestId('briefing-source-sidebar')
-    expect(aside).toHaveClass('bg-ink/70')
-    expect(aside).toHaveClass('border-r')
+    expect(aside).toHaveClass('bg-ink/45')
+    expect(aside).toHaveClass('backdrop-blur-md')
+    expect(aside).not.toHaveClass('border-r')
   })
 
   it('shows SVG icons instead of single characters when collapsed', () => {

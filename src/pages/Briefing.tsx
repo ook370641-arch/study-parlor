@@ -112,7 +112,7 @@ export function Briefing() {
   return (
     <div
       data-testid="briefing-page"
-      className={`relative h-full flex overflow-hidden ${isAcademic ? '' : 'bg-white'}`}
+      className={`relative h-full flex overflow-hidden ${isAcademic ? 'gap-2 p-2' : 'bg-white'}`}
       style={pageStyle}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
@@ -123,7 +123,10 @@ export function Briefing() {
         onToggle={() => setSidebarCollapsed((c) => !c)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div
+        data-testid="briefing-content-shell"
+        className={`flex-1 flex flex-col min-w-0 ${isAcademic ? 'bg-ink/45 backdrop-blur-md border border-parchment/15 rounded-xl overflow-hidden' : ''}`}
+      >
         {/* Digest renders the swap button inside the article body (AcademicBriefingLayout);
             anthropic renders its own inside AnthropicArticleReader;
             only job-briefing keeps the page-level one. */}
