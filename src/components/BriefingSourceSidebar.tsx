@@ -1,5 +1,8 @@
 import { useStore } from '@/store'
 import type { BriefingTheme } from '@shared/index'
+import { BackToCover } from './BackToCover'
+import { Button } from './Button'
+import { BriefingThemeToggle } from './briefing/BriefingThemeToggle'
 
 interface Props {
   collapsed: boolean
@@ -67,6 +70,12 @@ function JobBriefingIcon() {
 export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const source = useStore((s) => s.briefingSource)
   const setSource = useStore((s) => s.setBriefingSource)
+  const increase = useStore((s) => s.increaseBriefingFontSize)
+  const decrease = useStore((s) => s.decreaseBriefingFontSize)
+  const fontSize = useStore((s) => s.briefingFontSize)
+  const goto = useStore((s) => s.goto)
+  const canDecrease = fontSize !== 'sm'
+  const canIncrease = fontSize !== '7xl'
 
   const isAcademic = theme !== 'newspaper'
 
@@ -162,6 +171,44 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
           )
         })}
       </nav>
+      <div
+        data-testid="briefing-rail-controls"
+        className={`flex ${collapsed ? 'flex-col items-center' : 'flex-row items-center'} gap-1 p-2 border-t ${isAcademic ? 'border-[rgba(232,213,183,0.18)]' : 'border-[#c9c3b8]'}`}
+      >
+        <BackToCover className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'} />
+        <Button
+          variant="ghost"
+          onClick={decrease}
+          disabled={!canDecrease}
+          data-testid="briefing-font-size-decrease"
+          className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
+          title="减小字号"
+        >
+          -
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={increase}
+          disabled={!canIncrease}
+          data-testid="briefing-font-size-increase"
+          className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
+          title="增大字号"
+        >
+          +
+        </Button>
+        <BriefingThemeToggle />
+        {source === 'job-briefing' && (
+          <Button
+            variant="ghost"
+            data-testid="job-briefing-profile-entry"
+            onClick={() => goto('settings')}
+            className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
+            title="编辑求职档案（意向岗位、方向、经历）"
+          >
+            档案
+          </Button>
+        )}
+      </div>
     </aside>
   )
 }

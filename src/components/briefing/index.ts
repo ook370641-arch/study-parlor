@@ -1,5 +1,6 @@
 export { AcademicBriefingLayout } from './AcademicBriefingLayout'
 export { NewspaperBriefingLayout } from './NewspaperBriefingLayout'
+export { BriefingMetaLine } from './BriefingMetaLine'
 export { BriefingThemeToggle } from './BriefingThemeToggle'
 export { BriefingVeil } from './BriefingVeil'
 export { BriefingEmptyState } from './BriefingEmptyState'

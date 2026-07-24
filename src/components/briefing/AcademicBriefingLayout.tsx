@@ -7,6 +7,7 @@ import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnota
 import type { ArticleAssistantChunk } from '@shared/index'
 import type { TermDef } from '@/components/md/rehypeTermHighlight'
 import { BriefingSourceItem } from './BriefingSourceItem'
+import { BriefingMetaLine } from './BriefingMetaLine'
 import { Quote } from '@/components/Quote'
 import { TransferToWritingButton } from './TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
@@ -15,6 +16,9 @@ export function AcademicBriefingLayout({
   result,
   parsed,
   displayDate,
+  timeString,
+  sourceStatus,
+  cacheWriteFailed,
   terms,
   chunks,
   swapButton,
@@ -23,6 +27,9 @@ export function AcademicBriefingLayout({
   result: BriefingResult
   parsed: ParsedBriefing
   displayDate: string
+  timeString?: string
+  sourceStatus?: Record<string, 'ok' | 'failed' | 'empty'>
+  cacheWriteFailed?: boolean
   terms?: TermDef[]
   chunks?: ArticleAssistantChunk[]
   swapButton?: React.ReactNode
@@ -43,7 +50,13 @@ export function AcademicBriefingLayout({
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
         <header className="text-center mb-8">
           <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2">{result.title}</h1>
-          <p className="text-sm text-[#e8d5b7]/60">{displayDate}</p>
+          <BriefingMetaLine
+            displayDate={displayDate}
+            timeString={timeString}
+            sourceStatus={sourceStatus}
+            cacheWriteFailed={cacheWriteFailed}
+            theme="academic"
+          />
           <div className="mt-5 flex justify-center">
             <Quote surface="briefing" />
           </div>

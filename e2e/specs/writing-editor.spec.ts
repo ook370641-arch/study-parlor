@@ -220,7 +220,7 @@ test.describe('@p2 writing-editor', () => {
     const statePath = path.join(testConfigDir, 'state.json')
 
     // Click A+ (increase font size)
-    // Use has-text to disambiguate from BriefingHeader's font size button
+    // Use has-text to disambiguate from the briefing rail's font size button
     const increaseBtn = window.locator('button[title="增大字号"]').filter({ hasText: 'A+' })
     await expect(increaseBtn).toBeVisible({ timeout: 3000 })
     await increaseBtn.click()

@@ -8,7 +8,6 @@ import { BriefingDateColumn } from '@/components/BriefingDateColumn'
 import { BriefingSkeleton } from '@/components/BriefingSkeleton'
 import { BriefingProgress } from '@/components/BriefingProgress'
 import { BriefingError } from '@/components/BriefingError'
-import { BriefingHeader } from '@/components/BriefingHeader'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
@@ -18,7 +17,7 @@ import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
-import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil, BriefingEmptyState } from '@/components/briefing'
+import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil, BriefingEmptyState, BriefingMetaLine } from '@/components/briefing'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
 import {
@@ -137,32 +136,6 @@ export function Briefing() {
             />
           </div>
         )}
-        <BriefingHeader
-          showJobProfileEntry={isJob}
-          displayDate={source === 'writing' ? '写作' : source === 'anthropic' ? 'Anthropic Engineering' : isJob ? jobDisplayDate : displayDate}
-          timeString={
-            source === 'digest' && result?.generatedAt
-              ? formatGeneratedAt(result.generatedAt, result.date)
-              : isJob && jobResult?.generatedAt
-                ? formatGeneratedAt(jobResult.generatedAt, jobResult.date)
-                : undefined
-          }
-          sourceStatus={
-            source === 'digest'
-              ? result?.sourceStatus
-              : isJob && jobResult
-                ? { ...jobResult.sourceStatus.official, events: jobResult.sourceStatus.events, jobs: jobResult.sourceStatus.jobs, questions: jobResult.sourceStatus.questions }
-                : undefined
-          }
-          cacheWriteFailed={
-            source === 'digest'
-              ? result?.cacheWriteFailed
-              : isJob
-                ? jobResult?.cacheWriteFailed
-                : undefined
-          }
-        />
-
         <div className="flex-1 flex min-h-0">
           {source === 'digest' && (
             <BriefingListColumn
@@ -278,6 +251,17 @@ export function Briefing() {
                       </button>
                     </div>
                   )}
+                  {jobResult && (
+                    <div className="max-w-3xl mx-auto mb-2">
+                      <BriefingMetaLine
+                        displayDate={jobDisplayDate}
+                        timeString={jobResult.generatedAt ? formatGeneratedAt(jobResult.generatedAt, jobResult.date) : undefined}
+                        sourceStatus={{ ...jobResult.sourceStatus.official, events: jobResult.sourceStatus.events, jobs: jobResult.sourceStatus.jobs, questions: jobResult.sourceStatus.questions }}
+                        cacheWriteFailed={jobResult.cacheWriteFailed}
+                        theme={theme}
+                      />
+                    </div>
+                  )}
                   <JobBriefingRenderer content={jobResult.content} theme={theme} fontSize={fontSize} />
                 </main>
               ) : null
@@ -312,6 +296,9 @@ export function Briefing() {
                     result={result}
                     parsed={parsed}
                     displayDate={displayDate}
+                    timeString={result.generatedAt ? formatGeneratedAt(result.generatedAt, result.date) : undefined}
+                    sourceStatus={result.sourceStatus}
+                    cacheWriteFailed={result.cacheWriteFailed}
                     terms={terms}
                     chunks={guideChunks}
                     filePath={result.filePath}
@@ -328,6 +315,9 @@ export function Briefing() {
                     result={result}
                     parsed={parsed}
                     displayDate={displayDate}
+                    timeString={result.generatedAt ? formatGeneratedAt(result.generatedAt, result.date) : undefined}
+                    sourceStatus={result.sourceStatus}
+                    cacheWriteFailed={result.cacheWriteFailed}
                     terms={terms}
                     chunks={guideChunks}
                     filePath={result.filePath}

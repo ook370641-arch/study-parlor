@@ -7,6 +7,7 @@ import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnota
 import type { ArticleAssistantChunk } from '@shared/index'
 import type { TermDef } from '@/components/md/rehypeTermHighlight'
 import { BriefingSourceItem } from './BriefingSourceItem'
+import { BriefingMetaLine } from './BriefingMetaLine'
 import { TransferToWritingButton } from './TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 
@@ -14,6 +15,9 @@ export function NewspaperBriefingLayout({
   result,
   parsed,
   displayDate,
+  timeString,
+  sourceStatus,
+  cacheWriteFailed,
   terms,
   chunks,
   swapButton,
@@ -22,6 +26,9 @@ export function NewspaperBriefingLayout({
   result: BriefingResult
   parsed: ParsedBriefing
   displayDate: string
+  timeString?: string
+  sourceStatus?: Record<string, 'ok' | 'failed' | 'empty'>
+  cacheWriteFailed?: boolean
   terms?: TermDef[]
   chunks?: ArticleAssistantChunk[]
   swapButton?: React.ReactNode
@@ -45,7 +52,13 @@ export function NewspaperBriefingLayout({
           <div className="flex items-center justify-center gap-3 text-xs text-[#555] uppercase tracking-widest">
             <span>夜航简报</span>
             <span>|</span>
-            <span>{displayDate}</span>
+            <BriefingMetaLine
+              displayDate={displayDate}
+              timeString={timeString}
+              sourceStatus={sourceStatus}
+              cacheWriteFailed={cacheWriteFailed}
+              theme="newspaper"
+            />
           </div>
           {filePath && (
             <div className="mt-3 flex items-center justify-center gap-2">

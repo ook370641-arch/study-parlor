@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({
   ipc: {
@@ -119,5 +119,23 @@ describe('BriefingSourceSidebar', () => {
     render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
     const aside = screen.getByTestId('briefing-source-sidebar')
     expect(aside).toHaveClass('z-[5]')
+  })
+
+  it('hosts font-size controls, theme toggle and back-to-cover in the rail bottom cluster', () => {
+    render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="academic" />)
+    const cluster = screen.getByTestId('briefing-rail-controls')
+    expect(cluster).toBeInTheDocument()
+    expect(within(cluster).getByTestId('briefing-font-size-decrease')).toBeInTheDocument()
+    expect(within(cluster).getByTestId('briefing-font-size-increase')).toBeInTheDocument()
+  })
+
+  it('shows job profile entry only for job-briefing source', () => {
+    useStore.setState({ briefingSource: 'job-briefing' } as any)
+    const { unmount } = render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="academic" />)
+    expect(screen.getByTestId('job-briefing-profile-entry')).toBeInTheDocument()
+    unmount()
+    useStore.setState({ briefingSource: 'digest' } as any)
+    render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="academic" />)
+    expect(screen.queryByTestId('job-briefing-profile-entry')).not.toBeInTheDocument()
   })
 })
