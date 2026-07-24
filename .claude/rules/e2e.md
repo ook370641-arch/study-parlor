@@ -26,12 +26,11 @@ paths:
 
 ## 1c. 禁止跳过测试；真实 API 用应用自己的 .env
 
-**Why:** 跳过的测试没有任何意义——失败被静默掩盖，功能坏了一年都不知道。三个案例：reload 持久化测试被 fixme 一年（所谓 CDP bug 实为导航 bug）、外部删除测试被 skip（seed 含 profile.name 导致封面变体不对）、真实 API 测试因 runner 缺 KIMI_API_KEY 被 skip（应用自己就从根 .env 读 key）。
+**Why:** 跳过的测试没有意义——失败被静默掩盖。所谓"跑不了"多数是测试自身的导航/seed bug，不是平台限制。
 
-- 禁止 `test.skip` / `test.fixme` / 条件跳过（含 `test.skip(!process.env.X)`）。测试要么通过，要么修复到通过，要么删除并说明理由。
-- 发现已跳过的测试，先调查根因再解除跳过——多数“跑不了”是测试自身的导航/seed bug，不是平台限制。
-- 真实 API 测试的密钥来源 = 应用自己读取的 `.env`（`createTestConfigDir` 已复制根目录 `.env` 到隔离配置目录）；禁止再依赖 runner 进程环境变量。
-- 密钥缺失或占位符时让测试失败（响亮信号），不许降级为 skip。
+- 禁止 `test.skip` / `test.fixme` / 条件跳过（含 `test.skip(!process.env.X)`）；测试要么通过，要么修复到通过，要么删除并说明理由。
+- 解除已跳过的测试前先调查根因，不要盲目改生产代码迎合测试。
+- 真实 API 密钥来源 = 应用自己读取的 `.env`（`createTestConfigDir` 已复制到隔离配置目录），禁止依赖 runner 进程环境变量；密钥缺失/占位符时让测试失败，不许降级为 skip。
 - Source: 2026-07-24 三个 skip/fixme 解除修复（fb6fada）
 
 ## 2. 文档同步与用例来源可追溯
