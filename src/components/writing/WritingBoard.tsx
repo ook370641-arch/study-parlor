@@ -70,6 +70,7 @@ export function WritingBoard() {
           <Quote surface="briefing" />
         </div>
         <WritingEditor
+          key={file.path}
           initial={file.body}
           onChange={(md) => updateWritingBody(md)}
         />

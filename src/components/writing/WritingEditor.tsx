@@ -24,11 +24,6 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
   // useEditor's loading transitions to false, the editor is stable and we
   // open the gate so genuine user edits can flow through.
   const loadedRef = useRef(false)
-  const prevInitial = useRef(initial)
-  if (prevInitial.current !== initial) {
-    prevInitial.current = initial
-    loadedRef.current = false
-  }
 
   const { loading, get } = useEditor((root) => {
     return Editor.make()
@@ -42,7 +37,7 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
         ctx.set(defaultValueCtx, initial)
         ctx.get(listenerCtx).markdownUpdated((_, md) => { if (loadedRef.current) ref.current(md) })
       })
-  }, [initial])
+  }, [])
 
   // Register editor action proxy once the editor is created, so the toolbar
   // can call editor commands (bold, table, heading, etc.).
