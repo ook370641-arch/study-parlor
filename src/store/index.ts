@@ -126,6 +126,8 @@ type AppStore = {
   briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
   anthropicBlogCache: AnthropicBlogCache
   anthropicReaderFilePath: string | null
+  anthropicReaderBody: string | null
+  anthropicReaderTitle: string | null
   anthropicBlogLastSeenAt: string | null
   setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing' | 'writing') => Promise<void>
   discoverAnthropicArticles: (
@@ -142,6 +144,7 @@ type AppStore = {
   cancelAnthropicImport: () => Promise<void>
   openAnthropicReader: (filePath: string) => Promise<void>
   closeAnthropicReader: () => void
+  setAnthropicReaderContent: (content: { body: string | null; title: string | null }) => void
   deleteAnthropicArticle: (filePath: string) => Promise<void>
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
@@ -410,6 +413,8 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingSource: 'digest',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicReaderFilePath: null,
+  anthropicReaderBody: null,
+  anthropicReaderTitle: null,
   anthropicBlogLastSeenAt: null,
   jobBriefing: { result: null, loading: false, error: null },
   jobBriefingHistory: { list: [], loading: false, error: null },
@@ -907,7 +912,9 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now })
     await ipc.patchState({ anthropicBlogLastSeenAt: now } as Partial<StateJson>)
   },
-  closeAnthropicReader: () => set({ anthropicReaderFilePath: null }),
+  closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
+  setAnthropicReaderContent: ({ body, title }) =>
+    set({ anthropicReaderBody: body, anthropicReaderTitle: title }),
 
   deleteAnthropicArticle: async (filePath) => {
     const r = await ipc.anthropicDeleteArticle({ filePath })

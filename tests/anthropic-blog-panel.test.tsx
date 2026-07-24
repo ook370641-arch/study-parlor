@@ -10,7 +10,15 @@ vi.mock('@/lib/ipc', () => ({
     loadSessions: vi.fn(),
     anthropicDiscover: vi.fn(() => Promise.resolve({ ok: true, lastFetchedAt: null, articles: [] })),
     anthropicImportArticle: vi.fn(),
-    readMd: vi.fn(),
+    readMd: vi.fn().mockResolvedValue({ frontmatter: { title: 'x' }, body: '正文' }),
+    readAssetAsDataUrl: vi.fn().mockRejectedValue(new Error('not found')),
+    openExternal: vi.fn(),
+    annotationsRead: vi.fn().mockResolvedValue([]),
+    annotationsWrite: vi.fn().mockResolvedValue(undefined),
+    articleAssistantReadGuide: vi.fn().mockResolvedValue({ guide: null }),
+    articleAssistantReadSession: vi.fn().mockResolvedValue({ messages: [] }),
+    articleAssistantWriteGuide: vi.fn().mockResolvedValue(undefined),
+    articleAssistantWriteSession: vi.fn().mockResolvedValue(undefined),
   },
 }))
 
@@ -98,5 +106,26 @@ describe('AnthropicBlogPanel', () => {
     fireEvent.click(screen.getByTestId('anthropic-new-articles-prompt'))
 
     expect(merge).toHaveBeenCalledWith([article('new-1', 'New Article')], lastFetchedAt)
+  })
+
+  it('mounts ArticleAssistantPanel at panel root when reader is open', async () => {
+    useStore.setState({
+      anthropicReaderFilePath: '/lib/Anthropic博客/x.md',
+      anthropicReaderBody: '正文',
+      anthropicReaderTitle: '标题',
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    // ArticleAssistantPanel effect calls openAssistantSession synchronously via set(),
+    // then loadAssistantGuide/loadAssistantSession async; the panel div appears once
+    // contextId matches parentPath (set synchronously).
+    await waitFor(() => {
+      expect(screen.getByTestId('article-assistant-panel')).toBeInTheDocument()
+    })
+  })
+
+  it('does not mount ArticleAssistantPanel when no reader is open', () => {
+    useStore.setState({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    expect(screen.queryByTestId('article-assistant-panel')).not.toBeInTheDocument()
   })
 })

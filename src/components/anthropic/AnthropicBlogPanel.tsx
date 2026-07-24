@@ -7,6 +7,7 @@ import { AnthropicArticleReader } from './AnthropicArticleReader'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { findNewArticleUrls } from '@/lib/anthropic-articles'
 import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
@@ -46,6 +47,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
 
   const { articles, loading, error, lastFetchedAt } = useStore((s) => s.anthropicBlogCache)
   const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
+  const readerBody = useStore((s) => s.anthropicReaderBody)
+  const readerTitle = useStore((s) => s.anthropicReaderTitle)
   const discover = useStore((s) => s.discoverAnthropicArticles)
   const mergeArticles = useStore((s) => s.mergeAnthropicArticles)
   const importArticle = useStore((s) => s.importAnthropicArticle)
@@ -302,6 +305,17 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           </div>
         )}
       </div>
+
+      {readerFilePath && readerBody && (
+        <ArticleAssistantPanel
+          articleType="anthropic-article"
+          parentPath={readerFilePath}
+          articleTitle={readerTitle ?? undefined}
+          articleContent={readerBody}
+          autoGenerateGuide
+          theme={theme}
+        />
+      )}
 
       <ConfirmDialog
         open={pendingDelete !== null}

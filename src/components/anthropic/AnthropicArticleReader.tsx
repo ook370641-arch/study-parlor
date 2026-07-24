@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { ipc } from '@/lib/ipc'
 import { useStore } from '@/store'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
-import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
 import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
@@ -64,6 +63,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   const articleBodyRef = useRef<HTMLElement | null>(null)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const setAnthropicReaderContent = useStore((s) => s.setAnthropicReaderContent)
 
   useEffect(() => {
     let cancelled = false
@@ -92,6 +92,13 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
       cancelled = true
     }
   }, [filePath])
+
+  // Report body/title to store so the parent blog panel can mount ArticleAssistantPanel
+  useEffect(() => {
+    if (!loading && frontmatter && body) {
+      setAnthropicReaderContent({ body, title: frontmatter.title ?? null })
+    }
+  }, [loading, frontmatter, body, setAnthropicReaderContent])
 
   const themeClasses = isAcademic
     ? {
@@ -262,16 +269,6 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
           </div>
         </div>
       </div>
-      {!loading && frontmatter && body && (
-        <ArticleAssistantPanel
-          articleType="anthropic-article"
-          parentPath={filePath}
-          articleTitle={frontmatter.title}
-          articleContent={body}
-          autoGenerateGuide
-          theme={theme}
-        />
-      )}
     </div>
   )
 }
