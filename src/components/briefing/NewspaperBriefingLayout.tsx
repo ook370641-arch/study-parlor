@@ -56,9 +56,9 @@ export function NewspaperBriefingLayout({
     >
       <article ref={articleBodyRef} className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative briefing-article-body">
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
-        <header className="border-b-2 border-[#1a1a1a] pb-4 mb-6 text-center arrive-item">
-          <h1 className="text-[28px] font-extrabold font-serif text-[#1a1a1a] mb-1">{result.title}</h1>
-          <div className="flex items-center justify-center gap-3 text-xs text-[#555] uppercase tracking-widest">
+        <header className="border-b-2 border-[#1a1a1a] pb-4 mb-6 text-center">
+          <h1 className="text-[28px] font-extrabold font-serif text-[#1a1a1a] mb-1 arrive-item d1">{result.title}</h1>
+          <div className="flex items-center justify-center gap-3 text-xs text-[#555] uppercase tracking-widest arrive-item d2">
             <span>夜航简报</span>
             <span>|</span>
             <BriefingMetaLine
@@ -85,7 +85,7 @@ export function NewspaperBriefingLayout({
 
         <div
           data-testid="briefing-markdown-body"
-          className="briefing-body-newspaper text-[#1a1a1a] space-y-6 arrive-item d3"
+          className="briefing-body-newspaper text-[#1a1a1a] space-y-6 arrive-item d4"
           style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
         >
           <ArticleBodyChunks

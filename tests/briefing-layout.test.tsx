@@ -266,15 +266,27 @@ describe('BriefingLayout arrival cascade', () => {
     sources: [],
   }
 
-  it('academic layout marks header and body as arrival cascade items', () => {
+  it('academic layout has 4-step arrival cascade: title / date / quote / body', () => {
     render(
       <AcademicBriefingLayout
         result={RESULT as any}
         parsed={PARSED as any}
         displayDate="2026 年 7 月 25 日"
+        swapButton={<button data-testid="swap-btn">swap</button>}
       />,
     )
-    expect(screen.getByTestId('briefing-academic-layout').querySelector('header')!.className).toContain('arrive-item')
+    const layout = screen.getByTestId('briefing-academic-layout')
+    // h1 (title): d1
+    expect(layout.querySelector('h1')!.className).toContain('arrive-item')
+    expect(layout.querySelector('h1')!.className).toContain('d1')
+    // date line: d2
+    expect(screen.getByTestId('briefing-generated-at').parentElement!.className).toContain('arrive-item')
+    expect(screen.getByTestId('briefing-generated-at').parentElement!.className).toContain('d2')
+    // quote band: d3 (quote-band is wrapped in our arrive-item d3 div)
+    expect(screen.getByTestId('quote-band').parentElement!.className).toContain('arrive-item')
+    expect(screen.getByTestId('quote-band').parentElement!.className).toContain('d3')
+    // body: d4
     expect(screen.getByTestId('briefing-markdown-body').className).toContain('arrive-item')
+    expect(screen.getByTestId('briefing-markdown-body').className).toContain('d4')
   })
 })

@@ -50,6 +50,7 @@ export function AcademicBriefingLayout({
   const articleBodyRef = useRef<HTMLDivElement>(null)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const paintingPlateEnabled = useStore((s) => s.paintingPlateEnabled)
   const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
 
   useEffect(() => {
@@ -78,10 +79,11 @@ export function AcademicBriefingLayout({
             onNavigate={navigateToChunk}
           />
         )}
-        {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
-        <header className="text-center mb-8 arrive-item">
-          <PaintingPlate />
-          <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2">{result.title}</h1>
+        {swapButton && !paintingPlateEnabled && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
+        <header className="text-center mb-8">
+          <PaintingPlate swapButton={swapButton} />
+          <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2 arrive-item d1">{result.title}</h1>
+          <div className="arrive-item d2">
           <BriefingMetaLine
             displayDate={displayDate}
             timeString={timeString}
@@ -89,7 +91,8 @@ export function AcademicBriefingLayout({
             cacheWriteFailed={cacheWriteFailed}
             theme="academic"
           />
-          <div className="mt-5 flex justify-center">
+          </div>
+          <div className="mt-5 flex justify-center arrive-item d3">
             <Quote surface="briefing" />
           </div>
           {filePath && (
@@ -108,7 +111,7 @@ export function AcademicBriefingLayout({
 
         <div
           data-testid="briefing-markdown-body"
-          className="briefing-body-academic space-y-6 arrive-item d3"
+          className="briefing-body-academic space-y-6 arrive-item d4"
           style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
         >
           <ArticleBodyChunks
