@@ -244,3 +244,15 @@ html, body, #root { height: 100%; }
   .constellation-failed [data-testid^="briefing-progress-step-"],
   .constellation-failed [data-testid="briefing-constellation-well"] { transition: none; }
 }
+
+/* ===== 抵达阶梯（F5）：报题/正文依次落定；revisit 与 reduced-motion 不重演 ===== */
+.arrive-item { animation: arriveItem 700ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.arrive-item.d3 { animation-delay: 400ms; }
+@keyframes arriveItem {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+[data-arrival="revisit"] .arrive-item { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .arrive-item { animation: none; }
+}

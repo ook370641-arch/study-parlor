@@ -246,3 +246,35 @@ describe('BriefingLayout quote band', () => {
     expect(screen.queryByTestId('quote-text')).not.toBeInTheDocument()
   })
 })
+
+describe('BriefingLayout arrival cascade', () => {
+  beforeEach(() => cleanup())
+
+  const RESULT = {
+    title: '夜航简报',
+    date: '2026-07-25',
+    content: '## A\n正文内容',
+    sources: [],
+    filePath: '/x/夜航简报-2026-07-25.md',
+    cached: false,
+    generatedAt: new Date().toISOString(),
+    sourceStatus: { x: 'ok', podcasts: 'ok', blogs: 'ok' },
+  } as const
+
+  const PARSED = {
+    sections: [{ title: 'A', body: '正文内容' }],
+    sources: [],
+  }
+
+  it('academic layout marks header and body as arrival cascade items', () => {
+    render(
+      <AcademicBriefingLayout
+        result={RESULT as any}
+        parsed={PARSED as any}
+        displayDate="2026 年 7 月 25 日"
+      />,
+    )
+    expect(screen.getByTestId('briefing-academic-layout').querySelector('header')!.className).toContain('arrive-item')
+    expect(screen.getByTestId('briefing-markdown-body').className).toContain('arrive-item')
+  })
+})

@@ -50,7 +50,7 @@ export function WritingBoard() {
   const color = TONE_COLORS[tone]
 
   return (
-    <div className="flex flex-col h-full"
+    <div className="flex flex-col h-full arrive-item"
       style={{
         ['--writing-body-size' as string]: size.size,
         ['--writing-body-weight' as string]: size.weight,

@@ -48,7 +48,7 @@ export function AcademicBriefingLayout({
     >
       <div ref={articleBodyRef} className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative briefing-article-body">
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
-        <header className="text-center mb-8">
+        <header className="text-center mb-8 arrive-item">
           <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2">{result.title}</h1>
           <BriefingMetaLine
             displayDate={displayDate}
@@ -76,7 +76,7 @@ export function AcademicBriefingLayout({
 
         <div
           data-testid="briefing-markdown-body"
-          className="briefing-body-academic space-y-6"
+          className="briefing-body-academic space-y-6 arrive-item d3"
           style={{ fontSize: 'var(--briefing-body-size)', fontWeight: 'var(--briefing-body-weight)' }}
         >
           <ArticleBodyChunks
