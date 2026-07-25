@@ -12,7 +12,7 @@ import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
-import { JobBriefingRenderer } from '@/components/job-briefing'
+import { JobBriefingRenderer, JobProfilePanel } from '@/components/job-briefing'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
@@ -71,8 +71,8 @@ export function Briefing() {
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const jobProfile = useStore((s) => s.jobProfile)
-  const goto = useStore((s) => s.goto)
   const [profileHintDismissed, setProfileHintDismissed] = useState(false)
+  const [jobProfilePanelOpen, setJobProfilePanelOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<BriefingHistoryItem[] | null>(null)
   const deleteBriefings = useStore((s) => s.deleteBriefings)
   const deleteJobBriefings = useStore((s) => s.deleteJobBriefings)
@@ -329,10 +329,10 @@ export function Briefing() {
                       <span className="flex-1">完善求职档案（意向岗位、方向、经历）以获得个性化岗位适配与高频问题。</span>
                       <button
                         data-testid="job-briefing-profile-hint-goto"
-                        onClick={() => goto('settings')}
+                        onClick={() => setJobProfilePanelOpen(true)}
                         className="shrink-0 px-3 py-1 rounded bg-ember text-white text-xs hover:bg-ember/90"
                       >
-                        去设置
+                        填写档案
                       </button>
                       <button
                         data-testid="job-briefing-profile-hint-dismiss"
@@ -345,7 +345,7 @@ export function Briefing() {
                     </div>
                   )}
                   {jobResult && (
-                    <div className="max-w-3xl mx-auto mb-2">
+                    <div className="max-w-3xl mx-auto mb-2 flex items-center justify-between">
                       <BriefingMetaLine
                         displayDate={jobDisplayDate}
                         timeString={jobResult.generatedAt ? formatGeneratedAt(jobResult.generatedAt, jobResult.date) : undefined}
@@ -353,6 +353,18 @@ export function Briefing() {
                         cacheWriteFailed={jobResult.cacheWriteFailed}
                         theme={theme}
                       />
+                      <button
+                        data-testid="job-profile-panel-trigger"
+                        onClick={() => setJobProfilePanelOpen(true)}
+                        className="shrink-0 ml-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-[#3a3028] bg-[#2a1f1a]/60 text-[#a09080] text-xs hover:text-[#e0d5c0] hover:border-[#d97757] transition-colors"
+                        title="求职档案设置"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-70">
+                          <circle cx="12" cy="12" r="3"/>
+                          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        求职档案
+                      </button>
                     </div>
                   )}
                   <JobBriefingRenderer content={jobResult.content} theme={theme} fontSize={fontSize} finished={jobFinished} alreadyRead={jobResult ? jobRead.includes(jobResult.date) : false} />
@@ -491,6 +503,10 @@ export function Briefing() {
         <p className="mt-2">删除「今天」的简报后，再次点击今天将重新生成。</p>
         <p className="mt-2">将同时删除所选简报的旁注对话、标注与导读。</p>
       </ConfirmDialog>
+      <JobProfilePanel
+        open={jobProfilePanelOpen && isJob}
+        onClose={() => setJobProfilePanelOpen(false)}
+      />
       <CandlelightLayer />
       <BriefingCornerControls />
     </div>
