@@ -147,6 +147,16 @@ describe('JobBriefingRenderer four sections', () => {
   })
 })
 
+describe('JobBriefingRenderer arrival cascade', () => {
+  afterEach(cleanup)
+
+  it('root element carries arrive-item for arrival cascade', () => {
+    render(<JobBriefingRenderer content="## A\ncontent" theme="academic" fontSize="base" />)
+    const root = screen.getByTestId('job-briefing-renderer')
+    expect(root.className).toContain('arrive-item')
+  })
+})
+
 describe('JobBriefingRenderer quote band and ornaments', () => {
   afterEach(cleanup)
 
