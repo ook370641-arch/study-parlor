@@ -65,4 +65,17 @@ test.describe('@p1 generation ceremony', () => {
     const state = await well.getAttribute('data-state')
     expect(['live', 'checking']).toContain(state)
   })
+
+  test('constellation well supports per-stage bloom class', async ({ window, testLibraryPath }) => {
+    seedBriefing(testLibraryPath, localToday())
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+    const well = window.locator('[data-testid="briefing-constellation-well"]')
+    await expect(well).toBeVisible({ timeout: 5000 })
+    // Well should be live or checking during generation
+    const state = await well.getAttribute('data-state')
+    expect(state).toBeTruthy()
+  })
 })

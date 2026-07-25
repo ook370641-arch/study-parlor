@@ -93,4 +93,36 @@ test.describe('@p1 lighting layer', () => {
     }
     // 若无标注则跳过 warm 断言（此场景下 warm 不会触发，不算失败）
   })
+
+  test('job briefing: flame uses star-blue color', async ({ window, testLibraryPath }) => {
+    const today = localToday()
+    seedBriefing(testLibraryPath, today)
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    // Switch to job briefing source
+    await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
+    // The today flame should exist with lit state
+    await expect(window.locator(`[data-testid="briefing-date-flame-${today}"]`)).toBeAttached()
+    // Verify the star-blue color via computed style
+    const flame = window.locator(`[data-testid="briefing-date-flame-${today}"]`)
+    const bg = await flame.evaluate((el) => getComputedStyle(el).backgroundColor)
+    expect(bg).toContain('127, 168, 217')
+  })
+
+  test('colophon ◆ is visible after scroll (F7 CSS fix verification)', async ({ window, testLibraryPath }) => {
+    seedBriefing(testLibraryPath, localToday())
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+
+    await window.locator(SELECTORS.briefing.academicLayout).evaluate((el) => el.scrollTo(0, (el as HTMLElement).scrollHeight))
+    const colophon = window.locator('[data-testid="briefing-colophon"]')
+    await expect(colophon).toBeVisible({ timeout: 5000 })
+    // Verify opacity is 1 (visible in normal mode)
+    const opacity = await colophon.evaluate((el) => getComputedStyle(el).opacity)
+    expect(parseFloat(opacity)).toBeGreaterThan(0.5)
+  })
 })
