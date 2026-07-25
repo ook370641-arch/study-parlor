@@ -4,9 +4,9 @@ import { Button } from '@/components/Button'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ipc } from '@/lib/ipc'
-import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE } from '@/lib/job-briefing-defaults'
+import { DEFAULT_JOB_BRIEFING_CONFIG } from '@/lib/job-briefing-defaults'
 import type { AppConfig } from '@electron/env'
-import type { JobBriefingConfig, JobCompany, JobProfile } from '@shared/index'
+import type { JobBriefingConfig } from '@shared/index'
 
 const DEFAULT_BASE_URL = 'https://api.kimi.com/coding/v1'
 const DEFAULT_MODEL = 'kimi-k2.6'
@@ -34,8 +34,6 @@ export function Settings() {
   const [searchConfigured, setSearchConfigured] = useState(false)
   const [jobConfig, setJobConfig] = useState<JobBriefingConfig>(DEFAULT_JOB_BRIEFING_CONFIG)
   const [jobConfigSaving, setJobConfigSaving] = useState(false)
-  const [jobProfile, setJobProfile] = useState<JobProfile>(DEFAULT_JOB_PROFILE)
-  const [jobProfileSaving, setJobProfileSaving] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -56,7 +54,6 @@ export function Settings() {
       .then(state => {
         if (!mounted) return
         setJobConfig(state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG)
-        setJobProfile(state.jobProfile ?? DEFAULT_JOB_PROFILE)
       })
       .catch(err => { if (mounted) setError(err.message || '读取求职简报配置失败') })
     return () => { mounted = false }
@@ -147,27 +144,6 @@ export function Settings() {
   const canSave = apiKey.trim().length > 0 && libraryPath.trim().length > 0
   const canVerify = apiKey.trim().length > 0
 
-  const updateCompany = (index: number, patch: Partial<JobCompany>) => {
-    setJobConfig(prev => ({
-      ...prev,
-      companies: prev.companies.map((c, i) => (i === index ? { ...c, ...patch } : c)),
-    }))
-  }
-
-  const addCompany = () => {
-    setJobConfig(prev => ({
-      ...prev,
-      companies: [...prev.companies, { name: '', priority: prev.companies.length + 1, enabled: true }],
-    }))
-  }
-
-  const removeCompany = (index: number) => {
-    setJobConfig(prev => ({
-      ...prev,
-      companies: prev.companies.filter((_, i) => i !== index),
-    }))
-  }
-
   const handleSaveJobConfig = async () => {
     setJobConfigSaving(true)
     setError(null)
@@ -178,29 +154,6 @@ export function Settings() {
       setError(err.message || '保存求职简报配置失败')
     } finally {
       setJobConfigSaving(false)
-    }
-  }
-
-  const handleSaveJobProfile = async () => {
-    setJobProfileSaving(true)
-    try {
-      await useStore.getState().updateJobProfile(jobProfile)
-      showToast('求职档案已保存')
-    } catch (err: any) {
-      setError(err.message || '保存求职档案失败')
-    } finally {
-      setJobProfileSaving(false)
-    }
-  }
-
-  const handleDiscoverPages = async () => {
-    setError(null)
-    const result = await useStore.getState().discoverJobBriefingPages()
-    if (!result.ok) {
-      setError(result.message || '刷新招聘页链接失败')
-    } else {
-      setJobConfig(prev => ({ ...prev, companies: result.companies }))
-      showToast('招聘页链接已更新')
     }
   }
 
@@ -367,76 +320,6 @@ export function Settings() {
                 </div>
               </div>
 
-              {/* 求职档案 */}
-              <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
-                <h3 className="text-ember font-semibold mb-4">求职档案</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">意向岗位（逗号分隔）</div>
-                    <input
-                      data-testid="settings-jobprofile-target-roles"
-                      type="text"
-                      value={jobProfile.targetRoles.join('，')}
-                      onChange={e => setJobProfile(prev => ({ ...prev, targetRoles: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      placeholder="模型产品经理，AI产品经理"
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">方向描述（如：大模型/Agent 产品，偏评测与平台）</div>
-                    <input
-                      data-testid="settings-jobprofile-direction"
-                      type="text"
-                      value={jobProfile.direction}
-                      onChange={e => setJobProfile(prev => ({ ...prev, direction: e.target.value }))}
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">技能清单（逗号分隔）</div>
-                    <input
-                      data-testid="settings-jobprofile-skills"
-                      type="text"
-                      value={jobProfile.skills.join('，')}
-                      onChange={e => setJobProfile(prev => ({ ...prev, skills: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      placeholder="提示词工程，RAG，数据分析"
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">经历摘要（项目 / 实习 / 学历）</div>
-                    <textarea
-                      data-testid="settings-jobprofile-experience"
-                      rows={4}
-                      value={jobProfile.experience}
-                      onChange={e => setJobProfile(prev => ({ ...prev, experience: e.target.value }))}
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">补充说明（如：只要北上深）</div>
-                    <textarea
-                      data-testid="settings-jobprofile-notes"
-                      rows={2}
-                      value={jobProfile.additionalNotes}
-                      onChange={e => setJobProfile(prev => ({ ...prev, additionalNotes: e.target.value }))}
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
-                    />
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    <Button data-testid="settings-jobprofile-save" onClick={handleSaveJobProfile} disabled={jobProfileSaving}>
-                      保存求职档案
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
               {/* 求职简报 */}
               <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
                 <h3 className="text-ember font-semibold mb-4">求职简报</h3>
@@ -464,55 +347,21 @@ export function Settings() {
                     />
                   </div>
 
-
-                  <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">关注公司</div>
-                    <div className="space-y-2">
-                      {jobConfig.companies.map((company, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={company.enabled}
-                            onChange={e => updateCompany(idx, { enabled: e.target.checked })}
-                            className="shrink-0"
-                          />
-                          <input
-                            type="text"
-                            value={company.name}
-                            onChange={e => updateCompany(idx, { name: e.target.value })}
-                            placeholder="公司名"
-                            className="flex-1 min-w-0 bg-ink/50 border border-slate/40 rounded-md px-3 py-1.5 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
-                          />
-                          <input
-                            type="number"
-                            value={company.priority}
-                            onChange={e => updateCompany(idx, { priority: Number(e.target.value) })}
-                            className="w-16 bg-ink/50 border border-slate/40 rounded-md px-2 py-1.5 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
-                          />
-                          {company.careerPageUrl && (
-                            <span className="text-xs text-parchment/40 truncate max-w-[120px]" title={company.careerPageUrl}>已发现招聘页</span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeCompany(idx)}
-                            className="text-parchment/50 hover:text-wine text-sm px-2 bg-transparent border-none cursor-pointer"
-                          >
-                            删除
-                          </button>
-                        </div>
-                      ))}
-                      <Button data-testid="settings-job-add-company" variant="ghost" onClick={addCompany}>
-                        添加公司
-                      </Button>
-                    </div>
+                  <div className="text-xs text-parchment/50 mt-4">
+                    关注公司、个人档案、搜索关键词请在
+                    <button
+                      data-testid="settings-goto-job-profile"
+                      onClick={() => goto('briefing')}
+                      className="underline text-ember hover:text-ember/80 mx-1"
+                    >
+                      求职简报页面
+                    </button>
+                    中编辑
                   </div>
 
                   <div className="flex flex-wrap gap-3">
                     <Button data-testid="settings-job-save" onClick={handleSaveJobConfig} disabled={jobConfigSaving}>
                       保存求职简报配置
-                    </Button>
-                    <Button data-testid="settings-job-discover" variant="ghost" onClick={handleDiscoverPages}>
-                      刷新官方招聘页链接
                     </Button>
                     <Button data-testid="settings-job-reset" variant="ghost" onClick={handleResetJobConfig}>
                       恢复默认
