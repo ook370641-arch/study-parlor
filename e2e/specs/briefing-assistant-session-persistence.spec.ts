@@ -12,7 +12,7 @@ test.describe('@p1 briefing assistant session persistence', () => {
     await window.locator(SELECTORS.briefing.receiveDigestButton).click()
     await window.locator('[data-testid="briefing-reading-pane"]').waitFor({ state: 'visible', timeout: 30000 })
 
-    // Open assistant chat
+    // Open assistant chat — the tab is shown as a vertical "旁注" label
     const chatTab = window.locator('[data-testid="article-assistant-tab"]')
     await chatTab.waitFor({ state: 'visible', timeout: 10000 })
     await chatTab.click()

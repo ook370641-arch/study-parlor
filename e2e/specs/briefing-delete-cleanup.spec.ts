@@ -2,9 +2,10 @@ import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
 import fs from 'node:fs'
+import path from 'node:path'
 
 test.describe('@p1 briefing delete cleanup', () => {
-  test('delete removes sibling annotation and assistant files', async ({ window }) => {
+  test('delete removes sibling annotation and assistant files', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
@@ -13,12 +14,9 @@ test.describe('@p1 briefing delete cleanup', () => {
     await window.locator(SELECTORS.briefing.receiveDigestButton).click()
     await window.locator('[data-testid="briefing-reading-pane"]').waitFor({ state: 'visible', timeout: 30000 })
 
-    // Get file path
-    const result = await window.evaluate(() => {
-      const store = (window as any).__ZUSTAND_STORE__
-      return store?.getState?.()?.briefing?.result
-    })
-    const briefingPath = result.filePath
+    // Construct file paths from library path + today's date (mock generates for today)
+    const today = new Date().toISOString().slice(0, 10)
+    const briefingPath = path.join(testLibraryPath, '夜航简报', `夜航简报-${today}.md`)
     const annoPath = briefingPath.replace(/\.md$/, '.annotations.md')
     const sessionPath = briefingPath.replace(/\.md$/, '.assistant.md')
     const guidePath = briefingPath.replace(/\.md$/, '.guide.md')
@@ -29,8 +27,8 @@ test.describe('@p1 briefing delete cleanup', () => {
     fs.writeFileSync(guidePath, 'test guide', 'utf8')
     expect(fs.existsSync(annoPath)).toBe(true)
 
-    // Right-click the date item to delete
-    const dateItem = window.locator(SELECTORS.briefing.dateItem(result.date))
+    // Right-click the date item to open context menu
+    const dateItem = window.locator(SELECTORS.briefing.dateItem(today))
     await dateItem.waitFor({ state: 'visible', timeout: 5000 })
     await dateItem.click({ button: 'right' })
 

@@ -2,9 +2,10 @@ import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
 import fs from 'node:fs'
+import path from 'node:path'
 
 test.describe('@p1 briefing annotations persistence', () => {
-  test('annotations file created after marking text in briefing', async ({ window }) => {
+  test('annotations file created after marking text in briefing', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
@@ -13,12 +14,10 @@ test.describe('@p1 briefing annotations persistence', () => {
     await window.locator(SELECTORS.briefing.receiveDigestButton).click()
     await window.locator('[data-testid="briefing-reading-pane"]').waitFor({ state: 'visible', timeout: 30000 })
 
-    // Get the briefing result to find file path
-    const result = await window.evaluate(() => {
-      const store = (window as any).__ZUSTAND_STORE__
-      return store?.getState?.()?.briefing?.result
-    })
-    const annotationsPath = result.filePath.replace(/\.md$/, '.annotations.md')
+    // Construct the annotations file path from library path + today's date
+    const today = new Date().toISOString().slice(0, 10)
+    const briefingPath = path.join(testLibraryPath, '夜航简报', `夜航简报-${today}.md`)
+    const annotationsPath = briefingPath.replace(/\.md$/, '.annotations.md')
 
     // Trigger ghost pen via E2E helper on the article body
     await window.evaluate(() => {
@@ -26,7 +25,7 @@ test.describe('@p1 briefing annotations persistence', () => {
       if (!container) return
       const paras = container.querySelectorAll('p')
       if (paras.length === 0) return
-      const firstPara = paras[0]
+      const firstPara = paras[0] as HTMLElement
       const textNode = Array.from(firstPara.childNodes).find(
         (n): n is Text => n.nodeType === Node.TEXT_NODE && (n.textContent?.length ?? 0) > 10,
       ) as Text | undefined
