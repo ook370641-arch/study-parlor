@@ -141,6 +141,7 @@ node scripts/e2e-changed.js          # 仅列出受影响的 spec
 **映射表维护** (`e2e/source-map.json`)：
 - 每个 `group` 包含源文件 glob (`sources`) 和 E2E spec glob (`specs`)
 - 变更命中 source pattern → 触发对应 spec
-- **新建 spec 或新增模块时必须同步更新映射**，否则新 spec 永远不会被定向执行
-- `node scripts/e2e-changed.js` 运行时会自动检测未被任何 group 覆盖的**孤儿 spec**并输出 `WARNING`——遇到此警告必须补齐 source-map
-- 未匹配任何 group 的变更 → 仅跑 `startup-health.spec.ts`
+- **新建 spec 或新增模块时应同步更新映射**，以确保后续 source 变更也能触发
+- 直接变更的 spec 文件（git diff 中的 `e2e/specs/*.spec.ts`）会自动纳入执行
+- 未被任何 group 覆盖的**孤儿 spec** 会自动纳入执行并输出 `WARNING`——遇到此警告应补齐 source-map
+- 未匹配任何 group 的源文件变更 → 仅跑 `startup-health.spec.ts`（以及直接变更的 spec/孤儿 spec）
