@@ -55,4 +55,24 @@ describe('extractJsonObject', () => {
   it('returns null for a JSON array (only objects are extracted)', () => {
     expect(extractJsonObject('[1,2,3]')).toBeNull()
   })
+
+  it('returns null via fallback when braces are unbalanced and no } exists', () => {
+    // Main balancing loop never reaches depth 0, lastIndexOf('}') returns -1
+    expect(extractJsonObject('{"a": 1')).toBeNull()
+  })
+
+  it('returns null via fallback when last } candidate is not valid JSON', () => {
+    // Main balancing loop fails on nested unbalanced braces,
+    // fallback lastIndexOf('}') finds inner }, but candidate is not valid JSON
+    expect(extractJsonObject('{"outer": {"inner": 1}')).toBeNull()
+  })
+
+  it('recovers via fallback when braces inside a string confuse the main loop', () => {
+    // The main loop tracks string state — it should handle this correctly,
+    // but verify the safety net doesn't break the happy path
+    const input = '结论：{"summary": "包含 { 特殊字符} 的文本", "count": 1}后续文字'
+    const out = extractJsonObject(input)
+    expect(out).toBe('{"summary": "包含 { 特殊字符} 的文本", "count": 1}')
+    expect(JSON.parse(out!)).toEqual({ summary: '包含 { 特殊字符} 的文本', count: 1 })
+  })
 })

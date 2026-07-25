@@ -128,3 +128,19 @@ npx playwright show-trace e2e-results/<trace-file>.zip
 - `@p0`：核心路径，每次 CI/本地提交前跑
 - `@p1`：重要功能，PR 合并前跑
 - `@p2`：边界/慢路径，发布前全量或按需跑
+
+## 定向测试
+
+全量 E2E 耗时较长。日常开发迭代使用定向测试，基于 `git diff` 和 `e2e/source-map.json` 自动选择相关 spec：
+
+```bash
+node scripts/e2e-changed.js --run   # 自动选择 + 执行
+node scripts/e2e-changed.js          # 仅列出受影响的 spec
+```
+
+**映射表维护** (`e2e/source-map.json`)：
+- 每个 `group` 包含源文件 glob (`sources`) 和 E2E spec glob (`specs`)
+- 变更命中 source pattern → 触发对应 spec
+- **新建 spec 或新增模块时必须同步更新映射**，否则新 spec 永远不会被定向执行
+- `node scripts/e2e-changed.js` 运行时会自动检测未被任何 group 覆盖的**孤儿 spec**并输出 `WARNING`——遇到此警告必须补齐 source-map
+- 未匹配任何 group 的变更 → 仅跑 `startup-health.spec.ts`
