@@ -27,9 +27,9 @@ test.describe('@p1 briefing assistant session persistence', () => {
     // Wait for response (mock returns a reply)
     await expect(window.locator('[data-testid="chat-message"]')).toHaveCount(2, { timeout: 10000 })
 
-    // Switch to writing source
-    await window.locator(SELECTORS.writing.sourceButton).click()
-    await window.locator('[data-testid="writing-board-empty"]').waitFor({ state: 'visible', timeout: 10000 })
+    // Switch to job-briefing source (no directory setup required)
+    await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
+    await window.locator('[data-testid="briefing-receive-job-button"]').waitFor({ state: 'visible', timeout: 10000 })
 
     // Switch back to digest
     await window.locator(SELECTORS.briefing.sourceDigestButton).click()
