@@ -8,13 +8,15 @@ import {
   discoverCareerPage,
   jobBriefingFilePath,
   jobBriefingDir,
+  generateJobBriefingKeywords,
+  generateArticleSearchQuery,
 } from '../lib/job-briefing'
 import { toJobErrorCode } from '../lib/job-error-codes'
 import { deleteSiblingFiles } from '../lib/sibling-files'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { getSearchApiKey } from '../lib/credentials'
 import { getCurrentState } from './state'
-import { normalizeJobProfile, formatJobProfile } from '../../src/lib/job-briefing-defaults'
+import { normalizeJobProfile, formatJobProfile, isJobProfileEmpty } from '../../src/lib/job-briefing-defaults'
 
 function bumpMockCounter(dir: string, name: string): void {
   try {
@@ -260,6 +262,39 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       }
     } catch (err: any) {
       return { ok: false, code: 'NETWORK_ERROR', message: err.message || String(err) }
+    }
+  })
+
+  ipcMain.handle('job-briefing:generate-keywords', async (_, args: { profile: JobProfile }) => {
+    const profile = normalizeJobProfile(args.profile)
+    if (isJobProfileEmpty(profile)) {
+      return { ok: false as const, code: 'EMPTY_PROFILE' as const, message: '求职档案为空，无法生成关键词' }
+    }
+    try {
+      const ctl = new AbortController()
+      const timeout = setTimeout(() => ctl.abort(), 60_000)
+      try {
+        const result = await generateJobBriefingKeywords(cfg, profile, { signal: ctl.signal })
+        return { ok: true as const, eventKeywords: result.eventKeywords, jobKeywords: result.jobKeywords }
+      } finally {
+        clearTimeout(timeout)
+      }
+    } catch (err: any) {
+      return { ok: false as const, code: 'LLM_ERROR' as const, message: err.message || '关键词生成失败' }
+    }
+  })
+
+  ipcMain.handle('job-briefing:generate-article-search-query', async (_, args: {
+    articleContent: string; selection?: string; lastMessage?: string
+  }) => {
+    try {
+      const query = await generateArticleSearchQuery(cfg, args)
+      if (!query) {
+        return { ok: false as const, code: 'LLM_ERROR' as const, message: '生成的搜索词为空' }
+      }
+      return { ok: true as const, query }
+    } catch (err: any) {
+      return { ok: false as const, code: 'LLM_ERROR' as const, message: err.message || '搜索词生成失败' }
     }
   })
 
