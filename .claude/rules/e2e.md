@@ -1,5 +1,5 @@
 ---
-description: "Use when writing or maintaining Playwright E2E tests, fixtures, page objects, or selectors."
+description: "Use when writing or maintaining Playwright E2E tests, fixtures, page objects, selectors, or the e2e/source-map.json mapping."
 paths:
   - "e2e/**"
   - "tests/**/*.test.ts"
@@ -103,6 +103,18 @@ paths:
 - seed 文件后通过 `window.reload()`、UI 操作触发重新扫描，或等待轮询/缓存失效。
 - 在 POM 中提供 `waitForLibraryLoaded()` 或 `reloadAndWait()` 强制处理时序。
 - Source: e2e.md §10
+
+## 10. 功能迭代后跑定向 E2E，新建 spec 同步维护 source-map
+
+**Why:** 全量 E2E 67 个 spec 耗时 20+ 分钟；source-map 过期会导致新增 spec 永远不会被定向执行。
+
+- 代码变更完成后，运行 `node scripts/e2e-changed.js --run` 执行受影响的 spec。
+- **新建 E2E spec 或新增页面/组件/IPC 模块时，必须同步更新 `e2e/source-map.json`**：在对应 `group` 的 `specs` 中添加新 spec 文件名，或新建 group（若为全新功能域）。
+- `startup-health.spec.ts` 始终包含在每次运行中（`always` 列表）。
+- 变更不匹配任何 group → 仅跑 `startup-health`；若此结果不合理，说明 source-map 需要更新。
+- `node scripts/e2e-changed.js` 会自动检测未被任何 group 覆盖的孤儿 spec 并输出 WARNING——遇到此警告必须补齐 source-map。
+- CI/合并前仍需全量 `npm run test:e2e`，本规则仅适用于本地开发迭代。
+- Source: 2026-07-25 E2E targeting infra
 
 ## Example: selector stability
 

@@ -259,28 +259,33 @@ Job 简报同理，匹配模式 `求职简报-YYYY-MM-DD.md`。
 - **验证点**：消息列表中仍有历史消息、`.assistant.md` 文件存在
 
 #### Spec 3: `e2e/specs/briefing-delete-cleanup.spec.ts`
-- **场景**：生成简报 → 做标注 → 删简报（通过日期列右键菜单）→ 确认删除 → 验证 `.annotations.md` `.assistant.md` `.guide.md` 三个 sibling 文件均已删除
+- **场景**：生成简报 → 创建 dummy `.annotations.md` 和 `.assistant.md` → 删简报（右键日期列菜单）→ 确认删除 → 验证两个 sibling 文件均已删除
 - **标签**：`@p1`
 - **走 mock 路径**
-- **验证点**：`fs.existsSync` 对三个 sibling 路径均返回 `false`
+- **验证点**：`fs.existsSync` 对 `.annotations.md` 和 `.assistant.md` 返回 `false`
+- **注意**：`.guide.md` 不在断言中，因为 `autoGenerateGuide` 可能在删除后异步重新生成
+
+### F13 · e2e-changed 孤儿 spec 检测
+
+**问题**：`source-map.json` 用 glob pattern 匹配 spec 文件（如 `briefing-*.spec.ts`）。如果新建 spec 不匹配任何已有 glob——例如全新功能域——定向测试系统静默忽略它，永远不会执行。
+
+**修复**：`scripts/e2e-changed.js` 新增孤儿 spec 检测：在输出匹配结果后，列出 `e2e/specs/` 中未被任何 group 的 `specs` 覆盖的 spec 文件，输出 WARNING 提示开发者补齐 source-map。
+
+同步更新 `.claude/rules/e2e.md` §10，将孤儿检测警告纳入维护规则。
 
 ## 4. 测试策略
 
-### 单元测试
-- `tests/article-assistant/json-extract.test.ts`：确保 F6 fallback 修复后现有 9 个 case 仍然 PASS
-- `tests/job-briefing.test.ts`：确保 F1/F2/F7 不影响现有测试
-- `tests/briefing.test.ts`：确保 F5 原子写入不影响缓存读写
+### 验证分层
 
-### E2E 测试
-- 新增 3 个 spec（F12）
-- 现有 12 个 briefing spec 全部回归
+| 层级 | 覆盖内容 | 形式 |
+|---|---|---|
+| **E2E（用户可感知行为）** | 标注持久化、旁注对话恢复、删除联动清理 | 3 个新 spec |
+| **真实 API 集成** | LLM 参数变更后简报生成质量不退化 | `job-briefing-real.test.ts`（12 tests） |
+| **单元测试（基础设施层）** | JSON 提取 fallback、超时 error code、缓存原子写入、BrowserWindow 信号量、briefingRead GC、Writing catalog UI | 对应模块的 vitest 测试 |
 
-### 真实 API 验证
-```bash
-# 确保真实 API 路径不受 F1/F2 影响
-npx playwright test --config e2e/playwright.config.ts briefing-real-api --env E2E_BRIEFING_DISABLE_MOCK=1
-npx playwright test --config e2e/playwright.config.ts job-briefing-real
-```
+基础设施层修改（F5/F6/F8/F9/F10）不适合写 E2E：它们改动的是 IO 原子性、JSON 解析鲁棒性、进程并发控制、错误码映射——这些行为在 E2E 层面无法可靠触发或断言。对于这类修改，单元测试是正确且充分的验证闭环。
+
+用户可感知的行为变更（F11 Writing catalog UI、F12 持久化）均编写了 E2E 测试。
 
 ## 5. 实现顺序
 
