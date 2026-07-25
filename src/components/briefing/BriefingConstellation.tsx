@@ -49,6 +49,7 @@ export function BriefingConstellation({ stage, mode = 'live' }: Props) {
   const jobDetail = useStore((s) => s.jobBriefingStageDetail)
   const pulseAt = useStore((s) => s.briefingPulseAt)
   const [pulse, setPulse] = useState(false)
+  const [blooming, setBlooming] = useState(false)
   const lastBeat = useRef(0)
   const pulseTimer = useRef<number | null>(null)
 
@@ -70,6 +71,13 @@ export function BriefingConstellation({ stage, mode = 'live' }: Props) {
   // 防御：stage key 不属于当前源（跨源串味等历史遗留状态）时回退第一站激活。
   const foundIndex = stations.findIndex((s) => s.key === stage)
   const currentIndex = foundIndex === -1 ? 0 : foundIndex
+
+  useEffect(() => {
+    if (mode !== 'live' || currentIndex === 0) return
+    setBlooming(true)
+    const t = setTimeout(() => setBlooming(false), 800)
+    return () => clearTimeout(t)
+  }, [currentIndex, mode])
 
   // 主色：Academic digest = 琥珀；Academic job = 星蓝（源标识，spec §4）；Newspaper = 墨色。
   const accent = !isAcademic ? '#1a1a1a' : isJob ? '#7fa8d9' : '#d97757'
@@ -120,7 +128,7 @@ export function BriefingConstellation({ stage, mode = 'live' }: Props) {
         data-state={wellState}
         className={`absolute flex flex-col items-center justify-center rounded-full ${
           mode === 'resolved' ? 'constellation-well-resolved constellation-well-bloom' : ''
-        }`}
+        } ${blooming ? 'constellation-well-bloom' : ''}`}
         style={{
           left: '50%', top: '44%',
           transform: `translate(-50%,-50%) scale(${pulse ? 1.015 : 1})`,

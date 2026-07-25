@@ -76,7 +76,6 @@ describe('Briefing generation transition choreography', () => {
           error: null,
         },
         briefingStage: null,
-        briefingArrivedAt: Date.now(),
       } as any)
     })
     // Advance through resolved (900ms) + departing (600ms) → idle

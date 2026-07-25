@@ -649,7 +649,6 @@ export const useStore = create<AppStore>((set, get) => ({
         briefingStage: null,
         briefingStageDetail: null,
         briefingPulseAt: null,
-        briefingArrivedAt: Date.now(),
       })
     } catch (err: any) {
       const raw = err.message || String(err)
@@ -708,7 +707,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const unsubscribe = ipc.onBriefingProgress((stage, detail) => set({ jobBriefingStage: stage, jobBriefingStageDetail: detail ?? null, briefingPulseAt: Date.now() }))
     try {
       const result = await ipc.jobBriefingGenerate({ date, force: opts?.force })
-      set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null, jobBriefingStageDetail: null, briefingPulseAt: null, briefingArrivedAt: Date.now() })
+      set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null, jobBriefingStageDetail: null, briefingPulseAt: null })
     } catch (err: any) {
       const raw = err.message || String(err)
       if (raw.includes('JOB_ABORTED')) return

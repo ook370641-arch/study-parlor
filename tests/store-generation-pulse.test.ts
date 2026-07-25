@@ -25,7 +25,7 @@ describe('store generation pulse fields', () => {
     useStore.setState({ briefingPulseAt: null, briefingArrivedAt: null, candleBreathAt: null })
   })
 
-  it('progress events stamp briefingPulseAt; success clears it and stamps briefingArrivedAt', async () => {
+  it('progress events stamp briefingPulseAt; success clears it (arrivedAt stamped later by Briefing.tsx)', async () => {
     const p = useStore.getState().generateBriefing('2026-07-25')
     expect(progressCb).toBeTypeOf('function')
     progressCb!('extracting', '5 个来源')
@@ -34,7 +34,7 @@ describe('store generation pulse fields', () => {
 
     await p
     expect(useStore.getState().briefingPulseAt).toBeNull()
-    expect(useStore.getState().briefingArrivedAt).toBeTypeOf('number')
+    expect(useStore.getState().briefingArrivedAt).toBeNull()
   })
 
   it('breathCandle stamps candleBreathAt (阖卷→烛光通道)', () => {

@@ -117,6 +117,20 @@ export function Briefing() {
   const { phase: jobPhase, fresh: jobFresh } = useGenerationTransition(
     `job:${jobResult?.date ?? today}`, jobLoading, !!jobResult, !!jobError,
   )
+
+  // Stamp briefingArrivedAt when constellation begins its depart (F4→F5 handoff).
+  // The veil flash starts AS the constellation fades, so the light breaks through.
+  useEffect(() => {
+    if (digestPhase === 'departing') {
+      useStore.setState({ briefingArrivedAt: Date.now() })
+    }
+  }, [digestPhase])
+  useEffect(() => {
+    if (jobPhase === 'departing') {
+      useStore.setState({ briefingArrivedAt: Date.now() })
+    }
+  }, [jobPhase])
+
   // Preserve last stage for mode="failed" rendering
   const lastDigestStage = useRef(stage)
   if (stage) lastDigestStage.current = stage
@@ -423,6 +437,7 @@ export function Briefing() {
       </div>
 
       {source === 'digest' && result?.filePath && (
+        <div data-zone="article">
         <ArticleAssistantPanel
           articleType="briefing"
           parentPath={result.filePath}
@@ -431,8 +446,10 @@ export function Briefing() {
           autoGenerateGuide
           theme={theme}
         />
+        </div>
       )}
       {isJob && jobResult?.filePath && (
+        <div data-zone="article">
         <ArticleAssistantPanel
           articleType="briefing"
           parentPath={jobResult.filePath}
@@ -440,8 +457,13 @@ export function Briefing() {
           articleContent={jobResult.content ?? ''}
           showGuide={false}
         />
+        </div>
       )}
-      {source === 'writing' && <WritingAssistantPanel />}
+      {source === 'writing' && (
+        <div data-zone="article">
+        <WritingAssistantPanel />
+        </div>
+      )}
       <ConfirmDialog
         open={pendingDelete !== null}
         title="删除简报"
