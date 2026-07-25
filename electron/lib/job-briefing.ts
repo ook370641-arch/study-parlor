@@ -28,6 +28,16 @@ import { DEFAULT_JOB_BRIEFING_CONFIG, formatJobProfile } from '../../src/lib/job
 
 export { DEFAULT_JOB_BRIEFING_CONFIG }
 
+// Simple promise-based semaphore: serialize BrowserWindow creation to avoid
+// multiple concurrent hidden Electron windows competing for resources.
+let browserSemaphore: Promise<void> = Promise.resolve()
+function withBrowserLimit<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = browserSemaphore
+  let release: () => void
+  browserSemaphore = new Promise<void>(resolve => { release = resolve })
+  return prev.then(() => fn().finally(() => release!()))
+}
+
 export function normalizeJobBriefingConfig(raw?: Partial<JobBriefingConfig>): JobBriefingConfig {
   return {
     companies: raw?.companies?.length ? raw.companies : DEFAULT_JOB_BRIEFING_CONFIG.companies,
@@ -210,8 +220,8 @@ export async function fetchPageHtml(
     if (externalListenerAdded) opts.signal?.removeEventListener('abort', onExternalAbort)
   }
 
-  // Browser fallback for JS-rendered pages
-  return new Promise((resolve, reject) => {
+  // Browser fallback for JS-rendered pages (serialized via semaphore)
+  return withBrowserLimit(() => new Promise((resolve, reject) => {
     const win = new BrowserWindow({
       width: 1280,
       height: 800,
@@ -254,7 +264,7 @@ export async function fetchPageHtml(
     })
 
     win.loadURL(url)
-  })
+  }))
 }
 
 export async function extractJobsFromHtml(
