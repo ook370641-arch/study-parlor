@@ -34,6 +34,10 @@ export function normalizeJobBriefingConfig(raw?: Partial<JobBriefingConfig>): Jo
     roleKeywords: raw?.roleKeywords?.length ? raw.roleKeywords : DEFAULT_JOB_BRIEFING_CONFIG.roleKeywords,
     cities: raw?.cities?.length ? raw.cities : DEFAULT_JOB_BRIEFING_CONFIG.cities,
     skillKeywords: raw?.skillKeywords?.length ? raw.skillKeywords : DEFAULT_JOB_BRIEFING_CONFIG.skillKeywords,
+    eventSearchKeywords: raw?.eventSearchKeywords ?? DEFAULT_JOB_BRIEFING_CONFIG.eventSearchKeywords,
+    jobSearchKeywords: raw?.jobSearchKeywords ?? DEFAULT_JOB_BRIEFING_CONFIG.jobSearchKeywords,
+    searchInternship: raw?.searchInternship ?? DEFAULT_JOB_BRIEFING_CONFIG.searchInternship,
+    searchFallRecruit: raw?.searchFallRecruit ?? DEFAULT_JOB_BRIEFING_CONFIG.searchFallRecruit,
   }
 }
 
@@ -46,18 +50,38 @@ export function buildOfficialPageQueries(company: string): string[] {
 
 export const JOB_COMMUNITY_DOMAINS = ['nowcoder.com', 'yingjiesheng.com', 'zhihu.com', 'xiaohongshu.com']
 
-export type EventQuery = { query: string; company?: string; includeDomains?: string[] }
+export type EventQuery = { query: string; company?: string; includeDomains?: string[]; dimension?: 'fallRecruit' | 'internship' | 'general' }
 
 export function buildEventQueries(config: JobBriefingConfig): EventQuery[] {
   const cities = config.cities.join(' ')
-  const queries: EventQuery[] = config.companies
-    .filter(c => c.enabled)
-    .sort((a, b) => a.priority - b.priority)
-    .map(c => ({ query: `${c.name} 2026秋招 2027届 校招 宣讲会 AI产品 招聘 ${cities}`.trim(), company: c.name }))
-  queries.push({
-    query: `AI产品 2026秋招 2027届 校招 汇总 ${cities}`.trim(),
-    includeDomains: ['nowcoder.com', 'yingjiesheng.com'],
-  })
+  const enabledCompanies = config.companies.filter(c => c.enabled)
+  const companyNames = enabledCompanies.map(c => c.name).join(' ')
+  const keywords = config.eventSearchKeywords.length > 0
+    ? config.eventSearchKeywords.join(' ')
+    : config.roleKeywords.join(' ')
+
+  const queries: EventQuery[] = []
+  if (config.searchFallRecruit) {
+    queries.push({
+      query: `${keywords} 秋招 校招 2026 2027届 ${companyNames} ${cities}`.trim(),
+      includeDomains: ['nowcoder.com', 'yingjiesheng.com'],
+      dimension: 'fallRecruit' as const,
+    })
+  }
+  if (config.searchInternship) {
+    queries.push({
+      query: `${keywords} 实习 提前批 2026 2027届 ${companyNames} ${cities}`.trim(),
+      includeDomains: ['nowcoder.com', 'yingjiesheng.com'],
+      dimension: 'internship' as const,
+    })
+  }
+  if (queries.length === 0) {
+    queries.push({
+      query: `${keywords} 招聘 2026 2027届 ${companyNames} ${cities}`.trim(),
+      includeDomains: ['nowcoder.com', 'yingjiesheng.com'],
+      dimension: 'general' as const,
+    })
+  }
   return queries
 }
 
@@ -277,51 +301,76 @@ export async function discoverEvents(
   cfg: AppConfig,
   config: JobBriefingConfig,
   opts: { apiKey: string; signal?: AbortSignal }
-): Promise<JobEvent[]> {
+): Promise<{ fallRecruit: JobEvent[]; internship: JobEvent[] }> {
   const today = new Date().toISOString().slice(0, 10)
-  const events: JobEvent[] = []
-  for (const q of buildEventQueries(config)) {
+  const queries = buildEventQueries(config)
+
+  // Parallel Tavily search with per-dimension tagging
+  const searchResults = await Promise.all(
+    queries.map(q =>
+      searchWeb({
+        query: q.query, apiKey: opts.apiKey, maxResults: 15, days: 14,
+        includeDomains: q.includeDomains, signal: opts.signal,
+      }).then(results => ({ dimension: q.dimension ?? 'general', results }))
+       .catch(err => {
+         console.warn(`[job-briefing] event search failed for ${q.dimension}: ${q.query}`, err)
+         return { dimension: q.dimension ?? 'general', results: [] as TavilyResult[] }
+       })
+    )
+  )
+
+  const fallRecruitEvents: JobEvent[] = []
+  const internshipEvents: JobEvent[] = []
+
+  for (const { dimension, results } of searchResults) {
     if (opts.signal?.aborted) break
+    if (results.length === 0) continue
+
+    const content = results.map(r => `标题: ${r.title}\nURL: ${r.url}\n摘要: ${r.content}`).join('\n\n')
+    const prompt = readPrompt('extract-events')
+      .replace('{{today}}', today)
+      .replace('{{company}}', '全部关注公司')
+      .replace('{{content}}', content.slice(0, 25000))
+
     try {
-      const results = await searchWeb({
-        query: q.query,
-        apiKey: opts.apiKey,
-        maxResults: 5,
-        days: 7,
-        includeDomains: q.includeDomains,
-        signal: opts.signal,
-      })
-      const content = results.map(r => `标题: ${r.title}\nURL: ${r.url}\n摘要: ${r.content}`).join('\n\n')
-      const prompt = readPrompt('extract-events')
-        .replace('{{today}}', today)
-        .replace('{{company}}', q.company ?? '全部关注公司')
-        .replace('{{content}}', content.slice(0, 20_000))
       const text = await chatNonStream(cfg, {
         messages: [{ role: 'user', content: prompt } as Message],
         temperature: 0.3,
-        thinking: { type: 'disabled' },
+        thinking: { type: 'enabled' },
         signal: opts.signal,
       })
       const extracted = extractJsonObject(text)
       if (!extracted) continue
       const obj = JSON.parse(extracted)
       if (!Array.isArray(obj.events)) continue
-      for (const e of obj.events) {
-        if (!e || typeof e.title !== 'string' || !e.title.trim()) continue
-        events.push({
-          company: String(e.company ?? q.company ?? '').trim(),
+
+      const events = obj.events
+        .filter((e: any) => e && typeof e.title === 'string' && e.title.trim())
+        .map((e: any) => ({
+          company: String(e.company ?? '').trim(),
           eventType: normalizeEventType(e.eventType),
           title: e.title.trim(),
           date: String(e.date ?? '').trim(),
           summary: String(e.summary ?? '').trim(),
           url: String(e.url ?? '').trim(),
-        })
+        }))
+
+      if (dimension === 'fallRecruit') fallRecruitEvents.push(...events)
+      else if (dimension === 'internship') internshipEvents.push(...events)
+      else {
+        // general dimension (no toggles enabled): put in both
+        fallRecruitEvents.push(...events)
+        internshipEvents.push(...events)
       }
     } catch (err) {
-      console.warn(`[job-briefing] event query failed: ${q.query}`, err)
+      console.warn(`[job-briefing] LLM extraction failed for ${dimension}`, err)
     }
   }
-  return filterAndCapEvents(dedupEvents(events), config, today)
+
+  return {
+    fallRecruit: filterAndCapEvents(dedupEvents(fallRecruitEvents), config, today),
+    internship: filterAndCapEvents(dedupEvents(internshipEvents), config, today),
+  }
 }
 
 /** Post-extraction filter: keep only watchlist companies, drop clearly stale events, cap at 20. */
@@ -351,13 +400,18 @@ export function filterAndCapEvents(events: JobEvent[], config: JobBriefingConfig
 
 export type FocusCompany = { name: string; eventTitle?: string }
 
-export function selectFocusCompanies(events: JobEvent[], config: JobBriefingConfig): FocusCompany[] {
+export function selectFocusCompanies(
+  fallRecruitEvents: JobEvent[],
+  internshipEvents: JobEvent[],
+  config: JobBriefingConfig
+): FocusCompany[] {
+  const allEvents = [...fallRecruitEvents, ...internshipEvents]
   const enabled = config.companies
     .filter(c => c.enabled)
     .sort((a, b) => a.priority - b.priority)
   const withEvents: FocusCompany[] = []
   for (const c of enabled) {
-    const ev = events.find(e => companyNameMatches(e.company, c.name))
+    const ev = allEvents.find(e => companyNameMatches(e.company, c.name))
     if (ev) withEvents.push({ name: c.name, eventTitle: ev.title })
   }
   if (withEvents.length > 0) return withEvents
@@ -368,6 +422,39 @@ export function buildFocusJobQuery(company: string, profile: JobProfile, config:
   const roles = profile.targetRoles.length ? profile.targetRoles : config.roleKeywords
   const cities = config.cities.join(' ')
   return `${company} ${roles.join(' ')} 招聘 校招 2026 ${cities}`.trim()
+}
+
+export function buildFocusJobQueries(
+  focus: FocusCompany[],
+  profile: JobProfile,
+  config: JobBriefingConfig,
+): { query: string; dimension: 'fallRecruit' | 'internship' }[] {
+  const focusNames = focus.map(f => f.name).join(' ')
+  const cities = config.cities.join(' ')
+  const keywords = config.jobSearchKeywords.length > 0
+    ? config.jobSearchKeywords.join(' ')
+    : (profile.targetRoles.length ? profile.targetRoles.join(' ') : config.roleKeywords.join(' '))
+
+  const queries: { query: string; dimension: 'fallRecruit' | 'internship' }[] = []
+  if (config.searchFallRecruit) {
+    queries.push({
+      query: `${keywords} 秋招 校招 招聘 2026 ${focusNames} ${cities}`.trim(),
+      dimension: 'fallRecruit',
+    })
+  }
+  if (config.searchInternship) {
+    queries.push({
+      query: `${keywords} 实习 提前批 招聘 2026 ${focusNames} ${cities}`.trim(),
+      dimension: 'internship',
+    })
+  }
+  if (queries.length === 0) {
+    queries.push({
+      query: `${keywords} 招聘 2026 ${focusNames} ${cities}`.trim(),
+      dimension: 'fallRecruit',
+    })
+  }
+  return queries
 }
 
 export async function matchJobsToProfile(
@@ -442,6 +529,48 @@ export function dedupQuestions(questions: InterviewQuestion[]): InterviewQuestio
   return out
 }
 
+export async function generateJobBriefingKeywords(
+  cfg: AppConfig,
+  profile: JobProfile,
+  opts: { signal?: AbortSignal } = {}
+): Promise<{ eventKeywords: string[]; jobKeywords: string[] }> {
+  const prompt = readPrompt('generate-keywords')
+    .replace('{{profile}}', formatJobProfile(profile))
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt } as Message],
+    temperature: 0.3,
+    thinking: { type: 'disabled' },
+    signal: opts.signal,
+  })
+  const extracted = extractJsonObject(text)
+  if (!extracted) throw new Error('KEYWORD_EXTRACTION_ERROR')
+  const obj = JSON.parse(extracted)
+  return {
+    eventKeywords: Array.isArray(obj.eventKeywords)
+      ? obj.eventKeywords.filter((k: unknown): k is string => typeof k === 'string' && k.trim().length > 0).slice(0, 5)
+      : [],
+    jobKeywords: Array.isArray(obj.jobKeywords)
+      ? obj.jobKeywords.filter((k: unknown): k is string => typeof k === 'string' && k.trim().length > 0).slice(0, 5)
+      : [],
+  }
+}
+
+export async function generateArticleSearchQuery(
+  cfg: AppConfig,
+  args: { articleContent: string; selection?: string; lastMessage?: string }
+): Promise<string> {
+  const prompt = readPrompt('generate-search-query')
+    .replace('{{articleContent}}', args.articleContent.slice(0, 3000))
+    .replace('{{selection}}', args.selection ?? '')
+    .replace('{{lastMessage}}', args.lastMessage ?? '')
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt } as Message],
+    temperature: 0.3,
+    thinking: { type: 'disabled' },
+  })
+  return text.trim()
+}
+
 async function runQuestionQuery(
   cfg: AppConfig,
   query: string,
@@ -486,29 +615,22 @@ async function runQuestionQuery(
 
 export async function discoverQuestions(
   cfg: AppConfig,
-  focus: FocusCompany[],
   profile: JobProfile,
   config: JobBriefingConfig,
   opts: { apiKey: string; signal?: AbortSignal }
 ): Promise<InterviewQuestion[]> {
-  const collected: InterviewQuestion[] = []
-  for (const q of buildQuestionQueries(focus, profile, config)) {
-    if (opts.signal?.aborted) break
-    try {
-      collected.push(...await runQuestionQuery(cfg, q.query, { ...opts, includeDomains: q.includeDomains }))
-    } catch (err) {
-      console.warn(`[job-briefing] question query failed: ${q.query}`, err)
-    }
+  const direction = questionDirection(profile, config)
+  const query = `${direction} 面经 面试题 高频`
+
+  try {
+    return await runQuestionQuery(cfg, query, {
+      ...opts,
+      includeDomains: [...JOB_COMMUNITY_DOMAINS],
+    })
+  } catch (err) {
+    console.warn(`[job-briefing] question query failed: ${query}`, err)
+    return []
   }
-  if (collected.length === 0 && !opts.signal?.aborted) {
-    const fallback = buildFallbackQuestionQuery(profile, config)
-    try {
-      collected.push(...await runQuestionQuery(cfg, fallback, { ...opts, includeDomains: [...JOB_COMMUNITY_DOMAINS] }))
-    } catch (err) {
-      console.warn(`[job-briefing] fallback question query failed: ${fallback}`, err)
-    }
-  }
-  return dedupQuestions(collected).slice(0, 8)
 }
 
 export async function generateJobBriefing(
@@ -533,9 +655,12 @@ export async function generateJobBriefing(
 
   // ── Level 1: 新动态 ──
   opts.emitProgress?.('scanning-events')
-  let events: JobEvent[] = []
+  let fallRecruitEvents: JobEvent[] = []
+  let internshipEvents: JobEvent[] = []
   try {
-    events = await discoverEvents(cfg, config, { apiKey, signal: opts.signal })
+    const result = await discoverEvents(cfg, config, { apiKey, signal: opts.signal })
+    fallRecruitEvents = result.fallRecruit
+    internshipEvents = result.internship
   } catch (err) {
     console.warn('[job-briefing] event discovery failed', err)
     sourceStatus.events = 'failed'
@@ -543,7 +668,7 @@ export async function generateJobBriefing(
 
   // ── Level 2: 焦点岗位 ──
   opts.emitProgress?.('digging-jobs')
-  const focus = selectFocusCompanies(events, config)
+  const focus = selectFocusCompanies(fallRecruitEvents, internshipEvents, config)
   const allJobs: RawJob[] = []
   for (const f of focus) {
     if (opts.signal?.aborted) break
@@ -559,19 +684,28 @@ export async function generateJobBriefing(
         sourceStatus.official[f.name] = 'failed'
       }
     }
-    try {
-      const query = buildFocusJobQuery(f.name, profile, config)
-      const results = await searchWeb({ query, apiKey, maxResults: 5, days: 30, signal: opts.signal })
-      for (const r of results) {
-        try {
-          const jobs = await extractJobsFromHtml(cfg, { html: r.content, company: f.name, url: r.url, source: 'tavily' })
-          allJobs.push(...jobs)
-        } catch (e) {
-          console.warn('[job-briefing] extraction failed for result', e)
-        }
+  }
+  // Job search with parallel Tavily queries
+  const jobQueries = buildFocusJobQueries(focus, profile, config)
+  const jobSearchResults = await Promise.all(
+    jobQueries.map(q =>
+      searchWeb({ query: q.query, apiKey, maxResults: 10, days: 30, signal: opts.signal })
+        .then(results => results)
+        .catch(err => {
+          console.warn(`[job-briefing] job search failed for ${q.dimension}`, err)
+          return [] as TavilyResult[]
+        })
+    )
+  )
+  for (const results of jobSearchResults) {
+    if (opts.signal?.aborted) break
+    for (const r of results) {
+      try {
+        const jobs = await extractJobsFromHtml(cfg, { html: r.content, company: '', url: r.url, source: 'tavily' })
+        allJobs.push(...jobs)
+      } catch (e) {
+        console.warn('[job-briefing] extraction failed for result', e)
       }
-    } catch (err) {
-      console.warn(`[job-briefing] job search failed for ${f.name}`, err)
     }
   }
   const merged = mergeAndDedupJobs(allJobs)
@@ -610,13 +744,14 @@ export async function generateJobBriefing(
   opts.emitProgress?.('aggregating-questions')
   let questions: InterviewQuestion[] = []
   try {
-    questions = await discoverQuestions(cfg, focus, profile, config, { apiKey, signal: opts.signal })
+    questions = await discoverQuestions(cfg, profile, config, { apiKey, signal: opts.signal })
   } catch (err) {
     console.warn('[job-briefing] question aggregation failed', err)
   }
   if (questions.length === 0) sourceStatus.questions = 'failed'
 
-  if (events.length === 0 && matchedJobs.length === 0 && questions.length === 0) {
+  const allEvents = [...fallRecruitEvents, ...internshipEvents]
+  if (allEvents.length === 0 && matchedJobs.length === 0 && questions.length === 0) {
     throw Object.assign(new Error('EMPTY_RESULTS'), { code: 'EMPTY_RESULTS' as JobErrorCode })
   }
 
@@ -624,7 +759,8 @@ export async function generateJobBriefing(
   opts.emitProgress?.('synthesizing')
   const synthesisPrompt = readPrompt('synthesize')
     .replace('{{profile}}', formatJobProfile(profile))
-    .replace('{{eventsJson}}', JSON.stringify(events, null, 2))
+    .replace('{{eventsFallRecruit}}', JSON.stringify(fallRecruitEvents, null, 2))
+    .replace('{{eventsInternship}}', JSON.stringify(internshipEvents, null, 2))
     .replace('{{jobsJson}}', JSON.stringify(matchedJobs, null, 2))
     .replace('{{questionsJson}}', JSON.stringify(questions, null, 2))
 

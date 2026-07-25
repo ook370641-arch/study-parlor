@@ -115,24 +115,37 @@ describe('job profile defaults', () => {
 })
 
 describe('event lane', () => {
-  it('builds one query per enabled company plus a community query', () => {
+  it('builds dimension-based event queries with year anchors and community domains', () => {
     const config = normalizeJobBriefingConfig({
       companies: [
         { name: '腾讯', priority: 2, enabled: true },
         { name: '字节跳动', priority: 1, enabled: true },
         { name: '禁用', priority: 3, enabled: false },
       ],
+      searchFallRecruit: true,
+      searchInternship: true,
     })
     const qs = buildEventQueries(config)
-    // 按 priority 排序：字节跳动在前
-    expect(qs[0]).toEqual({ query: expect.stringContaining('字节跳动'), company: '字节跳动' })
-    expect(qs[1]).toEqual({ query: expect.stringContaining('腾讯'), company: '腾讯' })
+    // Two dimensions: fallRecruit + internship
+    expect(qs).toHaveLength(2)
+    expect(qs[0].dimension).toBe('fallRecruit')
+    expect(qs[0].query).toMatch(/秋招/)
+    expect(qs[0].query).toMatch(/2026/)
+    expect(qs[0].query).toMatch(/2027届/)
+    expect(qs[0].includeDomains).toEqual(['nowcoder.com', 'yingjiesheng.com'])
+    expect(qs[1].dimension).toBe('internship')
+    expect(qs[1].query).toMatch(/实习/)
+    expect(qs[1].query).toMatch(/提前批/)
+    // Disabled company should not appear
     expect(qs.some(q => q.query.includes('禁用'))).toBe(false)
-    // 最后一条是社区定向查询
-    const community = qs[qs.length - 1]
-    expect(community.company).toBeUndefined()
-    expect(community.includeDomains).toBeDefined()
-    expect(community.includeDomains!.every(d => JOB_COMMUNITY_DOMAINS.includes(d))).toBe(true)
+  })
+
+  it('generates single general query when both dimensions disabled', () => {
+    const config = normalizeJobBriefingConfig({ searchFallRecruit: false, searchInternship: false })
+    const qs = buildEventQueries(config)
+    expect(qs).toHaveLength(1)
+    expect(qs[0].dimension).toBe('general')
+    expect(qs[0].includeDomains).toEqual(['nowcoder.com', 'yingjiesheng.com'])
   })
 
   it('dedups events by company+title', () => {
@@ -168,13 +181,14 @@ describe('focus selection', () => {
   it('focuses on companies that have fresh events, carrying event title', () => {
     const focus = selectFocusCompanies(
       [{ company: '腾讯科技', eventType: '秋招开启', title: '腾讯 2027 届秋招启动', date: '', summary: '', url: '' }],
+      [],
       config,
     )
     expect(focus).toEqual([{ name: '腾讯', eventTitle: '腾讯 2027 届秋招启动' }])
   })
 
   it('falls back to top-5 priority companies when no events', () => {
-    const focus = selectFocusCompanies([], config)
+    const focus = selectFocusCompanies([], [], config)
     expect(focus.map(f => f.name)).toEqual(['字节跳动', '腾讯', '百度', '美团', '阿里'])
     expect(focus.every(f => f.eventTitle === undefined)).toBe(true)
   })
@@ -272,11 +286,11 @@ describe('event filter and cap', () => {
 })
 
 describe('event query year anchors', () => {
-  it('includes 2026 and 2027届 in per-company queries', () => {
-    const queries = buildEventQueries(normalizeJobBriefingConfig({}))
-    const companyQueries = queries.filter(q => q.company)
-    for (const q of companyQueries) {
-      expect(q.query).toMatch(/2026秋招/)
+  it('includes 2026 and 2027届 in dimension queries', () => {
+    const config = normalizeJobBriefingConfig({ searchFallRecruit: true, searchInternship: true })
+    const queries = buildEventQueries(config)
+    for (const q of queries) {
+      expect(q.query).toMatch(/2026/)
       expect(q.query).toMatch(/2027届/)
     }
   })

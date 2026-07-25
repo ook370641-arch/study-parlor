@@ -5,11 +5,22 @@
 求职者背景：
 {{profile}}
 
-今日新动态（JSON）：
+今日新动态 — 秋招/校招（JSON）：
 
 ```json
-{{eventsJson}}
+{{eventsFallRecruit}}
 ```
+
+今日新动态 — 实习/提前批（JSON）：
+
+```json
+{{eventsInternship}}
+```
+
+当两个数组均非空时，「## 今日新动态」下应分子区展示：
+### 秋招/校招
+### 实习/提前批
+仅一个非空时不显示子标题。
 
 匹配岗位（JSON，含 matchLevel 1-5 与 matchReason、可选 sourceEventTitle）：
 

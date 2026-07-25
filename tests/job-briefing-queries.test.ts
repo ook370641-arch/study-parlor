@@ -3,14 +3,14 @@ import { buildEventQueries, buildFocusJobQuery } from '../electron/lib/job-brief
 import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE } from '../src/lib/job-briefing-defaults'
 
 describe('buildEventQueries cities injection', () => {
-  it('company and aggregate queries include city keyword', () => {
-    const config = { ...DEFAULT_JOB_BRIEFING_CONFIG, cities: ['西安'] }
+  it('dimension queries include city keyword', () => {
+    const config = { ...DEFAULT_JOB_BRIEFING_CONFIG, cities: ['西安'], searchFallRecruit: true, searchInternship: true }
     const queries = buildEventQueries(config)
-    expect(queries.length).toBeGreaterThan(1)
+    expect(queries.length).toBeGreaterThanOrEqual(1)
     for (const q of queries) expect(q.query).toContain('西安')
   })
   it('empty cities produces no trailing whitespace', () => {
-    const config = { ...DEFAULT_JOB_BRIEFING_CONFIG, cities: [] }
+    const config = { ...DEFAULT_JOB_BRIEFING_CONFIG, cities: [], searchFallRecruit: true }
     for (const q of buildEventQueries(config)) {
       expect(q.query).not.toMatch(/\s{2,}/)
       expect(q.query).not.toMatch(/\s$/)
