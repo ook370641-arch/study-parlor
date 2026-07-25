@@ -121,6 +121,10 @@ type AppStore = {
   briefingStageDetail: string | null
   jobBriefingStage: BriefingStage | null
   jobBriefingStageDetail: string | null
+  briefingPulseAt: number | null
+  briefingArrivedAt: number | null
+  candleBreathAt: number | null
+  breathCandle: () => void
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
   briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
@@ -423,6 +427,9 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingStageDetail: null,
   jobBriefingStage: null,
   jobBriefingStageDetail: null,
+  briefingPulseAt: null,
+  briefingArrivedAt: null,
+  candleBreathAt: null,
   briefingSource: 'digest',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicReaderFilePath: null,
@@ -617,7 +624,7 @@ export const useStore = create<AppStore>((set, get) => ({
     })
 
     const unsubscribe = ipc.onBriefingProgress((stage, detail) => {
-      set({ briefingStage: stage, briefingStageDetail: detail ?? null })
+      set({ briefingStage: stage, briefingStageDetail: detail ?? null, briefingPulseAt: Date.now() })
     })
 
     try {
@@ -626,6 +633,8 @@ export const useStore = create<AppStore>((set, get) => ({
         briefing: { result, loading: false, error: null },
         briefingStage: null,
         briefingStageDetail: null,
+        briefingPulseAt: null,
+        briefingArrivedAt: Date.now(),
       })
     } catch (err: any) {
       const raw = err.message || String(err)
@@ -643,6 +652,7 @@ export const useStore = create<AppStore>((set, get) => ({
         briefing: { result: null, loading: false, error },
         briefingStage: null,
         briefingStageDetail: null,
+        briefingPulseAt: null,
       })
     } finally {
       unsubscribe()
@@ -673,17 +683,17 @@ export const useStore = create<AppStore>((set, get) => ({
   cancelBriefing: () => {
     if (!get().briefing.loading) return
     ipc.briefingAbort()
-    set({ briefing: { result: null, loading: false, error: null }, briefingStage: null })
+    set({ briefing: { result: null, loading: false, error: null }, briefingStage: null, briefingPulseAt: null })
   },
 
   generateJobBriefing: async (date, opts) => {
     const s = get()
     if (s.jobBriefing.loading) return
     set({ jobBriefing: { result: null, loading: true, error: null }, jobBriefingStage: 'scanning-events' })
-    const unsubscribe = ipc.onBriefingProgress((stage, detail) => set({ jobBriefingStage: stage, jobBriefingStageDetail: detail ?? null }))
+    const unsubscribe = ipc.onBriefingProgress((stage, detail) => set({ jobBriefingStage: stage, jobBriefingStageDetail: detail ?? null, briefingPulseAt: Date.now() }))
     try {
       const result = await ipc.jobBriefingGenerate({ date, force: opts?.force })
-      set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null, jobBriefingStageDetail: null })
+      set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null, jobBriefingStageDetail: null, briefingPulseAt: null, briefingArrivedAt: Date.now() })
     } catch (err: any) {
       const raw = err.message || String(err)
       if (raw.includes('JOB_ABORTED')) return
@@ -697,7 +707,7 @@ export const useStore = create<AppStore>((set, get) => ({
         : raw.includes('JOB_CACHE_WRITE_FAILED') ? 'JOB_CACHE_WRITE_FAILED'
         : raw.includes('JOB_TIMEOUT') ? 'JOB_TIMEOUT'
         : raw
-      set({ jobBriefing: { result: null, loading: false, error }, jobBriefingStage: null, jobBriefingStageDetail: null })
+      set({ jobBriefing: { result: null, loading: false, error }, jobBriefingStage: null, jobBriefingStageDetail: null, briefingPulseAt: null })
     } finally {
       unsubscribe()
     }
@@ -727,7 +737,7 @@ export const useStore = create<AppStore>((set, get) => ({
   cancelJobBriefing: () => {
     if (!get().jobBriefing.loading) return
     ipc.jobBriefingAbort()
-    set({ jobBriefing: { result: null, loading: false, error: null }, jobBriefingStage: null })
+    set({ jobBriefing: { result: null, loading: false, error: null }, jobBriefingStage: null, briefingPulseAt: null })
   },
 
   transferArticleToWriting: async (args) => {
@@ -860,6 +870,8 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   setBriefingStage: (stage) => set({ briefingStage: stage }),
+
+  breathCandle: () => set({ candleBreathAt: Date.now() }),
 
   setBriefingSource: async (source) => {
     set({ briefingSource: source })
