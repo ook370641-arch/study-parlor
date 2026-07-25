@@ -1,0 +1,150 @@
+{
+  "always": ["startup-health.spec.ts"],
+  "groups": {
+    "briefing-core": {
+      "sources": [
+        "src/pages/Briefing.tsx",
+        "src/components/briefing/**",
+        "src/components/Briefing*.tsx",
+        "src/lib/parse-briefing-markdown.ts",
+        "src/lib/format-briefing-date.ts",
+        "src/lib/briefing-font-size.ts",
+        "electron/ipc/briefing.ts"
+      ],
+      "specs": [
+        "briefing.spec.ts",
+        "briefing-*.spec.ts"
+      ]
+    },
+    "job-briefing": {
+      "sources": [
+        "src/components/job-briefing/**",
+        "electron/lib/job-briefing.ts",
+        "electron/ipc/job-briefing.ts",
+        "electron/prompts/job-briefing/**",
+        "src/lib/job-briefing-defaults.ts"
+      ],
+      "specs": [
+        "job-briefing-*.spec.ts"
+      ]
+    },
+    "settings": {
+      "sources": [
+        "src/pages/Settings.tsx"
+      ],
+      "specs": ["settings.spec.ts"]
+    },
+    "article-assistant": {
+      "sources": [
+        "electron/ipc/article-assistant.ts",
+        "src/components/article-assistant/**",
+        "src/lib/assistant-*.ts"
+      ],
+      "specs": [
+        "article-assistant*.spec.ts",
+        "article-annotations.spec.ts",
+        "external-materials*.spec.ts",
+        "guide-visibility.spec.ts"
+      ]
+    },
+    "writing": {
+      "sources": [
+        "src/components/writing/**",
+        "src/components/writing-assistant/**",
+        "electron/lib/writing-*.ts",
+        "electron/ipc/writing*.ts",
+        "electron/lib/writing-assistant/**"
+      ],
+      "specs": [
+        "writing-*.spec.ts"
+      ]
+    },
+    "study": {
+      "sources": [
+        "src/pages/Study.tsx",
+        "src/components/PreStudyModal.tsx",
+        "electron/ipc/llm.ts",
+        "electron/lib/kimi.ts",
+        "electron/lib/prompts.ts",
+        "electron/lib/llm-tasks.ts",
+        "electron/lib/extract-json.ts",
+        "src/lib/finalize.ts",
+        "src/lib/session-runtime.ts"
+      ],
+      "specs": [
+        "new-topic-progress.spec.ts",
+        "continue-topic.spec.ts",
+        "review-topic.spec.ts",
+        "terminology.spec.ts",
+        "quote-display.spec.ts",
+        "archive-edge.spec.ts",
+        "pre-study.spec.ts",
+        "study.spec.ts",
+        "diagram-generation.spec.ts",
+        "fable-generation.spec.ts",
+        "group-guide.spec.ts"
+      ]
+    },
+    "anthropic-blog": {
+      "sources": [
+        "src/components/anthropic/**",
+        "electron/ipc/anthropic.ts"
+      ],
+      "specs": [
+        "anthropic-blog*.spec.ts"
+      ]
+    },
+    "cover-home": {
+      "sources": [
+        "src/pages/Cover.tsx",
+        "src/pages/Home.tsx",
+        "src/pages/Profile.tsx"
+      ],
+      "specs": [
+        "cover.spec.ts",
+        "home.spec.ts",
+        "profile.spec.ts",
+        "smoke.spec.ts",
+        "onboarding-journey.spec.ts",
+        "wild-card.spec.ts",
+        "continue-suggestions.spec.ts",
+        "extension-page.spec.ts"
+      ]
+    },
+    "library": {
+      "sources": [
+        "src/components/library/**",
+        "electron/lib/writing-tree.ts",
+        "electron/lib/writing-catalog.ts"
+      ],
+      "specs": [
+        "library-*.spec.ts"
+      ]
+    },
+    "aesthetics": {
+      "sources": [
+        "src/components/paintings/**",
+        "src/components/lighting/**",
+        "src/lib/motion-*.ts",
+        "electron/lib/painting-*.ts"
+      ],
+      "specs": [
+        "painting-swap.spec.ts",
+        "reading-ritual.spec.ts",
+        "lighting.spec.ts",
+        "generation-ceremony.spec.ts"
+      ]
+    },
+    "types-state": {
+      "sources": [
+        "src/types/index.ts",
+        "src/store/index.ts",
+        "electron/ipc/state.ts"
+      ],
+      "specs": [
+        "settings.spec.ts",
+        "startup-health.spec.ts"
+      ]
+    }
+  }
+}
