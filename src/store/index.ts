@@ -104,6 +104,8 @@ type AppStore = {
   }>
 
   // 简报
+  briefingRead: { digest: string[]; 'job-briefing': string[] }
+  markBriefingRead: (source: 'digest' | 'job-briefing', date: string) => Promise<void>
   briefing: {
     result: BriefingResult | null
     loading: boolean
@@ -418,6 +420,7 @@ export const useStore = create<AppStore>((set, get) => ({
   preStudyArgs: null,
   toast: null,
   currentPaintings: { cover: null, home: null, study: null, briefing: null },
+  briefingRead: { digest: [], 'job-briefing': [] },
   briefing: { result: null, loading: false, error: null },
   briefingHistory: { list: [], loading: false, error: null },
   briefingTheme: 'academic',
@@ -474,6 +477,10 @@ export const useStore = create<AppStore>((set, get) => ({
       terminology: state.terminology ?? {},
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
+      briefingRead: {
+        digest: Array.isArray(state.briefingRead?.digest) ? state.briefingRead.digest : [],
+        'job-briefing': Array.isArray(state.briefingRead?.['job-briefing']) ? state.briefingRead['job-briefing'] : [],
+      },
       externalSummaryFontSize: normalizeSummaryFontSize(state.externalSummaryFontSize),
       briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' || state.briefingSource === 'writing' ? state.briefingSource : 'digest',
       anthropicBlogCache: state.anthropicBlogCache
@@ -876,6 +883,14 @@ export const useStore = create<AppStore>((set, get) => ({
   setBriefingSource: async (source) => {
     set({ briefingSource: source })
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
+  },
+
+  markBriefingRead: async (source, date) => {
+    const cur = get().briefingRead
+    if (cur[source].includes(date)) return
+    const next = { ...cur, [source]: [...cur[source], date].slice(-120) }
+    set({ briefingRead: next })
+    await ipc.patchState({ briefingRead: next } as Partial<StateJson>)
   },
 
   discoverAnthropicArticles: async (opts) => {

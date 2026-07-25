@@ -484,6 +484,7 @@ export type StateJson = {
   lastWritingFile?: string | null
   writingOrder?: Record<string, string[]>
   writingUIFontSize?: BriefingFontSize
+  briefingRead?: { digest?: string[]; 'job-briefing'?: string[] }
 }
 
 export type IpcApi = {
