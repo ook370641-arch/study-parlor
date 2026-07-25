@@ -32,6 +32,10 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
   const isAcademic = theme !== 'newspaper'
   const source = useStore((s) => s.briefingSource)
   const jobBlue = isAcademic && source === 'job-briefing'
+  // Flame accent: source-color identity — amber (digest), star-blue (job), ink (newspaper)
+  const flameAccent = !isAcademic ? '26, 26, 26'       // Newspaper: ink
+    : jobBlue ? '127, 168, 217'                         // Job: star-blue
+    : '217, 151, 87'                                    // Digest: amber
   const [menu, setMenu] = useState<{ x: number; y: number; item: BriefingHistoryItem } | null>(null)
 
   useEffect(() => {
@@ -98,14 +102,14 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
               }
               className="inline-block w-[7px] h-[7px] rounded-full border shrink-0 transition-all duration-500"
               style={{
-                background: readDates.includes(entry.date) ? 'rgba(217,151,87,0.28)'
-                  : generatedDates.includes(entry.date) ? '#d97757'
+                background: readDates.includes(entry.date) ? `rgba(${flameAccent}, 0.28)`
+                  : generatedDates.includes(entry.date) ? `rgb(${flameAccent})`
                   : 'transparent',
-                borderColor: generatedDates.includes(entry.date) && !readDates.includes(entry.date) ? '#d97757'
-                  : readDates.includes(entry.date) ? 'rgba(217,151,87,0.3)'
-                  : 'rgba(217,151,87,0.8)',
+                borderColor: generatedDates.includes(entry.date) && !readDates.includes(entry.date) ? `rgb(${flameAccent})`
+                  : readDates.includes(entry.date) ? `rgba(${flameAccent}, 0.3)`
+                  : `rgba(${flameAccent}, 0.8)`,
                 boxShadow: generatedDates.includes(entry.date) && !readDates.includes(entry.date)
-                  ? '0 0 8px 2px rgba(217,119,87,0.55)' : 'none',
+                  ? `0 0 8px 2px rgba(${flameAccent}, 0.55)` : 'none',
               }}
             />
             {entry.isToday ? todayLabel : formatLabel(entry.date)}

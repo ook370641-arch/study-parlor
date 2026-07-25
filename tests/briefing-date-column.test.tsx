@@ -213,6 +213,25 @@ describe('BriefingDateColumn', () => {
     expect(screen.getByTestId('briefing-date-flame-2026-07-11').dataset.state).toBe('lit')
   })
 
+  it('renders star-blue flames for job source', () => {
+    useStore.setState({ briefingSource: 'job-briefing' })
+    render(
+      <BriefingDateColumn
+        collapsed={false}
+        history={[{ date: '2026-07-10', filePath: '/x.md' }]}
+        currentDate="2026-07-10"
+        today="2026-07-11"
+        generatedDates={['2026-07-10']}
+        readDates={[]}
+        onSelect={vi.fn()}
+        onReceiveToday={vi.fn()}
+        theme="academic"
+      />
+    )
+    const flame = screen.getByTestId('briefing-date-flame-2026-07-10')
+    expect(flame.style.background).toContain('127, 168, 217')
+  })
+
   it('today without generation shows an unlit flame', () => {
     render(
       <BriefingDateColumn
