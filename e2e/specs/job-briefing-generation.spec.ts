@@ -47,32 +47,33 @@ test.describe('@p1 job briefing generation', () => {
 
   test('profile fill removes hint banner and persists to state.json', async ({ window, testConfigDir }) => {
     const cover = new CoverPage(window)
-    await cover.enterApp('E2E 测试员')       // enter home page
-    await window.locator('[data-testid="home-settings-button"]').click()
-    await window.locator('[data-testid="settings-api-key-input"]').waitFor({ state: 'visible', timeout: 15000 })
-
-    // Fill job profile and save
-    await window.locator('[data-testid="settings-jobprofile-target-roles"]').fill('AI产品经理，模型产品经理')
-    await window.locator('[data-testid="settings-jobprofile-direction"]').fill('大模型/Agent 产品，偏评测与平台')
-    await window.locator('[data-testid="settings-jobprofile-experience"]').fill('RAG 评测项目实习')
-    await window.locator('[data-testid="settings-jobprofile-save"]').click()
-    await window.waitForTimeout(500)
-
-    // Navigate: settings → home → cover → briefing
-    await window.locator('[data-testid="settings-back-button"]').click()
-    // Home page has BackToCover button
-    await window.locator('[aria-label="返回封面"]').click()
-    // Now on cover page
+    await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
-
-    // Switch to job briefing and generate
     await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
+
+    // Generate (empty profile -> hint shows)
     const receiveButton = window.locator(SELECTORS.briefing.receiveJobButton)
     await receiveButton.waitFor({ state: 'visible', timeout: 15000 })
     await receiveButton.click()
     await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
 
-    // Filled profile → hint banner must NOT appear
+    // Empty profile -> hint banner visible
+    await expect(window.locator('[data-testid="job-briefing-profile-hint"]')).toBeVisible()
+
+    // Open panel via hint "填写档案" button (not via old settings navigation)
+    await window.locator('[data-testid="job-briefing-profile-hint-goto"]').click()
+    await window.locator('[data-testid="job-profile-panel"]').waitFor({ state: 'visible', timeout: 5000 })
+
+    // Fill profile fields in panel
+    await window.locator('[data-testid="job-profile-target-roles"]').fill('AI产品经理，模型产品经理')
+    await window.locator('[data-testid="job-profile-direction"]').fill('大模型/Agent 产品，偏评测与平台')
+    await window.locator('[data-testid="job-profile-experience"]').fill('RAG 评测项目实习')
+
+    // Save (panel closes automatically after save)
+    await window.locator('[data-testid="job-profile-save"]').click()
+    await expect(window.locator('[data-testid="job-profile-panel"]')).not.toBeVisible({ timeout: 5000 })
+
+    // Filled profile -> hint banner must NOT appear
     await expect(window.locator('[data-testid="job-briefing-profile-hint"]')).not.toBeVisible()
 
     // Verify state.json persistence
@@ -121,7 +122,7 @@ test.describe('@p1 job briefing generation', () => {
     expect(fs.existsSync(cacheFile)).toBe(true)
     const firstContent = fs.readFileSync(cacheFile, 'utf8')
 
-    // Leave briefing → cover → re-enter name → re-enter briefing
+    // Leave briefing -> cover -> re-enter name -> re-enter briefing
     await window.locator('[aria-label="返回封面"]').click()
     // On cover: enter name to enable the briefing button (disabled after return)
     await cover.enterName('E2E 测试员')
@@ -142,20 +143,29 @@ test.describe('@p1 job briefing generation', () => {
 
   test('saves job profile settings and verifies in state.json', async ({ window, testConfigDir }) => {
     const cover = new CoverPage(window)
-    await cover.enterApp('E2E 测试员')       // enter home page
-    await window.locator('[data-testid="home-settings-button"]').click()
-    await window.locator('[data-testid="settings-api-key-input"]').waitFor({ state: 'visible', timeout: 15000 })
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
+
+    // Generate to make the profile panel trigger visible
+    await window.locator(SELECTORS.briefing.receiveJobButton).waitFor({ state: 'visible', timeout: 15000 })
+    await window.locator(SELECTORS.briefing.receiveJobButton).click()
+    await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
+
+    // Open panel via gear icon
+    await window.locator('[data-testid="job-profile-panel-trigger"]').click()
+    await window.locator('[data-testid="job-profile-panel"]').waitFor({ state: 'visible', timeout: 5000 })
 
     // Fill all five profile fields
-    await window.locator('[data-testid="settings-jobprofile-target-roles"]').fill('AI产品经理，模型产品经理')
-    await window.locator('[data-testid="settings-jobprofile-direction"]').fill('大模型/Agent 产品，偏评测与平台')
-    await window.locator('[data-testid="settings-jobprofile-skills"]').fill('RAG，提示词工程，数据分析')
-    await window.locator('[data-testid="settings-jobprofile-experience"]').fill('AI 产品实习，参与 RAG 评测项目')
-    await window.locator('[data-testid="settings-jobprofile-notes"]').fill('只要北上深杭')
+    await window.locator('[data-testid="job-profile-target-roles"]').fill('AI产品经理，模型产品经理')
+    await window.locator('[data-testid="job-profile-direction"]').fill('大模型/Agent 产品，偏评测与平台')
+    await window.locator('[data-testid="job-profile-skills"]').fill('RAG，提示词工程，数据分析')
+    await window.locator('[data-testid="job-profile-experience"]').fill('AI 产品实习，参与 RAG 评测项目')
+    await window.locator('[data-testid="job-profile-notes"]').fill('只要北上深杭')
 
-    // Save and wait briefly for IPC to flush to disk
-    await window.locator('[data-testid="settings-jobprofile-save"]').click()
-    await window.waitForTimeout(500)
+    // Save
+    await window.locator('[data-testid="job-profile-save"]').click()
+    await expect(window.locator('[data-testid="job-profile-panel"]')).not.toBeVisible({ timeout: 5000 })
 
     // Verify state.json has persisted all fields
     const statePath = path.join(testConfigDir, 'state.json')
@@ -170,30 +180,32 @@ test.describe('@p1 job briefing generation', () => {
 
   test('求职背景注入请求：profile 字段出现在 last-job-request.json', async ({ window, testConfigDir, testLibraryPath }) => {
     const cover = new CoverPage(window)
-    await cover.enterApp('E2E 测试员')
-    await window.locator('[data-testid="home-settings-button"]').click()
-    await window.locator('[data-testid="settings-api-key-input"]').waitFor({ state: 'visible', timeout: 15000 })
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
 
-    // Fill distinctive profile
-    await window.locator('[data-testid="settings-jobprofile-target-roles"]').fill('AI产品经理，模型产品经理')
-    await window.locator('[data-testid="settings-jobprofile-direction"]').fill('大模型/Agent 产品方向')
-    await window.locator('[data-testid="settings-jobprofile-experience"]').fill('RAG 评测项目实习经历')
-    await window.locator('[data-testid="settings-jobprofile-save"]').click()
-    await window.waitForTimeout(500)
+    // First generation (empty profile) — creates cache we'll delete later
+    await window.locator(SELECTORS.briefing.receiveJobButton).waitFor({ state: 'visible', timeout: 15000 })
+    await window.locator(SELECTORS.briefing.receiveJobButton).click()
+    await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
 
-    // Delete today's cached briefing so generation hits the E2E mock block
-    // (not the cache-return path which runs before the mock guard)
+    // Open panel via gear icon and fill profile
+    await window.locator('[data-testid="job-profile-panel-trigger"]').click()
+    await window.locator('[data-testid="job-profile-panel"]').waitFor({ state: 'visible', timeout: 5000 })
+    await window.locator('[data-testid="job-profile-target-roles"]').fill('AI产品经理，模型产品经理')
+    await window.locator('[data-testid="job-profile-direction"]').fill('大模型/Agent 产品方向')
+    await window.locator('[data-testid="job-profile-experience"]').fill('RAG 评测项目实习经历')
+    await window.locator('[data-testid="job-profile-save"]').click()
+    await expect(window.locator('[data-testid="job-profile-panel"]')).not.toBeVisible({ timeout: 5000 })
+
+    // Delete today's cached briefing so re-generation hits the E2E mock block
     const today = localToday()
     const cachePath = path.join(testLibraryPath, '求职简报', `求职简报-${today}.md`)
     if (fs.existsSync(cachePath)) fs.rmSync(cachePath)
 
-    // Navigate to job briefing
-    await window.locator('[data-testid="settings-back-button"]').click()
-    await window.locator('[aria-label="返回封面"]').click()
-    await cover.goToBriefing()
-    await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
-    await window.locator(SELECTORS.briefing.receiveJobButton).waitFor({ state: 'visible', timeout: 15000 })
-    await window.locator(SELECTORS.briefing.receiveJobButton).click()
+    // Re-generate: click today in date column triggers generateJobBriefing(today)
+    // which sets result:null then enters mock path (cache deleted)
+    await window.locator('[data-testid="briefing-date-item-' + today + '"]').click()
     await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
 
     // Read the request dump
