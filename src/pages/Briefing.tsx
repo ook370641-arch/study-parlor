@@ -21,6 +21,7 @@ import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil, Briefing
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
 import { useGenerationTransition } from '@/lib/use-generation-transition'
+import { useReadingFinished } from '@/lib/use-reading-finished'
 import {
   ACADEMIC_BODY_STYLES,
   NEWSPAPER_BODY_STYLES,
@@ -76,6 +77,31 @@ export function Briefing() {
   const cancelJobBriefing = useStore((s) => s.cancelJobBriefing)
 
   const today = formatBriefingDate(new Date())
+
+  // Reading finished — colophon + candle breath + mark-read
+  const digestMainRef = useRef<HTMLElement>(null)
+  const digestSentinelRef = useRef<HTMLDivElement>(null)
+  const digestFinished = useReadingFinished(digestMainRef, digestSentinelRef, result?.filePath)
+  const digestRead = useStore((s) => s.briefingRead.digest)
+  const breathCandle = useStore((s) => s.breathCandle)
+  const markBriefingRead = useStore((s) => s.markBriefingRead)
+
+  useEffect(() => {
+    if (!digestFinished || !result) return
+    breathCandle()
+    void markBriefingRead('digest', result.date)
+  }, [digestFinished])
+
+  const jobMainRef = useRef<HTMLElement>(null)
+  const jobSentinelRef = useRef<HTMLDivElement>(null)
+  const jobFinished = useReadingFinished(jobMainRef, jobSentinelRef, jobResult?.filePath)
+  const jobRead = useStore((s) => s.briefingRead['job-briefing'])
+
+  useEffect(() => {
+    if (!jobFinished || !jobResult) return
+    breathCandle()
+    void markBriefingRead('job-briefing', jobResult.date)
+  }, [jobFinished])
 
   // Generation ceremony orchestration
   const { phase: digestPhase, fresh: digestFresh } = useGenerationTransition(
@@ -262,7 +288,7 @@ export function Briefing() {
                 </main>
               ) : jobResult ? (
                 <div data-testid="job-briefing-reading-pane" data-arrival={jobFresh ? 'fresh' : 'revisit'} className="flex-1 flex flex-col min-h-0">
-                <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6">
+                <main ref={jobMainRef} className="relative z-[5] flex-1 overflow-y-auto px-6 py-6">
                   {isJobProfileEmpty(jobProfile) && !profileHintDismissed && (
                     <div
                       data-testid="job-briefing-profile-hint"
@@ -299,7 +325,8 @@ export function Briefing() {
                       />
                     </div>
                   )}
-                  <JobBriefingRenderer content={jobResult.content} theme={theme} fontSize={fontSize} />
+                  <JobBriefingRenderer content={jobResult.content} theme={theme} fontSize={fontSize} finished={jobFinished} alreadyRead={jobResult ? jobRead.includes(jobResult.date) : false} />
+                  <div ref={jobSentinelRef} data-testid="briefing-volume-end" />
                 </main>
                 </div>
               ) : null
@@ -351,6 +378,10 @@ export function Briefing() {
                         className="text-parchment/70 hover:text-parchment"
                       />
                     }
+                    containerRef={digestMainRef}
+                    sentinelRef={digestSentinelRef}
+                    finished={digestFinished}
+                    alreadyRead={result ? digestRead.includes(result.date) : false}
                   />
                 ) : (
                   <NewspaperBriefingLayout
@@ -363,6 +394,10 @@ export function Briefing() {
                     terms={terms}
                     chunks={guideChunks}
                     filePath={result.filePath}
+                    containerRef={digestMainRef}
+                    sentinelRef={digestSentinelRef}
+                    finished={digestFinished}
+                    alreadyRead={result ? digestRead.includes(result.date) : false}
                   />
                 )}
               </div>

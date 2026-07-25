@@ -14,6 +14,8 @@ interface Props {
   content: string
   theme: BriefingTheme
   fontSize: BriefingFontSize
+  finished?: boolean
+  alreadyRead?: boolean
 }
 
 type JobEventItem = {
@@ -200,7 +202,7 @@ function ExternalLink({ href, label = '原文链接' }: { href: string; label?: 
   )
 }
 
-export function JobBriefingRenderer({ content, theme, fontSize }: Props) {
+export function JobBriefingRenderer({ content, theme, fontSize, finished, alreadyRead }: Props) {
   const isAcademic = theme !== 'newspaper'
   const sections = useMemo(() => parseSections(content), [content])
 
@@ -378,6 +380,9 @@ export function JobBriefingRenderer({ content, theme, fontSize }: Props) {
           </section>
         )
       })}
+      {(finished || alreadyRead) && (
+        <div data-testid="briefing-colophon" className="briefing-colophon show">◆</div>
+      )}
     </div>
   )
 }

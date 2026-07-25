@@ -255,4 +255,18 @@ html, body, #root { height: 100%; }
 [data-arrival="revisit"] .arrive-item { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .arrive-item { animation: none; }
+
+/* ===== 阖卷（F7）：卷尾 ◆ 静驻 ===== */
+.briefing-colophon {
+  text-align: center;
+  margin-top: 60px;
+  color: #d97757;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.briefing-colophon.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .briefing-colophon { transition: none; }
+}
 }

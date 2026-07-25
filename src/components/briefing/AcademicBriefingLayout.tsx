@@ -23,6 +23,10 @@ export function AcademicBriefingLayout({
   chunks,
   swapButton,
   filePath,
+  finished,
+  alreadyRead,
+  containerRef,
+  sentinelRef,
 }: {
   result: BriefingResult
   parsed: ParsedBriefing
@@ -34,6 +38,10 @@ export function AcademicBriefingLayout({
   chunks?: ArticleAssistantChunk[]
   swapButton?: React.ReactNode
   filePath?: string
+  finished?: boolean
+  alreadyRead?: boolean
+  containerRef?: React.RefObject<HTMLElement | null>
+  sentinelRef?: React.RefObject<HTMLDivElement | null>
 }) {
   const [expandedSources, setExpandedSources] = useState(false)
   const articleBodyRef = useRef<HTMLDivElement>(null)
@@ -45,6 +53,7 @@ export function AcademicBriefingLayout({
     <main
       data-testid="briefing-academic-layout"
       className="relative z-[5] flex-1 overflow-y-auto"
+      ref={containerRef}
     >
       <div ref={articleBodyRef} className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative briefing-article-body">
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
@@ -120,6 +129,11 @@ export function AcademicBriefingLayout({
               </div>
             )}
           </div>
+        )}
+
+        <div ref={sentinelRef} data-testid="briefing-volume-end" />
+        {(finished || alreadyRead) && (
+          <div data-testid="briefing-colophon" className="briefing-colophon show">◆</div>
         )}
       </div>
       {filePath && (
