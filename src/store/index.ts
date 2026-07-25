@@ -692,6 +692,21 @@ export const useStore = create<AppStore>((set, get) => ({
     if (current && filePaths.includes(current)) {
       set({ briefing: { result: null, loading: false, error: null } })
     }
+    // GC: remove deleted dates from briefingRead
+    const digestDates = new Set(
+      filePaths
+        .map(p => { const m = p.match(/夜航简报-(\d{4}-\d{2}-\d{2})\.md$/); return m?.[1] })
+        .filter((d): d is string => !!d)
+    )
+    if (digestDates.size > 0) {
+      const cur = get().briefingRead
+      const nextDigest = cur.digest.filter(d => !digestDates.has(d))
+      if (nextDigest.length !== cur.digest.length) {
+        const next = { ...cur, digest: nextDigest }
+        set({ briefingRead: next })
+        await ipc.patchState({ briefingRead: next } as Partial<StateJson>)
+      }
+    }
     await get().loadBriefingHistory()
   },
 
@@ -745,6 +760,21 @@ export const useStore = create<AppStore>((set, get) => ({
     }
     if (current && filePaths.includes(current)) {
       set({ jobBriefing: { result: null, loading: false, error: null } })
+    }
+    // GC: remove deleted dates from briefingRead
+    const jobDates = new Set(
+      filePaths
+        .map(p => { const m = p.match(/求职简报-(\d{4}-\d{2}-\d{2})\.md$/); return m?.[1] })
+        .filter((d): d is string => !!d)
+    )
+    if (jobDates.size > 0) {
+      const cur = get().briefingRead
+      const nextJob = cur['job-briefing'].filter(d => !jobDates.has(d))
+      if (nextJob.length !== cur['job-briefing'].length) {
+        const next = { ...cur, 'job-briefing': nextJob }
+        set({ briefingRead: next })
+        await ipc.patchState({ briefingRead: next } as Partial<StateJson>)
+      }
     }
     await get().loadJobBriefingHistory()
   },
