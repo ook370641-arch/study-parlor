@@ -82,16 +82,43 @@
 
 /* ===== 画作背景 ===== */
 
-@keyframes paintingFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* ===== 换画重量语法（motion-presets 的 CSS 落点，值必须同步） ===== */
+.painting-fall-out { animation: paintingFallOut 500ms cubic-bezier(0.55, 0, 0.85, 0.36) forwards; }
+@keyframes paintingFallOut {
+  to { transform: translateY(46px) rotate(0.6deg); opacity: 0; }
 }
-@keyframes paintingFadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+.painting-drop-in { animation: paintingDropIn 550ms cubic-bezier(0.34, 1.4, 0.5, 1) both; }
+@keyframes paintingDropIn {
+  0% { transform: translateY(-34px); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
 }
-.painting-fade-in { animation: paintingFadeIn 600ms ease-out forwards; }
-.painting-fade-out { animation: paintingFadeOut 600ms ease-out forwards; }
+
+/* 换画中点 CRT 细颗粒闪烁（微检定手势） */
+.painting-crt {
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 240, 210, 0.06) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0 1px, transparent 1px 4px);
+  opacity: 0;
+}
+.painting-crt.on { animation: paintingCrtBlink 220ms steps(2) 200ms 1; }
+@keyframes paintingCrtBlink {
+  0% { opacity: 0; }
+  50% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+/* ===== 面板开合不对称：开 = 快出慢停的迎接，关 = 慢出快收的抽离 ===== */
+.panel-arise { animation: panelArise 300ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes panelArise {
+  0% { opacity: 0; transform: translateX(24px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.panel-depart { animation: panelDepart 200ms ease-in both; }
+@keyframes panelDepart {
+  0% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(16px); }
+}
 
 .painting-vignette {
   background:
@@ -131,14 +158,19 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .painting-fade-in,
-  .painting-fade-out {
-    animation: none;
-  }
+  .painting-fall-out { animation: paintingSwapFadeOut 150ms ease-out forwards; }
+  .painting-drop-in { animation: paintingSwapFadeIn 150ms ease-out both; }
+  .painting-crt.on { animation: none; }
+  .panel-arise { animation: panelFadeIn 150ms ease-out both; }
+  .panel-depart { animation: panelFadeOut 150ms ease-out both; }
   .swap-btn svg {
     transition: none !important;
   }
 }
+@keyframes paintingSwapFadeOut { to { opacity: 0; } }
+@keyframes paintingSwapFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes panelFadeIn { from { opacity: 0; } }
+@keyframes panelFadeOut { to { opacity: 0; } }
 
 .timeline a {
   color: #6b8fa8;
