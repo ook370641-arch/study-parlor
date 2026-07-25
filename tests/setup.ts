@@ -17,4 +17,18 @@ if (typeof window !== 'undefined') {
       dispatchEvent: () => false,
     }),
   })
+
+  // IntersectionObserver polyfill — used by useReadingFinished hook
+  if (typeof IntersectionObserver === 'undefined') {
+    ;(globalThis as any).IntersectionObserver = class {
+      observe = () => {}
+      unobserve = () => {}
+      disconnect = () => {}
+      root = null
+      rootMargin = ''
+      thresholds = []
+      takeRecords = () => []
+      constructor(_cb: any, _opts?: any) {}
+    }
+  }
 }
