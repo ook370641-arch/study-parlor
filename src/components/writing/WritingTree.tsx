@@ -149,7 +149,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         <span className="w-4 text-center shrink-0">{isDir ? (open ? '▾' : '▸') : '·'}</span>
         <div className="min-w-0 flex-1">
           <span className="truncate block">{node.name}</span>
-          {!isDir && node.summary && hovered && (
+          {!isDir && hovered && (
             <div
               className="text-[10px] text-parchment/50 mt-0.5"
               style={{
@@ -159,9 +159,15 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
                 WebkitBoxOrient: 'vertical',
               }}
             >
-              {node.summary}
-              {node.catalogUpdatedAt && (
-                <span className="text-parchment/30 ml-2">{node.catalogUpdatedAt}</span>
+              {node.summary ? (
+                <>
+                  {node.summary}
+                  {node.catalogUpdatedAt && (
+                    <span className="text-parchment/30 ml-2">{node.catalogUpdatedAt}</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-parchment/30 italic">摘要生成中…</span>
               )}
             </div>
           )}

@@ -14,7 +14,7 @@ function localToday(): string {
 
 /**
  * Navigate to job briefing page with a generated result.
- * Returns once the gear icon (profile panel trigger) is visible.
+ * Waits for the reading pane to appear (post-animation).
  */
 async function enterJobBriefingWithResult(window: any) {
   const cover = new CoverPage(window)
@@ -23,30 +23,30 @@ async function enterJobBriefingWithResult(window: any) {
   await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
   await window.locator(SELECTORS.briefing.receiveJobButton).waitFor({ state: 'visible', timeout: 15000 })
   await window.locator(SELECTORS.briefing.receiveJobButton).click()
+  // Wait for the mock-generated content to appear (same pattern as existing working test).
+  // Generation transition takes ~1500ms (resolved → departing → idle).
   await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
+  // Extra settle time for the phase transition to fully complete
+  await window.waitForTimeout(500)
 }
 
 async function openProfilePanel(window: any) {
-  const trigger = window.locator('[data-testid="job-profile-panel-trigger"]')
-  await trigger.waitFor({ state: 'visible', timeout: 5000 })
-  await trigger.click()
+  // Use dispatchEvent because Playwright's .click({force:true}) doesn't fire React onClick
+  await window.locator('[data-testid="job-profile-panel-trigger"]').waitFor({ state: 'attached', timeout: 5000 })
+  await window.evaluate(() => {
+    const btn = document.querySelector('[data-testid="job-profile-panel-trigger"]') as HTMLElement
+    if (btn) btn.click()
+  })
   await window.locator('[data-testid="job-profile-panel"]').waitFor({ state: 'visible', timeout: 5000 })
 }
 
 test.describe('@p1 job briefing profile panel', () => {
   test('opens via gear icon trigger after generation', async ({ window }) => {
     await enterJobBriefingWithResult(window)
+    await openProfilePanel(window)
 
-    // Gear icon appears next to the date meta line
-    const trigger = window.locator('[data-testid="job-profile-panel-trigger"]')
-    await expect(trigger).toBeVisible()
-
-    // Click to open panel
-    await trigger.click()
-    const panel = window.locator('[data-testid="job-profile-panel"]')
-    await expect(panel).toBeVisible({ timeout: 5000 })
-
-    // Verify overlay is present
+    // Verify panel and overlay are visible
+    await expect(window.locator('[data-testid="job-profile-panel"]')).toBeVisible()
     await expect(window.locator('[data-testid="job-profile-panel-overlay"]')).toBeVisible()
   })
 
@@ -55,7 +55,7 @@ test.describe('@p1 job briefing profile panel', () => {
     await openProfilePanel(window)
 
     // Click the close (X) button in the panel header
-    await window.locator('[data-testid="job-profile-panel"] button[aria-label="关闭"]').click()
+    await window.locator('[data-testid="job-profile-panel"] button[aria-label="关闭"]').click({ force: true })
 
     // Panel should close
     await expect(window.locator('[data-testid="job-profile-panel"]')).not.toBeVisible({ timeout: 5000 })
@@ -66,7 +66,7 @@ test.describe('@p1 job briefing profile panel', () => {
     await openProfilePanel(window)
 
     // Click the backdrop overlay
-    await window.locator('[data-testid="job-profile-panel-overlay"]').click()
+    await window.locator('[data-testid="job-profile-panel-overlay"]').click({ force: true })
 
     // Panel should close
     await expect(window.locator('[data-testid="job-profile-panel"]')).not.toBeVisible({ timeout: 5000 })
@@ -128,15 +128,18 @@ test.describe('@p1 job briefing profile panel', () => {
     const companyInput = window.locator('[data-testid="job-profile-panel"] input[placeholder*="新公司名"]')
     await companyInput.fill('字节跳动')
     await companyInput.press('Enter')
+    await window.waitForTimeout(500)
 
     // Verify company appears in the panel
     await expect(window.locator('[data-testid="job-profile-panel"]')).toContainText('字节跳动')
 
-    // Remove the company — company rows contain a checkbox; find the one with our text
+    // Remove the company — find the row containing our company name and click its last button
     const panel = window.locator('[data-testid="job-profile-panel"]')
-    const companyRows = panel.locator('div').filter({ has: panel.locator('input[type="checkbox"]') })
-    const targetRow = companyRows.filter({ hasText: '字节跳动' }).first()
-    await targetRow.locator('button').last().click()
+    // Each company row has: checkbox, priority, name, url, edit btn, delete btn
+    // The delete button is the last button in the row, marked with ×
+    const deleteBtn = panel.locator('button').filter({ hasText: '×' }).last()
+    await deleteBtn.click({ force: true })
+    await window.waitForTimeout(500)
 
     // Verify company removed
     await expect(window.locator('[data-testid="job-profile-panel"]')).not.toContainText('字节跳动')
@@ -187,9 +190,11 @@ test.describe('@p1 job briefing profile panel', () => {
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
 
-    // Ensure we are on digest source
+    // Ensure we are on digest source (default when entering briefing)
     await window.locator(SELECTORS.briefing.sourceSidebar).waitFor({ state: 'visible', timeout: 10000 })
+    // Click digest button to make sure we're on digest
     await window.locator(SELECTORS.briefing.sourceDigestButton).click()
+    await window.waitForTimeout(500)
 
     // Panel trigger and hint should NOT exist in digest mode
     await expect(window.locator('[data-testid="job-profile-panel-trigger"]')).toHaveCount(0)

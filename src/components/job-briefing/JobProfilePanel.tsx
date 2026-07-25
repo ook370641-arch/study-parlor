@@ -9,6 +9,7 @@ type Props = {
 }
 
 export function JobProfilePanel({ open, onClose }: Props) {
+
   const jobProfile = useStore(s => s.jobProfile)
   const jobConfig = useStore(s => s.jobBriefingConfig)
   const updateJobProfile = useStore(s => s.updateJobProfile)

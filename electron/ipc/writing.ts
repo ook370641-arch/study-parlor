@@ -75,13 +75,16 @@ export function registerWritingIpc(cfg: AppConfig): void {
   ipcMain.handle('writing:write', async (_, a: { path: string; body: string }) => {
     const result = await wrapWriting(() => { tree.writeWritingFile(lib, a.path, a.body); return null })
     if (result.ok) {
+      // Write empty summary placeholder so tree UI shows pending hint
+      const destRoot = rootFromPath(a.path)
+      updateEntry(lib, destRoot, a.path, { title: path.basename(a.path, '.md'), summary: '', updatedAt: new Date().toISOString().slice(0, 10) })
       // fire-and-forget: generate summary and update catalog
       setTimeout(async () => {
         try {
           const { body } = tree.readWritingFile(lib, a.path)
           const summary = await generateWritingSummary(cfg, path.basename(a.path, '.md'), body)
-          if (summary) updateEntry(lib, rootFromPath(a.path), a.path, { title: path.basename(a.path, '.md'), summary, updatedAt: new Date().toISOString().slice(0, 10) })
-        } catch { /* silent */ }
+          if (summary) updateEntry(lib, destRoot, a.path, { title: path.basename(a.path, '.md'), summary, updatedAt: new Date().toISOString().slice(0, 10) })
+        } catch { /* silent — placeholder remains empty, UI shows pending hint */ }
       }, 0)
     }
     return result
@@ -112,6 +115,8 @@ export function registerWritingIpc(cfg: AppConfig): void {
       const destRoot = root
       setTimeout(async () => {
         for (const destRel of imported) {
+          // Write empty placeholder so tree UI shows pending hint
+          updateEntry(lib, destRoot, destRel, { title: path.basename(destRel, '.md'), summary: '', updatedAt: new Date().toISOString().slice(0, 10) })
           try {
             const { body } = tree.readWritingFile(lib, destRel)
             const summary = await generateWritingSummary(cfg, path.basename(destRel, '.md'), body)

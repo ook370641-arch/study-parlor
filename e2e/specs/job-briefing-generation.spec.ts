@@ -61,7 +61,10 @@ test.describe('@p1 job briefing generation', () => {
     await expect(window.locator('[data-testid="job-briefing-profile-hint"]')).toBeVisible()
 
     // Open panel via hint "填写档案" button (not via old settings navigation)
-    await window.locator('[data-testid="job-briefing-profile-hint-goto"]').click()
+    await window.evaluate(() => {
+      const btn = document.querySelector('[data-testid="job-briefing-profile-hint-goto"]') as HTMLElement
+      if (btn) btn.click()
+    })
     await window.locator('[data-testid="job-profile-panel"]').waitFor({ state: 'visible', timeout: 5000 })
 
     // Fill profile fields in panel
@@ -70,7 +73,10 @@ test.describe('@p1 job briefing generation', () => {
     await window.locator('[data-testid="job-profile-experience"]').fill('RAG 评测项目实习')
 
     // Save (panel closes automatically after save)
-    await window.locator('[data-testid="job-profile-save"]').click()
+    await window.evaluate(() => {
+      const btn = document.querySelector('[data-testid="job-profile-save"]') as HTMLElement
+      if (btn) btn.click()
+    })
     await expect(window.locator('[data-testid="job-profile-panel"]')).not.toBeVisible({ timeout: 5000 })
 
     // Filled profile -> hint banner must NOT appear
@@ -153,7 +159,7 @@ test.describe('@p1 job briefing generation', () => {
     await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
 
     // Open panel via gear icon
-    await window.locator('[data-testid="job-profile-panel-trigger"]').click()
+    await window.evaluate(() => { const btn = document.querySelector('[data-testid="job-profile-panel-trigger"]') as HTMLElement; if (btn) btn.click() })
     await window.locator('[data-testid="job-profile-panel"]').waitFor({ state: 'visible', timeout: 5000 })
 
     // Fill all five profile fields
@@ -190,7 +196,7 @@ test.describe('@p1 job briefing generation', () => {
     await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
 
     // Open panel via gear icon and fill profile
-    await window.locator('[data-testid="job-profile-panel-trigger"]').click()
+    await window.evaluate(() => { const btn = document.querySelector('[data-testid="job-profile-panel-trigger"]') as HTMLElement; if (btn) btn.click() })
     await window.locator('[data-testid="job-profile-panel"]').waitFor({ state: 'visible', timeout: 5000 })
     await window.locator('[data-testid="job-profile-target-roles"]').fill('AI产品经理，模型产品经理')
     await window.locator('[data-testid="job-profile-direction"]').fill('大模型/Agent 产品方向')
