@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react'
 
 const patchState = vi.fn()
 vi.mock('@/lib/ipc', () => ({ ipc: { patchState: (...a: unknown[]) => patchState(...a) } }))
@@ -28,9 +28,12 @@ describe('WritingAssistantPanel', () => {
   })
 
   it('divider toggle collapses the panel to the ember strip', () => {
+    vi.useFakeTimers()
     render(<WritingAssistantPanel />)
     fireEvent.click(screen.getByTestId('article-assistant-divider-toggle'))
+    act(() => { vi.advanceTimersByTime(250) })
     expect(useStore.getState().writingAssistantOpen).toBe(false)
+    vi.useRealTimers()
   })
 
   it('keeps the collapsed strip entry with its testid', () => {
@@ -47,8 +50,11 @@ describe('WritingAssistantPanel', () => {
   })
 
   it('close button sets writingAssistantOpen to false', () => {
+    vi.useFakeTimers()
     render(<WritingAssistantPanel />)
     fireEvent.click(screen.getByTestId('writing-assistant-close-btn'))
+    act(() => { vi.advanceTimersByTime(250) })
     expect(useStore.getState().writingAssistantOpen).toBe(false)
+    vi.useRealTimers()
   })
 })

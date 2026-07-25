@@ -90,7 +90,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
             onResizeEnd={() => setResizing(false)}
             theme={theme}
           />
-          <div className={`h-full overflow-hidden ${resizing ? '' : 'transition-[width] duration-150 ease-out'}`} style={{ width: sidebarWidth }}>
+          <div className={`h-full overflow-hidden ${resizing ? '' : guideCollapsed ? 'transition-[width] duration-200 ease-in' : 'transition-[width] duration-300 ease-out'}`} style={{ width: sidebarWidth }}>
             <GuideSidebar theme={theme} />
           </div>
         </>
