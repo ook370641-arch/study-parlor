@@ -194,4 +194,38 @@ describe('BriefingDateColumn', () => {
     fireEvent.contextMenu(screen.getByTestId('briefing-date-item-2026-07-11'))
     expect(screen.queryByTestId('briefing-date-menu')).not.toBeInTheDocument()
   })
+
+  it('renders flame states: spent for read, lit for generated-unread, unlit for not-generated today', () => {
+    render(
+      <BriefingDateColumn
+        collapsed={false}
+        history={[{ date: '2026-07-10', filePath: '/x.md' }, { date: '2026-07-11', filePath: '/y.md' }]}
+        currentDate="2026-07-11"
+        today="2026-07-11"
+        generatedDates={['2026-07-10', '2026-07-11']}
+        readDates={['2026-07-10']}
+        onSelect={vi.fn()}
+        onReceiveToday={vi.fn()}
+        theme="academic"
+      />
+    )
+    expect(screen.getByTestId('briefing-date-flame-2026-07-10').dataset.state).toBe('spent')
+    expect(screen.getByTestId('briefing-date-flame-2026-07-11').dataset.state).toBe('lit')
+  })
+
+  it('today without generation shows an unlit flame', () => {
+    render(
+      <BriefingDateColumn
+        collapsed={false}
+        history={[]}
+        today="2026-07-11"
+        generatedDates={[]}
+        readDates={[]}
+        onSelect={vi.fn()}
+        onReceiveToday={vi.fn()}
+        theme="academic"
+      />
+    )
+    expect(screen.getByTestId('briefing-date-flame-2026-07-11').dataset.state).toBe('unlit')
+  })
 })

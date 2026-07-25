@@ -176,6 +176,11 @@ export function Briefing() {
                 onReceiveToday={() => generateBriefing(today)}
                 onDelete={(items) => setPendingDelete(items)}
                 theme={theme}
+                generatedDates={[
+                  ...historyList.map((h: { date: string }) => h.date),
+                  ...(result?.date ? [result.date] : []),
+                ]}
+                readDates={useStore((s) => s.briefingRead.digest)}
               />
             </BriefingListColumn>
           )}
@@ -198,6 +203,11 @@ export function Briefing() {
                 onDelete={(items) => setPendingDelete(items)}
                 todayLabel="生成简报"
                 theme={theme}
+                generatedDates={[
+                  ...jobHistoryList.map((h: { date: string }) => h.date),
+                  ...(jobResult?.date ? [jobResult.date] : []),
+                ]}
+                readDates={useStore((s) => s.briefingRead['job-briefing'])}
               />
             </BriefingListColumn>
           )}

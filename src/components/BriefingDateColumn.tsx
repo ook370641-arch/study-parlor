@@ -18,6 +18,8 @@ interface Props {
   theme: 'academic' | 'newspaper'
   todayLabel?: string
   onDelete?: (items: BriefingHistoryItem[]) => void
+  generatedDates?: string[]
+  readDates?: string[]
 }
 
 function formatLabel(date: string): string {
@@ -26,7 +28,7 @@ function formatLabel(date: string): string {
   return `${m}月${d}日`
 }
 
-export function BriefingDateColumn({ collapsed, history, currentDate, today, onSelect, onReceiveToday, theme, todayLabel = '查收日报', onDelete }: Props) {
+export function BriefingDateColumn({ collapsed, history, currentDate, today, onSelect, onReceiveToday, theme, todayLabel = '查收日报', onDelete, generatedDates = [], readDates = [] }: Props) {
   const isAcademic = theme !== 'newspaper'
   const source = useStore((s) => s.briefingSource)
   const jobBlue = isAcademic && source === 'job-briefing'
@@ -82,11 +84,30 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
               e.preventDefault()
               setMenu({ x: e.clientX, y: e.clientY, item })
             }}
-            className={`w-full text-left px-3 py-2 rounded transition-all duration-300 ${isCurrent ? activeItem : itemBase}`}
+            className={`w-full text-left px-3 py-2 rounded transition-all duration-300 flex items-center gap-2 ${isCurrent ? activeItem : itemBase} ${readDates.includes(entry.date) ? 'opacity-60' : ''}`}
             style={{
               fontSize: 'var(--briefing-list-title-size)',
               ...(isCurrent ? { transform: 'translateX(4px)', transitionTimingFunction: SPRING_SETTLE } : {}),
             }}>
+            <span
+              data-testid={`briefing-date-flame-${entry.date}`}
+              data-state={
+                readDates.includes(entry.date) ? 'spent'
+                : generatedDates.includes(entry.date) ? 'lit'
+                : 'unlit'
+              }
+              className="inline-block w-[7px] h-[7px] rounded-full border shrink-0 transition-all duration-500"
+              style={{
+                background: readDates.includes(entry.date) ? 'rgba(217,151,87,0.28)'
+                  : generatedDates.includes(entry.date) ? '#d97757'
+                  : 'transparent',
+                borderColor: generatedDates.includes(entry.date) && !readDates.includes(entry.date) ? '#d97757'
+                  : readDates.includes(entry.date) ? 'rgba(217,151,87,0.3)'
+                  : 'rgba(217,151,87,0.8)',
+                boxShadow: generatedDates.includes(entry.date) && !readDates.includes(entry.date)
+                  ? '0 0 8px 2px rgba(217,119,87,0.55)' : 'none',
+              }}
+            />
             {entry.isToday ? todayLabel : formatLabel(entry.date)}
           </button>
         )
