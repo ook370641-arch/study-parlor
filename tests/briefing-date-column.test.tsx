@@ -171,6 +171,23 @@ describe('BriefingDateColumn', () => {
     expect(screen.queryByTestId('briefing-delete-mode-toggle')).not.toBeInTheDocument()
   })
 
+  it('settles the current date item 4px toward content with the settle spring', () => {
+    render(
+      <BriefingDateColumn
+        collapsed={false}
+        history={[{ date: '2026-07-10', filePath: '/x.md' }]}
+        currentDate="2026-07-10"
+        today="2026-07-11"
+        onSelect={vi.fn()}
+        onReceiveToday={vi.fn()}
+        theme="academic"
+      />
+    )
+    const item = screen.getByTestId('briefing-date-item-2026-07-10')
+    expect(item.style.transform).toBe('translateX(4px)')
+    expect(item.style.transitionTimingFunction).toBe('cubic-bezier(0.34, 1.4, 0.5, 1)')
+  })
+
   it('does not open menu for today entry when its file is absent from history', () => {
     render(<BriefingDateColumn collapsed={false} history={[]}
       today="2026-07-11" onSelect={vi.fn()} onReceiveToday={vi.fn()} theme="academic" onDelete={vi.fn()} />)

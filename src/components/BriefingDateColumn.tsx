@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
+import { SPRING_SETTLE } from '@/lib/motion-presets'
 
 export type BriefingHistoryItem = {
   date: string
@@ -81,8 +82,11 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
               e.preventDefault()
               setMenu({ x: e.clientX, y: e.clientY, item })
             }}
-            className={`w-full text-left px-3 py-2 rounded transition-colors ${isCurrent ? activeItem : itemBase}`}
-            style={{ fontSize: 'var(--briefing-list-title-size)' }}>
+            className={`w-full text-left px-3 py-2 rounded transition-all duration-300 ${isCurrent ? activeItem : itemBase}`}
+            style={{
+              fontSize: 'var(--briefing-list-title-size)',
+              ...(isCurrent ? { transform: 'translateX(4px)', transitionTimingFunction: SPRING_SETTLE } : {}),
+            }}>
             {entry.isToday ? todayLabel : formatLabel(entry.date)}
           </button>
         )
