@@ -52,6 +52,7 @@ export function CandlelightLayer() {
       armIdle()
     }
     const onLeave = () => { glow.style.opacity = '0' }
+    const onBlur = () => { glow.style.opacity = '0' }
     const frame = () => {
       const k = reduced ? 1 : LERP
       pos.x += (target.x - pos.x) * k
@@ -61,12 +62,14 @@ export function CandlelightLayer() {
     }
     window.addEventListener('mousemove', onMove)
     document.documentElement.addEventListener('mouseleave', onLeave)
+    window.addEventListener('blur', onBlur)
     raf = requestAnimationFrame(frame)
     return () => {
       cancelAnimationFrame(raf)
       if (idleTimer) clearTimeout(idleTimer)
       window.removeEventListener('mousemove', onMove)
       document.documentElement.removeEventListener('mouseleave', onLeave)
+      window.removeEventListener('blur', onBlur)
     }
   }, [live])
 
