@@ -281,11 +281,12 @@ Job 简报同理，匹配模式 `求职简报-YYYY-MM-DD.md`。
 |---|---|---|
 | **E2E（用户可感知行为）** | 标注持久化、旁注对话恢复、删除联动清理 | 3 个新 spec |
 | **真实 API 集成** | LLM 参数变更后简报生成质量不退化 | `job-briefing-real.test.ts`（12 tests） |
-| **单元测试（基础设施层）** | JSON 提取 fallback、超时 error code、缓存原子写入、BrowserWindow 信号量、briefingRead GC、Writing catalog UI | 对应模块的 vitest 测试 |
+| **单元测试（基础设施层）** | JSON 提取 fallback、超时 error code、缓存原子写入、BrowserWindow 信号量、briefingRead GC | 对应模块的 vitest 测试 |
+| **单元测试（用户可感知 UI）** | Writing catalog 摘要 pending 提示 | `tests/writing-catalog.test.ts`（4 tests） |
 
 基础设施层修改（F5/F6/F8/F9/F10）不适合写 E2E：它们改动的是 IO 原子性、JSON 解析鲁棒性、进程并发控制、错误码映射——这些行为在 E2E 层面无法可靠触发或断言。对于这类修改，单元测试是正确且充分的验证闭环。
 
-用户可感知的行为变更（F11 Writing catalog UI、F12 持久化）均编写了 E2E 测试。
+F11（Writing catalog 摘要 pending 提示）是用户可感知的 UI 变更，当前由单元测试闭环；后续可补 E2E 覆盖 hover 提示文案。F12 持久化场景已编写 3 个 E2E spec。
 
 ## 5. 实现顺序
 
