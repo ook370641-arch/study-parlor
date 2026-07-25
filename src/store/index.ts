@@ -127,6 +127,10 @@ type AppStore = {
   briefingArrivedAt: number | null
   candleBreathAt: number | null
   breathCandle: () => void
+  candlelightEnabled: boolean
+  paintingPlateEnabled: boolean
+  toggleCandlelight: () => Promise<void>
+  togglePaintingPlate: () => Promise<void>
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
   briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
@@ -433,6 +437,8 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingPulseAt: null,
   briefingArrivedAt: null,
   candleBreathAt: null,
+  candlelightEnabled: true,
+  paintingPlateEnabled: false,
   briefingSource: 'digest',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicReaderFilePath: null,
@@ -504,6 +510,8 @@ export const useStore = create<AppStore>((set, get) => ({
       writingUIFontSize: state.writingUIFontSize ?? 'base',
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
+      candlelightEnabled: state.candlelightEnabled ?? true,
+      paintingPlateEnabled: state.paintingPlateEnabled ?? false,
       session_count: state.ui?.session_count ?? 0,
       library,
       unsavedSessions: unsaved,
@@ -879,6 +887,17 @@ export const useStore = create<AppStore>((set, get) => ({
   setBriefingStage: (stage) => set({ briefingStage: stage }),
 
   breathCandle: () => set({ candleBreathAt: Date.now() }),
+
+  toggleCandlelight: async () => {
+    const next = !get().candlelightEnabled
+    set({ candlelightEnabled: next })
+    await ipc.patchState({ candlelightEnabled: next } as Partial<StateJson>)
+  },
+  togglePaintingPlate: async () => {
+    const next = !get().paintingPlateEnabled
+    set({ paintingPlateEnabled: next })
+    await ipc.patchState({ paintingPlateEnabled: next } as Partial<StateJson>)
+  },
 
   setBriefingSource: async (source) => {
     set({ briefingSource: source })
