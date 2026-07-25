@@ -259,6 +259,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
             { role: 'user', content: user },
           ],
           temperature: 0.7,
+          thinking: { type: 'enabled', reasoning_effort: 'max' },
         })
 
         const extracted = extractJsonObject(raw)

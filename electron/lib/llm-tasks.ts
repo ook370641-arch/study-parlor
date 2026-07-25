@@ -346,6 +346,7 @@ export async function generateWritingSummary(cfg: AppConfig, title: string, body
         { role: 'user', content: `标题：${title}\n\n${body.slice(0, 2000)}` },
       ],
       temperature: 0.3,
+      thinking: { type: 'enabled' },
     })
     return content.trim().replace(/\n[\s\S]*$/, '').slice(0, 80)
   } catch {

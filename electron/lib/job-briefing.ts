@@ -269,7 +269,7 @@ export async function extractJobsFromHtml(
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt } as Message],
     temperature: 0.3,
-    thinking: { type: 'disabled' },
+    thinking: { type: 'enabled' },
   })
 
   const extracted = extractJsonObject(text)
@@ -336,7 +336,7 @@ export async function discoverEvents(
       const text = await chatNonStream(cfg, {
         messages: [{ role: 'user', content: prompt } as Message],
         temperature: 0.3,
-        thinking: { type: 'enabled' },
+        thinking: { type: 'enabled', reasoning_effort: 'high' },
         signal: opts.signal,
       })
       const extracted = extractJsonObject(text)
@@ -472,7 +472,7 @@ export async function matchJobsToProfile(
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt } as Message],
     temperature: 0.3,
-    thinking: { type: 'enabled', reasoning_effort: 'high' },
+    thinking: { type: 'enabled', reasoning_effort: 'max' },
     signal: opts.signal,
   })
   const extracted = extractJsonObject(text)
@@ -539,7 +539,7 @@ export async function generateJobBriefingKeywords(
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt } as Message],
     temperature: 0.3,
-    thinking: { type: 'disabled' },
+    thinking: { type: 'enabled' },
     signal: opts.signal,
   })
   const extracted = extractJsonObject(text)
@@ -566,7 +566,7 @@ export async function generateArticleSearchQuery(
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt } as Message],
     temperature: 0.3,
-    thinking: { type: 'disabled' },
+    thinking: { type: 'enabled' },
   })
   return text.trim()
 }
@@ -591,7 +591,7 @@ async function runQuestionQuery(
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt } as Message],
     temperature: 0.3,
-    thinking: { type: 'disabled' },
+    thinking: { type: 'enabled' },
     signal: opts.signal,
   })
   const extracted = extractJsonObject(text)
@@ -776,7 +776,7 @@ export async function generateJobBriefing(
     content = await chatNonStream(cfg, {
       messages: [{ role: 'user', content: synthesisPrompt } as Message],
       temperature: 0.5,
-      thinking: { type: 'enabled', reasoning_effort: 'high' },
+      thinking: { type: 'enabled', reasoning_effort: 'max' },
       signal: synthesisCtl.signal,
     })
   } catch (err) {
