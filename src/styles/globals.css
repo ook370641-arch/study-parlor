@@ -219,6 +219,9 @@ html, body, #root { height: 100%; }
   from { transform: rotate(0deg) translateX(72px); }
   to { transform: rotate(360deg) translateX(72px); }
 }
+@keyframes wellRingBreathe {
+  50% { opacity: 0.85; }
+}
 .constellation-well-resolved .constellation-photon {
   animation: none;
   transform: rotate(0deg) translateX(0) scale(0.2);
@@ -243,6 +246,9 @@ html, body, #root { height: 100%; }
   .constellation-depart { transition: opacity 150ms ease; transform: none; }
   .constellation-failed [data-testid^="briefing-progress-step-"],
   .constellation-failed [data-testid="briefing-constellation-well"] { transition: none; }
+  [data-testid="briefing-constellation-well"] {
+    animation: wellRingBreathe 2s ease-in-out infinite;
+  }
 }
 
 /* ===== 抵达阶梯（F5）：报题/正文依次落定；revisit 与 reduced-motion 不重演 ===== */
@@ -255,6 +261,7 @@ html, body, #root { height: 100%; }
 [data-arrival="revisit"] .arrive-item { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .arrive-item { animation: none; }
+}
 
 /* ===== 阖卷（F7）：卷尾 ◆ 静驻 ===== */
 .briefing-colophon {
@@ -268,7 +275,6 @@ html, body, #root { height: 100%; }
 .briefing-colophon.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .briefing-colophon { transition: none; }
-}
 }
 
 /* ===== 内化脊柱（F8） ===== */
@@ -305,6 +311,11 @@ html, body, #root { height: 100%; }
 @media (prefers-reduced-motion: reduce) {
   .candle-glow.candle-breathe, .candle-glow.candle-breath-once { animation: none; }
   .candle-glow.candle-warm { filter: saturate(1.15); }
+}
+
+/* ===== 烛光标注辉光（F1）：hover 标注时 ✎ 标记发光 ===== */
+.anno-wrap:hover .anno-pen {
+  text-shadow: 0 0 8px rgba(238, 194, 135, 0.8);
 }
 
 /* ===== 聚焦呼吸（F10）：三区照明 ===== */

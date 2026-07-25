@@ -7,7 +7,7 @@ export function PaintingPlate() {
   if (!enabled || !painting) return null
 
   return (
-    <figure data-testid="painting-plate" className="mx-auto mb-8 w-full max-w-[620px] p-2.5 bg-[#1c130d] border border-parchment/15">
+    <figure data-testid="painting-plate" className="mx-auto mb-8 w-full max-w-[620px] p-2.5 bg-[#1c130d] border border-parchment/15 shadow-[0_18px_50px_rgba(0,0,0,0.5)]">
       <div className="aspect-[21/9] w-full overflow-hidden">
         <img src={painting.url} alt={formatAttribution(painting)} className="w-full h-full object-cover"
           style={{ filter: 'brightness(1.1) saturate(1.06)' }} />
