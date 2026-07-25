@@ -48,13 +48,15 @@ rm -rf .electron-cache
 
 ## E2E 定向测试
 
-功能迭代后跑定向测试（按 git diff 匹配 `e2e/source-map.json`），不跑全量：
+功能迭代后跑定向测试（按 git diff 匹配 `e2e/source-map.json`），**不跑全量**。全量是合并前门禁。
 
 ```bash
 node scripts/e2e-changed.js --run   # 执行受影响 spec
 node scripts/e2e-changed.js          # 仅列出（不执行）
 npm run test:e2e                     # 全量（合并前）
 ```
+
+**单元测试同理**：改哪个文件就跑哪个测试，不跑 `npx vitest run`。改 3 个以内文件时手动指定路径。
 
 **source-map 维护**：新建 E2E spec 或新增页面/组件/IPC 模块时，必须同步更新 `e2e/source-map.json` ——在对应 group 的 `specs` 中添加新 spec，或新建 group（全新功能域）。`e2e-changed.js` 运行时会自动检测未被任何 group 覆盖的孤儿 spec 并输出 WARNING。
 

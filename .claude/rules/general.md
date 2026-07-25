@@ -84,3 +84,13 @@ These rules apply to every task. They describe recurring failure modes and how t
 - Normalize removed/renamed enum values explicitly in parsers (e.g., `medium` → `mid`).
 - Check file existence before rendering/opening and degrade gracefully when files are missing.
 - Source: iteration-density-report.md §3
+
+## 9. 验证只跑受影响测试，禁止全量
+
+**Why:** 三次在改 1-2 个文件后跑 `npx vitest run`（821 tests, 17 分钟），浪费时间和 token。全量是合并前的门禁，不是每次改代码后的验证手段。
+
+- 改单元测试文件 → `npx vitest run tests/<changed-file>.test.ts`（只跑改动的文件）
+- 改源代码 → 跑对应的测试文件 + `node scripts/e2e-changed.js --run`
+- 绝对不跑 `npx vitest run` 或 `npm run test:e2e`，除非用户明确说"跑全量"或准备合并
+- 改动 3 个以内文件时，手动指定测试文件路径，不自动发现
+- Source: 2026-07-26 三次全量跑测试的反馈
