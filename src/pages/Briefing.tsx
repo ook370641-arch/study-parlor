@@ -18,6 +18,8 @@ import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
 import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil, BriefingEmptyState, BriefingMetaLine } from '@/components/briefing'
+import { CandlelightLayer } from '@/components/briefing/CandlelightLayer'
+import { BriefingCornerControls } from '@/components/briefing/BriefingCornerControls'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
 import { useGenerationTransition } from '@/lib/use-generation-transition'
@@ -453,6 +455,8 @@ export function Briefing() {
         <p className="mt-2">删除「今天」的简报后，再次点击今天将重新生成。</p>
         <p className="mt-2">将同时删除所选简报的旁注对话、标注与导读。</p>
       </ConfirmDialog>
+      <CandlelightLayer />
+      <BriefingCornerControls />
     </div>
   )
 }

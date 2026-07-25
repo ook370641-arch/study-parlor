@@ -294,3 +294,15 @@ html, body, #root { height: 100%; }
 }
 @media (max-width: 900px) { .internalization-spine { display: none; } }
 @media (prefers-reduced-motion: reduce) { .spine-node { transition: none; } }
+
+/* ===== 烛光调制（F1）+ 全场让路 ===== */
+.candle-glow.candle-warm { filter: saturate(1.3) brightness(1.12); }
+.candle-glow.candle-dim { filter: brightness(0.94) saturate(0.95); }
+.candle-glow.candle-breathe { animation: candleBreathe 4s ease-in-out infinite; }
+@keyframes candleBreathe { 50% { opacity: 0.62 !important; } }
+.candle-glow.candle-breath-once { animation: candleBreathOnce 1.5s ease-in-out 1; }
+@keyframes candleBreathOnce { 40% { opacity: 0.3 !important; } 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .candle-glow.candle-breathe, .candle-glow.candle-breath-once { animation: none; }
+  .candle-glow.candle-warm { filter: saturate(1.15); }
+}
