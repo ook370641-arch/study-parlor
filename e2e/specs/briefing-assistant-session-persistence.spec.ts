@@ -35,8 +35,7 @@ test.describe('@p1 briefing assistant session persistence', () => {
     await window.locator(SELECTORS.briefing.sourceDigestButton).click()
     await window.locator('[data-testid="briefing-reading-pane"]').waitFor({ state: 'visible', timeout: 10000 })
 
-    // Open assistant again
-    await chatTab.click()
+    // Chat window should already be visible (session preserved isOpen state)
     await chatWindow.waitFor({ state: 'visible', timeout: 5000 })
 
     // Verify messages are still there
