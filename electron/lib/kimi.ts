@@ -89,7 +89,11 @@ export async function chatNonStream(
 ): Promise<string> {
   const TIMEOUT_MS = 300_000
   const ctl = new AbortController()
-  const timeoutId = setTimeout(() => ctl.abort(), TIMEOUT_MS)
+  let timedOut = false
+  const timeoutId = setTimeout(() => {
+    timedOut = true
+    ctl.abort()
+  }, TIMEOUT_MS)
   let externalListenerAdded = false
   const onExternalAbort = () => ctl.abort()
   if (args.signal) {
@@ -127,6 +131,13 @@ export async function chatNonStream(
     const content = json.choices[0]?.message?.content ?? ''
     if (!content) throw new Error('Kimi returned empty content')
     return content
+  } catch (err: any) {
+    if (timedOut) {
+      const e: any = new Error(`Request timeout after ${TIMEOUT_MS}ms`)
+      e.code = 'TIMEOUT'
+      throw e
+    }
+    throw err
   } finally {
     clearTimeout(timeoutId)
     if (externalListenerAdded) {
