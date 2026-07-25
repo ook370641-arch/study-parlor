@@ -127,14 +127,16 @@ for (const [groupName, group] of Object.entries(groups)) {
   }
 }
 
-// ── 输出结果 ──────────────────────────────────────────────
-const specList = [...matchedSpecs].sort()
+// ── 变更文件本身是 E2E spec？直接加入执行列表 ──
+const changedSpecs = changedFiles
+  .filter(f => f.startsWith('e2e/specs/') && f.endsWith('.spec.ts'))
+  .map(f => path.basename(f))
+changedSpecs.forEach(s => {
+  matchedSpecs.add(s)
+  console.log(`[e2e-changed] Directly changed spec: e2e/specs/${s}`)
+})
 
-console.log(`[e2e-changed] Affected groups: ${affectedGroups.length > 0 ? affectedGroups.join(', ') : '(none — changes outside known groups)'}`)
-console.log(`[e2e-changed] Specs to run (${specList.length}):`)
-specList.forEach(s => console.log(`  e2e/specs/${s}`))
-
-// ── 孤儿 spec 检测 ──
+// ── 孤儿 spec 检测 + 自动纳入执行 ──
 const allSpecs = fs.readdirSync(specsDir).filter(f => f.endsWith('.spec.ts'))
 const coveredSpecs = new Set()
 for (const [, group] of Object.entries(groups)) {
@@ -143,10 +145,19 @@ for (const [, group] of Object.entries(groups)) {
 }
 const orphanSpecs = allSpecs.filter(s => !coveredSpecs.has(s))
 if (orphanSpecs.length > 0) {
-  console.warn(`[e2e-changed] WARNING: ${orphanSpecs.length} spec(s) not covered by ANY group:`)
+  console.warn(`[e2e-changed] WARNING: ${orphanSpecs.length} spec(s) not covered by ANY group — auto-including in run:`)
   orphanSpecs.forEach(s => console.warn(`  e2e/specs/${s}`))
   console.warn('[e2e-changed] Add them to a group\'s "specs" or create a new group.')
+  // 孤儿 spec 自动纳入执行，避免"新增 spec 永远不跑"的陷阱
+  orphanSpecs.forEach(s => matchedSpecs.add(s))
 }
+
+// ── 输出结果 ──────────────────────────────────────────────
+const specList = [...matchedSpecs].sort()
+
+console.log(`[e2e-changed] Affected groups: ${affectedGroups.length > 0 ? affectedGroups.join(', ') : '(none — changes outside known groups)'}`)
+console.log(`[e2e-changed] Specs to run (${specList.length}):`)
+specList.forEach(s => console.log(`  e2e/specs/${s}`))
 
 if (specList.length === 0) {
   console.log('[e2e-changed] No specs to run.')
