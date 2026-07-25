@@ -13,6 +13,7 @@ import {
   buildAssistantUserPrompt,
   formatSearchResults,
 } from '../lib/article-assistant-prompt'
+import { generateArticleSearchQuery } from '../lib/job-briefing'
 import type { AppConfig } from '../env'
 import type {
   ArticleAnnotation,
@@ -457,10 +458,21 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         if (!apiKey) {
           searchError = 'SEARCH_ERROR'
         } else {
-          const query = [args.selection, args.messages.at(-1)?.content]
-            .filter(Boolean)
-            .join(' ')
-            .trim()
+          let query: string
+          try {
+            query = await generateArticleSearchQuery(cfg, {
+              articleContent: args.articleContent,
+              selection: args.selection,
+              lastMessage: args.messages.at(-1)?.content,
+            })
+          } catch (err) {
+            console.warn('[article-assistant] smart query generation failed, falling back to concatenation', err)
+            // Fallback: preserve old concatenation behavior
+            query = [args.selection, args.messages.at(-1)?.content]
+              .filter(Boolean)
+              .join(' ')
+              .trim()
+          }
           try {
             const results = await searchWeb({ query, apiKey, maxResults: 8 })
             searchSources = results.map((r) => ({
