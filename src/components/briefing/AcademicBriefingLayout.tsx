@@ -12,6 +12,7 @@ import { Quote } from '@/components/Quote'
 import { TransferToWritingButton } from './TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 import { InternalizationSpine } from '@/components/briefing/InternalizationSpine'
+import { PaintingPlate } from './PaintingPlate'
 
 export function AcademicBriefingLayout({
   result,
@@ -79,6 +80,7 @@ export function AcademicBriefingLayout({
         )}
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
         <header className="text-center mb-8 arrive-item">
+          <PaintingPlate />
           <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2">{result.title}</h1>
           <BriefingMetaLine
             displayDate={displayDate}
