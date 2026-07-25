@@ -18,7 +18,7 @@ import type {
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
-import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE } from '@/lib/job-briefing-defaults'
+import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE, isJobProfileEmpty } from '@/lib/job-briefing-defaults'
 import type { Painting } from '@shared/index'
 
 export type AssistantSession = {
@@ -192,6 +192,7 @@ type AppStore = {
   }) => Promise<void>
   setJobBriefingConfig: (config: JobBriefingConfig) => Promise<void>
   discoverJobBriefingPages: () => Promise<{ ok: true; companies: JobCompany[] } | { ok: false; error: JobErrorCode | string; message: string }>
+  generateJobBriefingKeywords: () => Promise<void>
 
   // 画作背景
   currentPaintings: {
@@ -819,6 +820,34 @@ export const useStore = create<AppStore>((set, get) => ({
       return result.ok ? { ok: true, companies: result.companies } : { ok: false, error: result.code, message: result.message }
     } catch (err: any) {
       return { ok: false, error: 'NETWORK_ERROR', message: err.message || String(err) }
+    }
+  },
+
+  generateJobBriefingKeywords: async () => {
+    const profile = get().jobProfile
+    if (isJobProfileEmpty(profile)) {
+      get().showToast('请先完善求职档案')
+      return
+    }
+    try {
+      const result = await ipc.jobBriefingGenerateKeywords({ profile })
+      if (result.ok) {
+        const config = {
+          ...get().jobBriefingConfig,
+          eventSearchKeywords: result.eventKeywords,
+          jobKeywords: result.jobKeywords,
+        }
+        await get().setJobBriefingConfig(config)
+        await get().updateJobProfile({
+          ...profile,
+          keywordsGeneratedAt: new Date().toISOString(),
+        })
+        get().showToast('搜索关键词已更新')
+      } else {
+        get().showToast(result.message)
+      }
+    } catch (err: any) {
+      get().showToast('生成搜索关键词失败: ' + (err.message || '未知错误'))
     }
   },
 
