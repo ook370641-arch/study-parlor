@@ -306,3 +306,17 @@ html, body, #root { height: 100%; }
   .candle-glow.candle-breathe, .candle-glow.candle-breath-once { animation: none; }
   .candle-glow.candle-warm { filter: saturate(1.15); }
 }
+
+/* ===== 聚焦呼吸（F10）：三区照明 ===== */
+.focus-zone-root [data-zone] { transition: opacity 250ms ease; }
+.focus-zone-root[data-focus-zone="none"] [data-zone] { opacity: 0.38; }
+.focus-zone-root[data-focus-zone="article"] [data-zone="rail-source"],
+.focus-zone-root[data-focus-zone="article"] [data-zone="rail-list"],
+.focus-zone-root[data-focus-zone="rail-source"] [data-zone="article"],
+.focus-zone-root[data-focus-zone="rail-source"] [data-zone="rail-list"],
+.focus-zone-root[data-focus-zone="rail-list"] [data-zone="article"],
+.focus-zone-root[data-focus-zone="rail-list"] [data-zone="rail-source"] { opacity: 0.38; }
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-zone-root [data-zone] { transition: none; }
+}

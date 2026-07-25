@@ -24,6 +24,7 @@ import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-dat
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
 import { useGenerationTransition } from '@/lib/use-generation-transition'
 import { useReadingFinished } from '@/lib/use-reading-finished'
+import { useFocusZone } from '@/lib/use-focus-zone'
 import {
   ACADEMIC_BODY_STYLES,
   NEWSPAPER_BODY_STYLES,
@@ -79,6 +80,10 @@ export function Briefing() {
   const cancelJobBriefing = useStore((s) => s.cancelJobBriefing)
 
   const today = formatBriefingDate(new Date())
+
+  // Focus breathing (F10): three-zone lighting
+  const rootRef = useRef<HTMLDivElement>(null)
+  useFocusZone(rootRef)
 
   // Reading finished — colophon + candle breath + mark-read
   const digestMainRef = useRef<HTMLElement>(null)
@@ -159,16 +164,19 @@ export function Briefing() {
   return (
     <div
       data-testid="briefing-page"
-      className={`relative h-full flex overflow-hidden ${isAcademic ? 'gap-2 p-2' : 'bg-white'}`}
+      className={`relative h-full flex overflow-hidden focus-zone-root ${isAcademic ? 'gap-2 p-2' : 'bg-white'}`}
       style={pageStyle}
+      ref={rootRef}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
       {isAcademic && <BriefingVeil />}
-      <BriefingSourceSidebar
-        theme={theme}
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((c) => !c)}
-      />
+      <div data-zone="rail-source">
+        <BriefingSourceSidebar
+          theme={theme}
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((c) => !c)}
+        />
+      </div>
 
       <div
         data-testid="briefing-content-shell"
@@ -188,6 +196,7 @@ export function Briefing() {
         )}
         <div className="flex-1 flex min-h-0">
           {source === 'digest' && (
+            <div data-zone="rail-list">
             <BriefingListColumn
               collapsed={dateColumnCollapsed}
               onToggle={() => setDateColumnCollapsed((c) => !c)}
@@ -211,9 +220,11 @@ export function Briefing() {
                 readDates={useStore((s) => s.briefingRead.digest)}
               />
             </BriefingListColumn>
+            </div>
           )}
 
           {isJob && (
+            <div data-zone="rail-list">
             <BriefingListColumn
               collapsed={dateColumnCollapsed}
               onToggle={() => setDateColumnCollapsed((c) => !c)}
@@ -238,9 +249,11 @@ export function Briefing() {
                 readDates={useStore((s) => s.briefingRead['job-briefing'])}
               />
             </BriefingListColumn>
+            </div>
           )}
 
           {source === 'writing' && (
+            <div data-zone="rail-list">
             <BriefingListColumn
               collapsed={dateColumnCollapsed}
               onToggle={() => setDateColumnCollapsed((c) => !c)}
@@ -250,9 +263,10 @@ export function Briefing() {
             >
               <WritingListColumn theme={theme} collapsed={dateColumnCollapsed} />
             </BriefingListColumn>
+            </div>
           )}
 
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0" data-zone="article">
             {source === 'writing' ? (
               <main className="relative z-[5] flex-1">
                 <WritingBoard />
