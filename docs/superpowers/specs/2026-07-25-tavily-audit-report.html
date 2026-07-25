@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Parlor Tavily 搜索调用审计报告</title>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --surface: #252525;
+    --surface2: #2d2d2d;
+    --text: #e0d5c0;
+    --text-dim: #a09080;
+    --accent: #d97757;
+    --accent2: #e8a84c;
+    --green: #6bad6b;
+    --red: #d95b5b;
+    --blue: #5b8bd9;
+    --code-bg: #1e1e1e;
+    --border: #3a3a3a;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.7;
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 2rem; color: var(--accent2); margin-bottom: 0.3rem; }
+  h1 .sub { display: block; font-size: 1rem; color: var(--text-dim); font-weight: normal; margin-top: 0.3rem; }
+  h2 {
+    font-size: 1.5rem; color: var(--accent); margin: 2.5rem 0 1rem;
+    border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;
+  }
+  h3 { font-size: 1.15rem; color: var(--accent2); margin: 1.5rem 0 0.6rem; }
+  h4 { font-size: 1rem; color: var(--text); margin: 1rem 0 0.4rem; }
+  p { margin: 0.6rem 0; }
+  a { color: var(--blue); }
+  ul, ol { margin: 0.4rem 0 0.4rem 1.5rem; }
+  li { margin: 0.2rem 0; }
+
+  /* 卡片 */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1rem 0;
+  }
+  .card.warn { border-left: 4px solid var(--red); }
+  .card.info { border-left: 4px solid var(--blue); }
+  .card.ok { border-left: 4px solid var(--green); }
+
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th, td { padding: 0.55rem 0.7rem; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface2); color: var(--accent2); font-weight: 600; }
+  tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+  .num { text-align: right; font-family: var(--mono); }
+
+  /* 代码 */
+  pre, code { font-family: var(--mono); }
+  code { background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.88em; }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem; overflow-x: auto;
+    font-size: 0.82rem; line-height: 1.55; margin: 0.8rem 0;
+  }
+  pre .kw { color: #c792ea; }
+  pre .str { color: #c3e88d; }
+  pre .fn { color: #82aaff; }
+  pre .cm { color: #546e7a; font-style: italic; }
+  pre .num { color: #f78c6c; }
+
+  /* 提示框 */
+  .tip {
+    background: rgba(217,119,87,0.1); border: 1px solid rgba(217,119,87,0.3);
+    border-radius: 6px; padding: 0.8rem 1rem; margin: 0.8rem 0;
+  }
+  .tip::before { content: '💡 '; }
+  .warn-box {
+    background: rgba(217,91,91,0.1); border: 1px solid rgba(217,91,91,0.3);
+    border-radius: 6px; padding: 0.8rem 1rem; margin: 0.8rem 0;
+  }
+  .warn-box::before { content: '⚠️ '; }
+
+  /* 对比 */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .compare .old { background: rgba(217,91,91,0.08); border: 1px solid rgba(217,91,91,0.25); border-radius: 8px; padding: 1rem; }
+  .compare .new { background: rgba(107,173,107,0.08); border: 1px solid rgba(107,173,107,0.25); border-radius: 8px; padding: 1rem; }
+  .compare h4 { margin-top: 0; }
+  .compare .old h4 { color: var(--red); }
+  .compare .new h4 { color: var(--green); }
+
+  /* 流程图 */
+  .flow { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+  .flow .step {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.85rem;
+  }
+  .flow .arrow { color: var(--text-dim); font-size: 1.2rem; }
+  .flow .cost { font-size: 0.75rem; color: var(--red); display: block; }
+
+  /* TOC */
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem 1.5rem; margin: 1.5rem 0; }
+  .toc h3 { margin-top: 0; }
+  .toc ol { margin-left: 1.2rem; }
+  .toc a { color: var(--accent2); }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 0.15em 0.5em; border-radius: 4px; font-size: 0.78em; font-weight: 600; }
+  .badge.red { background: rgba(217,91,91,0.2); color: var(--red); }
+  .badge.green { background: rgba(107,173,107,0.2); color: var(--green); }
+  .badge.amber { background: rgba(232,168,76,0.2); color: var(--accent2); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .compare { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🔍 Study Parlor — Tavily 搜索调用审计报告
+  <span class="sub">生成日期：2026-07-25 · 聚焦：求职简报链路优化 · 当前月配额消耗 ~40 次/次生成</span>
+</h1>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+<h3>📋 目录</h3>
+<ol>
+  <li><a href="#s1">问题概览：配额消耗全景</a></li>
+  <li><a href="#s2">Tavily 是什么？（零基础说明）</a></li>
+  <li><a href="#s3">应用里所有 Tavily 调用点（4 大场景）</a></li>
+  <li><a href="#s4">调用策略详解：求职简报五阶段</a></li>
+  <li><a href="#s5">当前所有搜索提示词（完整版）</a></li>
+  <li><a href="#s6">Tavily 官方最佳实践</a></li>
+  <li><a href="#s7">优化方案：新调用策略 + 新提示词</a></li>
+  <li><a href="#s8">新旧对比总表</a></li>
+  <li><a href="#s9">实施建议</a></li>
+  <li><a href="#s10">附录：关键代码位置索引</a></li>
+</ol>
+</div>
+
+<!-- ==================== S1: 问题概览 ==================== -->
+<h2 id="s1">1. 问题概览：配额消耗全景</h2>
+
+<div class="card warn">
+<h3>核心问题</h3>
+<p>当前求职简报（Job Briefing）每次生成消耗 <strong>约 35-40 次 Tavily API 调用</strong>。以 Tavily Researcher 免费套餐（1000 次/月）计算，<strong>每天跑一次就用光月配额</strong>。E2E 测试中同样调用真实 Tavily，进一步加剧配额消耗。</p>
+</div>
+
+<p>按默认配置（10 家关注公司），单次 <code>generateJobBriefing</code> 的 Tavily 调用分布：</p>
+
+<table>
+<thead>
+  <tr><th>阶段</th><th class="num">Tavily 调用</th><th class="num">LLM 调用</th><th>说明</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td><strong>① discoverEvents</strong>（发现新动态）</td>
+    <td class="num"><span class="badge red">11</span></td>
+    <td class="num">11</td>
+    <td>10 家公司各 1 次搜索 + 1 次汇总搜索</td>
+  </tr>
+  <tr>
+    <td><strong>② discoverOfficial</strong>（发现官方招聘页）</td>
+    <td class="num"><span class="badge red">最多 20</span></td>
+    <td class="num">0</td>
+    <td>每家公司 2 个查询（中文 + 英文），成功即停</td>
+  </tr>
+  <tr>
+    <td><strong>③ 岗位搜索</strong>（搜索具体岗位）</td>
+    <td class="num"><span class="badge amber">3~5</span></td>
+    <td class="num">3~5 × 5</td>
+    <td>每个焦点公司 1 次搜索 → 每个结果 1 次 LLM 提取</td>
+  </tr>
+  <tr>
+    <td><strong>④ discoverQuestions</strong>（发现面经）</td>
+    <td class="num"><span class="badge amber">最多 4</span></td>
+    <td class="num">最多 4</td>
+    <td>3 个公司方向各 1 次 + 1 次 fallback</td>
+  </tr>
+  <tr style="background: rgba(217,119,87,0.08);">
+    <td><strong>合计（最坏情况）</strong></td>
+    <td class="num"><strong><span class="badge red">~40</span></strong></td>
+    <td class="num"><strong>~40-70</strong></td>
+    <td>单次生成即消耗月配额的 ~4%</td>
+  </tr>
+</tbody>
+</table>
+
+<!-- ==================== S2: Tavily 是什么 ==================== -->
+<h2 id="s2">2. Tavily 是什么？（零基础说明）</h2>
+
+<div class="card info">
+<h3>一句话概括</h3>
+<p><strong>Tavily</strong> 是一个专为 AI Agent 设计的<strong>网络搜索引擎 API</strong>。你把搜索词发过去，它返回相关的网页标题、URL 和内容摘要——跟 Google 搜索类似，但是为程序调用优化的。</p>
+</div>
+
+<h3>关键概念</h3>
+
+<table>
+<thead><tr><th>概念</th><th>含义</th><th>本项目的设置</th></tr></thead>
+<tbody>
+  <tr><td><strong>API Key</strong></td><td>身份凭证，每个请求都要带</td><td>存在 <code>~/.studyparlor/</code> 加密存储</td></tr>
+  <tr><td><strong>Credit（配额）</strong></td><td>每次调用消耗的点数</td><td>免费套餐 1000 credits/月</td></tr>
+  <tr><td><strong>search_depth</strong></td><td>搜索深度：basic（1 credit）或 advanced（2 credits）</td><td>当前用 <code>basic</code> ✅</td></tr>
+  <tr><td><strong>max_results</strong></td><td>每次返回最多几条结果</td><td>3~8 条不等</td></tr>
+  <tr><td><strong>days</strong></td><td>只搜最近 N 天的内容</td><td>7~90 天不等</td></tr>
+  <tr><td><strong>include_domains</strong></td><td>只搜指定网站</td><td>如 nowcoder.com（牛客网）</td></tr>
+</tbody>
+</table>
+
+<h3>本项目的 Tavily 封装</h3>
+<p>所有 Tavily 调用都经过 <code>electron/lib/search.ts</code> 的 <code>searchWeb()</code> 函数：</p>
+
+<pre><span class="kw">export async function</span> <span class="fn">searchWeb</span>(opts: TavilySearchOptions): Promise&lt;TavilyResult[]&gt; {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(url, {
+    method: <span class="str">'POST'</span>,
+    headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+    body: <span class="fn">JSON.stringify</span>({
+      api_key: opts.apiKey,
+      query: opts.query,          <span class="cm">// 搜索词</span>
+      search_depth: <span class="str">'basic'</span>,     <span class="cm">// 基础深度（1 credit/次）</span>
+      max_results: opts.maxResults ?? <span class="num">5</span>,
+      include_answer: <span class="kw">false</span>,
+      ...(opts.days ? { days: opts.days } : {}),
+      ...(opts.includeDomains?.length ? { include_domains: opts.includeDomains } : {})
+    })
+  })
+  <span class="cm">// ... 错误处理 ...</span>
+  <span class="kw">return</span> data.results  <span class="cm">// → [{ title, url, content, score }]</span>
+}</pre>
+
+<!-- ==================== S3: 所有调用点 ==================== -->
+<h2 id="s3">3. 应用里所有 Tavily 调用点（4 大场景）</h2>
+
+<div class="card">
+<h3>场景 1：🧑‍🏫 苏格拉底辅导 — 搜索备课资料</h3>
+<p><strong>文件</strong>：<code>electron/ipc/search.ts</code> → <code>search:prepare</code></p>
+<p><strong>触发</strong>：用户在辅导页点击"搜索背景资料"</p>
+<p><strong>调用次数</strong>：1 次 LLM（生成 3 个搜索词）→ 3 次 Tavily（并行）→ 1 次 LLM（生成备课笔记）</p>
+<p><strong>每次消耗</strong>：约 <strong>3 credits</strong></p>
+<p><strong>优化空间</strong>：✅ 已经并行搜索，基本合理</p>
+</div>
+
+<div class="card">
+<h3>场景 2：✍️ 写作助手 — AI 对话中的网络搜索</h3>
+<p><strong>文件</strong>：<code>electron/lib/writing-assistant/tools.ts</code></p>
+<p><strong>触发</strong>：用户在写作助手对话中要求搜索，且 🔍 开关打开</p>
+<p><strong>调用次数</strong>：每次工具调用 1 次 Tavily（<code>maxResults: 8</code>），每轮对话最多 6 次工具调用</p>
+<p><strong>每次消耗</strong>：约 <strong>1-6 credits</strong>（用户主动触发，可接受）</p>
+<p><strong>优化空间</strong>：✅ 用户主动触发 + 有开关控制，合理</p>
+</div>
+
+<div class="card">
+<h3>场景 3：📰 文章旁注助手 — 获取外部资料</h3>
+<p><strong>文件</strong>：<code>electron/ipc/article-assistant.ts</code> 第 465 行</p>
+<p><strong>触发</strong>：用户阅读文章时请求 AI 旁注，且搜索开关打开</p>
+<p><strong>调用次数</strong>：1 次 Tavily（<code>maxResults: 8</code>），用选中文字 + 最后一条消息拼接为搜索词</p>
+<p><strong>每次消耗</strong>：约 <strong>1 credit</strong></p>
+<p><strong>优化空间</strong>：✅ 用户主动触发 + 单次调用，合理</p>
+</div>
+
+<div class="card warn">
+<h3>场景 4：💼 求职简报 — 自动生成每日简报 <span class="badge red">🔴 配额杀手</span></h3>
+<p><strong>文件</strong>：<code>electron/lib/job-briefing.ts</code> → <code>generateJobBriefing()</code></p>
+<p><strong>触发</strong>：用户点击"生成求职简报"</p>
+<p><strong>调用次数</strong>：约 <strong>35-40 次</strong> Tavily + 约 <strong>40-70 次</strong> LLM</p>
+<p><strong>每次消耗</strong>：约 <strong>35-40 credits</strong>（单次吃掉月配额的 ~4%）</p>
+<p><strong>优化空间</strong>：🔴 <strong>巨大——这是本次优化的主要目标</strong></p>
+</div>
+
+<!-- ==================== S4: 五阶段详解 ==================== -->
+<h2 id="s4">4. 调用策略详解：求职简报五阶段</h2>
+
+<!-- 阶段 1 -->
+<h3>阶段 ① discoverEvents — 发现招聘新动态 <span class="badge red">11 次 Tavily</span></h3>
+
+<div class="flow">
+  <span class="step">buildEventQueries()<br><span class="cost">生成 11 个搜索词</span></span>
+  <span class="arrow">→</span>
+  <span class="step">循环 11 次<br><span class="cost">逐个调 Tavily</span></span>
+  <span class="arrow">→</span>
+  <span class="step">每次结果 → LLM<br><span class="cost">提取事件 JSON</span></span>
+  <span class="arrow">→</span>
+  <span class="step">过滤 + 去重 + 排序</span>
+</div>
+
+<p><strong>当前搜索词生成逻辑</strong>（<code>buildEventQueries</code>）：</p>
+<pre><span class="kw">export function</span> <span class="fn">buildEventQueries</span>(config: JobBriefingConfig): EventQuery[] {
+  <span class="kw">const</span> cities = config.cities.join(<span class="str">' '</span>)
+  <span class="cm">// 每家公司一个搜索词</span>
+  <span class="kw">const</span> queries = config.companies
+    .filter(c => c.enabled)
+    .map(c => ({
+      query: <span class="str">`${c.name} 2026秋招 2027届 校招 宣讲会 AI产品 招聘 ${cities}`</span>,
+      company: c.name
+    }))
+  <span class="cm">// 加一个汇总搜索</span>
+  queries.push({
+    query: <span class="str">`AI产品 2026秋招 2027届 校招 汇总 ${cities}`</span>,
+    includeDomains: [<span class="str">'nowcoder.com'</span>, <span class="str">'yingjiesheng.com'</span>]
+  })
+  <span class="kw">return</span> queries  <span class="cm">// → 11 个查询</span>
+}</pre>
+
+<p><strong>Tavily 调用参数</strong>：<code>maxResults: 5, days: 7</code></p>
+<p><strong>问题</strong>：10 家公司串行搜索，每个结果还要调一次 LLM 提取。串行 + 数量多 = 又慢又贵。</p>
+
+<!-- 阶段 2 -->
+<h3>阶段 ② discoverOfficial — 发现官方招聘页面 <span class="badge red">最多 20 次 Tavily</span></h3>
+
+<p><strong>当前搜索词生成逻辑</strong>（<code>buildOfficialPageQueries</code>）：</p>
+<pre><span class="kw">export function</span> <span class="fn">buildOfficialPageQueries</span>(company: string): string[] {
+  <span class="kw">return</span> [
+    <span class="str">`${company} 官方招聘 AI产品经理`</span>,      <span class="cm">// 中文查询</span>
+    <span class="str">`${company} careers AI product manager`</span>, <span class="cm">// 英文查询</span>
+  ]
+}</pre>
+
+<p><strong>调用逻辑</strong>（<code>discoverCareerPage</code>）：</p>
+<pre><span class="kw">for</span> (<span class="kw">const</span> query <span class="kw">of</span> queries) {
+  <span class="kw">const</span> results = <span class="kw">await</span> <span class="fn">searchWeb</span>({ query, maxResults: <span class="num">3</span> })
+  <span class="kw">const</span> official = results.find(r =>
+    r.url.includes(<span class="str">'jobs.'</span>) || r.url.includes(<span class="str">'careers.'</span>) ||
+    r.url.includes(<span class="str">'zhaopin'</span>) || r.url.includes(<span class="str">'join'</span>)
+  )
+  <span class="kw">if</span> (official) <span class="kw">return</span> { url: official.url }  <span class="cm">// 找到就停</span>
+}</pre>
+
+<div class="warn-box">
+<strong>注意</strong>：这段代码的返回值 <strong>在当前主流程中未被使用</strong>！<code>generateJobBriefing</code> 直接跳过了 <code>discoverCareerPage</code>，优先用预配置的 <code>careerPageUrl</code>，只有在没有预配置时才走 Tavily。但 <code>discoverCareerPage</code> 仍在导出，可能在 UI 层或其他地方被调用。
+</div>
+
+<!-- 阶段 3 -->
+<h3>阶段 ③ 岗位搜索 — 为焦点公司搜索具体岗位 <span class="badge amber">3~5 次 Tavily</span></h3>
+
+<p><strong>当前搜索词生成逻辑</strong>（<code>buildFocusJobQuery</code>）：</p>
+<pre><span class="kw">export function</span> <span class="fn">buildFocusJobQuery</span>(company, profile, config): string {
+  <span class="kw">const</span> roles = profile.targetRoles.length ? profile.targetRoles : config.roleKeywords
+  <span class="kw">const</span> cities = config.cities.join(<span class="str">' '</span>)
+  <span class="kw">return</span> <span class="str">`${company} ${roles.join(' ')} 招聘 校招 2026 ${cities}`</span>
+}</pre>
+
+<p><strong>Tavily 调用参数</strong>：<code>maxResults: 5, days: 30</code></p>
+<p>然后对 <strong>每个搜索结果</strong> 再调一次 LLM（<code>extractJobsFromHtml</code>）提取结构化岗位信息。如果 3 个焦点公司各返回 5 条结果 = 15 次 LLM 调用。</p>
+
+<!-- 阶段 4 -->
+<h3>阶段 ④ discoverQuestions — 发现面经高频问题 <span class="badge amber">最多 4 次 Tavily</span></h3>
+
+<p><strong>当前搜索词生成逻辑</strong>（<code>buildQuestionQueries</code>）：</p>
+<pre><span class="kw">export function</span> <span class="fn">buildQuestionQueries</span>(focus, profile, config): QuestionQuery[] {
+  <span class="kw">const</span> direction = profile.direction || config.roleKeywords[<span class="num">0</span>]
+  <span class="kw">return</span> focus.slice(<span class="num">0</span>, <span class="num">3</span>).map(f => ({
+    query: <span class="str">`${f.name} ${direction} 面经 面试题`</span>,
+    includeDomains: [<span class="str">'nowcoder.com'</span>, <span class="str">'yingjiesheng.com'</span>, <span class="str">'zhihu.com'</span>, <span class="str">'xiaohongshu.com'</span>]
+  }))
+}</pre>
+
+<p><strong>Tavily 调用参数</strong>：<code>maxResults: 5, days: 90</code></p>
+<p>Fallback（前面全失败时）：<code>${direction} 面经 高频问题</code></p>
+
+<!-- ==================== S5: 所有提示词 ==================== -->
+<h2 id="s5">5. 当前所有搜索提示词（完整版）</h2>
+
+<p>这些是发送给 Tavily 的搜索词（不是 LLM prompt）。搜索词越精准，Tavily 返回的结果越相关，就能减少"搜了没用、换个词再搜"的浪费。</p>
+
+<table>
+<thead>
+  <tr><th>阶段</th><th>搜索词模板</th><th>示例（公司=字节跳动）</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td>发现动态</td>
+    <td><code>${公司} 2026秋招 2027届 校招 宣讲会 AI产品 招聘 ${城市}</code></td>
+    <td><code>字节跳动 2026秋招 2027届 校招 宣讲会 AI产品 招聘 北京 上海 杭州 深圳</code></td>
+  </tr>
+  <tr>
+    <td>发现动态（汇总）</td>
+    <td><code>AI产品 2026秋招 2027届 校招 汇总 ${城市}</code></td>
+    <td><code>AI产品 2026秋招 2027届 校招 汇总 北京 上海 杭州 深圳</code></td>
+  </tr>
+  <tr>
+    <td>官方招聘页</td>
+    <td><code>${公司} 官方招聘 AI产品经理</code></td>
+    <td><code>字节跳动 官方招聘 AI产品经理</code></td>
+  </tr>
+  <tr>
+    <td>官方招聘页（英）</td>
+    <td><code>${公司} careers AI product manager</code></td>
+    <td><code>字节跳动 careers AI product manager</code></td>
+  </tr>
+  <tr>
+    <td>岗位搜索</td>
+    <td><code>${公司} ${岗位关键词} 招聘 校招 2026 ${城市}</code></td>
+    <td><code>字节跳动 AI产品经理 大模型产品经理 Agent产品经理 招聘 校招 2026 北京 上海 杭州 深圳</code></td>
+  </tr>
+  <tr>
+    <td>面经问题</td>
+    <td><code>${公司} ${方向} 面经 面试题</code></td>
+    <td><code>字节跳动 大模型/Agent 产品 面经 面试题</code></td>
+  </tr>
+</tbody>
+</table>
+
+<h3>搜索词的问题分析</h3>
+
+<div class="card warn">
+<h4>问题 1：搜索词冗余</h4>
+<p>每条搜索词都把"2026秋招 2027届 校招 宣讲会 AI产品 招聘 北京 上海 杭州 深圳"全塞进去，导致：</p>
+<ul>
+  <li>搜索词过长（>100 字符），Tavily 官方建议 <strong>不超过 400 字符</strong>——虽然没超标，但冗余关键词稀释了核心意图</li>
+  <li>10 家公司的搜索词高度雷同，返回结果可能大面积重叠</li>
+</ul>
+</div>
+
+<div class="card warn">
+<h4>问题 2：重复搜索同一主题</h4>
+<p>如果字节和阿里同时开了秋招，牛客网上同一篇文章可能被两家公司的搜索都命中——这就是 10 次搜索产生大量重复结果的原因。</p>
+</div>
+
+<div class="card warn">
+<h4>问题 3：串行执行</h4>
+<p><code>discoverEvents</code> 用 <code>for...of</code> 逐个调 Tavily，11 次请求串行执行 = 等待时间长且无法利用 Tavily 的并发能力。</p>
+</div>
+
+<!-- ==================== S6: 官方最佳实践 ==================== -->
+<h2 id="s6">6. Tavily 官方最佳实践</h2>
+
+<div class="card info">
+<h3>核心原则（来自 Tavily 官方文档）</h3>
+<ol>
+  <li><strong>搜索词精炼</strong>：像写给搜索引擎的搜索词，不是写 prompt。400 字符以内。</li>
+  <li><strong>复杂问题拆成子查询</strong>：一个宽泛问题拆成 2-3 个聚焦子查询，效果优于一个长查询</li>
+  <li><strong>并行执行</strong>：用 <code>Promise.allSettled</code> 同时发多个请求，而非串行</li>
+  <li><strong>结果去重</strong>：不同查询可能返回相同 URL，去重后再往下游处理</li>
+  <li><strong>控制搜索深度</strong>：<code>basic</code>（1 credit）通常够用，不要默认 <code>advanced</code>（2 credits）</li>
+  <li><strong>领域过滤</strong>：用 <code>include_domains</code> 缩小搜索范围，提高精度</li>
+  <li><strong>时效过滤</strong>：用 <code>days</code> 参数限制时间范围</li>
+  <li><strong>两步法</strong>：Search → 过滤评分 → Extract（只对高相关结果做深度提取）</li>
+</ol>
+</div>
+
+<!-- ==================== S7: 优化方案 ==================== -->
+<h2 id="s7">7. 优化方案：新调用策略 + 新提示词</h2>
+
+<div class="card ok">
+<h3>优化目标</h3>
+<p>将求职简报的 Tavily 调用从 <strong>~40 次 → ~6-8 次</strong>（降低 ~80%），同时不丢失信息覆盖度。</p>
+</div>
+
+<!-- 策略 A -->
+<h3>策略 A：合并搜索词 → 按层级批量搜索</h3>
+
+<p><strong>核心思路</strong>：不再按"每家公司一个搜索词"，而是按"信息层级"分类搜索。</p>
+
+<div class="compare">
+<div class="old">
+<h4>❌ 旧方案：每家搜一次</h4>
+<pre>10 个搜索词，串行执行：
+"字节跳动 2026秋招 校招..."
+"阿里巴巴 2026秋招 校招..."
+"腾讯 2026秋招 校招..."
+...（共 10 个）
++ 1 个汇总搜索词
+= <strong>11 次 Tavily</strong></pre>
+</div>
+<div class="new">
+<h4>✅ 新方案：按信息源分层</h4>
+<pre>3 个搜索词，并行执行：
+
+<strong>第 1 层 — 社区汇总贴（限域）</strong>
+"2026秋招 2027届 校招 AI产品 大模型
+提前批 汇总"
+→ include_domains: nowcoder.com,
+   yingjiesheng.com
+→ <strong>1 次 Tavily</strong>
+
+<strong>第 2 层 — 全网动态（不限域）</strong>
+"2026秋招 AI产品经理 校招开启
+字节 阿里 腾讯 百度 美团 MiniMax
+智谱 月之暗面"
+→ days: 7
+→ <strong>1 次 Tavily</strong>
+
+<strong>第 3 层 — 宣讲会/线下活动</strong>
+"2026秋招 AI 校招 宣讲会
+线下 北京 上海 杭州 深圳"
+→ days: 14
+→ <strong>1 次 Tavily</strong>
+
+合计：<strong>3 次</strong>（↓73%）</pre>
+</div>
+</div>
+
+<div class="tip">
+<strong>为什么 3 个搜索词就够了？</strong>
+<ul>
+  <li>Tavily 的 <code>maxResults</code> 可以调到 10-15，3 个搜索词 × 10 条结果 = 30 条结果，覆盖度足够</li>
+  <li>搜索词里包含所有公司名，一条结果可能覆盖多家公司</li>
+  <li>社区汇总贴（牛客网）天然就是多家公司的合集</li>
+  <li>LLM 提取阶段按公司分类即可——从 30 条结果里挑出各公司的动态，比从 50 条分散结果里挑更高效</li>
+</ul>
+</div>
+
+<!-- 策略 B -->
+<h3>策略 B：去掉 discoverOfficial 的独立 Tavily 调用</h3>
+
+<div class="compare">
+<div class="old">
+<h4>❌ 旧方案</h4>
+<pre>每家公司 2 个搜索词：
+"${公司} 官方招聘 AI产品经理"
+"${公司} careers AI product manager"
+→ 最多 20 次 Tavily</pre>
+</div>
+<div class="new">
+<h4>✅ 新方案</h4>
+<pre><strong>方案 B1（推荐）</strong>：完全移除 Tavily 搜索。
+改为在"岗位搜索"阶段的结果中
+顺带识别官方招聘页 URL。
+→ <strong>0 次额外 Tavily</strong>（↓100%）
+
+<strong>方案 B2（备选）</strong>：如果确实需要单独搜，
+合并为一个搜索词：
+"${公司} 官网招聘入口 careers jobs"
+→ 仅对无预配置 careerPageUrl 的公司使用
+→ <strong>0~2 次</strong></pre>
+</div>
+</div>
+
+<div class="tip">
+<strong>为什么可以移除？</strong>当前代码中 <code>discoverCareerPage</code> 的返回值在 <code>generateJobBriefing</code> 主流程中实际未被使用——主流程优先用预配置的 <code>careerPageUrl</code>。如果某公司没预配置，岗位搜索阶段搜到的结果里自然包含该公司的招聘链接。
+</div>
+
+<!-- 策略 C -->
+<h3>策略 C：岗位搜索合并 + 结果聚合</h3>
+
+<div class="compare">
+<div class="old">
+<h4>❌ 旧方案</h4>
+<pre>每个焦点公司单独搜：
+for (const f of focus) {
+  query = "${f.name} AI产品经理 招聘 校招 2026"
+  results = searchWeb(query)  // 每公司 1 次
+  for (r of results) {
+    extractJobsFromHtml(r)    // 每个结果 1 次 LLM
+  }
+}
+→ 3~5 次 Tavily + 15~25 次 LLM</pre>
+</div>
+<div class="new">
+<h4>✅ 新方案</h4>
+<pre><strong>一次搜索覆盖全部焦点公司：</strong>
+query = "AI产品经理 大模型产品经理 Agent产品经理
+  校招 2026 2027届 字节 阿里 腾讯 百度 美团
+  MiniMax 智谱 月之暗面"
+→ maxResults: 15, days: 30
+→ <strong>1 次 Tavily</strong>（↓67-80%）
+
+<strong>然后一次性提取所有岗位：</strong>
+把所有结果的 content 拼接，
+调 1 次 LLM 提取所有公司的岗位。
+→ <strong>1 次 LLM</strong>（↓80-95%）</pre>
+</div>
+</div>
+
+<!-- 策略 D -->
+<h3>策略 D：面经问题合并为单次搜索</h3>
+
+<div class="compare">
+<div class="old">
+<h4>❌ 旧方案</h4>
+<pre>3 个公司各搜一次：
+"字节 面经 面试题"
+"阿里 面经 面试题"
+"腾讯 面经 面试题"
++ 1 次 fallback
+→ 最多 4 次 Tavily + 4 次 LLM</pre>
+</div>
+<div class="new">
+<h4>✅ 新方案</h4>
+<pre><strong>一个搜索词覆盖：</strong>
+"AI产品经理 面经 面试题 高频
+  字节 阿里 腾讯 百度"
+→ include_domains: nowcoder.com,
+   zhihu.com, xiaohongshu.com
+→ days: 90, maxResults: 10
+→ <strong>1 次 Tavily + 1 次 LLM</strong>（↓75%）</pre>
+</div>
+</div>
+
+<!-- 策略 E -->
+<h3>策略 E：并行化 + 去重</h3>
+
+<div class="card ok">
+<h4>当前：串行 <code>for...of</code></h4>
+<pre><span class="kw">for</span> (<span class="kw">const</span> q <span class="kw">of</span> buildEventQueries(config)) {
+  <span class="kw">const</span> results = <span class="kw">await</span> <span class="fn">searchWeb</span>({ query: q.query, ... })
+  <span class="cm">// 处理 results...</span>
+}</pre>
+<p>11 次 Tavily 调用串行 → 即使每次 1.5s，总耗时 ~16.5s</p>
+
+<h4 style="margin-top:1rem;">优化后：并行 <code>Promise.allSettled</code></h4>
+<pre><span class="kw">const</span> queries = buildEventQueries(config)  <span class="cm">// 精简后只有 3 个</span>
+<span class="kw">const</span> settled = <span class="kw">await</span> <span class="fn">Promise.allSettled</span>(
+  queries.map(q =>
+    <span class="fn">searchWeb</span>({ query: q.query, apiKey, maxResults: <span class="num">10</span>, days: q.days, signal })
+  )
+)
+<span class="cm">// 收集所有成功的结果</span>
+<span class="kw">const</span> allResults = settled
+  .filter(r => r.status === <span class="str">'fulfilled'</span>)
+  .flatMap(r => r.value)
+
+<span class="cm">// 去重 URL</span>
+<span class="kw">const</span> seen = <span class="kw">new</span> <span class="fn">Set</span>&lt;string&gt;()
+<span class="kw">const</span> unique = allResults.filter(r => {
+  <span class="kw">const</span> key = r.url.replace(<span class="str">/\?.*$/</span>, <span class="str">''</span>)
+  <span class="kw">if</span> (seen.has(key)) <span class="kw">return</span> <span class="kw">false</span>
+  seen.add(key)
+  <span class="kw">return</span> <span class="kw">true</span>
+})</pre>
+<p>3 次 Tavily 调用并行 → 总耗时 ~2s（↓88%）</p>
+</div>
+
+<!-- 新搜索提示词汇总 -->
+<h3>优化后的搜索提示词汇总</h3>
+
+<table>
+<thead>
+  <tr><th>阶段</th><th>新搜索词</th><th class="num">次数</th><th>参数</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td>社区汇总</td>
+    <td><code>2026秋招 2027届 校招 AI产品 大模型 提前批 汇总</code></td>
+    <td class="num">1</td>
+    <td><code>domains: nowcoder.com, yingjiesheng.com<br>days: 7, maxResults: 10</code></td>
+  </tr>
+  <tr>
+    <td>全网动态</td>
+    <td><code>2026秋招 AI产品经理 校招开启 {全部关注公司名}</code></td>
+    <td class="num">1</td>
+    <td><code>days: 7, maxResults: 10</code></td>
+  </tr>
+  <tr>
+    <td>宣讲会/活动</td>
+    <td><code>2026秋招 AI 校招 宣讲会 线下 {城市列表}</code></td>
+    <td class="num">1</td>
+    <td><code>days: 14, maxResults: 10</code></td>
+  </tr>
+  <tr>
+    <td>官方招聘页</td>
+    <td><strong>移除独立搜索</strong>（合并到岗位搜索中）</td>
+    <td class="num">0</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td>岗位搜索</td>
+    <td><code>{岗位关键词} 校招 2026 2027届 {全部焦点公司名}</code></td>
+    <td class="num">1</td>
+    <td><code>days: 30, maxResults: 15</code></td>
+  </tr>
+  <tr>
+    <td>面经问题</td>
+    <td><code>{方向} 面经 面试题 高频 {全部焦点公司名}</code></td>
+    <td class="num">1</td>
+    <td><code>days: 90, maxResults: 10<br>domains: nowcoder.com, zhihu.com, xiaohongshu.com</code></td>
+  </tr>
+  <tr style="background: rgba(107,173,107,0.08);">
+    <td><strong>合计</strong></td>
+    <td></td>
+    <td class="num"><strong><span class="badge green">5-6</span></strong></td>
+    <td></td>
+  </tr>
+</tbody>
+</table>
+
+<!-- ==================== S8: 新旧对比 ==================== -->
+<h2 id="s8">8. 新旧对比总表</h2>
+
+<table>
+<thead>
+  <tr><th>阶段</th><th class="num">旧 Tavily 次数</th><th class="num">新 Tavily 次数</th><th class="num">降幅</th><th>关键改动</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td>① 发现动态</td>
+    <td class="num"><span class="badge red">11</span></td>
+    <td class="num"><span class="badge green">3</span></td>
+    <td class="num">↓73%</td>
+    <td>10 个公司搜索词 → 3 个层级搜索词 + 并行</td>
+  </tr>
+  <tr>
+    <td>② 官方招聘页</td>
+    <td class="num"><span class="badge red">20</span></td>
+    <td class="num"><span class="badge green">0</span></td>
+    <td class="num">↓100%</td>
+    <td>移除独立搜索，合入岗位搜索结果</td>
+  </tr>
+  <tr>
+    <td>③ 岗位搜索</td>
+    <td class="num"><span class="badge amber">3~5</span></td>
+    <td class="num"><span class="badge green">1</span></td>
+    <td class="num">↓67-80%</td>
+    <td>合并为一次全量搜索（maxResults: 15）</td>
+  </tr>
+  <tr>
+    <td>④ 面经问题</td>
+    <td class="num"><span class="badge amber">4</span></td>
+    <td class="num"><span class="badge green">1</span></td>
+    <td class="num">↓75%</td>
+    <td>3+1 → 1 次搜索</td>
+  </tr>
+  <tr style="background: rgba(107,173,107,0.08);">
+    <td><strong>合计</strong></td>
+    <td class="num"><strong><span class="badge red">~38-40</span></strong></td>
+    <td class="num"><strong><span class="badge green">~5-6</span></strong></td>
+    <td class="num"><strong>↓85%</strong></td>
+    <td></td>
+  </tr>
+</tbody>
+</table>
+
+<h3>LLM 调用也同步减少</h3>
+
+<table>
+<thead>
+  <tr><th>阶段</th><th class="num">旧 LLM 次数</th><th class="num">新 LLM 次数</th><th class="num">降幅</th></tr>
+</thead>
+<tbody>
+  <tr><td>事件提取</td><td class="num">11</td><td class="num">1（批量提取）</td><td class="num">↓91%</td></tr>
+  <tr><td>岗位提取</td><td class="num">15-25</td><td class="num">1（批量提取）</td><td class="num">↓93%</td></tr>
+  <tr><td>问题聚合</td><td class="num">4</td><td class="num">1</td><td class="num">↓75%</td></tr>
+  <tr><td>岗位匹配</td><td class="num">1</td><td class="num">1</td><td class="num">—</td></tr>
+  <tr><td>综合生成</td><td class="num">1</td><td class="num">1</td><td class="num">—</td></tr>
+  <tr style="background: rgba(107,173,107,0.08);">
+    <td><strong>LLM 合计</strong></td>
+    <td class="num"><strong>~32-42</strong></td>
+    <td class="num"><strong>~5</strong></td>
+    <td class="num"><strong>↓85%</strong></td>
+  </tr>
+</tbody>
+</table>
+
+<!-- ==================== S9: 实施建议 ==================== -->
+<h2 id="s9">9. 实施建议</h2>
+
+<div class="card ok">
+<h3>推荐的实施顺序</h3>
+<ol>
+  <li><strong>第一步（最快见效）</strong>：合并搜索词 + 并行化。<br>
+    改动范围：<code>buildEventQueries</code> / <code>discoverEvents</code>。<br>
+    效果：Tavily 调用 11→3，总耗时 ~16s→~2s。</li>
+  <li><strong>第二步</strong>：移除 <code>discoverOfficial</code> 的独立 Tavily 调用。<br>
+    改动范围：<code>generateJobBriefing</code> 主流程。<br>
+    效果：Tavily 调用最多再减 20 次。</li>
+  <li><strong>第三步</strong>：合并岗位搜索 + 批量 LLM 提取。<br>
+    改动范围：岗位搜索循环 + <code>extract-jobs.md</code> prompt（支持多公司）。<br>
+    效果：Tavily 调用 3~5→1，LLM 调用 15~25→1。</li>
+  <li><strong>第四步</strong>：合并面经搜索。<br>
+    改动范围：<code>buildQuestionQueries</code> + <code>aggregate-questions.md</code> prompt。<br>
+    效果：Tavily 调用 4→1。</li>
+</ol>
+</div>
+
+<div class="card info">
+<h3>注意事项</h3>
+<ul>
+  <li><strong>搜索词长度</strong>：新版搜索词包含多家公司名，长度会在 200-350 字符，仍在 Tavily 400 字符限制内。</li>
+  <li><strong>结果质量</strong>：合并搜索词后，单次搜索返回 10-15 条结果。需要把 prompt 中的事件提取逻辑从"针对一家公司"改为"针对所有关注公司"。</li>
+  <li><strong>渐进式上线</strong>：建议先改 <code>discoverEvents</code>（改动最小、收益最大），跑通测试后再改其他阶段。</li>
+  <li><strong>E2E mock</strong>：同步更新 <code>mock-tavily-server.ts</code>，让 mock 返回合并搜索词对应的多公司结果。</li>
+  <li><strong>回退方案</strong>：保留旧的搜索词构建函数（加 <code>@deprecated</code>），新增函数用新命名，方便 A/B 对比。</li>
+</ul>
+</div>
+
+<!-- ==================== S10: 附录 ==================== -->
+<h2 id="s10">10. 附录：关键代码位置索引</h2>
+
+<table>
+<thead><tr><th>文件</th><th>关键函数/内容</th></tr></thead>
+<tbody>
+  <tr><td><code>electron/lib/search.ts</code></td><td><code>searchWeb()</code> — Tavily API 封装（唯一出口）<br><code>generateSearchQueries()</code> — LLM 生成搜索词<br><code>generateTutorBrief()</code> — LLM 生成备课笔记</td></tr>
+  <tr><td><code>electron/lib/job-briefing.ts</code></td><td><code>generateJobBriefing()</code> — 主流程（五个阶段）<br><code>buildEventQueries()</code> — 搜索词：发现动态<br><code>buildOfficialPageQueries()</code> — 搜索词：官方招聘页<br><code>buildFocusJobQuery()</code> — 搜索词：岗位搜索<br><code>buildQuestionQueries()</code> — 搜索词：面经问题<br><code>discoverEvents()</code> — 阶段①：搜索+LLM提取<br><code>discoverCareerPage()</code> — 阶段②：发现官方页<br><code>extractJobsFromHtml()</code> — 阶段③：LLM提取岗位<br><code>discoverQuestions()</code> — 阶段④：搜索+LLM聚合<br><code>matchJobsToProfile()</code> — 匹配评估</td></tr>
+  <tr><td><code>electron/prompts/job-briefing/extract-events.md</code></td><td>LLM prompt：从搜索结果提取招聘事件</td></tr>
+  <tr><td><code>electron/prompts/job-briefing/extract-jobs.md</code></td><td>LLM prompt：从页面 HTML 提取岗位信息</td></tr>
+  <tr><td><code>electron/prompts/job-briefing/aggregate-questions.md</code></td><td>LLM prompt：从面经聚合高频问题</td></tr>
+  <tr><td><code>electron/prompts/job-briefing/match-jobs.md</code></td><td>LLM prompt：岗位-候选人匹配评估</td></tr>
+  <tr><td><code>electron/prompts/job-briefing/synthesize.md</code></td><td>LLM prompt：综合生成简报正文</td></tr>
+  <tr><td><code>electron/ipc/search.ts</code></td><td>辅导搜索 IPC：<code>search:prepare</code>（3 次 Tavily 并行）</td></tr>
+  <tr><td><code>electron/ipc/job-briefing.ts</code></td><td>简报 IPC：<code>job-briefing:generate</code></td></tr>
+  <tr><td><code>electron/lib/writing-assistant/tools.ts</code></td><td>写作助手 <code>web_search</code> 工具</td></tr>
+  <tr><td><code>electron/lib/writing-assistant/tool-protocol.ts</code></td><td><code>MAX_TOOL_CALLS = 6</code>（单轮最多 6 次 Tavily）</td></tr>
+  <tr><td><code>electron/ipc/article-assistant.ts</code></td><td>文章旁注搜索（第 465 行）</td></tr>
+  <tr><td><code>src/lib/job-briefing-defaults.ts</code></td><td><code>DEFAULT_JOB_BRIEFING_CONFIG</code>（10 家默认公司）</td></tr>
+  <tr><td><code>tests/job-briefing-real.test.ts</code></td><td>真实 API 集成测试（默认运行）</td></tr>
+  <tr><td><code>e2e/helpers/mock-tavily-server.ts</code></td><td>E2E mock Tavily 服务器</td></tr>
+</tbody>
+</table>
+
+<hr style="border-color: var(--border); margin: 2rem 0;">
+
+<p style="color: var(--text-dim); font-size: 0.85rem;">
+  📅 报告生成：2026-07-25 · Study Parlor Tavily 搜索调用审计 ·
+  <a href="https://docs.tavily.com/documentation/best-practices/best-practices-search">Tavily 官方最佳实践</a> ·
+  <a href="https://docs.tavily.com/documentation/rate-limits">Tavily 配额与定价</a>
+</p>
+
+</body>
+</html>

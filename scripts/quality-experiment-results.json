@@ -1,0 +1,1758 @@
+{
+  "timestamp": "2026-07-25T08:35:00.735Z",
+  "phase1": {
+    "A-逐家(当前)": {
+      "calls": 11,
+      "totalResults": 55,
+      "uniqueResults": 52,
+      "elapsed": 56708,
+      "quality": {
+        "scores": [],
+        "avgRelevance": 0,
+        "actionableCount": 0,
+        "noiseRatio": 0,
+        "companyCoverage": {},
+        "rawOutput": "```json\n[\n  {\n    \"index\": 0,\n    \"relevance\": 2,\n    \"contentType\": \"校招公告\",\n    \"companiesFound\": [\"字节跳动\"],\n    \"hasActionableInfo\": false,\n    \"noiseLevel\": 4,\n    \"brief\": \"字节跳动27届秋招页面，但内容被截断，未显示AI产品经理岗位信息，缺乏可操作细节\"\n  },\n  {\n    \"index\": 1,\n    \"relevance\": 5,\n    \"contentType\": \"岗位信息\",\n    \"companiesFound\": [\"字节跳动\"],\n    \"hasActionableInfo\": true,\n    \"noiseLevel\": 1,\n    \"brief\": \"直接命中字节跳动2027届AI产品经理早鸟通道，含城市、面试方式、投递说明等关键信息\"\n  },\n  {\n    \"index\": 2,\n    \"relevance\": 2,\n    \"contentType\": \"校招公"
+      }
+    },
+    "B-全量合并": {
+      "calls": 1,
+      "totalResults": 15,
+      "uniqueResults": 15,
+      "elapsed": 16358,
+      "quality": {
+        "scores": [
+          {
+            "index": 0,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接宣布腾讯2026校招启动，明确提及AI产品经理培训生项目，含项目介绍和启动时间，高度相关。"
+          },
+          {
+            "index": 1,
+            "relevance": 2,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "标题看似相关，但正文内容为观远数据运维实习面经，与目标公司及AI产品经理岗位完全无关，属于标题党噪音。"
+          },
+          {
+            "index": 2,
+            "relevance": 4,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 2,
+            "brief": "提及腾讯2026校招及AI产品经理培训生项目，但内容侧重AI面试工具和员工福利，缺少具体岗位描述或投递信息。"
+          },
+          {
+            "index": 3,
+            "relevance": 5,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接提供阿里巴巴AI产品经理实习生岗位描述和要求，含工作地点和职责，信息明确且可操作。"
+          },
+          {
+            "index": 4,
+            "relevance": 4,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 2,
+            "brief": "概述2026届大厂AI秋招趋势，提及腾讯和字节跳动招聘规模，但无具体AI产品经理岗位细节或投递链接。"
+          },
+          {
+            "index": 5,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "泛泛提及AI类岗位成秋招热门，但内容碎片化，未明确涉及目标公司或AI产品经理具体信息。"
+          },
+          {
+            "index": 6,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "报道腾讯面向13-18岁中学生的暑期实践项目，虽涉及AI产品方向，但与2026/2027届校招目标人群不匹配。"
+          },
+          {
+            "index": 7,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "提及阿里顶尖人才计划，但聚焦技术科研人才，未涉及AI产品经理岗位，与目标场景关联度低。"
+          },
+          {
+            "index": 8,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "智谱AI",
+              "MiniMax"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "仅提及公司名称，内容为具身智能行业动态，与AI产品经理校招完全无关。"
+          },
+          {
+            "index": 9,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "讨论AI面试官趋势，虽提及目标公司但主题是求职技巧而非AI产品经理岗位信息。"
+          },
+          {
+            "index": 10,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "米哈游面经，公司不在关注列表，且内容几乎为空，完全无关。"
+          },
+          {
+            "index": 11,
+            "relevance": 2,
+            "contentType": "无关",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴",
+              "字节跳动",
+              "百度",
+              "美团"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "GitHub面试题合集，虽提及多家目标公司，但面向技术岗且无AI产品经理特定内容。"
+          },
+          {
+            "index": 12,
+            "relevance": 5,
+            "contentType": "面经",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 1,
+            "brief": "直接为腾讯AI产品三面面经，对准备面试的候选人参考价值极高，但缺少具体岗位描述。"
+          },
+          {
+            "index": 13,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "夸克校招页面，但内容为千问C端事业群介绍，未提及AI产品经理岗位，与目标场景无关。"
+          },
+          {
+            "index": 14,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "牛客网话题聚合页，内容为通用求职讨论，无任何与目标公司或AI产品经理相关的信息。"
+          }
+        ],
+        "avgRelevance": 2.6,
+        "actionableCount": 2,
+        "noiseRatio": 60,
+        "companyCoverage": {
+          "腾讯": 7,
+          "阿里巴巴": 4,
+          "字节跳动": 3,
+          "智谱AI": 1,
+          "MiniMax": 1,
+          "百度": 1,
+          "美团": 1
+        }
+      }
+    },
+    "C-双层(社区+全网)": {
+      "calls": 2,
+      "totalResults": 18,
+      "uniqueResults": 18,
+      "elapsed": 21457,
+      "quality": {
+        "scores": [
+          {
+            "index": 0,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为27届秋招信息汇总，但仅提及网易游戏、vivo、同花顺、NVIDIA等非关注公司，且无AI产品经理岗位信息，完全无关。"
+          },
+          {
+            "index": 1,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "百度"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "虽提及百度，但仅列出大模型算法/工程师等技术岗，无AI产品经理岗位，且目标场景为27届校招，与26届/27届AI产品经理需求不匹配。"
+          },
+          {
+            "index": 2,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为27届实习信息汇总，提及腾讯混元青云计划但为技术岗，影像产品经理非AI方向，且无关注公司AI产品经理校招信息。"
+          },
+          {
+            "index": 3,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "宇树科技27届秋招提前批，仅涉及AI算法/嵌入式/硬件等技术岗画像，无产品经理岗位，且公司不在关注列表内。"
+          },
+          {
+            "index": 4,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "拼多多27届秋招研发提前批，岗位为服务端研发/算法等技术岗，无AI产品经理，公司不在关注列表。"
+          },
+          {
+            "index": 5,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "百度",
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "提及百度、阿里、字节跳动AI岗位占比高，但为26届校招趋势概述，无具体AI产品经理岗位信息或投递链接。"
+          },
+          {
+            "index": 6,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "27届秋招信息汇总，涉及影石、亚玛芬等非关注公司，岗位为运营/实习生，无AI产品经理相关信息。"
+          },
+          {
+            "index": 7,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "27届秋招提前批提醒，但未列出任何关注公司或AI产品经理岗位，仅为通用性时间提醒。"
+          },
+          {
+            "index": 8,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "拼多多27届秋招研发提前批内推，仅涉及大模型算法工程师，无AI产品经理岗位，公司不在关注列表。"
+          },
+          {
+            "index": 9,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接命中：腾讯2026校园招聘正式启动，明确提及将推出AI产品经理培训生项目，面向2025年1月至2026年12月毕业生，含关键日期。"
+          },
+          {
+            "index": 10,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "与index 9内容相同，腾讯2026校招启动，明确推出AI产品经理培训生项目，高价值信号。"
+          },
+          {
+            "index": 11,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "新华网来源的腾讯2026校招公告，明确AI产品经理培训生项目将于8月上旬启动，权威性高，直接相关。"
+          },
+          {
+            "index": 12,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "美团"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接命中：美团2026届校招「AI产品经理提前批」正式启动，标题即包含目标岗位，含投递引导。"
+          },
+          {
+            "index": 13,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "阿里、字节跳动2026届校招AI岗位占比新闻，但未提及AI产品经理具体岗位或投递方式，仅为趋势分析。"
+          },
+          {
+            "index": 14,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "26届秋招AI类岗位趋势文章，提及公司非关注列表，且无AI产品经理具体信息。"
+          },
+          {
+            "index": 15,
+            "relevance": 3,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "阿里巴巴控股集团校招官网链接，面向2026年11月-2027年毕业学生，但未明确是否有AI产品经理岗位，需进一步查看。"
+          },
+          {
+            "index": 16,
+            "relevance": 5,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "美团"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "美团26届校招AI产品经理提前批岗位信息，含投递链接、AI面试说明及岗位描述，高度相关且有可操作信息。"
+          },
+          {
+            "index": 17,
+            "relevance": 3,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "阿里巴巴校招岗位列表页面，涵盖多个事业群，但未明确显示AI产品经理岗位，需用户自行筛选查找。"
+          }
+        ],
+        "avgRelevance": 2.44,
+        "actionableCount": 7,
+        "noiseRatio": 61,
+        "companyCoverage": {
+          "百度": 2,
+          "腾讯": 4,
+          "阿里巴巴": 4,
+          "字节跳动": 2,
+          "美团": 2
+        }
+      }
+    },
+    "D-三层(社区+大厂+创业)": {
+      "calls": 3,
+      "totalResults": 22,
+      "uniqueResults": 22,
+      "elapsed": 20021,
+      "quality": {
+        "scores": [
+          {
+            "index": 0,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "字节跳动"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接包含字节跳动2027届AI产品经理早鸟通道链接，高度相关且可操作"
+          },
+          {
+            "index": 1,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为网易游戏、vivo、同花顺、NVIDIA等非关注公司校招，与目标岗位完全无关"
+          },
+          {
+            "index": 2,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为艾为电子、前海开源基金、迅雷、快手等非关注公司校招，与目标岗位完全无关"
+          },
+          {
+            "index": 3,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为影石、亚玛芬、心盛计划等非关注公司校招，与目标岗位完全无关"
+          },
+          {
+            "index": 4,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "仅泛泛提及27届秋招提前批概念，未涉及任何关注公司或AI产品岗位具体信息"
+          },
+          {
+            "index": 5,
+            "relevance": 2,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "百度"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "提到百度2027管培生计划，但非AI产品经理岗位，且夹杂大量无关公司信息"
+          },
+          {
+            "index": 6,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为中国联通、天册、中信证券等非关注公司实习信息，与目标岗位完全无关"
+          },
+          {
+            "index": 7,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "仅泛泛提及腾讯、阿里启动27届寒假实习，无具体AI产品岗位信息或投递链接"
+          },
+          {
+            "index": 8,
+            "relevance": 5,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "字节跳动"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "专门介绍字节跳动2027届AI产品经理早鸟通道，包含城市、流程等关键信息，高度相关"
+          },
+          {
+            "index": 9,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "报道腾讯、阿里、字节2026届校招启动及AI岗位占比，但非2027届且无具体AI产品岗位信息"
+          },
+          {
+            "index": 10,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为高考择校及互联网大厂青睐院校分析，与校招岗位信息完全无关"
+          },
+          {
+            "index": 11,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "字节跳动",
+              "美团"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "报道阿里、字节、美团等2026届校招计划及AI占比，但非2027届且无具体AI产品岗位信息"
+          },
+          {
+            "index": 12,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "字节跳动",
+              "美团"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为高考择校选专业攻略，虽提及字节、美团但完全无关校招岗位信息"
+          },
+          {
+            "index": 13,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "美团"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "汇总阿里、美团等2026届秋招数据及AI占比，但非2027届且无具体AI产品岗位信息"
+          },
+          {
+            "index": 14,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "报道阿里、字节2026届校招AI岗位占比，但非2027届且无具体AI产品岗位信息"
+          },
+          {
+            "index": 15,
+            "relevance": 2,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "字节跳动"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "字节跳动校招官网入口，面向前沿技术人才，但未明确提及AI产品经理岗位或2027届"
+          },
+          {
+            "index": 16,
+            "relevance": 3,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "月之暗面"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "月之暗面2026年校招页面，包含产品岗位，但非明确AI产品经理且非2027届"
+          },
+          {
+            "index": 17,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "讨论2026届秋招AI岗位热度，未涉及关注公司名单中的企业或具体AI产品岗位"
+          },
+          {
+            "index": 18,
+            "relevance": 2,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "阿里巴巴校招官网，有AI研发岗位，但非明确AI产品经理且未标注面向届次"
+          },
+          {
+            "index": 19,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "求职辅导平台登录页，与具体校招岗位信息完全无关"
+          },
+          {
+            "index": 20,
+            "relevance": 2,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "阿里千问事业群校招页面，涉及AI业务但未明确AI产品经理岗位及面向届次"
+          },
+          {
+            "index": 21,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "腾讯元器智能体平台介绍，与校招岗位信息完全无关"
+          }
+        ],
+        "avgRelevance": 2.14,
+        "actionableCount": 7,
+        "noiseRatio": 50,
+        "companyCoverage": {
+          "字节跳动": 7,
+          "百度": 1,
+          "腾讯": 3,
+          "阿里巴巴": 7,
+          "美团": 3,
+          "月之暗面": 1
+        }
+      }
+    },
+    "E-极简单次": {
+      "calls": 1,
+      "totalResults": 13,
+      "uniqueResults": 13,
+      "elapsed": 14247,
+      "quality": {
+        "scores": [
+          {
+            "index": 0,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "提及阿里和字节2026届校招中AI岗位占比高，但无具体AI产品经理岗位信息，属于宏观趋势报道"
+          },
+          {
+            "index": 1,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "提到阿里2026届秋招AI岗位占比及产品类岗位，但无AI产品经理具体描述，且混有院校专业推荐内容"
+          },
+          {
+            "index": 2,
+            "relevance": 4,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "百度"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 2,
+            "brief": "百度2026届校招正式启动，明确AI岗位占比超90%、产品方向职位涨幅大，含城市和岗位数量信息"
+          },
+          {
+            "index": 3,
+            "relevance": 2,
+            "contentType": "面经",
+            "companiesFound": [
+              "字节跳动",
+              "腾讯",
+              "百度"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "介绍字节、腾讯、百度的AI招聘特点和面试侧重点，但面向通用AI岗位而非AI产品经理，无具体投递信息"
+          },
+          {
+            "index": 4,
+            "relevance": 2,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "MiniMax"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 4,
+            "brief": "列出MiniMax的岗位但均为技术岗（AI评测开发、Agent测试开发等），无AI产品经理岗位，且非校招专属"
+          },
+          {
+            "index": 5,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "仅提及科大讯飞和墨芯的校招，未覆盖任何目标关注公司，与需求完全无关"
+          },
+          {
+            "index": 6,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴",
+              "智谱AI",
+              "MiniMax",
+              "月之暗面"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "投行报告分析AI行业发展前景，虽提及多家目标公司但无任何校招或岗位信息，纯行业分析"
+          },
+          {
+            "index": 7,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴",
+              "智谱AI",
+              "MiniMax"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "与index6内容重复的投行报告，仅分析AI行业趋势，无校招相关信息"
+          },
+          {
+            "index": 8,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "页面内容为模板代码和占位符，无任何实际信息，完全不可用"
+          },
+          {
+            "index": 9,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "仅有一条关于腾讯混元大模型免费体验的短评论，与校招AI产品经理完全无关"
+          },
+          {
+            "index": 10,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "字节跳动",
+              "阿里巴巴",
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "讨论AI算力投入和入口争夺的行业分析文章，无任何校招或岗位信息"
+          },
+          {
+            "index": 11,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "AI大会活动宣传，提及商汤科技但非目标公司，与校招AI产品经理完全无关"
+          },
+          {
+            "index": 12,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "文章已不存在，显示的是娱乐八卦新闻，完全不可用"
+          }
+        ],
+        "avgRelevance": 1.69,
+        "actionableCount": 2,
+        "noiseRatio": 69,
+        "companyCoverage": {
+          "阿里巴巴": 5,
+          "字节跳动": 3,
+          "百度": 2,
+          "腾讯": 5,
+          "MiniMax": 3,
+          "智谱AI": 2,
+          "月之暗面": 1
+        }
+      }
+    }
+  },
+  "phase2": {
+    "individual-no-think": {
+      "elapsed": 2604,
+      "eventCount": 0,
+      "quality": {
+        "scores": {
+          "overallQuality": 0
+        },
+        "validEventCount": 0,
+        "hallucinatedEventCount": 0,
+        "issues": [
+          "无输出"
+        ]
+      }
+    },
+    "batch-no-think": {
+      "elapsed": 1612,
+      "eventCount": 0,
+      "quality": {
+        "scores": {
+          "overallQuality": 0
+        },
+        "validEventCount": 0,
+        "hallucinatedEventCount": 0,
+        "issues": [
+          "无输出"
+        ]
+      }
+    },
+    "batch-think": {
+      "elapsed": 64732,
+      "eventCount": 0,
+      "quality": {
+        "scores": {
+          "overallQuality": 0
+        },
+        "validEventCount": 0,
+        "hallucinatedEventCount": 0,
+        "issues": [
+          "无输出"
+        ]
+      }
+    }
+  },
+  "searchRanking": [
+    {
+      "name": "C-双层(社区+全网)",
+      "calls": 2,
+      "totalResults": 18,
+      "uniqueResults": 18,
+      "elapsed": 21457,
+      "quality": {
+        "scores": [
+          {
+            "index": 0,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为27届秋招信息汇总，但仅提及网易游戏、vivo、同花顺、NVIDIA等非关注公司，且无AI产品经理岗位信息，完全无关。"
+          },
+          {
+            "index": 1,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "百度"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "虽提及百度，但仅列出大模型算法/工程师等技术岗，无AI产品经理岗位，且目标场景为27届校招，与26届/27届AI产品经理需求不匹配。"
+          },
+          {
+            "index": 2,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为27届实习信息汇总，提及腾讯混元青云计划但为技术岗，影像产品经理非AI方向，且无关注公司AI产品经理校招信息。"
+          },
+          {
+            "index": 3,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "宇树科技27届秋招提前批，仅涉及AI算法/嵌入式/硬件等技术岗画像，无产品经理岗位，且公司不在关注列表内。"
+          },
+          {
+            "index": 4,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "拼多多27届秋招研发提前批，岗位为服务端研发/算法等技术岗，无AI产品经理，公司不在关注列表。"
+          },
+          {
+            "index": 5,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "百度",
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "提及百度、阿里、字节跳动AI岗位占比高，但为26届校招趋势概述，无具体AI产品经理岗位信息或投递链接。"
+          },
+          {
+            "index": 6,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "27届秋招信息汇总，涉及影石、亚玛芬等非关注公司，岗位为运营/实习生，无AI产品经理相关信息。"
+          },
+          {
+            "index": 7,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "27届秋招提前批提醒，但未列出任何关注公司或AI产品经理岗位，仅为通用性时间提醒。"
+          },
+          {
+            "index": 8,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "拼多多27届秋招研发提前批内推，仅涉及大模型算法工程师，无AI产品经理岗位，公司不在关注列表。"
+          },
+          {
+            "index": 9,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接命中：腾讯2026校园招聘正式启动，明确提及将推出AI产品经理培训生项目，面向2025年1月至2026年12月毕业生，含关键日期。"
+          },
+          {
+            "index": 10,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "与index 9内容相同，腾讯2026校招启动，明确推出AI产品经理培训生项目，高价值信号。"
+          },
+          {
+            "index": 11,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "新华网来源的腾讯2026校招公告，明确AI产品经理培训生项目将于8月上旬启动，权威性高，直接相关。"
+          },
+          {
+            "index": 12,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "美团"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接命中：美团2026届校招「AI产品经理提前批」正式启动，标题即包含目标岗位，含投递引导。"
+          },
+          {
+            "index": 13,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "阿里、字节跳动2026届校招AI岗位占比新闻，但未提及AI产品经理具体岗位或投递方式，仅为趋势分析。"
+          },
+          {
+            "index": 14,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "26届秋招AI类岗位趋势文章，提及公司非关注列表，且无AI产品经理具体信息。"
+          },
+          {
+            "index": 15,
+            "relevance": 3,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "阿里巴巴控股集团校招官网链接，面向2026年11月-2027年毕业学生，但未明确是否有AI产品经理岗位，需进一步查看。"
+          },
+          {
+            "index": 16,
+            "relevance": 5,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "美团"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "美团26届校招AI产品经理提前批岗位信息，含投递链接、AI面试说明及岗位描述，高度相关且有可操作信息。"
+          },
+          {
+            "index": 17,
+            "relevance": 3,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "阿里巴巴校招岗位列表页面，涵盖多个事业群，但未明确显示AI产品经理岗位，需用户自行筛选查找。"
+          }
+        ],
+        "avgRelevance": 2.44,
+        "actionableCount": 7,
+        "noiseRatio": 61,
+        "companyCoverage": {
+          "百度": 2,
+          "腾讯": 4,
+          "阿里巴巴": 4,
+          "字节跳动": 2,
+          "美团": 2
+        }
+      }
+    },
+    {
+      "name": "B-全量合并",
+      "calls": 1,
+      "totalResults": 15,
+      "uniqueResults": 15,
+      "elapsed": 16358,
+      "quality": {
+        "scores": [
+          {
+            "index": 0,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接宣布腾讯2026校招启动，明确提及AI产品经理培训生项目，含项目介绍和启动时间，高度相关。"
+          },
+          {
+            "index": 1,
+            "relevance": 2,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "标题看似相关，但正文内容为观远数据运维实习面经，与目标公司及AI产品经理岗位完全无关，属于标题党噪音。"
+          },
+          {
+            "index": 2,
+            "relevance": 4,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 2,
+            "brief": "提及腾讯2026校招及AI产品经理培训生项目，但内容侧重AI面试工具和员工福利，缺少具体岗位描述或投递信息。"
+          },
+          {
+            "index": 3,
+            "relevance": 5,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接提供阿里巴巴AI产品经理实习生岗位描述和要求，含工作地点和职责，信息明确且可操作。"
+          },
+          {
+            "index": 4,
+            "relevance": 4,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 2,
+            "brief": "概述2026届大厂AI秋招趋势，提及腾讯和字节跳动招聘规模，但无具体AI产品经理岗位细节或投递链接。"
+          },
+          {
+            "index": 5,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "泛泛提及AI类岗位成秋招热门，但内容碎片化，未明确涉及目标公司或AI产品经理具体信息。"
+          },
+          {
+            "index": 6,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "报道腾讯面向13-18岁中学生的暑期实践项目，虽涉及AI产品方向，但与2026/2027届校招目标人群不匹配。"
+          },
+          {
+            "index": 7,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "提及阿里顶尖人才计划，但聚焦技术科研人才，未涉及AI产品经理岗位，与目标场景关联度低。"
+          },
+          {
+            "index": 8,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "智谱AI",
+              "MiniMax"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "仅提及公司名称，内容为具身智能行业动态，与AI产品经理校招完全无关。"
+          },
+          {
+            "index": 9,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "讨论AI面试官趋势，虽提及目标公司但主题是求职技巧而非AI产品经理岗位信息。"
+          },
+          {
+            "index": 10,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "米哈游面经，公司不在关注列表，且内容几乎为空，完全无关。"
+          },
+          {
+            "index": 11,
+            "relevance": 2,
+            "contentType": "无关",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴",
+              "字节跳动",
+              "百度",
+              "美团"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "GitHub面试题合集，虽提及多家目标公司，但面向技术岗且无AI产品经理特定内容。"
+          },
+          {
+            "index": 12,
+            "relevance": 5,
+            "contentType": "面经",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 1,
+            "brief": "直接为腾讯AI产品三面面经，对准备面试的候选人参考价值极高，但缺少具体岗位描述。"
+          },
+          {
+            "index": 13,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "夸克校招页面，但内容为千问C端事业群介绍，未提及AI产品经理岗位，与目标场景无关。"
+          },
+          {
+            "index": 14,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "牛客网话题聚合页，内容为通用求职讨论，无任何与目标公司或AI产品经理相关的信息。"
+          }
+        ],
+        "avgRelevance": 2.6,
+        "actionableCount": 2,
+        "noiseRatio": 60,
+        "companyCoverage": {
+          "腾讯": 7,
+          "阿里巴巴": 4,
+          "字节跳动": 3,
+          "智谱AI": 1,
+          "MiniMax": 1,
+          "百度": 1,
+          "美团": 1
+        }
+      }
+    },
+    {
+      "name": "D-三层(社区+大厂+创业)",
+      "calls": 3,
+      "totalResults": 22,
+      "uniqueResults": 22,
+      "elapsed": 20021,
+      "quality": {
+        "scores": [
+          {
+            "index": 0,
+            "relevance": 5,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "字节跳动"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "直接包含字节跳动2027届AI产品经理早鸟通道链接，高度相关且可操作"
+          },
+          {
+            "index": 1,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为网易游戏、vivo、同花顺、NVIDIA等非关注公司校招，与目标岗位完全无关"
+          },
+          {
+            "index": 2,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为艾为电子、前海开源基金、迅雷、快手等非关注公司校招，与目标岗位完全无关"
+          },
+          {
+            "index": 3,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为影石、亚玛芬、心盛计划等非关注公司校招，与目标岗位完全无关"
+          },
+          {
+            "index": 4,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "仅泛泛提及27届秋招提前批概念，未涉及任何关注公司或AI产品岗位具体信息"
+          },
+          {
+            "index": 5,
+            "relevance": 2,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "百度"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "提到百度2027管培生计划，但非AI产品经理岗位，且夹杂大量无关公司信息"
+          },
+          {
+            "index": 6,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为中国联通、天册、中信证券等非关注公司实习信息，与目标岗位完全无关"
+          },
+          {
+            "index": 7,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "仅泛泛提及腾讯、阿里启动27届寒假实习，无具体AI产品岗位信息或投递链接"
+          },
+          {
+            "index": 8,
+            "relevance": 5,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "字节跳动"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 1,
+            "brief": "专门介绍字节跳动2027届AI产品经理早鸟通道，包含城市、流程等关键信息，高度相关"
+          },
+          {
+            "index": 9,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "报道腾讯、阿里、字节2026届校招启动及AI岗位占比，但非2027届且无具体AI产品岗位信息"
+          },
+          {
+            "index": 10,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为高考择校及互联网大厂青睐院校分析，与校招岗位信息完全无关"
+          },
+          {
+            "index": 11,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "字节跳动",
+              "美团"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "报道阿里、字节、美团等2026届校招计划及AI占比，但非2027届且无具体AI产品岗位信息"
+          },
+          {
+            "index": 12,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "字节跳动",
+              "美团"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "内容为高考择校选专业攻略，虽提及字节、美团但完全无关校招岗位信息"
+          },
+          {
+            "index": 13,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "美团"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "汇总阿里、美团等2026届秋招数据及AI占比，但非2027届且无具体AI产品岗位信息"
+          },
+          {
+            "index": 14,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "报道阿里、字节2026届校招AI岗位占比，但非2027届且无具体AI产品岗位信息"
+          },
+          {
+            "index": 15,
+            "relevance": 2,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "字节跳动"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "字节跳动校招官网入口，面向前沿技术人才，但未明确提及AI产品经理岗位或2027届"
+          },
+          {
+            "index": 16,
+            "relevance": 3,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "月之暗面"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "月之暗面2026年校招页面，包含产品岗位，但非明确AI产品经理且非2027届"
+          },
+          {
+            "index": 17,
+            "relevance": 2,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 4,
+            "brief": "讨论2026届秋招AI岗位热度，未涉及关注公司名单中的企业或具体AI产品岗位"
+          },
+          {
+            "index": 18,
+            "relevance": 2,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "阿里巴巴校招官网，有AI研发岗位，但非明确AI产品经理且未标注面向届次"
+          },
+          {
+            "index": 19,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "求职辅导平台登录页，与具体校招岗位信息完全无关"
+          },
+          {
+            "index": 20,
+            "relevance": 2,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 3,
+            "brief": "阿里千问事业群校招页面，涉及AI业务但未明确AI产品经理岗位及面向届次"
+          },
+          {
+            "index": 21,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "腾讯元器智能体平台介绍，与校招岗位信息完全无关"
+          }
+        ],
+        "avgRelevance": 2.14,
+        "actionableCount": 7,
+        "noiseRatio": 50,
+        "companyCoverage": {
+          "字节跳动": 7,
+          "百度": 1,
+          "腾讯": 3,
+          "阿里巴巴": 7,
+          "美团": 3,
+          "月之暗面": 1
+        }
+      }
+    },
+    {
+      "name": "E-极简单次",
+      "calls": 1,
+      "totalResults": 13,
+      "uniqueResults": 13,
+      "elapsed": 14247,
+      "quality": {
+        "scores": [
+          {
+            "index": 0,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴",
+              "字节跳动"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "提及阿里和字节2026届校招中AI岗位占比高，但无具体AI产品经理岗位信息，属于宏观趋势报道"
+          },
+          {
+            "index": 1,
+            "relevance": 3,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "阿里巴巴"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "提到阿里2026届秋招AI岗位占比及产品类岗位，但无AI产品经理具体描述，且混有院校专业推荐内容"
+          },
+          {
+            "index": 2,
+            "relevance": 4,
+            "contentType": "校招公告",
+            "companiesFound": [
+              "百度"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 2,
+            "brief": "百度2026届校招正式启动，明确AI岗位占比超90%、产品方向职位涨幅大，含城市和岗位数量信息"
+          },
+          {
+            "index": 3,
+            "relevance": 2,
+            "contentType": "面经",
+            "companiesFound": [
+              "字节跳动",
+              "腾讯",
+              "百度"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 3,
+            "brief": "介绍字节、腾讯、百度的AI招聘特点和面试侧重点，但面向通用AI岗位而非AI产品经理，无具体投递信息"
+          },
+          {
+            "index": 4,
+            "relevance": 2,
+            "contentType": "岗位信息",
+            "companiesFound": [
+              "MiniMax"
+            ],
+            "hasActionableInfo": true,
+            "noiseLevel": 4,
+            "brief": "列出MiniMax的岗位但均为技术岗（AI评测开发、Agent测试开发等），无AI产品经理岗位，且非校招专属"
+          },
+          {
+            "index": 5,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "仅提及科大讯飞和墨芯的校招，未覆盖任何目标关注公司，与需求完全无关"
+          },
+          {
+            "index": 6,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴",
+              "智谱AI",
+              "MiniMax",
+              "月之暗面"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "投行报告分析AI行业发展前景，虽提及多家目标公司但无任何校招或岗位信息，纯行业分析"
+          },
+          {
+            "index": 7,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "腾讯",
+              "阿里巴巴",
+              "智谱AI",
+              "MiniMax"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "与index6内容重复的投行报告，仅分析AI行业趋势，无校招相关信息"
+          },
+          {
+            "index": 8,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "页面内容为模板代码和占位符，无任何实际信息，完全不可用"
+          },
+          {
+            "index": 9,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "仅有一条关于腾讯混元大模型免费体验的短评论，与校招AI产品经理完全无关"
+          },
+          {
+            "index": 10,
+            "relevance": 1,
+            "contentType": "行业新闻",
+            "companiesFound": [
+              "字节跳动",
+              "阿里巴巴",
+              "腾讯"
+            ],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "讨论AI算力投入和入口争夺的行业分析文章，无任何校招或岗位信息"
+          },
+          {
+            "index": 11,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "AI大会活动宣传，提及商汤科技但非目标公司，与校招AI产品经理完全无关"
+          },
+          {
+            "index": 12,
+            "relevance": 1,
+            "contentType": "无关",
+            "companiesFound": [],
+            "hasActionableInfo": false,
+            "noiseLevel": 5,
+            "brief": "文章已不存在，显示的是娱乐八卦新闻，完全不可用"
+          }
+        ],
+        "avgRelevance": 1.69,
+        "actionableCount": 2,
+        "noiseRatio": 69,
+        "companyCoverage": {
+          "阿里巴巴": 5,
+          "字节跳动": 3,
+          "百度": 2,
+          "腾讯": 5,
+          "MiniMax": 3,
+          "智谱AI": 2,
+          "月之暗面": 1
+        }
+      }
+    }
+  ],
+  "llmRanking": [
+    {
+      "name": "individual-no-think",
+      "elapsed": 2604,
+      "eventCount": 0,
+      "quality": {
+        "scores": {
+          "overallQuality": 0
+        },
+        "validEventCount": 0,
+        "hallucinatedEventCount": 0,
+        "issues": [
+          "无输出"
+        ]
+      }
+    },
+    {
+      "name": "batch-no-think",
+      "elapsed": 1612,
+      "eventCount": 0,
+      "quality": {
+        "scores": {
+          "overallQuality": 0
+        },
+        "validEventCount": 0,
+        "hallucinatedEventCount": 0,
+        "issues": [
+          "无输出"
+        ]
+      }
+    },
+    {
+      "name": "batch-think",
+      "elapsed": 64732,
+      "eventCount": 0,
+      "quality": {
+        "scores": {
+          "overallQuality": 0
+        },
+        "validEventCount": 0,
+        "hallucinatedEventCount": 0,
+        "issues": [
+          "无输出"
+        ]
+      }
+    }
+  ],
+  "recommendation": {
+    "search": "C-双层(社区+全网)",
+    "searchCalls": 2,
+    "llm": "individual-no-think",
+    "llmCalls": 1,
+    "tavilyReduction": "95%",
+    "llmReduction": "98%"
+  }
+}

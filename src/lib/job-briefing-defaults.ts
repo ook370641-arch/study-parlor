@@ -16,6 +16,10 @@ export const DEFAULT_JOB_BRIEFING_CONFIG: JobBriefingConfig = {
   roleKeywords: ['AI产品经理', '大模型产品经理', 'Agent产品经理'],
   cities: ['北京', '上海', '杭州', '深圳'],
   skillKeywords: ['RAG', 'Agent', '提示词工程', '多模态'],
+  eventSearchKeywords: [],
+  jobSearchKeywords: [],
+  searchInternship: false,
+  searchFallRecruit: true,
 }
 
 export const DEFAULT_JOB_PROFILE: JobProfile = {
@@ -25,6 +29,7 @@ export const DEFAULT_JOB_PROFILE: JobProfile = {
   experience: '',
   additionalNotes: '',
   updatedAt: '',
+  keywordsGeneratedAt: '',
 }
 
 export function normalizeJobProfile(raw?: Partial<JobProfile>): JobProfile {
@@ -35,6 +40,7 @@ export function normalizeJobProfile(raw?: Partial<JobProfile>): JobProfile {
     experience: typeof raw?.experience === 'string' ? raw.experience : '',
     additionalNotes: typeof raw?.additionalNotes === 'string' ? raw.additionalNotes : '',
     updatedAt: typeof raw?.updatedAt === 'string' ? raw.updatedAt : '',
+    keywordsGeneratedAt: typeof raw?.keywordsGeneratedAt === 'string' ? raw.keywordsGeneratedAt : '',
   }
 }
 

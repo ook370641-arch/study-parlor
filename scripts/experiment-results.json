@@ -1,0 +1,457 @@
+{
+  "timestamp": "2026-07-25T07:43:50.934Z",
+  "events": {
+    "A-逐家(当前方案)": {
+      "calls": 11,
+      "total": 55,
+      "unique": 50,
+      "domains": {
+        "campus.niuqizp.com": 5,
+        "www.wondercv.com": 1,
+        "m.yingjiesheng.com": 1,
+        "jobs.bytedance.com": 1,
+        "m.zhipin.com": 1,
+        "baike.baidu.com": 1,
+        "talent.alibaba.com": 1,
+        "www.alibabacloud.com": 1,
+        "www.aliyun.com": 1,
+        "alibaba.com.cn": 1,
+        "www.zhipin.com": 1,
+        "www.yingjiesheng.com": 2,
+        "www.news.cn": 2,
+        "www.cls.cn": 1,
+        "m.sh.bendibao.com": 1,
+        "pjcareer.dlut.edu.cn": 1,
+        "talent.baidu.com": 1,
+        "career.uibe.edu.cn": 1,
+        "www.shyp.gov.cn": 1,
+        "zhaopin.meituan.com": 1,
+        "en.wikipedia.org": 2,
+        "www.minimax.io": 1,
+        "github.com": 1,
+        "openrouter.ai": 1,
+        "zhuanlan.zhihu.com": 1,
+        "www.offershow.cn": 1,
+        "news.qq.com": 1,
+        "www.laoyujianli.com": 1,
+        "www.moonshot.cn": 1,
+        "careers.kimi.com": 1,
+        "sfi.cuhk.edu.cn": 1,
+        "www.offerstar.cn": 1,
+        "www.gankinterview.cn": 1,
+        "www.qiuzhifangzhou.com": 1,
+        "www.offerxiansheng.com": 1,
+        "www.nowcoder.com": 6,
+        "m.nowcoder.com": 1,
+        "cq6qe6bvfr6.jobs.feishu.cn": 1
+      },
+      "elapsed": 5410,
+      "ok": true,
+      "efficiency": "4.5",
+      "topDomains": [
+        [
+          "www.nowcoder.com",
+          6
+        ],
+        [
+          "campus.niuqizp.com",
+          5
+        ],
+        [
+          "www.yingjiesheng.com",
+          2
+        ],
+        [
+          "www.news.cn",
+          2
+        ],
+        [
+          "en.wikipedia.org",
+          2
+        ]
+      ]
+    },
+    "B-全量合并": {
+      "calls": 1,
+      "total": 15,
+      "unique": 15,
+      "domains": {
+        "www.shushuqiuzhi.com": 1,
+        "m.nowcoder.com": 1,
+        "talent.alibaba.com": 2,
+        "finance.sina.com.cn": 1,
+        "zhuanlan.zhihu.com": 2,
+        "www.qbitai.com": 1,
+        "www.news.cn": 1,
+        "sfi.cuhk.edu.cn": 1,
+        "tidenews.com.cn": 1,
+        "blog.offergoose.com": 1,
+        "www.sohu.com": 1,
+        "github.com": 1,
+        "aidc-jobs.alibaba.com": 1
+      },
+      "elapsed": 1480,
+      "ok": true,
+      "efficiency": "15.0",
+      "topDomains": [
+        [
+          "talent.alibaba.com",
+          2
+        ],
+        [
+          "zhuanlan.zhihu.com",
+          2
+        ],
+        [
+          "www.shushuqiuzhi.com",
+          1
+        ],
+        [
+          "m.nowcoder.com",
+          1
+        ],
+        [
+          "finance.sina.com.cn",
+          1
+        ]
+      ]
+    },
+    "C-双层(社区+全网)": {
+      "calls": 2,
+      "total": 19,
+      "unique": 19,
+      "domains": {
+        "www.nowcoder.com": 10,
+        "www.cls.cn": 1,
+        "zhuanlan.zhihu.com": 1,
+        "www.zizzs.com": 1,
+        "gkwz.xunlugaokao.com": 1,
+        "www.mroldcat.top": 1,
+        "jobs.bytedance.com": 1,
+        "zhaopin.meituan.com": 1,
+        "www.jfdaily.com": 1,
+        "wap.eastmoney.com": 1
+      },
+      "elapsed": 2437,
+      "ok": true,
+      "efficiency": "9.5",
+      "topDomains": [
+        [
+          "www.nowcoder.com",
+          10
+        ],
+        [
+          "www.cls.cn",
+          1
+        ],
+        [
+          "zhuanlan.zhihu.com",
+          1
+        ],
+        [
+          "www.zizzs.com",
+          1
+        ],
+        [
+          "gkwz.xunlugaokao.com",
+          1
+        ]
+      ]
+    },
+    "D-三层(社区+大厂+创业)": {
+      "calls": 3,
+      "total": 24,
+      "unique": 24,
+      "domains": {
+        "www.nowcoder.com": 9,
+        "www.mroldcat.top": 1,
+        "www.news.cn": 1,
+        "zhuanlan.zhihu.com": 1,
+        "sfi.cuhk.edu.cn": 2,
+        "m.nowcoder.com": 1,
+        "talent-holding.alibaba.com": 1,
+        "www.jfdaily.com": 1,
+        "campus-talent.alibaba.com": 1,
+        "campus.niuqizp.com": 1,
+        "deepseek.csdn.net": 1,
+        "www.cls.cn": 1,
+        "xueqiu.com": 1,
+        "m.bjnews.com.cn": 1,
+        "www.minimaxi.com": 1
+      },
+      "elapsed": 1415,
+      "ok": true,
+      "efficiency": "8.0",
+      "topDomains": [
+        [
+          "www.nowcoder.com",
+          9
+        ],
+        [
+          "sfi.cuhk.edu.cn",
+          2
+        ],
+        [
+          "www.mroldcat.top",
+          1
+        ],
+        [
+          "www.news.cn",
+          1
+        ],
+        [
+          "zhuanlan.zhihu.com",
+          1
+        ]
+      ]
+    },
+    "E-极简单次": {
+      "calls": 1,
+      "total": 10,
+      "unique": 10,
+      "domains": {
+        "www.cls.cn": 1,
+        "www.stcn.com": 1,
+        "gitcode.csdn.net": 1,
+        "finance.sina.cn": 1,
+        "xueqiu.com": 1,
+        "m.bjnews.com.cn": 1,
+        "www.finet.hk": 1,
+        "zhuanlan.zhihu.com": 1,
+        "news.futunn.com": 1,
+        "www.youtube.com": 1
+      },
+      "elapsed": 922,
+      "ok": true,
+      "efficiency": "10.0",
+      "topDomains": [
+        [
+          "www.cls.cn",
+          1
+        ],
+        [
+          "www.stcn.com",
+          1
+        ],
+        [
+          "gitcode.csdn.net",
+          1
+        ],
+        [
+          "finance.sina.cn",
+          1
+        ],
+        [
+          "xueqiu.com",
+          1
+        ]
+      ]
+    }
+  },
+  "jobs": {
+    "A-逐公司(当前)": {
+      "calls": 5,
+      "total": 25,
+      "unique": 22,
+      "domains": {
+        "campus.niuqizp.com": 1,
+        "www.wondercv.com": 1,
+        "www.zhipin.com": 1,
+        "zhuanlan.zhihu.com": 1,
+        "www.liepin.com": 2,
+        "campus-talent.alibaba.com": 2,
+        "cn.indeed.com": 1,
+        "talent.alibaba.com": 1,
+        "www.news.cn": 1,
+        "finance.sina.com.cn": 2,
+        "careers.tencent.com": 2,
+        "tencent.wd1.myworkdayjobs.com": 1,
+        "m.sh.bendibao.com": 1,
+        "talent.baidu.com": 1,
+        "zhaopin.meituan.com": 2,
+        "m.zhipin.com": 1,
+        "sfi.cuhk.edu.cn": 1
+      },
+      "elapsed": 6782,
+      "ok": true,
+      "efficiency": "4.4",
+      "topDomains": [
+        [
+          "www.liepin.com",
+          2
+        ],
+        [
+          "campus-talent.alibaba.com",
+          2
+        ],
+        [
+          "finance.sina.com.cn",
+          2
+        ],
+        [
+          "careers.tencent.com",
+          2
+        ],
+        [
+          "zhaopin.meituan.com",
+          2
+        ]
+      ]
+    },
+    "B-全量合并": {
+      "calls": 1,
+      "total": 9,
+      "unique": 9,
+      "domains": {
+        "www.nowcoder.com": 2,
+        "campus-talent.alibaba.com": 1,
+        "www.news.cn": 1,
+        "sfi.cuhk.edu.cn": 1,
+        "zhuanlan.zhihu.com": 1,
+        "vrfi1sk8a0.jobs.feishu.cn": 1,
+        "niumianoffer.com": 1,
+        "www.ai-master.cc": 1
+      },
+      "elapsed": 950,
+      "ok": true,
+      "efficiency": "9.0",
+      "topDomains": [
+        [
+          "www.nowcoder.com",
+          2
+        ],
+        [
+          "campus-talent.alibaba.com",
+          1
+        ],
+        [
+          "www.news.cn",
+          1
+        ],
+        [
+          "sfi.cuhk.edu.cn",
+          1
+        ],
+        [
+          "zhuanlan.zhihu.com",
+          1
+        ]
+      ]
+    },
+    "C-分层(大厂+创业)": {
+      "calls": 2,
+      "total": 17,
+      "unique": 16,
+      "domains": {
+        "www.nowcoder.com": 1,
+        "m.zhipin.com": 2,
+        "sfi.cuhk.edu.cn": 1,
+        "zhaopin.meituan.com": 1,
+        "jobs.bytedance.com": 1,
+        "talent-holding.alibaba.com": 1,
+        "cn.linkedin.com": 1,
+        "campus-talent.alibaba.com": 2,
+        "careers.tencent.com": 1,
+        "deepseek.csdn.net": 1,
+        "cn.indeed.com": 1,
+        "www.datayuan.cn": 1,
+        "www.salary.top": 1,
+        "a2m.msup.com.cn": 1
+      },
+      "elapsed": 1997,
+      "ok": true,
+      "efficiency": "8.0",
+      "topDomains": [
+        [
+          "m.zhipin.com",
+          2
+        ],
+        [
+          "campus-talent.alibaba.com",
+          2
+        ],
+        [
+          "www.nowcoder.com",
+          1
+        ],
+        [
+          "sfi.cuhk.edu.cn",
+          1
+        ],
+        [
+          "zhaopin.meituan.com",
+          1
+        ]
+      ]
+    }
+  },
+  "questions": {
+    "A-逐公司(当前)": {
+      "calls": 4,
+      "total": 20,
+      "unique": 17,
+      "domains": {
+        "www.nowcoder.com": 17
+      },
+      "elapsed": 5950,
+      "ok": true,
+      "efficiency": "4.3",
+      "topDomains": [
+        [
+          "www.nowcoder.com",
+          17
+        ]
+      ]
+    },
+    "B-全量合并": {
+      "calls": 1,
+      "total": 13,
+      "unique": 12,
+      "domains": {
+        "www.nowcoder.com": 11,
+        "www.zhihu.com": 1
+      },
+      "elapsed": 1649,
+      "ok": true,
+      "efficiency": "12.0",
+      "topDomains": [
+        [
+          "www.nowcoder.com",
+          11
+        ],
+        [
+          "www.zhihu.com",
+          1
+        ]
+      ]
+    }
+  },
+  "llmExtraction": {
+    "individual": {
+      "elapsed": 0,
+      "length": 2518,
+      "ok": true,
+      "preview": "{\"events\":[{\"company\":\"字节跳动\",\"eventType\":\"秋招开启\",\"title\":\"字节跳动2026届校招启动，研发岗扩招23%，AI岗位占比达90%\",\"date\":\"2026-07-25\",\"summary\":\"字节跳动2026届校招已启动，计划招聘超5000个岗位，比去年增加20%。研发类岗位招聘数量同比增长23%，其中AI相关岗位占比高达90%，算法、前端、客"
+    },
+    "batch-no-think": {
+      "elapsed": 11062,
+      "length": 2376,
+      "ok": true,
+      "preview": "{\"events\": [{\"company\":\"字节跳动\",\"eventType\":\"秋招开启\",\"title\":\"字节跳动2026届校招启动，AI岗位占比达90%\",\"date\":\"2025-08-11\",\"summary\":\"字节跳动2026届校招计划招聘超5000个岗位，比去年增加20%，研发类岗位招聘数量同比增长23%，算法、前端、客户端增幅最大。面向顶尖人才推出Seed计划，由豆包大模型"
+    },
+    "batch": {
+      "elapsed": 47499,
+      "length": 938,
+      "ok": true,
+      "preview": "{\"events\": [{\"company\":\"字节跳动\",\"eventType\":\"新岗位\",\"title\":\"字节跳动启动ByteIntern实习生招聘，面向2027届毕业生\",\"date\":\"2026-03-06\",\"summary\":\"字节跳动启动史上规模最大的转正实习生招聘计划ByteIntern，面向全球2027届毕业生招聘超7000名实习生，研发类岗位Offer超4800个，转正率预"
+    }
+  },
+  "recommendation": {
+    "events": "B-全量合并",
+    "jobs": "B-全量合并",
+    "questions": "B-全量合并",
+    "tavilyCallsBefore": 40,
+    "tavilyCallsAfter": 3,
+    "reduction": "93%"
+  }
+}

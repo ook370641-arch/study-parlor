@@ -337,6 +337,10 @@ export type JobBriefingConfig = {
   roleKeywords: string[]
   cities: string[]
   skillKeywords: string[]
+  eventSearchKeywords: string[]
+  jobSearchKeywords: string[]
+  searchInternship: boolean
+  searchFallRecruit: boolean
 }
 
 export type JobErrorCode =
@@ -355,6 +359,7 @@ export type JobProfile = {
   experience: string
   additionalNotes: string
   updatedAt: string
+  keywordsGeneratedAt: string
 }
 
 export type JobEventType = '秋招开启' | '新岗位' | '线下活动' | '宣讲会' | '其他'
@@ -679,6 +684,13 @@ export type IpcApi = {
     | { ok: true; companies: JobCompany[] }
     | { ok: false; code: JobErrorCode; message: string }
   >
+  jobBriefingGenerateKeywords: (args: {
+    profile: JobProfile
+  }) => Promise<{ ok: true; eventKeywords: string[]; jobKeywords: string[] }
+              | { ok: false; code: 'LLM_ERROR' | 'EMPTY_PROFILE'; message: string }>
+  jobBriefingGenerateArticleSearchQuery: (args: {
+    articleContent: string; selection?: string; lastMessage?: string
+  }) => Promise<{ ok: true; query: string } | { ok: false; code: 'LLM_ERROR'; message: string }>
 
   // App shell
   openExternal: (url: string) => Promise<void>
