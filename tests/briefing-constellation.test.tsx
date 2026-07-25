@@ -1,5 +1,5 @@
-import { render, screen, cleanup } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { render, screen, cleanup, act } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '@/store'
 import { BriefingConstellation } from '@/components/briefing/BriefingConstellation'
 
@@ -86,5 +86,47 @@ describe('BriefingConstellation', () => {
     render(<BriefingConstellation stage="scanning-events" />)
     const jobSatellites = document.querySelectorAll('[data-testid^="briefing-progress-step-"]')
     expect(jobSatellites.length).toBe(5)
+  })
+
+  it('done satellites dock into the well (slide-in, kept in DOM for testid contract)', () => {
+    render(<BriefingConstellation stage="assembling" />)
+    const done = screen.getByTestId('briefing-progress-step-fetching')
+    expect(done.dataset.state).toBe('done')
+    expect(done.className).toContain('sat-docked')
+    expect(screen.getByTestId('briefing-progress-step-finalizing').className).not.toContain('sat-docked')
+  })
+
+  it('finalizing: well enters checking state with two orbiting photons, counter hidden', () => {
+    render(<BriefingConstellation stage="finalizing" />)
+    const well = screen.getByTestId('briefing-constellation-well')
+    expect(well.dataset.state).toBe('checking')
+    expect(well.querySelectorAll('.constellation-photon').length).toBe(2)
+    expect(well.textContent).not.toContain('已归位')
+  })
+
+  it('mode resolved: photons drop, bloom plays, counter shows N/N', () => {
+    render(<BriefingConstellation stage="finalizing" mode="resolved" />)
+    const well = screen.getByTestId('briefing-constellation-well')
+    expect(well.dataset.state).toBe('resolved')
+    expect(well.className).toContain('constellation-well-resolved')
+    expect(well.className).toContain('constellation-well-bloom')
+    expect(well.textContent).toContain('4 / 4 已归位')
+  })
+
+  it('mode failed: well data-state failed, root carries constellation-failed', () => {
+    render(<BriefingConstellation stage="extracting" mode="failed" />)
+    expect(screen.getByTestId('briefing-constellation-well').dataset.state).toBe('failed')
+    expect(screen.getByTestId('briefing-progress').className).toContain('constellation-failed')
+  })
+
+  it('well breathes on briefingPulseAt (throttled pulse)', () => {
+    vi.useFakeTimers()
+    render(<BriefingConstellation stage="fetching" />)
+    const well = screen.getByTestId('briefing-constellation-well')
+    act(() => { useStore.setState({ briefingPulseAt: Date.now() }) })
+    expect(well.style.transform).toContain('scale(1.015)')
+    act(() => { vi.advanceTimersByTime(300) })
+    expect(well.style.transform).not.toContain('scale(1.015)')
+    vi.useRealTimers()
   })
 })

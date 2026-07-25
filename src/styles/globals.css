@@ -197,3 +197,50 @@ html, body, #root { height: 100%; }
     transition: none !important;
   }
 }
+
+/* ===== 生成仪式（F4）：卫星滑入 / 检定光子 / 退潮 / 失败褪冷 ===== */
+.sat-docked {
+  left: 50% !important;
+  top: 44% !important;
+  transform: translate(-50%, -50%) scale(0.6) !important;
+  opacity: 0;
+}
+.constellation-photon {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 7px; height: 7px; margin: -3.5px;
+  border-radius: 50%;
+  background: #eec287;
+  box-shadow: 0 0 10px 3px rgba(238, 194, 135, 0.7);
+}
+.constellation-photon.p1 { animation: photonOrbit 1.6s linear infinite; }
+.constellation-photon.p2 { animation: photonOrbit 1.6s linear infinite reverse; }
+@keyframes photonOrbit {
+  from { transform: rotate(0deg) translateX(72px); }
+  to { transform: rotate(360deg) translateX(72px); }
+}
+.constellation-well-resolved .constellation-photon {
+  animation: none;
+  transform: rotate(0deg) translateX(0) scale(0.2);
+  opacity: 0;
+  transition: transform 450ms cubic-bezier(0.6, 0, 0.8, 0.4), opacity 450ms;
+}
+.constellation-well-bloom { animation: constellationBloom 800ms cubic-bezier(0.34, 1.4, 0.5, 1) 1; }
+@keyframes constellationBloom {
+  30% { box-shadow: 0 0 60px 18px rgba(217, 119, 87, 0.5); }
+}
+.constellation-depart { opacity: 0; transform: scale(1.04); transition: opacity 600ms ease, transform 600ms ease; }
+/* 失败：屏息 400ms（transition-delay）后漂移褪冷 */
+.constellation-failed [data-testid^="briefing-progress-step-"],
+.constellation-failed [data-testid="briefing-constellation-well"] {
+  filter: saturate(0.35) brightness(0.75);
+  transition: filter 600ms ease 400ms, transform 600ms ease 400ms;
+}
+.constellation-failed [data-testid^="briefing-progress-step-"] { transform: translate(var(--fail-dx, 0px), var(--fail-dy, 0px)) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .constellation-photon.p1, .constellation-photon.p2 { animation: none; }
+  .constellation-depart { transition: opacity 150ms ease; transform: none; }
+  .constellation-failed [data-testid^="briefing-progress-step-"],
+  .constellation-failed [data-testid="briefing-constellation-well"] { transition: none; }
+}
