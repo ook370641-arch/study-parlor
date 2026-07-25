@@ -112,4 +112,5 @@ paths:
 - 语录（`quotes.ts`）、引力/轨道（GravityField 语言）、画作（painting-manifest）是仅有的三个诗意资产；新增装饰语言前先在本规则登记。
 - 动效必须克制且可退化：位移动画必须有 `prefers-reduced-motion` 静态回退。
 - 例外主色（如求职星蓝 `#7fa8d9`）只允许出现在「源标识性」元素上，且需在设计文档中显式声明。
+- 重量/归位语法（`motion-presets` 双弹簧：SPRING_SETTLE / SPRING_SLIDE）登记为引力/轨道语言的触觉层；换画、归位、日期选中、面板开合一律引用同一常量，不得自造曲线。过冲硬上限 scale ≤4% / 位移 ≤8px。
 - Source: docs/superpowers/specs/2026-07-23-briefing-ui-design.md
