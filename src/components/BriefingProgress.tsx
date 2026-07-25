@@ -4,17 +4,18 @@ import { BriefingConstellation } from '@/components/briefing'
 
 interface Props {
   stage: BriefingStage
+  mode?: 'live' | 'resolved' | 'failed'
   onCancel?: () => void
 }
 
-export function BriefingProgress({ stage, onCancel }: Props) {
+export function BriefingProgress({ stage, mode = 'live', onCancel }: Props) {
   const theme = useStore((s) => s.briefingTheme)
   const isAcademic = theme !== 'newspaper'
 
   return (
     <div className="flex flex-col items-center justify-center h-full">
-      <BriefingConstellation stage={stage} />
-      {onCancel && (
+      <BriefingConstellation stage={stage} mode={mode} />
+      {mode === 'live' && onCancel && (
         <button
           data-testid="briefing-cancel-button"
           onClick={onCancel}

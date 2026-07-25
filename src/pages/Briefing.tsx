@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { BriefingHistoryItem } from '@/components/BriefingDateColumn'
@@ -20,6 +20,7 @@ import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
 import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil, BriefingEmptyState, BriefingMetaLine } from '@/components/briefing'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
+import { useGenerationTransition } from '@/lib/use-generation-transition'
 import {
   ACADEMIC_BODY_STYLES,
   NEWSPAPER_BODY_STYLES,
@@ -75,6 +76,19 @@ export function Briefing() {
   const cancelJobBriefing = useStore((s) => s.cancelJobBriefing)
 
   const today = formatBriefingDate(new Date())
+
+  // Generation ceremony orchestration
+  const { phase: digestPhase, fresh: digestFresh } = useGenerationTransition(
+    `digest:${result?.date ?? today}`, loading, !!result, !!error,
+  )
+  const { phase: jobPhase, fresh: jobFresh } = useGenerationTransition(
+    `job:${jobResult?.date ?? today}`, jobLoading, !!jobResult, !!jobError,
+  )
+  // Preserve last stage for mode="failed" rendering
+  const lastDigestStage = useRef(stage)
+  if (stage) lastDigestStage.current = stage
+  const lastJobStage = useRef(jobStage)
+  if (jobStage) lastJobStage.current = jobStage
 
   // The date column IS the history UI, so it must load past briefings on mount
   // (and whenever a new briefing is generated) rather than only when a drawer opens.
@@ -215,13 +229,17 @@ export function Briefing() {
                   buttonTestId="briefing-receive-job-button"
                   onReceive={() => generateJobBriefing(today)}
                 />
-              ) : isJobLoading ? (
+              ) : jobPhase === 'generating' || jobPhase === 'resolved' || jobPhase === 'departing' ? (
+                <main className={`relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto ${jobPhase === 'departing' ? 'constellation-depart' : ''}`}>
+                  <BriefingProgress
+                    stage={lastJobStage.current ?? 'scanning-events'}
+                    mode={jobPhase === 'resolved' ? 'resolved' : 'live'}
+                    onCancel={cancelJobBriefing}
+                  />
+                </main>
+              ) : jobPhase === 'failing' ? (
                 <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
-                  {jobStage ? (
-                    <BriefingProgress stage={jobStage} onCancel={cancelJobBriefing} />
-                  ) : (
-                    <BriefingSkeleton data-testid="briefing-skeleton" />
-                  )}
+                  <BriefingProgress stage={lastJobStage.current ?? 'scanning-events'} mode="failed" />
                 </main>
               ) : isJobError ? (
                 <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
@@ -233,6 +251,7 @@ export function Briefing() {
                   </div>
                 </main>
               ) : jobResult ? (
+                <div data-testid="job-briefing-reading-pane" data-arrival={jobFresh ? 'fresh' : 'revisit'} className="flex-1 flex flex-col min-h-0">
                 <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6">
                   {isJobProfileEmpty(jobProfile) && !profileHintDismissed && (
                     <div
@@ -272,6 +291,7 @@ export function Briefing() {
                   )}
                   <JobBriefingRenderer content={jobResult.content} theme={theme} fontSize={fontSize} />
                 </main>
+                </div>
               ) : null
             ) : emptyState ? (
               <BriefingEmptyState
@@ -280,13 +300,17 @@ export function Briefing() {
                 buttonTestId="briefing-receive-digest-button"
                 onReceive={() => generateBriefing(today)}
               />
-            ) : isDigestLoading ? (
+            ) : digestPhase === 'generating' || digestPhase === 'resolved' || digestPhase === 'departing' ? (
+              <main className={`relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto ${digestPhase === 'departing' ? 'constellation-depart' : ''}`}>
+                <BriefingProgress
+                  stage={lastDigestStage.current ?? 'fetching'}
+                  mode={digestPhase === 'resolved' ? 'resolved' : 'live'}
+                  onCancel={cancelBriefing}
+                />
+              </main>
+            ) : digestPhase === 'failing' ? (
               <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
-                {stage ? (
-                  <BriefingProgress stage={stage} onCancel={cancelBriefing} />
-                ) : (
-                  <BriefingSkeleton data-testid="briefing-skeleton" />
-                )}
+                <BriefingProgress stage={lastDigestStage.current ?? 'fetching'} mode="failed" />
               </main>
             ) : isDigestError ? (
               <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
@@ -298,7 +322,7 @@ export function Briefing() {
                 </div>
               </main>
             ) : parsed && result ? (
-              <>
+              <div data-testid="briefing-reading-pane" data-arrival={digestFresh ? 'fresh' : 'revisit'} className="flex-1 flex min-h-0">
                 {isAcademic ? (
                   <AcademicBriefingLayout
                     result={result}
@@ -331,7 +355,7 @@ export function Briefing() {
                     filePath={result.filePath}
                   />
                 )}
-              </>
+              </div>
             ) : null}
           </div>
         </div>
