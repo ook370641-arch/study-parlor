@@ -617,18 +617,41 @@ export async function discoverQuestions(
   cfg: AppConfig,
   profile: JobProfile,
   config: JobBriefingConfig,
+  focus: FocusCompany[],
   opts: { apiKey: string; signal?: AbortSignal }
 ): Promise<InterviewQuestion[]> {
-  const direction = questionDirection(profile, config)
-  const query = `${direction} 面经 面试题 高频`
+  // Use per-company queries for top focus companies
+  const queries = focus.length > 0
+    ? buildQuestionQueries(focus, profile, config)
+    : []
 
+  if (queries.length > 0) {
+    const results = await Promise.all(
+      queries.map(q =>
+        runQuestionQuery(cfg, q.query, {
+          apiKey: opts.apiKey,
+          signal: opts.signal,
+          includeDomains: q.includeDomains,
+        }).catch(err => {
+          console.warn(`[job-briefing] question query failed for ${q.query}`, err)
+          return [] as InterviewQuestion[]
+        })
+      )
+    )
+    const allQuestions = results.flat()
+    if (allQuestions.length > 0) return dedupQuestions(allQuestions)
+  }
+
+  // Fallback: generic query
+  const fallbackQuery = buildFallbackQuestionQuery(profile, config)
   try {
-    return await runQuestionQuery(cfg, query, {
-      ...opts,
+    return await runQuestionQuery(cfg, fallbackQuery, {
+      apiKey: opts.apiKey,
+      signal: opts.signal,
       includeDomains: [...JOB_COMMUNITY_DOMAINS],
     })
   } catch (err) {
-    console.warn(`[job-briefing] question query failed: ${query}`, err)
+    console.warn(`[job-briefing] fallback question query failed: ${fallbackQuery}`, err)
     return []
   }
 }
@@ -744,7 +767,7 @@ export async function generateJobBriefing(
   opts.emitProgress?.('aggregating-questions')
   let questions: InterviewQuestion[] = []
   try {
-    questions = await discoverQuestions(cfg, profile, config, { apiKey, signal: opts.signal })
+    questions = await discoverQuestions(cfg, profile, config, focus, { apiKey, signal: opts.signal })
   } catch (err) {
     console.warn('[job-briefing] question aggregation failed', err)
   }
