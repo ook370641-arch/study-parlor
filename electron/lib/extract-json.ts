@@ -83,13 +83,15 @@ export function extractJsonObject(text: string): string | null {
 
   if (end !== -1) return text.slice(start, end + 1)
 
-  // Fallback: 括号平衡失败时，尝试直接截取第一个 { 到最后一个 }
-  const fallback = text.slice(start).match(/\{[\s\S]*?\}(?=\s*$)/)
-  if (fallback) {
+  // Fallback: 括号平衡失败时，尝试从第一个 { 到文本中最后一个 }
+  const afterStart = text.slice(start)
+  const lastBrace = afterStart.lastIndexOf('}')
+  if (lastBrace !== -1) {
+    const candidate = text.slice(start, start + lastBrace + 1)
     try {
-      JSON.parse(fallback[0])
-      return fallback[0]
-    } catch {}
+      JSON.parse(candidate)
+      return candidate
+    } catch { /* fall through to return null */ }
   }
 
   return null
@@ -145,12 +147,15 @@ export function extractJsonArray(text: string): string | null {
 
   if (end !== -1) return text.slice(start, end + 1)
 
-  const fallback = text.slice(start).match(/\[[\s\S]*?\](?=\s*$)/)
-  if (fallback) {
+  // Fallback: 括号平衡失败时，尝试从第一个 [ 到文本中最后一个 ]
+  const afterStart = text.slice(start)
+  const lastBracket = afterStart.lastIndexOf(']')
+  if (lastBracket !== -1) {
+    const candidate = text.slice(start, start + lastBracket + 1)
     try {
-      JSON.parse(fallback[0])
-      return fallback[0]
-    } catch {}
+      JSON.parse(candidate)
+      return candidate
+    } catch { /* fall through to return null */ }
   }
 
   return null
