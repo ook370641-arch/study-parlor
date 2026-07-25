@@ -77,6 +77,8 @@ export const ipc = {
   get jobBriefingDelete() { return ensure().jobBriefingDelete },
   get jobBriefingAbort() { return ensure().jobBriefingAbort },
   get jobBriefingDiscoverPages() { return ensure().jobBriefingDiscoverPages },
+  get jobBriefingGenerateKeywords() { return ensure().jobBriefingGenerateKeywords },
+  get jobBriefingGenerateArticleSearchQuery() { return ensure().jobBriefingGenerateArticleSearchQuery },
 
   get anthropicDiscover() { return ensure().anthropicDiscover },
   get anthropicImportArticle() { return ensure().anthropicImportArticle },

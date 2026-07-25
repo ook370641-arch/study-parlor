@@ -102,6 +102,10 @@ const api: IpcApi = {
   jobBriefingDiscoverPages: () => ipcRenderer.invoke('job-briefing:discover-pages'),
   jobBriefingDelete: (args) => ipcRenderer.invoke('job-briefing:delete', args),
   jobBriefingAbort: () => ipcRenderer.invoke('job-briefing:abort'),
+  jobBriefingGenerateKeywords: (args: { profile: import('@shared/index').JobProfile }) =>
+    ipcRenderer.invoke('job-briefing:generate-keywords', args),
+  jobBriefingGenerateArticleSearchQuery: (args: { articleContent: string; selection?: string; lastMessage?: string }) =>
+    ipcRenderer.invoke('job-briefing:generate-article-search-query', args),
 
   anthropicDiscover: () => ipcRenderer.invoke('anthropic:discover'),
   anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
