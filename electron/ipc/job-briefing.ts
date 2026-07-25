@@ -142,7 +142,9 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
       }, mockContent)
       fs.mkdirSync(jobBriefingDir(cfg), { recursive: true })
       try {
-        fs.writeFileSync(filePath, fm, 'utf8')
+        const tmpPath = filePath + '.tmp'
+        fs.writeFileSync(tmpPath, fm, 'utf8')
+        fs.renameSync(tmpPath, filePath)
       } catch { /* ignore */ }
       // Write last-job-request.json for E2E request-level assertions
       const e2eDir = process.env.E2E_CONFIG_DIR

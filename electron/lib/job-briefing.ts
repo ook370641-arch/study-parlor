@@ -814,7 +814,9 @@ export async function generateJobBriefing(
   let cacheWriteFailed = false
   try {
     fs.mkdirSync(jobBriefingDir(cfg), { recursive: true })
-    fs.writeFileSync(filePath, serializeFrontmatter('job-briefing', fm, content), 'utf8')
+    const tmpPath = filePath + '.tmp'
+    fs.writeFileSync(tmpPath, serializeFrontmatter('job-briefing', fm, content), 'utf8')
+    fs.renameSync(tmpPath, filePath)
   } catch (writeErr) {
     console.error('[job-briefing] cache write failed', writeErr)
     dumpRecovery(path.basename(filePath), content)

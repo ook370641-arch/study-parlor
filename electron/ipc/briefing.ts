@@ -385,7 +385,9 @@ export function registerBriefingIpc(cfg: AppConfig) {
       const frontmatter = `---\ntitle: 夜航简报\ntype: briefing\ncreated: '${new Date().toISOString()}'\ntags:\n  - industry-digest\n  - ai\n---\n\n`
       fs.mkdirSync(path.dirname(filePath), { recursive: true })
       try {
-        fs.writeFileSync(filePath, frontmatter + mockContent, 'utf8')
+        const tmpPath = filePath + '.tmp'
+        fs.writeFileSync(tmpPath, frontmatter + mockContent, 'utf8')
+        fs.renameSync(tmpPath, filePath)
       } catch {
         // cache write can fail silently
       }
@@ -512,7 +514,9 @@ export function registerBriefingIpc(cfg: AppConfig) {
 
       try {
         fs.mkdirSync(briefingDir(cfg), { recursive: true })
-        fs.writeFileSync(filePath, serializeFrontmatter('briefing', fm, content), 'utf8')
+        const tmpPath = filePath + '.tmp'
+        fs.writeFileSync(tmpPath, serializeFrontmatter('briefing', fm, content), 'utf8')
+        fs.renameSync(tmpPath, filePath)
       } catch (writeErr) {
         console.error('[briefing] failed to write cached file, dumping recovery', writeErr)
         dumpRecovery(path.basename(filePath), content)
