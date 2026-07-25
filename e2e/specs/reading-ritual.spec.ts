@@ -37,4 +37,28 @@ test.describe('@p1 reading ritual (燃熄 + 阖卷 + 脊柱)', () => {
     // 脊柱存在
     await expect(window.locator('[data-testid="internalization-spine"]')).toBeAttached()
   })
+
+  test('internalization spine renders visited nodes after scrolling', async ({ window, testLibraryPath }) => {
+    const today = localToday()
+    seedBriefing(testLibraryPath, today)
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+
+    const spine = window.locator('[data-testid="internalization-spine"]')
+    await expect(spine).toBeAttached()
+    // 至少有一个节点存在
+    const nodes = spine.locator('[data-testid^="spine-node-"]')
+    await expect(nodes.first()).toBeAttached()
+
+    // 滚动使第一个 chunk 进入视口 → 第一个节点变 visited
+    await window.locator(SELECTORS.briefing.academicLayout).evaluate((el) => el.scrollTo(0, 200))
+    await window.waitForTimeout(500)
+    const firstNode = spine.locator('[data-testid="spine-node-0"]')
+    const state = await firstNode.getAttribute('data-state')
+    // visited 或 sealed（取决于是否有标注）——不会是 unvisited
+    expect(['visited', 'sealed']).toContain(state)
+  })
 })
