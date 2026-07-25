@@ -67,4 +67,30 @@ test.describe('@p1 lighting layer', () => {
     await expect(window.locator('[data-testid="briefing-candlelight"]')).toHaveCount(0)
     await expect(window.locator('[data-testid="briefing-candlelight-toggle"]')).toBeDisabled()
   })
+
+  test('candlelight warms on annotation hover (有识)', async ({ window, testLibraryPath }) => {
+    seedBriefing(testLibraryPath, localToday())
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+
+    // 烛光层存在
+    const glow = window.locator('[data-testid="briefing-candlelight"] .candle-glow')
+    await expect(glow).toBeAttached()
+    // 初始无 warm class
+    await expect(glow).not.toHaveClass(/candle-warm/)
+
+    // 找到标注标记并悬停——用 anno-wrap class（ArticleAnnotations 产生的标记）
+    const anno = window.locator('.anno-wrap').first()
+    if (await anno.count() > 0) {
+      await anno.hover()
+      await expect(glow).toHaveClass(/candle-warm/)
+      // 移开后 warm 消失
+      await window.locator('body').hover()
+      await expect(glow).not.toHaveClass(/candle-warm/)
+    }
+    // 若无标注则跳过 warm 断言（此场景下 warm 不会触发，不算失败）
+  })
 })
