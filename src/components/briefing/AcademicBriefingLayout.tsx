@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useStore } from '@/store'
 import type { BriefingResult } from '@/types'
 import type { ParsedBriefing } from '@/lib/parse-briefing-markdown'
@@ -11,6 +11,7 @@ import { BriefingMetaLine } from './BriefingMetaLine'
 import { Quote } from '@/components/Quote'
 import { TransferToWritingButton } from './TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
+import { InternalizationSpine } from '@/components/briefing/InternalizationSpine'
 
 export function AcademicBriefingLayout({
   result,
@@ -44,10 +45,21 @@ export function AcademicBriefingLayout({
   sentinelRef?: React.RefObject<HTMLDivElement | null>
 }) {
   const [expandedSources, setExpandedSources] = useState(false)
+  const [visitedMax, setVisitedMax] = useState<number | null>(null)
   const articleBodyRef = useRef<HTMLDivElement>(null)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
+
+  useEffect(() => {
+    if (activeChunkIndex !== null) setVisitedMax((v) => Math.max(v ?? -1, activeChunkIndex))
+  }, [activeChunkIndex])
+
+  const navigateToChunk = (i: number) => {
+    articleBodyRef.current
+      ?.querySelector(`[data-chunk-index="${i}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <main
@@ -56,6 +68,15 @@ export function AcademicBriefingLayout({
       ref={containerRef}
     >
       <div ref={articleBodyRef} className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative briefing-article-body">
+        {filePath && (
+          <InternalizationSpine
+            content={result.content}
+            chunks={chunks ?? []}
+            filePath={filePath}
+            visitedMax={visitedMax}
+            onNavigate={navigateToChunk}
+          />
+        )}
         {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
         <header className="text-center mb-8 arrive-item">
           <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2">{result.title}</h1>
