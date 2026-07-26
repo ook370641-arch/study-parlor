@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { Button } from '@/components/Button'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
-import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { StudyControlsGroup } from '@/components/StudyControlsGroup'
 import { ipc } from '@/lib/ipc'
 import { DEFAULT_JOB_BRIEFING_CONFIG } from '@/lib/job-briefing-defaults'
 import type { AppConfig } from '@electron/env'
@@ -20,6 +20,8 @@ export function Settings() {
   const goto = useStore(s => s.goto)
   const settingsReturnTo = useStore(s => s.settingsReturnTo)
   const showToast = useStore(s => s.showToast)
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
 
   const [initialConfig, setInitialConfig] = useState<AppConfig | null>(null)
   const [apiKey, setApiKey] = useState('')
@@ -164,17 +166,17 @@ export function Settings() {
   return (
     <div data-testid="settings-page" className="fixed inset-0">
       <SurfaceBackground surface="home" />
-      <SwapPaintingButton surface="home" className="absolute top-4 right-4 z-10" />
+      <StudyControlsGroup surface="home" className="absolute top-4 right-4 z-10" />
 
       <div className="absolute top-10 left-6 right-6 bottom-5 z-10">
         <div className="max-w-3xl mx-auto h-full flex flex-col">
-          <div className="bg-ink/72 backdrop-blur-md border border-slate/30 rounded-xl flex flex-col h-full overflow-hidden">
-            <div className="flex justify-between items-center px-6 pt-5 pb-3 border-b border-slate/25 shrink-0">
+          <div className={`${isAcademic ? 'bg-ink/72' : 'bg-white'} backdrop-blur-md border ${isAcademic ? 'border-slate/30' : 'border-[#1a1a1a]/10'} rounded-xl flex flex-col h-full overflow-hidden`}>
+            <div className={`flex justify-between items-center px-6 pt-5 pb-3 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/8'} shrink-0`}>
               <h2 className="text-2xl font-serif font-semibold">设置 · 仪器调校</h2>
               <button
                 data-testid="settings-back-button"
                 onClick={() => goto(settingsReturnTo ?? 'home')}
-                className="text-parchment/70 hover:text-parchment text-sm bg-transparent border-none cursor-pointer font-sans"
+                className={`${isAcademic ? 'text-parchment/70 hover:text-parchment' : 'text-[#555] hover:text-[#1a1a1a]'} text-sm bg-transparent border-none cursor-pointer font-sans`}
               >
                 返回夜话
               </button>
@@ -182,18 +184,18 @@ export function Settings() {
 
             <div className="overflow-y-auto flex-1 px-6 py-5">
               {error && (
-                <div data-testid="settings-error-display" className="mb-4 bg-wine/10 border border-wine/40 rounded-md px-4 py-3">
+                <div data-testid="settings-error-display" className={`mb-4 ${isAcademic ? 'bg-wine/10 border-wine/40' : 'bg-red-50 border-red-200'} border rounded-md px-4 py-3`}>
                   <p className="text-sm text-parchment/80">{error}</p>
                 </div>
               )}
 
               {/* AI 服务 */}
-              <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
-                <h3 className="text-ember font-semibold mb-4">AI 服务</h3>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>AI 服务</h3>
 
                 <div className="space-y-4">
                   <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">API Key</div>
+                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>API Key</div>
                     <div className="flex gap-2">
                       <input
                         data-testid="settings-api-key-input"
@@ -201,13 +203,13 @@ export function Settings() {
                         value={apiKey}
                         onChange={e => setApiKey(e.target.value)}
                         placeholder="sk-kimi-..."
-                        className="flex-1 bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                        className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                       />
                       <button
                         data-testid="settings-api-key-toggle"
                         type="button"
                         onClick={() => setShowKey(!showKey)}
-                        className="px-3 py-2 border border-slate/40 rounded-md text-sm text-parchment/80 hover:text-parchment transition-colors shrink-0"
+                        className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/12 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
                       >
                         {showKey ? '隐藏' : '显示'}
                       </button>
@@ -218,26 +220,26 @@ export function Settings() {
                   </div>
 
                   <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">Base URL</div>
+                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>Base URL</div>
                     <input
                       data-testid="settings-base-url-input"
                       type="text"
                       value={baseUrl}
                       onChange={e => setBaseUrl(e.target.value)}
                       placeholder={DEFAULT_BASE_URL}
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                   </div>
 
                   <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">Model</div>
+                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>Model</div>
                     <input
                       data-testid="settings-model-input"
                       type="text"
                       value={model}
                       onChange={e => setModel(e.target.value)}
                       placeholder={DEFAULT_MODEL}
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                   </div>
                 </div>
@@ -249,8 +251,8 @@ export function Settings() {
                   {verifyStatus && (
                     <span data-testid="settings-verify-status" className={`text-xs ${
                       verifyStatus.kind === 'error' ? 'text-wine' :
-                      verifyStatus.kind === 'success' ? 'text-ember' :
-                      'text-parchment/40'
+                      verifyStatus.kind === 'success' ? (isAcademic ? 'text-ember' : 'text-green-700') :
+                      (isAcademic ? 'text-parchment/40' : 'text-[#888]')
                     }`}>
                       {verifyStatus.message}
                     </span>
@@ -259,12 +261,12 @@ export function Settings() {
               </div>
 
               {/* 联网搜索 */}
-              <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
-                <h3 className="text-ember font-semibold mb-4">联网搜索</h3>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>联网搜索</h3>
 
                 <div className="space-y-4">
                   <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">Tavily API Key</div>
+                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>Tavily API Key</div>
                     <div className="flex gap-2">
                       <input
                         data-testid="settings-search-api-key-input"
@@ -272,19 +274,19 @@ export function Settings() {
                         value={searchApiKey}
                         onChange={e => setSearchApiKey(e.target.value)}
                         placeholder={searchConfigured ? '已配置，输入新 key 可覆盖' : 'tvly-...'}
-                        className="flex-1 bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                        className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                       />
                       <button
                         data-testid="settings-search-api-key-toggle"
                         type="button"
                         onClick={() => setShowSearchKey(!showSearchKey)}
-                        className="px-3 py-2 border border-slate/40 rounded-md text-sm text-parchment/80 hover:text-parchment transition-colors shrink-0"
+                        className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/12 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
                       >
                         {showSearchKey ? '隐藏' : '显示'}
                       </button>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <div className="text-xs text-parchment/40">
+                      <div className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
                         Key 会加密存储在系统密钥库中，不会写入 .env 文件；联网资料仅在你主动开启时使用。
                       </div>
                       <Button data-testid="settings-search-save-button" onClick={handleSaveSearchKey} disabled={!searchApiKey.trim()}>
@@ -296,23 +298,23 @@ export function Settings() {
               </div>
 
               {/* 学习库 */}
-              <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
-                <h3 className="text-ember font-semibold mb-4">学习库</h3>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>学习库</h3>
                 <div>
-                  <div className="text-[11px] text-parchment/60 font-sans mb-1">目录路径</div>
+                  <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目录路径</div>
                   <div className="flex gap-2">
                     <input
                       data-testid="settings-library-path-input"
                       type="text"
                       value={libraryPath}
                       onChange={e => setLibraryPath(e.target.value)}
-                      className="flex-1 bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                      className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                     <button
                       data-testid="settings-select-directory-button"
                       type="button"
                       onClick={handleSelectDirectory}
-                      className="px-3 py-2 border border-slate/40 rounded-md text-sm text-parchment/80 hover:text-parchment transition-colors shrink-0"
+                      className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/12 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
                     >
                       选择目录
                     </button>
@@ -321,29 +323,29 @@ export function Settings() {
               </div>
 
               {/* 求职简报 */}
-              <div className="bg-parchment/5 border border-slate/20 rounded-lg p-4 mb-4">
-                <h3 className="text-ember font-semibold mb-4">求职简报</h3>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>求职简报</h3>
 
                 <div className="space-y-4">
                   <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">目标岗位关键词（逗号分隔）</div>
+                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目标岗位关键词（逗号分隔）</div>
                     <input
                       data-testid="settings-job-role-keywords"
                       type="text"
                       value={jobConfig.roleKeywords.join('，')}
                       onChange={e => setJobConfig(prev => ({ ...prev, roleKeywords: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                   </div>
 
                   <div>
-                    <div className="text-[11px] text-parchment/60 font-sans mb-1">目标城市（逗号分隔）</div>
+                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目标城市（逗号分隔）</div>
                     <input
                       data-testid="settings-job-cities"
                       type="text"
                       value={jobConfig.cities.join('，')}
                       onChange={e => setJobConfig(prev => ({ ...prev, cities: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      className="w-full bg-ink/50 border border-slate/40 rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/60"
+                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                   </div>
 
@@ -380,7 +382,7 @@ export function Settings() {
                     作废
                   </Button>
                 </div>
-                <div className="text-xs text-parchment/40 border-l-2 border-slate/30 pl-3">
+                <div className={`text-xs ${isAcademic ? 'text-parchment/40 border-slate/30' : 'text-[#888] border-[#1a1a1a]/10'} border-l-2 pl-3`}>
                   保存后需重启应用，改动才会生效。
                 </div>
               </div>
