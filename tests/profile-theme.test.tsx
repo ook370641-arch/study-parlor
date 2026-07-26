@@ -42,10 +42,10 @@ describe('Profile theme', () => {
     expect(screen.getByTestId('surface-background')).toBeInTheDocument()
   })
 
-  it('hides surface background in newspaper mode', () => {
+  it('shows surface background in newspaper mode on Profile (Home surface)', () => {
     useStore.setState({ briefingTheme: 'newspaper' })
     render(<Profile />)
-    expect(screen.queryByTestId('surface-background')).not.toBeInTheDocument()
+    expect(screen.getByTestId('surface-background')).toBeInTheDocument()
   })
 
   it('renders profile name in academic mode', () => {

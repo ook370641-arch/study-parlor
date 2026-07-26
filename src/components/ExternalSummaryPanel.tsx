@@ -8,6 +8,8 @@ const PANEL_WIDTH = 760
 const SLIDE_DURATION_MS = 300
 
 export function ExternalSummaryPanel() {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const isOpen = useStore(s => s.isExternalSummaryOpen)
   const materials = useStore(s => s.externalMaterials)
   const closeExternalSummary = useStore(s => s.closeExternalSummary)
@@ -55,20 +57,20 @@ export function ExternalSummaryPanel() {
       role="dialog"
       aria-modal="true"
       aria-label="外部资料摘要"
-      className={`fixed right-0 top-16 bottom-0 z-[15] flex flex-col bg-[rgba(22,17,14,0.98)] border-l border-parchment/15 shadow-[-10px_0_40px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out ${
+      className={`fixed right-0 top-16 bottom-0 z-[15] flex flex-col transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}
+      } ${isAcademic ? 'bg-[rgba(22,17,14,0.98)] border-l border-parchment/15 shadow-[-10px_0_40px_rgba(0,0,0,0.5)]' : 'bg-white border-l border-[#1a1a1a]/10 shadow-[-10px_0_40px_rgba(0,0,0,0.08)]'}`}
       style={{ width: `${PANEL_WIDTH}px` }}
     >
-      <div className="h-12 border-b border-parchment/10 px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 text-sm text-parchment font-sans">
+      <div className={`h-12 border-b px-4 flex items-center justify-between shrink-0 ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}>
+        <div className={`flex items-center gap-2 text-sm font-sans ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>
           <span>🌐</span>
           <span>外部资料摘要</span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={decreaseFontSize}
-            className="w-7 h-7 flex items-center justify-center text-parchment/60 hover:text-parchment hover:bg-parchment/10 rounded transition-colors"
+            className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#555] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/5'}`}
             aria-label="缩小摘要字号"
             title="缩小字号"
           >
@@ -76,7 +78,7 @@ export function ExternalSummaryPanel() {
           </button>
           <button
             onClick={increaseFontSize}
-            className="w-7 h-7 flex items-center justify-center text-parchment/60 hover:text-parchment hover:bg-parchment/10 rounded transition-colors"
+            className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#555] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/5'}`}
             aria-label="放大摘要字号"
             title="放大字号"
           >
@@ -85,7 +87,7 @@ export function ExternalSummaryPanel() {
           <button
             data-testid="external-summary-close"
             onClick={closeExternalSummary}
-            className="text-parchment/50 hover:text-parchment text-sm px-1 ml-1"
+            className={`text-sm px-1 ml-1 ${isAcademic ? 'text-parchment/50 hover:text-parchment' : 'text-[#777] hover:text-[#1a1a1a]'}`}
             aria-label="关闭摘要面板"
           >
             ✕
@@ -94,13 +96,13 @@ export function ExternalSummaryPanel() {
       </div>
 
       <div
-        className="flex-1 overflow-y-auto px-4 py-4 leading-[1.75] text-parchment/80 font-serif"
+        className={`flex-1 overflow-y-auto px-4 py-4 leading-[1.75] font-serif ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}
         style={{ fontSize: baseStyle.size }}
       >
         {!hasSummary ? (
-          <div className="text-parchment/50 italic">暂无摘要</div>
+          <div className={`italic ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>暂无摘要</div>
         ) : (
-          <ExternalSummaryContent summary={materials.summary!} sources={sources} />
+          <ExternalSummaryContent summary={materials.summary!} sources={sources} theme={theme} />
         )}
       </div>
     </div>

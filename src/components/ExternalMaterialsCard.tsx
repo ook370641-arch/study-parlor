@@ -35,7 +35,7 @@ export function ExternalMaterialsCard() {
                 <span className={`text-xs ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>收集中…</span>
               )}
               {!materials.loading && hasSources && (
-                <span className="text-xs bg-ember/15 text-ember px-2 py-0.5 rounded-full">
+                <span className={`text-xs px-2 py-0.5 rounded-full ${isAcademic ? 'bg-ember/15 text-ember' : 'bg-[#1a1a1a]/8 text-[#1a1a1a]'}`}>
                   {materials.sources.length} 个来源
                 </span>
               )}
@@ -43,7 +43,7 @@ export function ExternalMaterialsCard() {
                 <span className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#999]'}`}>来自历史学习</span>
               )}
             </div>
-            <span className="text-ember text-xs">
+            <span className={`text-xs ${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'}`}>
               {expanded ? '收起' : '展开'}
             </span>
           </button>
@@ -53,7 +53,7 @@ export function ExternalMaterialsCard() {
               type="button"
               data-testid="external-summary-open"
               onClick={openExternalSummary}
-              className="px-4 py-3 text-xs text-ember hover:underline"
+              className={`px-4 py-3 text-xs hover:underline ${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'}`}
               aria-label="打开外部资料摘要面板"
             >
               摘要 →
@@ -65,7 +65,7 @@ export function ExternalMaterialsCard() {
           <div className={`px-4 pb-4 border-t ${isAcademic ? 'border-slate/20' : 'border-[#1a1a1a]/8'}`}>
             {materials.loading && (
               <div className={`pt-3 flex items-center gap-3 text-sm ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>
-                <span className={`inline-block w-4 h-4 border-2 ${isAcademic ? 'border-parchment/20' : 'border-[#ccc]'} border-t-ember rounded-full animate-spin`} />
+                <span className={`inline-block w-4 h-4 border-2 rounded-full animate-spin ${isAcademic ? 'border-parchment/20 border-t-ember' : 'border-[#ccc] border-t-[#1a1a1a]'}`} />
                 外部资料收集中…
               </div>
             )}

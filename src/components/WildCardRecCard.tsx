@@ -18,7 +18,7 @@ export function WildCardRecCard({
       <div className={`${isAcademic ? 'bg-ink/70' : 'bg-white'} backdrop-blur-md border border-wildcard/30 rounded py-3 px-4`}>
         <div className="flex flex-col items-center gap-3 py-2">
           <StarOrbit starCount={4} radius={14} period={3000} showLines={true} />
-          <span className="text-xs text-parchment/40 font-sans italic tracking-wide">
+          <span className={`text-xs font-sans italic tracking-wide ${isAcademic ? 'text-parchment/40' : 'text-[#999]'}`}>
             正在闯入…
           </span>
         </div>
@@ -33,7 +33,7 @@ export function WildCardRecCard({
           onClick={refresh}
           className={`block w-full text-left ${isAcademic ? 'bg-ink/70' : 'bg-white'} backdrop-blur-md border border-wildcard/30 rounded py-3 px-4 hover:border-wildcard/50 transition-colors`}
         >
-          <div className="text-xs text-parchment/40 font-sans mb-1">
+          <div className={`text-xs font-sans mb-1 ${isAcademic ? 'text-parchment/40' : 'text-[#999]'}`}>
             这次闯入失败了，再试一次
           </div>
           {error && (
@@ -56,7 +56,7 @@ export function WildCardRecCard({
       {loading && (
         <div className={`absolute inset-0 ${isAcademic ? 'bg-ink/60' : 'bg-white/80'} backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2`}>
           <StarOrbit starCount={4} radius={12} period={3000} showLines={true} />
-          <span className="text-[10px] text-parchment/50 font-sans italic tracking-wide">
+          <span className={`text-[10px] font-sans italic tracking-wide ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>
             正在闯入…
           </span>
         </div>
@@ -74,7 +74,7 @@ export function WildCardRecCard({
               refresh()
             }}
             disabled={loading}
-            className={`w-5 h-5 flex items-center justify-center rounded text-parchment/40 hover:text-wildcard hover:bg-wildcard/10 transition-all ${loading ? 'animate-spin' : ''}`}
+            className={`w-5 h-5 flex items-center justify-center rounded transition-all ${loading ? 'animate-spin' : ''} ${isAcademic ? 'text-parchment/40 hover:text-wildcard hover:bg-wildcard/10' : 'text-[#aaa] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/5'}`}
             title="换一条"
           >
             ↻

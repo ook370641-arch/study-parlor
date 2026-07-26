@@ -72,7 +72,7 @@ function SessionRow({
           isPending
             ? 'text-parchment/50 bg-ink'
             : reviewed
-              ? 'text-ember bg-ember/10'
+              ? isAcademic ? 'text-ember bg-ember/10' : 'text-[#1a1a1a] bg-[#1a1a1a]/5'
               : 'text-parchment/40 bg-ink'
         }`}>
           {isPending ? '⟳ 归档中' : reviewed ? '✓ 已复检' : '✕ 未复检'}
@@ -100,7 +100,7 @@ function SessionRow({
             className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${
               btn.disabled || isPending
                 ? `opacity-30 cursor-not-allowed ${isAcademic ? 'border-slate/20 text-parchment/40' : 'border-[#1a1a1a]/10 text-[#ccc]'}`
-                : `${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember`
+                : `${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} ${isAcademic ? 'hover:border-ember' : 'hover:border-[#1a1a1a]/25'}`
             }`}
           >
             {isPending && btn.label === '谈话记录' ? (
@@ -113,7 +113,7 @@ function SessionRow({
         {isGeneratingDiagram ? (
           <button
             disabled
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${isAcademic ? 'border-ember/40 text-ember/80 bg-ember/10' : 'border-[#1a1a1a]/15 text-[#1a1a1a] bg-[#1a1a1a]/5'}`}
           >
             <span className="inline-block animate-spin mr-1">⟳</span>生成中...
           </button>
@@ -129,7 +129,7 @@ function SessionRow({
                 version: 0,
               })
             }
-            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} ${isAcademic ? 'hover:border-ember' : 'hover:border-[#1a1a1a]/25'} transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             图表
           </button>
@@ -137,7 +137,7 @@ function SessionRow({
           <button
             data-testid="generate-diagram-button"
             onClick={() => onGenerateDiagram(dirName, session.sessionNumber)}
-            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} ${isAcademic ? 'hover:border-ember' : 'hover:border-[#1a1a1a]/25'} transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             📊 生成图表
           </button>
@@ -163,7 +163,7 @@ function SessionRow({
         ) : isGeneratingFable ? (
           <button
             onClick={() => onGenerateFable(dirName, session.sessionNumber)}
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:bg-ember/20 transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${isAcademic ? 'border-ember/40 text-ember/80 bg-ember/10 hover:bg-ember/20' : 'border-[#1a1a1a]/15 text-[#1a1a1a] bg-[#1a1a1a]/5 hover:bg-[#1a1a1a]/8'}`}
           >
             <span className="inline-block animate-spin mr-1">⟳</span>正在书写...
           </button>
@@ -180,7 +180,7 @@ function SessionRow({
                 version: 0,
               })
             }
-            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} ${isAcademic ? 'hover:border-ember' : 'hover:border-[#1a1a1a]/25'} transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             寓言
           </button>
@@ -188,7 +188,7 @@ function SessionRow({
           <button
             data-testid="generate-fable-button"
             onClick={() => onGenerateFable(dirName, session.sessionNumber)}
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:border-ember hover:bg-ember/20 hover:text-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${isAcademic ? 'border-ember/40 text-ember/80 bg-ember/10 hover:border-ember hover:bg-ember/20 hover:text-ember' : 'border-[#1a1a1a]/15 text-[#1a1a1a] bg-[#1a1a1a]/5 hover:border-[#1a1a1a]/25 hover:bg-[#1a1a1a]/8 hover:text-[#1a1a1a]'}`}
           >
             ✨ 唤醒寓言
           </button>
@@ -221,7 +221,7 @@ function SessionRow({
                 version: 0,
               })
             }
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember bg-ember/10 text-ember/80 hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${isAcademic ? 'border-ember bg-ember/10 text-ember/80 hover:bg-ember hover:text-ink' : 'border-[#1a1a1a] bg-[#1a1a1a]/5 text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white'}`}
           >
             复检记录
           </button>
@@ -229,7 +229,7 @@ function SessionRow({
           <button
             data-testid="session-review-button"
             onClick={() => onReview(session)}
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember text-ember hover:bg-ember hover:text-ink transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${isAcademic ? 'border-ember text-ember hover:bg-ember hover:text-ink' : 'border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white'}`}
           >
             复习
           </button>
@@ -334,7 +334,7 @@ function TopicAccordion({
               dirName: topic.dirName,
             })
           }}
-          className={`text-[10px] font-sans px-2 py-1 rounded border ${isAcademic ? 'border-slate/30 text-parchment/60' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember hover:text-ember transition-colors shrink-0`}
+          className={`text-[10px] font-sans px-2 py-1 rounded border transition-colors shrink-0 ${isAcademic ? 'border-slate/30 text-parchment/60 hover:border-ember hover:text-ember' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]'}`}
         >
           续谈（第{topic.sessionCount + 1}次）
         </button>
@@ -830,7 +830,7 @@ export function StudyLibrary() {
                     aria-label={`第${i + 1}屉`}
                     className={`rounded-full transition-colors ${
                       i === currentPage
-                        ? 'w-3.5 h-3.5 bg-ember'
+                        ? `w-3.5 h-3.5 ${isAcademic ? 'bg-ember' : 'bg-[#1a1a1a]'}`
                         : 'w-2.5 h-2.5 bg-slate/40 hover:bg-slate/60'
                     }`}
                   />

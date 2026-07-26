@@ -67,8 +67,8 @@ export function Quote({ surface }: Props) {
     >
       <div
         data-testid="quote-text"
-        className="font-serif text-[26px] leading-relaxed text-parchment"
-        style={{ textShadow: '0 1px 8px rgba(0,0,0,0.75)' }}
+        className={`font-serif text-[26px] leading-relaxed ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}
+        style={isAcademic ? { textShadow: '0 1px 8px rgba(0,0,0,0.75)' } : {}}
       >
         {"“"}{quote.text}{"”"}
       </div>
@@ -76,26 +76,26 @@ export function Quote({ surface }: Props) {
       {quote.original && (
         <div
           data-testid="quote-original"
-          className="mt-2 font-serif italic text-sm leading-relaxed text-parchment/60"
-          style={{ textShadow: '0 1px 6px rgba(0,0,0,0.65)' }}
+          className={`mt-2 font-serif italic text-sm leading-relaxed ${isAcademic ? 'text-parchment/60' : 'text-[#777]'}`}
+          style={isAcademic ? { textShadow: '0 1px 6px rgba(0,0,0,0.65)' } : {}}
         >
           {quote.original}
         </div>
       )}
 
-      <div className="mt-3 inline-flex items-center gap-2 font-sans text-sm text-parchment/80">
+      <div className={`mt-3 inline-flex items-center gap-2 font-sans text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>
         <span data-testid="quote-meta">
           {"—"} {quote.author}
           {quote.source && (
             <>
-              <span className="mx-1.5 text-parchment/40">{"·"}</span>
+              <span className={`mx-1.5 ${isAcademic ? 'text-parchment/40' : 'text-[#aaa]'}`}>{"·"}</span>
               {quote.source}
             </>
           )}
         </span>
         <button
           onClick={refresh}
-          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-parchment/40 hover:text-ember transition-opacity"
+          className={`opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity ${isAcademic ? 'text-parchment/40 hover:text-ember' : 'text-[#aaa] hover:text-[#1a1a1a]'}`}
           data-testid="quote-refresh-button"
           title="换一句"
         >

@@ -184,7 +184,7 @@ export function Study() {
 
       <ExternalSummaryPanel />
 
-      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''} ${pageShift} ${isAcademic ? '' : 'bg-[#fafaf8]'}`}>
+      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''} ${pageShift} ${isAcademic ? '' : 'bg-white'}`}>
       <SurfaceBackground surface="study" />
       {isExiting && (
         <div className="fixed inset-0 z-40 pointer-events-none">
@@ -270,7 +270,7 @@ export function Study() {
           <div data-testid="archive-pending-banner"
                className={isAcademic
                 ? "my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded text-sm font-sans text-parchment/80 flex justify-between items-center"
-                : "my-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded text-sm font-sans text-[#1a1a1a] flex justify-between items-center"}>
+                : "my-2 px-4 py-2 bg-white border border-[#1a1a1a]/10 rounded text-sm font-sans text-[#1a1a1a] flex justify-between items-center"}>
             <span>{t.archiveConfirmTitle}</span>
             <div className="flex gap-1.5 items-center">
               <Button data-testid="dismiss-archive-button" variant="ghost" onClick={() => useStore.getState().dismissArchive()}>

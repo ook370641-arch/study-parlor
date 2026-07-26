@@ -22,6 +22,8 @@ type SuggestionCardProps = {
 }
 
 function SuggestionCard({ suggestion, selected, onSelect }: SuggestionCardProps) {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
@@ -38,19 +40,19 @@ function SuggestionCard({ suggestion, selected, onSelect }: SuggestionCardProps)
       onKeyDown={handleKeyDown}
       className={`relative cursor-pointer rounded-lg border p-3 transition-colors ${
         selected
-          ? 'border-ember/50 bg-ember/10'
-          : 'border-slate/20 hover:border-slate/40'
+          ? isAcademic ? 'border-ember/50 bg-ember/10' : 'border-[#1a1a1a]/15 bg-[#1a1a1a]/5'
+          : isAcademic ? 'border-slate/20 hover:border-slate/40' : 'border-[#1a1a1a]/10 hover:border-[#1a1a1a]/20'
       }`}
     >
       <div className={`absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-        selected ? 'border-ember' : 'border-parchment/30'
+        selected ? (isAcademic ? 'border-ember' : 'border-[#1a1a1a]') : (isAcademic ? 'border-parchment/30' : 'border-[#ccc]')
       }`}>
-        {selected && <div className="w-2 h-2 rounded-full bg-ember" />}
+        {selected && <div className={`w-2 h-2 rounded-full ${isAcademic ? 'bg-ember' : 'bg-[#1a1a1a]'}`} />}
       </div>
-      <div className={`text-sm font-medium mb-1 pr-6 ${selected ? 'text-parchment' : 'text-parchment/80'}`}>
+      <div className={`text-sm font-medium mb-1 pr-6 ${selected ? (isAcademic ? 'text-parchment' : 'text-[#1a1a1a]') : (isAcademic ? 'text-parchment/80' : 'text-[#555]')}`}>
         {suggestion.title}
       </div>
-      <div className={`text-xs leading-relaxed space-y-1 ${selected ? 'text-parchment/70' : 'text-parchment/50'}`}>
+      <div className={`text-xs leading-relaxed space-y-1 ${selected ? (isAcademic ? 'text-parchment/70' : 'text-[#555]') : (isAcademic ? 'text-parchment/50' : 'text-[#777]')}`}>
         {suggestion.context && (
           <div className="flex gap-1.5">
             <span className={`text-xs shrink-0 mt-0.5 ${selected ? '' : 'opacity-40'}`}>{ICONS.context}</span>
@@ -75,12 +77,14 @@ function SuggestionCard({ suggestion, selected, onSelect }: SuggestionCardProps)
 }
 
 function SuggestionSkeleton() {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   return (
     <div className="space-y-3">
       {[1, 2].map(i => (
-        <div key={i} className="rounded-lg border border-slate/20 p-3 animate-pulse">
-          <div className="h-4 w-1/3 bg-parchment/10 rounded mb-2" />
-          <div className="h-3 w-3/4 bg-parchment/5 rounded" />
+        <div key={i} className={`rounded-lg border p-3 animate-pulse ${isAcademic ? 'border-slate/20' : 'border-[#1a1a1a]/10'}`}>
+          <div className={`h-4 w-1/3 rounded mb-2 ${isAcademic ? 'bg-parchment/10' : 'bg-[#1a1a1a]/10'}`} />
+          <div className={`h-3 w-3/4 rounded ${isAcademic ? 'bg-parchment/5' : 'bg-[#1a1a1a]/5'}`} />
         </div>
       ))}
     </div>
@@ -88,6 +92,8 @@ function SuggestionSkeleton() {
 }
 
 export function PreStudyModal() {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const args = useStore(s => s.preStudyArgs)
   const lastUsed = useStore(s => s.lastUsed)
   const closePreStudy = useStore(s => s.closePreStudy)
@@ -260,7 +266,7 @@ export function PreStudyModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-ink/70 flex items-center justify-center"
+    <div className={`fixed inset-0 z-40 flex items-center justify-center ${isAcademic ? 'bg-ink/70' : 'bg-black/5'}`}
          onClick={closePreStudy}>
       <div data-testid="prestudy-modal"
            className="panel w-[480px] p-8 space-y-6 max-h-[90vh] overflow-y-auto"
@@ -278,8 +284,8 @@ export function PreStudyModal() {
               }}
               className={`flex-1 py-2 rounded font-sans text-sm border transition-colors
                 ${topicSource === 'new'
-                  ? 'bg-ember text-ink border-ember'
-                  : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}
+                  ? isAcademic ? 'bg-ember text-ink border-ember' : 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                  : isAcademic ? 'border-slate/40 text-parchment/70 hover:border-parchment/60' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/25'}`}
             >
               {t.newTopicMode}
             </button>
@@ -294,15 +300,15 @@ export function PreStudyModal() {
               }}
               className={`flex-1 py-2 rounded font-sans text-sm border transition-colors
                 ${topicSource === 'existing'
-                  ? 'bg-ember text-ink border-ember'
-                  : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}
+                  ? isAcademic ? 'bg-ember text-ink border-ember' : 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                  : isAcademic ? 'border-slate/40 text-parchment/70 hover:border-parchment/60' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/25'}`}
             >
               {t.existingTopicMode}
             </button>
           </div>
         )}
         {!(args.mode === 'progress' && !args.dirName) && (
-          <div className="font-sans text-xs text-parchment/50">
+          <div className={`font-sans text-xs ${isAcademic ? 'text-parchment/50' : 'text-[#999]'}`}>
             {args.mode === 'progress' ? t.modeProgress : t.modeReview}
           </div>
         )}
@@ -327,7 +333,7 @@ export function PreStudyModal() {
               {/* Topic list */}
               <div className="max-h-40 overflow-y-auto space-y-1 border border-slate/20 rounded-lg p-2">
                 {filterAndSortTopics(library, searchQuery).length === 0 ? (
-                  <div className="text-sm text-parchment/40 italic px-2 py-1">
+                  <div className={`text-sm italic px-2 py-1 ${isAcademic ? 'text-parchment/40' : 'text-[#aaa]'}`}>
                     {library.length === 0 ? '档案室还空着，先创建一个新主题吧' : '未找到匹配的主题'}
                   </div>
                 ) : (
@@ -338,12 +344,12 @@ export function PreStudyModal() {
                       onClick={() => setSelectedDirName(t.dirName)}
                       className={`w-full text-left px-3 py-2 rounded text-sm transition-colors
                         ${selectedDirName === t.dirName
-                          ? 'bg-ember/10 text-parchment border border-ember/30'
-                          : 'text-parchment/70 hover:bg-slate/10 border border-transparent'}`}
+                          ? isAcademic ? 'bg-ember/10 text-parchment border border-ember/30' : 'bg-[#1a1a1a]/5 text-[#1a1a1a] border border-[#1a1a1a]/15'
+                          : isAcademic ? 'text-parchment/70 hover:bg-slate/10 border border-transparent' : 'text-[#555] hover:bg-[#1a1a1a]/5 border border-transparent'}`}
                     >
                       <div className="flex items-center justify-between">
                         <span>{t.title}</span>
-                        <span className="text-xs text-parchment/40">
+                        <span className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#999]'}`}>
                           {t.sessionCount} 次会话 · {t.last_studied_days} 天前
                         </span>
                       </div>
@@ -374,7 +380,7 @@ export function PreStudyModal() {
             </div>
           )
         ) : (
-          <div className="text-xl text-parchment">{args.topic}</div>
+          <div className={`text-xl ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>{args.topic}</div>
         )}
 
         {/* Continue suggestions (only for continue scenario) */}
@@ -396,11 +402,11 @@ export function PreStudyModal() {
                 ))}
               </div>
             ) : suggestionError ? (
-              <div className="text-sm text-parchment/40 italic">
+              <div className={`text-sm italic ${isAcademic ? 'text-parchment/40' : 'text-[#aaa]'}`}>
                 推荐加载失败，请检查网络后重试
               </div>
             ) : (
-              <div className="text-sm text-parchment/40 italic">
+              <div className={`text-sm italic ${isAcademic ? 'text-parchment/40' : 'text-[#aaa]'}`}>
                 暂无推荐，自由发挥即可
               </div>
             )}
@@ -416,10 +422,10 @@ export function PreStudyModal() {
             onChange={e => setUserRequirement(e.target.value)}
             placeholder="例如：多给我一些代码示例 / 用更直观的比喻 / 重点讲数学推导..."
             maxLength={200}
-            className="w-full bg-transparent border border-slate/30 rounded-lg px-3 py-2 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none focus:border-ember/50 resize-none"
+            className={`w-full bg-transparent border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none ${isAcademic ? 'border-slate/30 text-parchment placeholder:text-parchment/30 focus:border-ember/50' : 'border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]/30'}`}
             rows={3}
           />
-          <div className="text-right text-xs text-parchment/30 mt-1">
+          <div className={`text-right text-xs mt-1 ${isAcademic ? 'text-parchment/30' : 'text-[#bbb]'}`}>
             {userRequirement.length}/200
           </div>
         </div>
@@ -430,8 +436,8 @@ export function PreStudyModal() {
             data-testid="external-materials-toggle"
             className={`rounded-lg border p-3 transition-colors cursor-pointer ${
               enableExternalMaterials
-                ? 'bg-ember/10 border-ember/30'
-                : 'border-slate/20 hover:border-slate/40'
+                ? isAcademic ? 'bg-ember/10 border-ember/30' : 'bg-[#1a1a1a]/5 border-[#1a1a1a]/15'
+                : isAcademic ? 'border-slate/20 hover:border-slate/40' : 'border-[#1a1a1a]/10 hover:border-[#1a1a1a]/20'
             }`}
             onClick={() => {
               if (!enableExternalMaterials && !searchConfigured) {
@@ -444,16 +450,16 @@ export function PreStudyModal() {
             <div className="flex items-start gap-3">
               <div className={`mt-0.5 w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 ${
                 enableExternalMaterials
-                  ? 'bg-ember border-ember'
-                  : 'border-parchment/30'
+                  ? isAcademic ? 'bg-ember border-ember' : 'bg-[#1a1a1a] border-[#1a1a1a]'
+                  : isAcademic ? 'border-parchment/30' : 'border-[#ccc]'
               }`}>
                 {enableExternalMaterials && <span className="text-ink text-xs">✓</span>}
               </div>
               <div className="flex-1">
-                <div className={`text-sm font-medium ${enableExternalMaterials ? 'text-parchment' : 'text-parchment/80'}`}>
+                <div className={`text-sm font-medium ${enableExternalMaterials ? (isAcademic ? 'text-parchment' : 'text-[#1a1a1a]') : (isAcademic ? 'text-parchment/80' : 'text-[#555]')}`}>
                   引入联网资料
                 </div>
-                <div className="text-xs text-parchment/50 leading-relaxed mt-0.5">
+                <div className={`text-xs leading-relaxed mt-0.5 ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>
                   开始时会集中搜索一次主题资料，整理后注入对话上下文。来源将归档到本次学习目录。
                 </div>
               </div>
@@ -471,8 +477,8 @@ export function PreStudyModal() {
                 onClick={() => setDifficulty(d)}
                 className={`px-4 py-1.5 rounded font-sans text-sm border transition-colors
                   ${difficulty === d
-                    ? 'bg-ember text-ink border-ember'
-                    : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
+                    ? isAcademic ? 'bg-ember text-ink border-ember' : 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                    : isAcademic ? 'border-slate/40 text-parchment/70 hover:border-parchment/60' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/25'}`}>
                 {getDifficultyLabel(d, t)}
               </button>
             ))}
@@ -489,8 +495,8 @@ export function PreStudyModal() {
                 onClick={() => setTemperature(temp)}
                 className={`px-4 py-1.5 rounded font-sans text-sm border transition-colors
                   ${temperature === temp
-                    ? 'bg-ember text-ink border-ember'
-                    : 'border-slate/40 text-parchment/70 hover:border-parchment/60'}`}>
+                    ? isAcademic ? 'bg-ember text-ink border-ember' : 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                    : isAcademic ? 'border-slate/40 text-parchment/70 hover:border-parchment/60' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/25'}`}>
                 {getTemperatureLabel(temp, t)}
               </button>
             ))}
