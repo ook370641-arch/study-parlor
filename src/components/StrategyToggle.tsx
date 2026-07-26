@@ -8,6 +8,8 @@ const STRATEGY_META: Record<string, { label: string; color: string }> = {
 }
 
 export function StrategyToggle() {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const inspirationStrategy = useStore((s) => s.inspirationStrategy)
   const setInspirationStrategy = useStore((s) => s.setInspirationStrategy)
   const [hovered, setHovered] = useState(false)
@@ -38,8 +40,8 @@ export function StrategyToggle() {
         {inspirationStrategy}
       </button>
       {hovered && (
-        <div className="absolute right-0 top-7 z-20 whitespace-nowrap bg-ink/90 border border-slate/40 rounded px-2 py-1">
-          <span className="text-[10px] text-parchment/60 font-sans">
+        <div className={`absolute right-0 top-7 z-20 whitespace-nowrap ${isAcademic ? 'bg-ink/90 border-slate/40' : 'bg-white border-[#1a1a1a]/12'} border rounded px-2 py-1`}>
+          <span className={`text-[10px] ${isAcademic ? 'text-parchment/60' : 'text-[#555]'} font-sans`}>
             当前策略: {inspirationStrategy} {meta.label} · 点击切换
           </span>
         </div>
