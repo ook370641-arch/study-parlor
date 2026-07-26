@@ -36,10 +36,12 @@ describe('WritingAssistantPanel', () => {
     vi.useRealTimers()
   })
 
-  it('keeps the collapsed strip entry with its testid', () => {
+  it('renders divider in collapsed state when panel is closed', () => {
     useStore.setState({ writingAssistantOpen: false } as any)
     render(<WritingAssistantPanel />)
-    expect(screen.getByTestId('writing-assistant-collapsed')).toBeInTheDocument()
+    // ArticleDivider is always rendered; panel content only when open
+    expect(screen.getByTestId('article-assistant-divider')).toBeInTheDocument()
+    expect(screen.queryByTestId('writing-assistant-close-btn')).not.toBeInTheDocument()
   })
 
   it('renders header, messages and input when expanded', () => {

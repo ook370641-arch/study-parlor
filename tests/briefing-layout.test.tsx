@@ -204,12 +204,12 @@ describe('Briefing glass material (academic theme)', () => {
     })
   })
 
-  it('applies glass material to rail, list column and content shell in academic theme', () => {
+  it('does not apply glass material in academic theme (removed per user feedback)', () => {
     useStore.setState({ briefingTheme: 'academic', briefingSource: 'digest' } as any)
     render(<Briefing />)
-    expect(screen.getByTestId('briefing-source-sidebar').className).toContain('backdrop-blur-md')
-    expect(screen.getByTestId('briefing-list-column').className).toContain('backdrop-blur-md')
-    expect(screen.getByTestId('briefing-content-shell').className).toContain('backdrop-blur-md')
+    expect(screen.getByTestId('briefing-source-sidebar').className).not.toContain('backdrop-blur-md')
+    expect(screen.getByTestId('briefing-list-column').className).not.toContain('backdrop-blur-md')
+    expect(screen.getByTestId('briefing-content-shell').className).not.toContain('backdrop-blur-md')
   })
 
   it('does not apply glass material in newspaper theme', () => {
@@ -272,7 +272,6 @@ describe('BriefingLayout arrival cascade', () => {
         result={RESULT as any}
         parsed={PARSED as any}
         displayDate="2026 年 7 月 25 日"
-        swapButton={<button data-testid="swap-btn">swap</button>}
       />,
     )
     const layout = screen.getByTestId('briefing-academic-layout')

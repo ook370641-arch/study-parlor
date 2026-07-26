@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent, waitFor, act } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({
   ipc: {
@@ -13,6 +13,9 @@ vi.mock('@/lib/ipc', () => ({
     onBriefingProgress: vi.fn(() => () => {}),
     briefingList: vi.fn().mockResolvedValue([]),
     searchPrepare: vi.fn(),
+    writingScanTree: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    articleAssistantReadSession: vi.fn().mockResolvedValue(null),
+    annotationsRead: vi.fn().mockResolvedValue([]),
   }
 }))
 
@@ -70,6 +73,41 @@ describe('Briefing date column', () => {
   })
 })
 
+describe('Briefing source switching', () => {
+  beforeEach(() => {
+    cleanup()
+    useStore.setState({
+      briefing: { result: null, loading: false, error: null },
+      briefingSource: 'anthropic',
+      briefingTheme: 'academic',
+      briefingHistory: { list: [], loading: false, error: null },
+      jobBriefing: { result: null, loading: false, error: null },
+      jobBriefingHistory: { list: [], loading: false, error: null },
+      currentPaintings: {
+        briefing: null,
+        cover: null,
+        home: null,
+        study: null,
+      },
+    })
+  })
+
+  // Regression: readDates previously called useStore() inside the per-source
+  // conditional JSX, so entering/leaving digest/job changed the hook count and
+  // React threw "Rendered more hooks than during the previous render".
+  it('switches between sources without hook-count crash', () => {
+    render(<Briefing />)
+    act(() => { useStore.setState({ briefingSource: 'digest' }) })
+    expect(screen.getByTestId('briefing-date-column')).toBeInTheDocument()
+    act(() => { useStore.setState({ briefingSource: 'writing' }) })
+    expect(screen.queryByTestId('briefing-date-column')).not.toBeInTheDocument()
+    act(() => { useStore.setState({ briefingSource: 'job-briefing' }) })
+    expect(screen.getByTestId('briefing-date-column')).toBeInTheDocument()
+    act(() => { useStore.setState({ briefingSource: 'anthropic' }) })
+    expect(screen.queryByTestId('briefing-date-column')).not.toBeInTheDocument()
+  })
+})
+
 describe('Briefing global chrome', () => {
   beforeEach(() => {
     cleanup()
@@ -87,18 +125,58 @@ describe('Briefing global chrome', () => {
     })
   })
 
-  it('renders surface background without page-level swap button for anthropic source', () => {
+  it('renders surface background with blog-internal swap button for anthropic source', () => {
     render(<Briefing />)
     expect(screen.getByTestId('surface-background')).toBeInTheDocument()
-    // Digest keeps a body-level button inside its layout; anthropic renders its own
-    // inside AnthropicArticleReader; only job-briefing uses the page-level one.
+    // 博客源的换画+字号按钮在 AnthropicBlogPanel 内部，不在页面级 fixed 控件区。
     expect(screen.queryByTestId('briefing-swap-painting-button')).not.toBeInTheDocument()
+    expect(screen.getByTestId('anthropic-swap-painting-button')).toBeInTheDocument()
   })
 
-  it('renders the page-level swap button for job-briefing source in academic theme', () => {
-    useStore.setState({ briefingSource: 'job-briefing' })
+  it('renders swap button inside job reading pane (shifts with assistant panel)', () => {
+    useStore.setState({
+      briefingSource: 'job-briefing',
+      jobBriefing: {
+        result: {
+          title: '求职简报',
+          date: '2026-07-26',
+          content: '## 今日新动态\n测试内容',
+          sources: [],
+          filePath: '/x/job-briefing.md',
+          cached: false,
+          generatedAt: new Date().toISOString(),
+          sourceStatus: { official: 'ok', events: 'ok', jobs: 'ok', questions: 'ok' },
+        },
+        loading: false,
+        error: null,
+      },
+    })
     render(<Briefing />)
     expect(screen.getByTestId('briefing-swap-painting-button')).toBeInTheDocument()
+  })
+
+  it('renders swap button inside reading pane for digest source with result (shifts with assistant panel)', () => {
+    useStore.setState({
+      briefingSource: 'digest',
+      briefing: {
+        result: {
+          title: '夜航简报',
+          date: '2026-07-25',
+          content: '## A\n正文',
+          sources: [],
+          filePath: '/x/briefing.md',
+          cached: false,
+          generatedAt: new Date().toISOString(),
+          sourceStatus: { x: 'ok', podcasts: 'ok', blogs: 'ok' },
+        },
+        loading: false,
+        error: null,
+      },
+    })
+    render(<Briefing />)
+    // 换画按钮应在 reading-pane 内部（跟着导读面板开合移动），不在页面级 fixed 区
+    const pane = screen.getByTestId('briefing-reading-pane')
+    expect(pane.querySelector('[data-testid="briefing-swap-painting-button"]')).toBeTruthy()
   })
 
   it('does not render surface background for newspaper theme', () => {
@@ -106,6 +184,50 @@ describe('Briefing global chrome', () => {
     render(<Briefing />)
     expect(screen.queryByTestId('surface-background')).not.toBeInTheDocument()
     expect(screen.queryByTestId('briefing-swap-painting-button')).not.toBeInTheDocument()
+  })
+})
+
+describe('Briefing painting plate (今日展品)', () => {
+  beforeEach(() => {
+    cleanup()
+    useStore.setState({
+      briefing: { result: null, loading: false, error: null },
+      briefingSource: 'job-briefing',
+      briefingTheme: 'academic',
+      briefingHistory: { list: [], loading: false, error: null },
+      jobBriefing: {
+        result: {
+          date: '2026-07-26',
+          title: '求职简报',
+          content: '# 内容',
+          generatedAt: '2026-07-26T08:00:00.000Z',
+          filePath: '/test/job.md',
+          sourceStatus: { official: {}, events: 'ok', jobs: 'ok', questions: 'ok' },
+        },
+        loading: false,
+        error: null,
+      },
+      jobBriefingHistory: { list: [], loading: false, error: null },
+      paintingPlateEnabled: true,
+      currentPaintings: {
+        briefing: { id: 'test', painter: 'Test', title: 'Test', url: '/test.jpg' },
+        cover: null,
+        home: null,
+        study: null,
+      },
+    })
+  })
+
+  it('shows 今日展品 on the job-briefing reading pane when plate is enabled', () => {
+    render(<Briefing />)
+    expect(screen.getByTestId('painting-plate')).toBeInTheDocument()
+    expect(screen.getByTestId('painting-plate-caption')).toHaveTextContent('今日展品')
+  })
+
+  it('hides the plate on job-briefing in newspaper theme', () => {
+    useStore.setState({ briefingTheme: 'newspaper' })
+    render(<Briefing />)
+    expect(screen.queryByTestId('painting-plate')).not.toBeInTheDocument()
   })
 })
 

@@ -51,6 +51,20 @@ describe('SurfaceBackground weight grammar', () => {
     expect(settled[0].className).not.toContain('painting-drop-in')
   })
 
+  it('renders vignette darkening even when no painting is set (dev HMR resilience)', () => {
+    // SurfaceBackground must render the vignette overlay even if currentPaintings
+    // is null — otherwise dev-mode timing / HMR reload / Strict Mode remounting
+    // can leave the page without darkening, making text unreadable over bright art.
+    seedPaintings(null)
+    render(<SurfaceBackground surface="briefing" />)
+    const bg = screen.getByTestId('surface-background')
+    // Should still render with vignette div
+    expect(bg.querySelectorAll('img').length).toBe(0)
+    const vignetteEl = bg.children[0] as HTMLElement
+    expect(vignetteEl.tagName).toBe('DIV')
+    expect(vignetteEl.style.background).toContain('radial-gradient')
+  })
+
   it('CRT grain overlay activates during swap', () => {
     seedPaintings(PAINT_A)
     render(<SurfaceBackground surface="briefing" />)

@@ -43,8 +43,8 @@ describe('AnthropicArticleReader theme', () => {
     expect(reader).toHaveClass('bg-white')
   })
 
-  it('renders exactly one swap painting button', () => {
+  it('does not render its own swap painting button (centralized at page level)', () => {
     render(<AnthropicArticleReader filePath="/tmp/test.md" theme="academic" />)
-    expect(screen.getAllByTestId('anthropic-swap-painting-button')).toHaveLength(1)
+    expect(screen.queryByTestId('anthropic-swap-painting-button')).not.toBeInTheDocument()
   })
 })

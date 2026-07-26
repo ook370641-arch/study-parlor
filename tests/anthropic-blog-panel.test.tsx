@@ -61,9 +61,9 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getByTestId('briefing-list-column')).toBeInTheDocument()
   })
 
-  it('renders the swap painting button in the empty state (no article open)', () => {
+  it('does not render its own swap painting button (centralized at page level)', () => {
     render(<AnthropicBlogPanel theme="academic" />)
-    expect(screen.getByTestId('anthropic-swap-painting-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('anthropic-swap-painting-button')).not.toBeInTheDocument()
   })
 
   it('toggles collapsed rail and shows thumbnails', () => {

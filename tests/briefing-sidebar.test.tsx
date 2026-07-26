@@ -40,8 +40,9 @@ describe('BriefingSourceSidebar', () => {
   it('renders academic theme colors when theme is academic', () => {
     render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
     const aside = screen.getByTestId('briefing-source-sidebar')
-    expect(aside).toHaveClass('bg-ink/45')
-    expect(aside).toHaveClass('backdrop-blur-md')
+    expect(aside).toHaveClass('rounded-xl')
+    expect(aside).toHaveClass('border')
+    expect(aside).toHaveClass('border-parchment/15')
     expect(aside).not.toHaveClass('border-r')
   })
 
@@ -55,15 +56,8 @@ describe('BriefingSourceSidebar', () => {
 
   it('renders text labels in expanded mode', () => {
     render(<BriefingSourceSidebar theme="academic" collapsed={false} onToggle={() => {}} />)
-    expect(screen.getByText('AI 日报')).toBeInTheDocument()
-    expect(screen.getByText('Anthropic 博客')).toBeInTheDocument()
-  })
-
-  it('calls onToggle when a source is clicked while collapsed', () => {
-    const onToggle = vi.fn()
-    render(<BriefingSourceSidebar theme="academic" collapsed={true} onToggle={onToggle} />)
-    fireEvent.click(screen.getByTestId('briefing-source-anthropic'))
-    expect(onToggle).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('前沿')).toBeInTheDocument()
+    expect(screen.getByText('博客')).toBeInTheDocument()
   })
 
   it('applies academic active button styles', () => {
@@ -122,21 +116,26 @@ describe('BriefingSourceSidebar', () => {
     expect(aside).toHaveClass('z-[5]')
   })
 
-  it('hosts font-size controls, theme toggle and back-to-cover in the rail bottom cluster', () => {
+  it('hosts back-to-cover and theme toggle in the rail bottom cluster', () => {
     render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="academic" />)
     const cluster = screen.getByTestId('briefing-rail-controls')
     expect(cluster).toBeInTheDocument()
-    expect(within(cluster).getByTestId('briefing-font-size-decrease')).toBeInTheDocument()
-    expect(within(cluster).getByTestId('briefing-font-size-increase')).toBeInTheDocument()
+    expect(within(cluster).getByTestId('briefing-back-to-cover')).toBeInTheDocument()
+    expect(within(cluster).getByTestId('briefing-theme-toggle')).toBeInTheDocument()
   })
 
-  it('shows job profile entry only for job-briefing source', () => {
-    useStore.setState({ briefingSource: 'job-briefing' } as any)
-    const { unmount } = render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="academic" />)
-    expect(screen.getByTestId('job-briefing-profile-entry')).toBeInTheDocument()
-    unmount()
-    useStore.setState({ briefingSource: 'digest' } as any)
+  it('hosts candlelight and painting-plate toggles in the rail controls cluster', () => {
+    useStore.setState({ currentPaintings: { briefing: { id: 'p1', src: '' } } } as any)
     render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="academic" />)
-    expect(screen.queryByTestId('job-briefing-profile-entry')).not.toBeInTheDocument()
+    const cluster = screen.getByTestId('briefing-rail-controls')
+    expect(within(cluster).getByTestId('briefing-candlelight-toggle')).toBeInTheDocument()
+    expect(within(cluster).getByTestId('painting-plate-toggle')).toBeInTheDocument()
   })
+
+  it('hides candlelight and painting-plate toggles in newspaper theme', () => {
+    render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="newspaper" />)
+    expect(screen.queryByTestId('briefing-candlelight-toggle')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('painting-plate-toggle')).not.toBeInTheDocument()
+  })
+
 })
