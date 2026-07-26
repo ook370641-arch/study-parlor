@@ -52,7 +52,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
     if (!args.force && fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, 'utf8')
       const { frontmatter, body } = parseFrontmatter(raw, { filename: path.basename(filePath) })
-      const errorMatch = body.trim().match(/^##\s*Error\s*\n\s*(JOB_(MISSING_SEARCH_KEY|NETWORK_ERROR|OFFICIAL_PAGE_FAILED|EXTRACTION_ERROR|EMPTY_RESULTS|CACHE_WRITE_FAILED|TIMEOUT))$/)
+      const errorMatch = body.trim().match(/^##\s*Error\s*\n\s*(JOB_(MISSING_SEARCH_KEY|NETWORK_ERROR|TAVILY_ERROR|LLM_ERROR|OFFICIAL_PAGE_FAILED|EXTRACTION_ERROR|EMPTY_RESULTS|CACHE_WRITE_FAILED|TIMEOUT))$/)
       if (errorMatch) {
         throw new Error(errorMatch[1])
       }

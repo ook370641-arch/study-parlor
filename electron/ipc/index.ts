@@ -8,7 +8,7 @@ import { registerSessionsIpc } from './sessions'
 import { registerBriefingIpc } from './briefing'
 import { registerJobBriefingIpc } from './job-briefing'
 import { getCurrentState } from './state'
-import { DEFAULT_JOB_BRIEFING_CONFIG } from '../lib/job-briefing'
+import { DEFAULT_JOB_BRIEFING_CONFIG, normalizeJobBriefingConfig } from '../lib/job-briefing'
 import { registerSearchIpc } from './search'
 import { registerAnthropicIpc } from './anthropic'
 import { registerArticleAssistantIpc } from './article-assistant'
@@ -24,7 +24,7 @@ export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   registerLlmIpc(cfg, getMainWindow)
   registerSessionsIpc()
   registerBriefingIpc(cfg)
-  registerJobBriefingIpc(cfg, () => getCurrentState().jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG)
+  registerJobBriefingIpc(cfg, () => normalizeJobBriefingConfig(getCurrentState().jobBriefingConfig))
   registerSearchIpc(cfg)
   registerAnthropicIpc(cfg)
   registerArticleAssistantIpc(cfg)

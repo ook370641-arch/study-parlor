@@ -346,11 +346,13 @@ export type JobBriefingConfig = {
 export type JobErrorCode =
   | 'MISSING_SEARCH_KEY'
   | 'NETWORK_ERROR'
+  | 'TAVILY_ERROR'
   | 'OFFICIAL_PAGE_FAILED'
   | 'EXTRACTION_ERROR'
   | 'EMPTY_RESULTS'
   | 'CACHE_WRITE_FAILED'
   | 'TIMEOUT'
+  | 'LLM_ERROR'
 
 export type JobProfile = {
   targetRoles: string[]

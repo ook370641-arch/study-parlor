@@ -129,9 +129,12 @@ const api: IpcApi = {
   logTiming: (label, elapsed) => ipcRenderer.send('log:timing', label, elapsed),
 
   onBriefingProgress: (cb) => {
+    // removeAllListeners prevents duplicate handlers when digest and job-briefing
+    // subscribe to the same channel in rapid succession (React "Should have a queue" root cause).
+    ipcRenderer.removeAllListeners('briefing:progress')
     const handler = (_: unknown, stage: BriefingStage, detail?: string) => cb(stage, detail)
     ipcRenderer.on('briefing:progress', handler)
-    return () => ipcRenderer.off('briefing:progress', handler)
+    return () => ipcRenderer.removeAllListeners('briefing:progress')
   },
 
   bootStart: () => ipcRenderer.invoke('boot:start') as Promise<{ alreadyCompleted: boolean }>,

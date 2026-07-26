@@ -48,6 +48,22 @@ export function isJobProfileEmpty(p: JobProfile): boolean {
   return p.targetRoles.length === 0 && !p.direction.trim() && !p.experience.trim()
 }
 
+export function normalizeJobBriefingConfig(raw?: Partial<JobBriefingConfig> | null): JobBriefingConfig {
+  if (!raw) return { ...DEFAULT_JOB_BRIEFING_CONFIG, companies: DEFAULT_JOB_BRIEFING_CONFIG.companies.map(c => ({ ...c })) }
+  return {
+    companies: Array.isArray(raw.companies) && raw.companies.length > 0
+      ? raw.companies.map(c => ({ name: String(c.name ?? ''), priority: Number(c.priority ?? 99), enabled: c.enabled !== false, careerPageUrl: c.careerPageUrl ?? undefined }))
+      : DEFAULT_JOB_BRIEFING_CONFIG.companies.map(c => ({ ...c })),
+    roleKeywords: Array.isArray(raw.roleKeywords) ? raw.roleKeywords.filter((k): k is string => typeof k === 'string' && k.trim().length > 0) : [...DEFAULT_JOB_BRIEFING_CONFIG.roleKeywords],
+    cities: Array.isArray(raw.cities) ? raw.cities.filter((c): c is string => typeof c === 'string' && c.trim().length > 0) : [...DEFAULT_JOB_BRIEFING_CONFIG.cities],
+    skillKeywords: Array.isArray(raw.skillKeywords) ? raw.skillKeywords.filter((k): k is string => typeof k === 'string' && k.trim().length > 0) : [...DEFAULT_JOB_BRIEFING_CONFIG.skillKeywords],
+    eventSearchKeywords: Array.isArray(raw.eventSearchKeywords) ? raw.eventSearchKeywords.filter((k): k is string => typeof k === 'string' && k.trim().length > 0) : [],
+    jobSearchKeywords: Array.isArray(raw.jobSearchKeywords) ? raw.jobSearchKeywords.filter((k): k is string => typeof k === 'string' && k.trim().length > 0) : [],
+    searchInternship: raw.searchInternship ?? DEFAULT_JOB_BRIEFING_CONFIG.searchInternship,
+    searchFallRecruit: raw.searchFallRecruit ?? DEFAULT_JOB_BRIEFING_CONFIG.searchFallRecruit,
+  }
+}
+
 export function formatJobProfile(profile: JobProfile): string {
   if (isJobProfileEmpty(profile)) return '（用户未提供个人背景，按通用 AI 产品求职者处理）'
   const lines = [

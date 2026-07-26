@@ -13,13 +13,17 @@
       ],
       "specs": [
         "briefing.spec.ts",
-        "briefing-*.spec.ts"
+        "briefing-*.spec.ts",
+        "briefing-source-switching.spec.ts"
       ]
     },
     "job-briefing": {
       "sources": [
         "src/components/job-briefing/**",
         "electron/lib/job-briefing.ts",
+        "electron/lib/job-error-codes.ts",
+        "electron/lib/kimi.ts",
+        "electron/lib/search.ts",
         "electron/ipc/job-briefing.ts",
         "electron/prompts/job-briefing/**",
         "src/lib/job-briefing-defaults.ts"

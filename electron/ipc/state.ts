@@ -2,8 +2,8 @@ import { ipcMain } from 'electron'
 import path from 'node:path'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
 import { getStateDir } from '../env'
-import { DEFAULT_JOB_BRIEFING_CONFIG } from '../lib/job-briefing'
-import { DEFAULT_JOB_PROFILE } from '../../src/lib/job-briefing-defaults'
+import { DEFAULT_JOB_BRIEFING_CONFIG, normalizeJobBriefingConfig } from '../lib/job-briefing'
+import { DEFAULT_JOB_PROFILE, normalizeJobProfile } from '../../src/lib/job-briefing-defaults'
 import type { StateJson } from '@shared/index'
 
 function getStateFile(): string {
@@ -43,7 +43,16 @@ let currentState: StateJson | null = null
 function loadState(): StateJson {
   if (!currentState) {
     const raw = safeReadJson(getStateFile(), { fallback: DEFAULT })
-    currentState = { ...DEFAULT, ...raw }
+    currentState = {
+      ...DEFAULT,
+      ...raw,
+      // Deep-normalize nested configs that may have been added after the user's
+      // state.json was last saved. A shallow `{...DEFAULT, ...raw}` would let an
+      // old-format jobBriefingConfig (missing jobSearchKeywords, etc.) replace
+      // the complete default.
+      jobBriefingConfig: normalizeJobBriefingConfig(raw.jobBriefingConfig),
+      jobProfile: normalizeJobProfile(raw.jobProfile),
+    }
   }
   return currentState
 }
@@ -54,7 +63,12 @@ export function registerStateIpc() {
   ipcMain.handle('state:get', async (): Promise<StateJson> => {
     // Always read from disk so that renderer reloads pick up external state changes (e.g. E2E fixtures).
     const raw = safeReadJson(getStateFile(), { fallback: DEFAULT })
-    return { ...DEFAULT, ...raw }
+    return {
+      ...DEFAULT,
+      ...raw,
+      jobBriefingConfig: normalizeJobBriefingConfig(raw.jobBriefingConfig),
+      jobProfile: normalizeJobProfile(raw.jobProfile),
+    }
   })
 
   ipcMain.handle('state:patch', async (_, patch: Partial<StateJson>) => {

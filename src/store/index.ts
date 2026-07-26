@@ -18,7 +18,7 @@ import type {
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
-import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE, isJobProfileEmpty } from '@/lib/job-briefing-defaults'
+import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE, isJobProfileEmpty, normalizeJobProfile, normalizeJobBriefingConfig } from '@/lib/job-briefing-defaults'
 import type { Painting } from '@shared/index'
 
 export type AssistantSession = {
@@ -494,8 +494,8 @@ export const useStore = create<AppStore>((set, get) => ({
         ? { ...state.anthropicBlogCache, loading: false, error: null }
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
       anthropicBlogLastSeenAt: state.anthropicBlogLastSeenAt ?? null,
-      jobBriefingConfig: state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG,
-      jobProfile: state.jobProfile ?? DEFAULT_JOB_PROFILE,
+      jobBriefingConfig: normalizeJobBriefingConfig(state.jobBriefingConfig),
+      jobProfile: normalizeJobProfile(state.jobProfile),
       articleAssistantGuideWidth: state.articleAssistantGuideWidth ?? 320,
       articleAssistantGuideCollapsed: state.articleAssistantGuideCollapsed ?? false,
       assistantSearchEnabled: state.assistantSearchEnabled ?? false,
@@ -731,6 +731,8 @@ export const useStore = create<AppStore>((set, get) => ({
       // BriefingError.MESSAGES picks up the correct job-specific text.
       const error = raw.includes('JOB_MISSING_SEARCH_KEY') ? 'JOB_MISSING_SEARCH_KEY'
         : raw.includes('JOB_NETWORK_ERROR') ? 'JOB_NETWORK_ERROR'
+        : raw.includes('JOB_TAVILY_ERROR') ? 'JOB_TAVILY_ERROR'
+        : raw.includes('JOB_LLM_ERROR') ? 'JOB_LLM_ERROR'
         : raw.includes('JOB_OFFICIAL_PAGE_FAILED') ? 'JOB_OFFICIAL_PAGE_FAILED'
         : raw.includes('JOB_EXTRACTION_ERROR') ? 'JOB_EXTRACTION_ERROR'
         : raw.includes('JOB_EMPTY_RESULTS') ? 'JOB_EMPTY_RESULTS'

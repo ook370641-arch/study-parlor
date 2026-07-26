@@ -125,17 +125,32 @@ export async function chatNonStream(
     if (!res.ok) {
       const body = await res.text().catch(() => '')
       console.error('[kimi] chatNonStream HTTP error:', res.status, body.slice(0, 500))
-      throw new Error(`Kimi non-stream HTTP ${res.status}: ${body.slice(0, 200)}`)
+      const e: any = new Error(`Kimi non-stream HTTP ${res.status}: ${body.slice(0, 200)}`)
+      e.code = res.status === 401 || res.status === 403 ? 'LLM_ERROR'
+        : res.status === 429 ? 'LLM_ERROR'
+        : res.status >= 500 ? 'LLM_ERROR'
+        : 'LLM_ERROR'
+      e.status = res.status
+      throw e
     }
     const json = await res.json() as { choices: { message: { content: string } }[] }
     const content = json.choices[0]?.message?.content ?? ''
-    if (!content) throw new Error('Kimi returned empty content')
+    if (!content) {
+      const e: any = new Error('Kimi returned empty content')
+      e.code = 'LLM_ERROR'
+      throw e
+    }
     return content
   } catch (err: any) {
     if (timedOut) {
       const e: any = new Error(`Request timeout after ${TIMEOUT_MS}ms`)
       e.code = 'TIMEOUT'
       throw e
+    }
+    // Connection-level errors (TypeError, etc.) have no .code — mark them so
+    // toJobErrorCode can classify them as LLM_ERROR instead of NETWORK_ERROR.
+    if (!err.code && err.name !== 'AbortError') {
+      err.code = 'LLM_ERROR'
     }
     throw err
   } finally {

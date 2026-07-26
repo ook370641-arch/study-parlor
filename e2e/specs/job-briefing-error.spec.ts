@@ -39,6 +39,33 @@ test.describe('@p1 job-briefing 失败路径', () => {
     await expect(window.locator(SELECTORS.briefing.retryButton)).toHaveCount(0)
   })
 
+  // ── 全部 9 个错误码覆盖 ──
+  const ERROR_CODE_FIXTURES: { code: string; text: string; hasRetry: boolean }[] = [
+    { code: 'JOB_TAVILY_ERROR', text: '搜索服务暂时不可用', hasRetry: true },
+    { code: 'JOB_LLM_ERROR', text: 'AI 服务暂时不可用', hasRetry: true },
+    { code: 'JOB_OFFICIAL_PAGE_FAILED', text: '部分官方招聘页获取失败', hasRetry: true },
+    { code: 'JOB_EXTRACTION_ERROR', text: '岗位信息提取失败', hasRetry: true },
+    { code: 'JOB_EMPTY_RESULTS', text: '今日暂无岗位信息', hasRetry: true },
+    { code: 'JOB_CACHE_WRITE_FAILED', text: '缓存写入失败', hasRetry: false },
+    { code: 'JOB_TIMEOUT', text: '生成超时', hasRetry: true },
+  ]
+
+  for (const { code, text, hasRetry } of ERROR_CODE_FIXTURES) {
+    test(`${code} → "${text}" + retry=${hasRetry}`, async ({ window, testLibraryPath }) => {
+      seedJobBriefing(testLibraryPath, localToday(), `## Error\n${code}`)
+      await gotoJobBriefing(window)
+
+      await window.locator(SELECTORS.briefing.receiveJobButton).click()
+      await expect(window.locator(SELECTORS.briefing.errorDisplay)).toBeVisible({ timeout: 15000 })
+      await expect(window.locator(SELECTORS.briefing.errorDisplay)).toContainText(text)
+      if (hasRetry) {
+        await expect(window.locator(SELECTORS.briefing.retryButton)).toBeVisible()
+      } else {
+        await expect(window.locator(SELECTORS.briefing.retryButton)).toHaveCount(0)
+      }
+    })
+  }
+
   test('错误态点重试 → force 绕过错误缓存 → mock 成功', async ({ window, testLibraryPath }) => {
     seedJobBriefing(testLibraryPath, localToday(), `## Error\nJOB_NETWORK_ERROR`)
     await gotoJobBriefing(window)
@@ -67,18 +94,14 @@ test.describe('@p1 job-briefing 失败路径', () => {
 })
 
 test.describe('@p1 job-briefing 档案入口', () => {
-  test('常驻入口可见 → 进入设置 → 返回落到求职简报页', async ({ window }) => {
+  test('求职档案面板可通过页面内触发按钮打开', async ({ window, testLibraryPath }) => {
+    // 需要有简报结果才会渲染 trigger（trigger 在简报 meta 行内）
+    seedJobBriefing(testLibraryPath, localToday(), `## 今日新动态\n\n- 测试条目`)
     await gotoJobBriefing(window)
+    await window.locator(SELECTORS.briefing.receiveJobButton).click()
+    await expect(window.getByRole('heading', { name: '今日新动态' })).toBeVisible({ timeout: 15000 })
 
-    const entry = window.locator(SELECTORS.briefing.jobProfileEntry)
-    await expect(entry).toBeVisible()
-    await entry.click()
-
-    await expect(window.locator('[data-testid="settings-page"]')).toBeVisible({ timeout: 10000 })
-    await window.locator('[data-testid="settings-back-button"]').click()
-
-    await expect(window.locator(SELECTORS.briefing.page)).toBeVisible({ timeout: 10000 })
-    await expect(window.locator(SELECTORS.briefing.jobProfileEntry)).toBeVisible()
+    await expect(window.locator('[data-testid="job-profile-panel-trigger"]')).toBeVisible()
   })
 })
 

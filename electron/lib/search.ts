@@ -68,6 +68,13 @@ export async function searchWeb(opts: TavilySearchOptions): Promise<TavilyResult
       throw err
     }
     return data.results
+  } catch (err: any) {
+    // Connection-level errors (TypeError, DNS, etc.) have no .code — mark them so
+    // toJobErrorCode can classify them as TAVILY_ERROR instead of NETWORK_ERROR.
+    if (!err.code && err.name !== 'AbortError') {
+      err.code = 'TAVILY_ERROR'
+    }
+    throw err
   } finally {
     clearTimeout(timeoutId)
     if (externalListenerAdded) {
