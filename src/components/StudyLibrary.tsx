@@ -188,7 +188,7 @@ function SessionRow({
           <button
             data-testid="generate-fable-button"
             onClick={() => onGenerateFable(dirName, session.sessionNumber)}
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:border-ember hover:bg-ember/20 hover:text-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:border-ember hover:bg-ember/20 hover:text-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
           >
             ✨ 唤醒寓言
           </button>
