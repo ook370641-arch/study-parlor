@@ -133,7 +133,7 @@ export function Profile() {
                   onClick={() => setDifficulty(d)}
                   className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
                     difficulty === d
-                      ? 'bg-ember text-ink border-ember'
+                      ? (isAcademic ? 'bg-ember text-ink border-ember' : 'bg-[#1a1a1a] text-white border-[#1a1a1a]')
                       : `bg-transparent ${isAcademic ? 'text-parchment/70 border-slate/40' : 'text-[#555] border-[#1a1a1a]/12'} hover:border-slate/60`
                   }`}
                 >
@@ -153,7 +153,7 @@ export function Profile() {
                   onClick={() => setTemperature(temp)}
                   className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
                     temperature === temp
-                      ? 'bg-ember text-ink border-ember'
+                      ? (isAcademic ? 'bg-ember text-ink border-ember' : 'bg-[#1a1a1a] text-white border-[#1a1a1a]')
                       : `bg-transparent ${isAcademic ? 'text-parchment/70 border-slate/40' : 'text-[#555] border-[#1a1a1a]/12'} hover:border-slate/60`
                   }`}
                 >
