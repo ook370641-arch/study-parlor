@@ -225,7 +225,7 @@ test.describe('@p1 job briefing generation', () => {
   })
 })
 
-test.describe('@real @unstable job briefing real API', () => {
+test.describe('@real job briefing real API', () => {
   test.use({
     extraEnv: { E2E_JOB_BRIEFING_DISABLE_MOCK: '1' },
   })

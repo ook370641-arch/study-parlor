@@ -12,7 +12,7 @@ function localToday(): string {
 }
 
 test.describe('@p1 briefing generation', () => {
-  test('shows briefing page with auto-generated content @unstable', async ({ window, testLibraryPath }) => {
+  test('shows briefing page with auto-generated content', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()

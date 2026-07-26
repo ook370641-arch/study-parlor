@@ -226,7 +226,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
   })
 
   test('E2E-7: 自动检测新文章并显示刷新提示', {
-    tag: '@unstable',
+    tag: '@real',
   }, async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')

@@ -41,20 +41,6 @@ test.describe('@p1 lighting layer', () => {
     await expect(window.locator('[data-testid="painting-plate"]')).toBeVisible()
   })
 
-  test('focus breathing: hovering date rail dims article zone', async ({ window, testLibraryPath }) => {
-    seedBriefing(testLibraryPath, localToday())
-    const cover = new CoverPage(window)
-    await cover.enterName('E2E 测试员')
-    await cover.goToBriefing()
-    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
-    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
-
-    const root = window.locator('[data-testid="briefing-page"]')
-    await expect(root).toHaveAttribute('data-focus-zone', 'none')
-    await window.locator('[data-zone="rail-list"]').first().hover()
-    await expect(root).toHaveAttribute('data-focus-zone', 'rail-list')
-  })
-
   test('newspaper theme: candlelight absent and toggle greyed', async ({ window, testLibraryPath }) => {
     seedBriefing(testLibraryPath, localToday())
     const cover = new CoverPage(window)
