@@ -157,6 +157,17 @@
   color: #0f0a08;
 }
 
+/* 报纸版式换画按钮：深灰描边/黑字 */
+.swap-btn-newspaper {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(26, 26, 26, 0.18);
+  color: rgba(26, 26, 26, 0.5);
+}
+.swap-btn-newspaper:hover {
+  border-color: rgba(26, 26, 26, 0.35);
+  color: rgba(26, 26, 26, 0.8);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .painting-fall-out { animation: paintingSwapFadeOut 150ms ease-out forwards; }
   .painting-drop-in { animation: paintingSwapFadeIn 150ms ease-out both; }
@@ -320,16 +331,10 @@ html, body, #root { height: 100%; }
   text-shadow: 0 0 8px rgba(238, 194, 135, 0.8);
 }
 
-/* ===== 聚焦呼吸（F10）：三区照明 ===== */
-.focus-zone-root [data-zone] { transition: opacity 250ms ease; }
-.focus-zone-root[data-focus-zone="none"] [data-zone] { opacity: 0.38; }
-.focus-zone-root[data-focus-zone="article"] [data-zone="rail-source"],
-.focus-zone-root[data-focus-zone="article"] [data-zone="rail-list"],
-.focus-zone-root[data-focus-zone="rail-source"] [data-zone="article"],
-.focus-zone-root[data-focus-zone="rail-source"] [data-zone="rail-list"],
-.focus-zone-root[data-focus-zone="rail-list"] [data-zone="article"],
-.focus-zone-root[data-focus-zone="rail-list"] [data-zone="rail-source"] { opacity: 0.38; }
-
-@media (prefers-reduced-motion: reduce) {
-  .focus-zone-root [data-zone] { transition: none; }
+/* 烛光随行：默认隐藏光标增强沉浸感，交互元素始终显示 */
+.cursor-hidden { cursor: none; }
+.cursor-hidden button, .cursor-hidden a, .cursor-hidden [role="button"],
+.cursor-hidden input, .cursor-hidden textarea, .cursor-hidden [contenteditable],
+.cursor-hidden summary, .cursor-hidden select, .cursor-hidden [tabindex] {
+  cursor: auto;
 }
