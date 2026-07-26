@@ -321,8 +321,8 @@ export function Briefing() {
                   onReceive={() => generateJobBriefing(today)}
                 />
               ) : (jobPhase === 'generating' || jobPhase === 'resolved' || jobPhase === 'departing') && !jobResult ? (
-                <main className={`relative z-[5] flex-1 overflow-y-auto px-6 py-6 w-[95%] max-w-[1600px] min-w-[520px] mx-auto ${jobPhase === 'departing' ? 'constellation-depart' : ''}`}>
-                  <div className="absolute top-0 right-0 z-20 flex items-start gap-1">
+                <div className={`relative flex-1 min-h-0 w-[95%] max-w-[1600px] min-w-[520px] mx-auto ${jobPhase === 'departing' ? 'constellation-depart' : ''}`}>
+                  <div className="absolute top-4 right-0 z-20 flex items-start gap-1">
                     <button type="button" data-testid="briefing-font-size-decrease"
                       disabled={fontSize === 'sm'} onClick={decrease}
                       className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
@@ -333,12 +333,14 @@ export function Briefing() {
                       title="增大字号">+</button>
                     {isAcademic && <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />}
                   </div>
+                  <main className="relative z-[5] h-full overflow-y-auto px-6 py-6">
                   <BriefingProgress
                     stage={lastJobStage.current ?? 'scanning-events'}
                     mode={jobPhase === 'resolved' ? 'resolved' : 'live'}
                     onCancel={cancelJobBriefing}
                   />
                 </main>
+                </div>
               ) : jobPhase === 'failing' ? (
                 <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 w-[95%] max-w-[1600px] min-w-[520px] mx-auto">
                   <div className="absolute top-0 right-0 z-20 flex items-start gap-1">
