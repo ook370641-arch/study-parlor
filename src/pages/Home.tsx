@@ -88,6 +88,7 @@ export function Home() {
           <Button
             data-testid="new-topic-button"
             onClick={() => openPreStudy({ mode: 'progress', topic: '' })}
+            theme={theme}
             className="w-full text-lg py-4"
           >
             {t.newTopicLabel}
