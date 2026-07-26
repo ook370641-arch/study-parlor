@@ -59,25 +59,25 @@ export function Profile() {
 
             <div className="grid grid-cols-2 gap-x-7 gap-y-3.5">
               <div>
-                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#888]'} font-sans uppercase tracking-wider mb-1`}>{t.profileNameLabel}</div>
+                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} font-sans uppercase tracking-wider mb-1`}>{t.profileNameLabel}</div>
                 <div data-testid="profile-name-display" className={`text-xl font-semibold ${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'}`}>{profile.name}</div>
               </div>
               <div>
-                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#888]'} font-sans uppercase tracking-wider mb-1`}>{t.profileFieldLabel}</div>
+                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} font-sans uppercase tracking-wider mb-1`}>{t.profileFieldLabel}</div>
                 <div data-testid="profile-topics-display" className={`text-sm ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>{profile.preferred_topics.join(' · ') || '未填'}</div>
               </div>
               <div className="col-span-2">
-                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#888]'} font-sans uppercase tracking-wider mb-1`}>{t.profileTextLabel}</div>
+                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} font-sans uppercase tracking-wider mb-1`}>{t.profileTextLabel}</div>
                 <div data-testid="profile-text-display" className={`text-sm ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'} leading-relaxed`}>{profile.profile_text || '未填'}</div>
               </div>
               <div>
-                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#888]'} font-sans uppercase tracking-wider mb-1`}>{t.difficultyLabel}</div>
+                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} font-sans uppercase tracking-wider mb-1`}>{t.difficultyLabel}</div>
                 <div data-testid="profile-difficulty-display" className={`text-sm ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>
                   {getDifficultyLabel(lastUsed.difficulty, t)}
                 </div>
               </div>
               <div>
-                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#888]'} font-sans uppercase tracking-wider mb-1`}>{t.temperatureLabel}</div>
+                <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} font-sans uppercase tracking-wider mb-1`}>{t.temperatureLabel}</div>
                 <div data-testid="profile-temperature-display" className={`text-sm ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>{getTemperatureLabel(lastUsed.temperature, t)}</div>
               </div>
             </div>
