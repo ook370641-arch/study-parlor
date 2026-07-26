@@ -26,7 +26,7 @@ export function Home() {
   const firstUnsaved = unsavedSessions[0]
 
   return (
-    <div className={`h-full p-8 relative ${isAcademic ? '' : 'bg-[#fafaf8]'}`}>
+    <div className={`h-full p-8 relative ${isAcademic ? '' : 'bg-white'}`}>
       <BackToCover className="absolute top-4 left-4 z-10" />
       <SurfaceBackground surface="home" />
       <StudyControlsGroup surface="home" className="absolute top-4 right-52 z-10" />
