@@ -31,4 +31,9 @@ if (typeof window !== 'undefined') {
       constructor(_cb: any, _opts?: any) {}
     }
   }
+
+  // Element.scrollTo polyfill — jsdom does not implement scrollTo on HTMLElement
+  if (typeof HTMLElement !== 'undefined' && !('scrollTo' in HTMLElement.prototype)) {
+    ;(HTMLElement.prototype as any).scrollTo = function (_options?: any) {}
+  }
 }
