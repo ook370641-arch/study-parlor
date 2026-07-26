@@ -190,8 +190,8 @@ export function Settings() {
               )}
 
               {/* AI 服务 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>AI 服务</h3>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>AI 服务</h3>
 
                 <div className="space-y-4">
                   <div>
@@ -261,8 +261,8 @@ export function Settings() {
               </div>
 
               {/* 联网搜索 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>联网搜索</h3>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>联网搜索</h3>
 
                 <div className="space-y-4">
                   <div>
@@ -298,8 +298,8 @@ export function Settings() {
               </div>
 
               {/* 学习库 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>学习库</h3>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>学习库</h3>
                 <div>
                   <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目录路径</div>
                   <div className="flex gap-2">
@@ -323,8 +323,8 @@ export function Settings() {
               </div>
 
               {/* 求职简报 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>求职简报</h3>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>求职简报</h3>
 
                 <div className="space-y-4">
                   <div>

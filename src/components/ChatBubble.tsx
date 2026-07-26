@@ -8,15 +8,15 @@ function makeChatComponents(isAcademic: boolean): Components {
   const textMain = isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'
   const textMuted = isAcademic ? 'text-parchment/70' : 'text-[#555]'
   const textSubtle = isAcademic ? 'text-parchment/75' : 'text-[#444]'
-  const accent = isAcademic ? 'text-ember' : 'text-[#8a3a3a]'
-  const accentBg = isAcademic ? 'bg-ember/10' : 'bg-[#8a3a3a]/8'
-  const accentLight = isAcademic ? 'border-ember/50 bg-ember/5' : 'border-[#8a3a3a]/30 bg-[#8a3a3a]/4'
-  const codeBg = isAcademic ? 'bg-[rgba(42,31,26,0.8)]' : 'bg-[#f0f0ea]'
-  const preBg = isAcademic ? 'bg-[#15100d] border-[rgba(148,137,121,0.12)]' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'
+  const accent = isAcademic ? 'text-ember' : 'text-[#1a1a1a]'
+  const accentBg = isAcademic ? 'bg-ember/10' : 'bg-[#1a1a1a]/5'
+  const accentLight = isAcademic ? 'border-ember/50 bg-ember/5' : 'border-[#1a1a1a]/15 bg-[#1a1a1a]/3'
+  const codeBg = isAcademic ? 'bg-[rgba(42,31,26,0.8)]' : 'bg-[#f5f5f0]'
+  const preBg = isAcademic ? 'bg-[#15100d] border-[rgba(148,137,121,0.12)]' : 'bg-white border-[#1a1a1a]/10'
   const hrBorder = isAcademic ? 'bg-slate/20' : 'bg-[#1a1a1a]/10'
   const linkHover = isAcademic ? 'hover:text-[#e8a07a]' : 'hover:text-[#6a2a2a]'
   const thBorder = isAcademic ? 'border-slate/15' : 'border-[#1a1a1a]/10'
-  const h1Border = isAcademic ? 'border-ember/30' : 'border-[#8a3a3a]/25'
+  const h1Border = isAcademic ? 'border-ember/30' : 'border-[#1a1a1a]/15'
   const strongText = isAcademic ? 'text-parchment/95' : 'text-[#1a1a1a]'
 
   return {
@@ -76,7 +76,7 @@ function makeChatComponents(isAcademic: boolean): Components {
     h2: ({ children }) => <h2 className={`font-mono text-base ${textMain} mt-6 mb-2 font-normal`}>{children}</h2>,
     h3: ({ children }) => <h3 className={`font-mono text-sm ${accent} mt-4 mb-2 font-normal`}>{children}</h3>,
     h4: ({ children }) => (
-      <h4 className={`font-mono text-[13px] ${isAcademic ? 'text-ember/80' : 'text-[#8a3a3a]/80'} mt-3 mb-1.5 font-normal`}>{children}</h4>
+      <h4 className={`font-mono text-[13px] ${isAcademic ? 'text-ember/80' : 'text-[#1a1a1a]'} mt-3 mb-1.5 font-normal`}>{children}</h4>
     ),
   }
 }
@@ -91,7 +91,7 @@ export function ChatBubble({ msg, theme }: { msg: Message; theme?: BriefingTheme
 
   const userBubbleCls = isAcademic
     ? 'bg-ember/20 border border-ember/40 whitespace-pre-wrap'
-    : 'bg-[#1a1a1a] text-white whitespace-pre-wrap'
+    : 'bg-white text-[#1a1a1a] whitespace-pre-wrap'
 
   const assistantBubbleCls = isAcademic
     ? 'bg-ink/65 backdrop-blur-md border border-slate/40'

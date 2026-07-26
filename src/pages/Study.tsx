@@ -191,7 +191,7 @@ export function Study() {
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="absolute w-1.5 h-1.5 rounded-full bg-ember/60 star-fly-away"
+              className={`absolute w-1.5 h-1.5 rounded-full ${isAcademic ? 'bg-ember/60' : 'bg-[#1a1a1a]/30'} star-fly-away`}
               style={{
                 left: `${20 + i * 15}%`,
                 bottom: '20%',

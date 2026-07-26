@@ -60,7 +60,7 @@ export function Profile() {
             <div className="grid grid-cols-2 gap-x-7 gap-y-3.5">
               <div>
                 <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} font-sans uppercase tracking-wider mb-1`}>{t.profileNameLabel}</div>
-                <div data-testid="profile-name-display" className={`text-xl font-semibold ${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'}`}>{profile.name}</div>
+                <div data-testid="profile-name-display" className={`text-xl font-semibold ${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'}`}>{profile.name}</div>
               </div>
               <div>
                 <div className={`text-[10px] ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} font-sans uppercase tracking-wider mb-1`}>{t.profileFieldLabel}</div>
