@@ -28,7 +28,8 @@ export function SwapPaintingButton({ surface, theme, className = '', 'data-testi
   const isNewspaper = theme === 'newspaper'
 
   return (
-    <span className={`group inline-flex relative ${className}`}>
+    <span className={`group inline-flex items-center gap-2 ${className}`}>
+      <PaintingLabel surface={surface} />
       <button
         data-testid={dataTestId}
         type="button"
@@ -49,7 +50,6 @@ export function SwapPaintingButton({ surface, theme, className = '', 'data-testi
           <path d="M21 12a9 9 0 1 1-3.51-7.13M21 4v5h-5"/>
         </svg>
       </button>
-      <PaintingLabel surface={surface} className="absolute top-full right-0 whitespace-nowrap" />
     </span>
   )
 }
