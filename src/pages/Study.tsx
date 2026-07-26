@@ -13,7 +13,7 @@ import { ArchiveLoadingOverlay } from '@/components/ArchiveLoadingOverlay'
 import { ArchiveReportModal } from '@/components/ArchiveReportModal'
 import { StarOrbit } from '@/components/StarOrbit'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
-import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { StudyControlsGroup } from '@/components/StudyControlsGroup'
 import { useTerminology } from '@/lib/terminology'
 import { ExternalMaterialsCard } from '@/components/ExternalMaterialsCard'
 import { ExternalSummaryPanel } from '@/components/ExternalSummaryPanel'
@@ -22,6 +22,8 @@ import { Quote } from '@/components/Quote'
 export function Study() {
   const session = useStore(s => s.session)
   const t = useTerminology()
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const scrollRef = useRef<HTMLDivElement>(null)
   const userScrolledUpRef = useRef(false)
 
@@ -182,7 +184,7 @@ export function Study() {
 
       <ExternalSummaryPanel />
 
-      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''} ${pageShift}`}>
+      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''} ${pageShift} ${isAcademic ? '' : 'bg-[#fafaf8]'}`}>
       <SurfaceBackground surface="study" />
       {isExiting && (
         <div className="fixed inset-0 z-40 pointer-events-none">
@@ -199,17 +201,21 @@ export function Study() {
           ))}
         </div>
       )}
-      <header className="relative z-[5] flex justify-between items-center px-8 py-4 h-16 bg-ink/70 backdrop-blur-md border-b border-slate/40">
+      <header className={isAcademic
+        ? "relative z-[5] flex justify-between items-center px-8 py-4 h-16 bg-ink/70 backdrop-blur-md border-b border-slate/40"
+        : "relative z-[5] flex justify-between items-center px-8 py-4 h-16 bg-white border-b border-[#1a1a1a]/10"}>
         <button
           onClick={onBack}
           aria-label="退席"
-          className="text-2xl leading-none text-parchment/70 hover:text-parchment transition-colors px-2 py-1">
+          className={isAcademic
+            ? "text-2xl leading-none text-parchment/70 hover:text-parchment transition-colors px-2 py-1"
+            : "text-2xl leading-none text-[#555] hover:text-[#1a1a1a] transition-colors px-2 py-1"}>
           ←
         </button>
-        <div className="font-serif">{session.topic}</div>
+        <div className={`font-serif ${isAcademic ? '' : 'text-[#1a1a1a]'}`}>{session.topic}</div>
         <div className="flex items-center gap-3">
-          <SwapPaintingButton data-testid="swap-painting-button" surface="study" />
-          <div className="font-sans text-sm text-parchment/60">
+          <StudyControlsGroup surface="study" />
+          <div className={`font-sans text-sm ${isAcademic ? 'text-parchment/60' : 'text-[#555]'}`}>
             {session.mode === 'progress' ? t.modeProgress : t.modeReview} ·
             {getDifficultyLabel(session.difficulty, t)} ·
             {t.temperatureLabel}={getTemperatureLabel(session.temperature, t)}
@@ -220,9 +226,11 @@ export function Study() {
       <ExternalMaterialsCard />
 
       {streamError && (
-        <div data-testid="stream-error-banner" className="relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans">
+        <div data-testid="stream-error-banner" className={isAcademic
+          ? "relative z-[5] bg-wine/30 backdrop-blur-md border border-wine px-4 py-2 text-sm font-sans"
+          : "relative z-[5] bg-red-50 border border-red-200 px-4 py-2 text-sm font-sans text-[#1a1a1a]"}>
           <div className="flex justify-between items-center">
-            <span>
+            <span className={isAcademic ? '' : 'text-[#1a1a1a]'}>
               {streamError.code === 'UNAUTHORIZED'
                 ? 'API Key 无效：请检查 .env 文件中的 KIMI_API_KEY 是否为真实密钥'
                 : `流式失败:${streamError.message}`}
@@ -241,26 +249,28 @@ export function Study() {
         <div className="mb-6">
           <Quote surface="study" />
         </div>
-        {session.history.map((m, i) => <ChatBubble key={i} msg={m} />)}
+        {session.history.map((m, i) => <ChatBubble key={i} msg={m} theme={theme} />)}
         {session.streaming && !assistantHasContent && (
           <div className="flex justify-start my-3">
-            <div className="bg-ink/60 border border-slate/40 px-4 py-3 rounded-md
-                            text-parchment/50 font-sans text-sm flex items-center gap-3">
-              <StarOrbit starCount={3} radius={10} period={2000} />
+            <div className={isAcademic
+              ? "bg-ink/60 border border-slate/40 px-4 py-3 rounded-md text-parchment/50 font-sans text-sm flex items-center gap-3"
+              : "bg-white border border-[#1a1a1a]/10 px-4 py-3 rounded-md text-[#777] font-sans text-sm flex items-center gap-3"}>
+              <StarOrbit starCount={3} radius={10} period={2000} tone={isAcademic ? 'night' : 'paper'} />
               整理中…
             </div>
           </div>
         )}
         {session.streaming && assistantHasContent && (
-          <span className="inline-block w-2 h-5 bg-ember/70 align-middle animate-pulse ml-1" />
+          <span className={`inline-block w-2 h-5 align-middle animate-pulse ml-1 ${isAcademic ? 'bg-ember/70' : 'bg-[#1a1a1a]'}`} />
         )}
       </div>
 
       {session.archivePending && !session.streaming && (
         <div className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
           <div data-testid="archive-pending-banner"
-               className="my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded
-                          text-sm font-sans text-parchment/80 flex justify-between items-center">
+               className={isAcademic
+                ? "my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded text-sm font-sans text-parchment/80 flex justify-between items-center"
+                : "my-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded text-sm font-sans text-[#1a1a1a] flex justify-between items-center"}>
             <span>{t.archiveConfirmTitle}</span>
             <div className="flex gap-1.5 items-center">
               <Button data-testid="dismiss-archive-button" variant="ghost" onClick={() => useStore.getState().dismissArchive()}>
@@ -272,9 +282,11 @@ export function Study() {
         </div>
       )}
 
-      <div className="relative z-[5] bg-ink/70 backdrop-blur-md border-t border-slate/40">
+      <div className={isAcademic
+          ? "relative z-[5] bg-ink/70 backdrop-blur-md border-t border-slate/40"
+          : "relative z-[5] bg-white border-t border-[#1a1a1a]/10"}>
         <div className="px-8 py-4 max-w-4xl w-full mx-auto">
-          <ChatInput onSend={onSend} />
+          <ChatInput onSend={onSend} theme={theme} />
         </div>
       </div>
     </div>
