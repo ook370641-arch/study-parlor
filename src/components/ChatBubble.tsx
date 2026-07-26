@@ -91,7 +91,7 @@ export function ChatBubble({ msg, theme }: { msg: Message; theme?: BriefingTheme
 
   const userBubbleCls = isAcademic
     ? 'bg-ember/20 border border-ember/40 whitespace-pre-wrap'
-    : 'bg-white text-[#1a1a1a] whitespace-pre-wrap'
+    : 'bg-white border border-[#1a1a1a]/12 text-[#1a1a1a] whitespace-pre-wrap'
 
   const assistantBubbleCls = isAcademic
     ? 'bg-ink/65 backdrop-blur-md border border-slate/40'
