@@ -342,8 +342,8 @@ export function Briefing() {
                 </main>
                 </div>
               ) : jobPhase === 'failing' ? (
-                <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 w-[95%] max-w-[1600px] min-w-[520px] mx-auto">
-                  <div className="absolute top-0 right-0 z-20 flex items-start gap-1">
+                <div className="relative flex-1 min-h-0 w-[95%] max-w-[1600px] min-w-[520px] mx-auto">
+                  <div className="absolute top-4 right-0 z-20 flex items-start gap-1">
                     <button type="button" data-testid="briefing-font-size-decrease"
                       disabled={fontSize === 'sm'} onClick={decrease}
                       className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
@@ -354,8 +354,10 @@ export function Briefing() {
                       title="增大字号">+</button>
                     {isAcademic && <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />}
                   </div>
+                  <main className="relative z-[5] h-full overflow-y-auto px-6 py-6">
                   <BriefingProgress stage={lastJobStage.current ?? 'scanning-events'} mode="failed" />
                 </main>
+                </div>
               ) : isJobError ? (
                 <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
                   <div className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
@@ -367,18 +369,18 @@ export function Briefing() {
                 </main>
               ) : jobResult ? (
                 <div data-testid="job-briefing-reading-pane" data-arrival={jobFresh ? 'fresh' : 'revisit'} className="flex-1 flex flex-col min-h-0">
+                <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
+                  <button type="button" data-testid="briefing-font-size-decrease"
+                    disabled={fontSize === 'sm'} onClick={decrease}
+                    className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                    title="减小字号">−</button>
+                  <button type="button" data-testid="briefing-font-size-increase"
+                    disabled={fontSize === '7xl'} onClick={increase}
+                    className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                    title="增大字号">+</button>
+                  {isAcademic && <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />}
+                </div>
                 <main ref={jobMainRef} className="relative z-[5] flex-1 overflow-y-auto px-6 py-6">
-                  <div className="absolute top-0 right-0 z-20 flex items-start gap-1">
-                    <button type="button" data-testid="briefing-font-size-decrease"
-                      disabled={fontSize === 'sm'} onClick={decrease}
-                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-                      title="减小字号">−</button>
-                    <button type="button" data-testid="briefing-font-size-increase"
-                      disabled={fontSize === '7xl'} onClick={increase}
-                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-                      title="增大字号">+</button>
-                    {isAcademic && <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />}
-                  </div>
                   {isAcademic && <PaintingPlate />}
                   {isJobProfileEmpty(jobProfile) && !profileHintDismissed && (
                     <div
