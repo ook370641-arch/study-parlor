@@ -6,6 +6,8 @@ export function WildCardRecCard({
 }: {
   onClickTopic: (topic: string) => void
 }) {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const recommendation = useStore((s) => s.wildcardInspiration)
   const loading = useStore((s) => s.wildcardLoading)
   const error = useStore((s) => s.wildcardError)
@@ -13,7 +15,7 @@ export function WildCardRecCard({
 
   if (loading && !recommendation) {
     return (
-      <div className="bg-ink/70 backdrop-blur-md border border-wildcard/30 rounded py-3 px-4">
+      <div className={`${isAcademic ? 'bg-ink/70' : 'bg-white'} backdrop-blur-md border border-wildcard/30 rounded py-3 px-4`}>
         <div className="flex flex-col items-center gap-3 py-2">
           <StarOrbit starCount={4} radius={14} period={3000} showLines={true} />
           <span className="text-xs text-parchment/40 font-sans italic tracking-wide">
@@ -29,7 +31,7 @@ export function WildCardRecCard({
       return (
         <button
           onClick={refresh}
-          className="block w-full text-left bg-ink/70 backdrop-blur-md border border-wildcard/30 rounded py-3 px-4 hover:border-wildcard/50 transition-colors"
+          className={`block w-full text-left ${isAcademic ? 'bg-ink/70' : 'bg-white'} backdrop-blur-md border border-wildcard/30 rounded py-3 px-4 hover:border-wildcard/50 transition-colors`}
         >
           <div className="text-xs text-parchment/40 font-sans mb-1">
             这次闯入失败了，再试一次
@@ -48,11 +50,11 @@ export function WildCardRecCard({
   return (
     <div
       data-testid="wild-card-card"
-      className="relative bg-ink/70 backdrop-blur-md border border-wildcard/30 border-l-4 border-l-wildcard rounded overflow-hidden hover:border-wildcard/60 hover:bg-ink/80 transition-all cursor-pointer group"
+      className={`relative ${isAcademic ? 'bg-ink/70 hover:bg-ink/80' : 'bg-white hover:bg-[#f8f8f6]'} backdrop-blur-md border border-wildcard/30 border-l-4 border-l-wildcard rounded overflow-hidden hover:border-wildcard/60 transition-all cursor-pointer group`}
       onClick={() => onClickTopic(recommendation.topic)}
     >
       {loading && (
-        <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
+        <div className={`absolute inset-0 ${isAcademic ? 'bg-ink/60' : 'bg-white/80'} backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2`}>
           <StarOrbit starCount={4} radius={12} period={3000} showLines={true} />
           <span className="text-[10px] text-parchment/50 font-sans italic tracking-wide">
             正在闯入…
@@ -78,10 +80,10 @@ export function WildCardRecCard({
             ↻
           </button>
         </div>
-        <div data-testid="wild-card-title" className="font-serif text-[0.95rem] text-parchment font-semibold mb-1">
+        <div data-testid="wild-card-title" className={`font-serif text-[0.95rem] ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'} font-semibold mb-1`}>
           {recommendation.topic}
         </div>
-        <div data-testid="wild-card-hook" className="text-xs text-parchment/50 leading-relaxed italic">
+        <div data-testid="wild-card-hook" className={`text-xs ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} leading-relaxed italic`}>
           {recommendation.hook}
         </div>
         {error && (

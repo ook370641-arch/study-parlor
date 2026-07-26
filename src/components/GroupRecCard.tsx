@@ -14,6 +14,8 @@ export function GroupRecCard({
   onClickTopic: (topic: string) => void
 }) {
   const profile = useStore((s) => s.profile)
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const inspirationStrategy = useStore((s) => s.inspirationStrategy)
   const cached = useStore((s) => s.groupInspirations[group.id])
   const setGroupInspiration = useStore((s) => s.setGroupInspiration)
@@ -64,7 +66,7 @@ export function GroupRecCard({
 
   if (loading && !recommendation) {
     return (
-      <div className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded py-3 px-4">
+      <div className={`${isAcademic ? 'bg-ink/70 border-slate/40' : 'bg-white border-[#1a1a1a]/12'} backdrop-blur-md border rounded py-3 px-4`}>
         <div className="flex flex-col items-center gap-3 py-2">
           <StarOrbit starCount={4} radius={14} period={3000} showLines={true} />
           <span className="text-xs text-parchment/40 font-sans italic tracking-wide">
@@ -79,7 +81,7 @@ export function GroupRecCard({
     return (
       <button
         onClick={() => load()}
-        className="block w-full text-left bg-ink/70 backdrop-blur-md border border-slate/40 rounded py-3 px-4 hover:border-ember/50 transition-colors"
+        className={`block w-full text-left ${isAcademic ? 'bg-ink/70 border-slate/40' : 'bg-white border-[#1a1a1a]/12'} backdrop-blur-md border rounded py-3 px-4 hover:border-ember/50 transition-colors`}
       >
         <div className="text-xs text-parchment/40 font-sans mb-1">
           这次联结很模糊，再试一次
@@ -98,7 +100,7 @@ export function GroupRecCard({
   return (
     <div
       data-testid="group-rec-card"
-      className="relative bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden hover:border-ember/60 hover:bg-ink/80 transition-all cursor-pointer group"
+      className={`relative ${isAcademic ? 'bg-ink/70 border-slate/40 hover:bg-ink/80' : 'bg-white border-[#1a1a1a]/12 hover:bg-[#f8f8f6]'} backdrop-blur-md border rounded overflow-hidden hover:border-ember/60 transition-all cursor-pointer group`}
       onClick={(e) => {
         const target = e.target as HTMLElement
         if (target.closest('[data-refresh]')) return
@@ -121,7 +123,7 @@ export function GroupRecCard({
       <div className="pl-4 pr-3 py-2.5 relative">
         {/* Loading overlay */}
         {loading && (
-          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
+          <div className={`absolute inset-0 ${isAcademic ? 'bg-ink/60' : 'bg-white/80'} backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2`}>
             <StarOrbit starCount={4} radius={12} period={3000} showLines={true} />
             <span className="text-[10px] text-parchment/50 font-sans italic tracking-wide">
               正在浮现…
@@ -147,10 +149,10 @@ export function GroupRecCard({
             ↻
           </button>
         </div>
-        <div data-testid="group-rec-title" className="font-serif text-[0.95rem] text-parchment font-semibold mb-1">
+        <div data-testid="group-rec-title" className={`font-serif text-[0.95rem] ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'} font-semibold mb-1`}>
           {recommendation.topic}
         </div>
-        <div className="text-xs text-parchment/50 leading-relaxed italic">
+        <div className={`text-xs ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} leading-relaxed italic`}>
           {recommendation.hook}
         </div>
       </div>

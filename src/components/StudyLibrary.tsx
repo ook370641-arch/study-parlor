@@ -47,6 +47,8 @@ function SessionRow({
   onGenerateDiagram: (dirName: string, sessionNumber: number) => void
   isPending?: boolean
 }) {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
   const reviewed = session.hasReview
 
@@ -60,12 +62,12 @@ function SessionRow({
   const isGeneratingDiagram = generatingDiagrams.has(diagramKey)
 
   return (
-    <div className={`flex items-center gap-3 py-2 px-3 border-b border-slate/20 last:border-b-0 ${isPending ? 'opacity-60' : ''}`}>
+    <div className={`flex items-center gap-3 py-2 px-3 border-b ${isAcademic ? 'border-slate/20' : 'border-[#1a1a1a]/8'} last:border-b-0 ${isPending ? 'opacity-60' : ''}`}>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-xs text-parchment/50 font-sans">
+        <span className={`text-xs ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} font-sans`}>
           第{session.sessionNumber}
         </span>
-        <span className="text-xs text-parchment/40 font-sans">{dateStr}</span>
+        <span className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#999]'} font-sans`}>{dateStr}</span>
         <span className={`text-[10px] px-1.5 py-0.5 rounded font-sans ${
           isPending
             ? 'text-parchment/50 bg-ink'
@@ -97,8 +99,8 @@ function SessionRow({
             }
             className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap ${
               btn.disabled || isPending
-                ? 'opacity-30 cursor-not-allowed border-slate/20 text-parchment/40'
-                : 'border-slate/30 text-parchment/70 hover:border-ember'
+                ? `opacity-30 cursor-not-allowed ${isAcademic ? 'border-slate/20 text-parchment/40' : 'border-[#1a1a1a]/10 text-[#ccc]'}`
+                : `${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember`
             }`}
           >
             {isPending && btn.label === '谈话记录' ? (
@@ -127,7 +129,7 @@ function SessionRow({
                 version: 0,
               })
             }
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             图表
           </button>
@@ -135,7 +137,7 @@ function SessionRow({
           <button
             data-testid="generate-diagram-button"
             onClick={() => onGenerateDiagram(dirName, session.sessionNumber)}
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             📊 生成图表
           </button>
@@ -143,7 +145,7 @@ function SessionRow({
           <button
             data-testid="session-diagram-button"
             disabled
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/20 text-parchment/40' : 'border-[#1a1a1a]/10 text-[#ccc]'} opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             图表
           </button>
@@ -154,7 +156,7 @@ function SessionRow({
           <button
             data-testid="session-fable-button"
             disabled
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/20 text-parchment/40' : 'border-[#1a1a1a]/10 text-[#ccc]'} opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             寓言
           </button>
@@ -178,7 +180,7 @@ function SessionRow({
                 version: 0,
               })
             }
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/30 text-parchment/70 hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/30 text-parchment/70' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             寓言
           </button>
@@ -186,7 +188,7 @@ function SessionRow({
           <button
             data-testid="generate-fable-button"
             onClick={() => onGenerateFable(dirName, session.sessionNumber)}
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:border-ember hover:bg-ember/20 hover:text-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-ember/40 text-ember/80 bg-ember/10 hover:border-ember hover:bg-ember/20 hover:text-ember transition-colors min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             ✨ 唤醒寓言
           </button>
@@ -194,7 +196,7 @@ function SessionRow({
           <button
             data-testid="session-fable-button"
             disabled
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/20 text-parchment/40' : 'border-[#1a1a1a]/10 text-[#ccc]'} opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             寓言
           </button>
@@ -203,7 +205,7 @@ function SessionRow({
         {isPending ? (
           <button
             disabled
-            className="px-2 py-1 text-[10px] font-sans leading-tight rounded border border-slate/20 text-parchment/40 opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap"
+            className={`px-2 py-1 text-[10px] font-sans leading-tight rounded border ${isAcademic ? 'border-slate/20 text-parchment/40' : 'border-[#1a1a1a]/10 text-[#ccc]'} opacity-30 cursor-not-allowed min-h-[36px] flex items-center justify-center whitespace-nowrap`}
           >
             复习
           </button>
@@ -273,6 +275,8 @@ function TopicAccordion({
   onGenerateDiagram: (dirName: string, sessionNumber: number) => void
   pendingSessionNumbers?: Set<number>
 }) {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const [open, setOpen] = useState(false)
   const openPreStudy = useStore((s) => s.openPreStudy)
 
@@ -288,7 +292,7 @@ function TopicAccordion({
         : `${topic.last_studied_days}天前`
 
   return (
-    <div data-testid="topic-card" className="bg-ink/70 backdrop-blur-md border border-slate/40 rounded overflow-hidden shrink-0">
+    <div data-testid="topic-card" className={`${isAcademic ? 'bg-ink/70 border-slate/40' : 'bg-white border-[#1a1a1a]/12'} backdrop-blur-md border rounded overflow-hidden shrink-0`}>
       <div
         onClick={handleToggle}
         onMouseDown={(e) => {
@@ -301,22 +305,22 @@ function TopicAccordion({
         role="button"
         aria-expanded={open}
         aria-controls="topic-content"
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-ink/30 transition-colors cursor-pointer select-none"
+        className={`w-full flex items-center gap-3 px-4 py-3 ${isAcademic ? 'hover:bg-ink/30' : 'hover:bg-[#f5f5f0]'} transition-colors cursor-pointer select-none`}
       >
         <div
           className="w-[3px] h-5 rounded-full shrink-0"
           style={{ backgroundColor: groupColor }}
         />
         <span
-          className={`text-parchment/50 text-xs transition-transform ${open ? 'rotate-90' : ''}`}
+          className={`${isAcademic ? 'text-parchment/50' : 'text-[#999]'} text-xs transition-transform ${open ? 'rotate-90' : ''}`}
         >
           ▶
         </span>
-        <span className="font-serif text-parchment/90 truncate">{topic.title}</span>
-        <span className="text-xs text-parchment/40 font-sans shrink-0">
+        <span className={`font-serif ${isAcademic ? 'text-parchment/90' : 'text-[#1a1a1a]'} truncate`}>{topic.title}</span>
+        <span className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#999]'} font-sans shrink-0`}>
           <strong>{topic.sessionCount}</strong> 份记录
         </span>
-        <span className="text-xs text-parchment/30 font-sans shrink-0">{daysText}</span>
+        <span className={`text-xs ${isAcademic ? 'text-parchment/30' : 'text-[#bbb]'} font-sans shrink-0`}>{daysText}</span>
 
         <div className="flex-1" />
 
@@ -330,13 +334,13 @@ function TopicAccordion({
               dirName: topic.dirName,
             })
           }}
-          className="text-[10px] font-sans px-2 py-1 rounded border border-slate/30 text-parchment/60 hover:border-ember hover:text-ember transition-colors shrink-0"
+          className={`text-[10px] font-sans px-2 py-1 rounded border ${isAcademic ? 'border-slate/30 text-parchment/60' : 'border-[#1a1a1a]/15 text-[#555]'} hover:border-ember hover:text-ember transition-colors shrink-0`}
         >
           续谈（第{topic.sessionCount + 1}次）
         </button>
       </div>
 
-      <div id="topic-content" className={`bg-ink/30 overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div id="topic-content" className={`${isAcademic ? 'bg-ink/30' : 'bg-[#f5f5f0]'} overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="max-h-[160px] overflow-y-auto overflow-x-hidden" style={{ scrollbarColor: 'rgba(148,163,184,0.4) transparent', scrollbarWidth: 'thin' }}>
           {topic.sessions.map((s) => (
             <SessionRow
@@ -362,6 +366,8 @@ function TopicAccordion({
 }
 
 export function StudyLibrary() {
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
   const library = useStore((s) => s.library)
   const pendingArchives = useStore((s) => s.pendingArchives)
   const groups = useStore((s) => s.groups)
@@ -764,8 +770,8 @@ export function StudyLibrary() {
           onDelete={deleteGroup}
         />
         <div className="flex flex-col items-center justify-center py-16 text-center flex-1">
-          <p className="text-lg text-parchment/50 italic">档案室还空着。但空也是一种档案。</p>
-          <p className="text-sm text-parchment/30 mt-2">点击上方 <strong className="text-parchment/60">新的小径</strong> 开始学习</p>
+          <p className={`text-lg ${isAcademic ? 'text-parchment/50' : 'text-[#999]'} italic`}>档案室还空着。但空也是一种档案。</p>
+          <p className={`text-sm ${isAcademic ? 'text-parchment/30' : 'text-[#aaa]'} mt-2`}>点击上方 <strong className={isAcademic ? 'text-parchment/60' : 'text-[#666]'}>新的小径</strong> 开始学习</p>
         </div>
       </div>
     )
@@ -788,13 +794,13 @@ export function StudyLibrary() {
       />
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 py-2.5 border-b border-slate/10">
+        <div className={`flex items-center justify-center gap-4 py-2.5 border-b ${isAcademic ? 'border-slate/10' : 'border-[#1a1a1a]/8'}`}>
           <button
             data-testid="pagination-prev"
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             disabled={currentPage === 0}
             aria-label="前一屉"
-            className="text-lg font-bold text-parchment/50 hover:text-parchment/90 disabled:opacity-20 disabled:cursor-default transition-colors px-3 py-1"
+            className={`text-lg font-bold ${isAcademic ? 'text-parchment/50 hover:text-parchment/90' : 'text-[#888] hover:text-[#1a1a1a]'} disabled:opacity-20 disabled:cursor-default transition-colors px-3 py-1`}
           >
             ←
           </button>
@@ -838,7 +844,7 @@ export function StudyLibrary() {
             onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={currentPage >= totalPages - 1}
             aria-label="后一屉"
-            className="text-lg font-bold text-parchment/50 hover:text-parchment/90 disabled:opacity-20 disabled:cursor-default transition-colors px-3 py-1"
+            className={`text-lg font-bold ${isAcademic ? 'text-parchment/50 hover:text-parchment/90' : 'text-[#888] hover:text-[#1a1a1a]'} disabled:opacity-20 disabled:cursor-default transition-colors px-3 py-1`}
           >
             →
           </button>
