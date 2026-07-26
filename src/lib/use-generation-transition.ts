@@ -13,6 +13,10 @@ export const FAILING_MS = 1000
  * 生成→阅读/错误的过渡状态机（F4/F5 的编排核心）。
  * fresh：本次 key 内是否经历过 resolved（= 新抵达，配享有抵达动画；revisit 不重演）。
  * key = `${source}:${date}`，切换即归零（快速切换无残留）。
+ *
+ * fresh 必须在 loading→result 完成的那一次 render 中即为 true（同步推导），
+ * 否则抵达动画会滞后一帧——内容先完整可见（data-arrival="revisit"），
+ * 再跳到 opacity:0 开始动画（data-arrival="fresh"），表现为闪白或无动画。
  */
 export function useGenerationTransition(
   key: string,
@@ -21,17 +25,37 @@ export function useGenerationTransition(
   hasError: boolean,
 ): { phase: GenerationPhase; fresh: boolean } {
   const [phase, setPhase] = useState<GenerationPhase>('idle')
-  const [fresh, setFresh] = useState(false)
   const timers = useRef<number[]>([])
-  const wasLoading = useRef(false)
+
+  // ---- fresh：同步推导（render 阶段，零滞后帧） ----
+  const freshRef = useRef(false)
+  const prevKey = useRef(key)
+  const prevLoading = useRef(loading)
+
+  // key 变更 → 在 render 阶段归零所有 per-key 状态
+  if (prevKey.current !== key) {
+    prevKey.current = key
+    freshRef.current = false
+    prevLoading.current = loading
+  }
+
+  // 检测 loading→!loading 跳变：上一帧 loading=true，本帧 loading=false 且拿到了结果
+  if (prevLoading.current && !loading && hasResult && !hasError) {
+    freshRef.current = true
+  }
+
+  // 保存本帧 loading 供下一帧比较
+  prevLoading.current = loading
+
+  // ---- phase：useEffect 管理（定时器/异步过渡，逻辑不变） ----
 
   useEffect(() => {
     timers.current.forEach(clearTimeout)
     timers.current = []
-    wasLoading.current = false
     setPhase('idle')
-    setFresh(false)
   }, [key])
+
+  const wasLoading = useRef(false)
 
   useEffect(() => {
     const clear = () => { timers.current.forEach(clearTimeout); timers.current = [] }
@@ -46,7 +70,6 @@ export function useGenerationTransition(
         setPhase('failing')
         timers.current.push(window.setTimeout(() => setPhase('failed'), FAILING_MS))
       } else if (hasResult) {
-        setFresh(true)
         setPhase('resolved')
         timers.current.push(window.setTimeout(() => setPhase('departing'), RESOLVED_MS))
         timers.current.push(window.setTimeout(() => setPhase('idle'), RESOLVED_MS + DEPART_MS))
@@ -59,5 +82,5 @@ export function useGenerationTransition(
     return clear
   }, [loading, hasResult, hasError])
 
-  return { phase, fresh }
+  return { phase, fresh: freshRef.current }
 }

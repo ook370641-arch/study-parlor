@@ -5,26 +5,24 @@ import type { BriefingHistoryItem } from '@/components/BriefingDateColumn'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { BriefingDateColumn } from '@/components/BriefingDateColumn'
-import { BriefingSkeleton } from '@/components/BriefingSkeleton'
 import { BriefingProgress } from '@/components/BriefingProgress'
 import { BriefingError } from '@/components/BriefingError'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
-import { JobBriefingRenderer, JobProfilePanel } from '@/components/job-briefing'
+import { JobBriefingRenderer, JobProfilePanel, JobAssistantPanel } from '@/components/job-briefing'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
-import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingVeil, BriefingEmptyState, BriefingMetaLine } from '@/components/briefing'
+import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingEmptyState, BriefingMetaLine } from '@/components/briefing'
 import { CandlelightLayer } from '@/components/briefing/CandlelightLayer'
-import { BriefingCornerControls } from '@/components/briefing/BriefingCornerControls'
+import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
 import { parseBriefingMarkdown } from '@/lib/parse-briefing-markdown'
 import { useGenerationTransition } from '@/lib/use-generation-transition'
 import { useReadingFinished } from '@/lib/use-reading-finished'
-import { useFocusZone } from '@/lib/use-focus-zone'
 import {
   ACADEMIC_BODY_STYLES,
   NEWSPAPER_BODY_STYLES,
@@ -36,24 +34,25 @@ import {
 
 // 非组件导出会破坏 React Fast Refresh（hmr invalidate 一路推到 App 整树重挂载），
 // 日期 helper 统一放在 @/lib/format-briefing-date（ui-styling §10）。
-function formatGeneratedAt(iso: string, date: string): string {
+function formatGeneratedAt(iso: string, _date: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  const time = d.toLocaleTimeString('zh-CN', {
+  return d.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   })
-  const today = formatBriefingDate(new Date())
-  if (date === today) return time
-  const dateStr = `${d.getFullYear()} 年 ${String(d.getMonth() + 1).padStart(2, '0')} 月 ${String(d.getDate()).padStart(2, '0')} 日`
-  return `${dateStr} · ${time}`
 }
 
 export function Briefing() {
   const { result, loading, error } = useStore((s) => s.briefing)
   const theme = useStore((s) => s.briefingTheme)
   const fontSize = useStore((s) => s.briefingFontSize)
+  const increase = useStore((s) => s.increaseBriefingFontSize)
+  const decrease = useStore((s) => s.decreaseBriefingFontSize)
+  const writingUISize = useStore((s) => s.writingUIFontSize)
+  const increaseWritingUI = useStore((s) => s.increaseWritingUIFontSize)
+  const decreaseWritingUI = useStore((s) => s.decreaseWritingUIFontSize)
   const generateBriefing = useStore((s) => s.generateBriefing)
   const stage = useStore((s) => s.briefingStage)
   const jobStage = useStore((s) => s.jobBriefingStage)
@@ -80,10 +79,6 @@ export function Briefing() {
   const cancelJobBriefing = useStore((s) => s.cancelJobBriefing)
 
   const today = formatBriefingDate(new Date())
-
-  // Focus breathing (F10): three-zone lighting
-  const rootRef = useRef<HTMLDivElement>(null)
-  useFocusZone(rootRef)
 
   // Reading finished — colophon + candle breath + mark-read
   const digestMainRef = useRef<HTMLElement>(null)
@@ -149,6 +144,9 @@ export function Briefing() {
   const jobDisplayDate = useMemo(() => (jobResult ? formatDisplayDate(jobResult.date) : ''), [jobResult])
 
   const isAcademic = theme !== 'newspaper'
+  const fontSizeBtnCls = isAcademic
+    ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40'
+    : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a] hover:border-[#2a1f1a]/40'
   const bodyStyle = isAcademic
     ? ACADEMIC_BODY_STYLES[fontSize]
     : NEWSPAPER_BODY_STYLES[fontSize]
@@ -166,56 +164,68 @@ export function Briefing() {
     '--briefing-quote-size': BRIEFING_QUOTE_SIZES[fontSize],
   } as React.CSSProperties
 
-  const isDigestLoading = source === 'digest' && loading
   const isDigestError = source === 'digest' && error
   const emptyState = source === 'digest' && !result && !loading && !error
 
   const isJob = source === 'job-briefing'
-  const isJobLoading = isJob && jobLoading
   const isJobError = isJob && jobError
   const jobEmptyState = isJob && !jobResult && !jobLoading && !jobError
 
   return (
     <div
       data-testid="briefing-page"
-      className={`relative h-full flex overflow-hidden focus-zone-root ${isAcademic ? 'gap-2 p-2' : 'bg-white'}`}
+      className={`relative h-full flex overflow-hidden ${isAcademic ? 'gap-2 p-2' : 'bg-white'}`}
       style={pageStyle}
-      ref={rootRef}
     >
       {isAcademic && <SurfaceBackground surface="briefing" />}
-      {isAcademic && <BriefingVeil />}
-      <div data-zone="rail-source">
-        <BriefingSourceSidebar
-          theme={theme}
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((c) => !c)}
+      {isAcademic && (
+        <div
+          data-testid="briefing-dark-overlay"
+          className="fixed inset-0 z-[1] bg-[#0c0806]/[0.72] pointer-events-none"
+          aria-hidden="true"
         />
-      </div>
+      )}
+
+      <BriefingSourceSidebar
+        theme={theme}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((c) => !c)}
+      />
 
       <div
         data-testid="briefing-content-shell"
-        className={`flex-1 flex flex-col min-w-0 ${isAcademic ? 'bg-ink/45 backdrop-blur-md border border-parchment/15 rounded-xl overflow-hidden' : ''}`}
+        className="flex-1 flex flex-col min-w-0"
       >
-        {/* Digest renders the swap button inside the article body (AcademicBriefingLayout);
-            anthropic renders its own inside AnthropicArticleReader;
-            only job-briefing keeps the page-level one. */}
-        {isAcademic && source !== 'digest' && source !== 'anthropic' && source !== 'writing' && (
-          <div className="absolute top-24 right-4 z-10">
-            <SwapPaintingButton
-              surface="briefing"
-              data-testid="briefing-swap-painting-button"
-              className="text-parchment/70 hover:text-parchment"
-            />
+        {/* Top-right controls: job-briefing (always page-level) + digest empty/loading/error state.
+            博客/写作在内部组件自行渲染；digest 有结果时由 reading-pane 渲染。 */}
+        {(source === 'digest' && !result) && (
+          <div className="fixed top-6 right-4 z-20 flex items-start gap-1">
+            <button type="button" data-testid="briefing-font-size-decrease"
+              disabled={fontSize === 'sm'}
+              onClick={decrease}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+              title="减小字号">−</button>
+            <button type="button" data-testid="briefing-font-size-increase"
+              disabled={fontSize === '7xl'}
+              onClick={increase}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+              title="增大字号">+</button>
+            {isAcademic && (
+              <SwapPaintingButton
+                surface="briefing"
+                data-testid="briefing-swap-painting-button"
+                className="text-parchment/70 hover:text-parchment"
+              />
+            )}
           </div>
         )}
         <div className="flex-1 flex min-h-0">
           {source === 'digest' && (
-            <div data-zone="rail-list">
             <BriefingListColumn
               collapsed={dateColumnCollapsed}
               onToggle={() => setDateColumnCollapsed((c) => !c)}
               theme={theme}
-              width={64}
+              width={44}
               title="日期"
             >
               <BriefingDateColumn
@@ -225,25 +235,24 @@ export function Briefing() {
                 today={today}
                 onSelect={(date) => generateBriefing(date)}
                 onReceiveToday={() => generateBriefing(today)}
+                todayLabel="今日"
                 onDelete={(items) => setPendingDelete(items)}
                 theme={theme}
                 generatedDates={[
                   ...historyList.map((h: { date: string }) => h.date),
                   ...(result?.date ? [result.date] : []),
                 ]}
-                readDates={useStore((s) => s.briefingRead.digest)}
+                readDates={digestRead}
               />
             </BriefingListColumn>
-            </div>
           )}
 
           {isJob && (
-            <div data-zone="rail-list">
             <BriefingListColumn
               collapsed={dateColumnCollapsed}
               onToggle={() => setDateColumnCollapsed((c) => !c)}
               theme={theme}
-              width={64}
+              width={44}
               title="日期"
             >
               <BriefingDateColumn
@@ -254,20 +263,18 @@ export function Briefing() {
                 onSelect={(date) => generateJobBriefing(date)}
                 onReceiveToday={() => generateJobBriefing(today)}
                 onDelete={(items) => setPendingDelete(items)}
-                todayLabel="生成简报"
+                todayLabel="今日"
                 theme={theme}
                 generatedDates={[
                   ...jobHistoryList.map((h: { date: string }) => h.date),
                   ...(jobResult?.date ? [jobResult.date] : []),
                 ]}
-                readDates={useStore((s) => s.briefingRead['job-briefing'])}
+                readDates={jobRead}
               />
             </BriefingListColumn>
-            </div>
           )}
 
           {source === 'writing' && (
-            <div data-zone="rail-list">
             <BriefingListColumn
               collapsed={dateColumnCollapsed}
               onToggle={() => setDateColumnCollapsed((c) => !c)}
@@ -277,12 +284,30 @@ export function Briefing() {
             >
               <WritingListColumn theme={theme} collapsed={dateColumnCollapsed} />
             </BriefingListColumn>
-            </div>
           )}
 
-          <div className="flex-1 flex flex-col min-w-0" data-zone="article">
+          <div className="flex-1 flex flex-col min-w-0">
             {source === 'writing' ? (
               <main className="relative z-[5] flex-1">
+                <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
+                  <button type="button" data-testid="writing-ui-font-size-decrease"
+                    disabled={writingUISize === 'sm'}
+                    onClick={() => void decreaseWritingUI()}
+                    className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                    title="减小界面字号">−</button>
+                  <button type="button" data-testid="writing-ui-font-size-increase"
+                    disabled={writingUISize === '7xl'}
+                    onClick={() => void increaseWritingUI()}
+                    className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                    title="增大界面字号">+</button>
+                  {isAcademic && (
+                    <SwapPaintingButton
+                      surface="briefing"
+                      data-testid="briefing-swap-painting-button"
+                      className="text-parchment/70 hover:text-parchment"
+                    />
+                  )}
+                </div>
                 <WritingBoard />
               </main>
             ) : source === 'anthropic' ? (
@@ -291,12 +316,23 @@ export function Briefing() {
               jobEmptyState ? (
                 <BriefingEmptyState
                   hint="今日求职简报尚未生成"
-                  buttonLabel="生成求职简报"
+                  buttonLabel="今日"
                   buttonTestId="briefing-receive-job-button"
                   onReceive={() => generateJobBriefing(today)}
                 />
-              ) : jobPhase === 'generating' || jobPhase === 'resolved' || jobPhase === 'departing' ? (
-                <main className={`relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto ${jobPhase === 'departing' ? 'constellation-depart' : ''}`}>
+              ) : (jobPhase === 'generating' || jobPhase === 'resolved' || jobPhase === 'departing') && !jobResult ? (
+                <main className={`relative z-[5] flex-1 overflow-y-auto px-6 py-6 w-[95%] max-w-[1600px] min-w-[520px] mx-auto ${jobPhase === 'departing' ? 'constellation-depart' : ''}`}>
+                  <div className="absolute top-0 right-0 z-20 flex items-start gap-1">
+                    <button type="button" data-testid="briefing-font-size-decrease"
+                      disabled={fontSize === 'sm'} onClick={decrease}
+                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                      title="减小字号">−</button>
+                    <button type="button" data-testid="briefing-font-size-increase"
+                      disabled={fontSize === '7xl'} onClick={increase}
+                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                      title="增大字号">+</button>
+                    {isAcademic && <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />}
+                  </div>
                   <BriefingProgress
                     stage={lastJobStage.current ?? 'scanning-events'}
                     mode={jobPhase === 'resolved' ? 'resolved' : 'live'}
@@ -304,7 +340,18 @@ export function Briefing() {
                   />
                 </main>
               ) : jobPhase === 'failing' ? (
-                <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
+                <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 w-[95%] max-w-[1600px] min-w-[520px] mx-auto">
+                  <div className="absolute top-0 right-0 z-20 flex items-start gap-1">
+                    <button type="button" data-testid="briefing-font-size-decrease"
+                      disabled={fontSize === 'sm'} onClick={decrease}
+                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                      title="减小字号">−</button>
+                    <button type="button" data-testid="briefing-font-size-increase"
+                      disabled={fontSize === '7xl'} onClick={increase}
+                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                      title="增大字号">+</button>
+                    {isAcademic && <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />}
+                  </div>
                   <BriefingProgress stage={lastJobStage.current ?? 'scanning-events'} mode="failed" />
                 </main>
               ) : isJobError ? (
@@ -319,6 +366,18 @@ export function Briefing() {
               ) : jobResult ? (
                 <div data-testid="job-briefing-reading-pane" data-arrival={jobFresh ? 'fresh' : 'revisit'} className="flex-1 flex flex-col min-h-0">
                 <main ref={jobMainRef} className="relative z-[5] flex-1 overflow-y-auto px-6 py-6">
+                  <div className="absolute top-0 right-0 z-20 flex items-start gap-1">
+                    <button type="button" data-testid="briefing-font-size-decrease"
+                      disabled={fontSize === 'sm'} onClick={decrease}
+                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                      title="减小字号">−</button>
+                    <button type="button" data-testid="briefing-font-size-increase"
+                      disabled={fontSize === '7xl'} onClick={increase}
+                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                      title="增大字号">+</button>
+                    {isAcademic && <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />}
+                  </div>
+                  {isAcademic && <PaintingPlate />}
                   {isJobProfileEmpty(jobProfile) && !profileHintDismissed && (
                     <div
                       data-testid="job-briefing-profile-hint"
@@ -345,7 +404,7 @@ export function Briefing() {
                     </div>
                   )}
                   {jobResult && (
-                    <div className="max-w-3xl mx-auto mb-2 flex items-center justify-between">
+                    <div className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto mb-2 flex items-center justify-between">
                       <BriefingMetaLine
                         displayDate={jobDisplayDate}
                         timeString={jobResult.generatedAt ? formatGeneratedAt(jobResult.generatedAt, jobResult.date) : undefined}
@@ -375,12 +434,12 @@ export function Briefing() {
             ) : emptyState ? (
               <BriefingEmptyState
                 hint="今日夜航简报尚未生成"
-                buttonLabel="查收日报"
+                buttonLabel="今日"
                 buttonTestId="briefing-receive-digest-button"
                 onReceive={() => generateBriefing(today)}
               />
-            ) : digestPhase === 'generating' || digestPhase === 'resolved' || digestPhase === 'departing' ? (
-              <main className={`relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto ${digestPhase === 'departing' ? 'constellation-depart' : ''}`}>
+            ) : (digestPhase === 'generating' || digestPhase === 'resolved' || digestPhase === 'departing') && !result ? (
+              <main className={`relative z-[5] flex-1 overflow-y-auto px-6 py-6 w-full max-w-3xl mx-auto ${digestPhase === 'departing' ? 'constellation-depart' : ''}`}>
                 <BriefingProgress
                   stage={lastDigestStage.current ?? 'fetching'}
                   mode={digestPhase === 'resolved' ? 'resolved' : 'live'}
@@ -388,7 +447,7 @@ export function Briefing() {
                 />
               </main>
             ) : digestPhase === 'failing' ? (
-              <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto">
+              <main className="relative z-[5] flex-1 overflow-y-auto px-6 py-6 w-full max-w-3xl mx-auto">
                 <BriefingProgress stage={lastDigestStage.current ?? 'fetching'} mode="failed" />
               </main>
             ) : isDigestError ? (
@@ -401,7 +460,26 @@ export function Briefing() {
                 </div>
               </main>
             ) : parsed && result ? (
-              <div data-testid="briefing-reading-pane" data-arrival={digestFresh ? 'fresh' : 'revisit'} className="flex-1 flex min-h-0">
+              <div data-testid="briefing-reading-pane" data-arrival={digestFresh ? 'fresh' : 'revisit'} className="relative flex-1 flex min-h-0">
+                <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
+                  <button type="button" data-testid="briefing-font-size-decrease"
+                    disabled={fontSize === 'sm'}
+                    onClick={decrease}
+                    className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                    title="减小字号">−</button>
+                  <button type="button" data-testid="briefing-font-size-increase"
+                    disabled={fontSize === '7xl'}
+                    onClick={increase}
+                    className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                    title="增大字号">+</button>
+                  {isAcademic && (
+                    <SwapPaintingButton
+                      surface="briefing"
+                      data-testid="briefing-swap-painting-button"
+                      className="text-parchment/70 hover:text-parchment"
+                    />
+                  )}
+                </div>
                 {isAcademic ? (
                   <AcademicBriefingLayout
                     result={result}
@@ -413,13 +491,6 @@ export function Briefing() {
                     terms={terms}
                     chunks={guideChunks}
                     filePath={result.filePath}
-                    swapButton={
-                      <SwapPaintingButton
-                        surface="briefing"
-                        data-testid="briefing-swap-painting-button"
-                        className="text-parchment/70 hover:text-parchment"
-                      />
-                    }
                     containerRef={digestMainRef}
                     sentinelRef={digestSentinelRef}
                     finished={digestFinished}
@@ -449,7 +520,6 @@ export function Briefing() {
       </div>
 
       {source === 'digest' && result?.filePath && (
-        <div data-zone="article">
         <ArticleAssistantPanel
           articleType="briefing"
           parentPath={result.filePath}
@@ -458,23 +528,16 @@ export function Briefing() {
           autoGenerateGuide
           theme={theme}
         />
-        </div>
       )}
       {isJob && jobResult?.filePath && (
-        <div data-zone="article">
-        <ArticleAssistantPanel
-          articleType="briefing"
-          parentPath={jobResult.filePath}
+        <JobAssistantPanel
+          articlePath={jobResult.filePath}
           articleTitle={jobResult.title}
           articleContent={jobResult.content ?? ''}
-          showGuide={false}
         />
-        </div>
       )}
       {source === 'writing' && (
-        <div data-zone="article">
         <WritingAssistantPanel />
-        </div>
       )}
       <ConfirmDialog
         open={pendingDelete !== null}
@@ -508,7 +571,6 @@ export function Briefing() {
         onClose={() => setJobProfilePanelOpen(false)}
       />
       <CandlelightLayer />
-      <BriefingCornerControls />
     </div>
   )
 }

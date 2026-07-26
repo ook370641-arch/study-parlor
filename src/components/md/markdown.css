@@ -479,7 +479,7 @@
 
 /* ===== Academic briefing theme overrides ===== */
 .briefing-body-academic .md-body {
-  color: rgba(245, 230, 204, 0.9);
+  color: #e8d5b7;
 }
 
 .briefing-body-academic .md-body h1,
@@ -511,7 +511,7 @@
 }
 
 .briefing-body-academic p:lang(en) {
-  color: #b0a390;
+  color: #e8d5b7;
 }
 
 /* ===== Theme-aware image borders ===== */

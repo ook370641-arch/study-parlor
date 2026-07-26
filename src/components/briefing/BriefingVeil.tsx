@@ -19,7 +19,7 @@ export function BriefingVeil() {
       style={{
         opacity: flash ? 0.82 : 1,
         background:
-          'linear-gradient(180deg, rgba(12,8,6,0.30) 0%, rgba(12,8,6,0.62) 26%, rgba(12,8,6,0.86) 55%, rgba(12,8,6,0.94) 100%)',
+          'linear-gradient(180deg, rgba(12,8,6,0.08) 0%, rgba(12,8,6,0.18) 26%, rgba(12,8,6,0.32) 55%, rgba(12,8,6,0.45) 100%)',
       }}
       aria-hidden="true"
     />

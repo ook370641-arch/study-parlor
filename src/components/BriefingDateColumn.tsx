@@ -88,7 +88,7 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
               e.preventDefault()
               setMenu({ x: e.clientX, y: e.clientY, item })
             }}
-            className={`w-full text-left px-3 py-2 rounded transition-all duration-300 flex items-center gap-2 ${isCurrent ? activeItem : itemBase} ${readDates.includes(entry.date) ? 'opacity-60' : ''}`}
+            className={`w-full text-left px-2 py-2 rounded transition-all duration-300 flex items-center gap-2 ${isCurrent ? activeItem : itemBase} ${readDates.includes(entry.date) ? 'opacity-60' : ''}`}
             style={{
               fontSize: 'var(--briefing-list-title-size)',
               ...(isCurrent ? { transform: 'translateX(4px)', transitionTimingFunction: SPRING_SETTLE } : {}),

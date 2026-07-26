@@ -230,7 +230,7 @@ export function JobBriefingRenderer({ content, theme, fontSize, finished, alread
   return (
     <div
       data-testid="job-briefing-renderer"
-      className={`arrive-item max-w-3xl mx-auto space-y-8 ${pageClass}`}
+      className={`arrive-item w-[95%] max-w-[1600px] min-w-[520px] mx-auto space-y-8 ${pageClass}`}
       style={{ fontSize: bodyStyle.size, fontWeight: bodyStyle.weight }}
     >
       {isAcademic && (

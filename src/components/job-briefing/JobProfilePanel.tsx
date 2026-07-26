@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useStore } from '@/store'
+import { normalizeJobProfile, normalizeJobBriefingConfig } from '@/lib/job-briefing-defaults'
 
 import type { JobProfile, JobBriefingConfig } from '@shared/index'
 
@@ -18,9 +19,9 @@ export function JobProfilePanel({ open, onClose }: Props) {
   const discoverPages = useStore(s => s.discoverJobBriefingPages)
   const showToast = useStore(s => s.showToast)
 
-  // Local edit state — sync from store on open
-  const [profile, setProfile] = useState<JobProfile>(jobProfile)
-  const [config, setConfig] = useState<JobBriefingConfig>(jobConfig)
+  // Local edit state — sync from store on open; normalize defensively against stale/corrupted persisted data
+  const [profile, setProfile] = useState<JobProfile>(() => normalizeJobProfile(jobProfile))
+  const [config, setConfig] = useState<JobBriefingConfig>(() => normalizeJobBriefingConfig(jobConfig))
   const [newEventKeyword, setNewEventKeyword] = useState('')
   const [newJobKeyword, setNewJobKeyword] = useState('')
   const [newCompanyName, setNewCompanyName] = useState('')
@@ -30,8 +31,8 @@ export function JobProfilePanel({ open, onClose }: Props) {
 
   useEffect(() => {
     if (open) {
-      setProfile(jobProfile)
-      setConfig(jobConfig)
+      setProfile(normalizeJobProfile(jobProfile))
+      setConfig(normalizeJobBriefingConfig(jobConfig))
     }
   }, [open, jobProfile, jobConfig])
 

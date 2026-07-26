@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from 'react'
+import { memo, useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
@@ -19,6 +19,25 @@ function formatDate(iso: string | null | undefined) {
   }
 }
 
+// Extracted outside component to avoid re-creating on every render
+function ImportSpinner() {
+  return (
+    <svg
+      className="inline-flex ml-1.5 animate-spin align-middle"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      style={{ opacity: 0.8 }}
+    >
+      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+      <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete }: Props) {
   const isAcademic = theme !== 'newspaper'
   const importArticle = useStore((s) => s.importAnthropicArticle)
@@ -34,7 +53,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
     return () => document.removeEventListener('click', h)
   }, [menu])
 
-  const handleClick = async () => {
+  const handleClick = useCallback(async () => {
     if (importing) {
       // Clicking during import cancels it
       cancelImport()
@@ -58,7 +77,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
     } finally {
       setImporting(false)
     }
-  }
+  }, [importing, article.isSaved, article.filePath, article.url, cancelImport, importArticle, openReader])
 
   // --- Theme-dependent classes ---
   const bgClass = isAcademic ? 'bg-ink/30' : 'bg-white'
@@ -88,22 +107,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
       : 'border-l-[3px] border-l-[#c9c3b8]/30 border-t-[#c9c3b8]/30 border-r-[#c9c3b8]/30 border-b-[#c9c3b8]/30'
   }
 
-  // Spinner SVG for importing state
-  const Spinner = () => (
-    <svg
-      className="inline-flex ml-1.5 animate-spin align-middle"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      style={{ opacity: 0.8 }}
-    >
-      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-      <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
-    </svg>
-  )
+  // Spinner SVG for importing state — extracted outside component (ImportSpinner above)
 
   return (
     <button
@@ -139,6 +143,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             alt=""
             className={`shrink-0 w-20 h-20 object-cover rounded ${placeholderBg}`}
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className={`shrink-0 w-20 h-20 rounded flex items-center justify-center text-xs ${placeholderBg} ${placeholderText}`}>
@@ -155,7 +160,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             style={{ fontSize: 'var(--briefing-list-title-size)' }}
           >
             {article.title}
-            {importing && <Spinner />}
+            {importing && <ImportSpinner />}
           </h3>
           <p className={`mt-1 ${mutedText}`} style={{ fontSize: 'var(--briefing-list-meta-size)' }}>
             {importing ? '导入中…' : formatDate(article.publishedAt)}

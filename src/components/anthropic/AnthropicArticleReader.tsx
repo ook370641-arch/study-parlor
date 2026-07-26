@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ipc } from '@/lib/ipc'
 import { useStore } from '@/store'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
-import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChunks'
 import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
 import { Quote } from '@/components/Quote'
+import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 import { TransferToWritingButton } from '@/components/briefing/TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import type { Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -54,8 +55,11 @@ function formatDate(iso: string | undefined): string {
 
 export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
+  const fontSizeBtnCls = isAcademic
+    ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40'
+    : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a] hover:border-[#2a1f1a]/40'
   const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? [])
-  const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
+  const terms = useMemo(() => guideChunks.flatMap((c) => c.terms), [guideChunks])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
   const [body, setBody] = useState<string>('')
   const [loading, setLoading] = useState(true)
@@ -64,6 +68,9 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const setAnthropicReaderContent = useStore((s) => s.setAnthropicReaderContent)
+  const fontSize = useStore((s) => s.briefingFontSize)
+  const increaseFontSize = useStore((s) => s.increaseBriefingFontSize)
+  const decreaseFontSize = useStore((s) => s.decreaseBriefingFontSize)
 
   useEffect(() => {
     let cancelled = false
@@ -100,6 +107,9 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
     }
   }, [loading, frontmatter, body, setAnthropicReaderContent])
 
+  const handleChunkEnter = useCallback((i: number) => setAssistantActiveChunk(i), [setAssistantActiveChunk])
+  const handleChunkLeave = useCallback(() => setAssistantActiveChunk(null), [setAssistantActiveChunk])
+
   const themeClasses = isAcademic
     ? {
         bg: 'bg-transparent',
@@ -131,6 +141,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
       }
 
   const articleStyles = `
+    .briefing-body-academic.prose { --tw-prose-body: #e8d5b7; --tw-prose-bold: #f5e6cc; --tw-prose-headings: #f5e6cc; }
     .briefing-body-academic blockquote {
       border-left: 4px solid #d97757;
       background: rgba(42, 31, 26, 0.5);
@@ -163,13 +174,25 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
       className={`relative flex h-full ${themeClasses.bg} ${themeClasses.text}`}
     >
       <div className="relative flex-1 min-w-0 flex flex-col">
-        {/* 固定换画按钮 — 位于文章区右上角、不随文章滚动 */}
-        <div className="absolute top-4 right-4 z-20">
-          <SwapPaintingButton
-            surface="briefing"
-            data-testid="anthropic-swap-painting-button"
-            className="text-parchment/70 hover:text-parchment"
-          />
+        {/* 固定控件 — 位于文章区右上角、不随文章滚动。报纸版式只显示字号按钮。 */}
+        <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
+          <button type="button" data-testid="briefing-font-size-decrease"
+            disabled={fontSize === 'sm'}
+            onClick={() => void decreaseFontSize()}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+            title="减小字号">−</button>
+          <button type="button" data-testid="briefing-font-size-increase"
+            disabled={fontSize === '7xl'}
+            onClick={() => void increaseFontSize()}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+            title="增大字号">+</button>
+          {isAcademic && (
+            <SwapPaintingButton
+              surface="briefing"
+              data-testid="anthropic-swap-painting-button"
+              className="text-parchment/70 hover:text-parchment"
+            />
+          )}
         </div>
         <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
           <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
@@ -193,6 +216,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
             {!loading && frontmatter && (
               <>
                 <header className={`mb-8 pb-8 border-b ${themeClasses.headerBorder}`}>
+                  {theme !== 'newspaper' && <PaintingPlate />}
                   <h1 data-testid="anthropic-reader-title" className={`text-3xl font-serif leading-tight mb-4 ${themeClasses.title}`}>
                     {frontmatter.title}
                   </h1>
@@ -253,8 +277,8 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                     theme={theme}
                     terms={terms}
                     activeChunkIndex={activeChunkIndex}
-                    onChunkEnter={(i) => setAssistantActiveChunk(i)}
-                    onChunkLeave={() => setAssistantActiveChunk(null)}
+                    onChunkEnter={handleChunkEnter}
+                    onChunkLeave={handleChunkLeave}
                   />
                 </article>
                 {body && (

@@ -14,10 +14,10 @@ export function BriefingThemeToggle() {
     <button
       data-testid="briefing-theme-toggle"
       onClick={handleClick}
-      className={`p-2 rounded-md transition-colors ${
+      className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
         isAcademic
-          ? 'text-parchment/70 hover:text-parchment hover:bg-parchment/10'
-          : 'text-[#1a1a1a] hover:text-[#555] hover:bg-[#1a1a1a]/5'
+          ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40'
+          : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a]'
       }`}
       title={isAcademic ? '切换报纸版式' : '切换学术版式'}
     >

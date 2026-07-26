@@ -48,12 +48,40 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   }, [tree, selectWritingFile])
 
   if (collapsed) {
+    // Collect up to 3 recent file names for mini-navigation
+    const recentFiles: { name: string; path: string }[] = []
+    const collect = (nodes: typeof tree) => {
+      if (!nodes) return
+      for (const n of nodes.writing ?? []) {
+        if (n.kind === 'file') {
+          recentFiles.push({ name: n.name, path: n.path })
+        } else if (n.children) {
+          for (const c of n.children) {
+            if (c.kind === 'file') recentFiles.push({ name: c.name, path: c.path })
+            if (recentFiles.length >= 3) return
+          }
+        }
+        if (recentFiles.length >= 3) return
+      }
+    }
+    collect(tree)
+
     return (
       <div className="flex flex-col items-center py-3 gap-3 h-full">
         <span className={dim} style={{ writingMode: 'vertical-rl' }}>文章</span>
         <span data-testid="writing-collapsed-articles-count" className="min-w-[18px] px-1 py-0.5 rounded-full text-[10px] text-center bg-ember text-white">
           {countFiles(tree?.writing)}
         </span>
+        {recentFiles.map((f, i) => (
+          <button
+            key={i}
+            data-testid={`writing-collapsed-recent-${i}`}
+            onClick={() => selectWritingFile(f.path)}
+            className={`text-[10px] truncate max-w-[40px] ${isAcademic ? 'text-parchment/40 hover:text-parchment/70' : 'text-[#6b5d52]/50 hover:text-[#6b5d52]'}`}
+            style={{ writingMode: 'vertical-rl' }}
+            title={f.name}
+          >{f.name.length > 6 ? f.name.slice(0, 6) + '…' : f.name}</button>
+        ))}
         <div className="flex-1" />
         <span className={dim} style={{ writingMode: 'vertical-rl' }}>仓库</span>
         <span data-testid="writing-collapsed-repository-count" className={`min-w-[18px] px-1 py-0.5 rounded-full text-[10px] text-center ${isAcademic ? 'bg-parchment/20 text-parchment' : 'bg-[#1a1a1a] text-white'}`}>

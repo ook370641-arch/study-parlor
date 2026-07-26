@@ -4,6 +4,7 @@ import { WritingEditor } from './WritingEditor'
 import { WritingToolbar } from './WritingToolbar'
 import { ACADEMIC_BODY_STYLES, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
 import { Quote } from '@/components/Quote'
+import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 
 const TONE_COLORS = {
   parchment: '#e8d5b7',
@@ -16,6 +17,7 @@ export function WritingBoard() {
   const fontSize = useStore(s => s.writingFontSize)
   const tone = useStore(s => s.writingTone)
   const writingUISize = useStore(s => s.writingUIFontSize)
+  const briefingTheme = useStore(s => s.briefingTheme)
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
 
@@ -68,6 +70,7 @@ export function WritingBoard() {
       {/* Editor area */}
       <div data-testid="writing-editor" className="flex-1 overflow-y-auto px-8 py-6"
         style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}>
+        {briefingTheme !== 'newspaper' && <PaintingPlate />}
         <div className="flex justify-center mb-4">
           <Quote surface="writing" />
         </div>

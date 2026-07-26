@@ -20,7 +20,6 @@ export function NewspaperBriefingLayout({
   cacheWriteFailed,
   terms,
   chunks,
-  swapButton,
   filePath,
   finished,
   alreadyRead,
@@ -35,7 +34,6 @@ export function NewspaperBriefingLayout({
   cacheWriteFailed?: boolean
   terms?: TermDef[]
   chunks?: ArticleAssistantChunk[]
-  swapButton?: React.ReactNode
   filePath?: string
   finished?: boolean
   alreadyRead?: boolean
@@ -55,7 +53,6 @@ export function NewspaperBriefingLayout({
       ref={containerRef}
     >
       <article ref={articleBodyRef} className="w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-4 py-6 relative briefing-article-body">
-        {swapButton && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
         <header className="border-b-2 border-[#1a1a1a] pb-4 mb-6 text-center">
           <h1 className="text-[28px] font-extrabold font-serif text-[#1a1a1a] mb-1 arrive-item d1">{result.title}</h1>
           <div className="flex items-center justify-center gap-3 text-xs text-[#555] uppercase tracking-widest arrive-item d2">

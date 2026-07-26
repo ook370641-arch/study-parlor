@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
@@ -47,12 +47,16 @@ function allowFileUrlTransform(url: string): string {
 }
 
 export function MarkdownContent({ children, components, className, terms }: Props) {
-  const rehypePlugins = terms && terms.length > 0 ? [rehypeTermHighlight(terms)] : undefined
+  const rehypePlugins = useMemo(
+    () => (terms && terms.length > 0 ? [rehypeTermHighlight(terms)] : undefined),
+    [terms],
+  )
+  const remarkPlugins = useMemo(() => [remarkGfm], [])
   return (
     <div className={className}>
       <MdErrorBoundary>
         <Markdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={remarkPlugins}
           rehypePlugins={rehypePlugins}
           components={components}
           urlTransform={allowFileUrlTransform}

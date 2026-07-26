@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
@@ -15,9 +15,19 @@ interface Props {
   theme?: BriefingTheme
 }
 
+// Keyframe styles extracted to module level to avoid re-injecting on every render
+const KEYFRAME_STYLES = `
+  @keyframes shimmer { 0% { left: -60%; } 100% { left: 100%; } }
+  @keyframes borderPulse { 0%, 100% { border-left-color: #d97757; } 50% { border-left-color: rgba(217, 119, 87, 0.25); } }
+  @keyframes borderPulseNewspaper { 0%, 100% { border-left-color: #1a1a1a; } 50% { border-left-color: rgba(26, 26, 26, 0.25); } }
+`
+
 export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
-  const themeClasses = isAcademic
+  const fontSizeBtnCls = isAcademic
+    ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40'
+    : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a] hover:border-[#2a1f1a]/40'
+  const themeClasses = useMemo(() => isAcademic
     ? {
         panelBg: 'bg-transparent',
         border: 'border-slate/30',
@@ -43,7 +53,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         button: 'bg-[#1a1a1a] text-white hover:bg-[#333]',
         emptyIcon: 'text-[#c9c3b8]',
         skeleton: 'bg-[#e8e4de]',
-      }
+      }, [isAcademic])
 
   const { articles, loading, error, lastFetchedAt } = useStore((s) => s.anthropicBlogCache)
   const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
@@ -54,6 +64,9 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const openReader = useStore((s) => s.openAnthropicReader)
   const deleteAnthropicArticle = useStore((s) => s.deleteAnthropicArticle)
+  const fontSize = useStore((s) => s.briefingFontSize)
+  const increaseFontSize = useStore((s) => s.increaseBriefingFontSize)
+  const decreaseFontSize = useStore((s) => s.decreaseBriefingFontSize)
 
   const [query, setQuery] = useState('')
   const [listCollapsed, setListCollapsed] = useState(false)
@@ -115,7 +128,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
     setCheckKey((k) => k + 1)
   }
 
-  const openOrImportArticle = async (article: AnthropicArticleMeta) => {
+  const openOrImportArticle = useCallback(async (article: AnthropicArticleMeta) => {
     // Same logic as AnthropicArticleRow: open saved file, or re-import if missing.
     if (article.isSaved && article.filePath) {
       try {
@@ -127,18 +140,14 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
       }
     }
     await importArticle(article.url)
-  }
+  }, [importArticle, openReader])
 
   return (
     <div
       data-testid="anthropic-blog-panel"
       className={`relative flex-1 flex min-w-0 overflow-hidden z-[5] ${themeClasses.panelBg}`}
     >
-      <style>{`
-        @keyframes shimmer { 0% { left: -60%; } 100% { left: 100%; } }
-        @keyframes borderPulse { 0%, 100% { border-left-color: #d97757; } 50% { border-left-color: rgba(217, 119, 87, 0.25); } }
-        @keyframes borderPulseNewspaper { 0%, 100% { border-left-color: #1a1a1a; } 50% { border-left-color: rgba(26, 26, 26, 0.25); } }
-      `}</style>
+      <style>{KEYFRAME_STYLES}</style>
       <BriefingListColumn
         collapsed={listCollapsed}
         onToggle={() => setListCollapsed((c) => !c)}
@@ -174,6 +183,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                     alt=""
                     className="w-10 h-10 object-cover"
                     loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div
@@ -239,7 +249,10 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               />
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
+            <div
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-3"
+              style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+            >
               {loading && articles.length === 0 && (
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
@@ -280,16 +293,27 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           />
         ) : (
           <div className={`relative flex-1 flex flex-col items-center justify-center px-6 ${themeClasses.muted}`}>
-            {/* 空态下保留换画按钮 — 全局 Chrome 不依赖内容状态；文章打开时由 Reader 渲染自己的按钮 */}
-            {isAcademic && (
-              <div className="absolute top-4 right-4 z-20">
+            {/* 空态下保留字号+换画按钮 — 全局 Chrome 不依赖内容状态；文章打开时由 Reader 渲染自己的按钮。
+                报纸版式只显示字号按钮。 */}
+            <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
+              <button type="button" data-testid="briefing-font-size-decrease"
+                disabled={fontSize === 'sm'}
+                onClick={() => void decreaseFontSize()}
+                className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                title="减小字号">−</button>
+              <button type="button" data-testid="briefing-font-size-increase"
+                disabled={fontSize === '7xl'}
+                onClick={() => void increaseFontSize()}
+                className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                title="增大字号">+</button>
+              {isAcademic && (
                 <SwapPaintingButton
                   surface="briefing"
                   data-testid="anthropic-swap-painting-button"
                   className="text-parchment/70 hover:text-parchment"
                 />
-              </div>
-            )}
+              )}
+            </div>
             <svg
               className={`w-12 h-12 mb-4 ${themeClasses.emptyIcon}`}
               fill="none"

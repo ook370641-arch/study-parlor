@@ -23,7 +23,6 @@ export function AcademicBriefingLayout({
   cacheWriteFailed,
   terms,
   chunks,
-  swapButton,
   filePath,
   finished,
   alreadyRead,
@@ -38,7 +37,6 @@ export function AcademicBriefingLayout({
   cacheWriteFailed?: boolean
   terms?: TermDef[]
   chunks?: ArticleAssistantChunk[]
-  swapButton?: React.ReactNode
   filePath?: string
   finished?: boolean
   alreadyRead?: boolean
@@ -79,9 +77,8 @@ export function AcademicBriefingLayout({
             onNavigate={navigateToChunk}
           />
         )}
-        {swapButton && !paintingPlateEnabled && <div className="absolute top-4 right-4 z-10">{swapButton}</div>}
         <header className="text-center mb-8">
-          <PaintingPlate swapButton={swapButton} />
+          <PaintingPlate />
           <h1 className="text-[24px] font-bold font-serif text-[#f5e6cc] mb-2 arrive-item d1">{result.title}</h1>
           <div className="arrive-item d2">
           <BriefingMetaLine

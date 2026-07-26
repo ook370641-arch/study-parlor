@@ -1,7 +1,5 @@
 import { useStore } from '@/store'
 import type { BriefingTheme } from '@shared/index'
-import { BackToCover } from './BackToCover'
-import { Button } from './Button'
 import { BriefingThemeToggle } from './briefing/BriefingThemeToggle'
 
 interface Props {
@@ -70,23 +68,17 @@ function JobBriefingIcon() {
 export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const source = useStore((s) => s.briefingSource)
   const setSource = useStore((s) => s.setBriefingSource)
-  const increase = useStore((s) => s.increaseBriefingFontSize)
-  const decrease = useStore((s) => s.decreaseBriefingFontSize)
-  const fontSize = useStore((s) => s.briefingFontSize)
-  const increaseWritingUI = useStore((s) => s.increaseWritingUIFontSize)
-  const decreaseWritingUI = useStore((s) => s.decreaseWritingUIFontSize)
-  const writingUISize = useStore((s) => s.writingUIFontSize)
   const goto = useStore((s) => s.goto)
-  const canDecrease = fontSize !== 'sm'
-  const canIncrease = fontSize !== '7xl'
-  const canDecreaseWritingUI = writingUISize !== 'sm'
-  const canIncreaseWritingUI = writingUISize !== '7xl'
-
+  const candle = useStore((s) => s.candlelightEnabled)
+  const plate = useStore((s) => s.paintingPlateEnabled)
+  const painting = useStore((s) => s.currentPaintings.briefing)
+  const toggleCandle = useStore((s) => s.toggleCandlelight)
+  const togglePlate = useStore((s) => s.togglePaintingPlate)
   const isAcademic = theme !== 'newspaper'
 
   const themeClasses = isAcademic
     ? {
-        bg: 'bg-ink/45 backdrop-blur-md border border-parchment/15 rounded-xl',
+        bg: 'border border-parchment/15 rounded-xl',
         border: '',
         headerText: 'text-parchment',
         toggle: 'text-parchment/60 hover:text-parchment',
@@ -117,19 +109,19 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
     },
     {
       id: 'digest',
-      label: 'AI 日报',
+      label: '前沿',
       icon: DigestIcon,
       testId: 'briefing-source-digest',
     },
     {
       id: 'anthropic',
-      label: 'Anthropic 博客',
+      label: '博客',
       icon: AnthropicIcon,
       testId: 'briefing-source-anthropic',
     },
     {
       id: 'job-briefing',
-      label: '求职简报',
+      label: '求职',
       icon: JobBriefingIcon,
       testId: 'briefing-source-job-briefing',
     },
@@ -138,7 +130,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   return (
     <aside
       data-testid="briefing-source-sidebar"
-      className={`h-full flex flex-col transition-all ${collapsed ? 'w-14' : 'w-48'} ${themeClasses.bg} ${themeClasses.border} z-[5]`}
+      className={`h-full flex flex-col transition-[width] duration-200 ease-out ${collapsed ? 'w-14 overflow-hidden' : 'w-40'} ${themeClasses.bg} ${themeClasses.border} z-[5]`}
     >
       <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-4 ${themeClasses.headerBorder}`}>
         {!collapsed && <span className={`text-sm font-serif ${themeClasses.headerText}`}>来源</span>}
@@ -161,7 +153,6 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
               data-testid={item.testId}
               onClick={() => {
                 setSource(item.id)
-                if (collapsed) onToggle()
               }}
               className={`${base} ${isActive ? `${themeClasses.active} ${
                 isAcademic
@@ -180,68 +171,62 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
       </nav>
       <div
         data-testid="briefing-rail-controls"
-        className={`flex ${collapsed ? 'flex-col items-center' : 'flex-row items-center'} gap-1 p-2 ${themeClasses.railBorder}`}
+        className={`flex flex-col items-center gap-2 p-2 ${themeClasses.railBorder}`}
       >
-        <BackToCover className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'} />
-        {source === 'writing' ? (
-          <>
-            <Button
-              variant="ghost"
-              onClick={() => void decreaseWritingUI()}
-              disabled={!canDecreaseWritingUI}
-              data-testid="writing-ui-font-size-decrease"
-              className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
-              title="减小界面字号"
-            >
-              -
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => void increaseWritingUI()}
-              disabled={!canIncreaseWritingUI}
-              data-testid="writing-ui-font-size-increase"
-              className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
-              title="增大界面字号"
-            >
-              +
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="ghost"
-              onClick={decrease}
-              disabled={!canDecrease}
-              data-testid="briefing-font-size-decrease"
-              className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
-              title="减小字号"
-            >
-              -
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={increase}
-              disabled={!canIncrease}
-              data-testid="briefing-font-size-increase"
-              className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
-              title="增大字号"
-            >
-              +
-            </Button>
-          </>
+        {/* Candlelight — academic only */}
+        {isAcademic && (
+          <button type="button" data-testid="briefing-candlelight-toggle" aria-pressed={candle}
+            onClick={() => void toggleCandle()}
+            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
+              candle
+                ? 'border-ember/60 text-ember bg-ember/10'
+                : 'border-parchment/25 text-parchment/50'
+            }`}
+            title="烛光随行">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <path d="M12 3c1.5 2.5 3.5 4.2 3.5 7a3.5 3.5 0 1 1-7 0c0-1.5.6-2.6 1.4-3.7.3 1 .9 1.7 1.6 2.2C11.6 6.6 11.7 4.8 12 3z"/><path d="M9 21h6"/>
+            </svg>
+          </button>
         )}
+
+        {/* Painting plate — academic only */}
+        {isAcademic && painting && (
+          <button type="button" data-testid="painting-plate-toggle" aria-pressed={plate}
+            onClick={() => void togglePlate()}
+            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
+              plate
+                ? 'border-ember/60 text-ember bg-ember/10'
+                : 'border-parchment/25 text-parchment/50'
+            }`}
+            title="并置画框">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <rect x="3" y="5" width="18" height="14" rx="1"/><rect x="6.5" y="8" width="11" height="8"/>
+            </svg>
+          </button>
+        )}
+
+        {/* Spacer — pushes navigation controls to bottom */}
+        <div className="flex-1" />
+
+        {/* Back to cover */}
+        <button
+          type="button"
+          data-testid="briefing-back-to-cover"
+          aria-label="返回封面"
+          onClick={() => goto('cover')}
+          className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
+            isAcademic ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40' : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a]'
+          }`}
+          title="返回封面"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </button>
+
+        {/* Theme toggle */}
         <BriefingThemeToggle />
-        {source === 'job-briefing' && (
-          <Button
-            variant="ghost"
-            data-testid="job-briefing-profile-entry"
-            onClick={() => goto('settings')}
-            className={isAcademic ? '' : 'text-[#1a1a1a] hover:text-[#555]'}
-            title="编辑求职档案（意向岗位、方向、经历）"
-          >
-            档案
-          </Button>
-        )}
       </div>
     </aside>
   )

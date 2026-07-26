@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
 import { splitArticleIntoChunks } from '@/lib/article-chunks'
 import type { ArticleAssistantChunk } from '@shared/index'
@@ -15,7 +15,7 @@ interface Props {
   onChunkLeave?: () => void
 }
 
-export function ArticleBodyChunks({ content, chunks, fileName, theme = 'academic', terms, activeChunkIndex, onChunkEnter, onChunkLeave }: Props) {
+export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chunks, fileName, theme = 'academic', terms, activeChunkIndex, onChunkEnter, onChunkLeave }: Props) {
   const articleChunks = useMemo(() => splitArticleIntoChunks(content, chunks.map((c) => c.heading)), [content, chunks])
   const isAcademic = theme !== 'newspaper'
 
@@ -62,4 +62,10 @@ export function ArticleBodyChunks({ content, chunks, fileName, theme = 'academic
       })}
     </div>
   )
-}
+}, (prev, next) =>
+  prev.content === next.content &&
+  prev.chunks === next.chunks &&
+  prev.fileName === next.fileName &&
+  prev.theme === next.theme &&
+  prev.terms === next.terms
+)

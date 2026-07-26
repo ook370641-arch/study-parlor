@@ -43,12 +43,16 @@ export function CandlelightLayer() {
 
     const armIdle = () => {
       if (idleTimer) clearTimeout(idleTimer)
-      idleTimer = window.setTimeout(() => { glow.style.opacity = '0' }, IDLE_MS)
+      idleTimer = window.setTimeout(() => {
+        glow.style.opacity = '0'
+        document.documentElement.classList.add('cursor-hidden')
+      }, IDLE_MS)
     }
     const onMove = (e: MouseEvent) => {
       target = { x: e.clientX, y: e.clientY }
       if (!seen) { pos = { ...target }; seen = true }
       glow.style.opacity = '1'
+      document.documentElement.classList.remove('cursor-hidden')
       armIdle()
     }
     const onLeave = () => { glow.style.opacity = '0' }
@@ -67,6 +71,7 @@ export function CandlelightLayer() {
     return () => {
       cancelAnimationFrame(raf)
       if (idleTimer) clearTimeout(idleTimer)
+      document.documentElement.classList.remove('cursor-hidden')
       window.removeEventListener('mousemove', onMove)
       document.documentElement.removeEventListener('mouseleave', onLeave)
       window.removeEventListener('blur', onBlur)
@@ -106,7 +111,7 @@ export function CandlelightLayer() {
   if (!live) return null
 
   return (
-    <div data-testid="briefing-candlelight" className="fixed inset-0 z-[3] pointer-events-none" aria-hidden="true">
+    <div data-testid="briefing-candlelight" className="fixed inset-0 z-[6] pointer-events-none" aria-hidden="true">
       <div
         ref={glowRef}
         className={`candle-glow ${live && generating ? 'candle-dim' : ''}`}

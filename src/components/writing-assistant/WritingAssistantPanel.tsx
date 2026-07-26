@@ -21,52 +21,47 @@ export function WritingAssistantPanel() {
     closeTimer.current = window.setTimeout(() => setOpen(false), 200)
   }
 
-  // Collapsed state: right-edge tab
-  if (!open) {
-    return (
-      <div
-        data-testid="writing-assistant-collapsed"
-        className="w-6 bg-ember text-white text-xs flex items-center justify-center cursor-pointer shrink-0 select-none"
-        style={{ writingMode: 'vertical-rl' }}
-        onClick={() => setOpen(true)}
-      >
-        AI 助手 ▸
-      </div>
-    )
-  }
-
   return (
-    <div data-testid="writing-assistant-panel" className={`relative z-[5] flex h-full shrink-0 ${closing ? 'panel-depart' : 'panel-arise'}`}>
+    <div data-testid="writing-assistant-panel" className={`relative z-[5] flex h-full shrink-0 ${!open ? '' : (closing ? 'panel-depart' : 'panel-arise')}`}>
       <ArticleDivider
-        collapsed={false}
-        onToggleCollapse={() => requestClose()}
+        collapsed={!open}
+        onToggleCollapse={() => {
+          if (open) {
+            requestClose()
+          } else {
+            setOpen(true)
+          }
+        }}
         onResize={(w) => {
           const maxWidth = window.innerWidth * 0.45
           if (w < 40) {
-            requestClose()
+            if (open) requestClose()
           } else {
+            if (!open) setOpen(true)
             setWidth(Math.max(200, Math.min(w, maxWidth)))
           }
         }}
         theme="academic"
       />
-      <div className="h-full overflow-hidden" style={{ width }}>
-        <div className="h-full flex flex-col min-w-0 border-l border-parchment/20 bg-[#1a1512]">
-          <div className="h-9 flex items-center justify-between px-3 border-b border-parchment/10 shrink-0">
-            <span className="text-[11px] tracking-[0.2em] text-parchment/80 font-serif">AI 写作助手</span>
-            <button
-              data-testid="writing-assistant-close-btn"
-              className="text-parchment/60 hover:text-ember text-sm leading-none px-1"
-              onClick={() => requestClose()}
-              aria-label="关闭"
-            >
-              ✕
-            </button>
+      {open && (
+        <div className="h-full overflow-hidden" style={{ width }}>
+          <div className="h-full flex flex-col min-w-0 border-l border-parchment/20 bg-[#1a1512]">
+            <div className="h-9 flex items-center justify-between px-3 border-b border-parchment/10 shrink-0">
+              <span className="text-[11px] tracking-[0.2em] text-parchment/80 font-serif">AI 写作助手</span>
+              <button
+                data-testid="writing-assistant-close-btn"
+                className="text-parchment/60 hover:text-ember text-sm leading-none px-1"
+                onClick={() => requestClose()}
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </div>
+            <WritingAssistantMessages />
+            <WritingAssistantInput />
           </div>
-          <WritingAssistantMessages />
-          <WritingAssistantInput />
         </div>
-      </div>
+      )}
     </div>
   )
 }

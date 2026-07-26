@@ -13,7 +13,7 @@ export function BriefingProgress({ stage, mode = 'live', onCancel }: Props) {
   const isAcademic = theme !== 'newspaper'
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
+    <div className="flex flex-col items-center justify-center h-full w-full">
       <BriefingConstellation stage={stage} mode={mode} />
       {mode === 'live' && onCancel && (
         <button

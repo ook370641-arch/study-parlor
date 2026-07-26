@@ -11,6 +11,7 @@ interface Props {
 
 export function BriefingEmptyState({ hint, buttonLabel, buttonTestId, onReceive }: Props) {
   const theme = useStore((s) => s.briefingTheme)
+  const source = useStore((s) => s.briefingSource)
   const isAcademic = theme !== 'newspaper'
   return (
     <main className="relative z-[5] flex-1 flex items-center justify-center px-6">
@@ -25,7 +26,9 @@ export function BriefingEmptyState({ hint, buttonLabel, buttonTestId, onReceive 
           onClick={onReceive}
           className={`px-8 py-3 rounded text-[15px] font-serif transition-colors ${
             isAcademic
-              ? 'bg-ember text-white hover:bg-ember/90'
+              ? source === 'job-briefing'
+                ? 'bg-[#7fa8d9] text-white hover:bg-[#7fa8d9]/90'
+                : 'bg-ember text-white hover:bg-ember/90'
               : 'bg-[#1a1a1a] text-white hover:bg-[#333]'
           }`}
         >
