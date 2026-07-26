@@ -368,7 +368,7 @@ export function Briefing() {
                   </div>
                 </main>
               ) : jobResult ? (
-                <div data-testid="job-briefing-reading-pane" data-arrival={jobFresh ? 'fresh' : 'revisit'} className="flex-1 flex flex-col min-h-0">
+                <div data-testid="job-briefing-reading-pane" data-arrival={jobFresh ? 'fresh' : 'revisit'} className="relative flex-1 flex flex-col min-h-0">
                 <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
                   <button type="button" data-testid="briefing-font-size-decrease"
                     disabled={fontSize === 'sm'} onClick={decrease}
