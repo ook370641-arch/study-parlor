@@ -47,7 +47,7 @@ export function Extension() {
 
       <div className="absolute top-10 left-6 right-6 bottom-5 z-10">
         <div className={`max-w-5xl mx-auto h-full ${isAcademic ? 'bg-ink/72' : 'bg-white'} backdrop-blur-md border ${isAcademic ? 'border-slate/30' : 'border-[#1a1a1a]/10'} rounded-xl flex flex-col overflow-hidden`}>
-          <div className={`flex justify-between items-center px-6 pt-5 pb-3 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/8'} shrink-0`}>
+          <div className={`flex justify-between items-center px-6 pt-5 pb-3 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'} shrink-0`}>
             <h2 className="text-2xl font-serif font-semibold">扩展</h2>
             <button
               onClick={() => goto('home')}
@@ -65,7 +65,7 @@ export function Extension() {
 
           <div className="flex flex-1 overflow-hidden">
             {/* Sidebar */}
-            <nav className={`w-52 shrink-0 border-r ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/8'} p-3 space-y-1 overflow-y-auto`}>
+            <nav className={`w-52 shrink-0 border-r ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'} p-3 space-y-1 overflow-y-auto`}>
               {TABS.map(tab => (
                 <button
                   key={tab.id}
@@ -87,7 +87,7 @@ export function Extension() {
               {activeTab === 'terminology' && <TerminologyPanel />}
 
               {activeTab === 'library' && (
-                <div data-testid="extension-library-directory-card" className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4`}>
+                <div data-testid="extension-library-directory-card" className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4`}>
                   <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-2 flex items-center gap-2`}>
                     <span>📁</span> {t.libraryName}
                   </h3>
@@ -107,7 +107,7 @@ export function Extension() {
               )}
 
               {activeTab === 'agent' && (
-                <div data-testid="extension-local-agent-card" className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4`}>
+                <div data-testid="extension-local-agent-card" className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4`}>
                   <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-2 flex items-center gap-2`}>
                     <span>⚡</span> 本地 Agent 打通
                   </h3>
@@ -127,7 +127,7 @@ export function Extension() {
               )}
 
               {activeTab === 'paintings' && (
-                <div data-testid="extension-custom-pictures-card" className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4`}>
+                <div data-testid="extension-custom-pictures-card" className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4`}>
                   <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-2 flex items-center gap-2`}>
                     <span>🖼️</span> 自选配图
                   </h3>
@@ -154,7 +154,7 @@ export function Extension() {
 
                     <table className="w-full text-[11px] mt-2 border-collapse">
                       <thead>
-                        <tr className={`${isAcademic ? 'text-ember border-slate/20' : 'text-[#8a3a3a] border-[#1a1a1a]/8'} border-b`}>
+                        <tr className={`${isAcademic ? 'text-ember border-slate/20' : 'text-[#8a3a3a] border-[#1a1a1a]/10'} border-b`}>
                           <th className="text-left py-1">字段</th>
                           <th className="text-left py-1">必填</th>
                           <th className="text-left py-1">说明</th>

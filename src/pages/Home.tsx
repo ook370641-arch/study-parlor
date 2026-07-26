@@ -58,7 +58,7 @@ export function Home() {
         <div className="w-[360px] shrink-0 flex flex-col gap-4 h-full overflow-y-auto">
           {/* 恢复提示 */}
           {firstUnsaved && (
-            <div className={isAcademic ? "bg-ink/70 backdrop-blur-md border border-slate/40 rounded-md p-4" : "bg-white border border-[#1a1a1a]/12 rounded-md p-4"}>
+            <div className={isAcademic ? "bg-ink/70 backdrop-blur-md border border-slate/40 rounded-md p-4" : "bg-white border border-[#1a1a1a]/15 rounded-md p-4"}>
               <div className={`text-xs font-sans mb-2 ${isAcademic ? 'text-parchment/50' : 'text-[#1a1a1a]/50'}`}>{t.unsavedSessionLabel}</div>
               <div className="flex items-center justify-between gap-2">
                 <span data-testid="unsaved-session-title" className={`text-sm font-serif truncate ${isAcademic ? 'text-parchment/70' : 'text-[#1a1a1a]/70'}`}>

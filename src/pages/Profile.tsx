@@ -46,7 +46,7 @@ export function Profile() {
         <div className="absolute top-10 left-6 right-6 z-10">
           <div className="max-w-3xl mx-auto">
             <div className={`${isAcademic ? 'bg-ink/72' : 'bg-white'} backdrop-blur-md border ${isAcademic ? 'border-slate/30' : 'border-[#1a1a1a]/10'} rounded-xl p-6`}>
-            <div className={`flex justify-between items-center pb-3 mb-4 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/8'}`}>
+            <div className={`flex justify-between items-center pb-3 mb-4 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'}`}>
               <h2 className="text-2xl font-serif font-semibold">你</h2>
               <button
                 data-testid="profile-exit-button"
@@ -100,7 +100,7 @@ export function Profile() {
       <div className="absolute top-10 left-6 right-6 bottom-5 z-10">
         <div className="max-w-3xl mx-auto h-full flex flex-col">
           <div className={`${isAcademic ? 'bg-ink/78' : 'bg-white'} backdrop-blur-md border ${isAcademic ? 'border-slate/30' : 'border-[#1a1a1a]/10'} rounded-xl p-5 flex flex-col gap-3 overflow-y-auto flex-1`}>
-          <h2 className={`text-xl font-serif font-semibold pb-2 mb-1 border-b ${isAcademic ? 'border-slate/20' : 'border-[#1a1a1a]/8'}`}>改写</h2>
+          <h2 className={`text-xl font-serif font-semibold pb-2 mb-1 border-b ${isAcademic ? 'border-slate/20' : 'border-[#1a1a1a]/10'}`}>改写</h2>
 
           <div>
             <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>{t.profileNameLabel}</div>
@@ -114,7 +114,7 @@ export function Profile() {
               rows={4}
               value={text}
               onChange={e => setText(e.target.value)}
-              className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a]'} rounded-md p-3 focus:outline-none focus:border-ember/60 font-serif resize-y min-h-[80px]`}
+              className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a]'} rounded-md p-3 focus:outline-none focus:border-ember/60 font-serif resize-y min-h-[80px]`}
             />
           </div>
 
@@ -134,7 +134,7 @@ export function Profile() {
                   className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
                     difficulty === d
                       ? (isAcademic ? 'bg-ember text-ink border-ember' : 'bg-[#1a1a1a] text-white border-[#1a1a1a]')
-                      : `bg-transparent ${isAcademic ? 'text-parchment/70 border-slate/40' : 'text-[#555] border-[#1a1a1a]/12'} hover:border-slate/60`
+                      : `bg-transparent ${isAcademic ? 'text-parchment/70 border-slate/40' : 'text-[#555] border-[#1a1a1a]/15'} hover:border-slate/60`
                   }`}
                 >
                   {getDifficultyLabel(d, t)}
@@ -154,7 +154,7 @@ export function Profile() {
                   className={`px-4 py-1.5 rounded text-sm font-sans border cursor-pointer transition-colors ${
                     temperature === temp
                       ? (isAcademic ? 'bg-ember text-ink border-ember' : 'bg-[#1a1a1a] text-white border-[#1a1a1a]')
-                      : `bg-transparent ${isAcademic ? 'text-parchment/70 border-slate/40' : 'text-[#555] border-[#1a1a1a]/12'} hover:border-slate/60`
+                      : `bg-transparent ${isAcademic ? 'text-parchment/70 border-slate/40' : 'text-[#555] border-[#1a1a1a]/15'} hover:border-slate/60`
                   }`}
                 >
                   {getTemperatureLabel(temp, t)}

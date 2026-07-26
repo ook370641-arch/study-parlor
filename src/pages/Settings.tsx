@@ -171,7 +171,7 @@ export function Settings() {
       <div className="absolute top-10 left-6 right-6 bottom-5 z-10">
         <div className="max-w-3xl mx-auto h-full flex flex-col">
           <div className={`${isAcademic ? 'bg-ink/72' : 'bg-white'} backdrop-blur-md border ${isAcademic ? 'border-slate/30' : 'border-[#1a1a1a]/10'} rounded-xl flex flex-col h-full overflow-hidden`}>
-            <div className={`flex justify-between items-center px-6 pt-5 pb-3 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/8'} shrink-0`}>
+            <div className={`flex justify-between items-center px-6 pt-5 pb-3 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'} shrink-0`}>
               <h2 className="text-2xl font-serif font-semibold">设置 · 仪器调校</h2>
               <button
                 data-testid="settings-back-button"
@@ -190,7 +190,7 @@ export function Settings() {
               )}
 
               {/* AI 服务 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4 mb-4`}>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
                 <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>AI 服务</h3>
 
                 <div className="space-y-4">
@@ -203,13 +203,13 @@ export function Settings() {
                         value={apiKey}
                         onChange={e => setApiKey(e.target.value)}
                         placeholder="sk-kimi-..."
-                        className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+                        className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                       />
                       <button
                         data-testid="settings-api-key-toggle"
                         type="button"
                         onClick={() => setShowKey(!showKey)}
-                        className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/12 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
+                        className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
                       >
                         {showKey ? '隐藏' : '显示'}
                       </button>
@@ -227,7 +227,7 @@ export function Settings() {
                       value={baseUrl}
                       onChange={e => setBaseUrl(e.target.value)}
                       placeholder={DEFAULT_BASE_URL}
-                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                   </div>
 
@@ -239,7 +239,7 @@ export function Settings() {
                       value={model}
                       onChange={e => setModel(e.target.value)}
                       placeholder={DEFAULT_MODEL}
-                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                   </div>
                 </div>
@@ -261,7 +261,7 @@ export function Settings() {
               </div>
 
               {/* 联网搜索 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4 mb-4`}>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
                 <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>联网搜索</h3>
 
                 <div className="space-y-4">
@@ -274,13 +274,13 @@ export function Settings() {
                         value={searchApiKey}
                         onChange={e => setSearchApiKey(e.target.value)}
                         placeholder={searchConfigured ? '已配置，输入新 key 可覆盖' : 'tvly-...'}
-                        className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+                        className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                       />
                       <button
                         data-testid="settings-search-api-key-toggle"
                         type="button"
                         onClick={() => setShowSearchKey(!showSearchKey)}
-                        className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/12 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
+                        className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
                       >
                         {showSearchKey ? '隐藏' : '显示'}
                       </button>
@@ -298,7 +298,7 @@ export function Settings() {
               </div>
 
               {/* 学习库 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4 mb-4`}>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
                 <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>学习库</h3>
                 <div>
                   <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目录路径</div>
@@ -308,13 +308,13 @@ export function Settings() {
                       type="text"
                       value={libraryPath}
                       onChange={e => setLibraryPath(e.target.value)}
-                      className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+                      className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                     <button
                       data-testid="settings-select-directory-button"
                       type="button"
                       onClick={handleSelectDirectory}
-                      className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/12 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
+                      className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
                     >
                       选择目录
                     </button>
@@ -323,7 +323,7 @@ export function Settings() {
               </div>
 
               {/* 求职简报 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/8'} border rounded-lg p-4 mb-4`}>
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-[#f5f5f0] border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
                 <h3 className={`${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'} font-semibold mb-4`}>求职简报</h3>
 
                 <div className="space-y-4">
@@ -334,7 +334,7 @@ export function Settings() {
                       type="text"
                       value={jobConfig.roleKeywords.join('，')}
                       onChange={e => setJobConfig(prev => ({ ...prev, roleKeywords: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                   </div>
 
@@ -345,7 +345,7 @@ export function Settings() {
                       type="text"
                       value={jobConfig.cities.join('，')}
                       onChange={e => setJobConfig(prev => ({ ...prev, cities: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/12 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
                     />
                   </div>
 
