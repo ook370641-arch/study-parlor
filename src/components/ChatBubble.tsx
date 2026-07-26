@@ -20,7 +20,7 @@ function makeChatComponents(isAcademic: boolean): Components {
   const strongText = isAcademic ? 'text-parchment/95' : 'text-[#1a1a1a]'
 
   return {
-    p: ({ children }) => <p className="m-0 my-1">{children}</p>,
+    p: ({ children }) => <p className={`m-0 my-1 ${textMain}`}>{children}</p>,
     strong: ({ children }) => <strong className={`${strongText} font-semibold`}>{children}</strong>,
     em: ({ children }) => <em className={`italic ${textMuted}`}>{children}</em>,
     table: ({ children }) => <table className="w-full border-collapse my-2 text-sm">{children}</table>,
@@ -33,7 +33,7 @@ function makeChatComponents(isAcademic: boolean): Components {
     td: ({ children }) => (
       <td className={`px-2.5 py-1.5 border-b ${thBorder} ${textSubtle}`}>{children}</td>
     ),
-    tr: ({ children }) => <tr>{children}</tr>,
+    tr: ({ children }) => <tr className={textSubtle}>{children}</tr>,
     tbody: ({ children }) => <tbody>{children}</tbody>,
     blockquote: ({ children }) => (
       <blockquote className={`my-3 px-3.5 py-2.5 border-l-[3px] ${accentLight} rounded-r`}>
@@ -56,9 +56,9 @@ function makeChatComponents(isAcademic: boolean): Components {
         </pre>
       )
     },
-    ul: ({ children }) => <ul className="my-2 pl-5">{children}</ul>,
-    ol: ({ children }) => <ol className="my-2 pl-5">{children}</ol>,
-    li: ({ children }) => <li className="my-1">{children}</li>,
+    ul: ({ children }) => <ul className={`my-2 pl-5 ${textMain}`}>{children}</ul>,
+    ol: ({ children }) => <ol className={`my-2 pl-5 ${textMain}`}>{children}</ol>,
+    li: ({ children }) => <li className={`my-1 ${textMain}`}>{children}</li>,
     hr: () => <hr className={`border-none my-4 h-px ${hrBorder}`} />,
     a: ({ href, children }) => (
       <a
@@ -95,7 +95,7 @@ export function ChatBubble({ msg, theme }: { msg: Message; theme?: BriefingTheme
 
   const assistantBubbleCls = isAcademic
     ? 'bg-ink/65 backdrop-blur-md border border-slate/40'
-    : 'bg-white border border-[#1a1a1a]/12'
+    : 'bg-white border border-[#1a1a1a]/12 text-[#1a1a1a]'
 
   return (
     <div data-testid={isUser ? 'user-message' : 'assistant-message'} className={`flex ${isUser ? 'justify-end' : 'justify-start'} my-3`}>
