@@ -185,7 +185,7 @@ export function Settings() {
             <div className="overflow-y-auto flex-1 px-6 py-5">
               {error && (
                 <div data-testid="settings-error-display" className={`mb-4 ${isAcademic ? 'bg-wine/10 border-wine/40' : 'bg-red-50 border-red-200'} border rounded-md px-4 py-3`}>
-                  <p className="text-sm text-parchment/80">{error}</p>
+                  <p className={`text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>{error}</p>
                 </div>
               )}
 
