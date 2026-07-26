@@ -14,7 +14,7 @@ function makeChatComponents(isAcademic: boolean): Components {
   const codeBg = isAcademic ? 'bg-[rgba(42,31,26,0.8)]' : 'bg-[#f5f5f0]'
   const preBg = isAcademic ? 'bg-[#15100d] border-[rgba(148,137,121,0.12)]' : 'bg-white border-[#1a1a1a]/10'
   const hrBorder = isAcademic ? 'bg-slate/20' : 'bg-[#1a1a1a]/10'
-  const linkHover = isAcademic ? 'hover:text-[#e8a07a]' : 'hover:text-[#6a2a2a]'
+  const linkHover = isAcademic ? 'hover:text-[#e8a07a]' : 'hover:text-[#1a1a1a]'
   const thBorder = isAcademic ? 'border-slate/15' : 'border-[#1a1a1a]/10'
   const h1Border = isAcademic ? 'border-ember/30' : 'border-[#1a1a1a]/15'
   const strongText = isAcademic ? 'text-parchment/95' : 'text-[#1a1a1a]'
@@ -65,7 +65,7 @@ function makeChatComponents(isAcademic: boolean): Components {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${accent} underline decoration-ember/40 ${linkHover}`}
+        className={`${accent} underline ${isAcademic ? 'decoration-ember/40' : 'decoration-[#1a1a1a]/30'} ${linkHover}`}
       >
         {children}
       </a>

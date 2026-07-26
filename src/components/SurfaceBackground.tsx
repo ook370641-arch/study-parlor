@@ -46,8 +46,8 @@ export function SurfaceBackground({ surface }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [painting?.url])
 
-  // 报纸版式仅在 Study 页面隐藏画作背景
-  if (theme === 'newspaper' && surface === 'study') return null
+  // 报纸版式下仅封面保留画作
+  if (theme === 'newspaper' && surface !== 'cover') return null
 
   // 始终渲染 vignette 暗角（保证文字可读性），画作就绪后才渲染图片层。
   if (!painting || !settledUrl) {
