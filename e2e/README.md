@@ -125,9 +125,10 @@ npx playwright show-trace e2e-results/<trace-file>.zip
 
 - `@smoke`：启动冒烟测试，快且不调用 LLM
 - `@slow`：调用真实 Kimi API，每个用例可能耗时 10 秒到 2 分钟
+- `@real`：真实 API 回归（Tavily、Kimi、RSS），默认必跑，阻塞发布前验收
 - `@p0`：核心路径，每次 CI/本地提交前跑
 - `@p1`：重要功能，PR 合并前跑
-- `@p2`：边界/慢路径，发布前全量或按需跑
+- `@p2`：边界/慢路径，发布前全量跑
 
 ## 定向测试
 

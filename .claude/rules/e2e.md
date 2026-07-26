@@ -12,7 +12,7 @@ paths:
 **Why:** 真实外部依赖导致测试慢且 flaky，但只跑 mock 会错过 API 契约变化。
 
 - 对依赖外部网络/LLM 的功能，默认用确定性 mock 或 seed 覆盖 `@p1` 用例。
-- 每个外部依赖至少有一条可独立运行的 `@real` / `@unstable` 用例，通过 fixture 级环境变量关闭 mock。
+- 每个外部依赖至少有一条可独立运行的 `@real` 用例，通过 fixture 级环境变量关闭 mock。`@unstable` 仅适用于输出不可预期的 LLM 断言（如"寓言主题有趣"），不适用于 API 契约回归。
 - mock 分支必须同时满足 `NODE_ENV==='test'` 与 E2E 隔离标记，避免单元测试误走 mock。
 - Source: e2e.md §1
 
