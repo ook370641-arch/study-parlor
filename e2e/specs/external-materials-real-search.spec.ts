@@ -42,7 +42,7 @@ test.describe('@p1 external materials real search chain', () => {
         handler: (_req, res, body) => {
           const parsed = JSON.parse(body || '{}')
           const lastMsg = parsed.messages?.[parsed.messages.length - 1]?.content ?? ''
-          if (lastMsg.includes('搜索查询词')) {
+          if (lastMsg.includes('宽域搜索查询词')) {
             jsonResponse(res, 200, makeChatCompletion('["苏格拉底式教学法", "Bloom 掌握学习", "苏格拉底对话案例"]'))
           } else {
             jsonResponse(res, 200, makeChatCompletion('核心概念：苏格拉底式教学通过提问引导学生自己发现答案。常见误解：导师只问不答。应用场景：一对一辅导和掌握学习。'))
