@@ -149,6 +149,113 @@ export async function generateExploratoryQueries(
   return queries.slice(0, 3)
 }
 
+export async function identifySubDimensions(
+  cfg: AppConfig,
+  topic: string,
+  round1Results: TavilyResult[]
+): Promise<string[]> {
+  const prompt = `以下是关于「${topic}」的第一轮网络搜索结果。请通读，识别 2-4 个值得深挖的子维度，生成精准搜索查询词。
+
+第一轮结果：
+${formatResultsForSearchPrompt(round1Results, 'R1')}
+
+只输出 JSON 数组：["查询1", "查询2"]`
+
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.3,
+    thinking: { type: 'disabled' }
+  })
+  const extracted = extractJsonArray(text)
+  if (!extracted) throw new Error('JSON extraction failed')
+  let arr: unknown
+  try {
+    arr = JSON.parse(extracted)
+  } catch {
+    throw new Error('JSON parse failed')
+  }
+  if (!Array.isArray(arr)) throw new Error('JSON parse failed: not an array')
+  const queries = arr.filter((q): q is string => typeof q === 'string')
+  return queries.slice(0, 4)
+}
+
+export async function synthesizeResearchReport(
+  cfg: AppConfig,
+  topic: string,
+  round1Results: TavilyResult[],
+  round2Results: TavilyResult[]
+): Promise<string> {
+  const prompt = `你是一位技术研究助手。以下是从两轮网络搜索得到的关于「${topic}」的资料。
+
+## 第一轮（全景扫描）
+${formatResultsForSearchPrompt(round1Results, 'R1')}
+
+## 第二轮（子维度深钻）
+${round2Results.length > 0
+  ? formatResultsForSearchPrompt(round2Results, 'R2')
+  : '（无 — 仅基于第一轮结果合成）'}
+
+请撰写一份结构化的研究报告。要求：
+
+1. 输出纯 markdown 格式，控制在 4000 字以内
+2. 结构灵活但不失深度——根据材料自然产生的维度组织章节，而不是套固定模板
+3. 优先使用：对比表格、分层分析、关键数据点
+4. 每个事实性陈述后附上来源编号 [1] [2] ...
+5. 如果材料之间存在矛盾或不同观点，明确指出
+6. 结尾附"关键收获"：3-5 条最值得记住的要点
+7. 结尾附"来源列表"
+
+写作风格：资深工程师写的内部技术备忘录。`
+
+  const report = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.5,
+    thinking: { type: 'enabled', reasoning_effort: 'high' }
+  })
+  return report.trim()
+}
+
+export async function generateTutorSupplement(
+  cfg: AppConfig,
+  topic: string,
+  report: string
+): Promise<{ tutorNotes: string; questions: string }> {
+  const prompt = `以下是一份关于「${topic}」的研究报告。
+
+---
+${report}
+---
+
+请基于以上报告，生成以下两部分内容：
+
+### 导师备课笔记
+将报告的核心知识转化为苏格拉底式导师的备课参考。包含：核心概念（2-4个）、关键区分点、常见误解（2-3个）、前置知识。风格：导师知道但不直接告诉学生的背景笔记。控制在 800 字以内。
+
+### 提问方向
+基于报告内容，给出 3-5 个苏格拉底式提问方向，用于引导学生自己发现这些知识。每个提问方向包含：引导问题 + 期望学生最终自己发现的结论。
+
+请用 markdown 分隔线 --- 隔开两个部分。`
+
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.5,
+    thinking: { type: 'enabled', reasoning_effort: 'high' }
+  })
+
+  // 解析两个部分：以第一个 "\n---\n" 为界
+  const sepIdx = text.indexOf('\n---\n')
+  let tutorNotes = ''
+  let questions = ''
+  if (sepIdx > 0) {
+    tutorNotes = text.slice(0, sepIdx).trim()
+    questions = text.slice(sepIdx + 5).trim()
+  } else {
+    // 降级：整段作为导师笔记
+    tutorNotes = text.trim()
+  }
+  return { tutorNotes, questions }
+}
+
 function formatResultsForSearchPrompt(
   results: TavilyResult[],
   label: string
