@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { searchWeb, generateSearchQueries, generateTutorBrief } from '../electron/lib/search'
+import {
+  searchWeb,
+  generateSearchQueries,
+  generateTutorBrief,
+  generateExploratoryQueries,
+  identifySubDimensions,
+  synthesizeResearchReport,
+  generateTutorSupplement
+} from '../electron/lib/search'
 
 vi.stubGlobal('fetch', vi.fn())
 
@@ -73,6 +81,10 @@ describe('searchWeb', () => {
 })
 
 describe('generateSearchQueries', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('returns parsed array on success', async () => {
     const mockFetch = vi.mocked(fetch)
     mockFetch.mockResolvedValueOnce({
@@ -150,6 +162,159 @@ describe('generateTutorBrief', () => {
     expect(body.temperature).toBe(0.3)
     expect(body.messages[0].content).toContain('[1]')
     expect(body.messages[0].content).toContain('https://a.com')
+  })
+})
+
+describe('generateExploratoryQueries', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns parsed array on success', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '```json\n["角度A", "角度B"]\n```' } }]
+      })
+    } as Response)
+
+    const queries = await generateExploratoryQueries(mockCfg, 'test topic')
+    expect(queries).toEqual(['角度A', '角度B'])
+  })
+
+  it('throws on non-array output', async () => {
+    const extractJsonModule = await import('@electron/lib/extract-json')
+    vi.spyOn(extractJsonModule, 'extractJsonArray').mockReturnValue('{"key": "value"}')
+
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'not important' } }]
+      })
+    } as Response)
+
+    await expect(generateExploratoryQueries(mockCfg, 'test'))
+      .rejects.toThrow('not an array')
+  })
+
+  it('throws on all non-string items', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '```json\n[1, 2, 3]\n```' } }]
+      })
+    } as Response)
+
+    await expect(generateExploratoryQueries(mockCfg, 'test'))
+      .rejects.toThrow('No valid search queries generated')
+  })
+})
+
+describe('identifySubDimensions', () => {
+  const sampleResults = [
+    { title: 'T1', url: 'https://a.com', content: 'Content about A' },
+    { title: 'T2', url: 'https://b.com', content: 'Content about B' },
+  ]
+
+  it('returns parsed array on success', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '["维度1搜索词", "维度2搜索词"]' } }]
+      })
+    } as Response)
+
+    const queries = await identifySubDimensions(mockCfg, 'topic', sampleResults)
+    expect(queries).toEqual(['维度1搜索词', '维度2搜索词'])
+    // Verify round 1 results are passed in the prompt
+    const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+    const body = JSON.parse((lastCall[1] as RequestInit).body as string)
+    expect(body.messages[0].content).toContain('[R1-1]')
+    expect(body.messages[0].content).toContain('https://a.com')
+  })
+
+  it('throws on JSON extraction failure', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'sorry I cannot do that' } }]
+      })
+    } as Response)
+
+    await expect(identifySubDimensions(mockCfg, 'topic', sampleResults))
+      .rejects.toThrow('JSON extraction failed')
+  })
+})
+
+describe('synthesizeResearchReport', () => {
+  const sampleResults = [
+    { title: 'T1', url: 'https://a.com', content: 'Content' },
+  ]
+
+  it('returns markdown report on success', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '  # Research Report\n\nContent here.  ' } }]
+      })
+    } as Response)
+
+    const report = await synthesizeResearchReport(mockCfg, 'topic', sampleResults, [])
+    expect(report).toBe('# Research Report\n\nContent here.')
+    // Verify request body includes topic and temperature
+    const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+    const body = JSON.parse((lastCall[1] as RequestInit).body as string)
+    expect(body.temperature).toBe(0.5)
+    expect(body.messages[0].content).toContain('topic')
+  })
+
+  it('handles empty round 2 results', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '# Report' } }]
+      })
+    } as Response)
+
+    const report = await synthesizeResearchReport(mockCfg, 'topic', sampleResults, [])
+    expect(report).toBe('# Report')
+  })
+})
+
+describe('generateTutorSupplement', () => {
+  it('returns tutorNotes and questions when both sections present', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '### 导师备课笔记\n\nSome notes here.\n\n---\n\n### 提问方向\n\nQuestions here.' } }]
+      })
+    } as Response)
+
+    const result = await generateTutorSupplement(mockCfg, 'topic', '# Report content')
+    expect(result.tutorNotes).toContain('Some notes here')
+    expect(result.questions).toContain('Questions here')
+  })
+
+  it('falls back to tutorNotes only when no separator found', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'Just some notes without separator.' } }]
+      })
+    } as Response)
+
+    const result = await generateTutorSupplement(mockCfg, 'topic', '# Report')
+    expect(result.tutorNotes).toBe('Just some notes without separator.')
+    expect(result.questions).toBe('')
   })
 })
 
