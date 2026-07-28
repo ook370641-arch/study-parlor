@@ -118,6 +118,16 @@ export async function generateSearchQueries(
   return queries.slice(0, 3)
 }
 
+function formatResultsForSearchPrompt(
+  results: TavilyResult[],
+  label: string
+): string {
+  if (!results || results.length === 0) return `（${label}: 无结果）`
+  return results.map((r, i) =>
+    `[${label}-${i + 1}] ${r.title}\nURL: ${r.url}\n摘要: ${(r.content || '').slice(0, 400)}`
+  ).join('\n\n')
+}
+
 export async function generateTutorBrief(
   cfg: AppConfig,
   topic: string,
