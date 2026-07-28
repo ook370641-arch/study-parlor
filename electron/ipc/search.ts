@@ -1,7 +1,13 @@
 import { ipcMain } from 'electron'
 import type { AppConfig } from '../env'
 import { getSearchApiKey, hasSearchApiKey, setSearchApiKey } from '../lib/credentials'
-import { generateSearchQueries, searchWeb, generateTutorBrief } from '../lib/search'
+import {
+  searchWeb,
+  generateExploratoryQueries,
+  identifySubDimensions,
+  synthesizeResearchReport,
+  generateTutorSupplement
+} from '../lib/search'
 import type { SearchErrorCode } from '@shared/index'
 
 export function registerSearchIpc(cfg: AppConfig) {
@@ -31,20 +37,20 @@ export function registerSearchIpc(cfg: AppConfig) {
       throw err
     }
 
-    // Step 1: Generate search queries via LLM
-    let queries: string[]
+    // Step 1: Generate exploratory queries
+    let r1Queries: string[]
     try {
-      queries = await generateSearchQueries(cfg, topic)
+      r1Queries = await generateExploratoryQueries(cfg, topic)
     } catch (err: any) {
       const wrapped = new Error(err?.message ?? 'Failed to generate search queries') as Error & { code: SearchErrorCode }
       wrapped.code = 'LLM_ERROR'
       throw wrapped
     }
 
-    // Step 2: Search web with 1 retry
-    let results: Awaited<ReturnType<typeof searchWeb>>
+    // Step 2: Round 1 search
+    let r1Results: Awaited<ReturnType<typeof searchWeb>>
     try {
-      results = await searchWebWithRetry({ queries, apiKey })
+      r1Results = await searchWebWithRetry({ queries: r1Queries, apiKey })
     } catch (err: any) {
       const code: SearchErrorCode = err?.code === 'NO_RESULTS' ? 'NO_RESULTS' : 'NETWORK_ERROR'
       const wrapped = new Error(err?.message ?? 'Search failed') as Error & { code: SearchErrorCode }
@@ -52,15 +58,62 @@ export function registerSearchIpc(cfg: AppConfig) {
       throw wrapped
     }
 
-    // Step 3: Generate tutor brief
+    // Step 3: Identify sub-dimensions (degradable)
+    let dimQueries: string[] = []
     try {
-      const brief = await generateTutorBrief(cfg, topic, results)
-      return brief
+      dimQueries = await identifySubDimensions(cfg, topic, r1Results)
     } catch (err: any) {
-      const wrapped = new Error(err?.message ?? 'Failed to generate tutor brief') as Error & { code: SearchErrorCode }
+      console.warn('[search:prepare] identifySubDimensions failed, skipping round 2:', err?.message)
+    }
+
+    // Step 4: Round 2 search (degradable)
+    let r2Results: Awaited<ReturnType<typeof searchWeb>> = []
+    if (dimQueries.length > 0) {
+      try {
+        r2Results = await searchWebWithRetry({ queries: dimQueries, apiKey })
+      } catch (err: any) {
+        console.warn('[search:prepare] round 2 search failed, proceeding with round 1 only:', err?.message)
+      }
+    }
+
+    // Collect all sources from both rounds
+    const allSources = [...r1Results, ...r2Results]
+
+    // Step 5: Synthesize research report
+    let report: string
+    try {
+      report = await synthesizeResearchReport(cfg, topic, r1Results, r2Results)
+    } catch (err: any) {
+      const wrapped = new Error(err?.message ?? 'Failed to generate research report') as Error & { code: SearchErrorCode }
       wrapped.code = 'LLM_ERROR'
       throw wrapped
     }
+
+    // Step 6: Generate tutor notes + questions (optional enhancement)
+    let summary = report
+    try {
+      const supplement = await generateTutorSupplement(cfg, topic, report)
+      const tutorSection = supplement.tutorNotes
+        ? '## 导师备课笔记\n\n' + supplement.tutorNotes
+        : ''
+      const questionsSection = supplement.questions
+        ? '## 苏格拉底提问方向\n\n' + supplement.questions
+        : ''
+      const extras = [tutorSection, questionsSection].filter(Boolean).join('\n\n---\n\n')
+      if (extras) summary = report + '\n\n---\n\n' + extras
+    } catch (err: any) {
+      console.warn('[search:prepare] generateTutorSupplement failed, returning report only:', err?.message)
+    }
+
+    // Build sources array (keep existing MAX_SNIPPET_LENGTH slice pattern)
+    const MAX_SNIPPET_LENGTH = 200
+    const sources = allSources.map(r => ({
+      title: r.title,
+      url: r.url,
+      snippet: (r.content || '').slice(0, MAX_SNIPPET_LENGTH)
+    }))
+
+    return { summary, sources }
   })
 }
 
