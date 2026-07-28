@@ -118,6 +118,37 @@ export async function generateSearchQueries(
   return queries.slice(0, 3)
 }
 
+export async function generateExploratoryQueries(
+  cfg: AppConfig,
+  topic: string
+): Promise<string[]> {
+  const prompt = `用户想研究：「${topic}」
+
+请生成 2-3 个宽域搜索查询词，用于全面了解这个主题。要求：
+- 覆盖不同角度（架构设计、工程实践、对比分析、底层原理）
+- 查询词简短、精准，适合英文搜索引擎
+- 查询词用英文（此类技术资料英文质量更高）
+只输出 JSON 数组：["查询1", "查询2"]`
+
+  const text = await chatNonStream(cfg, {
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.3,
+    thinking: { type: 'disabled' }
+  })
+  const extracted = extractJsonArray(text)
+  if (!extracted) throw new Error('JSON extraction failed')
+  let arr: unknown
+  try {
+    arr = JSON.parse(extracted)
+  } catch {
+    throw new Error('JSON parse failed')
+  }
+  if (!Array.isArray(arr)) throw new Error('JSON parse failed: not an array')
+  const queries = arr.filter((q): q is string => typeof q === 'string')
+  if (queries.length === 0) throw new Error('No valid search queries generated')
+  return queries.slice(0, 3)
+}
+
 function formatResultsForSearchPrompt(
   results: TavilyResult[],
   label: string
