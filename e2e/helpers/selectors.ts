@@ -282,7 +282,13 @@ export const SELECTORS = {
     candidate: (i: number) => `[data-testid="scout-candidate-${i}"]`,
     confirmCandidates: '[data-testid="scout-confirm-candidates"]',
     confirmAllCandidates: '[data-testid="scout-confirm-all-candidates"]',
-    articleRow: '[data-testid="scout-article-row"]',
+    articleRow: '[data-testid="scout-article-row"]',  // fallback for backward compat
+    articleRowByUrl: (url: string) => `[data-testid="scout-article-row-${url}"]`,
+    articleTitle: '[data-testid="article-row-title"]',
+    articleDelete: '[data-testid="article-row-delete"]',
+    conversation: (id: string) => `[data-testid="scout-conversation-${id}"]`,
+    conversationDelete: (id: string) => `[data-testid="scout-conversation-delete-${id}"]`,
+    conversationRenameInput: '[data-testid="scout-conversation-rename-input"]',
     sourceButton: '[data-testid="briefing-source-scout"]',
   },
   annotations: {

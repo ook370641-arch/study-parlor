@@ -52,7 +52,7 @@ export function ScoutListColumn({ theme = 'academic' }: { theme?: BriefingTheme 
                 dateText={a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('zh-CN') : '未知日期'}
                 sourceName={a.sourceName}
                 theme={theme}
-                testId={`scout-article-row`}
+                testId={`scout-article-row-${a.url}`}
                 onOpen={() => openScoutReader(a.filePath)}
                 onRequestDelete={() => setPendingDelete(a)}
               />

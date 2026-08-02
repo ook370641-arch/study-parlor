@@ -56,12 +56,12 @@ test.describe('拾贝来源', () => {
     await window.locator(SELECTORS.scout.confirmAllCandidates).click()
 
     // Wait for the fetch + save to complete, then switch to articles tab
-    await window.waitForTimeout(500)
+    await expect(window.locator(SELECTORS.scout.articleRowByUrl('https://example.com/article-0'))).toBeVisible({ timeout: 10000 })
     await window.locator(SELECTORS.scout.tabArticles).click()
 
     // Two mock articles should be in the list
-    await expect(window.getByText('ReAct 原文')).toBeVisible({ timeout: 10000 })
-    await expect(window.getByText('The Second Half')).toBeVisible()
+    await expect(window.locator(SELECTORS.scout.articleRowByUrl('https://example.com/article-0'))).toBeVisible({ timeout: 10000 })
+    await expect(window.locator(SELECTORS.scout.articleRowByUrl('https://example.com/article-1'))).toBeVisible()
   })
 
   test('打开文章 → reader + 旁注助手出现', async ({ window, testConfigDir }) => {
@@ -83,12 +83,12 @@ test.describe('拾贝来源', () => {
     await window.locator(SELECTORS.scout.confirmAllCandidates).click()
 
     // Switch to articles and open the first one
-    await window.waitForTimeout(500)
+    await expect(window.locator(SELECTORS.scout.articleRowByUrl('https://example.com/article-0'))).toBeVisible({ timeout: 10000 })
     await window.locator(SELECTORS.scout.tabArticles).click()
-    await expect(window.getByText('ReAct 原文')).toBeVisible({ timeout: 10000 })
+    await expect(window.locator(SELECTORS.scout.articleRowByUrl('https://example.com/article-0'))).toBeVisible({ timeout: 10000 })
 
     // Click article row to open reader
-    await window.locator(SELECTORS.scout.articleRow).first().click()
+    await window.locator(SELECTORS.scout.articleRowByUrl('https://example.com/article-0')).click()
 
     // Reader should be visible once the AnthropicArticleReader finishes loading
     await expect(
