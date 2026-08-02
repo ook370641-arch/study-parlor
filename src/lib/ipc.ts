@@ -114,6 +114,18 @@ export const ipc = {
   get onWritingAssistantTool() { return ensure().onWritingAssistantTool },
   get onWritingAssistantReasoningChunk() { return ensure().onWritingAssistantReasoningChunk },
 
+  // Scout (拾贝)
+  get scoutSendMessage() { return ensure().scoutSendMessage },
+  get scoutAbort() { return ensure().scoutAbort },
+  get scoutListConversations() { return ensure().scoutListConversations },
+  get scoutCreateConversation() { return ensure().scoutCreateConversation },
+  get scoutGetConversation() { return ensure().scoutGetConversation },
+  get scoutRenameConversation() { return ensure().scoutRenameConversation },
+  get scoutDeleteConversation() { return ensure().scoutDeleteConversation },
+  get scoutListArticles() { return ensure().scoutListArticles },
+  get scoutDeleteArticle() { return ensure().scoutDeleteArticle },
+  get onScoutTool() { return ensure().onScoutTool },
+
   // Timing instrumentation
   get logTiming() { return ensure().logTiming },
   get bootStart() { return ensure().bootStart },

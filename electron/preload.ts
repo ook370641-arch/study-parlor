@@ -175,6 +175,22 @@ const api: IpcApi = {
     ipcRenderer.on('writingAssistant:reasoningChunk', handler)
     return () => ipcRenderer.removeListener('writingAssistant:reasoningChunk', handler)
   },
+
+  // Scout (拾贝)
+  scoutSendMessage: (a) => ipcRenderer.invoke('scout:sendMessage', a),
+  scoutAbort: (a) => ipcRenderer.invoke('scout:abort', a),
+  scoutListConversations: () => ipcRenderer.invoke('scout:listConversations'),
+  scoutCreateConversation: () => ipcRenderer.invoke('scout:createConversation'),
+  scoutGetConversation: (a) => ipcRenderer.invoke('scout:getConversation', a),
+  scoutRenameConversation: (a) => ipcRenderer.invoke('scout:renameConversation', a),
+  scoutDeleteConversation: (a) => ipcRenderer.invoke('scout:deleteConversation', a),
+  scoutListArticles: () => ipcRenderer.invoke('scout:listArticles'),
+  scoutDeleteArticle: (a) => ipcRenderer.invoke('scout:deleteArticle', a),
+  onScoutTool: (cb) => {
+    const handler = (_: unknown, payload: any) => cb(payload)
+    ipcRenderer.on('scout:tool', handler)
+    return () => ipcRenderer.removeListener('scout:tool', handler)
+  },
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -141,7 +141,7 @@ type AppStore = {
   togglePaintingPlate: () => Promise<void>
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
-  briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
+  briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing' | 'scout'
   anthropicBlogCache: AnthropicBlogCache
   anthropicReaderFilePath: string | null
   anthropicReaderBody: string | null
@@ -149,7 +149,7 @@ type AppStore = {
   anthropicBlogLastSeenAt: string | null
   /** 宪法可视化报告视图是否打开（仅运行时，与 anthropicReader 互斥） */
   constitutionReportOpen: boolean
-  setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing' | 'writing') => Promise<void>
+  setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing' | 'writing' | 'scout') => Promise<void>
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
   ) => Promise<
@@ -517,7 +517,7 @@ export const useStore = create<AppStore>((set, get) => ({
         'job-briefing': Array.isArray(state.briefingRead?.['job-briefing']) ? state.briefingRead['job-briefing'] : [],
       },
       studyFontSize: normalizeStudyFontSize(state.studyFontSize),
-      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' || state.briefingSource === 'writing' ? state.briefingSource : 'digest',
+      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' || state.briefingSource === 'writing' || state.briefingSource === 'scout' ? state.briefingSource : 'digest',
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null }
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
