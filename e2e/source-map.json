@@ -9,7 +9,9 @@
         "src/lib/parse-briefing-markdown.ts",
         "src/lib/format-briefing-date.ts",
         "src/lib/briefing-font-size.ts",
-        "electron/ipc/briefing.ts"
+        "src/lib/use-generation-transition.ts",
+        "electron/ipc/briefing.ts",
+        "electron/preload.ts"
       ],
       "specs": [
         "briefing.spec.ts",
@@ -147,7 +149,9 @@
       ],
       "specs": [
         "settings.spec.ts",
-        "startup-health.spec.ts"
+        "startup-health.spec.ts",
+        "generation-ceremony.spec.ts",
+        "briefing-background-generation.spec.ts"
       ]
     }
   }

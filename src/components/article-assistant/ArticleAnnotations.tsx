@@ -27,6 +27,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
   const ghostRef = useRef<HTMLDivElement | null>(null)
   const markerSpansRef = useRef<Map<string, HTMLElement>>(new Map())
   const nextIdRef = useRef(1)
+  const selectingRef = useRef(false)
   // Refs to avoid stale closure issues in event handlers
   const annotationsRef = useRef(annotations)
   annotationsRef.current = annotations
@@ -164,6 +165,8 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
   // 执行 applyMarkers 时先断开 observer：
   // applyMarkers 自身的 DOM 变更若被 observer 记录会再次触发自身（无限循环）
   const runApplyMarkers = useCallback(() => {
+    // Don't modify DOM during active text selection — it clears the browser selection
+    if (selectingRef.current) return
     const obs = observerRef.current
     const container = articleRef.current
     obs?.disconnect()
@@ -282,6 +285,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     if (!container) return
 
     const handleMouseUp = () => {
+      selectingRef.current = false
       const sel = window.getSelection()
       if (!sel || sel.isCollapsed || !sel.rangeCount) return
       const range = sel.getRangeAt(0)
@@ -337,6 +341,11 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement
+      // Track potential text selection start — prevents applyMarkers from modifying
+      // DOM during drag-selection, which would clear the browser's selection range
+      if (container.contains(target)) {
+        selectingRef.current = true
+      }
       // Only clear ghost + highlight when clicking truly outside the active selection UI
       const isInsideGhost = ghostRef.current?.contains(target) ?? false
       const isInsideHighlight = target.closest('[data-testid="anno-selection-highlight"]') !== null

@@ -1,5 +1,8 @@
 import { memo } from 'react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { ArticleAssistantMessage } from '@shared/index'
+import { assistantMdComponents } from '@/lib/assistant-md-components'
 
 interface Props {
   messages: ArticleAssistantMessage[]
@@ -17,8 +20,8 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, streami
           className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
           <div
-            className={`max-w-[85%] leading-relaxed whitespace-pre-wrap rounded px-2 py-1 ${
-              m.role === 'user' ? 'bg-ember/10 text-parchment/80' : 'text-parchment/90'
+            className={`max-w-[85%] leading-relaxed rounded px-2 py-1 ${
+              m.role === 'user' ? 'bg-ember/10 text-parchment/80 whitespace-pre-wrap' : 'text-parchment/90'
             }`}
           >
             {m.role === 'user' && m.selection && (
@@ -39,7 +42,17 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, streami
                 <div className="text-xs text-parchment/50 whitespace-pre-wrap mt-1">{m.reasoning}</div>
               </details>
             )}
-            {m.content || (m.role === 'assistant' && streaming ? '…' : '')}
+            {m.role === 'assistant' ? (
+              m.content ? (
+                <Markdown remarkPlugins={[remarkGfm]} components={assistantMdComponents}>
+                  {m.content}
+                </Markdown>
+              ) : (
+                streaming ? '…' : ''
+              )
+            ) : (
+              m.content
+            )}
             {m.searchSources && m.searchSources.length > 0 && (
               <div className="text-[11px] text-parchment/50 mt-1">已搜索 {m.searchSources.length} 个来源</div>
             )}

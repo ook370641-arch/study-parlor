@@ -49,13 +49,14 @@ export function useGenerationTransition(
 
   // ---- phase：useEffect 管理（定时器/异步过渡，逻辑不变） ----
 
+  const wasLoading = useRef(false)
+
   useEffect(() => {
     timers.current.forEach(clearTimeout)
     timers.current = []
+    wasLoading.current = false // key 变更必须清 stale wasLoading，否则跨 key 误播收束仪式
     setPhase('idle')
   }, [key])
-
-  const wasLoading = useRef(false)
 
   useEffect(() => {
     const clear = () => { timers.current.forEach(clearTimeout); timers.current = [] }

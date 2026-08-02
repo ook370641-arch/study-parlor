@@ -18,6 +18,7 @@ import { useTerminology } from '@/lib/terminology'
 import { ExternalMaterialsCard } from '@/components/ExternalMaterialsCard'
 import { ExternalSummaryPanel } from '@/components/ExternalSummaryPanel'
 import { Quote } from '@/components/Quote'
+import { STUDY_FONT_STYLES, normalizeStudyFontSize } from '@/lib/study-font-size'
 
 export function Study() {
   const session = useStore(s => s.session)
@@ -39,22 +40,22 @@ export function Study() {
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
-  // 左上箭头 = 返回主页:中止流、保存为未完成会话、重置 session
+  // 左上箭头 = 返回主页:保存快照后直接离开,不中断任何后台工作——
+  // 搜索、摘要、流式消息继续跑完(SSE 监听器是模块级的,按 abortId 匹配回 live session),
+  // 回来时经 restoreSession 的存活守卫直接切页,看到的就是完整结果。
   // 不触发归档,空对话/卡死状态也能安全退出
   const onBack = async () => {
     if (isExiting) return
     const s = useStore.getState()
-    const sess = s.session
-    if (!sess) return
+    if (!s.session) return
     setIsExiting(true)
     try {
-      if (sess.streaming) await ipc.llmAbort(sess.abortId)
       await s.saveCurrentSession()
     } catch (err) {
       console.error('[onBack] save before exit failed:', err)
     }
     setTimeout(() => {
-      s.resetSession()
+      s.goto('home')
     }, 700)
   }
 
@@ -77,10 +78,15 @@ export function Study() {
   const [streamError, setStreamError] = useState<{ code: string; message: string } | null>(null)
   const [archiving, setArchiving] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
-  const archiveResult = useStore(s => s.archiveResult)
-  const clearArchiveResult = useStore(s => s.clearArchiveResult)
+  const pendingReports = useStore(s => s.pendingReports)
+  // 仅查找当前 session 对应主题的待处理报告，防止旧归档弹窗遮住新学习
+  const currentDirName = session?.dirName ?? sanitizeDirName(session?.topic ?? '')
+  const currentPendingReport = currentDirName ? pendingReports[currentDirName] : null
   const isExternalSummaryOpen = useStore(s => s.isExternalSummaryOpen)
   const closeExternalSummary = useStore(s => s.closeExternalSummary)
+  const studyFontSize = useStore(s => s.studyFontSize)
+  const increaseStudyFontSize = useStore(s => s.increaseStudyFontSize)
+  const decreaseStudyFontSize = useStore(s => s.decreaseStudyFontSize)
 
   // ESC = 返回(等同左上箭头); 若外部资料摘要面板打开则优先关闭面板
   const onBackRef = useRef(onBack)
@@ -107,6 +113,8 @@ export function Study() {
   }, [session?.abortId])
 
   if (!session) return null
+
+  const studyFontStyle = STUDY_FONT_STYLES[normalizeStudyFontSize(studyFontSize)]
 
   const pageShift = isExternalSummaryOpen ? 'max-w-[calc(100vw-760px)] transition-all duration-300 ease-out' : 'transition-all duration-300 ease-out'
 
@@ -146,19 +154,29 @@ export function Study() {
   // 归档中点击返回:直接回主页,不中断后台归档进程
   const onArchiveBack = () => {
     if (isExiting) return
+    const sidAtExit = session?.abortId
     setIsExiting(true)
     setTimeout(() => {
-      clearArchiveResult()
-      useStore.getState().resetSession()
+      const s = useStore.getState()
+      // 仅当 session 未变更时才重置，防止覆盖新 session
+      if (s.session?.abortId === sidAtExit) {
+        s.resetSession()
+      }
     }, 700)
   }
 
   const handleArchiveClose = () => {
     if (isExiting) return
+    const dirName = session?.dirName ?? sanitizeDirName(session?.topic ?? '')
+    const sidAtExit = session?.abortId
     setIsExiting(true)
     setTimeout(() => {
-      clearArchiveResult()
-      useStore.getState().resetSession()
+      if (dirName) useStore.getState().dismissPendingReport(dirName)
+      // 仅当 session 未变更时才重置，防止误销毁新 session
+      const s = useStore.getState()
+      if (s.session?.abortId === sidAtExit) {
+        s.resetSession()
+      }
     }, 700)
   }
 
@@ -171,20 +189,20 @@ export function Study() {
 
   return (
     <>
-      {/* Archive loading overlay */}
-      {archiving && !archiveResult && <ArchiveLoadingOverlay onBack={onArchiveBack} />}
+      {archiving && !currentPendingReport && <ArchiveLoadingOverlay onBack={onArchiveBack} />}
 
-      {/* Archive report modal */}
-      {archiveResult && (
+      {/* 仅当用户正在等待归档完成（主动触发归档且未离开）时才弹报告。
+          换新 session 后 archiving 为 false，旧报告不会弹窗打断当前学习。 */}
+      {archiving && currentPendingReport && (
         <ArchiveReportModal
-          result={archiveResult}
+          result={currentPendingReport}
           onClose={handleArchiveClose}
         />
       )}
 
       <ExternalSummaryPanel />
 
-      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''} ${pageShift} ${isAcademic ? '' : 'bg-white'}`}>
+      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''} ${isAcademic ? '' : 'bg-white'}`}>
       <SurfaceBackground surface="study" />
       {isExiting && (
         <div className="fixed inset-0 z-40 pointer-events-none">
@@ -204,14 +222,34 @@ export function Study() {
       <header className={isAcademic
         ? "relative z-[5] flex justify-between items-center px-8 py-4 h-16 bg-ink/70 backdrop-blur-md border-b border-slate/40"
         : "relative z-[5] flex justify-between items-center px-8 py-4 h-16 bg-white border-b border-[#1a1a1a]/10"}>
-        <button
-          onClick={onBack}
-          aria-label="退席"
-          className={isAcademic
-            ? "text-2xl leading-none text-parchment/70 hover:text-parchment transition-colors px-2 py-1"
-            : "text-2xl leading-none text-[#555] hover:text-[#1a1a1a] transition-colors px-2 py-1"}>
-          ←
-        </button>
+        <div className="flex items-center">
+          <button
+            onClick={onBack}
+            aria-label="退席"
+            className={isAcademic
+              ? "text-2xl leading-none text-parchment/70 hover:text-parchment transition-colors px-2 py-1"
+              : "text-2xl leading-none text-[#555] hover:text-[#1a1a1a] transition-colors px-2 py-1"}>
+            ←
+          </button>
+          <button
+            onClick={decreaseStudyFontSize}
+            aria-label="缩小字号"
+            title="缩小字号"
+            className={isAcademic
+              ? "text-lg leading-none text-parchment/70 hover:text-parchment transition-colors px-1 py-1"
+              : "text-lg leading-none text-[#555] hover:text-[#1a1a1a] transition-colors px-1 py-1"}>
+            -
+          </button>
+          <button
+            onClick={increaseStudyFontSize}
+            aria-label="放大字号"
+            title="放大字号"
+            className={isAcademic
+              ? "text-lg leading-none text-parchment/70 hover:text-parchment transition-colors px-1 py-1"
+              : "text-lg leading-none text-[#555] hover:text-[#1a1a1a] transition-colors px-1 py-1"}>
+            +
+          </button>
+        </div>
         <div className={`font-serif ${isAcademic ? '' : 'text-[#1a1a1a]'}`}>{session.topic}</div>
         <div className="flex items-center gap-3">
           <StudyControlsGroup surface="study" />
@@ -223,6 +261,7 @@ export function Study() {
         </div>
       </header>
 
+      <div className={`flex-1 min-h-0 flex flex-col overflow-hidden ${pageShift}`}>
       <ExternalMaterialsCard />
 
       {streamError && (
@@ -245,7 +284,7 @@ export function Study() {
         </div>
       )}
 
-      <div data-testid="message-list" ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl w-full mx-auto">
+      <div data-testid="message-list" ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl lg:max-w-6xl w-full mx-auto" style={{ fontSize: studyFontStyle }}>
         <div className="mb-6">
           <Quote surface="study" />
         </div>
@@ -266,7 +305,7 @@ export function Study() {
       </div>
 
       {session.archivePending && !session.streaming && (
-        <div className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
+        <div className="relative z-[5] px-8 max-w-4xl lg:max-w-6xl w-full mx-auto">
           <div data-testid="archive-pending-banner"
                className={isAcademic
                 ? "my-2 px-4 py-2 bg-ember/10 border border-ember/40 rounded text-sm font-sans text-parchment/80 flex justify-between items-center"
@@ -285,9 +324,10 @@ export function Study() {
       <div className={isAcademic
           ? "relative z-[5] bg-ink/70 backdrop-blur-md border-t border-slate/40"
           : "relative z-[5] bg-white border-t border-[#1a1a1a]/10"}>
-        <div className="px-8 py-4 max-w-4xl w-full mx-auto">
+        <div className="px-8 py-4 max-w-4xl lg:max-w-6xl w-full mx-auto" style={{ fontSize: studyFontStyle }}>
           <ChatInput onSend={onSend} theme={theme} />
         </div>
+      </div>
       </div>
     </div>
     </>

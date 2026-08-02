@@ -40,15 +40,14 @@ export function AcademicBriefingLayout({
   filePath?: string
   finished?: boolean
   alreadyRead?: boolean
-  containerRef?: React.RefObject<HTMLElement | null>
-  sentinelRef?: React.RefObject<HTMLDivElement | null>
+  containerRef?: React.Ref<HTMLElement>
+  sentinelRef?: React.Ref<HTMLDivElement>
 }) {
   const [expandedSources, setExpandedSources] = useState(false)
   const [visitedMax, setVisitedMax] = useState<number | null>(null)
-  const articleBodyRef = useRef<HTMLDivElement>(null)
+  const articleBodyRef = useRef<HTMLDivElement>(null!)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
-  const paintingPlateEnabled = useStore((s) => s.paintingPlateEnabled)
   const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
 
   useEffect(() => {

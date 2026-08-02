@@ -14,6 +14,7 @@ vi.mock('@/lib/ipc', () => ({
     briefingGenerate: vi.fn(),
     onBriefingProgress: vi.fn(() => () => {}),
     briefingList: vi.fn(),
+    briefingAbort: vi.fn(),
     searchPrepare: vi.fn()
   }
 }))
@@ -26,6 +27,7 @@ vi.mock('@/lib/paintings', () => ({
 
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
+import { formatBriefingDate } from '@/lib/format-briefing-date'
 
 describe('store core operations', () => {
   beforeEach(() => {
@@ -33,7 +35,7 @@ describe('store core operations', () => {
     useStore.setState({
       session: null,
       session_count: 0,
-      archiveResult: null,
+      pendingReports: {},
       unsavedSessions: [],
       currentPage: 'cover'
     })
@@ -73,6 +75,23 @@ describe('store core operations', () => {
         mode: 'progress', topic: 'A', difficulty: 'mid', temperature: 0.7
       })
       expect(useStore.getState().currentPage).toBe('study')
+    })
+
+    it('clears external materials and aborts previous streaming session', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: '旧主题', difficulty: 'mid', temperature: 0.7
+      })
+      const prevId = useStore.getState().session!.abortId
+      useStore.setState(st => ({ session: st.session ? { ...st.session, streaming: true } : st.session }))
+      useStore.getState().setExternalMaterials({ summary: '旧主题资料', sources: [] })
+
+      useStore.getState().startSession({
+        mode: 'progress', topic: '新主题', difficulty: 'mid', temperature: 0.7
+      })
+
+      expect(ipc.llmAbort).toHaveBeenCalledWith(prevId)
+      expect(useStore.getState().externalMaterials).toBeNull()
+      expect(useStore.getState().session!.topic).toBe('新主题')
     })
   })
 
@@ -315,6 +334,65 @@ describe('store core operations', () => {
       expect(s!.archivePending).toBe(false)
       expect(useStore.getState().currentPage).toBe('study')
     })
+
+    it('keeps live session state when unsaved id matches (back did not interrupt)', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'Live', difficulty: 'mid', temperature: 0.7
+      })
+      const liveId = useStore.getState().session!.abortId
+      // 模拟 onBack 后后台流式继续跑出的完整内容
+      useStore.setState(st => ({
+        session: st.session ? { ...st.session, history: [
+          { role: 'user', content: '今夜想学:Live' },
+          { role: 'assistant', content: '完整回答' }
+        ] } : st.session,
+        currentPage: 'home'
+      }))
+      useStore.getState().setExternalMaterials({ summary: '资料摘要', sources: [] })
+
+      // 磁盘快照是退出时刻的残缺版本
+      useStore.getState().restoreSession({
+        id: liveId,
+        mode: 'progress',
+        topic: 'Live',
+        difficulty: 'mid',
+        temperature: 0.7,
+        history: [{ role: 'user', content: '今夜想学:Live' }]
+      } as any)
+
+      const st = useStore.getState()
+      expect(st.currentPage).toBe('study')
+      expect(st.session!.history).toHaveLength(2)
+      expect(st.session!.history[1].content).toBe('完整回答')
+      expect(st.externalMaterials?.summary).toBe('资料摘要')
+    })
+  })
+
+  describe('burnLiveSession', () => {
+    it('aborts stream and resets when burning the live session', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'Burn', difficulty: 'mid', temperature: 0.7
+      })
+      const liveId = useStore.getState().session!.abortId
+      useStore.setState(st => ({ session: st.session ? { ...st.session, streaming: true } : st.session }))
+
+      useStore.getState().burnLiveSession(liveId)
+
+      expect(ipc.llmAbort).toHaveBeenCalledWith(liveId)
+      expect(useStore.getState().session).toBeNull()
+      expect(useStore.getState().currentPage).toBe('home')
+    })
+
+    it('does nothing when id does not match live session', () => {
+      useStore.getState().startSession({
+        mode: 'progress', topic: 'Keep', difficulty: 'mid', temperature: 0.7
+      })
+
+      useStore.getState().burnLiveSession('some-other-id')
+
+      expect(ipc.llmAbort).not.toHaveBeenCalled()
+      expect(useStore.getState().session).not.toBeNull()
+    })
   })
 
   describe('refreshWildcardInspiration', () => {
@@ -430,7 +508,11 @@ describe('store core operations', () => {
           result: { title: '旧', date: '2026-06-20', content: '旧内容', sources: [], filePath: '/x.md', cached: true },
           loading: false,
           error: null
-        }
+        },
+        briefingViewingDate: null,
+        briefingGeneration: null,
+        briefingStage: null,
+        briefingStageDetail: null,
       })
       vi.mocked(ipc.briefingGenerate).mockReset()
     })
@@ -447,12 +529,16 @@ describe('store core operations', () => {
     })
 
     it('does not start a second call while one is in flight', () => {
+      const today = formatBriefingDate(new Date())
       vi.mocked(ipc.briefingGenerate).mockImplementation(() => new Promise(() => {}))
 
-      useStore.getState().generateBriefing('2026-06-22')
-      useStore.getState().generateBriefing('2026-06-22')
+      useStore.getState().generateBriefing(today)
+      useStore.getState().generateBriefing(today)
 
+      // 第二次只切视图观看进度，不发第二个 IPC
       expect(ipc.briefingGenerate).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().briefingGeneration).toMatchObject({ date: today, status: 'running' })
+      expect(useStore.getState().briefing.loading).toBe(true)
     })
 
     it('sets result on success', async () => {
@@ -482,6 +568,81 @@ describe('store core operations', () => {
       expect(b.loading).toBe(false)
       expect(b.result).toBeNull()
       expect(b.error).toBe('FEED_EMPTY')
+    })
+
+    it('views a cached past date while today is generating, generation record untouched', async () => {
+      const today = formatBriefingDate(new Date())
+      vi.mocked(ipc.briefingGenerate)
+        .mockImplementationOnce(() => new Promise(() => {})) // 今日生成：永挂
+        .mockResolvedValueOnce({
+          title: '夜航简报', date: '2026-06-22', content: '往期', sources: [],
+          filePath: '/past.md', cached: true,
+        } as any)
+
+      useStore.getState().generateBriefing(today)
+      await useStore.getState().generateBriefing('2026-06-22')
+
+      const s = useStore.getState()
+      expect(ipc.briefingGenerate).toHaveBeenCalledTimes(2)
+      expect(s.briefing.result).toMatchObject({ date: '2026-06-22', content: '往期' })
+      expect(s.briefingViewingDate).toBe('2026-06-22')
+      // 后台生成记录不受影响
+      expect(s.briefingGeneration).toMatchObject({ date: today, status: 'running' })
+    })
+
+    it('background completion does not steal the view, only refreshes history', async () => {
+      const today = formatBriefingDate(new Date())
+      let resolveGen: (r: unknown) => void = () => {}
+      vi.mocked(ipc.briefingGenerate)
+        .mockImplementationOnce(() => new Promise((res) => { resolveGen = res }))
+        .mockResolvedValueOnce({
+          title: '夜航简报', date: '2026-06-22', content: '往期', sources: [],
+          filePath: '/past.md', cached: true,
+        } as any)
+      vi.mocked(ipc.briefingList).mockResolvedValue([])
+
+      const genPromise = useStore.getState().generateBriefing(today)
+      await useStore.getState().generateBriefing('2026-06-22') // 切去看往期
+
+      resolveGen({
+        title: '夜航简报', date: today, content: '今日新内容', sources: [],
+        filePath: '/today.md', cached: false,
+      })
+      await genPromise
+
+      const s = useStore.getState()
+      // 视图仍是往期，不被今日结果抢占
+      expect(s.briefing.result).toMatchObject({ date: '2026-06-22', content: '往期' })
+      expect(s.briefingGeneration).toBeNull()
+      expect(ipc.briefingList).toHaveBeenCalled() // 历史/火焰刷新
+    })
+
+    it('failed generation record shows cold error on revisit; force retry regenerates', async () => {
+      const today = formatBriefingDate(new Date())
+      vi.mocked(ipc.briefingGenerate).mockRejectedValueOnce(new Error('FEED_EMPTY'))
+
+      await useStore.getState().generateBriefing(today)
+      expect(useStore.getState().briefingGeneration).toMatchObject({ date: today, status: 'failed', error: 'FEED_EMPTY' })
+      expect(useStore.getState().briefing.error).toBe('FEED_EMPTY')
+
+      // 切回失败日期（非 force）：直接冷展示错误，不发 IPC
+      vi.mocked(ipc.briefingGenerate).mockClear()
+      await useStore.getState().generateBriefing(today)
+      expect(ipc.briefingGenerate).not.toHaveBeenCalled()
+      expect(useStore.getState().briefing.error).toBe('FEED_EMPTY')
+    })
+
+    it('cancelBriefing aborts and clears record and watching view', () => {
+      const today = formatBriefingDate(new Date())
+      vi.mocked(ipc.briefingGenerate).mockImplementation(() => new Promise(() => {}))
+
+      useStore.getState().generateBriefing(today)
+      useStore.getState().cancelBriefing()
+
+      const s = useStore.getState()
+      expect(ipc.briefingAbort).toHaveBeenCalled()
+      expect(s.briefingGeneration).toBeNull()
+      expect(s.briefing).toEqual({ result: null, loading: false, error: null })
     })
   })
 

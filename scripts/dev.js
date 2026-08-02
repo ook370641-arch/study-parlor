@@ -132,7 +132,10 @@ async function main() {
   // shim) can be resolved by cmd.exe.  We track the shell PID and kill the whole
   // process tree on exit so that orphaned Electron processes cannot hold the Vite
   // dev-server port (5173) or the DevTools port (9222) and lock Chromium caches.
-  global.child = spawn('electron-vite', args, { stdio: 'inherit', shell: true })
+  // Pass command as a single string to avoid Node DEP0190 (passing args array with
+  // shell: true is deprecated since Node 21).
+  const cmd = ['electron-vite', ...args].join(' ')
+  global.child = spawn(cmd, { stdio: 'inherit', shell: true })
 
   // 关键改动：当 electron-vite 退出时（例如用户点击应用窗口 ×），
   // 先执行清理再结束 dev.js，避免 electron.exe 孤儿继续占着 5173。

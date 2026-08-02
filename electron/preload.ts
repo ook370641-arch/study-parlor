@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcApi, UnsavedSession, BriefingStage } from '@shared/index'
+import type { IpcApi, UnsavedSession, BriefingStage, BriefingProgressSource } from '@shared/index'
 
 const api: IpcApi = {
   scanLibrary: () => ipcRenderer.invoke('files:scan'),
@@ -129,12 +129,11 @@ const api: IpcApi = {
   logTiming: (label, elapsed) => ipcRenderer.send('log:timing', label, elapsed),
 
   onBriefingProgress: (cb) => {
-    // removeAllListeners prevents duplicate handlers when digest and job-briefing
-    // subscribe to the same channel in rapid succession (React "Should have a queue" root cause).
-    ipcRenderer.removeAllListeners('briefing:progress')
-    const handler = (_: unknown, stage: BriefingStage, detail?: string) => cb(stage, detail)
+    // Per-handler on/off：digest 与 job-briefing 可同时订阅同一频道（后台生成 +
+    // 查看并存），removeAllListeners 会互相残杀（React "Should have a queue" root cause）。
+    const handler = (_: unknown, source: BriefingProgressSource, stage: BriefingStage, detail?: string) => cb(source, stage, detail)
     ipcRenderer.on('briefing:progress', handler)
-    return () => ipcRenderer.removeAllListeners('briefing:progress')
+    return () => ipcRenderer.off('briefing:progress', handler)
   },
 
   bootStart: () => ipcRenderer.invoke('boot:start') as Promise<{ alreadyCompleted: boolean }>,

@@ -17,6 +17,7 @@ export function Home() {
   const unsavedSessions = useStore(s => s.unsavedSessions)
   const restoreSession = useStore(s => s.restoreSession)
   const removeUnsavedSession = useStore(s => s.removeUnsavedSession)
+  const burnLiveSession = useStore(s => s.burnLiveSession)
   const goto = useStore(s => s.goto)
   const openPreStudy = useStore(s => s.openPreStudy)
   const t = useTerminology()
@@ -74,7 +75,11 @@ export function Home() {
                   </button>
                   <button
                     data-testid="burn-unsaved-button"
-                    onClick={() => removeUnsavedSession(firstUnsaved.id)}
+                    onClick={() => {
+                      // 焚毁存活会话时同步中止后台流并销毁会话
+                      burnLiveSession(firstUnsaved.id)
+                      removeUnsavedSession(firstUnsaved.id)
+                    }}
                     className={`text-xs transition-colors font-sans ${isAcademic ? 'text-parchment/30 hover:text-red-400' : 'text-[#1a1a1a]/30 hover:text-red-500'}`}
                   >
                     {t.burnVerb}

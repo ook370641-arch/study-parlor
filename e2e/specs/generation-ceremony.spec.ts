@@ -9,6 +9,10 @@ function localToday(): string {
 }
 
 test.describe('@p1 generation ceremony', () => {
+  // 拉长 mock 生成窗口：星图/取消只存在于真实生成中（缓存查看不再闪现星图），
+  // 让取消与中间态断言有稳定的时间窗口。
+  test.use({ extraEnv: { E2E_BRIEFING_MOCK_DELAY_MS: '800' } })
+
   test('fresh generation passes constellation into fresh arrival; history revisit does not replay', async ({ window, testLibraryPath }) => {
     const today = localToday()
     const cover = new CoverPage(window)
@@ -30,15 +34,14 @@ test.describe('@p1 generation ceremony', () => {
     await expect(window.locator('[data-testid="briefing-reading-pane"]')).toHaveAttribute('data-arrival', 'revisit')
   })
 
-  test('generation failure: constellation shows failed state before error panel', async ({ window, testLibraryPath }) => {
-    const today = localToday()
-    seedBriefing(testLibraryPath, today)
+  test('generation failure: constellation shows failed state before error panel', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
 
-    // 触发取消（最快模拟失败路径——取消走「冻结回中性」而失败走屏息序列）
-    // 真实失败需要网络中断，E2E 用取消模拟：点击 receive 后立即取消
+    // 触发取消（最快模拟失败路径——取消走「冻结回中性」而失败走屏息序列）。
+    // 不 seed 今日：走真实（mock）生成，星图出现后在延迟窗口内取消。
+    // （缓存查看不再闪现星图，seed 今日会让星图根本不出现。）
     await window.locator(SELECTORS.briefing.receiveDigestButton).click()
     // 等星图出现
     await expect(window.locator(SELECTORS.briefing.constellation)).toBeVisible({ timeout: 5000 })
@@ -51,13 +54,12 @@ test.describe('@p1 generation ceremony', () => {
     }
   })
 
-  test('constellation well shows data-state transitions during generation', async ({ window, testLibraryPath }) => {
-    const today = localToday()
-    seedBriefing(testLibraryPath, today)
+  test('constellation well shows data-state transitions during generation', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
 
+    // 不 seed 今日：真实（mock）生成中星图可见
     await window.locator(SELECTORS.briefing.receiveDigestButton).click()
     const well = window.locator(SELECTORS.briefing.constellationWell)
     await expect(well).toBeVisible({ timeout: 5000 })
@@ -66,8 +68,7 @@ test.describe('@p1 generation ceremony', () => {
     expect(['live', 'checking']).toContain(state)
   })
 
-  test('constellation well supports per-stage bloom class', async ({ window, testLibraryPath }) => {
-    seedBriefing(testLibraryPath, localToday())
+  test('constellation well supports per-stage bloom class', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()

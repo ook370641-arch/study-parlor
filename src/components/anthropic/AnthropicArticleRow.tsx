@@ -43,6 +43,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
   const openReader = useStore((s) => s.openAnthropicReader)
+  const openConstitutionReport = useStore((s) => s.openConstitutionReport)
   const [importing, setImporting] = useState(false)
 
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
@@ -54,6 +55,12 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
   }, [menu])
 
   const handleClick = useCallback(async () => {
+    // 本地内置条目（宪法报告）直接打开报告视图
+    if (article.local === 'constitution') {
+      openConstitutionReport()
+      return
+    }
+
     if (importing) {
       // Clicking during import cancels it
       cancelImport()
@@ -77,7 +84,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
     } finally {
       setImporting(false)
     }
-  }, [importing, article.isSaved, article.filePath, article.url, cancelImport, importArticle, openReader])
+  }, [importing, article.isSaved, article.filePath, article.url, article.local, cancelImport, importArticle, openReader, openConstitutionReport])
 
   // --- Theme-dependent classes ---
   const bgClass = isAcademic ? 'bg-ink/30' : 'bg-white'
@@ -145,6 +152,10 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             loading="lazy"
             decoding="async"
           />
+        ) : article.local === 'constitution' ? (
+          <div className={`shrink-0 w-20 h-20 rounded flex items-center justify-center text-3xl font-serif ${placeholderBg} ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`}>
+            §
+          </div>
         ) : (
           <div className={`shrink-0 w-20 h-20 rounded flex items-center justify-center text-xs ${placeholderBg} ${placeholderText}`}>
             无配图
@@ -163,8 +174,22 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             {importing && <ImportSpinner />}
           </h3>
           <p className={`mt-1 ${mutedText}`} style={{ fontSize: 'var(--briefing-list-meta-size)' }}>
-            {importing ? '导入中…' : formatDate(article.publishedAt)}
+            {importing
+              ? '导入中…'
+              : article.local === 'constitution'
+                ? '内置报告'
+                : formatDate(article.publishedAt)}
           </p>
+          {article.local === 'constitution' && (
+            <span
+              data-testid="anthropic-constitution-pill"
+              className={`inline-block mt-1.5 px-2 py-0.5 rounded-full border text-[10px] ${
+                isAcademic ? 'border-ember/40 text-ember' : 'border-[#6b5d52]/40 text-[#6b5d52]'
+              }`}
+            >
+              交互报告
+            </span>
+          )}
         </div>
       </div>
       {/* Hidden element for E2E selectors — indicates saved state without text badge */}

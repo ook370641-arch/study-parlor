@@ -9,6 +9,10 @@ import { probeModel, probeModelWithCredentials } from './lib/kimi'
 import { patchState } from './ipc/state'
 import { resolveAppPaths } from './lib/app-paths'
 import { createStartupWatchdog } from './lib/startup-watchdog'
+import { registerReportSchemePrivileges, registerReportProtocol } from './lib/report-protocol'
+
+// sp-report:// 特权注册必须在 app ready 之前
+registerReportSchemePrivileges()
 
 // In packaged builds cwd is not writable for our config — macOS launches the
 // .app with cwd=/ (read-only system volume → EROFS), Windows uses the install
@@ -123,6 +127,9 @@ async function bootstrap() {
     console.error('[bootstrap] resource check failed:', resourceError)
   }
 
+  // Step 1.6: sp-report:// 协议（宪法可视化报告 iframe 的内容来源）
+  registerReportProtocol()
+
   // Step 2: 创建窗口（无论配置结果如何）
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -191,13 +198,18 @@ async function bootstrap() {
   })
 
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    // sp-report:// 响应自带报告专属 CSP（见 lib/report-protocol.ts），不要覆盖
+    if (details.url.startsWith('sp-report://')) {
+      callback({ responseHeaders: details.responseHeaders })
+      return
+    }
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           isDev
-            ? "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
-            : "default-src 'self'; script-src 'self'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com"
+            ? "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com; frame-src 'self' sp-report:"
+            : "default-src 'self'; script-src 'self'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com; frame-src 'self' sp-report:"
         ]
       }
     })

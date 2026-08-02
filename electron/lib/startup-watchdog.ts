@@ -129,9 +129,14 @@ export function createStartupWatchdog(opts: StartupWatchdogOptions): StartupWatc
           anomalies.push('slow first load')
           emit([
             `[WARN] first renderer load took ${(firstLoadDuration / 1000).toFixed(1)}s (threshold ${SLOW_LOAD_THRESHOLD_MS / 1000}s)`,
-            '  -> Vite cold transform too slow. Check warmup.clientFiles covers new page entries,',
-            '     node_modules/.vite is not being deleted, antivirus is not scanning node_modules.',
-            `  Ref: ${DOC_REF} Task 9/10/11`,
+            '  -> Check the "startup resources:" line above to narrow down the bottleneck:',
+            '     - "ALL resources slow" hint → system I/O (antivirus/Windows Defender, cold disk cache, CPU throttle).',
+            '       Fastest fix: add this project folder to Windows Defender exclusions, then rerun npm run dev.',
+            '     - "only source files slow" hint → warmup.clientFiles coverage or eager chain growth',
+            '     - "dep chunks slow" hint → node_modules/.vite/deps cache may be stale',
+            '  Also verify warmup.clientFiles covers new page entries,',
+            '  node_modules/.vite is not being deleted.',
+            `  Ref: ${DOC_REF} Task 9/10/11/15`,
           ])
         }
         // Boot-stall detection (cleared when boot:complete arrives)

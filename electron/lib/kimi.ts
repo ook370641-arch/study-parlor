@@ -273,10 +273,9 @@ export async function chatStream(
         const line = buffer.slice(0, idx)
         buffer = buffer.slice(idx + 1)
         const ev = parseSseChunk(line)
-        if (ev.kind === 'reasoning' && onReasoning) onReasoning(ev.text)
         if (ev.kind === 'chunk') onChunk(ev.text)
         else if (ev.kind === 'reasoning') onReasoning?.(ev.text)
-        if (ev.kind === 'done') return
+        else if (ev.kind === 'done') return
       }
     }
   } catch (err: any) {

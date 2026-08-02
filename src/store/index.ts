@@ -2,7 +2,8 @@
 import { create } from 'zustand'
 import { editorViewCtx } from '@milkdown/core'
 import type { Ctx } from '@milkdown/ctx'
-import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
+import { normalizeStudyFontSize } from '@/lib/study-font-size'
+import { formatBriefingDate } from '@/lib/format-briefing-date'
 import { mergeNewArticles } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
@@ -58,6 +59,7 @@ type Session = {
   userRequirement?: string
   selectedTopic?: string
   enableExternalMaterials?: boolean
+  groupId?: string
 }
 
 type AppStore = {
@@ -85,7 +87,7 @@ type AppStore = {
   modal: 'preStudy' | null
   preStudyArgs: { mode: Mode; topic: string; dirName?: string; file_path?: string } | null
   toast: { message: string; ts: number } | null
-  archiveResult: ArchiveResult | null
+  pendingReports: Record<string, ArchiveResult>
   groupInspirations: Record<string, NewTopic>
   inspirationStrategy: 'v1' | 'v2' | 'v3'
   wildcardInspiration: NewTopic | null
@@ -111,6 +113,12 @@ type AppStore = {
     loading: boolean
     error: string | null
   }
+  /** 视图桶对应的日期；null = 今天（纯内存，不持久化） */
+  briefingViewingDate: string | null
+  /** 后台生成记录（纯内存）：生成不再占用视图桶，生成中可自由切换日期/来源查看。
+   *  confirmed：收到首个进度事件才置真——缓存读（含"今日已生成再点今日"的投机登记）
+   *  永不触发进度事件，页面的"观看生成中"判定以 confirmed 为准，缓存查看不重演仪式。 */
+  briefingGeneration: { date: string; status: 'running' | 'failed'; error: string | null; confirmed: boolean } | null
   briefingHistory: {
     list: { date: string; filePath: string }[]
     loading: boolean
@@ -118,7 +126,7 @@ type AppStore = {
   }
   briefingTheme: BriefingTheme
   briefingFontSize: BriefingFontSize
-  externalSummaryFontSize: BriefingFontSize
+  studyFontSize: BriefingFontSize
   briefingStage: BriefingStage | null
   briefingStageDetail: string | null
   jobBriefingStage: BriefingStage | null
@@ -139,6 +147,8 @@ type AppStore = {
   anthropicReaderBody: string | null
   anthropicReaderTitle: string | null
   anthropicBlogLastSeenAt: string | null
+  /** 宪法可视化报告视图是否打开（仅运行时，与 anthropicReader 互斥） */
+  constitutionReportOpen: boolean
   setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing' | 'writing') => Promise<void>
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
@@ -154,6 +164,8 @@ type AppStore = {
   cancelAnthropicImport: () => Promise<void>
   openAnthropicReader: (filePath: string) => Promise<void>
   closeAnthropicReader: () => void
+  openConstitutionReport: () => void
+  closeConstitutionReport: () => void
   setAnthropicReaderContent: (content: { body: string | null; title: string | null }) => void
   deleteAnthropicArticle: (filePath: string) => Promise<void>
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
@@ -163,8 +175,8 @@ type AppStore = {
   setBriefingTheme: (theme: BriefingTheme) => Promise<void>
   increaseBriefingFontSize: () => Promise<void>
   decreaseBriefingFontSize: () => Promise<void>
-  increaseExternalSummaryFontSize: () => Promise<void>
-  decreaseExternalSummaryFontSize: () => Promise<void>
+  increaseStudyFontSize: () => Promise<void>
+  decreaseStudyFontSize: () => Promise<void>
 
   // 求职简报
   jobBriefing: {
@@ -172,6 +184,10 @@ type AppStore = {
     loading: boolean
     error: JobErrorCode | string | null
   }
+  /** 视图桶对应的日期；null = 今天（纯内存，不持久化） */
+  jobBriefingViewingDate: string | null
+  /** 后台生成记录（纯内存），与视图桶解耦；confirmed 语义同 briefingGeneration */
+  jobBriefingGeneration: { date: string; status: 'running' | 'failed'; error: JobErrorCode | string | null; confirmed: boolean } | null
   jobBriefingHistory: {
     list: { date: string; filePath: string }[]
     loading: boolean
@@ -227,13 +243,14 @@ type AppStore = {
     userRequirement?: string
     selectedTopic?: string
     enableExternalMaterials?: boolean
+    groupId?: string
   }) => void
   appendChunk: (text: string) => void
   finishStreaming: () => void
   pushUserMessage: (text: string) => void
   abortAndReplaceUser: (text: string) => Promise<void>
   dismissArchive: () => void   // 用户点【暂不归档】,清掉本次 ask
-  clearArchiveResult: () => void
+  dismissPendingReport: (dirName: string) => void
   resetSession: () => void
   showToast: (m: string) => void
   patchProfile: (p: Partial<Profile>) => Promise<void>
@@ -243,6 +260,7 @@ type AppStore = {
   saveCurrentSession: () => Promise<void>
   restoreSession: (session: UnsavedSession) => void
   removeUnsavedSession: (id: string) => void
+  burnLiveSession: (id: string) => void
   deleteArchivedSession: (dirName: string, sessionNumber: number) => Promise<void>
 
   // 外部资料操作
@@ -368,6 +386,11 @@ type AppStore = {
 
 let wildcardRequestId = 0
 
+// generateBriefing / generateJobBriefing 的单调序号：生成中切换日期后，迟到的
+// IPC 响应不得覆盖当前视图（rules general §7）。
+let briefingViewRequestId = 0
+let jobBriefingViewRequestId = 0
+
 // selectWritingFile 的单调序号：并发/交错的文件选中后写先赢时，丢弃过期的
 // writingRead 结果（rules general §7）。
 let writingSelectSeq = 0
@@ -408,7 +431,7 @@ export const useStore = create<AppStore>((set, get) => ({
   session: null,
   currentPage: 'cover',
   settingsReturnTo: null,
-  archiveResult: null,
+  pendingReports: {},
   groupInspirations: {},
   inspirationStrategy: 'v2',
   wildcardInspiration: null,
@@ -427,10 +450,12 @@ export const useStore = create<AppStore>((set, get) => ({
   currentPaintings: { cover: null, home: null, study: null, briefing: null },
   briefingRead: { digest: [], 'job-briefing': [] },
   briefing: { result: null, loading: false, error: null },
+  briefingViewingDate: null,
+  briefingGeneration: null,
   briefingHistory: { list: [], loading: false, error: null },
   briefingTheme: 'academic',
   briefingFontSize: 'base',
-  externalSummaryFontSize: 'base',
+  studyFontSize: 'lg',
   briefingStage: null,
   briefingStageDetail: null,
   jobBriefingStage: null,
@@ -446,7 +471,10 @@ export const useStore = create<AppStore>((set, get) => ({
   anthropicReaderBody: null,
   anthropicReaderTitle: null,
   anthropicBlogLastSeenAt: null,
+  constitutionReportOpen: false,
   jobBriefing: { result: null, loading: false, error: null },
+  jobBriefingViewingDate: null,
+  jobBriefingGeneration: null,
   jobBriefingHistory: { list: [], loading: false, error: null },
   jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
   jobProfile: DEFAULT_JOB_PROFILE,
@@ -488,7 +516,7 @@ export const useStore = create<AppStore>((set, get) => ({
         digest: Array.isArray(state.briefingRead?.digest) ? state.briefingRead.digest : [],
         'job-briefing': Array.isArray(state.briefingRead?.['job-briefing']) ? state.briefingRead['job-briefing'] : [],
       },
-      externalSummaryFontSize: normalizeSummaryFontSize(state.externalSummaryFontSize),
+      studyFontSize: normalizeStudyFontSize(state.studyFontSize),
       briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' || state.briefingSource === 'writing' ? state.briefingSource : 'digest',
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null }
@@ -563,6 +591,11 @@ export const useStore = create<AppStore>((set, get) => ({
   closePreStudy: () => set({ modal: null, preStudyArgs: null }),
 
   startSession: (a) => {
+    // onBack 不再中断会话,开新会话时旧会话可能还在后台跑:
+    // 中止旧流避免孤儿请求白烧 token,并清掉旧主题的外部资料,
+    // 否则新会话 kickoff 看到 summary 已存在会跳过搜索、用错主题的资料
+    const prev = get().session
+    if (prev?.streaming) ipc.llmAbort(prev.abortId)
     const sid = crypto.randomUUID()
     const nextCount = get().session_count + 1
     set({
@@ -573,8 +606,11 @@ export const useStore = create<AppStore>((set, get) => ({
         history: [], streaming: false, abortId: sid, archivePending: false,
         userRequirement: a.userRequirement,
         selectedTopic: a.selectedTopic,
-        enableExternalMaterials: a.enableExternalMaterials
+        enableExternalMaterials: a.enableExternalMaterials,
+        groupId: a.groupId
       },
+      externalMaterials: null,
+      isExternalSummaryOpen: false,
       modal: null,
       preStudyArgs: null,
       currentPage: 'study'
@@ -629,28 +665,80 @@ export const useStore = create<AppStore>((set, get) => ({
     s.session ? { session: { ...s.session, archivePending: false } } : s
   ),
 
-  clearArchiveResult: () => set({ archiveResult: null }),
+  dismissPendingReport: (dirName) => {
+    const next = { ...get().pendingReports }
+    delete next[dirName]
+    set({ pendingReports: next })
+  },
 
   generateBriefing: async (date: string, opts?: { force?: boolean }) => {
-    const s = get()
-    if (s.briefing.loading) return
+    const id = ++briefingViewRequestId
+    const today = formatBriefingDate(new Date())
+    const gen = get().briefingGeneration
+
+    // 该日期正在后台生成 → 只切视图观看进度，不发第二个 IPC
+    if (gen?.status === 'running' && gen.date === date) {
+      set({ briefingViewingDate: date, briefing: { result: null, loading: true, error: null } })
+      return
+    }
+    // 该日期生成失败过且非 force → 切视图冷展示错误（不自动重新生成）
+    if (gen?.status === 'failed' && gen.date === date && !opts?.force) {
+      set({ briefingViewingDate: date, briefing: { result: null, loading: false, error: gen.error } })
+      return
+    }
+
+    // 真实生成只会发生在今天（或 force 重试）；历史日期是缓存读，不登记记录、
+    // 不订阅进度——这是 digest/job 双域并存时进度不串扰的关键。
+    const mayGenerate = opts?.force === true || date === today
     set({
+      briefingViewingDate: date,
       briefing: { result: null, loading: true, error: null },
-      briefingStage: 'fetching',
+      ...(mayGenerate
+        ? { briefingGeneration: { date, status: 'running', error: null, confirmed: false }, briefingStage: 'fetching', briefingStageDetail: null }
+        : {}),
     })
 
-    const unsubscribe = ipc.onBriefingProgress((stage, detail) => {
-      set({ briefingStage: stage, briefingStageDetail: detail ?? null, briefingPulseAt: Date.now() })
-    })
+    const unsubscribe = mayGenerate
+      ? ipc.onBriefingProgress((source, stage, detail) => {
+          if (source !== 'digest') return
+          const rec = get().briefingGeneration
+          if (rec?.date !== date) return
+          set({
+            ...(rec.confirmed ? {} : { briefingGeneration: { ...rec, confirmed: true } }),
+            briefingStage: stage,
+            briefingStageDetail: detail ?? null,
+            briefingPulseAt: Date.now(),
+          })
+        })
+      : () => {}
 
     try {
-      const result = await ipc.briefingGenerate({ date, profile: s.profile, force: opts?.force })
-      set({
-        briefing: { result, loading: false, error: null },
-        briefingStage: null,
-        briefingStageDetail: null,
-        briefingPulseAt: null,
-      })
+      const result = await ipc.briefingGenerate({ date, profile: get().profile, force: opts?.force })
+      if (!result.cached) {
+        // 真实生成完成：无论请求是否 stale 都要清记录、刷历史（生成是后台的）；
+        // 只有"正在观看该日期"才落视图——requestId 不参与此判定（切走再切回观看
+        // 会 bump id，但 viewingDate 仍指向该日期，结果应当落下）。
+        const watching = (get().briefingViewingDate ?? today) === date
+        set({
+          briefingGeneration: null,
+          briefingStage: null,
+          briefingStageDetail: null,
+          briefingPulseAt: null,
+          ...(watching ? { briefing: { result, loading: false, error: null } } : {}),
+        })
+        void get().loadBriefingHistory()
+      } else {
+        if (id !== briefingViewRequestId) return
+        // 缓存命中：若按 mayGenerate 投机登记过记录（如"今日已生成再点今日"），一并清除
+        const cur = get().briefingGeneration
+        const speculative = cur?.status === 'running' && cur.date === date
+        set({
+          briefing: { result, loading: false, error: null },
+          ...(speculative
+            ? { briefingGeneration: null, briefingStage: null, briefingStageDetail: null, briefingPulseAt: null }
+            : {}),
+        })
+      }
     } catch (err: any) {
       const raw = err.message || String(err)
       if (raw.includes('BRIEFING_ABORTED')) return
@@ -663,12 +751,21 @@ export const useStore = create<AppStore>((set, get) => ({
             : raw.includes('ASSEMBLY_ERROR')
               ? 'ASSEMBLY_ERROR'
               : raw
-      set({
-        briefing: { result: null, loading: false, error },
-        briefingStage: null,
-        briefingStageDetail: null,
-        briefingPulseAt: null,
-      })
+      const cur = get().briefingGeneration
+      if (cur?.status === 'running' && cur.date === date) {
+        // 真实生成失败：错误记入生成记录（切走再切回仍可见）；正在观看同时落视图
+        const watching = (get().briefingViewingDate ?? today) === date
+        set({
+          briefingGeneration: { date, status: 'failed', error, confirmed: cur.confirmed },
+          briefingStage: null,
+          briefingStageDetail: null,
+          briefingPulseAt: null,
+          ...(watching ? { briefing: { result: null, loading: false, error } } : {}),
+        })
+      } else {
+        if (id !== briefingViewRequestId) return
+        set({ briefing: { result: null, loading: false, error } })
+      }
     } finally {
       unsubscribe()
     }
@@ -690,7 +787,7 @@ export const useStore = create<AppStore>((set, get) => ({
       await ipc.briefingDelete({ filePath: p })
     }
     if (current && filePaths.includes(current)) {
-      set({ briefing: { result: null, loading: false, error: null } })
+      set({ briefing: { result: null, loading: false, error: null }, briefingViewingDate: null })
     }
     // GC: remove deleted dates from briefingRead
     const digestDates = new Set(
@@ -711,19 +808,84 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   cancelBriefing: () => {
-    if (!get().briefing.loading) return
+    const gen = get().briefingGeneration
+    if (gen?.status !== 'running') return
     ipc.briefingAbort()
-    set({ briefing: { result: null, loading: false, error: null }, briefingStage: null, briefingPulseAt: null })
+    const watching = (get().briefingViewingDate ?? formatBriefingDate(new Date())) === gen.date
+    set({
+      briefingGeneration: null,
+      briefingStage: null,
+      briefingStageDetail: null,
+      briefingPulseAt: null,
+      ...(watching ? { briefing: { result: null, loading: false, error: null } } : {}),
+    })
   },
 
   generateJobBriefing: async (date, opts) => {
-    const s = get()
-    if (s.jobBriefing.loading) return
-    set({ jobBriefing: { result: null, loading: true, error: null }, jobBriefingStage: 'scanning-events' })
-    const unsubscribe = ipc.onBriefingProgress((stage, detail) => set({ jobBriefingStage: stage, jobBriefingStageDetail: detail ?? null, briefingPulseAt: Date.now() }))
+    const id = ++jobBriefingViewRequestId
+    const today = formatBriefingDate(new Date())
+    const gen = get().jobBriefingGeneration
+
+    // 该日期正在后台生成 → 只切视图观看进度，不发第二个 IPC
+    if (gen?.status === 'running' && gen.date === date) {
+      set({ jobBriefingViewingDate: date, jobBriefing: { result: null, loading: true, error: null } })
+      return
+    }
+    // 该日期生成失败过且非 force → 切视图冷展示错误（不自动重新生成）
+    if (gen?.status === 'failed' && gen.date === date && !opts?.force) {
+      set({ jobBriefingViewingDate: date, jobBriefing: { result: null, loading: false, error: gen.error } })
+      return
+    }
+
+    // 真实生成只会发生在今天（或 force 重试）；历史日期是缓存读，不登记记录、不订阅进度。
+    const mayGenerate = opts?.force === true || date === today
+    set({
+      jobBriefingViewingDate: date,
+      jobBriefing: { result: null, loading: true, error: null },
+      ...(mayGenerate
+        ? { jobBriefingGeneration: { date, status: 'running', error: null, confirmed: false }, jobBriefingStage: 'scanning-events', jobBriefingStageDetail: null }
+        : {}),
+    })
+
+    const unsubscribe = mayGenerate
+      ? ipc.onBriefingProgress((source, stage, detail) => {
+          if (source !== 'job') return
+          const rec = get().jobBriefingGeneration
+          if (rec?.date !== date) return
+          set({
+            ...(rec.confirmed ? {} : { jobBriefingGeneration: { ...rec, confirmed: true } }),
+            jobBriefingStage: stage,
+            jobBriefingStageDetail: detail ?? null,
+            briefingPulseAt: Date.now(),
+          })
+        })
+      : () => {}
+
     try {
       const result = await ipc.jobBriefingGenerate({ date, force: opts?.force })
-      set({ jobBriefing: { result, loading: false, error: null }, jobBriefingStage: null, jobBriefingStageDetail: null, briefingPulseAt: null })
+      if (!result.cached) {
+        // 真实生成完成：无论请求是否 stale 都要清记录、刷历史；只有正在观看才落视图
+        const watching = (get().jobBriefingViewingDate ?? today) === date
+        set({
+          jobBriefingGeneration: null,
+          jobBriefingStage: null,
+          jobBriefingStageDetail: null,
+          briefingPulseAt: null,
+          ...(watching ? { jobBriefing: { result, loading: false, error: null } } : {}),
+        })
+        void get().loadJobBriefingHistory()
+      } else {
+        if (id !== jobBriefingViewRequestId) return
+        // 缓存命中：若按 mayGenerate 投机登记过记录（如"今日已生成再点今日"），一并清除
+        const cur = get().jobBriefingGeneration
+        const speculative = cur?.status === 'running' && cur.date === date
+        set({
+          jobBriefing: { result, loading: false, error: null },
+          ...(speculative
+            ? { jobBriefingGeneration: null, jobBriefingStage: null, jobBriefingStageDetail: null, briefingPulseAt: null }
+            : {}),
+        })
+      }
     } catch (err: any) {
       const raw = err.message || String(err)
       if (raw.includes('JOB_ABORTED')) return
@@ -739,7 +901,21 @@ export const useStore = create<AppStore>((set, get) => ({
         : raw.includes('JOB_CACHE_WRITE_FAILED') ? 'JOB_CACHE_WRITE_FAILED'
         : raw.includes('JOB_TIMEOUT') ? 'JOB_TIMEOUT'
         : raw
-      set({ jobBriefing: { result: null, loading: false, error }, jobBriefingStage: null, jobBriefingStageDetail: null, briefingPulseAt: null })
+      const cur = get().jobBriefingGeneration
+      if (cur?.status === 'running' && cur.date === date) {
+        // 真实生成失败：错误记入生成记录（切走再切回仍可见）；正在观看同时落视图
+        const watching = (get().jobBriefingViewingDate ?? today) === date
+        set({
+          jobBriefingGeneration: { date, status: 'failed', error, confirmed: cur.confirmed },
+          jobBriefingStage: null,
+          jobBriefingStageDetail: null,
+          briefingPulseAt: null,
+          ...(watching ? { jobBriefing: { result: null, loading: false, error } } : {}),
+        })
+      } else {
+        if (id !== jobBriefingViewRequestId) return
+        set({ jobBriefing: { result: null, loading: false, error } })
+      }
     } finally {
       unsubscribe()
     }
@@ -761,7 +937,7 @@ export const useStore = create<AppStore>((set, get) => ({
       await ipc.jobBriefingDelete({ filePath: p })
     }
     if (current && filePaths.includes(current)) {
-      set({ jobBriefing: { result: null, loading: false, error: null } })
+      set({ jobBriefing: { result: null, loading: false, error: null }, jobBriefingViewingDate: null })
     }
     // GC: remove deleted dates from briefingRead
     const jobDates = new Set(
@@ -782,9 +958,17 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   cancelJobBriefing: () => {
-    if (!get().jobBriefing.loading) return
+    const gen = get().jobBriefingGeneration
+    if (gen?.status !== 'running') return
     ipc.jobBriefingAbort()
-    set({ jobBriefing: { result: null, loading: false, error: null }, jobBriefingStage: null, briefingPulseAt: null })
+    const watching = (get().jobBriefingViewingDate ?? formatBriefingDate(new Date())) === gen.date
+    set({
+      jobBriefingGeneration: null,
+      jobBriefingStage: null,
+      jobBriefingStageDetail: null,
+      briefingPulseAt: null,
+      ...(watching ? { jobBriefing: { result: null, loading: false, error: null } } : {}),
+    })
   },
 
   transferArticleToWriting: async (args) => {
@@ -908,22 +1092,22 @@ export const useStore = create<AppStore>((set, get) => ({
     await ipc.patchState({ briefingFontSize: prev } as Partial<StateJson>)
   },
 
-  increaseExternalSummaryFontSize: async () => {
-    const { nextSummaryFontSize } = await import('@/lib/external-summary-font-size')
-    const current = normalizeSummaryFontSize(get().externalSummaryFontSize)
-    const next = nextSummaryFontSize(current)
+  increaseStudyFontSize: async () => {
+    const { nextStudyFontSize, normalizeStudyFontSize } = await import('@/lib/study-font-size')
+    const current = normalizeStudyFontSize(get().studyFontSize)
+    const next = nextStudyFontSize(current)
     if (next === current) return
-    set({ externalSummaryFontSize: next })
-    await ipc.patchState({ externalSummaryFontSize: next } as Partial<StateJson>)
+    set({ studyFontSize: next })
+    await ipc.patchState({ studyFontSize: next } as Partial<StateJson>)
   },
 
-  decreaseExternalSummaryFontSize: async () => {
-    const { prevSummaryFontSize } = await import('@/lib/external-summary-font-size')
-    const current = normalizeSummaryFontSize(get().externalSummaryFontSize)
-    const prev = prevSummaryFontSize(current)
+  decreaseStudyFontSize: async () => {
+    const { prevStudyFontSize, normalizeStudyFontSize } = await import('@/lib/study-font-size')
+    const current = normalizeStudyFontSize(get().studyFontSize)
+    const prev = prevStudyFontSize(current)
     if (prev === current) return
-    set({ externalSummaryFontSize: prev })
-    await ipc.patchState({ externalSummaryFontSize: prev } as Partial<StateJson>)
+    set({ studyFontSize: prev })
+    await ipc.patchState({ studyFontSize: prev } as Partial<StateJson>)
   },
 
   increaseWritingUIFontSize: async () => {
@@ -1050,10 +1234,18 @@ export const useStore = create<AppStore>((set, get) => ({
 
   openAnthropicReader: async (filePath) => {
     const now = new Date().toISOString()
-    set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now })
+    set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now, constitutionReportOpen: false })
     await ipc.patchState({ anthropicBlogLastSeenAt: now } as Partial<StateJson>)
   },
   closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
+  openConstitutionReport: () =>
+    set({
+      constitutionReportOpen: true,
+      anthropicReaderFilePath: null,
+      anthropicReaderBody: null,
+      anthropicReaderTitle: null,
+    }),
+  closeConstitutionReport: () => set({ constitutionReportOpen: false }),
   setAnthropicReaderContent: ({ body, title }) =>
     set({ anthropicReaderBody: body, anthropicReaderTitle: title }),
 
@@ -1155,6 +1347,12 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   restoreSession: (unsaved) => {
+    // 存活守卫:onBack 不再中断会话,若它还在内存里(后台跑完或正在跑),
+    // 只切回学习页——不能用磁盘上的旧快照覆盖 live 的 history/materials
+    if (get().session?.abortId === unsaved.id) {
+      set({ currentPage: 'study' })
+      return
+    }
     set({
       session: {
         mode: unsaved.mode,
@@ -1183,6 +1381,14 @@ export const useStore = create<AppStore>((set, get) => ({
       unsavedSessions: s.unsavedSessions.filter(us => us.id !== id)
     }))
     ipc.deleteSession(id)
+  },
+
+  burnLiveSession: (id) => {
+    // 焚毁是唯一真正中断的路径:中止后台流并销毁存活会话
+    const live = get().session
+    if (live?.abortId !== id) return
+    if (live.streaming) ipc.llmAbort(id)
+    get().resetSession()
   },
 
   deleteArchivedSession: async (dirName: string, sessionNumber: number) => {
@@ -1753,7 +1959,7 @@ export const useStore = create<AppStore>((set, get) => ({
           }
         }
       }
-      msgs[msgs.length - 1] = { ...last, content, sources }
+      msgs[msgs.length - 1] = { ...last, content, sources, reasoning: undefined }
     } else if (e.phase === 'done') {
       const marker = e.ids && e.ids.length > 0
         ? `\n> 来源：[${e.tool}] ${e.ids.join(', ')}\n`
@@ -1836,6 +2042,7 @@ export const useStore = create<AppStore>((set, get) => ({
         messages: file.messages.map(m => ({
           role: m.role,
           content: m.content,
+          reasoning: m.reasoning,
           sources: m.searchSources?.map(s => ({
             type: 'web' as const,
             id: s.url,
@@ -1872,8 +2079,20 @@ export const useStore = create<AppStore>((set, get) => ({
     if (cur?.dirty) await get().saveWritingFile()
     const r = await ipc.writingRead({ path: filePath })
     if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
-    if (r.ok) set({ writingFile: { path: filePath, body: r.value.body ?? '', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
-    else set({ writingError: r.message })
+    if (r.ok) {
+      set({ writingFile: { path: filePath, body: r.value.body ?? '', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+      // 切换文章时重置并恢复该文章的助手会话：防止旧文章消息串台写入新文章的
+      // .assistant.md，并让已保存的对话跨重启/跨切换恢复（此前 load 无调用方）。
+      const wa = get().writingAssistant
+      if (wa && wa.articlePath !== filePath) {
+        if (wa.streaming) ipc.writingAssistantAbort({ sessionId: wa.sessionId })
+        resetAssistantStreamBuffers()
+        set({ writingAssistant: null })
+      }
+      if (!get().writingAssistant) await get().loadWritingAssistantSession(filePath)
+    } else {
+      set({ writingError: r.message })
+    }
   },
 
   updateWritingBody: (body: string) => set(s => s.writingFile ? { writingFile: { ...s.writingFile, body, dirty: true } } : {}),

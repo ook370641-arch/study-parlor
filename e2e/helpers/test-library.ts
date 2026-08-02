@@ -451,7 +451,7 @@ const BASE_STATE = {
   topicContinueSuggestions: {},
   unsavedSessions: [],
   pendingArchives: [],
-  archiveResult: null,
+  pendingReports: {},
   terminology: {},
   briefingSource: 'digest',
   briefingStageDetail: null,

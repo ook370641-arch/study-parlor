@@ -662,4 +662,83 @@ describe('writing assistant store', () => {
       expect(useStore.getState().writingAssistant).toBeNull()
     })
   })
+
+  describe('selectWritingFile assistant session wiring', () => {
+    beforeEach(() => {
+      vi.mocked(ipc.writingRead).mockResolvedValue({ ok: true, value: { body: '# 正文' } })
+    })
+
+    it('restores the assistant session from .assistant.md when selecting a file', async () => {
+      vi.mocked(ipc.articleAssistantReadSession).mockResolvedValue({
+        filePath: 'writing/b.assistant.md',
+        messages: [
+          { role: 'user', content: '旧问题' },
+          { role: 'assistant', content: '旧回复' },
+        ],
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+      })
+
+      await useStore.getState().selectWritingFile('writing/b.md')
+
+      expect(ipc.articleAssistantReadSession).toHaveBeenCalledWith({
+        parentPath: 'writing/b.md',
+        parentType: 'writing',
+      })
+      const wa = useStore.getState().writingAssistant!
+      expect(wa.articlePath).toBe('writing/b.md')
+      expect(wa.messages.map((m) => m.content)).toEqual(['旧问题', '旧回复'])
+    })
+
+    it('drops the previous file\'s messages when switching files (no cross-file contamination)', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-1',
+          articlePath: 'writing/a.md',
+          messages: [{ role: 'user', content: 'A 的消息' }],
+          streaming: false,
+          error: null,
+        },
+      })
+      // B 没有已保存会话 → 重置为 null，而不是带着 A 的消息
+      vi.mocked(ipc.articleAssistantReadSession).mockResolvedValue(null)
+
+      await useStore.getState().selectWritingFile('writing/b.md')
+
+      expect(useStore.getState().writingAssistant).toBeNull()
+    })
+
+    it('aborts an in-flight stream when switching files', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-1',
+          articlePath: 'writing/a.md',
+          messages: [],
+          streaming: true,
+          error: null,
+        },
+      })
+
+      await useStore.getState().selectWritingFile('writing/b.md')
+
+      expect(ipc.writingAssistantAbort).toHaveBeenCalledWith({ sessionId: 'wa-1' })
+    })
+
+    it('keeps the in-memory session when reselecting the same file', async () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-1',
+          articlePath: 'writing/a.md',
+          messages: [{ role: 'user', content: '继续聊' }],
+          streaming: false,
+          error: null,
+        },
+      })
+
+      await useStore.getState().selectWritingFile('writing/a.md')
+
+      expect(ipc.articleAssistantReadSession).not.toHaveBeenCalled()
+      expect(useStore.getState().writingAssistant!.messages).toHaveLength(1)
+    })
+  })
 })

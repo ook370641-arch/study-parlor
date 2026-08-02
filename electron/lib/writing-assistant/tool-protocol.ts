@@ -1,4 +1,4 @@
-export const MAX_TOOL_CALLS = 6
+export const MAX_TOOL_CALLS = 3
 
 export type ToolCall =
   | { tool: 'read_local'; ids: string[] }

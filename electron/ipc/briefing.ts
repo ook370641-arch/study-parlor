@@ -306,7 +306,7 @@ export function registerBriefingIpc(cfg: AppConfig) {
     const sender = event.sender
     const emitProgress = (stage: BriefingStage, detail?: string) => {
       if (!sender.isDestroyed()) {
-        sender.send('briefing:progress', stage, detail)
+        sender.send('briefing:progress', 'digest', stage, detail)
       }
     }
     const { date, profile } = args

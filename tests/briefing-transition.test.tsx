@@ -27,6 +27,9 @@ vi.mock('@/lib/paintings', () => ({ manifest: [], pickRandom: vi.fn(() => null) 
 
 import { useStore } from '@/store'
 import { Briefing } from '@/pages/Briefing'
+import { formatBriefingDate } from '@/lib/format-briefing-date'
+
+const TODAY = formatBriefingDate(new Date())
 
 const RESULT = {
   title: '夜航简报',
@@ -40,6 +43,8 @@ const RESULT = {
 function seedBase() {
   useStore.setState({
     briefing: { result: null, loading: false, error: null },
+    briefingViewingDate: null,
+    briefingGeneration: null,
     briefingStage: null,
     briefingStageDetail: null,
     briefingPulseAt: null,
@@ -48,6 +53,8 @@ function seedBase() {
     briefingTheme: 'academic',
     briefingHistory: { list: [], loading: false, error: null },
     jobBriefing: { result: null, loading: false, error: null },
+    jobBriefingViewingDate: null,
+    jobBriefingGeneration: null,
     jobBriefingHistory: { list: [], loading: false, error: null },
     assistantSession: null,
     currentPaintings: { cover: null, home: null, study: null, briefing: null },
@@ -63,6 +70,7 @@ describe('Briefing generation transition choreography', () => {
     act(() => {
       useStore.setState({
         briefing: { result: null, loading: true, error: null },
+        briefingGeneration: { date: TODAY, status: 'running', error: null, confirmed: true },
         briefingStage: 'fetching',
       } as any)
     })
@@ -71,10 +79,11 @@ describe('Briefing generation transition choreography', () => {
     act(() => {
       useStore.setState({
         briefing: {
-          result: RESULT as never,
+          result: { ...RESULT, date: TODAY } as never,
           loading: false,
           error: null,
         },
+        briefingGeneration: null,
         briefingStage: null,
       } as any)
     })
@@ -89,12 +98,14 @@ describe('Briefing generation transition choreography', () => {
     act(() => {
       useStore.setState({
         briefing: { result: null, loading: true, error: null },
+        briefingGeneration: { date: TODAY, status: 'running', error: null, confirmed: true },
         briefingStage: 'fetching',
       } as any)
     })
     act(() => {
       useStore.setState({
         briefing: { result: null, loading: false, error: 'NETWORK_ERROR' },
+        briefingGeneration: { date: TODAY, status: 'failed', error: 'NETWORK_ERROR', confirmed: true },
         briefingStage: null,
         briefingPulseAt: null,
       } as any)
@@ -112,6 +123,7 @@ describe('Briefing generation transition choreography', () => {
           loading: false,
           error: null,
         },
+        briefingViewingDate: RESULT.date,
       } as any)
     })
     render(<Briefing />)

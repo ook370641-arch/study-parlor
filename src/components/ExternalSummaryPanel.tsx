@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ExternalSummaryContent } from './ExternalSummaryContent'
-import { SUMMARY_BASE_STYLES } from '@/lib/external-summary-font-size'
-import { normalizeSummaryFontSize } from '@/lib/external-summary-font-size'
+import { STUDY_FONT_STYLES, normalizeStudyFontSize } from '@/lib/study-font-size'
 
 const PANEL_WIDTH = 760
 const SLIDE_DURATION_MS = 300
@@ -13,9 +12,7 @@ export function ExternalSummaryPanel() {
   const isOpen = useStore(s => s.isExternalSummaryOpen)
   const materials = useStore(s => s.externalMaterials)
   const closeExternalSummary = useStore(s => s.closeExternalSummary)
-  const fontSize = useStore(s => s.externalSummaryFontSize)
-  const increaseFontSize = useStore(s => s.increaseExternalSummaryFontSize)
-  const decreaseFontSize = useStore(s => s.decreaseExternalSummaryFontSize)
+  const fontSize = useStore(s => s.studyFontSize)
   const panelRef = useRef<HTMLDivElement>(null)
   const [rendered, setRendered] = useState(isOpen)
 
@@ -48,7 +45,7 @@ export function ExternalSummaryPanel() {
 
   const hasSummary = !!materials?.summary
   const sources = materials?.sources ?? []
-  const baseStyle = SUMMARY_BASE_STYLES[normalizeSummaryFontSize(fontSize)]
+  const studyFontStyle = STUDY_FONT_STYLES[normalizeStudyFontSize(fontSize)]
 
   return (
     <div
@@ -69,25 +66,9 @@ export function ExternalSummaryPanel() {
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={decreaseFontSize}
-            className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#555] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/5'}`}
-            aria-label="缩小摘要字号"
-            title="缩小字号"
-          >
-            -
-          </button>
-          <button
-            onClick={increaseFontSize}
-            className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#555] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/5'}`}
-            aria-label="放大摘要字号"
-            title="放大字号"
-          >
-            +
-          </button>
-          <button
             data-testid="external-summary-close"
             onClick={closeExternalSummary}
-            className={`text-sm px-1 ml-1 ${isAcademic ? 'text-parchment/50 hover:text-parchment' : 'text-[#777] hover:text-[#1a1a1a]'}`}
+            className={`text-sm px-1 ${isAcademic ? 'text-parchment/50 hover:text-parchment' : 'text-[#777] hover:text-[#1a1a1a]'}`}
             aria-label="关闭摘要面板"
           >
             ✕
@@ -97,7 +78,7 @@ export function ExternalSummaryPanel() {
 
       <div
         className={`flex-1 overflow-y-auto px-4 py-4 leading-[1.75] font-serif ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}
-        style={{ fontSize: baseStyle.size }}
+        style={{ fontSize: studyFontStyle }}
       >
         {!hasSummary ? (
           <div className={`italic ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>暂无摘要</div>

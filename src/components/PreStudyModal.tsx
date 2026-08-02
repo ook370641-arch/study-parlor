@@ -102,6 +102,8 @@ export function PreStudyModal() {
   const topicContinueSuggestions = useStore(s => s.topicContinueSuggestions)
   const library = useStore(s => s.library)
   const showToast = useStore(s => s.showToast)
+  const groups = useStore(s => s.groups)
+  const activeGroupId = useStore(s => s.activeGroupId)
   const t = useTerminology()
 
   const [topic, setTopic] = useState(args?.topic ?? '')
@@ -119,6 +121,7 @@ export function PreStudyModal() {
   const [customTopic, setCustomTopic] = useState('')
   const [enableExternalMaterials, setEnableExternalMaterials] = useState(false)
   const [searchConfigured, setSearchConfigured] = useState(false)
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(activeGroupId ?? 'default')
 
   const topicRef = useRef<HTMLInputElement>(null)
   const diffRef = useRef<HTMLDivElement>(null)
@@ -233,17 +236,29 @@ export function PreStudyModal() {
       finalTopic = args.topic.trim()
       finalDirName = args.dirName
     } else if (topicSource === 'existing') {
-      // Existing topic + custom sub-topic
-      if (!selectedDirName) return
+      // Existing topic + optional custom sub-topic
+      if (!selectedDirName) {
+        showToast('请先选择一个已有主题')
+        return
+      }
       const selectedTopicMeta = library.find(t => t.dirName === selectedDirName)
-      if (!selectedTopicMeta) return
-      if (!customTopic.trim()) return
-      finalTopic = `${selectedTopicMeta.title} — ${customTopic.trim()}`
+      if (!selectedTopicMeta) {
+        showToast('未找到该主题，请刷新后重试')
+        return
+      }
+      if (customTopic.trim()) {
+        finalTopic = `${selectedTopicMeta.title} — ${customTopic.trim()}`
+      } else {
+        finalTopic = selectedTopicMeta.title
+      }
       finalDirName = selectedDirName
     } else {
       // New topic
       finalTopic = topic.trim()
-      if (!finalTopic) return
+      if (!finalTopic) {
+        showToast('请输入主题')
+        return
+      }
       finalDirName = undefined
     }
 
@@ -261,7 +276,8 @@ export function PreStudyModal() {
       temperature,
       userRequirement: userRequirement.trim() || undefined,
       selectedTopic,
-      enableExternalMaterials: args.mode === 'progress' ? enableExternalMaterials : undefined
+      enableExternalMaterials: args.mode === 'progress' ? enableExternalMaterials : undefined,
+      groupId: selectedGroupId
     })
   }
 
@@ -429,6 +445,23 @@ export function PreStudyModal() {
             {userRequirement.length}/200
           </div>
         </div>
+
+        {/* Group selector (new topic only) */}
+        {topicSource === 'new' && !isContinue && (
+        <div>
+          <div className="field-label mb-2">分组</div>
+          <select
+            data-testid="group-selector"
+            value={selectedGroupId}
+            onChange={e => setSelectedGroupId(e.target.value)}
+            className={`w-full bg-transparent border rounded-lg px-3 py-2 text-sm focus:outline-none ${isAcademic ? 'border-slate/30 text-parchment focus:border-ember/50' : 'border-[#1a1a1a]/15 text-[#1a1a1a] focus:border-[#1a1a1a]/30'}`}
+          >
+            {groups.map(g => (
+              <option key={g.id} value={g.id} className="bg-ink text-parchment">{g.name}</option>
+            ))}
+          </select>
+        </div>
+        )}
 
         {/* External materials toggle (progress only) */}
         {showExternalMaterialsToggle && (

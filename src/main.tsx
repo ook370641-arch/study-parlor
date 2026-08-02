@@ -5,9 +5,19 @@
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import './styles/globals.css'
+import { reportStartupResources } from '@/lib/startup-diag'
 
 const t1 = performance.now()
 window.api?.logTiming('main.tsx imports resolved', t1)
+
+// Capture browser resource waterfall for startup diagnostics.
+// Sends structured summary via logTiming IPC → terminal output.
+// Dead-code eliminated in production builds (import.meta.env.DEV is
+// a compile-time constant — Vite strips the branch and tree-shakes
+// the import).
+if (import.meta.env.DEV) {
+  reportStartupResources()
+}
 
 createRoot(document.getElementById('root')!).render(<App />)
 

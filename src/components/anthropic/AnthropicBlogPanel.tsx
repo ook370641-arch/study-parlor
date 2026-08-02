@@ -5,10 +5,12 @@ import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
+import { ConstitutionReportView } from './ConstitutionReportView'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { findNewArticleUrls } from '@/lib/anthropic-articles'
+import { withConstitutionEntry } from '@/lib/constitution-report'
 import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -63,6 +65,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const mergeArticles = useStore((s) => s.mergeAnthropicArticles)
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const openReader = useStore((s) => s.openAnthropicReader)
+  const constitutionReportOpen = useStore((s) => s.constitutionReportOpen)
+  const openConstitutionReport = useStore((s) => s.openConstitutionReport)
   const deleteAnthropicArticle = useStore((s) => s.deleteAnthropicArticle)
   const fontSize = useStore((s) => s.briefingFontSize)
   const increaseFontSize = useStore((s) => s.increaseBriefingFontSize)
@@ -77,15 +81,18 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [checkKey, setCheckKey] = useState(0)
   const [pendingDelete, setPendingDelete] = useState<AnthropicArticleMeta | null>(null)
 
+  // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成
+  const displayArticles = useMemo(() => withConstitutionEntry(articles), [articles])
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return articles
-    return articles.filter(
+    if (!q) return displayArticles
+    return displayArticles.filter(
       (a) =>
         a.title?.toLowerCase().includes(q) ||
         (a.summary ?? '').toLowerCase().includes(q)
     )
-  }, [articles, query])
+  }, [displayArticles, query])
 
   // 自动检测新文章
   useEffect(() => {
@@ -129,6 +136,11 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   }
 
   const openOrImportArticle = useCallback(async (article: AnthropicArticleMeta) => {
+    // 本地内置条目（宪法报告）直接打开报告视图
+    if (article.local === 'constitution') {
+      openConstitutionReport()
+      return
+    }
     // Same logic as AnthropicArticleRow: open saved file, or re-import if missing.
     if (article.isSaved && article.filePath) {
       try {
@@ -140,7 +152,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
       }
     }
     await importArticle(article.url)
-  }, [importArticle, openReader])
+  }, [importArticle, openReader, openConstitutionReport])
 
   return (
     <div
@@ -189,7 +201,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                   <div
                     className={`w-10 h-10 flex items-center justify-center text-sm font-serif ${themeClasses.skeleton} ${themeClasses.muted}`}
                   >
-                    A
+                    {article.local === 'constitution' ? '§' : 'A'}
                   </div>
                 )}
               </button>
@@ -286,7 +298,9 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
       </BriefingListColumn>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        {readerFilePath ? (
+        {constitutionReportOpen ? (
+          <ConstitutionReportView theme={theme} />
+        ) : readerFilePath ? (
           <AnthropicArticleReader
             filePath={readerFilePath}
             theme={theme}

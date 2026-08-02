@@ -87,13 +87,17 @@ export async function finalizeAndReturnHome() {
       }
 
       const lib = await ipc.scanLibrary()
+      const currentPending = useStore.getState().pendingReports
       useStore.setState({
         library: lib,
-        archiveResult: {
-          mode: 'progress',
-          topic: sess.topic,
-          title,
-          content: body
+        pendingReports: {
+          ...currentPending,
+          [dirName]: {
+            mode: 'progress',
+            topic: sess.topic,
+            title,
+            content: body
+          }
         }
       })
     } else if (sess.mode === 'review') {
@@ -153,13 +157,17 @@ export async function finalizeAndReturnHome() {
         adviceText ? '\n## 未来发展建议\n\n' + adviceText : ''
       ].filter(Boolean).join('\n')
 
+      const currentPending = useStore.getState().pendingReports
       useStore.setState({
         library: lib,
-        archiveResult: {
-          mode: 'review',
-          topic: sess.topic,
-          title: sess.topic,
-          content
+        pendingReports: {
+          ...currentPending,
+          [dirName]: {
+            mode: 'review',
+            topic: sess.topic,
+            title: sess.topic,
+            content
+          }
         }
       })
     }

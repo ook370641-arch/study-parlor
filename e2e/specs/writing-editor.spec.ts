@@ -446,17 +446,17 @@ test.describe('@p2 writing-editor', () => {
     expect(restoredContent).toContain('第一段内容')
     expect(restoredContent).toContain('插入标题')
 
-    // 12. Open AI assistant → verify conversation restored
+    // 12. Open AI assistant → verify conversation restored via the real path
+    // (selectFile 已在第 10 步触发 selectWritingFile → 自动加载 .assistant.md)
+    await window.waitForFunction(() => {
+      const wa = (window as any).useStore?.getState()?.writingAssistant
+      return wa?.articlePath?.includes('全流程测试') && wa.messages.length > 0
+    })
     const assistant2 = new WritingAssistantPanel(window)
     const panelAlreadyOpen = await assistant2.panel.isVisible().catch(() => false)
     if (!panelAlreadyOpen) {
       await assistant2.open()
     }
-    await window.evaluate(async () => {
-      const store = (window as any).useStore
-      await store.getState().loadWritingAssistantSession('writing/全流程测试.md')
-    })
-    await window.waitForTimeout(500)
 
     const restored = await window.evaluate(() => {
       const state = (window as any).useStore?.getState()?.writingAssistant

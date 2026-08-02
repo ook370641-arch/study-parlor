@@ -7,12 +7,12 @@ export function ExternalMaterialsCard() {
   const materials = useStore(s => s.externalMaterials)
   const openExternalSummary = useStore(s => s.openExternalSummary)
   const [expanded, setExpanded] = useState(false)
+  const theme = useStore((s) => s.briefingTheme)
+  const isAcademic = theme !== 'newspaper'
 
   if (!materials) return null
 
   const isReview = session?.mode === 'review'
-  const theme = useStore((s) => s.briefingTheme)
-  const isAcademic = theme !== 'newspaper'
   const hasSources = materials.sources.length > 0
 
   const cardCls = isAcademic
@@ -21,7 +21,7 @@ export function ExternalMaterialsCard() {
   const headerHoverCls = isAcademic ? 'hover:bg-parchment/5' : 'hover:bg-[#1a1a1a]/3'
 
   return (
-    <div data-testid="external-materials-card" className="relative z-[5] px-8 max-w-4xl w-full mx-auto">
+    <div data-testid="external-materials-card" className="relative z-[5] px-8 max-w-4xl lg:max-w-6xl w-full mx-auto">
       <div className={`my-3 ${cardCls} border rounded-lg overflow-hidden`}>
         <div className="flex items-center">
           <button

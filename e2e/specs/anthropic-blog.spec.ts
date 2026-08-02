@@ -102,6 +102,29 @@ test.describe('@real Anthropic 博客集成', () => {
       const panel = window.locator(SELECTORS.briefing.anthropicPanel)
       await expect(panel.locator(SELECTORS.briefing.anthropicListCheckError)).toBeVisible({ timeout: 20000 })
     })
+
+    test('宪法可视化报告：离线仍置顶可见，点击后 iframe 打开交互报告', async ({ window }) => {
+      const cover = new CoverPage(window)
+      await cover.enterName('E2E 测试员')
+      await cover.goToBriefing()
+      await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+
+      // 本地内置条目不依赖网络抓取 — 离线下也必须置顶出现在列表
+      const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
+      const constitutionRow = rows.filter({ has: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+      await expect(constitutionRow).toHaveCount(1)
+      await expect(rows.first().locator(SELECTORS.briefing.anthropicConstitutionPill)).toBeVisible()
+
+      // 点击打开报告视图，iframe 指向 sp-report:// 协议
+      await constitutionRow.click()
+      const frame = window.locator(SELECTORS.briefing.constitutionReportFrame)
+      await expect(frame).toBeVisible()
+      await expect(frame).toHaveAttribute('src', 'sp-report://constitution/index.html')
+
+      // iframe 内容真正加载成功（协议 + 报告专属 CSP 生效），内联脚本可运行
+      const reportBody = window.frameLocator(SELECTORS.briefing.constitutionReportFrame).locator('body')
+      await expect(reportBody).toContainText('Constitution', { timeout: 15000 })
+    })
   })
 
   test('E2E-9: 摘要持久化与展示 — 导入后阅读器展示摘要，再次打开仍存在', async ({

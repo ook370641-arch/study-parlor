@@ -94,7 +94,7 @@ export function registerWritingAssistantIpc(cfg: AppConfig): void {
 
     // Real branch
     const index = await buildWritingIndex(cfg)
-    const systemPrompt = buildWritingSystemPrompt(index)
+    const systemPrompt = buildWritingSystemPrompt(index, args.useSearch)
 
     const ctl = new AbortController()
     writingSessions.set(args.sessionId, ctl)

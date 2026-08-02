@@ -58,7 +58,7 @@ describe('attachSessionListeners', () => {
     useStore.setState({
       session: null,
       session_count: 0,
-      archiveResult: null,
+      pendingReports: {},
       unsavedSessions: [],
       toast: null
     })

@@ -1,13 +1,14 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import type { SessionMeta, TopicMeta } from '@shared/index'
+import type { SessionMeta, TopicMeta, ArchiveResult } from '@shared/index'
 import { SessionViewer } from './SessionViewer'
 import { GroupRibbon } from './GroupRibbon'
 import { GravityField } from './GravityField'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ReviewFlash } from './ReviewFlash'
 import { FableStyleDialog } from './FableStyleDialog'
+import { ArchiveReportModal } from './ArchiveReportModal'
 
 const PAGE_SIZE = 9
 
@@ -262,6 +263,7 @@ function TopicAccordion({
   generatingDiagrams,
   onGenerateDiagram,
   pendingSessionNumbers,
+  onViewPendingReport,
 }: {
   topic: TopicMeta
   onViewFile: (v: ViewerState) => void
@@ -274,6 +276,7 @@ function TopicAccordion({
   generatingDiagrams: Set<string>
   onGenerateDiagram: (dirName: string, sessionNumber: number) => void
   pendingSessionNumbers?: Set<number>
+  onViewPendingReport?: (topic: TopicMeta) => void
 }) {
   const theme = useStore((s) => s.briefingTheme)
   const isAcademic = theme !== 'newspaper'
@@ -338,6 +341,23 @@ function TopicAccordion({
         >
           续谈（第{topic.sessionCount + 1}次）
         </button>
+
+        {topic.pendingReport && onViewPendingReport && (
+          <button
+            data-testid="topic-pending-report-badge"
+            onClick={(e) => {
+              e.stopPropagation()
+              onViewPendingReport(topic)
+            }}
+            className={`text-[10px] font-sans px-2 py-1 rounded border transition-colors shrink-0 ${
+              isAcademic
+                ? 'border-ember/40 text-ember bg-ember/10 hover:bg-ember/20'
+                : 'border-[#1a1a1a]/20 text-[#1a1a1a] bg-[#1a1a1a]/5 hover:bg-[#1a1a1a]/10'
+            }`}
+          >
+            📋 新报告
+          </button>
+        )}
       </div>
 
       <div id="topic-content" className={`${isAcademic ? 'bg-ink/30' : 'bg-[#f5f5f0]'} overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
@@ -419,6 +439,8 @@ export function StudyLibrary() {
 
   const [styleDialogOpen, setStyleDialogOpen] = useState(false)
   const [pendingFable, setPendingFable] = useState<{ dirName: string; sessionNumber: number } | null>(null)
+  const [pendingReportViewer, setPendingReportViewer] = useState<{ report: ArchiveResult; dirName: string } | null>(null)
+  const dismissPendingReport = useStore((s) => s.dismissPendingReport)
 
   const handleReviewSession = useCallback((session: SessionMeta, topic: TopicMeta) => {
     const dateStr = session.date.slice(0, 10).replace(/-/g, '.')
@@ -875,6 +897,7 @@ export function StudyLibrary() {
             generatingDiagrams={generatingDiagrams}
             onGenerateDiagram={handleGenerateDiagramClick}
             pendingSessionNumbers={pendingSessionMap.get(topic.dirName)}
+            onViewPendingReport={(t) => t.pendingReport && setPendingReportViewer({ report: t.pendingReport, dirName: t.dirName })}
           />
         ))}
       </div>
@@ -946,6 +969,16 @@ export function StudyLibrary() {
         }}
         onConfirm={handleStyleConfirm}
       />
+
+      {pendingReportViewer && (
+        <ArchiveReportModal
+          result={pendingReportViewer.report}
+          onClose={() => {
+            dismissPendingReport(pendingReportViewer.dirName)
+            setPendingReportViewer(null)
+          }}
+        />
+      )}
     </div>
   )
 }

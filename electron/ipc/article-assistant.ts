@@ -185,7 +185,11 @@ export function serializeAssistantSessionBody(messages: ArticleAssistantMessage[
         m.role === 'user' && m.snapshot?.trim()
           ? `<!-- snapshot:start -->\n${m.snapshot.trim()}\n<!-- snapshot:end -->\n\n`
           : ''
-      return `## ${m.role === 'user' ? '用户' : '助手'}\n\n${selLine}${snapshotBlock}${m.content}\n`
+      const reasoningLine =
+        m.role === 'assistant' && m.reasoning?.trim()
+          ? `<!-- reasoning:start -->\n${m.reasoning.trim()}\n<!-- reasoning:end -->\n\n`
+          : ''
+      return `## ${m.role === 'user' ? '用户' : '助手'}\n\n${selLine}${snapshotBlock}${reasoningLine}${m.content}\n`
     })
     .join('\n')
 }
@@ -217,7 +221,18 @@ export function parseAssistantSessionBody(body: string): ArticleAssistantMessage
       }
       messages.push({ role: 'user', content, selection, snapshot })
     } else if (heading.startsWith('助手')) {
-      messages.push({ role: 'assistant', content })
+      let reasoning: string | undefined
+      if (content.startsWith('<!-- reasoning:start -->')) {
+        const startTagEnd = content.indexOf('\n')
+        const afterStart = content.slice(startTagEnd + 1)
+        const endIdx = afterStart.indexOf('\n<!-- reasoning:end -->')
+        if (endIdx !== -1) {
+          reasoning = afterStart.slice(0, endIdx).trim()
+          const afterEnd = afterStart.slice(endIdx + '\n<!-- reasoning:end -->'.length)
+          content = afterEnd.trim()
+        }
+      }
+      messages.push({ role: 'assistant', content, reasoning })
     }
   }
   return messages

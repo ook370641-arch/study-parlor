@@ -101,21 +101,14 @@ test.describe('@p2 writing-assistant', () => {
     })
     expect(messagesA.length).toBeGreaterThan(0)
 
-    // Select article B (分布式随笔)
+    // Select article B (分布式随笔) — selectWritingFile now resets the stale
+    // assistant session and loads B's .assistant.md (none yet) via the real path
     await selectArticle(window, '分布式随笔')
-
-    // Send message B — this replaces the writingAssistant state in the store
-    await window.evaluate(() => {
-      const store = (window as any).useStore
-      const state = store.getState()
-      if (state.writingAssistant) {
-        // Reset assistant state for the new article
-        store.setState({ writingAssistant: null })
-      }
-      // Load session for article B (may not exist yet)
-      store.getState().loadWritingAssistantSession('writing/技术笔记/分布式随笔.md')
+    // 确定性等待：writingRead 返回且旧会话已被重置（不用固定 sleep 猜 IPC 时序）
+    await window.waitForFunction(() => {
+      const s = (window as any).useStore.getState()
+      return s.writingFile?.path?.includes('分布式随笔') && !s.writingAssistant
     })
-    await window.waitForTimeout(300)
 
     await assistant.send('消息给分布式随笔')
     await assistant.waitForStreamingDone(15000)
@@ -124,27 +117,24 @@ test.describe('@p2 writing-assistant', () => {
       const state = (window as any).useStore?.getState()?.writingAssistant
       return state ? state.messages.map((m: any) => ({ role: m.role, content: m.content })) : []
     })
-    // B should have its own messages
+    // B should have its own messages, not contaminated by A's
     expect(messagesB.length).toBeGreaterThan(0)
+    expect(messagesB.some((m: any) => m.content.includes('消息给七月夜话'))).toBe(false)
 
-    // Switch back to article A and restore its session
+    // Switch back to article A — its session restores from disk via the real path
     await selectArticle(window, '七月夜话')
-    await window.waitForTimeout(500)
-
-    // Reload A's session from the .assistant.md (persisted by seedWriteTree)
-    await window.evaluate(async () => {
-      const store = (window as any).useStore
-      await store.getState().loadWritingAssistantSession('writing/随笔/七月夜话.md')
+    // 确定性等待：A 的 .assistant.md 加载完成（seed + 刚发送的一轮对话）
+    await window.waitForFunction(() => {
+      const wa = (window as any).useStore.getState().writingAssistant
+      return wa?.articlePath?.includes('七月夜话') && wa.messages.length > 0
     })
-    await window.waitForTimeout(500)
 
     // Verify A's assistant shows messages again
     const restoredMessages = await window.evaluate(() => {
       const state = (window as any).useStore?.getState()?.writingAssistant
       return state ? state.messages.map((m: any) => ({ role: m.role, content: m.content })) : []
     })
-    // After reload, we should have messages (at minimum from the seed .assistant.md)
-    expect(restoredMessages.length).toBeGreaterThan(0)
+    expect(restoredMessages.some((m: any) => m.content.includes('消息给七月夜话'))).toBe(true)
   })
 
   // ── NEW: 2. .assistant.md 跨重启恢复 ─────────────────────────────
@@ -181,18 +171,17 @@ test.describe('@p2 writing-assistant', () => {
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
     await window.waitForTimeout(1500)
 
-    // Select the article and open assistant
+    // Select the article and open assistant — selecting the file restores the
+    // persisted session from .assistant.md via the real path (selectWritingFile)
     await selectArticle(window, '七月夜话')
+    // 确定性等待：跨重启后 .assistant.md 经 selectWritingFile → loadWritingAssistantSession 恢复完成
+    await window.waitForFunction(() => {
+      const wa = (window as any).useStore?.getState()?.writingAssistant
+      return wa?.articlePath?.includes('七月夜话') && wa.messages.length > 0
+    })
 
     const assistant2 = new WritingAssistantPanel(window)
     await assistant2.open()
-
-    // Load the persisted session from .assistant.md
-    await window.evaluate(async () => {
-      const store = (window as any).useStore
-      await store.getState().loadWritingAssistantSession('writing/随笔/七月夜话.md')
-    })
-    await window.waitForTimeout(500)
 
     // Verify messages from disk are restored
     const restored = await window.evaluate(() => {

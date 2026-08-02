@@ -22,7 +22,8 @@ export function CandlelightLayer() {
   const breathAt = useStore((s) => s.candleBreathAt)
   const streaming = useStore((s) =>
     Boolean(s.assistantSession?.streaming))
-  const generating = useStore((s) => s.briefing.loading || s.jobBriefing.loading)
+  const generating = useStore((s) =>
+    s.briefingGeneration?.status === 'running' || s.jobBriefingGeneration?.status === 'running')
   const glowRef = useRef<HTMLDivElement>(null)
 
   const isAcademic = theme !== 'newspaper'

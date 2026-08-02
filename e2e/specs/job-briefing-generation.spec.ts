@@ -231,12 +231,16 @@ test.describe('@real job briefing real API', () => {
   })
 
   test('generates job briefing via real Tavily + Kimi', async ({ window, testLibraryPath }) => {
+    // 两轮检索真实管线常超过全局 180s（waitFor 本就是 600s），测试超时要与之匹配
+    test.setTimeout(600_000)
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
 
     await window.locator(SELECTORS.briefing.receiveJobButton).waitFor({ state: 'visible', timeout: 15000 })
+    // 生成前捕获日期（真实生成可能跨零点）
+    const today = localToday()
     await window.locator(SELECTORS.briefing.receiveJobButton).click()
 
     // Real API may take several minutes
@@ -248,8 +252,8 @@ test.describe('@real job briefing real API', () => {
     await expect(window.getByRole('heading', { name: '高频考察问题' })).toBeVisible()
     await expect(window.getByRole('heading', { name: '趋势解读' })).toBeVisible()
 
-    // Cache file written
-    const today = localToday()
+    // Cache file written —— today 必须在点击生成前捕获：
+    // 真实生成可能跨越零点，事后取 localToday() 会得到下一天（file 日期 ≠ today）。
     expect(fs.existsSync(path.join(testLibraryPath, '求职简报', `求职简报-${today}.md`))).toBe(true)
   })
 })

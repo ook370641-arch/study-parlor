@@ -8,7 +8,7 @@ import { loadCatalog } from '../writing-catalog'
 export type IndexEntry = { id: string; type: WritingSourceType; title: string; summary: string }
 
 /** Subdirectories inside the library root to skip during study-topic scanning. */
-const SKIP_DIRS = new Set(['writing', 'repository', '夜航简报', 'Anthropic博客', '.assets', '.git', 'node_modules'])
+const SKIP_DIRS = new Set(['writing', 'repository', '夜航简报', '求职简报', 'Anthropic博客', '.assets', '.git', 'node_modules'])
 
 /**
  * Scan the user's library and build a flat list of readable resources.
@@ -129,26 +129,39 @@ export async function buildWritingIndex(cfg: AppConfig): Promise<IndexEntry[]> {
   return entries
 }
 
-export function buildWritingSystemPrompt(index: IndexEntry[]): string {
+export function buildWritingSystemPrompt(index: IndexEntry[], searchEnabled: boolean): string {
   const catalog = index.map(e => `- [${e.type}] ${e.id} — ${e.title}：${e.summary}`).join('\n')
-  return `你是用户的写作助手，可以读取用户的学习资料和写作库来辅助写作。
+
+  const searchSection = searchEnabled
+    ? `- web_search：{"tool":"web_search","query":"搜索关键词"} — 仅在需要最新信息或事实核查时使用，不要对简单概念问询使用`
+    : ''
+
+  const maxTools = 3
+
+  return `你是用户的写作助手。你的默认行为是直接回答——只有当你确实需要查阅用户本地资料、${
+    searchEnabled ? '搜索网络最新信息、' : ''
+  }或向编辑器插入内容时，才使用工具。
 
 # 可调取资料目录
 ${catalog || '(暂无资料)'}
 
-# 工具协议
-当需要读取资料全文、搜索网络或向编辑器插入内容时，输出一个工具块：
+# 工具
+当必须使用工具时，输出一个工具块：
 
 \`\`\`tool
 {"tool":"read_local","ids":["writing:随笔/a.md"]}
 \`\`\`
 
 规则：
-- read_local：ids 必须来自上方目录的 id。ids 为空数组或 ["index"] 时返回完整目录
-- web_search：{"tool":"web_search","query":"搜索关键词"}
-- insert_into_article：{"tool":"insert_into_article","markdown":"插入内容"}，把 markdown 内容插入用户正在编辑的文章光标处，直接插入无需确认
-- 一次只输出一个工具块；工具结果会以 user 消息返回，然后你继续回答
-- 不需要工具时禁止输出工具块（直接回答）
+- read_local：ids 必须来自上方目录的 id。只在用户明确引用其已有内容时使用；禁止先用空数组查目录再读文件（两步合并为一步：直接猜最相关的 id 去读）
+${searchSection}
+- insert_into_article：{"tool":"insert_into_article","markdown":"插入内容"} — 直接插入，无需确认
+- 一次一个工具块；工具结果以 user 消息返回，你继续
+- 不需要工具时禁止输出工具块
 - 禁止编造不存在的 id
-- 单轮最多 6 次工具调用`
+- 单轮最多 ${maxTools} 次工具调用。优先直接回答
+
+# 写作规范
+- 回答使用 markdown 格式，结构清晰
+- 使用 web_search 获取的信息，必须在正文中附带来源编号 [1] [2] ...，并在末尾列出"来源"列表（含标题和完整 URL）`
 }

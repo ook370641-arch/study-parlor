@@ -53,6 +53,8 @@ export type AnthropicArticleMeta = {
   imageUrl: string | null
   isSaved?: boolean
   filePath?: string
+  /** 本地内置条目（非网络抓取），如 'constitution' 宪法可视化报告 */
+  local?: 'constitution'
 }
 
 export type AnthropicErrorCode =
@@ -211,6 +213,7 @@ export type TopicMeta = {
   last_studied: string
   last_studied_days: number
   groupId: string
+  pendingReport?: ArchiveResult
 }
 
 export type RecCard = {
@@ -298,6 +301,9 @@ export type BriefingStage =
   | 'finalizing'
   | 'done'
   | JobBriefingStage
+
+/** briefing:progress 事件的来源域，区分 digest（前沿）与 job（求职）简报 */
+export type BriefingProgressSource = 'digest' | 'job'
 
 export type BriefingSourceItem = {
   text?: string
@@ -472,7 +478,7 @@ export type StateJson = {
   terminology?: Terminology
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
-  externalSummaryFontSize?: BriefingFontSize
+  studyFontSize?: BriefingFontSize
   briefingSource?: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
   jobBriefingConfig?: JobBriefingConfig
   jobProfile?: JobProfile
@@ -538,7 +544,7 @@ export type IpcApi = {
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
   onArticleAssistantSearchDone: (cb: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void) => () => void
   onArticleAssistantReasoningChunk: (cb: (sessionId: string, text: string) => void) => () => void
-  onBriefingProgress: (cb: (stage: BriefingStage, detail?: string) => void) => () => void
+  onBriefingProgress: (cb: (source: BriefingProgressSource, stage: BriefingStage, detail?: string) => void) => () => void
   briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
   briefingList: () => Promise<{ date: string; filePath: string }[]>
   briefingDelete: (args: { filePath: string }) => Promise<{ ok: true } | { ok: false; message: string }>

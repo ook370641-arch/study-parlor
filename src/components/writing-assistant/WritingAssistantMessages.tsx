@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useStore } from '@/store'
 import type { WritingSource } from '@shared/index'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { assistantMdComponents } from '@/lib/assistant-md-components'
 
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   study: '学习',
@@ -109,9 +112,18 @@ export function WritingAssistantMessages() {
                   streaming={isLastAssistant && streaming}
                 />
               )}
-              <div className="text-sm text-parchment/90 whitespace-pre-wrap">
-                {msg.content || (isLastAssistant && streaming ? '…' : '')}
-              </div>
+              {msg.content ? (
+                <Markdown
+                  remarkPlugins={[remarkGfm]}
+                  components={assistantMdComponents}
+                >
+                  {msg.content}
+                </Markdown>
+              ) : (
+                isLastAssistant && streaming && (
+                  <div className="text-sm text-parchment/50">…</div>
+                )
+              )}
               {msg.content && !streaming && (
                 <button
                   data-testid="writing-assistant-insert-btn"

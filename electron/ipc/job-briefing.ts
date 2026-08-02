@@ -41,7 +41,7 @@ export function registerJobBriefingIpc(cfg: AppConfig, getConfig: () => JobBrief
     const sender = event.sender
     const emitProgress = (stage: string, detail?: string) => {
       if (!sender.isDestroyed()) {
-        sender.send('briefing:progress', stage, detail)
+        sender.send('briefing:progress', 'job', stage, detail)
       }
     }
 

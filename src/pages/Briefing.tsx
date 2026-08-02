@@ -65,6 +65,10 @@ export function Briefing() {
   const generateJobBriefing = useStore((s) => s.generateJobBriefing)
   const { list: jobHistoryList } = useStore((s) => s.jobBriefingHistory)
   const loadJobBriefingHistory = useStore((s) => s.loadJobBriefingHistory)
+  const digestViewingDate = useStore((s) => s.briefingViewingDate)
+  const digestGen = useStore((s) => s.briefingGeneration)
+  const jobViewingDate = useStore((s) => s.jobBriefingViewingDate)
+  const jobGen = useStore((s) => s.jobBriefingGeneration)
   const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
   const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? [])
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
@@ -79,6 +83,14 @@ export function Briefing() {
   const cancelJobBriefing = useStore((s) => s.cancelJobBriefing)
 
   const today = formatBriefingDate(new Date())
+
+  // 视图日期（null = 今天）与"正在观看后台生成"标志：生成不再占用视图桶，
+  // 生成中切换日期/来源只改 viewingDate，后台 promise 不受影响。
+  // watching 要求 confirmed（收到过真实进度事件）——缓存读的投机登记不触发仪式。
+  const digestViewDate = digestViewingDate ?? today
+  const digestWatching = digestGen?.status === 'running' && digestGen.confirmed && digestGen.date === digestViewDate
+  const jobViewDate = jobViewingDate ?? today
+  const jobWatching = jobGen?.status === 'running' && jobGen.confirmed && jobGen.date === jobViewDate
 
   // Reading finished — colophon + candle breath + mark-read
   const digestMainRef = useRef<HTMLElement>(null)
@@ -105,12 +117,13 @@ export function Briefing() {
     void markBriefingRead('job-briefing', jobResult.date)
   }, [jobFinished])
 
-  // Generation ceremony orchestration
+  // Generation ceremony orchestration — 喂 watching 而非桶 loading：
+  // 缓存查看（loading 一闪而过）不触发仪式，只有真实生成的 true→false 跳变才 fresh。
   const { phase: digestPhase, fresh: digestFresh } = useGenerationTransition(
-    `digest:${result?.date ?? today}`, loading, !!result, !!error,
+    `digest:${digestViewDate}`, digestWatching, !!result, !!error,
   )
   const { phase: jobPhase, fresh: jobFresh } = useGenerationTransition(
-    `job:${jobResult?.date ?? today}`, jobLoading, !!jobResult, !!jobError,
+    `job:${jobViewDate}`, jobWatching, !!jobResult, !!jobError,
   )
 
   // Stamp briefingArrivedAt when constellation begins its depart (F4→F5 handoff).
@@ -231,7 +244,7 @@ export function Briefing() {
               <BriefingDateColumn
                 collapsed={dateColumnCollapsed}
                 history={historyList}
-                currentDate={result?.date}
+                currentDate={digestViewDate}
                 today={today}
                 onSelect={(date) => generateBriefing(date)}
                 onReceiveToday={() => generateBriefing(today)}
@@ -258,7 +271,7 @@ export function Briefing() {
               <BriefingDateColumn
                 collapsed={dateColumnCollapsed}
                 history={jobHistoryList}
-                currentDate={jobResult?.date}
+                currentDate={jobViewDate}
                 today={today}
                 onSelect={(date) => generateJobBriefing(date)}
                 onReceiveToday={() => generateJobBriefing(today)}
@@ -363,7 +376,7 @@ export function Briefing() {
                   <div className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
                     <BriefingError
                       code={jobError}
-                      onRetry={() => generateJobBriefing(today, { force: true })}
+                      onRetry={() => generateJobBriefing(jobViewDate, { force: true })}
                     />
                   </div>
                 </main>
@@ -459,7 +472,7 @@ export function Briefing() {
                 <div className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
                   <BriefingError
                     code={error}
-                    onRetry={() => generateBriefing(today, { force: true })}
+                    onRetry={() => generateBriefing(digestViewDate, { force: true })}
                   />
                 </div>
               </main>

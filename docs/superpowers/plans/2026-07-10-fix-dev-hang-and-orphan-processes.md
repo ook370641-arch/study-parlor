@@ -16,6 +16,8 @@
 | 2026-07-19 | 第四次 | Task 11：optimizeDeps 覆盖懒加载链 + warmup 全页面 + 主进程 dev 外部化 + LoadingScreen 守卫 | 消除 re-optimization 整页 reload（棕色闪屏 + 二次加载）；主进程构建 15.5s → 0.4s |
 | 2026-07-19 | 第五次 | Task 12：看门狗 HMR 误报修复 + 输出英文化 + Fast Refresh 组件导出规范 | 区分「HMR 原地重挂载」与「异常重复」；GBK 终端不再乱码 |
 | 2026-07-19 | 第六次 | Task 13：启动健康 E2E（dev-server 模式断言 + 负向验证） | 启动回归从「人看日志」变为自动化断言，调试闭环 |
+| 2026-07-28 | 第七次 | Task 14：消除 `spawn` DEP0190 弃用警告 | dev 日志不再出现 Node 安全警告 |
+| 2026-07-30 | 第八次 | Task 15：系统 I/O 导致首次加载偶发 28s，终端提示指向 Windows Defender 排除项 | 再次出现 `ALL resources slow` 时，开发者可自助定位修复 |
 
 ---
 
@@ -362,6 +364,109 @@ npm run test   # 67 files, 491 tests 全过（无回归）
 **相关提交：** 本次工作树改动（startup-health.spec.ts、process-cleanup.ts、main.ts `E2E_STARTUP_WATCHDOG` 开关、CLAUDE.md、e2e/README.md、build-dev.md §10）
 
 **对修订历史的影响：** 已追加第六行。
+
+---
+
+### Task 14 (2026-07-28) — 消除 `spawn` DEP0190 弃用警告
+
+**问题描述：** 每次 `npm run dev` 终端都出现：
+
+```
+(node:10932) [DEP0190] DeprecationWarning: Passing args to a child process
+with shell option true can lead to security vulnerabilities, as the arguments
+are not escaped, only concatenated.
+```
+
+**根因分析：** `scripts/dev.js:135` 调用 `spawn('electron-vite', args, { shell: true })`——Node.js 21+ 弃用了在 `shell: true` 时以数组传参的方式。当 `shell: true` 时，Node 将 args 数组直接拼接为字符串传给 shell，不做转义——特殊字符可能被 shell 误解析。此处的 `args`（`process.argv.slice(2)`，即 `['dev']`）来自 CLI，无不可信输入，安全风险低，但警告在每次启动时都会出现。
+
+Task 1–8 中约定 `shell: true` 是 Windows 必需（解析 `node_modules/.bin` shim），不能移除。不会误杀说明 `shell: true` 的进程追踪机制正确。
+
+**修复方案：**
+
+- **Step 14.1: 改用单字符串传参**
+  - 文件：`scripts/dev.js`
+  - 改动：`spawn('electron-vite', args, { shell: true })` → `spawn(['electron-vite', ...args].join(' '), { shell: true })`
+  - 原因：Node 仅在「数组 + `shell: true`」组合时触发 DEP0190；传单字符串不触发。等效功能，零行为变化
+
+**验证：**
+
+```bash
+npm run dev
+# 预期：终端不再出现 DEP0190 警告；preflight、构建、启动健康摘要均正常
+```
+
+**相关提交：** 本次改动（`scripts/dev.js`）
+
+**对修订历史的影响：** 已追加第七行。
+
+---
+
+### Task 15 (2026-07-30) — 系统 I/O 导致首次加载偶发 28s，看门狗提示指向 Windows Defender
+
+**问题描述：** 一次正常 `npm run dev` 中，启动极慢：
+
+```
+[bootstrap] renderer did-finish-load [+29079ms]
+[startup-watchdog] [WARN] first renderer load took 28.9s (threshold 8s)
+[renderer] startup hint: ALL resources slow → likely system I/O (antivirus, disk)
+[renderer] startup slow: deps/react.js (6354ms, 1KB)
+[renderer] startup slow: deps/react-dom_client.js (7058ms, 1KB)
+[renderer] startup slow: src/main.tsx (16363ms, 5KB)
+```
+
+同时主进程构建也退化到 9.43s（正常约 0.4s）。
+
+**根因分析：**
+
+1. **Deps 缓存重建（一次性成本）**：日志出现 `Re-optimizing dependencies because vite config has changed`，说明 `electron.vite.config.ts` 有变更，Vite 按设计使 `node_modules/.vite/deps` 失效并重建。
+2. **系统 I/O 极慢（主因）**：`startup resources` 显示源文件和 dep chunk **同时**慢，1KB 文件加载 6-7 秒。这是典型的系统级 I/O 瓶颈，最常见于 **Windows Defender 实时保护扫描 Vite 输出的每个文件**；也可能是冷磁盘缓存、CPU 降频。
+
+Task 10/11 的代码层优化（SWC、warmup、optimizeDeps、主进程外部化）已经全部到位；剩下的变量是 OS 层 I/O，代码无法消除，但看门狗可以把它解释清楚。
+
+**修复方案：**
+
+- **Step 15.1: 让终端提示直接 actionable**
+  - 文件：`src/lib/startup-diag.ts`
+  - 改动：`"ALL resources slow"` 提示从 `likely system I/O (antivirus, disk)` 扩展为显式指出 `"antivirus/Windows Defender"`，并给出最快修复路径 `"add this project folder to Windows Defender exclusions, then rerun npm run dev"`，附本文档 Task 15 链接
+  - 原因：下次再遇到同样症状，开发者不需要排查，10 秒内就能看到具体修复动作
+
+- **Step 15.2: 看门狗慢加载警告同步更新**
+  - 文件：`electron/lib/startup-watchdog.ts`
+  - 改动：慢加载指引中的 `"ALL resources slow"` 行同样指向 Windows Defender 排除项；参考文档链接追加 `Task 15`
+  - 原因：保持 `startup-diag.ts` 与 `startup-watchdog.ts` 两处提示一致，避免指引分裂
+
+- **Step 15.3: 将本 failure mode 写入长期跟踪文档**
+  - 文件：`docs/superpowers/plans/2026-07-10-fix-dev-hang-and-orphan-processes.md`
+  - 改动：追加 Task 15，并更新顶部修订历史表
+  - 原因：这是启动优化文档的唯一长期入口，未来任何同类问题都应从这里开始排查
+
+**验证：**
+
+```bash
+# 1. 确认代码改动不破坏看门狗行为
+npx vitest run tests/startup-watchdog.test.ts
+
+# 2. 正常 dev 启动应恢复快速（<3s 首屏）
+npm run dev
+# 预期：[bootstrap] renderer did-finish-load [+0000~3000ms]
+#      [startup-watchdog] verdict: HEALTHY
+
+# 3. 若不幸再次遇到 ALL resources slow，按终端提示执行：
+#    Windows 安全中心 → 病毒和威胁防护 → 管理设置 → 排除项 →
+#    添加文件夹 → 选择 study-parlor 项目根目录，然后重新 npm run dev
+```
+
+**对"下次是否还会慢"的覆盖说明：**
+
+- **不改 vite 配置的日常 dev**：`node_modules/.vite/deps` 保持温热，启动应保持本次修复后的快速水平（~1s 主进程构建、~1s 首屏加载）。
+- **修改 `electron.vite.config.ts` 后**：Vite 仍会重建 deps 缓存（设计如此），但如果系统 I/O 正常，重建只会慢几秒，不会回到 28s。
+- **Windows Defender 再次发癫**：仍可能慢，但终端现在会直接告诉你去加排除项，不需要再猜。
+
+**相关提交：** 本次改动（`src/lib/startup-diag.ts`、`electron/lib/startup-watchdog.ts`、本文档 Task 15）
+
+**后续记录：** 2026-08-01 再次出现 `ALL resources slow`（首屏 12s），确认为同一 failure mode；已将 `C:\Users\86468\Desktop\project\study-parlor` 加入 Windows Defender 排除项。
+
+**对修订历史的影响：** 已追加第八行。
 
 ---
 

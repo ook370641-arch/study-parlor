@@ -30,7 +30,7 @@ export function SurfaceBackground({ surface }: Props) {
   const [settledUrl, setSettledUrl] = useState<string | null>(painting?.url ?? null)
   const [outgoingUrl, setOutgoingUrl] = useState<string | null>(null)
   const [incomingUrl, setIncomingUrl] = useState<string | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timer = useRef<number | null>(null)
 
   useEffect(() => {
     if (!painting) return

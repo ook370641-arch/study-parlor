@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { probeModel, chatNonStream, parseSseChunk, buildChatBody } from '@electron/lib/kimi'
+import { probeModel, chatNonStream, chatStream, parseSseChunk, buildChatBody } from '@electron/lib/kimi'
 
 const cfg = {
   apiKey: 'sk-test',
@@ -195,6 +195,42 @@ describe('parseSseChunk reasoning', () => {
   it('ignores [DONE] and malformed lines', () => {
     expect(parseSseChunk('data: [DONE]')).toEqual({ kind: 'done' })
     expect(parseSseChunk('data: {not json')).toEqual({ kind: 'noop' })
+  })
+})
+
+describe('chatStream reasoning dispatch', () => {
+  function sseBody(lines: string[]): ReadableStream<Uint8Array> {
+    const encoder = new TextEncoder()
+    return new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const l of lines) controller.enqueue(encoder.encode(l + '\n'))
+        controller.close()
+      },
+    })
+  }
+
+  it('dispatches each reasoning delta exactly once', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      body: sseBody([
+        'data: {"choices":[{"delta":{"reasoning_content":"先想"}}]}',
+        'data: {"choices":[{"delta":{"reasoning_content":"再想"}}]}',
+        'data: {"choices":[{"delta":{"content":"答"}}]}',
+        'data: [DONE]',
+      ]),
+    })) as any)
+
+    const reasoning: string[] = []
+    const chunks: string[] = []
+    await chatStream(
+      cfg,
+      { messages: [{ role: 'user', content: 'q' }], temperature: 0.7, signal: new AbortController().signal },
+      (t) => chunks.push(t),
+      (t) => reasoning.push(t),
+    )
+    expect(reasoning).toEqual(['先想', '再想'])
+    expect(chunks.join('')).toBe('答')
   })
 })
 

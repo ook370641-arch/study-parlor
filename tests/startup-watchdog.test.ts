@@ -95,7 +95,7 @@ describe('startup-watchdog', () => {
     watchdog.onDidFinishLoad()
     const text = lines.join('\n')
     expect(text).toContain('first renderer load took 14.0s')
-    expect(text).toContain('cold transform too slow')
+    expect(text).toContain('startup resources')
   })
 
   it('boot stall: alert after 30s without boot:complete; none when boot completes', () => {
