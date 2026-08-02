@@ -220,29 +220,53 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                   <h1 data-testid="anthropic-reader-title" className={`text-3xl font-serif leading-tight mb-4 ${themeClasses.title}`}>
                     {frontmatter.title}
                   </h1>
-                  <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${themeClasses.meta}`}>
-                    {frontmatter.source_url && (
-                      <button
-                        type="button"
-                        onClick={() => ipc.openExternal(frontmatter.source_url!)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-colors ${themeClasses.pillBorder} ${themeClasses.pillBg} ${themeClasses.link} ${themeClasses.pillHover}`}
-                      >
-                        <span>Anthropic Engineering</span>
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M7 17L17 7M17 7H9M17 7V15" />
-                        </svg>
-                      </button>
-                    )}
-                    {frontmatter.published_at && (
-                      <span>发布：{formatDate(frontmatter.published_at)}</span>
-                    )}
-                    {frontmatter.imported_at && (
-                      <span>导入：{formatDate(frontmatter.imported_at)}</span>
-                    )}
-                    {frontmatter.authors && frontmatter.authors.length > 0 && (
-                      <span>作者：{frontmatter.authors.join(', ')}</span>
-                    )}
-                  </div>
+                  {frontmatter.type === 'web-article' ? (
+                    <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${themeClasses.meta}`}>
+                      {frontmatter.source_name && frontmatter.source_url && (
+                        <a
+                          href={frontmatter.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-colors ${themeClasses.pillBorder} ${themeClasses.pillBg} ${themeClasses.link} ${themeClasses.pillHover}`}
+                        >
+                          <span>{frontmatter.source_name}</span>
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M7 17L17 7M17 7H9M17 7V15" />
+                          </svg>
+                        </a>
+                      )}
+                      {frontmatter.published_at && (
+                        <span>{formatDate(frontmatter.published_at)}</span>
+                      )}
+                      {frontmatter.authors && frontmatter.authors.length > 0 && (
+                        <span>作者：{frontmatter.authors.join(', ')}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${themeClasses.meta}`}>
+                      {frontmatter.source_url && (
+                        <button
+                          type="button"
+                          onClick={() => ipc.openExternal(frontmatter.source_url!)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-colors ${themeClasses.pillBorder} ${themeClasses.pillBg} ${themeClasses.link} ${themeClasses.pillHover}`}
+                        >
+                          <span>Anthropic Engineering</span>
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M7 17L17 7M17 7H9M17 7V15" />
+                          </svg>
+                        </button>
+                      )}
+                      {frontmatter.published_at && (
+                        <span>发布：{formatDate(frontmatter.published_at)}</span>
+                      )}
+                      {frontmatter.imported_at && (
+                        <span>导入：{formatDate(frontmatter.imported_at)}</span>
+                      )}
+                      {frontmatter.authors && frontmatter.authors.length > 0 && (
+                        <span>作者：{frontmatter.authors.join(', ')}</span>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-4 flex items-center gap-2">
                     <TransferToWritingButton
                       name={frontmatter.title ?? 'article'}
