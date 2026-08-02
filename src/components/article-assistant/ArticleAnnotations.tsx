@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { flushSync } from 'react-dom'
 import { ipc } from '@/lib/ipc'
-import type { ArticleAnnotation, BriefingTheme } from '@shared/index'
+import { ANNOTATION_NOTE_SIZES, ANNOTATION_UI_SIZES } from '@/lib/briefing-font-size'
+import type { ArticleAnnotation, BriefingTheme, BriefingFontSize } from '@shared/index'
 
 interface Props {
   articlePath: string
   articleRef: React.RefObject<HTMLElement | null>
   theme?: BriefingTheme
+  briefingFontSize: BriefingFontSize
 }
 
 interface GhostData {
@@ -16,8 +18,10 @@ interface GhostData {
   top: number
 }
 
-export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic' }: Props) {
+export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic', briefingFontSize }: Props) {
   const isAcademic = theme !== 'newspaper'
+  const noteSize = ANNOTATION_NOTE_SIZES[briefingFontSize]
+  const uiSize = ANNOTATION_UI_SIZES[briefingFontSize]
   const [annotations, setAnnotations] = useState<ArticleAnnotation[]>([])
   const [openAnnoId, setOpenAnnoId] = useState<string | null>(null)
   const [ghost, setGhost] = useState<GhostData | null>(null)
@@ -127,7 +131,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       pen.style.border = '1.5px solid #d97757'
       pen.style.zIndex = '3'
       pen.style.transition = 'transform 0.15s, background 0.15s'
-      pen.style.fontSize = '11px'
+      pen.style.fontSize = uiSize.pen
       pen.style.lineHeight = '1'
       if (anno.note) {
         pen.style.background = '#d97757'
@@ -531,7 +535,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
             background: isAcademic ? '#2a1f1a' : '#f5f2ed',
             borderRadius: '50%',
             border: '1.5px solid #d97757',
-            fontSize: '11px',
+            fontSize: uiSize.pen,
             lineHeight: '1',
             color: '#d97757',
             animation: 'ghostPulse 0.7s ease-in-out infinite alternate',
@@ -576,7 +580,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
             }}
           />
 
-          <div style={{ fontSize: '10px', letterSpacing: '0.15em', color: cardBorder, marginBottom: '6px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: uiSize.small, letterSpacing: '0.15em', color: cardBorder, marginBottom: '6px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>🖊️ 备注</span>
           </div>
 
@@ -593,7 +597,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
               border: 'none',
               outline: 'none',
               color: cardText,
-              fontSize: '13px',
+              fontSize: noteSize,
               fontStyle: 'italic',
               lineHeight: '1.6',
               fontFamily: 'Georgia, serif',
@@ -605,7 +609,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
             }}
           />
 
-          <div style={{ marginTop: '8px', fontSize: '10px', color: cardMuted, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ marginTop: '8px', fontSize: uiSize.small, color: cardMuted, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>{openAnno.createdAt ? `${openAnno.createdAt} · §${openAnno.paragraphIndex}` : '新备注'}</span>
             <button
               data-testid="anno-save-button"
@@ -616,7 +620,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
                 background: cardBorder,
                 border: 'none',
                 color: '#fff',
-                fontSize: '10px',
+                fontSize: uiSize.small,
                 padding: '3px 12px',
                 borderRadius: '3px',
                 cursor: 'pointer',
@@ -634,7 +638,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
                   background: 'none',
                   border: '1px solid rgba(180,80,80,0.3)',
                   color: '#a06060',
-                  fontSize: '10px',
+                  fontSize: uiSize.small,
                   padding: '2px 8px',
                   borderRadius: '3px',
                   cursor: 'pointer',

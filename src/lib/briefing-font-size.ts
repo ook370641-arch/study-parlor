@@ -90,6 +90,29 @@ export const WRITING_UI_STYLES: Record<BriefingFontSize, string> = {
 
 export const WRITING_UI_QUOTE_SIZES: Record<BriefingFontSize, string> = { ...BRIEFING_QUOTE_SIZES }
 
+/**
+ * 旁注正文字号：与页面正文大小相同。
+ * 随 briefingFontSize 全局调配。
+ */
+export const ANNOTATION_NOTE_SIZES: Record<BriefingFontSize, string> = {
+  sm: '17px', base: '19px', lg: '21px', xl: '23px', '2xl': '25px',
+  '3xl': '27px', '4xl': '29px', '5xl': '31px', '6xl': '33px', '7xl': '35px',
+}
+
+/** 旁注 UI 元素（笔图标、按钮、标签）：比旁注正文再小一档，温和缩放。 */
+export const ANNOTATION_UI_SIZES: Record<BriefingFontSize, { pen: string; small: string }> = {
+  sm: { pen: '10px', small: '9px' },
+  base: { pen: '12px', small: '10px' },
+  lg: { pen: '13px', small: '11px' },
+  xl: { pen: '14px', small: '12px' },
+  '2xl': { pen: '15px', small: '13px' },
+  '3xl': { pen: '16px', small: '14px' },
+  '4xl': { pen: '17px', small: '15px' },
+  '5xl': { pen: '18px', small: '16px' },
+  '6xl': { pen: '19px', small: '17px' },
+  '7xl': { pen: '20px', small: '18px' },
+}
+
 export function nextFontSize(current: BriefingFontSize): BriefingFontSize {
   const idx = BRIEFING_FONT_SIZES.indexOf(current)
   return BRIEFING_FONT_SIZES[Math.min(idx + 1, BRIEFING_FONT_SIZES.length - 1)]

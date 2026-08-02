@@ -48,14 +48,14 @@ describe('ArticleAnnotations marker scheduling', () => {
     const ref = { current: container as HTMLElement }
     const walkerSpy = vi.spyOn(document, 'createTreeWalker')
 
-    const { rerender } = render(<ArticleAnnotations articlePath="/x.md" articleRef={ref} />)
+    const { rerender } = render(<ArticleAnnotations articlePath="/x.md" articleRef={ref} briefingFontSize="lg" />)
     await flushLoad()
     expect(container.querySelector('.anno-wrap')).not.toBeNull()
     const scansAfterLoad = walkerSpy.mock.calls.length
     expect(scansAfterLoad).toBeGreaterThan(0)
 
-    rerender(<ArticleAnnotations articlePath="/x.md" articleRef={ref} />)
-    rerender(<ArticleAnnotations articlePath="/x.md" articleRef={ref} />)
+    rerender(<ArticleAnnotations articlePath="/x.md" articleRef={ref} briefingFontSize="lg" />)
+    rerender(<ArticleAnnotations articlePath="/x.md" articleRef={ref} briefingFontSize="lg" />)
     await act(async () => { await new Promise((r) => setTimeout(r, 250)) })
     expect(walkerSpy.mock.calls.length).toBe(scansAfterLoad)
     walkerSpy.mockRestore()
@@ -64,7 +64,7 @@ describe('ArticleAnnotations marker scheduling', () => {
   it('re-applies markers after the article DOM is replaced imperatively', async () => {
     const container = makeContainer()
     const ref = { current: container as HTMLElement }
-    render(<ArticleAnnotations articlePath="/x.md" articleRef={ref} />)
+    render(<ArticleAnnotations articlePath="/x.md" articleRef={ref} briefingFontSize="lg" />)
     await flushLoad()
     expect(container.querySelector('.anno-wrap')).not.toBeNull()
 

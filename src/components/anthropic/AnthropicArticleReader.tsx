@@ -277,7 +277,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                       sourcePath={filePath}
                       theme={theme}
                     />
-                    <AnnotationListButton articlePath={filePath} theme={theme} />
+                    <AnnotationListButton articlePath={filePath} theme={theme} briefingFontSize={fontSize} />
                   </div>
                   {frontmatter.summary && (
                     <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
@@ -312,6 +312,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                     articlePath={filePath}
                     articleRef={articleBodyRef}
                     theme={theme}
+                    briefingFontSize={fontSize}
                   />
                 )}
               </>

@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { ipc } from '@/lib/ipc'
-import type { ArticleAnnotation } from '@shared/index'
+import { ANNOTATION_UI_SIZES } from '@/lib/briefing-font-size'
+import type { ArticleAnnotation, BriefingFontSize } from '@shared/index'
 
 interface Props {
   articlePath: string
   theme?: 'academic' | 'newspaper'
+  briefingFontSize: BriefingFontSize
 }
 
-export function AnnotationListButton({ articlePath, theme = 'academic' }: Props) {
+export function AnnotationListButton({ articlePath, theme = 'academic', briefingFontSize }: Props) {
+  const uiSize = ANNOTATION_UI_SIZES[briefingFontSize]
   const [open, setOpen] = useState(false)
   const [annotations, setAnnotations] = useState<ArticleAnnotation[]>([])
   const isAcademic = theme !== 'newspaper'
@@ -41,7 +44,8 @@ export function AnnotationListButton({ articlePath, theme = 'academic' }: Props)
       <button
         data-testid="annotation-list-button"
         onClick={() => { const next = !open; setOpen(next); if (next) void load() }}
-        className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+        style={{ fontSize: uiSize.small }}
+        className={`px-3 py-1 rounded-full border transition-colors ${
           isAcademic
             ? 'border-parchment/30 text-parchment/70 hover:text-parchment hover:border-ember/60'
             : 'border-[#1a1a1a]/30 text-[#6b5d52] hover:text-[#1a1a1a] hover:border-[#1a1a1a]/60'
@@ -62,7 +66,8 @@ export function AnnotationListButton({ articlePath, theme = 'academic' }: Props)
               data-testid="annotation-list-item"
               data-anno-id={a.id}
               onClick={() => jumpTo(a.id)}
-              className={`w-full text-left rounded px-2 py-1.5 text-xs transition-colors ${
+              style={{ fontSize: uiSize.small }}
+              className={`w-full text-left rounded px-2 py-1.5 transition-colors ${
                 isAcademic ? 'text-parchment/80 hover:bg-parchment/10' : 'text-[#1a1a1a] hover:bg-[#f5f2ed]'
               }`}
             >

@@ -44,6 +44,7 @@ export function NewspaperBriefingLayout({
   const articleBodyRef = useRef<HTMLElement>(null!)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const briefingFontSize = useStore((s) => s.briefingFontSize)
   const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
 
   return (
@@ -75,7 +76,7 @@ export function NewspaperBriefingLayout({
                 sourcePath={filePath}
                 theme="newspaper"
               />
-              <AnnotationListButton articlePath={filePath} theme="newspaper" />
+              <AnnotationListButton articlePath={filePath} theme="newspaper" briefingFontSize={briefingFontSize} />
             </div>
           )}
         </header>
@@ -138,6 +139,7 @@ export function NewspaperBriefingLayout({
           articlePath={filePath}
           articleRef={articleBodyRef}
           theme="newspaper"
+          briefingFontSize={briefingFontSize}
         />
       )}
     </main>

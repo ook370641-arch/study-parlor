@@ -48,6 +48,7 @@ export function AcademicBriefingLayout({
   const articleBodyRef = useRef<HTMLDivElement>(null!)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const briefingFontSize = useStore((s) => s.briefingFontSize)
   const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
 
   useEffect(() => {
@@ -100,7 +101,7 @@ export function AcademicBriefingLayout({
                 sourcePath={filePath}
                 theme="academic"
               />
-              <AnnotationListButton articlePath={filePath} theme="academic" />
+              <AnnotationListButton articlePath={filePath} theme="academic" briefingFontSize={briefingFontSize} />
             </div>
           )}
         </header>
@@ -163,6 +164,7 @@ export function AcademicBriefingLayout({
           articlePath={filePath}
           articleRef={articleBodyRef}
           theme="academic"
+          briefingFontSize={briefingFontSize}
         />
       )}
     </main>
