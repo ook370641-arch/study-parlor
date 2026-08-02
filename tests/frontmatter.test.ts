@@ -198,3 +198,27 @@ parent_type: briefing
     expect(out).not.toContain('progress_summary:')
   })
 })
+
+describe('web-article frontmatter', () => {
+  it('serializes and parses web-article ext fields', () => {
+    const raw = serializeFrontmatter('web-article', {
+      title: 'The Second Half',
+      type: 'web-article',
+      created: '2025-04-10T00:00:00.000Z',
+      tags: ['拾贝'],
+      source_url: 'https://ysymyth.github.io/The-Second-Half/',
+      source_name: 'ysymyth.github.io',
+      published_at: '2025-04-10T00:00:00.000Z',
+      imported_at: '2026-08-02T00:00:00.000Z',
+      authors: ['Shunyu Yao'],
+      summary: 'AI 进入下半场',
+    }, '# The Second Half\n\n正文')
+    const { frontmatter, body } = parseFrontmatter(raw, { filename: 'The Second Half.md' })
+    expect(frontmatter.type).toBe('web-article')
+    expect(frontmatter.source_url).toBe('https://ysymyth.github.io/The-Second-Half/')
+    expect(frontmatter.source_name).toBe('ysymyth.github.io')
+    expect(frontmatter.authors).toEqual(['Shunyu Yao'])
+    expect(frontmatter.summary).toBe('AI 进入下半场')
+    expect(body).toContain('正文')
+  })
+})

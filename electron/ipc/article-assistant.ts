@@ -241,7 +241,7 @@ export function parseAssistantSessionBody(body: string): ArticleAssistantMessage
 export function registerArticleAssistantIpc(cfg: AppConfig) {
   ipcMain.handle(
     'articleAssistant:generateGuide',
-    async (_, args: { articleContent: string; articleType: 'briefing' | 'anthropic-article'; articleTitle?: string }) => {
+    async (_, args: { articleContent: string; articleType: 'briefing' | 'anthropic-article' | 'web-article'; articleTitle?: string }) => {
       // E2E deterministic mock: return a fixed valid guide without calling the LLM.
       if (isE2EMock()) {
         const mockGuide: ArticleAssistantGuide = {
@@ -311,7 +311,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       _,
       args: {
         parentPath: string
-        parentType: 'briefing' | 'anthropic-article' | 'writing'
+        parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
         messages: ArticleAssistantMessage[]
       }
     ): Promise<{ filePath: string }> => {
@@ -361,7 +361,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:readSession',
     async (
       _,
-      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' }
+      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' | 'web-article' }
     ): Promise<ArticleAssistantSessionFile | null> => {
       const sessionPath = sessionPathFor(args.parentPath, cfg.libraryPath)
       if (!fs.existsSync(sessionPath)) return null
@@ -390,7 +390,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       args: {
         sessionId: string
         articleContent: string
-        articleType: 'briefing' | 'anthropic-article'
+        articleType: 'briefing' | 'anthropic-article' | 'web-article'
         messages: ArticleAssistantMessage[]
         annotations?: ArticleAnnotation[]
         selection?: string
@@ -558,7 +558,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:writeGuide',
     async (
       _,
-      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article'; guide: ArticleAssistantGuide }
+      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' | 'web-article'; guide: ArticleAssistantGuide }
     ): Promise<{ filePath: string }> => {
       const parsed = path.parse(resolveParentPath(args.parentPath, cfg.libraryPath))
       const guidePath = guidePathFor(args.parentPath, cfg.libraryPath)
@@ -594,7 +594,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:readGuide',
     async (
       _,
-      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' }
+      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' | 'web-article' }
     ): Promise<ArticleAssistantGuideFile | null> => {
       const guidePath = guidePathFor(args.parentPath, cfg.libraryPath)
       if (!fs.existsSync(guidePath)) return null

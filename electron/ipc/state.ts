@@ -36,6 +36,8 @@ const DEFAULT: StateJson = {
   lastWritingFile: null,
   writingOrder: {},
   writingUIFontSize: 'base',
+  scoutTab: 'chat',
+  scoutActiveConversationId: null,
 }
 
 let currentState: StateJson | null = null

@@ -24,7 +24,7 @@ import type { Painting } from '@shared/index'
 
 export type AssistantSession = {
   contextId: string
-  contextType: 'briefing' | 'anthropic-article'
+  contextType: 'briefing' | 'anthropic-article' | 'web-article'
   articleTitle?: string
   articleContent: string
   guide: ArticleAssistantGuide | null
@@ -309,7 +309,7 @@ type AppStore = {
   assistantThinkingEffort: AssistantThinkingEffort
   toggleAssistantSocratic: () => void
   cycleAssistantThinkingEffort: () => void
-  openAssistantSession: (args: { contextId: string; contextType: 'briefing' | 'anthropic-article'; articleTitle?: string; articleContent: string; autoGenerateGuide?: boolean }) => void
+  openAssistantSession: (args: { contextId: string; contextType: 'briefing' | 'anthropic-article' | 'web-article'; articleTitle?: string; articleContent: string; autoGenerateGuide?: boolean }) => void
   closeAssistantSession: () => void
   toggleAssistantOpen: () => void
   toggleAssistantSearch: () => void

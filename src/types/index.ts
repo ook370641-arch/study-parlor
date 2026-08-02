@@ -142,7 +142,7 @@ export type ArticleAnnotation = {
   updatedAt: string
 }
 
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'article-assistant' | 'job-briefing' | 'writing'
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'web-article' | 'article-assistant' | 'job-briefing' | 'writing'
 
 export type Profile = {
   name: string
@@ -168,11 +168,12 @@ export type Frontmatter = {
   sources?: SearchSource[]
   topic?: string
   source_url?: string
+  source_name?: string
   published_at?: string
   imported_at?: string
   authors?: string[]
   parent_path?: string
-  parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing' | 'writing'
+  parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing' | 'writing' | 'web-article'
   generated_at?: string
   role_keywords?: string[]
   cities?: string[]
@@ -479,7 +480,7 @@ export type StateJson = {
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
   studyFontSize?: BriefingFontSize
-  briefingSource?: 'digest' | 'anthropic' | 'job-briefing' | 'writing'
+  briefingSource?: 'digest' | 'anthropic' | 'job-briefing' | 'writing' | 'scout'
   jobBriefingConfig?: JobBriefingConfig
   jobProfile?: JobProfile
   anthropicBlogCache?: AnthropicBlogCache
@@ -492,6 +493,8 @@ export type StateJson = {
   writingFontSize?: BriefingFontSize
   writingTone?: WritingTone
   writingListTab?: 'articles' | 'repository'
+  scoutTab?: 'chat' | 'articles'
+  scoutActiveConversationId?: string | null
   writingAssistantWidth?: number
   writingAssistantOpen?: boolean
   lastWritingFile?: string | null
@@ -642,14 +645,14 @@ export type IpcApi = {
   // Article assistant
   articleAssistantGenerateGuide: (args: {
     articleContent: string
-    articleType: 'briefing' | 'anthropic-article'
+    articleType: 'briefing' | 'anthropic-article' | 'web-article'
     articleTitle?: string
   }) => Promise<ArticleAssistantGuide>
 
   articleAssistantSendMessage: (args: {
     sessionId: string
     articleContent: string
-    articleType: 'briefing' | 'anthropic-article'
+    articleType: 'briefing' | 'anthropic-article' | 'web-article'
     messages: ArticleAssistantMessage[]
     annotations?: ArticleAnnotation[]
     selection?: string
@@ -663,23 +666,23 @@ export type IpcApi = {
 
   articleAssistantReadSession: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article' | 'writing'
+    parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
   }) => Promise<ArticleAssistantSessionFile | null>
 
   articleAssistantWriteSession: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article' | 'writing'
+    parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
     messages: ArticleAssistantMessage[]
   }) => Promise<{ filePath: string }>
 
   articleAssistantReadGuide: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article' | 'writing'
+    parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
   }) => Promise<ArticleAssistantGuideFile | null>
 
   articleAssistantWriteGuide: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article' | 'writing'
+    parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
     guide: ArticleAssistantGuide
   }) => Promise<{ filePath: string }>
 
@@ -727,6 +730,18 @@ export type IpcApi = {
   writingAssistantAbort: (a: { sessionId: string }) => Promise<void>
   onWritingAssistantTool: (cb: (e: WritingToolEvent) => void) => () => void
   onWritingAssistantReasoningChunk: (cb: (sessionId: string, text: string) => void) => () => void
+
+  // Scout (拾贝)
+  scoutSendMessage: (a: { conversationId: string; messages: ScoutMessage[] }) => Promise<void>
+  scoutAbort: (a: { conversationId: string }) => Promise<void>
+  scoutListConversations: () => Promise<ScoutConversationMeta[]>
+  scoutCreateConversation: () => Promise<ScoutConversation>
+  scoutGetConversation: (a: { id: string }) => Promise<ScoutConversation | null>
+  scoutRenameConversation: (a: { id: string; title: string }) => Promise<{ ok: true } | { ok: false; message: string }>
+  scoutDeleteConversation: (a: { id: string }) => Promise<{ ok: true } | { ok: false; message: string }>
+  scoutListArticles: () => Promise<ScoutArticleMeta[]>
+  scoutDeleteArticle: (a: { filePath: string }) => Promise<{ ok: true } | { ok: false; message: string }>
+  onScoutTool: (cb: (e: ScoutToolEvent) => void) => () => void
 }
 
 export type Painting = {
@@ -737,6 +752,57 @@ export type Painting = {
   url: string
   category?: string
 }
+
+// --- 拾贝（Scout）来源 ---
+export type ScoutErrorCode =
+  | 'NETWORK_ERROR'
+  | 'TAVILY_ERROR'
+  | 'FETCH_BLOCKED'
+  | 'NO_CONTENT'
+  | 'LLM_ERROR'
+
+export type ScoutCandidate = {
+  title: string
+  url: string
+  sourceName: string
+  reason: string
+  fetchable?: boolean      // 预检结果；undefined = 未检
+  failReason?: string
+}
+
+export type ScoutMessage = {
+  role: 'user' | 'assistant'
+  content: string
+  candidates?: ScoutCandidate[]   // assistant 消息附带的候选卡片
+  candidatesResolved?: boolean
+}
+
+export type ScoutConversationMeta = {
+  id: string
+  title: string
+  createdAt: string
+  updatedAt: string
+  filePath: string
+}
+
+export type ScoutConversation = ScoutConversationMeta & {
+  messages: ScoutMessage[]
+}
+
+export type ScoutArticleMeta = {
+  url: string
+  title: string
+  summary: string | null
+  publishedAt: string | null
+  sourceName: string | null
+  filePath: string
+}
+
+export type ScoutToolEvent =
+  | { conversationId: string; phase: 'start' | 'done'; tool: 'web_search'; query: string }
+  | { conversationId: string; phase: 'candidates'; candidates: ScoutCandidate[] }
+  | { conversationId: string; phase: 'start' | 'done'; tool: 'fetch_and_save'; urls: string[]; savedTitles?: string[] }
+  | { conversationId: string; phase: 'start' | 'done'; tool: 'read_article'; url: string }
 
 declare global {
   interface Window {

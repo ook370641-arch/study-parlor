@@ -5,7 +5,7 @@ import { ChatWindow } from './ChatWindow'
 import { ArticleDivider } from './ArticleDivider'
 
 interface Props {
-  articleType: 'briefing' | 'anthropic-article'
+  articleType: 'briefing' | 'anthropic-article' | 'web-article'
   parentPath: string
   articleTitle?: string
   articleContent: string

@@ -284,7 +284,7 @@ export function registerFilesIpc(cfg: AppConfig) {
 
     const results: TopicMeta[] = []
     for (const td of topicDirs) {
-      if (['writing', 'repository', '夜航简报', '求职简报', 'Anthropic博客'].includes(td)) continue
+      if (['writing', 'repository', '夜航简报', '求职简报', 'Anthropic博客', '拾贝'].includes(td)) continue
       const topicPath = path.join(root, td)
       try {
         const meta = getTopicMeta(topicPath)
