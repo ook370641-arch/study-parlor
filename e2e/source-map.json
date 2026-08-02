@@ -141,6 +141,17 @@
         "generation-ceremony.spec.ts"
       ]
     },
+    "scout": {
+      "sources": [
+        "src/components/scout/**",
+        "src/components/article/**",
+        "electron/lib/scout/**",
+        "electron/ipc/scout.ts"
+      ],
+      "specs": [
+        "scout-*.spec.ts"
+      ]
+    },
     "types-state": {
       "sources": [
         "src/types/index.ts",

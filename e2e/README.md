@@ -67,6 +67,7 @@ e2e/
 │   ├── briefing-real-generation.spec.ts
 │   ├── briefing-ux-optimization.spec.ts
 │   ├── briefing.spec.ts
+│   ├── scout-source.spec.ts          (来源 spec: docs/superpowers/specs/2026-08-02-scout-source-design.md, mock 链路, @p1)
 │   ├── writing-list-column.spec.ts    (来源 spec: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md §K, mock 链路, @p2)
 │   ├── smoke.spec.ts
 │   ├── new-topic-progress.spec.ts

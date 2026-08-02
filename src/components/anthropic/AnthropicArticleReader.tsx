@@ -68,6 +68,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const setAnthropicReaderContent = useStore((s) => s.setAnthropicReaderContent)
+  const setScoutReaderContent = useStore((s) => s.setScoutReaderContent)
   const fontSize = useStore((s) => s.briefingFontSize)
   const increaseFontSize = useStore((s) => s.increaseBriefingFontSize)
   const decreaseFontSize = useStore((s) => s.decreaseBriefingFontSize)
@@ -104,6 +105,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   useEffect(() => {
     if (!loading && frontmatter && body) {
       setAnthropicReaderContent({ body, title: frontmatter.title ?? null })
+      setScoutReaderContent({ body, title: frontmatter.title ?? null })
     }
   }, [loading, frontmatter, body, setAnthropicReaderContent])
 

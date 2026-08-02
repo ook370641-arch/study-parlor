@@ -455,6 +455,8 @@ const BASE_STATE = {
   terminology: {},
   briefingSource: 'digest',
   briefingStageDetail: null,
+  scoutTab: 'chat',
+  scoutActiveConversationId: null,
   jobBriefingStageDetail: null,
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
   anthropicBlogLastSeenAt: null,
