@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ipc } from '@/lib/ipc'
 import { attachAssistantSessionListeners } from '@/lib/assistant-session-runtime'
 import { attachWritingAssistantListeners } from '@/lib/writing-assistant-runtime'
+import { initScoutRuntime } from '@/lib/scout-runtime'
 
 // Lazy-load pages to reduce Vite dev-server first-page transform cost.
 // All 7 pages + their dependency trees were eagerly parsed on startup, but the
@@ -55,6 +56,7 @@ export function App() {
   // Attach article assistant streaming listeners once globally
   useEffect(() => { attachAssistantSessionListeners() }, [])
   useEffect(() => { attachWritingAssistantListeners() }, [])
+  useEffect(() => { initScoutRuntime() }, [])
 
   // After boot, prefetch the common page chunks during idle. Pages are
   // React.lazy (see below) wrapped in <Suspense fallback={null}>, so the first
