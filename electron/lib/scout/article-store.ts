@@ -9,7 +9,7 @@ export const SCOUT_DIR = '拾贝'
 const ARTICLES_SUBDIR = '文章'
 
 export function safeFileName(title: string): string {
-  return title.replace(/[\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 120)
+  return title.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 120)
 }
 
 function monthFolder(iso: string | null): string {
@@ -72,7 +72,6 @@ export function saveArticle(
     imported_at: new Date().toISOString(),
     authors: fetched.authors.length > 0 ? fetched.authors : undefined,
     summary: fetched.summary || undefined,
-    description: fetched.summary || undefined,
   }, fetched.markdown)
 
   fs.writeFileSync(filePath, raw, 'utf8')

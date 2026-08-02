@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { saveArticle, listArticles, deleteArticle, findSavedByUrl, SCOUT_DIR } from '../electron/lib/scout/article-store'
+import { saveArticle, safeFileName, listArticles, deleteArticle, findSavedByUrl, SCOUT_DIR } from '../electron/lib/scout/article-store'
 import type { FetchedArticle } from '../electron/lib/scout/article-fetcher'
 
 let root: string
@@ -58,6 +58,22 @@ describe('scout article-store', () => {
     expect(deleteArticle(root, r.filePath)).toEqual({ ok: true })
     expect(fs.existsSync(r.filePath)).toBe(false)
     expect(deleteArticle(root, 'C:/Windows/evil.md').ok).toBe(false)
+  })
+
+  it('safeFileName escapes backslash and Windows unsafe chars', () => {
+    expect(safeFileName('test\\file')).toBe('test_file')
+    expect(safeFileName('a/b:c*d?e"f<g>h|i')).toBe('a_b_c_d_e_f_g_h_i')
+    expect(safeFileName('  spaces  ')).toBe('spaces')
+  })
+
+  it('saveArticle does not write description frontmatter', () => {
+    const r = saveArticle(root, fetched())
+    const raw = fs.readFileSync(r.filePath, 'utf8')
+    // 确认 frontmatter 里没有 description: 字段
+    const fmBlock = raw.split('---')[1] ?? ''
+    expect(fmBlock).not.toMatch(/^description:/m)
+    // summary 仍然存在
+    expect(fmBlock).toMatch(/^summary:/m)
   })
 
   it('listArticles 容错：损坏文件跳过不抛', () => {
