@@ -20,7 +20,7 @@ import type { ScoutMessage, ScoutToolEvent } from '@shared/index'
 const scoutSessions = new Map<string, AbortController>()
 
 function isE2EMock(): boolean {
-  return process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
+  return process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR && process.env.E2E_SCOUT_DISABLE_MOCK !== '1'
 }
 
 export function registerScoutIpc(cfg: AppConfig): void {
@@ -39,23 +39,35 @@ export function registerScoutIpc(cfg: AppConfig): void {
         try {
           const lastUser = args.messages.filter(m => m.role === 'user').at(-1)?.content ?? ''
           if (/^抓取/.test(lastUser)) {
-            // User confirmed fetch: write two fixture articles
+            // User confirmed fetch: parse URLs from message content.
+            // Message format from confirmScoutCandidates:
+            //   "抓取以下候选：\n1. https://example.com/article-0\n2. ..."
+            const urlsInMsg = lastUser.match(/https?:\/\/\S+/g) ?? []
             const { saveArticle } = await import('../lib/scout/article-store')
-            for (const [i, title] of ['ReAct 原文', 'The Second Half'].entries()) {
-              saveArticle(cfg.libraryPath, {
-                url: `https://example.com/article-${i}`,
-                title,
-                markdown: `# ${title}\n\nE2E 正文`,
-                summary: `${title} 摘要`,
-                publishedAt: '2026-08-01T00:00:00.000Z',
-                authors: [],
-                tier: 1,
-              })
+            const allCandidates: [number, string][] = [[0, 'ReAct 原文'], [1, 'The Second Half']]
+            const savedTitles: string[] = []
+            for (const [i, title] of allCandidates) {
+              const url = `https://example.com/article-${i}`
+              if (urlsInMsg.length === 0 || urlsInMsg.includes(url)) {
+                saveArticle(cfg.libraryPath, {
+                  url,
+                  title,
+                  markdown: `# ${title}\n\nE2E 正文`,
+                  summary: `${title} 摘要`,
+                  publishedAt: '2026-08-01T00:00:00.000Z',
+                  authors: [],
+                  tier: 1,
+                })
+                savedTitles.push(title)
+              }
             }
             send('scout:tool', { conversationId: args.conversationId, phase: 'start', tool: 'fetch_and_save', urls: [] })
-            send('scout:tool', { conversationId: args.conversationId, phase: 'done', tool: 'fetch_and_save', urls: [], savedTitles: ['ReAct 原文', 'The Second Half'] })
-            send('llm:chunk', args.conversationId, '两篇都已入库，去「文章」Tab 查看。')
+            send('scout:tool', { conversationId: args.conversationId, phase: 'done', tool: 'fetch_and_save', urls: [], savedTitles })
+            send('llm:chunk', args.conversationId, `${savedTitles.length} 篇已入库，去「文章」Tab 查看。`)
           } else {
+            // Small delay so E2E abort-during-streaming tests have a window to click abort.
+            await new Promise(r => setTimeout(r, 300))
+            if (ctl.signal.aborted) return
             send('llm:chunk', args.conversationId, '我找到了两篇候选：')
             send('scout:tool', {
               conversationId: args.conversationId,
@@ -67,7 +79,7 @@ export function registerScoutIpc(cfg: AppConfig): void {
             })
             send('llm:chunk', args.conversationId, '确认后我就抓取。')
           }
-          send('llm:done', args.conversationId)
+          if (!ctl.signal.aborted) send('llm:done', args.conversationId)
         } finally {
           scoutSessions.delete(args.conversationId)
         }
