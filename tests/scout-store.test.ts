@@ -90,6 +90,32 @@ describe('scout store slice', () => {
     expect(mockIpc.scoutSendMessage).toHaveBeenCalledWith(expect.objectContaining({ conversationId: 'c1' }))
   })
 
+  it('sendScoutMessage while streaming aborts previous and sends new', async () => {
+    mockIpc.scoutAbort.mockResolvedValue(undefined)
+    mockIpc.scoutSendMessage.mockResolvedValue(undefined)
+    useStore.setState({
+      scoutActiveConversationId: 'c1',
+      scoutMessages: [{ role: 'user', content: 'first' }],
+      scoutStreaming: true,
+    })
+    await useStore.getState().sendScoutMessage('second')
+    expect(mockIpc.scoutAbort).toHaveBeenCalledWith({ conversationId: 'c1' })
+    expect(useStore.getState().scoutMessages).toHaveLength(2)
+    expect(useStore.getState().scoutMessages[1].content).toBe('second')
+    expect(mockIpc.scoutSendMessage).toHaveBeenCalledWith(expect.objectContaining({ conversationId: 'c1' }))
+  })
+
+  it('sendScoutMessage surfaces error as assistant message', async () => {
+    mockIpc.scoutSendMessage.mockRejectedValue(new Error('network down'))
+    useStore.setState({ scoutActiveConversationId: 'c1', scoutMessages: [] })
+    await useStore.getState().sendScoutMessage('hello')
+    const msgs = useStore.getState().scoutMessages
+    expect(msgs).toHaveLength(2)
+    expect(msgs[0]).toEqual({ role: 'user', content: 'hello' })
+    expect(msgs[1]).toEqual({ role: 'assistant', content: '请求失败：network down' })
+    expect(useStore.getState().scoutStreaming).toBe(false)
+  })
+
   it('deleteScoutArticle 关闭打开的 reader 并刷新列表', async () => {
     mockIpc.scoutDeleteArticle.mockResolvedValue({ ok: true })
     mockIpc.scoutListArticles.mockResolvedValue([])

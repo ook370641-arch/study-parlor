@@ -1355,11 +1355,18 @@ export const useStore = create<AppStore>((set, get) => ({
 
   sendScoutMessage: async (content) => {
     const id = get().scoutActiveConversationId
-    if (!id || get().scoutStreaming) return
+    if (!id) return
+    if (get().scoutStreaming) {
+      await ipc.scoutAbort({ conversationId: id })
+    }
     const messages: ScoutMessage[] = [...get().scoutMessages, { role: 'user', content }]
     set({ scoutMessages: messages, scoutStreaming: true })
     try {
       await ipc.scoutSendMessage({ conversationId: id, messages })
+    } catch (err) {
+      set(state => ({
+        scoutMessages: [...state.scoutMessages, { role: 'assistant', content: `请求失败：${(err as Error).message}` }]
+      }))
     } finally {
       set({ scoutStreaming: false })
     }

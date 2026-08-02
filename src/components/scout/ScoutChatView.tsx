@@ -29,7 +29,7 @@ export function ScoutChatView({ theme = 'academic' }: { theme?: BriefingTheme })
 
   const submit = () => {
     const v = input.trim()
-    if (!v || streaming) return
+    if (!v) return
     setInput('')
     void sendMessage(v)
   }
