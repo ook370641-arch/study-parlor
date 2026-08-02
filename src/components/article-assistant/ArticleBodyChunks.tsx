@@ -48,7 +48,14 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
             className={`rounded-r-lg border-l-4 pl-4 py-2 transition-colors cursor-pointer ${borderColor} ${isActive ? 'bg-ember/5' : ''}`}
             onMouseEnter={() => hasHeading && onChunkEnter?.(guideIndex)}
             onMouseLeave={() => onChunkLeave?.()}
-            onClick={() => hasHeading && onChunkClick?.(guideIndex)}
+            onClick={() => {
+              if (!hasHeading) return
+              // 仅纯点击（无选区）触发导读定位；拖拽选字后 click 也会触发，
+              // 此时选区仍在，跳过导航让旁注系统接管
+              const sel = window.getSelection()
+              if (sel && !sel.isCollapsed) return
+              onChunkClick?.(guideIndex)
+            }}
           >
             {chunk.heading && (
               <div data-testid="article-chunk-plaque" className="flex items-center gap-2 mb-2">
