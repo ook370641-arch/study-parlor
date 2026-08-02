@@ -16,6 +16,7 @@ import type {
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent,
+  ScoutConversationMeta, ScoutMessage, ScoutArticleMeta,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -168,6 +169,31 @@ type AppStore = {
   closeConstitutionReport: () => void
   setAnthropicReaderContent: (content: { body: string | null; title: string | null }) => void
   deleteAnthropicArticle: (filePath: string) => Promise<void>
+
+  // --- 拾贝（Scout）---
+  scoutTab: 'chat' | 'articles'
+  scoutConversations: ScoutConversationMeta[]
+  scoutActiveConversationId: string | null
+  scoutMessages: ScoutMessage[]
+  scoutStreaming: boolean
+  scoutArticles: ScoutArticleMeta[]
+  scoutReaderFilePath: string | null
+  scoutReaderBody: string | null
+  scoutReaderTitle: string | null
+  setScoutTab: (tab: 'chat' | 'articles') => Promise<void>
+  initScout: () => Promise<void>
+  createScoutConversation: () => Promise<void>
+  selectScoutConversation: (id: string) => Promise<void>
+  renameScoutConversation: (id: string, title: string) => Promise<void>
+  deleteScoutConversation: (id: string) => Promise<void>
+  sendScoutMessage: (content: string) => Promise<void>
+  abortScout: () => Promise<void>
+  confirmScoutCandidates: (urls: string[]) => Promise<void>
+  openScoutReader: (filePath: string) => void
+  closeScoutReader: () => void
+  setScoutReaderContent: (content: { body: string | null; title: string | null }) => void
+  deleteScoutArticle: (filePath: string) => Promise<void>
+
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
   loadBriefingHistory: () => Promise<void>
   deleteBriefings: (filePaths: string[]) => Promise<void>
@@ -472,6 +498,15 @@ export const useStore = create<AppStore>((set, get) => ({
   anthropicReaderTitle: null,
   anthropicBlogLastSeenAt: null,
   constitutionReportOpen: false,
+  scoutTab: 'chat',
+  scoutConversations: [],
+  scoutActiveConversationId: null,
+  scoutMessages: [],
+  scoutStreaming: false,
+  scoutArticles: [],
+  scoutReaderFilePath: null,
+  scoutReaderBody: null,
+  scoutReaderTitle: null,
   jobBriefing: { result: null, loading: false, error: null },
   jobBriefingViewingDate: null,
   jobBriefingGeneration: null,
@@ -518,6 +553,8 @@ export const useStore = create<AppStore>((set, get) => ({
       },
       studyFontSize: normalizeStudyFontSize(state.studyFontSize),
       briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' || state.briefingSource === 'writing' || state.briefingSource === 'scout' ? state.briefingSource : 'digest',
+      scoutTab: state.scoutTab === 'articles' ? 'articles' : 'chat',
+      scoutActiveConversationId: state.scoutActiveConversationId ?? null,
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null }
         : { lastFetchedAt: null, articles: [], loading: false, error: null },
@@ -1267,6 +1304,97 @@ export const useStore = create<AppStore>((set, get) => ({
     if (get().anthropicReaderFilePath === filePath) {
       get().closeAnthropicReader()
     }
+  },
+
+  // --- 拾贝（Scout）actions ---
+  setScoutTab: async (tab) => {
+    set({ scoutTab: tab })
+    await ipc.patchState({ scoutTab: tab } as Partial<StateJson>)
+    if (tab === 'articles') {
+      const articles = await ipc.scoutListArticles()
+      set({ scoutArticles: articles })
+    }
+  },
+
+  initScout: async () => {
+    const [conversations, articles] = await Promise.all([ipc.scoutListConversations(), ipc.scoutListArticles()])
+    set({ scoutConversations: conversations, scoutArticles: articles })
+  },
+
+  createScoutConversation: async () => {
+    const conv = await ipc.scoutCreateConversation()
+    const conversations = await ipc.scoutListConversations()
+    set({ scoutConversations: conversations, scoutActiveConversationId: conv.id, scoutMessages: [] })
+    await ipc.patchState({ scoutActiveConversationId: conv.id } as Partial<StateJson>)
+  },
+
+  selectScoutConversation: async (id) => {
+    const conv = await ipc.scoutGetConversation({ id })
+    if (!conv) return
+    set({ scoutActiveConversationId: id, scoutMessages: conv.messages })
+    await ipc.patchState({ scoutActiveConversationId: id } as Partial<StateJson>)
+  },
+
+  renameScoutConversation: async (id, title) => {
+    const r = await ipc.scoutRenameConversation({ id, title })
+    if (!r.ok) { get().showToast(r.message); return }
+    const conversations = await ipc.scoutListConversations()
+    set({ scoutConversations: conversations })
+  },
+
+  deleteScoutConversation: async (id) => {
+    const r = await ipc.scoutDeleteConversation({ id })
+    if (!r.ok) { get().showToast(r.message); return }
+    const conversations = await ipc.scoutListConversations()
+    set((s) => ({
+      scoutConversations: conversations,
+      scoutActiveConversationId: s.scoutActiveConversationId === id ? null : s.scoutActiveConversationId,
+      scoutMessages: s.scoutActiveConversationId === id ? [] : s.scoutMessages,
+    }))
+  },
+
+  sendScoutMessage: async (content) => {
+    const id = get().scoutActiveConversationId
+    if (!id || get().scoutStreaming) return
+    const messages: ScoutMessage[] = [...get().scoutMessages, { role: 'user', content }]
+    set({ scoutMessages: messages, scoutStreaming: true })
+    try {
+      await ipc.scoutSendMessage({ conversationId: id, messages })
+    } finally {
+      set({ scoutStreaming: false })
+    }
+  },
+
+  abortScout: async () => {
+    const id = get().scoutActiveConversationId
+    if (!id) return
+    await ipc.scoutAbort({ conversationId: id })
+    set({ scoutStreaming: false })
+  },
+
+  confirmScoutCandidates: async (urls) => {
+    const messages = get().scoutMessages.map((m, i, arr) =>
+      i === arr.length - 1 && m.candidates ? { ...m, candidatesResolved: true } : m
+    )
+    set({ scoutMessages: messages })
+    const lines = urls.map((u, i) => `${i + 1}. ${u}`).join('\n')
+    await get().sendScoutMessage(`抓取以下候选：\n${lines}`)
+  },
+
+  openScoutReader: (filePath) => set({ scoutReaderFilePath: filePath }),
+  closeScoutReader: () => set({ scoutReaderFilePath: null, scoutReaderBody: null, scoutReaderTitle: null }),
+  setScoutReaderContent: ({ body, title }) => set({ scoutReaderBody: body, scoutReaderTitle: title }),
+
+  deleteScoutArticle: async (filePath) => {
+    const r = await ipc.scoutDeleteArticle({ filePath })
+    if (!r.ok) { get().showToast(r.message); return }
+    const articles = await ipc.scoutListArticles()
+    set((s) => ({
+      scoutArticles: articles,
+      scoutReaderFilePath: s.scoutReaderFilePath === filePath ? null : s.scoutReaderFilePath,
+      scoutReaderBody: s.scoutReaderFilePath === filePath ? null : s.scoutReaderBody,
+      scoutReaderTitle: s.scoutReaderFilePath === filePath ? null : s.scoutReaderTitle,
+    }))
   },
 
   resetSession: () => set({ session: null, currentPage: 'home', externalMaterials: null, isExternalSummaryOpen: false }),
