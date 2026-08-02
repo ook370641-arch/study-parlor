@@ -23,6 +23,7 @@ export function JobAssistantPanel({ articlePath, articleTitle, articleContent }:
   const toggleAssistantSocratic = useStore((s) => s.toggleAssistantSocratic)
   const cycleAssistantThinkingEffort = useStore((s) => s.cycleAssistantThinkingEffort)
   const setAssistantSelection = useStore((s) => s.setAssistantSelection)
+  const briefingFontSize = useStore((s) => s.briefingFontSize)
 
   const [open, setOpen] = useState(false)
   const [width, setWidth] = useState(320)
@@ -119,7 +120,7 @@ export function JobAssistantPanel({ articlePath, articleTitle, articleContent }:
                   选中简报内容后打开面板，或直接输入问题
                 </div>
               )}
-              <ChatMessageList messages={session?.messages ?? []} streaming={streaming} />
+              <ChatMessageList messages={session?.messages ?? []} streaming={streaming} briefingFontSize={briefingFontSize} />
               {streaming && !session?.searchLoading && (
                 <div className="text-xs text-parchment/50 animate-pulse">思考中…</div>
               )}

@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useStore } from '@/store'
 import type { WritingSource } from '@shared/index'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { assistantMdComponents } from '@/lib/assistant-md-components'
+import { createAssistantMdComponents } from '@/lib/assistant-md-components'
 
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   study: '学习',
@@ -51,6 +51,8 @@ export function WritingAssistantMessages() {
   const assistant = useStore((s) => s.writingAssistant)
   const error = useStore((s) => s.writingAssistant?.error ?? null)
   const retryWritingAssistantMessage = useStore((s) => s.retryWritingAssistantMessage)
+  const briefingFontSize = useStore((s) => s.briefingFontSize)
+  const mdComponents = useMemo(() => createAssistantMdComponents(briefingFontSize), [briefingFontSize])
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const messages = assistant?.messages ?? []
@@ -115,7 +117,7 @@ export function WritingAssistantMessages() {
               {msg.content ? (
                 <Markdown
                   remarkPlugins={[remarkGfm]}
-                  components={assistantMdComponents}
+                  components={mdComponents}
                 >
                   {msg.content}
                 </Markdown>

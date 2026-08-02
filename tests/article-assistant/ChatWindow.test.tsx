@@ -47,6 +47,7 @@ function mockStore(session: AssistantSession | null, globals: Record<string, unk
     assistantSearchEnabled: false,
     assistantSocraticMode: true,
     assistantThinkingEffort: 'off' as const,
+    briefingFontSize: 'base' as const,
     ...globals,
     ...actions,
   }

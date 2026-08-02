@@ -1,15 +1,19 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import type { ArticleAssistantMessage } from '@shared/index'
-import { assistantMdComponents } from '@/lib/assistant-md-components'
+import type { ArticleAssistantMessage, BriefingFontSize } from '@shared/index'
+import { createAssistantMdComponents } from '@/lib/assistant-md-components'
+import { ANNOTATION_UI_SIZES } from '@/lib/briefing-font-size'
 
 interface Props {
   messages: ArticleAssistantMessage[]
   streaming: boolean
+  briefingFontSize: BriefingFontSize
 }
 
-export const ChatMessageList = memo(function ChatMessageList({ messages, streaming }: Props) {
+export const ChatMessageList = memo(function ChatMessageList({ messages, streaming, briefingFontSize }: Props) {
+  const mdComponents = useMemo(() => createAssistantMdComponents(briefingFontSize), [briefingFontSize])
+  const uiSmall = ANNOTATION_UI_SIZES[briefingFontSize].small
   return (
     <>
       {messages.map((m, i) => (
@@ -27,7 +31,8 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, streami
             {m.role === 'user' && m.selection && (
               <div
                 data-testid="chat-message-selection"
-                className="text-xs border-l-2 border-parchment/40 bg-parchment/5 p-1.5 mb-1 text-parchment/60 rounded-r"
+                className="border-l-2 border-parchment/40 bg-parchment/5 p-1.5 mb-1 text-parchment/60 rounded-r"
+                style={{ fontSize: uiSmall }}
               >
                 "{m.selection}"
               </div>
@@ -38,13 +43,13 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, streami
                 open={streaming && i === messages.length - 1}
                 className="mb-1"
               >
-                <summary className="text-[11px] text-parchment/40 cursor-pointer select-none">思考过程</summary>
-                <div className="text-xs text-parchment/50 whitespace-pre-wrap mt-1">{m.reasoning}</div>
+                <summary className="text-parchment/40 cursor-pointer select-none" style={{ fontSize: uiSmall }}>思考过程</summary>
+                <div className="text-parchment/50 whitespace-pre-wrap mt-1" style={{ fontSize: uiSmall }}>{m.reasoning}</div>
               </details>
             )}
             {m.role === 'assistant' ? (
               m.content ? (
-                <Markdown remarkPlugins={[remarkGfm]} components={assistantMdComponents}>
+                <Markdown remarkPlugins={[remarkGfm]} components={mdComponents}>
                   {m.content}
                 </Markdown>
               ) : (
@@ -54,7 +59,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, streami
               m.content
             )}
             {m.searchSources && m.searchSources.length > 0 && (
-              <div className="text-[11px] text-parchment/50 mt-1">已搜索 {m.searchSources.length} 个来源</div>
+              <div className="text-parchment/50 mt-1" style={{ fontSize: uiSmall }}>已搜索 {m.searchSources.length} 个来源</div>
             )}
           </div>
         </div>
