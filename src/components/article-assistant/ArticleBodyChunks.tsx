@@ -45,20 +45,20 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
             key={i}
             data-testid="article-body-chunk"
             data-chunk-index={hasHeading ? guideIndex : undefined}
-            className={`rounded-r-lg border-l-4 pl-4 py-2 transition-colors cursor-pointer ${borderColor} ${isActive ? 'bg-ember/5' : ''}`}
+            className={`rounded-r-lg border-l-4 pl-4 py-2 transition-colors ${borderColor} ${isActive ? 'bg-ember/5' : ''}`}
             onMouseEnter={() => hasHeading && onChunkEnter?.(guideIndex)}
             onMouseLeave={() => onChunkLeave?.()}
-            onClick={() => {
-              if (!hasHeading) return
-              // 仅纯点击（无选区）触发导读定位；拖拽选字后 click 也会触发，
-              // 此时选区仍在，跳过导航让旁注系统接管
-              const sel = window.getSelection()
-              if (sel && !sel.isCollapsed) return
-              onChunkClick?.(guideIndex)
-            }}
           >
             {chunk.heading && (
-              <div data-testid="article-chunk-plaque" className="flex items-center gap-2 mb-2">
+              <div
+                data-testid="article-chunk-plaque"
+                className="flex items-center gap-2 mb-2 cursor-pointer select-none"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onChunkClick?.(guideIndex)
+                }}
+                title="点击定位到导读对应章节"
+              >
                 <span className="text-ember text-sm leading-none">
                   ❧<span className="text-xs align-top">{headingIndex}</span>
                 </span>
