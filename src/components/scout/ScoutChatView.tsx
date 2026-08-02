@@ -11,12 +11,28 @@ export function ScoutChatView({ theme = 'academic' }: { theme?: BriefingTheme })
   const abort = useStore((s) => s.abortScout)
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const userScrolledUpRef = useRef(false)
   const isAcademic = theme !== 'newspaper'
   const muted = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
-  }, [messages])
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+      userScrolledUpRef.current = distance > 80
+    }
+    el.addEventListener('scroll', onScroll)
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (!scrollRef.current) return
+    const el = scrollRef.current
+    if (!userScrolledUpRef.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: streaming ? 'auto' : 'smooth' })
+    }
+  }, [messages, streaming])
 
   if (!activeId) {
     return (
@@ -39,6 +55,7 @@ export function ScoutChatView({ theme = 'academic' }: { theme?: BriefingTheme })
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((m, i) => (
           <div key={i}>
+            <div className="text-[10px] text-parchment/40 mb-0.5">{m.role === 'user' ? '你' : '拾贝'}</div>
             <div
               data-testid={`scout-message-${m.role}`}
               className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
@@ -46,13 +63,16 @@ export function ScoutChatView({ theme = 'academic' }: { theme?: BriefingTheme })
                   ? isAcademic ? 'ml-auto bg-ember/15 text-parchment' : 'ml-auto bg-[#1a1a1a]/10 text-[#1a1a1a]'
                   : isAcademic ? 'bg-parchment/8 text-parchment/90' : 'bg-white text-[#1a1a1a] border border-[#c9c3b8]'
               }`}
-            >{m.content}</div>
+            ><span className="font-serif">{m.content}</span></div>
             {m.role === 'assistant' && m.candidates && (
               <ScoutCandidateCards message={m} theme={theme} />
             )}
           </div>
         ))}
-        {streaming && <div className={`text-xs animate-pulse ${muted}`}>拾贝工作中...</div>}
+        {streaming && <div className={`text-xs flex items-center gap-2 ${muted}`}>
+              <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin align-middle" />
+              <span className="animate-pulse">拾贝工作中…</span>
+            </div>}
       </div>
       <div className={`p-3 border-t flex gap-2 shrink-0 ${isAcademic ? 'border-parchment/15' : 'border-[#c9c3b8]'}`}>
         <textarea

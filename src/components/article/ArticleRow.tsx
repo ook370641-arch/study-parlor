@@ -35,7 +35,7 @@ export const ArticleRow = memo(function ArticleRow({
       {isNew && (
         <span data-testid="article-row-new-badge" className="absolute top-2 right-2 min-w-[18px] px-1 py-0.5 rounded-full text-[10px] text-center bg-ember text-white">新</span>
       )}
-      <p className={`text-sm font-serif leading-snug pr-6 ${titleCls}`}>{title}</p>
+      <p data-testid="article-row-title" className={`text-sm font-serif leading-snug pr-6 ${titleCls}`}>{title}</p>
       {summary && <p className={`mt-1 text-xs line-clamp-2 ${muted}`}>{summary}</p>}
       <p className={`mt-1.5 text-[10px] ${muted}`}>{sourceName ? `${sourceName} · ` : ''}{dateText}</p>
       {onRequestDelete && (
@@ -45,7 +45,7 @@ export const ArticleRow = memo(function ArticleRow({
           aria-label="删除文章"
           onClick={(e) => { e.stopPropagation(); onRequestDelete() }}
           className={`absolute bottom-2 right-2 text-xs opacity-0 group-hover:opacity-100 hover:text-wine ${muted}`}
-        >🗑</button>
+        ><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
       )}
     </div>
   )

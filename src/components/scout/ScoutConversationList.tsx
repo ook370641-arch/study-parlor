@@ -59,7 +59,7 @@ export function ScoutConversationList({ theme = 'academic' }: { theme?: Briefing
                 onBlur={() => submitRename(c.id)}
                 onKeyDown={(e) => { if (e.key === 'Enter') submitRename(c.id); if (e.key === 'Escape') setEditingId(null) }}
                 onClick={(e) => e.stopPropagation()}
-                className={`flex-1 min-w-0 bg-transparent border-b outline-none text-xs ${isAcademic ? 'border-ember/50 text-parchment' : 'border-[#1a1a1a]/50 text-[#1a1a1a]'}`}
+                className={`flex-1 min-w-0 rounded px-1.5 py-0.5 border outline-none text-xs ${isAcademic ? 'bg-parchment/10 border-ember/30 text-parchment' : 'bg-[#f5f3ef] border-ember/30 text-[#1a1a1a]'}`}
               />
             ) : (
               <span
@@ -74,7 +74,7 @@ export function ScoutConversationList({ theme = 'academic' }: { theme?: Briefing
               aria-label="删除对话"
               onClick={(e) => { e.stopPropagation(); setPendingDelete(c) }}
               className="opacity-0 group-hover:opacity-100 text-[10px] hover:text-wine shrink-0"
-            >✕</button>
+            ><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
           </div>
         ))}
       </div>

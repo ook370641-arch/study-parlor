@@ -23,14 +23,14 @@ export function ScoutListColumn({ theme = 'academic' }: { theme?: BriefingTheme 
           <button
             key={t}
             role="tab"
-            aria-pressed={tab === t}
+            aria-selected={tab === t}
             data-testid={t === 'chat' ? 'scout-tab-chat' : 'scout-tab-articles'}
             onClick={() => void setTab(t)}
             className={`flex-1 py-1.5 transition-colors ${
               tab === t ? (isAcademic ? 'bg-ember/20 text-ember' : 'bg-[#1a1a1a] text-white') : tabIdle
             }`}
           >
-            {t === 'chat' ? '💬 聊天' : '📄 文章'}
+            {t === 'chat' ? '聊天' : '文章'}
           </button>
         ))}
       </div>

@@ -21,6 +21,7 @@ const storeState: any = {
   confirmScoutCandidates: vi.fn(),
   openScoutReader: vi.fn(),
   briefingFontSize: 'base',
+  currentPaintings: { briefing: { url: '', title: '', artist: '' } },
 }
 vi.mock('@/store', () => ({ useStore: (sel: any) => sel(storeState) }))
 vi.mock('@/lib/ipc', () => ({ ipc: {} }))
