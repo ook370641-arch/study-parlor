@@ -85,7 +85,7 @@ export function registerScoutIpc(cfg: AppConfig): void {
           {
             messages: args.messages,
             onChunk: (t) => send('llm:chunk', args.conversationId, t),
-            onReasoning: (t) => send('scout:reasoningChunk', args.conversationId, t),
+            onReasoning: () => {},
             signal: ctl.signal,
           },
           {
