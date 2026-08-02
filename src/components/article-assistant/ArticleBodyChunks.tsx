@@ -33,8 +33,10 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
     <div className="space-y-6">
       {articleChunks.map((chunk, i) => {
         const hasHeading = !!chunk.heading
+        // guideIndex maps to guide.chunks[N]: 引言(无标题)不参与同步，❧1↔§0, ❧2↔§1, ...
+        const guideIndex = hasHeading ? headingIndex : -1
         if (hasHeading) headingIndex++
-        const isActive = activeChunkIndex === i
+        const isActive = activeChunkIndex === guideIndex
         const borderColor = isAcademic
           ? isActive ? 'border-ember' : 'border-parchment/20'
           : isActive ? 'border-ember' : 'border-[#1a1a1a]/10'
@@ -42,11 +44,11 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
           <section
             key={i}
             data-testid="article-body-chunk"
-            data-chunk-index={i}
+            data-chunk-index={hasHeading ? guideIndex : undefined}
             className={`rounded-r-lg border-l-4 pl-4 py-2 transition-colors cursor-pointer ${borderColor} ${isActive ? 'bg-ember/5' : ''}`}
-            onMouseEnter={() => onChunkEnter?.(i)}
+            onMouseEnter={() => hasHeading && onChunkEnter?.(guideIndex)}
             onMouseLeave={() => onChunkLeave?.()}
-            onClick={() => onChunkClick?.(i)}
+            onClick={() => hasHeading && onChunkClick?.(guideIndex)}
           >
             {chunk.heading && (
               <div data-testid="article-chunk-plaque" className="flex items-center gap-2 mb-2">
