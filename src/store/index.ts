@@ -356,6 +356,8 @@ type AppStore = {
   setArticleAssistantGuideWidth: (width: number) => void
   setArticleAssistantGuideCollapsed: (collapsed: boolean) => void
   setAssistantActiveChunk: (index: number | null) => void
+  guideScrollToChunkIndex: number | null
+  setGuideScrollToChunk: (index: number | null) => void
   persistAssistantState: () => Promise<void>
   generateAssistantGuide: () => Promise<void>
 
@@ -519,6 +521,7 @@ export const useStore = create<AppStore>((set, get) => ({
   assistantThinkingEffort: 'off',
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
+  guideScrollToChunkIndex: null,
   writingTree: null,
   writingFile: null,
   writingError: null,
@@ -1911,6 +1914,9 @@ export const useStore = create<AppStore>((set, get) => ({
     const s = get().assistantSession
     if (!s) return
     set({ assistantSession: { ...s, activeChunkIndex: index } })
+  },
+  setGuideScrollToChunk: (index) => {
+    set({ guideScrollToChunkIndex: index })
   },
   persistAssistantState: async () => {
     const s = get().assistantSession

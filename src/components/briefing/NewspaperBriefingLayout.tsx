@@ -10,6 +10,7 @@ import { BriefingSourceCard } from './BriefingSourceCard'
 import { BriefingMetaLine } from './BriefingMetaLine'
 import { TransferToWritingButton } from './TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
+import { useChunkScrollSpy } from '@/lib/use-chunk-scroll-spy'
 
 export function NewspaperBriefingLayout({
   result,
@@ -44,8 +45,16 @@ export function NewspaperBriefingLayout({
   const articleBodyRef = useRef<HTMLElement>(null!)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const setGuideScrollToChunk = useStore((s) => s.setGuideScrollToChunk)
   const briefingFontSize = useStore((s) => s.briefingFontSize)
   const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
+
+  useChunkScrollSpy(articleBodyRef, setAssistantActiveChunk)
+
+  const handleChunkClick = (i: number) => {
+    setAssistantActiveChunk(i)
+    setGuideScrollToChunk(i)
+  }
 
   return (
     <main
@@ -95,6 +104,7 @@ export function NewspaperBriefingLayout({
             activeChunkIndex={activeChunkIndex}
             onChunkEnter={(i) => setAssistantActiveChunk(i)}
             onChunkLeave={() => setAssistantActiveChunk(null)}
+            onChunkClick={handleChunkClick}
           />
         </div>
 

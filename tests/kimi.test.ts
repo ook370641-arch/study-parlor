@@ -192,6 +192,11 @@ describe('parseSseChunk reasoning', () => {
     expect(parseSseChunk(line)).toEqual({ kind: 'chunk', text: '你好' })
   })
 
+  it('carries content alongside reasoning when both fields present in same delta', () => {
+    const line = 'data: {"choices":[{"delta":{"reasoning_content":"思考","content":"回答"}}]}'
+    expect(parseSseChunk(line)).toEqual({ kind: 'reasoning', text: '思考', content: '回答' })
+  })
+
   it('ignores [DONE] and malformed lines', () => {
     expect(parseSseChunk('data: [DONE]')).toEqual({ kind: 'done' })
     expect(parseSseChunk('data: {not json')).toEqual({ kind: 'noop' })

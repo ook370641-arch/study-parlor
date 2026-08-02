@@ -13,9 +13,10 @@ interface Props {
   activeChunkIndex?: number | null
   onChunkEnter?: (index: number) => void
   onChunkLeave?: () => void
+  onChunkClick?: (index: number) => void
 }
 
-export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chunks, fileName, theme = 'academic', terms, activeChunkIndex, onChunkEnter, onChunkLeave }: Props) {
+export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chunks, fileName, theme = 'academic', terms, activeChunkIndex, onChunkEnter, onChunkLeave, onChunkClick }: Props) {
   const articleChunks = useMemo(() => splitArticleIntoChunks(content, chunks.map((c) => c.heading)), [content, chunks])
   const isAcademic = theme !== 'newspaper'
 
@@ -27,9 +28,12 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
     )
   }
 
+  let headingIndex = 0
   return (
     <div className="space-y-6">
       {articleChunks.map((chunk, i) => {
+        const hasHeading = !!chunk.heading
+        if (hasHeading) headingIndex++
         const isActive = activeChunkIndex === i
         const borderColor = isAcademic
           ? isActive ? 'border-ember' : 'border-parchment/20'
@@ -39,14 +43,15 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
             key={i}
             data-testid="article-body-chunk"
             data-chunk-index={i}
-            className={`rounded-r-lg border-l-4 pl-4 py-2 transition-colors ${borderColor} ${isActive ? 'bg-ember/5' : ''}`}
+            className={`rounded-r-lg border-l-4 pl-4 py-2 transition-colors cursor-pointer ${borderColor} ${isActive ? 'bg-ember/5' : ''}`}
             onMouseEnter={() => onChunkEnter?.(i)}
             onMouseLeave={() => onChunkLeave?.()}
+            onClick={() => onChunkClick?.(i)}
           >
             {chunk.heading && (
               <div data-testid="article-chunk-plaque" className="flex items-center gap-2 mb-2">
                 <span className="text-ember text-sm leading-none">
-                  ❧<span className="text-xs align-top">{i + 1}</span>
+                  ❧<span className="text-xs align-top">{headingIndex}</span>
                 </span>
                 <span className="text-ember text-sm tracking-[0.2em]" style={{ fontVariant: 'small-caps' }}>
                   {chunk.heading}
@@ -67,5 +72,6 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
   prev.chunks === next.chunks &&
   prev.fileName === next.fileName &&
   prev.theme === next.theme &&
-  prev.terms === next.terms
+  prev.terms === next.terms &&
+  prev.activeChunkIndex === next.activeChunkIndex
 )

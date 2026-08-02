@@ -131,6 +131,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       pen.style.border = '1.5px solid #d97757'
       pen.style.zIndex = '3'
       pen.style.transition = 'transform 0.15s, background 0.15s'
+      pen.style.pointerEvents = 'none'
       pen.style.fontSize = uiSize.pen
       pen.style.lineHeight = '1'
       if (anno.note) {
@@ -142,9 +143,10 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       }
       pen.textContent = '✎'
 
-      pen.addEventListener('click', (e) => {
+      // Click handler on wrapper (not pen) so the pen doesn't block text selection
+      wrap.addEventListener('click', (e) => {
         e.stopPropagation()
-        handlePenClick(anno.id, pen)
+        handlePenClick(anno.id, wrap)
       })
 
       wrap.appendChild(textSpan)
@@ -205,21 +207,21 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     }
   }, [articleRef, articlePath, runApplyMarkers])
 
-  // --- Handle pen click ---
-  function handlePenClick(annoId: string, penEl: HTMLElement) {
+  // --- Handle annotation marker click ---
+  function handlePenClick(annoId: string, anchorEl: HTMLElement) {
     setOpenAnnoId(annoId)
-    setCardAnchorEl(penEl)
+    setCardAnchorEl(anchorEl)
 
     const container = articleRef.current
     if (container) {
-      const penRect = penEl.getBoundingClientRect()
+      const anchorRect = anchorEl.getBoundingClientRect()
       // 绝对定位的锚点是 reader 的 relative 内容容器（article 的 offsetParent），
       // 不是 article 本身 —— article 上方还有 header，两者原点不同
       const origin = (container.offsetParent as HTMLElement | null) ?? container
       const originRect = origin.getBoundingClientRect()
       setCardPos({
-        left: penRect.left - originRect.left - 4,
-        top: penRect.top - originRect.top - 10,
+        left: anchorRect.left - originRect.left - 4,
+        top: anchorRect.top - originRect.top - 10,
       })
     }
   }
@@ -360,14 +362,16 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
         setGhost(null)
         setSelectionHighlights([])
       }
-      // Close card if clicking outside BOTH the marker pen and the note card
+      // Close card if clicking outside BOTH the marker pen and the note card.
+      // Defer via setTimeout so React state updates don't disrupt text selection
+      // initiation which also happens on mousedown.
       const anchorEl = cardAnchorElRef.current
       if (
         anchorEl &&
         !anchorEl.contains(target) &&
         !target.closest('[data-testid="anno-note-card"]')
       ) {
-        doSaveAndClose()
+        setTimeout(() => doSaveAndClose(), 0)
       }
     }
 
@@ -404,8 +408,8 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     setTimeout(() => {
       applyMarkers()
       // Open the card for the new annotation
-      const penEl = markerSpansRef.current.get(id)?.querySelector('.anno-pen') as HTMLElement | null
-      if (penEl) handlePenClick(id, penEl)
+      const wrapEl = markerSpansRef.current.get(id) as HTMLElement | null
+      if (wrapEl) handlePenClick(id, wrapEl)
     }, 150)
 
     // Save immediately (empty note, marker exists)

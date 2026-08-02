@@ -69,6 +69,8 @@ export function attachAssistantSessionListeners() {
     scheduleFlush()
   })
   ipc.onArticleAssistantSearchDone((sid, payload) => {
+    const s = useStore.getState().assistantSession
+    if (!s || s.abortId !== sid) return
     useStore.getState().applyAssistantSearchResult(sid, payload)
   })
 }

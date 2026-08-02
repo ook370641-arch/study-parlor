@@ -13,6 +13,7 @@ import { TransferToWritingButton } from './TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 import { InternalizationSpine } from '@/components/briefing/InternalizationSpine'
 import { PaintingPlate } from './PaintingPlate'
+import { useChunkScrollSpy } from '@/lib/use-chunk-scroll-spy'
 
 export function AcademicBriefingLayout({
   result,
@@ -48,17 +49,26 @@ export function AcademicBriefingLayout({
   const articleBodyRef = useRef<HTMLDivElement>(null!)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const setGuideScrollToChunk = useStore((s) => s.setGuideScrollToChunk)
   const briefingFontSize = useStore((s) => s.briefingFontSize)
   const articleName = filePath?.split(/[\\/]/).pop()?.replace(/\.md$/, '') ?? result.title
+
+  const { suppressFor } = useChunkScrollSpy(articleBodyRef, setAssistantActiveChunk)
 
   useEffect(() => {
     if (activeChunkIndex !== null) setVisitedMax((v) => Math.max(v ?? -1, activeChunkIndex))
   }, [activeChunkIndex])
 
   const navigateToChunk = (i: number) => {
+    suppressFor(600)
     articleBodyRef.current
       ?.querySelector(`[data-chunk-index="${i}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const handleChunkClick = (i: number) => {
+    setAssistantActiveChunk(i)
+    setGuideScrollToChunk(i)
   }
 
   return (
@@ -120,6 +130,7 @@ export function AcademicBriefingLayout({
             activeChunkIndex={activeChunkIndex}
             onChunkEnter={(i) => setAssistantActiveChunk(i)}
             onChunkLeave={() => setAssistantActiveChunk(null)}
+            onChunkClick={handleChunkClick}
           />
         </div>
 

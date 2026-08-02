@@ -470,6 +470,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       let searchSources: { title: string; url: string; snippet: string }[] | undefined
       let searchError: 'NO_RESULTS' | 'SEARCH_ERROR' | undefined
       if (args.useSearch) {
+        console.log('[article-assistant] search phase started')
         const apiKey = await getSearchApiKey()
         if (!apiKey) {
           searchError = 'SEARCH_ERROR'

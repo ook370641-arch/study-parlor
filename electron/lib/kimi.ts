@@ -163,7 +163,7 @@ export async function chatNonStream(
 
 export type SseEvent =
   | { kind: 'chunk'; text: string }
-  | { kind: 'reasoning'; text: string }
+  | { kind: 'reasoning'; text: string; content?: string }
   | { kind: 'done' }
   | { kind: 'noop' }
 
@@ -175,7 +175,9 @@ export function parseSseChunk(line: string): SseEvent {
   try {
     const json = JSON.parse(payload) as { choices?: { delta?: { content?: string; reasoning_content?: string } }[] }
     const delta = json.choices?.[0]?.delta
-    if (delta?.reasoning_content) return { kind: 'reasoning', text: delta.reasoning_content }
+    if (delta?.reasoning_content) {
+      return { kind: 'reasoning', text: delta.reasoning_content, content: delta.content || undefined }
+    }
     return { kind: 'chunk', text: delta?.content ?? '' }
   } catch {
     return { kind: 'noop' }
@@ -274,7 +276,10 @@ export async function chatStream(
         buffer = buffer.slice(idx + 1)
         const ev = parseSseChunk(line)
         if (ev.kind === 'chunk') onChunk(ev.text)
-        else if (ev.kind === 'reasoning') onReasoning?.(ev.text)
+        else if (ev.kind === 'reasoning') {
+          onReasoning?.(ev.text)
+          if (ev.content) onChunk(ev.content)
+        }
         else if (ev.kind === 'done') return
       }
     }

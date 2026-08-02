@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useStore } from '@/store'
 
 // 导读字号锚定正文字号变量 --briefing-body-size（档位步进 2px）：
@@ -15,7 +16,23 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
   const guideError = useStore((s) => s.assistantSession?.guideError ?? null)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
+  const guideScrollToChunkIndex = useStore((s) => s.guideScrollToChunkIndex)
+  const setGuideScrollToChunk = useStore((s) => s.setGuideScrollToChunk)
   const isAcademic = theme !== 'newspaper'
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Scroll guide sidebar to chunk when triggered by article body click
+  useEffect(() => {
+    if (guideScrollToChunkIndex === null) return
+    const container = scrollRef.current
+    if (!container) return
+    const el = container.querySelector(`[data-chunk-index="${guideScrollToChunkIndex}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+    // Clear after scrolling so the same index can be clicked again
+    setGuideScrollToChunk(null)
+  }, [guideScrollToChunkIndex, setGuideScrollToChunk])
 
   return (
     <div className={`h-full flex flex-col shrink-0 border-l ${isAcademic ? 'border-parchment/10 bg-ink/40' : 'border-[#1a1a1a]/10 bg-[#f5f2ed]'} `}>
@@ -27,7 +44,7 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
         <div className="px-4 text-sm text-ember">未能生成导读，可继续阅读原文。</div>
       )}
       {guide && (
-        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
           <div style={{ fontSize: GUIDE_BODY_SIZE }} className={`rounded p-3 leading-relaxed ${isAcademic ? 'bg-ink/60 border border-parchment/10 text-parchment/90' : 'bg-white border border-[#1a1a1a]/10 text-[#1a1a1a]'}`}>
             <strong className="text-ember">背景</strong>：{guide.background}
           </div>
