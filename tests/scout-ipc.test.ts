@@ -35,7 +35,6 @@ describe('registerScoutIpc', () => {
     }))
     vi.doMock('@electron/lib/scout/tools', () => ({
       executeScoutTool: vi.fn(),
-      clearPrecheckCache: vi.fn(),
     }))
     vi.doMock('@electron/lib/credentials', () => ({
       getSearchApiKey: vi.fn().mockResolvedValue(null),

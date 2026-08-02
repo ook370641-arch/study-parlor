@@ -2,13 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { executeScoutTool, clearPrecheckCache, type ScoutToolDeps } from '../electron/lib/scout/tools'
+import { executeScoutTool, type ScoutToolDeps } from '../electron/lib/scout/tools'
 import { buildScoutSystemPrompt } from '../electron/lib/scout/prompt'
 
 let root: string
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), 'scout-tools-'))
-  clearPrecheckCache()
 })
 afterEach(() => { fs.rmSync(root, { recursive: true, force: true }) })
 
@@ -22,6 +21,7 @@ function makeDeps(overrides: Partial<ScoutToolDeps> = {}): ScoutToolDeps {
     tavilyExtract: async () => LONG_MD,
     plainFetch: async () => LONG_MD,
     scraperFetch: async () => ({ markdown: LONG_MD, title: '好文', publishedAt: null, authors: [] }),
+    precheckCache: new Map(),
     ...overrides,
   }
 }
@@ -101,6 +101,27 @@ describe('executeScoutTool', () => {
     const r = await executeScoutTool({ tool: 'read_article', url: 'https://a.com/x' }, deps)
     expect(r.length).toBeLessThan(huge.length)
     expect(r).toContain('截断')
+  })
+
+  it('两个不同 deps 的 precheckCache 互不共享', async () => {
+    let fetchCount = 0
+    const deps1 = makeDeps({
+      tavilyExtract: async () => { throw Object.assign(new Error('no key'), { code: 'TAVILY_ERROR' }) },
+      plainFetch: async () => { fetchCount++; return LONG_MD },
+    })
+    const deps2 = makeDeps({
+      tavilyExtract: async () => { throw Object.assign(new Error('no key'), { code: 'TAVILY_ERROR' }) },
+      plainFetch: async () => { fetchCount++; return LONG_MD },
+    })
+    // deps1 propose → 内容入 deps1 的 cache
+    await executeScoutTool({
+      tool: 'propose_candidates',
+      candidates: [{ title: '好', url: 'https://a.com/iso', sourceName: 'a.com', reason: 'r' }],
+    }, deps1)
+    expect(fetchCount).toBe(1)
+    // deps2 fetch_and_save → 应重新抓取，不走 deps1 的 cache
+    await executeScoutTool({ tool: 'fetch_and_save', urls: ['https://a.com/iso'] }, deps2)
+    expect(fetchCount).toBe(2)
   })
 })
 

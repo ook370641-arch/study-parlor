@@ -11,7 +11,7 @@ function makeDeps(chatStreamImpl: any): ScoutLoopDeps {
   return {
     chatStream: chatStreamImpl,
     executeTool: async () => '工具结果',
-    buildDeps: () => ({} as any),
+    buildDeps: async (_precheckCache) => ({} as any),
   }
 }
 
@@ -36,7 +36,7 @@ describe('runScoutTurn', () => {
         else onChunk('最终回复')
       },
       executeTool: async (call) => { toolCalls.push(call.tool); return '搜索结果' },
-      buildDeps: () => ({} as any),
+      buildDeps: async (_precheckCache) => ({} as any),
     }
     await runScoutTurn(
       { messages: [{ role: 'user', content: '找文章' }], onChunk: (t) => chunks.push(t), onReasoning: () => {}, signal: new AbortController().signal },
@@ -54,7 +54,7 @@ describe('runScoutTurn', () => {
         onChunk('```tool\n{"tool":"web_search","query":"q"}\n```')
       },
       executeTool: async () => { toolRuns++; return 'r' },
-      buildDeps: () => ({} as any),
+      buildDeps: async (_precheckCache) => ({} as any),
     }
     await runScoutTurn(
       { messages: [], onChunk: () => {}, onReasoning: () => {}, signal: new AbortController().signal },

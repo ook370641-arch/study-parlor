@@ -16,14 +16,7 @@ export type ScoutToolDeps = {
   scraperFetch: FetchDeps['scraperFetch']
   conversationId?: string
   signal?: AbortSignal
-}
-
-// 预检缓存：同一次 executeScoutTool 调用序列（一个 loop turn）内共享。
-// key = url，value = 已抓到的文章内容。
-const precheckCache = new Map<string, FetchedArticle>()
-
-export function clearPrecheckCache(): void {
-  precheckCache.clear()
+  precheckCache: Map<string, FetchedArticle>
 }
 
 function fetchDepsOf(deps: ScoutToolDeps): FetchDeps {
@@ -50,7 +43,7 @@ export async function executeScoutTool(call: ToolCall, deps: ScoutToolDeps): Pro
       for (const c of call.candidates) {
         try {
           const fetched = await fetchArticle({ url: c.url, signal: deps.signal, deps: fetchDepsOf(deps) })
-          precheckCache.set(c.url, fetched)
+          deps.precheckCache.set(c.url, fetched)
           checked.push({ ...c, fetchable: true })
         } catch (err: any) {
           checked.push({ ...c, fetchable: false, failReason: err?.code === 'FETCH_BLOCKED' ? '站点拒绝访问' : '无法提取正文' })
@@ -72,9 +65,9 @@ export async function executeScoutTool(call: ToolCall, deps: ScoutToolDeps): Pro
           continue
         }
         try {
-          const fetched = precheckCache.get(url)
+          const fetched = deps.precheckCache.get(url)
             ?? await fetchArticle({ url, signal: deps.signal, deps: fetchDepsOf(deps) })
-          precheckCache.delete(url)
+          deps.precheckCache.delete(url)
           const r = saveArticle(deps.libraryPath, fetched)
           if (r.wasAlreadySaved) {
             lines.push(`《${fetched.title}》已在库中。`)

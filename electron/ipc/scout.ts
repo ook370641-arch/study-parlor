@@ -3,7 +3,7 @@ import type { AppConfig } from '../env'
 import { chatStream } from '../lib/kimi'
 import { runScoutTurn } from '../lib/scout/loop'
 import { executeScoutTool } from '../lib/scout/tools'
-import { makeTavilyExtract, plainFetch, scraperFetch } from '../lib/scout/article-fetcher'
+import { makeTavilyExtract, plainFetch, scraperFetch, type FetchedArticle } from '../lib/scout/article-fetcher'
 import {
   saveConversation,
   createConversation,
@@ -96,7 +96,7 @@ export function registerScoutIpc(cfg: AppConfig): void {
                 onChunk,
                 onReasoning,
               ),
-            buildDeps: async () => {
+            buildDeps: async (precheckCache: Map<string, FetchedArticle>) => {
               const searchKey = await getSearchApiKey()
               return {
                 libraryPath: cfg.libraryPath,
@@ -108,6 +108,7 @@ export function registerScoutIpc(cfg: AppConfig): void {
                 tavilyExtract: makeTavilyExtract(searchKey ?? ''),
                 plainFetch,
                 scraperFetch,
+                precheckCache,
               }
             },
             executeTool: (call, roundDeps) => executeScoutTool(call, roundDeps as any),
