@@ -34,28 +34,12 @@ export function ScoutPanel({ theme = 'academic' }: { theme?: BriefingTheme }) {
   const isAcademic = theme !== 'newspaper'
   const themeClasses = useMemo(() => isAcademic
     ? {
-        panelBg: 'bg-transparent',
-        border: 'border-slate/30',
-        text: 'text-parchment',
         muted: 'text-parchment/50',
-        inputBg: 'bg-parchment/10',
-        inputText: 'text-parchment',
-        inputPlaceholder: 'placeholder:text-parchment/40',
-        inputBorder: 'border-slate/30 focus:border-ember/50',
-        button: 'bg-ember/20 text-parchment hover:bg-ember/30',
         emptyIcon: 'text-parchment/20',
         skeleton: 'bg-parchment/10',
       }
     : {
-        panelBg: 'bg-white',
-        border: 'border-[#c9c3b8]',
-        text: 'text-[#1a1a1a]',
         muted: 'text-[#6b5d52]',
-        inputBg: 'bg-white',
-        inputText: 'text-[#1a1a1a]',
-        inputPlaceholder: 'placeholder:text-[#6b5d52]/60',
-        inputBorder: 'border-[#c9c3b8] focus:border-[#1a1a1a]/50',
-        button: 'bg-[#1a1a1a] text-white hover:bg-[#333]',
         emptyIcon: 'text-[#c9c3b8]',
         skeleton: 'bg-[#e8e4de]',
       }, [isAcademic])

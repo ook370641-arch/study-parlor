@@ -11,6 +11,7 @@ export function ScoutChatView({ theme = 'academic' }: { theme?: BriefingTheme })
   const abort = useStore((s) => s.abortScout)
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const userScrolledUpRef = useRef(false)
   const isAcademic = theme !== 'newspaper'
   const muted = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
@@ -33,6 +34,15 @@ export function ScoutChatView({ theme = 'academic' }: { theme?: BriefingTheme })
       el.scrollTo({ top: el.scrollHeight, behavior: streaming ? 'auto' : 'smooth' })
     }
   }, [messages, streaming])
+
+  // Auto-resize textarea height capped at ~6 rows
+  useEffect(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = 'auto'
+    const lineHeight = 20 // Tailwind text-sm py-2 ≈ 20px/line
+    ta.style.height = `${Math.min(ta.scrollHeight, lineHeight * 6 + 16)}px`
+  }, [input])
 
   if (!activeId) {
     return (
@@ -76,13 +86,14 @@ export function ScoutChatView({ theme = 'academic' }: { theme?: BriefingTheme })
       </div>
       <div className={`p-3 border-t flex gap-2 shrink-0 ${isAcademic ? 'border-parchment/15' : 'border-[#c9c3b8]'}`}>
         <textarea
+          ref={textareaRef}
           data-testid="scout-chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
           placeholder="给拾贝一个主题，或丢一个链接..."
           rows={2}
-          className={`flex-1 resize-none rounded border px-3 py-2 text-sm outline-none ${
+          className={`flex-1 resize-none rounded border px-3 py-2 text-sm outline-none min-h-[44px] ${
             isAcademic
               ? 'bg-parchment/10 border-slate/30 text-parchment placeholder:text-parchment/40 focus:border-ember/50'
               : 'bg-white border-[#c9c3b8] text-[#1a1a1a] placeholder:text-[#6b5d52]/60 focus:border-[#1a1a1a]/50'
