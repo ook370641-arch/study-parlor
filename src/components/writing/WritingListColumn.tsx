@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import { writingTreeContainsPath, countFiles } from '@/lib/writing-tree-utils'
+import { writingTreeContainsPath, countFiles, firstWritingFilePath } from '@/lib/writing-tree-utils'
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 import { WritingTree } from './WritingTree'
 import { PromptDialog } from './PromptDialog'
@@ -37,14 +37,8 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   useEffect(() => {
     const current = useStore.getState().writingFile
     if (current && writingTreeContainsPath(tree, current.path)) return
-    if (tree?.writing?.[0]) {
-      const first = tree.writing[0]
-      if (first.kind === 'file') {
-        selectWritingFile(first.path)
-      } else if (first.children?.[0]?.kind === 'file') {
-        selectWritingFile(first.children[0].path)
-      }
-    }
+    const first = tree ? firstWritingFilePath(tree.writing) : null
+    if (first) selectWritingFile(first)
   }, [tree, selectWritingFile])
 
   if (collapsed) {

@@ -44,7 +44,7 @@ export function WritingAssistantPanel() {
         theme="academic"
       />
       {open && (
-        <div className="h-full overflow-hidden" style={{ width }}>
+        <div data-testid="writing-assistant-panel-content" className="h-full overflow-hidden" style={{ width }}>
           <div className="h-full flex flex-col min-w-0 border-l border-parchment/20 bg-[#1a1512]">
             <div className="h-9 flex items-center justify-between px-3 border-b border-parchment/10 shrink-0">
               <span className="text-[11px] tracking-[0.2em] text-parchment/80 font-serif">AI 写作助手</span>

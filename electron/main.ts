@@ -10,6 +10,7 @@ import { patchState } from './ipc/state'
 import { resolveAppPaths } from './lib/app-paths'
 import { createStartupWatchdog } from './lib/startup-watchdog'
 import { registerReportSchemePrivileges, registerReportProtocol } from './lib/report-protocol'
+import { syncConstitutionReportToLibrary, resolveBundledReportDir } from './lib/report-sync'
 
 // sp-report:// 特权注册必须在 app ready 之前
 registerReportSchemePrivileges()
@@ -355,6 +356,22 @@ async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWind
   }
 
   const bootSeqStart = Date.now()
+
+  // 宪法可视化报告 → 学习库同步（index.html + source/；失败不阻断启动）
+  try {
+    const bundledDir = resolveBundledReportDir(app.getAppPath(), __dirname)
+    const sync = syncConstitutionReportToLibrary(cfg.libraryPath, bundledDir)
+    if (sync.reportWritten || sync.sourceFilesSynced > 0) {
+      console.log(
+        '[bootstrap] constitution report synced to library:',
+        sync.reportPath,
+        `(html:${sync.reportWritten} source:${sync.sourceFilesSynced})`,
+        bootTs()
+      )
+    }
+  } catch (err) {
+    console.warn('[bootstrap] constitution report sync failed:', err, bootTs())
+  }
 
   // ===== 阶段 1: 注册 IPC =====
   console.time('[bootstrap] stage: register IPC')

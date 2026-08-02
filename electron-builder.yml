@@ -6,7 +6,6 @@ files:
   - out/**/*
   - package.json
   - electron/prompts
-  - constitution/index.html
 extraMetadata:
   main: out/main/index.js
 win:

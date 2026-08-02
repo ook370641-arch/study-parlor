@@ -141,6 +141,17 @@ async function main() {
   // 先执行清理再结束 dev.js，避免 electron.exe 孤儿继续占着 5173。
   child.on('exit', (code, signal) => {
     console.log(`[dev] electron-vite exited with code ${code}, signal ${signal}`)
+    // After a successful build, copy the constitution report from the skill
+    // template into the output directory so it gets bundled in the asar.
+    const isBuild = args[0] === 'build'
+    if (isBuild && code === 0 && !signal) {
+      const { execSync } = require('child_process')
+      try {
+        execSync('node scripts/copy-constitution.js', { stdio: 'inherit', cwd: PROJECT_ROOT })
+      } catch (err) {
+        console.warn('[dev] copy-constitution failed (report will not be bundled):', err.message)
+      }
+    }
     shutdown(false).then(() => {
       process.exitCode = code ?? 0
       setTimeout(() => process.exit(process.exitCode ?? 0), 500)

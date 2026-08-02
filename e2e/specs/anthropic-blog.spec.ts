@@ -103,7 +103,7 @@ test.describe('@real Anthropic 博客集成', () => {
       await expect(panel.locator(SELECTORS.briefing.anthropicListCheckError)).toBeVisible({ timeout: 20000 })
     })
 
-    test('宪法可视化报告：离线仍置顶可见，点击后 iframe 打开交互报告', async ({ window }) => {
+    test('宪法可视化报告：离线仍置顶可见，点击后 iframe 打开交互报告', async ({ window, testLibraryPath }) => {
       const cover = new CoverPage(window)
       await cover.enterName('E2E 测试员')
       await cover.goToBriefing()
@@ -124,6 +124,13 @@ test.describe('@real Anthropic 博客集成', () => {
       // iframe 内容真正加载成功（协议 + 报告专属 CSP 生效），内联脚本可运行
       const reportBody = window.frameLocator(SELECTORS.briefing.constitutionReportFrame).locator('body')
       await expect(reportBody).toContainText('Constitution', { timeout: 15000 })
+
+      // 报告已同步到学习库：单个文件夹 constitution-report/
+      const reportDir = path.join(testLibraryPath, 'Anthropic博客', 'constitution-report')
+      expect(fs.existsSync(path.join(reportDir, 'index.html'))).toBe(true)
+      expect(fs.readFileSync(path.join(reportDir, 'source', 'full-text.md'), 'utf8')).toContain('Claude')
+      // 不生成 .md 索引卡
+      expect(fs.existsSync(path.join(reportDir, 'README.md'))).toBe(false)
     })
   })
 

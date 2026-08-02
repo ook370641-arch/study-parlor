@@ -66,8 +66,15 @@ export class ArticleAssistantPage {
     await this.sendBtn.click()
   }
 
+  /**
+   * Toggle the search switch, then park the mouse at a neutral corner: the
+   * button has a hover:text-parchment/70 variant in its off state, so leaving
+   * the cursor on it would make non-hover color assertions (toHaveCSS) read
+   * the hover color instead.
+   */
   async clickSearch() {
     await this.searchBtn.click()
+    await this.page.mouse.move(0, 0)
   }
 
   /**

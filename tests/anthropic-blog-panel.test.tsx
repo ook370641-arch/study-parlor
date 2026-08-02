@@ -134,7 +134,8 @@ describe('AnthropicBlogPanel', () => {
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
     fireEvent.click(screen.getByTestId('briefing-list-column-toggle'))
-    expect(screen.getAllByTestId('anthropic-list-rail-thumb')).toHaveLength(15)
+    // 15 篇网络文章 + 1 个本地置顶的宪法报告条目
+    expect(screen.getAllByTestId('anthropic-list-rail-thumb')).toHaveLength(16)
   })
 
   it('collapsed rail marks saved articles with ember border', () => {
@@ -150,7 +151,9 @@ describe('AnthropicBlogPanel', () => {
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
     fireEvent.click(screen.getByTestId('briefing-list-column-toggle'))
-    const [saved, plain] = screen.getAllByTestId('anthropic-list-rail-thumb')
+    // 首位永远是宪法报告条目（isSaved 视觉），其后才是文章列表
+    const [constitution, saved, plain] = screen.getAllByTestId('anthropic-list-rail-thumb')
+    expect(constitution.className).toContain('border-ember')
     expect(saved.className).toContain('border-ember')
     expect(plain.className).not.toContain('border-ember')
   })

@@ -21,6 +21,17 @@ export function sortNodesByOrder<T extends { path: string }>(nodes: T[], order: 
   })
 }
 
+/** 深度优先（按树顺序）找 nodes 中第一个 file 节点的 path；找不到返回 null。 */
+export function firstWritingFilePath(nodes: WritingTreeNode[] | undefined): string | null {
+  if (!nodes) return null
+  for (const n of nodes) {
+    if (n.kind === 'file') return n.path
+    const found = firstWritingFilePath(n.children)
+    if (found) return found
+  }
+  return null
+}
+
 /** 判断 path 是否仍存在于写作树（writing 或 repository 任意深度）。 */
 export function writingTreeContainsPath(
   tree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null,
