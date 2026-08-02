@@ -10,6 +10,7 @@ import { BriefingError } from '@/components/BriefingError'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
+import { ScoutPanel } from '@/components/scout/ScoutPanel'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { JobBriefingRenderer, JobProfilePanel, JobAssistantPanel } from '@/components/job-briefing'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
@@ -325,6 +326,8 @@ export function Briefing() {
               </main>
             ) : source === 'anthropic' ? (
               <AnthropicBlogPanel theme={theme} />
+            ) : source === 'scout' ? (
+              <ScoutPanel theme={theme} />
             ) : isJob ? (
               jobEmptyState ? (
                 <BriefingEmptyState

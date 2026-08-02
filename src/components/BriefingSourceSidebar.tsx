@@ -65,6 +65,25 @@ function JobBriefingIcon() {
   )
 }
 
+function ScoutIcon() {
+  return (
+    <svg
+      data-testid="briefing-source-icon-scout"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 3c-4 3-7 4-7 9a7 7 0 0 0 14 0c0-5-3-6-7-9z" />
+      <path d="M12 3v18" />
+    </svg>
+  )
+}
+
 export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const source = useStore((s) => s.briefingSource)
   const setSource = useStore((s) => s.setBriefingSource)
@@ -124,6 +143,12 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
       label: '求职',
       icon: JobBriefingIcon,
       testId: 'briefing-source-job-briefing',
+    },
+    {
+      id: 'scout',
+      label: '拾贝',
+      icon: ScoutIcon,
+      testId: 'briefing-source-scout',
     },
   ] as const
 
