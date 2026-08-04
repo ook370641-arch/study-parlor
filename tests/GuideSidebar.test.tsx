@@ -9,7 +9,12 @@ vi.mock('@/store', () => ({
 }))
 
 function mockStore(session: AssistantSession | null) {
-  const fullState = { assistantSession: session, setAssistantActiveChunk: vi.fn() }
+  const fullState = {
+    assistantSession: session,
+    setAssistantActiveChunk: vi.fn(),
+    guideScrollToChunkIndex: null,
+    setGuideScrollToChunk: vi.fn(),
+  }
   ;(storeModule.useStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     (selector: (s: typeof fullState) => unknown) => selector(fullState)
   )
@@ -32,6 +37,7 @@ function sessionWithGuide(): AssistantSession {
       ],
     },
     guideLoading: false,
+    guideProgress: null,
     guideError: null,
     messages: [],
     streaming: false,
@@ -70,5 +76,51 @@ describe('GuideSidebar', () => {
     // 术语级再小 1 档（比正文小 2 档），维持导读内部梯度
     const term = screen.getByTestId('guide-term')
     expect(term.style.fontSize).toBe('calc(var(--briefing-body-size, 19px) - 4px)')
+  })
+
+  it('renders chunk context (v2) when present, falling back to summary', () => {
+    const s = sessionWithGuide()
+    s.guide = {
+      background: '背景',
+      chunks: [
+        { heading: '一', context: '背景铺陈文字', terms: [] },
+        { heading: '二', summary: '旧摘要文字', terms: [] },
+      ],
+    }
+    mockStore(s)
+    render(<GuideSidebar />)
+    expect(screen.getByText('背景铺陈文字')).toBeInTheDocument()
+    expect(screen.getByText('旧摘要文字')).toBeInTheDocument()
+  })
+
+  it('shows searching progress text and progress bar while generating', () => {
+    const s = sessionWithGuide()
+    s.guide = null
+    s.guideLoading = true
+    s.guideProgress = { stage: 'searching', done: 1, total: 2 }
+    mockStore(s)
+    render(<GuideSidebar />)
+    const el = screen.getByTestId('guide-progress')
+    expect(el).toHaveTextContent('检索背景资料中… 1/2')
+  })
+
+  it('shows writing progress with entry counter and char count', () => {
+    const s = sessionWithGuide()
+    s.guide = null
+    s.guideLoading = true
+    s.guideProgress = { stage: 'writing', chars: 860, entriesDone: 2, entriesTotal: 14 }
+    mockStore(s)
+    render(<GuideSidebar />)
+    expect(screen.getByTestId('guide-progress')).toHaveTextContent('撰写导读中… §2/14 · 已写 860 字')
+  })
+
+  it('renders progress under newspaper theme too', () => {
+    const s = sessionWithGuide()
+    s.guide = null
+    s.guideLoading = true
+    s.guideProgress = { stage: 'planning' }
+    mockStore(s)
+    render(<GuideSidebar theme="newspaper" />)
+    expect(screen.getByTestId('guide-progress')).toHaveTextContent('规划检索中…')
   })
 })

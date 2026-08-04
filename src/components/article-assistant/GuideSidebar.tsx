@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useStore } from '@/store'
+import { guideProgressFraction, guideProgressText } from '@/lib/guide-progress'
 
 // 导读字号锚定正文字号变量 --briefing-body-size（档位步进 2px）：
 // 导读正文级恒比正文小 1 档，术语级小 2 档，随正文字号控制同步缩放
@@ -14,6 +15,7 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
   const guide = useStore((s) => s.assistantSession?.guide ?? null)
   const guideLoading = useStore((s) => s.assistantSession?.guideLoading ?? false)
   const guideError = useStore((s) => s.assistantSession?.guideError ?? null)
+  const guideProgress = useStore((s) => s.assistantSession?.guideProgress ?? null)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const guideScrollToChunkIndex = useStore((s) => s.guideScrollToChunkIndex)
@@ -38,7 +40,20 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
     <div className={`h-full flex flex-col shrink-0 border-l ${isAcademic ? 'border-parchment/10 bg-ink/40' : 'border-[#1a1a1a]/10 bg-[#f5f2ed]'} `}>
       <div className={`px-4 py-3 text-xs uppercase tracking-widest select-none ${isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}`}>导读</div>
       {guideLoading && (
-        <div className={`px-4 text-sm ${isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'}`}>生成导读中…</div>
+        <div data-testid="guide-progress" className="px-4">
+          <div
+            style={{ fontSize: GUIDE_TERM_SIZE, fontVariantNumeric: 'tabular-nums' }}
+            className={isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}
+          >
+            {guideProgressText(guideProgress)}
+          </div>
+          <div className={`mt-2 h-px ${isAcademic ? 'bg-parchment/10' : 'bg-[#1a1a1a]/10'}`}>
+            <div
+              className="h-px bg-ember/60 transition-[width] duration-500 motion-reduce:transition-none"
+              style={{ width: `${Math.round(guideProgressFraction(guideProgress) * 100)}%` }}
+            />
+          </div>
+        </div>
       )}
       {guideError && !guide && (
         <div className="px-4 text-sm text-ember">未能生成导读，可继续阅读原文。</div>
@@ -65,7 +80,7 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
                 onMouseLeave={() => setAssistantActiveChunk(null)}
               >
                 <div className="text-ember font-medium mb-1">§{i + 1} {chunk.heading}</div>
-                <div className={`leading-relaxed mb-2 ${isAcademic ? 'text-parchment/80' : 'text-[#555]'}`}>{chunk.summary}</div>
+                <div className={`leading-relaxed mb-2 ${isAcademic ? 'text-parchment/80' : 'text-[#555]'}`}>{chunk.context ?? chunk.summary}</div>
                 {chunk.terms.length > 0 && (
                   <div className={`space-y-1.5 mt-2 pt-2 border-t ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}>
                     {chunk.terms.map((t, ti) => (
