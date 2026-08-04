@@ -96,6 +96,7 @@ export const ipc = {
   get articleAssistantReadGuide() { return ensure().articleAssistantReadGuide },
   get articleAssistantWriteGuide() { return ensure().articleAssistantWriteGuide },
   get onArticleAssistantReasoningChunk() { return ensure().onArticleAssistantReasoningChunk },
+  get onArticleAssistantGuideProgress() { return ensure().onArticleAssistantGuideProgress },
 
   get openExternal() { return ensure().openExternal },
 

@@ -60,6 +60,11 @@ const api: IpcApi = {
     ipcRenderer.on('articleAssistant:reasoningChunk', handler)
     return () => ipcRenderer.off('articleAssistant:reasoningChunk', handler)
   },
+  onArticleAssistantGuideProgress: (cb) => {
+    const handler = (_e: unknown, payload: unknown) => cb(payload as import('@shared/index').GuideProgress)
+    ipcRenderer.on('articleAssistant:guideProgress', handler)
+    return () => ipcRenderer.off('articleAssistant:guideProgress', handler)
+  },
 
   bootFatal: () => ipcRenderer.invoke('boot:fatal'),
   getExtensionInfo: () => ipcRenderer.invoke('files:getExtensionInfo'),

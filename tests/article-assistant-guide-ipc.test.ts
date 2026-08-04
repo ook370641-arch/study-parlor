@@ -27,3 +27,24 @@ describe('serializeGuide', () => {
     expect(parsed).toEqual(guide)
   })
 })
+
+describe('serializeGuide v2', () => {
+  it('writes context text in the body position and round-trips it into summary', () => {
+    const guide = {
+      background: 'bg',
+      chunks: [{ heading: 'H', context: 'C 背景铺陈', terms: [] }],
+    }
+    const parsed = parseAssistantGuideBody(serializeGuide(guide as any))
+    expect(parsed).not.toBeNull()
+    expect(parsed!.chunks[0].summary).toBe('C 背景铺陈')
+  })
+
+  it('prefers context over summary when both present', () => {
+    const guide = {
+      background: 'bg',
+      chunks: [{ heading: 'H', summary: '旧摘要', context: '新铺陈', terms: [] }],
+    }
+    expect(serializeGuide(guide as any)).toContain('新铺陈')
+    expect(serializeGuide(guide as any)).not.toContain('旧摘要')
+  })
+})

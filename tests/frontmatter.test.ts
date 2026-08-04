@@ -199,6 +199,17 @@ parent_type: briefing
   })
 })
 
+describe('guide_version frontmatter', () => {
+  it('article-assistant frontmatter keeps guide_version through serialization', () => {
+    const out = serializeFrontmatter(
+      'article-assistant',
+      { title: '导读', type: 'article-assistant', created: '2026-08-04', guide_version: 2 } as any,
+      'body'
+    )
+    expect(out).toContain('guide_version: 2')
+  })
+})
+
 describe('web-article frontmatter', () => {
   it('serializes and parses web-article ext fields', () => {
     const raw = serializeFrontmatter('web-article', {

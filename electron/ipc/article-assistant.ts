@@ -14,6 +14,8 @@ import {
   formatSearchResults,
 } from '../lib/article-assistant-prompt'
 import { generateArticleSearchQuery } from '../lib/job-briefing'
+import { runDigestGuideV2 } from '../lib/guide-v2-pipeline'
+import { GUIDE_FORMAT_VERSION } from '../lib/guide-v2'
 import type { AppConfig } from '../env'
 import type {
   ArticleAnnotation,
@@ -94,7 +96,7 @@ export function serializeGuide(guide: ArticleAssistantGuide): string {
     const terms = c.terms.length
       ? '\n\n' + c.terms.map((t) => `**上下文（context）**：${t.term}（${t.translation}）— ${t.explanation}`).join('\n\n')
       : ''
-    return `## §${i + 1} ${c.heading}\n\n${c.summary}${terms}`
+    return `## §${i + 1} ${c.heading}\n\n${c.context ?? c.summary ?? ''}${terms}`
   }).join('\n\n')
   return `# 背景\n\n${guide.background}\n\n${chunks}`
 }
@@ -241,9 +243,50 @@ export function parseAssistantSessionBody(body: string): ArticleAssistantMessage
 export function registerArticleAssistantIpc(cfg: AppConfig) {
   ipcMain.handle(
     'articleAssistant:generateGuide',
-    async (_, args: { articleContent: string; articleType: 'briefing' | 'anthropic-article' | 'web-article'; articleTitle?: string }) => {
+    async (event, args: { articleContent: string; articleType: 'briefing' | 'anthropic-article' | 'web-article'; articleTitle?: string; entriesTotal?: number }) => {
+      const send = (channel: string, ...payload: unknown[]) => {
+        if (event.sender.isDestroyed()) return
+        event.sender.send(channel, ...payload)
+      }
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
       // E2E deterministic mock: return a fixed valid guide without calling the LLM.
       if (isE2EMock()) {
+        if (args.articleType === 'briefing') {
+          // v2 mock：合成三阶段进度事件（带延时，给 E2E 留出断言窗口），返回 context 格式导读
+          const entriesTotal = Math.max(args.entriesTotal ?? 1, 1)
+          send('articleAssistant:guideProgress', { stage: 'planning' })
+          await sleep(400)
+          send('articleAssistant:guideProgress', { stage: 'searching', done: 1, total: 2 })
+          await sleep(500)
+          send('articleAssistant:guideProgress', { stage: 'searching', done: 2, total: 2 })
+          for (let i = 1; i <= 5; i++) {
+            await sleep(400)
+            send('articleAssistant:guideProgress', {
+              stage: 'writing',
+              chars: i * 240,
+              entriesDone: Math.min(i >= 3 ? 1 : 0, entriesTotal),
+              entriesTotal,
+            })
+          }
+          const mockGuideV2: ArticleAssistantGuide = {
+            background: '这是一份 E2E 测试简报的整体背景：本期条目共同反映了 AI Agent 工程化落地的争论。',
+            chunks: [
+              {
+                heading: 'AI Safety',
+                context: 'Constitutional AI 出自 Anthropic 2022 年的同名论文，是用成文原则替代人工反馈的对齐路线（E2E mock 背景铺陈）。',
+                terms: [
+                  {
+                    term: 'Constitutional AI',
+                    translation: '宪法式 AI',
+                    explanation: '一种用一组书面原则约束模型行为、减少人工标注的对齐方法。',
+                  },
+                ],
+              },
+            ],
+          }
+          return mockGuideV2
+        }
         const mockGuide: ArticleAssistantGuide = {
           background: '这是一段用于 E2E 测试的文章背景介绍，说明本文讨论 AI 对齐与安全。',
           chunks: [
@@ -263,6 +306,29 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         return mockGuide
       }
 
+      // digest 走 v2 背景铺陈管线；其余类型沿用旧的单次摘要式调用
+      if (args.articleType === 'briefing') {
+        const v2PromptPath = path.join(promptsDir(), 'digest-guide-v2.md')
+        const systemV2 = fs.existsSync(v2PromptPath) ? fs.readFileSync(v2PromptPath, 'utf8') : ''
+        try {
+          return await runDigestGuideV2(
+            cfg,
+            {
+              system: systemV2,
+              articleContent: args.articleContent,
+              articleTitle: args.articleTitle,
+              entriesTotal: args.entriesTotal,
+            },
+            (p) => send('articleAssistant:guideProgress', p)
+          )
+        } catch (err) {
+          const code = (err as Error & { code?: string }).code
+          if (code === 'GUIDE_JSON_ERROR') throw err
+          throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
+        }
+      }
+
+      // 旧路径（anthropic-article / web-article）
       const promptPath = path.join(promptsDir(), 'digest-guide.md')
       const system = fs.existsSync(promptPath) ? fs.readFileSync(promptPath, 'utf8') : ''
       const user = `Article title: ${args.articleTitle ?? 'Untitled'}\n\n${args.articleContent}`
@@ -566,6 +632,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       assertInsideLibrary(guidePath, cfg.libraryPath)
 
       const now = new Date().toISOString()
+      const isV2 = args.guide.chunks.some((c) => typeof c.context === 'string' && c.context.length > 0)
       const fm = {
         title: '导读',
         type: 'article-assistant' as const,
@@ -575,6 +642,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         parent_path: args.parentPath,
         parent_type: args.parentType,
         generated_at: now,
+        ...(isV2 ? { guide_version: GUIDE_FORMAT_VERSION } : {}),
         tags: [] as string[],
       }
       const body = serializeGuide(args.guide)
@@ -606,10 +674,12 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         })
         const guide = parseAssistantGuideBody(body)
         if (!guide) return null
+        const fmRecord = frontmatter as unknown as Record<string, unknown>
         return {
           filePath: guidePath,
           guide,
-          generatedAt: (frontmatter as unknown as Record<string, unknown>).generated_at as string | undefined ?? frontmatter.created,
+          generatedAt: (fmRecord.generated_at as string | undefined) ?? frontmatter.created,
+          guideVersion: typeof fmRecord.guide_version === 'number' ? fmRecord.guide_version : undefined,
         }
       } catch {
         return null
