@@ -11,12 +11,16 @@
         "src/lib/briefing-font-size.ts",
         "src/lib/use-generation-transition.ts",
         "electron/ipc/briefing.ts",
+        "electron/ipc/collection.ts",
+        "electron/lib/collection-store.ts",
+        "src/lib/collection-attribution.ts",
         "electron/preload.ts"
       ],
       "specs": [
         "briefing.spec.ts",
         "briefing-*.spec.ts",
-        "briefing-source-switching.spec.ts"
+        "briefing-source-switching.spec.ts",
+        "briefing-collection.spec.ts"
       ]
     },
     "job-briefing": {

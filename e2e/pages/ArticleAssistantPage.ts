@@ -203,4 +203,16 @@ export class ArticleAssistantPage {
   }
 
   async cancelSelection() { await this.selectionCancelBtn.click() }
+
+  /**
+   * Abort a streaming assistant reply by clicking the stop button (which replaces
+   * the send button during streaming), then wait for the streaming flag to clear.
+   */
+  async abort() {
+    await this.stopBtn.click()
+    await this.page.waitForFunction(() => {
+      const s = (window as any).useStore?.getState?.()?.assistantSession
+      return !s?.streaming
+    }, undefined, { timeout: 10000 })
+  }
 }

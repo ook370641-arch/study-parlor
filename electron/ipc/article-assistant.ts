@@ -301,6 +301,17 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
                 },
               ],
             },
+            {
+              heading: 'Training Data',
+              summary: '本段介绍训练数据的去重与过滤。',
+              terms: [
+                {
+                  term: 'Deduplication',
+                  translation: '去重',
+                  explanation: '移除训练语料中重复或近重复样本的过程。',
+                },
+              ],
+            },
           ],
         }
         return mockGuide
