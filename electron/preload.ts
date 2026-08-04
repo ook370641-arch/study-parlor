@@ -120,6 +120,11 @@ const api: IpcApi = {
   annotationsRead: (articlePath) => ipcRenderer.invoke('annotations:read', articlePath),
   annotationsWrite: (articlePath, annotations) => ipcRenderer.invoke('annotations:write', articlePath, annotations),
 
+  collectionRead: () => ipcRenderer.invoke('collection:read'),
+  collectionAddEntry: (entry) => ipcRenderer.invoke('collection:addEntry', entry),
+  collectionRemoveEntry: (id) => ipcRenderer.invoke('collection:removeEntry', id),
+  collectionAppendQA: (args) => ipcRenderer.invoke('collection:appendQA', args),
+
   articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),
   articleAssistantSendMessage: (a) => ipcRenderer.invoke('articleAssistant:sendMessage', a),
   articleAssistantAbort: (a) => ipcRenderer.invoke('articleAssistant:abort', a),

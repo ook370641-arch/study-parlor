@@ -88,6 +88,11 @@ export const ipc = {
   get annotationsRead() { return ensure().annotationsRead },
   get annotationsWrite() { return ensure().annotationsWrite },
 
+  get collectionRead() { return ensure().collectionRead },
+  get collectionAddEntry() { return ensure().collectionAddEntry },
+  get collectionRemoveEntry() { return ensure().collectionRemoveEntry },
+  get collectionAppendQA() { return ensure().collectionAppendQA },
+
   get articleAssistantGenerateGuide() { return ensure().articleAssistantGenerateGuide },
   get articleAssistantSendMessage() { return ensure().articleAssistantSendMessage },
   get articleAssistantAbort() { return ensure().articleAssistantAbort },
