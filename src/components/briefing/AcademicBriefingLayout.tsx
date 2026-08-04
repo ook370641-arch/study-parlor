@@ -131,6 +131,7 @@ export function AcademicBriefingLayout({
             onChunkEnter={(i) => setAssistantActiveChunk(i)}
             onChunkLeave={() => setAssistantActiveChunk(null)}
             onChunkClick={handleChunkClick}
+            collectible
           />
         </div>
 

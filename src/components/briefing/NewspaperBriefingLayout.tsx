@@ -105,6 +105,7 @@ export function NewspaperBriefingLayout({
             onChunkEnter={(i) => setAssistantActiveChunk(i)}
             onChunkLeave={() => setAssistantActiveChunk(null)}
             onChunkClick={handleChunkClick}
+            collectible
           />
         </div>
 

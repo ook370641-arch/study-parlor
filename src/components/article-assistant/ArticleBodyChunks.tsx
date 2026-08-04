@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react'
+import { useStore } from '@/store'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
 import { splitArticleIntoChunks } from '@/lib/article-chunks'
 import type { ArticleAssistantChunk } from '@shared/index'
@@ -14,9 +15,13 @@ interface Props {
   onChunkEnter?: (index: number) => void
   onChunkLeave?: () => void
   onChunkClick?: (index: number) => void
+  collectible?: boolean
 }
 
-export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chunks, fileName, theme = 'academic', terms, activeChunkIndex, onChunkEnter, onChunkLeave, onChunkClick }: Props) {
+export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chunks, fileName, theme = 'academic', terms, activeChunkIndex, onChunkEnter, onChunkLeave, onChunkClick, collectible = false }: Props) {
+  const collectionEntries = useStore((s) => s.collection.entries)
+  const contextId = useStore((s) => s.assistantSession?.contextId ?? null)
+  const collectChunk = useStore((s) => s.collectChunk)
   const articleChunks = useMemo(() => splitArticleIntoChunks(content, chunks.map((c) => c.heading)), [content, chunks])
   const isAcademic = theme !== 'newspaper'
 
@@ -66,6 +71,31 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
                   {chunk.heading}
                 </span>
                 <span className="flex-1 border-t border-ember/40" />
+                {collectible && (() => {
+                  const isCollected = collectionEntries.some(
+                    (e) => e.briefingFilePath === contextId && e.chunkIndex === guideIndex
+                  )
+                  return (
+                    <button
+                      type="button"
+                      data-testid={`chunk-collect-button-${guideIndex}`}
+                      disabled={isCollected}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void collectChunk(guideIndex)
+                      }}
+                      className={`text-xs tracking-wider transition-colors flex-shrink-0 ${
+                        isCollected
+                          ? 'text-ember cursor-default'
+                          : isAcademic
+                            ? 'text-parchment/40 hover:text-ember'
+                            : 'text-[#6b5d52]/60 hover:text-ember'
+                      }`}
+                    >
+                      {isCollected ? '★ 已收藏' : '☆ 收入精选集'}
+                    </button>
+                  )
+                })()}
               </div>
             )}
             <div className={isAcademic ? 'text-parchment/90' : 'text-[#1a1a1a]'}>
@@ -82,5 +112,6 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
   prev.fileName === next.fileName &&
   prev.theme === next.theme &&
   prev.terms === next.terms &&
-  prev.activeChunkIndex === next.activeChunkIndex
+  prev.activeChunkIndex === next.activeChunkIndex &&
+  prev.collectible === next.collectible
 )
