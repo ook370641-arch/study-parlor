@@ -6,6 +6,7 @@ import { normalizeStudyFontSize } from '@/lib/study-font-size'
 import { formatBriefingDate } from '@/lib/format-briefing-date'
 import { mergeNewArticles } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
+import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
@@ -16,7 +17,7 @@ import type {
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent,
-  ScoutConversationMeta, ScoutMessage, ScoutArticleMeta,
+  ScoutConversationMeta, ScoutMessage, ScoutArticleMeta, GuideProgress,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -30,6 +31,7 @@ export type AssistantSession = {
   articleContent: string
   guide: ArticleAssistantGuide | null
   guideLoading: boolean
+  guideProgress: GuideProgress | null
   guideError: ArticleAssistantErrorCode | null
   messages: ArticleAssistantMessage[]
   streaming: boolean
@@ -358,6 +360,7 @@ type AppStore = {
   setAssistantActiveChunk: (index: number | null) => void
   guideScrollToChunkIndex: number | null
   setGuideScrollToChunk: (index: number | null) => void
+  setAssistantGuideProgress: (p: GuideProgress | null) => void
   persistAssistantState: () => Promise<void>
   generateAssistantGuide: () => Promise<void>
 
@@ -1674,7 +1677,7 @@ export const useStore = create<AppStore>((set, get) => ({
         contextType: args.contextType,
         articleTitle: args.articleTitle,
         articleContent: args.articleContent,
-        guide: null, guideLoading: false, guideError: null,
+        guide: null, guideLoading: false, guideProgress: null, guideError: null,
         messages: [], streaming: false, abortId: '',
         searchLoading: false, searchError: null, chatError: null,
         retryContext: null, pendingSelection: undefined, isOpen: false,
@@ -1739,8 +1742,11 @@ export const useStore = create<AppStore>((set, get) => ({
       const file = await ipc.articleAssistantReadGuide({ parentPath: s.contextId, parentType: s.contextType })
       const cur = get().assistantSession
       if (!cur || cur.contextId !== s.contextId) return
-      if (file?.guide) set({ assistantSession: { ...cur, guide: file.guide, guideLoading: false } })
-      else set({ assistantSession: { ...cur, guideLoading: false } })
+      if (file?.guide && isGuideCacheCurrent(s.contextType, file.guideVersion)) {
+        set({ assistantSession: { ...cur, guide: file.guide, guideLoading: false } })
+      } else {
+        set({ assistantSession: { ...cur, guideLoading: false } })
+      }
     } catch {
       const cur = get().assistantSession
       if (!cur || cur.contextId !== s.contextId) return
@@ -1918,6 +1924,11 @@ export const useStore = create<AppStore>((set, get) => ({
   setGuideScrollToChunk: (index) => {
     set({ guideScrollToChunkIndex: index })
   },
+  setAssistantGuideProgress: (p) => {
+    const s = get().assistantSession
+    if (!s) return
+    set({ assistantSession: { ...s, guideProgress: p } })
+  },
   persistAssistantState: async () => {
     const s = get().assistantSession
     if (!s) return
@@ -1933,16 +1944,18 @@ export const useStore = create<AppStore>((set, get) => ({
   generateAssistantGuide: async () => {
     const s = get().assistantSession
     if (!s || s.guideLoading || s.guide) return
-    set({ assistantSession: { ...s, guideLoading: true, guideError: null } })
+    const entriesTotal = countArticleHeadings(s.articleContent)
+    set({ assistantSession: { ...s, guideLoading: true, guideError: null, guideProgress: { stage: 'planning' } } })
     try {
       const guide = await ipc.articleAssistantGenerateGuide({
         articleContent: s.articleContent,
         articleType: s.contextType,
         articleTitle: s.articleTitle,
+        entriesTotal,
       })
       const cur = get().assistantSession
       if (!cur || cur.contextId !== s.contextId) return
-      set({ assistantSession: { ...cur, guide, guideLoading: false } })
+      set({ assistantSession: { ...cur, guide, guideLoading: false, guideProgress: null } })
       try {
         await ipc.articleAssistantWriteGuide({ parentPath: s.contextId, parentType: s.contextType, guide })
       } catch {
@@ -1953,7 +1966,7 @@ export const useStore = create<AppStore>((set, get) => ({
       const code: ArticleAssistantErrorCode = raw === 'GUIDE_JSON_ERROR' ? 'GUIDE_JSON_ERROR' : raw === 'GUIDE_ABORT' ? 'GUIDE_ABORT' : 'GUIDE_LLM_ERROR'
       const cur = get().assistantSession
       if (!cur || cur.contextId !== s.contextId) return
-      set({ assistantSession: { ...cur, guideLoading: false, guideError: code } })
+      set({ assistantSession: { ...cur, guideLoading: false, guideError: code, guideProgress: null } })
     }
   },
 

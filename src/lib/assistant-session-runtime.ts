@@ -73,4 +73,9 @@ export function attachAssistantSessionListeners() {
     if (!s || s.abortId !== sid) return
     useStore.getState().applyAssistantSearchResult(sid, payload)
   })
+  ipc.onArticleAssistantGuideProgress((payload) => {
+    const s = useStore.getState().assistantSession
+    if (!s || !s.guideLoading) return
+    useStore.getState().setAssistantGuideProgress(payload)
+  })
 }

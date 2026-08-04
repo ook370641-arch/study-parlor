@@ -73,7 +73,8 @@ describe('store article assistant', () => {
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledWith({
         articleContent: 'article body',
         articleType: 'briefing',
-        articleTitle: 'B'
+        articleTitle: 'B',
+        entriesTotal: 0,
       })
       expect(ipc.articleAssistantWriteGuide).toHaveBeenCalledWith({
         parentPath: '/lib/b.md',
@@ -87,7 +88,8 @@ describe('store article assistant', () => {
       vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue({
         filePath: '/guide.json',
         guide: guideFixture as any,
-        generatedAt: '2026-07-11'
+        generatedAt: '2026-07-11',
+        guideVersion: 2,
       })
 
       useStore.getState().openAssistantSession({
@@ -101,6 +103,92 @@ describe('store article assistant', () => {
 
       expect(ipc.articleAssistantGenerateGuide).not.toHaveBeenCalled()
       expect(useStore.getState().assistantSession?.guide).toEqual(guideFixture)
+    })
+  })
+
+  describe('guide v2 cache versioning and progress', () => {
+    const openBriefing = (articleContent = 'article body') =>
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/d.md',
+        contextType: 'briefing',
+        articleContent,
+        articleTitle: 'D',
+        autoGenerateGuide: true,
+      })
+
+    it('regenerates when briefing cache has no guideVersion (v1)', async () => {
+      vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue({
+        filePath: '/g.md',
+        guide: guideFixture as any,
+        generatedAt: '2026-08-01',
+      })
+      openBriefing()
+      await flush(); await flush(); await flush()
+      expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalled()
+    })
+
+    it('uses briefing cache when guideVersion is 2', async () => {
+      vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue({
+        filePath: '/g.md',
+        guide: guideFixture as any,
+        generatedAt: '2026-08-04',
+        guideVersion: 2,
+      })
+      openBriefing()
+      await flush(); await flush()
+      expect(ipc.articleAssistantGenerateGuide).not.toHaveBeenCalled()
+      expect(useStore.getState().assistantSession?.guide).toEqual(guideFixture)
+    })
+
+    it('uses non-briefing cache without version check', async () => {
+      vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue({
+        filePath: '/g.md',
+        guide: guideFixture as any,
+        generatedAt: '2026-08-01',
+      })
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/e.md',
+        contextType: 'anthropic-article',
+        articleContent: 'body',
+        autoGenerateGuide: true,
+      })
+      await flush(); await flush()
+      expect(ipc.articleAssistantGenerateGuide).not.toHaveBeenCalled()
+    })
+
+    it('counts H2/H3 headings as entriesTotal', async () => {
+      openBriefing('## 一\nx\n### 二\ny\n## 三\nz')
+      await flush(); await flush(); await flush()
+      expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledWith(
+        expect.objectContaining({ entriesTotal: 3 })
+      )
+    })
+
+    it('tracks guideProgress and clears it on success', async () => {
+      // 挂起生成，避免 microtask 一把跑完导致断言不到中间态
+      let resolveGuide!: (g: unknown) => void
+      vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(
+        new Promise((r) => { resolveGuide = r }) as Promise<any>
+      )
+      openBriefing()
+      await flush(); await flush()
+      expect(useStore.getState().assistantSession?.guideProgress).toEqual({ stage: 'planning' })
+
+      useStore.getState().setAssistantGuideProgress({ stage: 'searching', done: 1, total: 2 })
+      expect(useStore.getState().assistantSession?.guideProgress).toEqual({ stage: 'searching', done: 1, total: 2 })
+
+      resolveGuide(guideFixture)
+      await flush(); await flush()
+      expect(useStore.getState().assistantSession?.guide).toEqual(guideFixture)
+      expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
+    })
+
+    it('clears guideProgress on failure', async () => {
+      vi.mocked(ipc.articleAssistantGenerateGuide).mockRejectedValue(Object.assign(new Error('x'), { code: 'GUIDE_LLM_ERROR' }))
+      openBriefing()
+      await flush(); await flush(); await flush()
+      expect(useStore.getState().assistantSession?.guideError).toBe('GUIDE_LLM_ERROR')
+      expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
     })
   })
 
