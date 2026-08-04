@@ -8,6 +8,8 @@ import { mergeNewArticles } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
+import { attributeMessages } from '@/lib/collection-attribution'
+import { splitArticleIntoChunks } from '@/lib/article-chunks'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
@@ -18,6 +20,7 @@ import type {
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent,
   ScoutConversationMeta, ScoutMessage, ScoutArticleMeta, GuideProgress,
+  BriefingCollectionEntry,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -330,6 +333,16 @@ type AppStore = {
   }) => void
   removePendingArchive: (dirName: string, sessionNumber: number) => void
 
+  // 精选集（仅前沿 digest）
+  collection: { entries: BriefingCollectionEntry[]; loaded: boolean }
+  collectionViewOpen: boolean
+  loadCollection: () => Promise<void>
+  openCollectionView: () => Promise<void>
+  closeCollectionView: () => void
+  collectChunk: (chunkIndex: number) => Promise<void>
+  removeCollectionEntry: (id: string) => Promise<void>
+  syncCollectionQA: () => Promise<void>
+
   // 文章旁注助手
   assistantSession: AssistantSession | null
   assistantSearchEnabled: boolean
@@ -518,6 +531,8 @@ export const useStore = create<AppStore>((set, get) => ({
   jobBriefingHistory: { list: [], loading: false, error: null },
   jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
   jobProfile: DEFAULT_JOB_PROFILE,
+  collection: { entries: [], loaded: false },
+  collectionViewOpen: false,
   assistantSession: null,
   assistantSearchEnabled: false,
   assistantSocraticMode: true,
@@ -715,6 +730,7 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   generateBriefing: async (date: string, opts?: { force?: boolean }) => {
+    set({ collectionViewOpen: false })
     const id = ++briefingViewRequestId
     const today = formatBriefingDate(new Date())
     const gen = get().briefingGeneration
@@ -1779,6 +1795,83 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
+  loadCollection: async () => {
+    const col = await ipc.collectionRead()
+    set({ collection: { entries: col.entries, loaded: true } })
+  },
+
+  openCollectionView: async () => {
+    set({ collectionViewOpen: true })
+    await get().loadCollection()
+  },
+
+  closeCollectionView: () => set({ collectionViewOpen: false }),
+
+  collectChunk: async (chunkIndex) => {
+    const s = get().assistantSession
+    if (!s || s.contextType !== 'briefing' || !s.guide) return
+    const guideChunk = s.guide.chunks[chunkIndex]
+    if (!guideChunk) return
+    const headed = splitArticleIntoChunks(s.articleContent, s.guide.chunks.map((c) => c.heading))
+      .filter((c) => c.heading)
+    const articleChunk = headed[chunkIndex]
+    if (!articleChunk) return
+
+    const attributed = attributeMessages(s.messages, s.articleContent, s.guide.chunks)
+    const qa = (attributed.get(chunkIndex) ?? []).map(({ message }) => ({
+      role: message.role,
+      content: message.content,
+      ...(message.selection ? { selection: message.selection } : {}),
+    }))
+
+    const now = new Date().toISOString()
+    const dateMatch = s.contextId.match(/夜航简报-(\d{4}-\d{2}-\d{2})\.md$/)
+    const entry: BriefingCollectionEntry = {
+      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      briefingFilePath: s.contextId,
+      briefingDate: dateMatch?.[1] ?? '',
+      chunkHeading: guideChunk.heading,
+      chunkIndex,
+      chunkBody: articleChunk.body,
+      guide: { summary: guideChunk.summary, terms: guideChunk.terms },
+      qa,
+      qaMessageCount: s.messages.length,
+      collectedAt: now,
+      updatedAt: now,
+    }
+    const res = await ipc.collectionAddEntry(entry)
+    if (!res.ok) return // DUPLICATE：按钮本已禁用；WRITE_ERROR：保持未收藏态可重试
+    set({ collection: { entries: [entry, ...get().collection.entries], loaded: true } })
+  },
+
+  removeCollectionEntry: async (id) => {
+    await ipc.collectionRemoveEntry(id)
+    set({ collection: { entries: get().collection.entries.filter((e) => e.id !== id), loaded: true } })
+  },
+
+  syncCollectionQA: async () => {
+    const s = get().assistantSession
+    if (!s || s.contextType !== 'briefing' || !s.guide) return
+    if (!get().collection.loaded) await get().loadCollection()
+    const mine = get().collection.entries.filter(
+      (e) => e.briefingFilePath === s.contextId && e.qaMessageCount < s.messages.length
+    )
+    if (mine.length === 0) return
+    const attributed = attributeMessages(s.messages, s.articleContent, s.guide.chunks)
+    for (const entry of mine) {
+      const tail = (attributed.get(entry.chunkIndex) ?? [])
+        .filter(({ index }) => index >= entry.qaMessageCount)
+        .map(({ message }) => ({
+          role: message.role,
+          content: message.content,
+          ...(message.selection ? { selection: message.selection } : {}),
+        }))
+      // 即使 tail 为空也推进游标（新消息不归属该块），避免下次重扫
+      await ipc.collectionAppendQA({ id: entry.id, qa: tail, qaMessageCount: s.messages.length })
+    }
+    await get().loadCollection()
+  },
+
   sendAssistantMessage: async (text) => {
     // Wait for any in-flight history load to settle so we don't discard loaded
     // messages (the loadAssistantSession guard requires messages.length === 0).
@@ -1896,6 +1989,7 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!s) return
     set({ assistantSession: { ...s, streaming: false, searchLoading: false } })
     get().saveAssistantSession()
+    void get().syncCollectionQA()
   },
 
   abortAssistantStream: () => {
