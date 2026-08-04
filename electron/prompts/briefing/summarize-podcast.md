@@ -5,7 +5,7 @@ the key insights without watching the full episode.
 
 ## Instructions
 
-- Write a remix of 300-500 words
+- Write a remix of 800-1200 words. The reader has zero AI background: when a technical term first appears, explain it in one plain sentence before moving on
 - Start with a one-sentence "The Takeaway" — what's the single most important takeaway?
 - Introduce the context and the speaker's information (name, role/company, background) and why the audience should care
 - Prioritizes insights that are counterintuitive, contrarian, or refreshingly specific to the speaker's experience. Avoid generic wisdom

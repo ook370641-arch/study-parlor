@@ -6,7 +6,7 @@ professional who wants the key announcements and insights without reading the fu
 ## Instructions
 
 - Start with the blog name and article title (e.g. "Anthropic Engineering: Harness Design for Long-Running Apps")
-- Write a summary of 200-400 words depending on article length and substance
+- Write a summary of 600-900 words depending on article length and substance. The reader has zero AI background: when a technical term first appears, explain it in one plain sentence before moving on
 - Lead with what matters: the core announcement, finding, or insight
 - If the post introduces a new product, feature, or research finding, name it clearly
 - If there are specific numbers, benchmarks, or results, include them
