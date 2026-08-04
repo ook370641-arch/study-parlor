@@ -137,3 +137,51 @@ describe('buildAssistantUserPrompt socratic flag', () => {
     expect(out).not.toContain('苏格拉底式回复')
   })
 })
+
+const digestGuideV2Prompt = fs.readFileSync(
+  path.resolve(process.cwd(), 'electron/prompts/digest-guide-v2.md'),
+  'utf8'
+)
+
+describe('digest-guide-v2.md prompt', () => {
+  it('demands JSON-only output with no markdown fences or prose', () => {
+    expect(digestGuideV2Prompt).toMatch(/Return ONLY a JSON object|只输出 JSON/)
+    expect(digestGuideV2Prompt).toMatch(/Do not wrap it in markdown code blocks|不要 markdown 代码块/)
+  })
+
+  it('documents the background/chunks/heading/context/terms schema', () => {
+    for (const key of ['"background"', '"chunks"', '"heading"', '"context"', '"terms"']) {
+      expect(digestGuideV2Prompt).toContain(key)
+    }
+  })
+
+  it('reframes the reader assumption: article content is waste, not material', () => {
+    expect(digestGuideV2Prompt).toMatch(/读者自己会读正文|WILL read the briefing themselves/)
+  })
+
+  it('carries the self-question checklist (故事线/说话者/赞成或挑战/拼图)', () => {
+    expect(digestGuideV2Prompt).toContain('故事线')
+    expect(digestGuideV2Prompt).toMatch(/说话者|说话的人/)
+    expect(digestGuideV2Prompt).toMatch(/支持或挑战|赞成或挑战/)
+    expect(digestGuideV2Prompt).toContain('拼图')
+  })
+
+  it('anchors the three-tier examples: summary / 掉书袋 / 刻意通俗 forbidden, 前见 expected', () => {
+    // 三层反例 + 一层正例
+    expect(digestGuideV2Prompt).toContain('❌')
+    expect(digestGuideV2Prompt).toContain('✅')
+    expect(digestGuideV2Prompt).toContain('掉书袋')
+    expect(digestGuideV2Prompt).toContain('刻意通俗')
+    expect(digestGuideV2Prompt).toContain('Karpathy')
+  })
+
+  it('states the language style: 平实准确, no abstract-noun stacking, no forced colloquialism', () => {
+    expect(digestGuideV2Prompt).toContain('平实准确')
+    expect(digestGuideV2Prompt).toMatch(/命题|范式|赋能/)
+  })
+
+  it('keeps heading language and terms format from v1', () => {
+    expect(digestGuideV2Prompt).toMatch(/Do not translate headings|不要翻译.*标题|标题.*不要翻译/)
+    expect(digestGuideV2Prompt).toContain('上下文（context）')
+  })
+})
