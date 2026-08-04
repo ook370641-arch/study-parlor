@@ -39,7 +39,7 @@ export function buildAssistantUserPrompt(args: {
 
   if (args.guide && args.guide.chunks.length > 0) {
     const summaryText = args.guide.chunks
-      .map((c) => `## ${c.heading}\n${c.summary}`)
+      .map((c) => `## ${c.heading}\n${c.context ?? c.summary ?? ''}`)
       .join('\n\n')
     sections.push(`# 文章摘要\n${summaryText}`)
   }

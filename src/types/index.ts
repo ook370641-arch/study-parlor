@@ -85,7 +85,10 @@ export type ArticleAssistantTerm = {
 
 export type ArticleAssistantChunk = {
   heading: string
-  summary: string
+  /** v1 摘要式导读；v2（digest 背景铺陈）起由 context 取代，旧缓存/非 digest 类型仍是 summary */
+  summary?: string
+  /** v2 背景铺陈，仅 digest 新链路产出 */
+  context?: string
   terms: ArticleAssistantTerm[]
 }
 
@@ -93,6 +96,12 @@ export type ArticleAssistantGuide = {
   background: string
   chunks: ArticleAssistantChunk[]
 }
+
+/** digest 导读 v2 生成进度（主进程 articleAssistant:guideProgress 事件负载） */
+export type GuideProgress =
+  | { stage: 'planning' }
+  | { stage: 'searching'; done: number; total: number }
+  | { stage: 'writing'; chars: number; entriesDone: number; entriesTotal: number }
 
 export type ArticleAssistantMessage = {
   role: 'user' | 'assistant'
@@ -120,6 +129,8 @@ export type ArticleAssistantGuideFile = {
   filePath: string
   guide: ArticleAssistantGuide
   generatedAt: string
+  /** digest 导读格式版本；缺失视为 1（摘要式） */
+  guideVersion?: number
 }
 
 export type AssistantThinkingEffort = 'off' | 'high' | 'max'
@@ -546,6 +557,7 @@ export type IpcApi = {
   onLlmDone: (cb: (sessionId: string) => void) => () => void
   onLlmError: (cb: (sessionId: string, err: { code: string; message: string }) => void) => () => void
   onArticleAssistantSearchDone: (cb: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void) => () => void
+  onArticleAssistantGuideProgress: (cb: (payload: GuideProgress) => void) => () => void
   onArticleAssistantReasoningChunk: (cb: (sessionId: string, text: string) => void) => () => void
   onBriefingProgress: (cb: (source: BriefingProgressSource, stage: BriefingStage, detail?: string) => void) => () => void
   briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
@@ -647,6 +659,8 @@ export type IpcApi = {
     articleContent: string
     articleType: 'briefing' | 'anthropic-article' | 'web-article'
     articleTitle?: string
+    /** digest v2：正文 H2/H3 标题数，用于撰写进度分母 */
+    entriesTotal?: number
   }) => Promise<ArticleAssistantGuide>
 
   articleAssistantSendMessage: (args: {
