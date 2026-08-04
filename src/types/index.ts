@@ -153,6 +153,33 @@ export type ArticleAnnotation = {
   updatedAt: string
 }
 
+export type BriefingCollectionQA = {
+  role: 'user' | 'assistant'
+  content: string
+  selection?: string
+}
+
+export type BriefingCollectionEntry = {
+  id: string
+  briefingFilePath: string
+  briefingDate: string
+  chunkHeading: string
+  /** guide.chunks 下标（preamble 不计） */
+  chunkIndex: number
+  chunkBody: string
+  guide: { summary: string; terms: ArticleAssistantTerm[] }
+  qa: BriefingCollectionQA[]
+  /** 已处理的源旁注会话消息数（增量追加游标） */
+  qaMessageCount: number
+  collectedAt: string
+  updatedAt: string
+}
+
+export type BriefingCollection = {
+  version: 1
+  entries: BriefingCollectionEntry[]
+}
+
 export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'web-article' | 'article-assistant' | 'job-briefing' | 'writing'
 
 export type Profile = {
@@ -654,6 +681,11 @@ export type IpcApi = {
   // Annotations
   annotationsRead: (articlePath: string) => Promise<ArticleAnnotation[]>
   annotationsWrite: (articlePath: string, annotations: ArticleAnnotation[]) => Promise<void>
+
+  collectionRead: () => Promise<BriefingCollection>
+  collectionAddEntry: (entry: BriefingCollectionEntry) => Promise<{ ok: true } | { ok: false; code: 'DUPLICATE' | 'WRITE_ERROR' }>
+  collectionRemoveEntry: (id: string) => Promise<void>
+  collectionAppendQA: (args: { id: string; qa: BriefingCollectionQA[]; qaMessageCount: number }) => Promise<void>
 
   // Article assistant
   articleAssistantGenerateGuide: (args: {
