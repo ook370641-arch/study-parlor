@@ -20,6 +20,8 @@ interface Props {
   onDelete?: (items: BriefingHistoryItem[]) => void
   generatedDates?: string[]
   readDates?: string[]
+  /** 仅 digest 源传入：精选集置顶入口 */
+  collection?: { active: boolean; onOpen: () => void }
 }
 
 function formatLabel(date: string): string {
@@ -28,7 +30,7 @@ function formatLabel(date: string): string {
   return `${m}月${d}日`
 }
 
-export function BriefingDateColumn({ collapsed, history, currentDate, today, onSelect, onReceiveToday, theme, todayLabel = '查收日报', onDelete, generatedDates = [], readDates = [] }: Props) {
+export function BriefingDateColumn({ collapsed, history, currentDate, today, onSelect, onReceiveToday, theme, todayLabel = '查收日报', onDelete, generatedDates = [], readDates = [], collection }: Props) {
   const isAcademic = theme !== 'newspaper'
   const source = useStore((s) => s.briefingSource)
   const jobBlue = isAcademic && source === 'job-briefing'
@@ -61,6 +63,12 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
     const latest = past[0]
     return (
       <div className="flex flex-col items-center py-3 px-1 gap-3">
+        {collection && (
+          <button data-testid="briefing-collection-mini" onClick={collection.onOpen} title="精选集"
+            className={`w-8 h-8 rounded flex items-center justify-center ${isAcademic ? (collection.active ? 'bg-ember/20 text-ember' : 'text-parchment/60 hover:text-ember') : (collection.active ? 'bg-[#1a1a1a] text-white' : 'text-[#6b5d52] hover:text-[#1a1a1a]')}`}>
+            ✦
+          </button>
+        )}
         <button data-testid="briefing-date-today-mini" onClick={onReceiveToday} title={todayLabel}
           className={`w-8 h-8 rounded flex items-center justify-center ${isAcademic ? (jobBlue ? 'bg-[#7fa8d9]/20 text-[#7fa8d9]' : 'bg-ember/20 text-ember') : 'bg-[#1a1a1a] text-white'}`}>
           今
@@ -77,6 +85,19 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
 
   return (
     <div className="p-2 space-y-1" data-testid="briefing-date-column">
+      {collection && (
+        <button
+          data-testid="briefing-collection-entry"
+          onClick={collection.onOpen}
+          className={`w-full text-left px-2 py-2 rounded transition-all duration-300 flex items-center gap-2 ${
+            collection.active ? activeItem : itemBase
+          }`}
+          style={{ fontSize: 'var(--briefing-list-title-size)' }}
+        >
+          <span className="inline-block w-[7px] h-[7px] shrink-0" />
+          ✦ 精选集
+        </button>
+      )}
       {entries.map((entry) => {
         const isCurrent = entry.date === currentDate
         return (

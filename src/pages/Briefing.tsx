@@ -18,6 +18,7 @@ import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
 import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingEmptyState, BriefingMetaLine } from '@/components/briefing'
+import { CollectionView } from '@/components/briefing/CollectionView'
 import { CandlelightLayer } from '@/components/briefing/CandlelightLayer'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 import { formatBriefingDate, formatDisplayDate } from '@/lib/format-briefing-date'
@@ -82,6 +83,8 @@ export function Briefing() {
   const deleteJobBriefings = useStore((s) => s.deleteJobBriefings)
   const cancelBriefing = useStore((s) => s.cancelBriefing)
   const cancelJobBriefing = useStore((s) => s.cancelJobBriefing)
+  const collectionViewOpen = useStore((s) => s.collectionViewOpen)
+  const openCollectionView = useStore((s) => s.openCollectionView)
 
   const today = formatBriefingDate(new Date())
 
@@ -257,6 +260,7 @@ export function Briefing() {
                   ...(result?.date ? [result.date] : []),
                 ]}
                 readDates={digestRead}
+                collection={{ active: collectionViewOpen, onOpen: () => void openCollectionView() }}
               />
             </BriefingListColumn>
           )}
@@ -301,7 +305,9 @@ export function Briefing() {
           )}
 
           <div className="flex-1 flex flex-col min-w-0">
-            {source === 'writing' ? (
+            {source === 'digest' && collectionViewOpen ? (
+              <CollectionView theme={theme} />
+            ) : source === 'writing' ? (
               <main className="relative z-[5] flex-1">
                 <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
                   <button type="button" data-testid="writing-ui-font-size-decrease"
