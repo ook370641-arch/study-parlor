@@ -78,6 +78,7 @@ export function parseFrontmatter(
     parent_path: typeof data.parent_path === 'string' ? data.parent_path : undefined,
     parent_type: data.parent_type === 'briefing' || data.parent_type === 'anthropic-article' || data.parent_type === 'job-briefing' || data.parent_type === 'web-article' ? data.parent_type : undefined,
     generated_at: typeof data.generated_at === 'string' ? data.generated_at : undefined,
+    guide_version: typeof data.guide_version === 'number' ? data.guide_version : undefined,
     role_keywords: Array.isArray(data.role_keywords) ? data.role_keywords as string[] : undefined,
     cities: Array.isArray(data.cities) ? data.cities as string[] : undefined,
     companies: Array.isArray(data.companies) ? data.companies as string[] : undefined,

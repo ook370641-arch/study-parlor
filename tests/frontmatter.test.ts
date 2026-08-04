@@ -208,6 +208,27 @@ describe('guide_version frontmatter', () => {
     )
     expect(out).toContain('guide_version: 2')
   })
+
+  it('round-trips guide_version through parse → serialize → parse', () => {
+    const raw = `---
+title: 导读
+type: article-assistant
+created: 2026-08-04
+parent_path: notes/briefing-2026-08-04.md
+parent_type: briefing
+guide_version: 2
+tags: []
+---
+# 背景
+
+正文`
+    const { frontmatter } = parseFrontmatter(raw, { filename: '2026-08-04-导读.guide.md' })
+    expect(frontmatter.guide_version).toBe(2)
+    expect(frontmatter.type).toBe('article-assistant')
+    const out = serializeFrontmatter('article-assistant', frontmatter, 'body')
+    const reparsed = parseFrontmatter(out, { filename: '2026-08-04-导读.guide.md' })
+    expect(reparsed.frontmatter.guide_version).toBe(2)
+  })
 })
 
 describe('web-article frontmatter', () => {

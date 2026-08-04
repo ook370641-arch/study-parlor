@@ -186,6 +186,7 @@ export type Frontmatter = {
   parent_path?: string
   parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing' | 'writing' | 'web-article'
   generated_at?: string
+  guide_version?: number
   role_keywords?: string[]
   cities?: string[]
   companies?: string[]
