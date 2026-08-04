@@ -1,8 +1,10 @@
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { ArticleAssistantPage } from '../pages/ArticleAssistantPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBriefing } from '../helpers/test-library'
+import { seedBriefing, seedBriefingGuideFile } from '../helpers/test-library'
 import type { Page } from '@playwright/test'
 
 function localToday(): string {
@@ -83,5 +85,39 @@ test.describe('@p2 article assistant guide', () => {
     // rendered inside the academic layout body.
     await expect(swap).toHaveCount(1)
     await expect(swap).toBeVisible()
+  })
+
+  test('v2 guide: progress stages visible, then context-based guide renders', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigestWithGuide(window, testLibraryPath)
+    // v2 mock 的合成进度约 3.4s：先断言进度文案出现，再等导读落地
+    await expect(window.locator('[data-testid="guide-progress"]')).toContainText('检索背景资料中', { timeout: 15000 })
+    await assistant.waitForGuideLoaded()
+    await expect(window.locator('[data-testid="guide-chunk"]').first()).toContainText('E2E mock 背景铺陈')
+  })
+
+  test('stale v1 guide cache is regenerated to v2', async ({ window, testLibraryPath }) => {
+    const today = localToday()
+    seedBriefing(testLibraryPath, today, DIGEST_CONTENT)
+    seedBriefingGuideFile(testLibraryPath, today, '# 背景\n\n旧版背景。\n\n## §1 AI Safety\n\n旧版摘要内容。')
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+
+    const assistant = new ArticleAssistantPage(window)
+    await assistant.waitForMounted()
+    await assistant.waitForGuideLoaded()
+
+    // 旧缓存被判定失效并重新生成：渲染的是 v2 mock 内容而非旧摘要
+    await expect(window.locator('[data-testid="guide-chunk"]').first()).toContainText('E2E mock 背景铺陈')
+    await expect(window.locator('[data-testid="guide-chunk"]').first()).not.toContainText('旧版摘要内容')
+
+    // 覆盖写盘后带 guide_version: 2
+    const guidePath = path.join(testLibraryPath, '夜航简报', `夜航简报-${today}.guide.md`)
+    await expect
+      .poll(() => (fs.existsSync(guidePath) ? fs.readFileSync(guidePath, 'utf8') : ''), { timeout: 10000 })
+      .toContain('guide_version: 2')
   })
 })

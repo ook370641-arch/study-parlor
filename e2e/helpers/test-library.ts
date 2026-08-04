@@ -613,6 +613,24 @@ tags:
   fs.writeFileSync(filePath, fm + defaultContent, 'utf8')
 }
 
+/**
+ * Seed a v1-format (no guide_version) .guide.md for a digest, used to verify
+ * stale-cache invalidation regenerates the guide via the v2 pipeline.
+ */
+export function seedBriefingGuideFile(libPath: string, date: string, body: string): void {
+  const dir = path.join(libPath, '夜航简报')
+  fs.mkdirSync(dir, { recursive: true })
+  const fm = `---
+title: 导读
+type: article-assistant
+created: '2026-01-01'
+tags: []
+---
+
+`
+  fs.writeFileSync(path.join(dir, `夜航简报-${date}.guide.md`), fm + body, 'utf8')
+}
+
 export function seedAnthropicArticle(
   libPath: string,
   slug: string,
