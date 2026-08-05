@@ -190,6 +190,19 @@ describe('store article assistant', () => {
       expect(useStore.getState().assistantSession?.guideError).toBe('GUIDE_LLM_ERROR')
       expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
     })
+
+    it('非 briefing 生成中不置 guideProgress（articleType 门控）', async () => {
+      vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise(() => {}) as Promise<any>)
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/a.md',
+        contextType: 'anthropic-article',
+        articleContent: 'body',
+        autoGenerateGuide: true,
+      })
+      await flush(); await flush()
+      expect(useStore.getState().assistantSession?.guideLoading).toBe(true)
+      expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
+    })
   })
 
   describe('toggleAssistantSearch', () => {

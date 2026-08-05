@@ -2039,7 +2039,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const s = get().assistantSession
     if (!s || s.guideLoading || s.guide) return
     const entriesTotal = countArticleHeadings(s.articleContent)
-    set({ assistantSession: { ...s, guideLoading: true, guideError: null, guideProgress: { stage: 'planning' } } })
+    set({ assistantSession: { ...s, guideLoading: true, guideError: null, guideProgress: s.contextType === 'briefing' ? { stage: 'planning' } : null } })
     try {
       const guide = await ipc.articleAssistantGenerateGuide({
         articleContent: s.articleContent,
