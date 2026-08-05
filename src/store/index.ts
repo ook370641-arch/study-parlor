@@ -1833,7 +1833,7 @@ export const useStore = create<AppStore>((set, get) => ({
       chunkHeading: guideChunk.heading,
       chunkIndex,
       chunkBody: articleChunk.body,
-      guide: { summary: guideChunk.summary, terms: guideChunk.terms },
+      guide: { summary: guideChunk.summary, context: guideChunk.context, terms: guideChunk.terms },
       qa,
       qaMessageCount: s.messages.length,
       collectedAt: now,

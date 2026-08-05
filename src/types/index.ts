@@ -167,7 +167,7 @@ export type BriefingCollectionEntry = {
   /** guide.chunks 下标（preamble 不计） */
   chunkIndex: number
   chunkBody: string
-  guide: { summary: string; terms: ArticleAssistantTerm[] }
+  guide: { summary?: string; context?: string; terms: ArticleAssistantTerm[] }
   qa: BriefingCollectionQA[]
   /** 已处理的源旁注会话消息数（增量追加游标） */
   qaMessageCount: number

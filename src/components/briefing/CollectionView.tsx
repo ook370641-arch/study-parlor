@@ -72,7 +72,7 @@ export function CollectionView({ theme = 'academic' }: { theme?: BriefingTheme }
                     <MarkdownRenderer content={entry.chunkBody} fileName="collection.md" hideHeader briefingStyle={theme} />
                   </div>
                   <div className={`mt-3 rounded p-3 ${isAcademic ? 'bg-ink/80 border border-parchment/10' : 'bg-[#f5f2ed] border border-[#1a1a1a]/10'}`}>
-                    <div className={`leading-relaxed ${textMuted}`}>{entry.guide.summary}</div>
+                    <div className={`leading-relaxed ${textMuted}`}>{entry.guide.context || entry.guide.summary}</div>
                     {entry.guide.terms.map((t, i) => (
                       <div key={i} className={`mt-1 text-sm ${textMuted}`}>
                         <span className="text-ember font-medium">{t.term}</span>
