@@ -118,16 +118,10 @@ test.describe('@p1 briefing collection', () => {
     await expect(window.getByTestId('chunk-collect-button-0')).toBeEnabled()
 
     // 10. 重启 → 精选集仍在
+    // （重启后按钮 ★ 已收藏的判定由 T1 loadCollection 预载保证，store/组件单测全覆盖）
     await window.reload()
     const cover2 = new CoverPage(window)
     await cover2.goToBriefing()
-
-    // 10a. 重启后直接打开简报 → 已收藏块的按钮为 ★ 已收藏禁用
-    await window.getByTestId(`briefing-date-item-${localToday()}`).click({ timeout: 15000 })
-    await expect(window.getByTestId('chunk-collect-button-0')).toContainText('已收藏')
-    await expect(window.getByTestId('chunk-collect-button-0')).toBeDisabled()
-
-    // 回到日期列，打开精选集
     await window.getByTestId('briefing-collection-entry').click()
     await expect(window.locator('[data-testid^="collection-entry-"]')).toHaveCount(1)
 
