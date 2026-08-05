@@ -10,7 +10,8 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantReadSession: vi.fn(),
     articleAssistantWriteSession: vi.fn(),
     articleAssistantSendMessage: vi.fn(),
-    articleAssistantAbort: vi.fn()
+    articleAssistantAbort: vi.fn(),
+    collectionRead: vi.fn().mockResolvedValue({ version: 1, entries: [] })
   }
 }))
 

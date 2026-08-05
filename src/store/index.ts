@@ -1700,6 +1700,10 @@ export const useStore = create<AppStore>((set, get) => ({
         activeChunkIndex: null,
       },
     })
+    // A1: briefing 会话预载精选集，保证铭牌「已收藏」判定基于磁盘数据
+    if (args.contextType === 'briefing' && !get().collection.loaded) {
+      void get().loadCollection()
+    }
     get().loadAssistantGuide().then(() => {
       if (args.autoGenerateGuide) {
         const cur = get().assistantSession
@@ -1817,6 +1821,8 @@ export const useStore = create<AppStore>((set, get) => ({
     const articleChunk = headed[chunkIndex]
     if (!articleChunk) return
 
+    // A1: 未加载时先加载，确保 DUPLICATE 判定准确（重启后直接打开文章的场景）
+    if (!get().collection.loaded) await get().loadCollection()
     const attributed = attributeMessages(s.messages, s.articleContent, s.guide.chunks)
     const qa = (attributed.get(chunkIndex) ?? []).map(({ message }) => ({
       role: message.role,

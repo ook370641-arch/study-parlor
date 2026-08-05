@@ -92,6 +92,7 @@ describe('collection slice', () => {
 
   it('collectChunk 重复收藏（DUPLICATE）不写入 store', async () => {
     seedAssistantSession([])
+    useStore.setState({ collection: { entries: [], loaded: true } })
     mockIpc.collectionAddEntry.mockResolvedValue({ ok: false, code: 'DUPLICATE' })
     await useStore.getState().collectChunk(0)
     expect(useStore.getState().collection.entries).toHaveLength(0)
@@ -142,5 +143,26 @@ describe('collection slice', () => {
     useStore.setState({ assistantSession: { ...useStore.getState().assistantSession!, streaming: true } as never })
     useStore.getState().finishAssistantStreaming()
     await vi.waitFor(() => expect(mockIpc.collectionAppendQA).toHaveBeenCalled())
+  })
+
+  it('打开 briefing 旁注会话时预载精选集', async () => {
+    mockIpc.collectionRead.mockResolvedValue({ version: 1, entries: [] })
+    useStore.getState().openAssistantSession({
+      contextId: FILE,
+      contextType: 'briefing',
+      articleContent: ARTICLE,
+    })
+    await vi.waitFor(() => expect(mockIpc.collectionRead).toHaveBeenCalled())
+    expect(useStore.getState().collection.loaded).toBe(true)
+  })
+
+  it('collectChunk 在精选集未加载时先加载再判重', async () => {
+    seedAssistantSession([{ role: 'user', content: 'q', selection: '宪法式 AI' }])
+    useStore.setState({ collection: { entries: [], loaded: false } })
+    mockIpc.collectionRead.mockResolvedValue({ version: 1, entries: [entryOf()] })
+    mockIpc.collectionAddEntry.mockResolvedValue({ ok: false, code: 'DUPLICATE' })
+    await useStore.getState().collectChunk(0)
+    expect(mockIpc.collectionRead).toHaveBeenCalled()
+    expect(useStore.getState().collection.entries).toHaveLength(1)
   })
 })
