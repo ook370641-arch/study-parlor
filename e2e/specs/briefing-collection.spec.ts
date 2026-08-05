@@ -35,7 +35,7 @@ async function openDigest(window: Page, libPath: string): Promise<ArticleAssista
   return assistant
 }
 
-/** E2E only（e2e §8）：store 后门注入选段。真实路径由 article-assistant.spec.ts 的 UI 选字用例覆盖。 */
+/** E2E only（e2e §8）：store 后门注入选段。真实路径由 article-annotations.spec.ts 的 ghost pen UI 选字用例覆盖。 */
 async function injectSelection(window: Page, text: string): Promise<void> {
   await window.evaluate((t) => {
     ;(window as unknown as { useStore: { getState: () => { setAssistantSelection: (s: string) => void } } })
@@ -55,6 +55,7 @@ test.describe('@p1 briefing collection', () => {
 
     // 1. 日期列有精选集置顶入口（UI 出口断言，feature-development §12）
     await expect(window.getByTestId('briefing-collection-entry')).toBeVisible()
+    await expect(window.getByTestId('briefing-font-size-increase')).toBeVisible()
 
     // 2. 导读生成后铭牌按钮出现（等 mock guide 到达）
     await expect(window.getByTestId('chunk-collect-button-0')).toBeVisible({ timeout: 15000 })
@@ -120,6 +121,12 @@ test.describe('@p1 briefing collection', () => {
     await window.reload()
     const cover2 = new CoverPage(window)
     await cover2.goToBriefing()
+
+    // 10a. 重启后直接打开简报 → 已收藏块的按钮为 ★ 已收藏禁用
+    await window.getByTestId(`briefing-date-item-${localToday()}`).click()
+    await expect(window.getByTestId('chunk-collect-button-0')).toContainText('已收藏')
+    await expect(window.getByTestId('chunk-collect-button-0')).toBeDisabled()
+
     await window.getByTestId('briefing-collection-entry').click()
     await expect(window.locator('[data-testid^="collection-entry-"]')).toHaveCount(1)
 

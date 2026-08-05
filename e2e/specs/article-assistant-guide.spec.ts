@@ -13,13 +13,18 @@ function localToday(): string {
   return `${y}-${m}-${day}`
 }
 
-// Digest content whose first heading matches the E2E mock guide chunk heading
-// ("AI Safety"). splitArticleIntoChunks keys body chunks off the guide headings,
-// so this guarantees the body renders at least one `article-body-chunk` section.
+// Digest content whose headings match the E2E mock guide chunk headings
+// ("AI Safety", "Training Data"). splitArticleIntoChunks keys body chunks off
+// guide headings, so both headings are needed to render two body chunks (and
+// two plaques) for the click-navigation test.
 const DIGEST_CONTENT = `## AI Safety
 
 ### Box CEO Aaron Levie
 Aaron Levie 讨论了 AI 安全与对齐在企业工作流中的落地。
+
+## Training Data
+
+训练数据质量直接影响模型行为与安全边界。
 
 ## 原始来源
 ### Aaron Levie
@@ -125,5 +130,15 @@ test.describe('@p2 article assistant guide', () => {
     // 移开后失活（mouse move 到页面角落触发真实的 mouseleave）
     await window.mouse.move(0, 0)
     await expect(window.locator('[data-testid="article-body-chunk"][data-chunk-index="0"]')).not.toHaveClass(/border-ember/)
+  })
+
+  test('body-to-guide chunk navigation: clicking plaque scrolls guide chunk into view', async ({ window, testLibraryPath }) => {
+    // 用户在正文点击第二条铭牌 → 右侧导读栏滚动定位到对应 § 卡片
+    const assistant = await openDigestWithGuide(window, testLibraryPath)
+    await assistant.waitForGuideLoaded()
+    await window.locator('[data-testid="article-chunk-plaque"]').nth(1).click()
+    await expect(
+      window.locator('[data-testid="guide-chunk"][data-chunk-index="1"]')
+    ).toBeInViewport()
   })
 })
