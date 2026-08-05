@@ -24,7 +24,7 @@ export function readCollection(libraryPath: string): BriefingCollection {
 export function addCollectionEntry(libraryPath: string, entry: BriefingCollectionEntry): 'ok' | 'duplicate' {
   const col = readCollection(libraryPath)
   const dup = col.entries.some(
-    (e) => e.briefingFilePath === entry.briefingFilePath && e.chunkIndex === entry.chunkIndex
+    (e) => e.briefingFilePath === entry.briefingFilePath && e.chunkIndex === entry.chunkIndex && e.chunkHeading === entry.chunkHeading
   )
   if (dup) return 'duplicate'
   col.entries.unshift(entry)

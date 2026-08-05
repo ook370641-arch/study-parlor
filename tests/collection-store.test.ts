@@ -44,10 +44,16 @@ describe('collection-store', () => {
     expect(col.entries.map((e) => e.id)).toEqual(['c-new', 'c-old'])
   })
 
-  it('addEntry 同 (filePath, chunkIndex) 去重返回 duplicate', () => {
+  it('addEntry 同 (filePath, chunkIndex, chunkHeading) 去重返回 duplicate', () => {
     addCollectionEntry(dir, makeEntry())
     expect(addCollectionEntry(dir, makeEntry({ id: 'c-2' }))).toBe('duplicate')
     expect(readCollection(dir).entries).toHaveLength(1)
+  })
+
+  it('addEntry 同索引但 heading 不同（源重生成）允许收藏', () => {
+    addCollectionEntry(dir, makeEntry())
+    expect(addCollectionEntry(dir, makeEntry({ id: 'c-2', chunkHeading: '全新标题' }))).toBe('ok')
+    expect(readCollection(dir).entries).toHaveLength(2)
   })
 
   it('removeEntry 按 id 删除', () => {

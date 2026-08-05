@@ -73,7 +73,7 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
                 <span className="flex-1 border-t border-ember/40" />
                 {collectible && (() => {
                   const isCollected = collectionEntries.some(
-                    (e) => e.briefingFilePath === contextId && e.chunkIndex === guideIndex
+                    (e) => e.briefingFilePath === contextId && e.chunkIndex === guideIndex && e.chunkHeading === chunk.heading
                   )
                   return (
                     <button

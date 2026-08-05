@@ -77,4 +77,21 @@ describe('chunk collect button', () => {
     render(<ArticleBodyChunks content={ARTICLE} chunks={CHUNKS} fileName="b.md" />)
     expect(screen.queryByTestId('chunk-collect-button-0')).toBeNull()
   })
+
+  it('已收藏条目 heading 与当前块不匹配（源重生成）时按钮可点', () => {
+    seedSession()
+    useStore.setState({
+      collection: {
+        loaded: true,
+        entries: [{
+          id: 'c-1', briefingFilePath: '/lib/夜航简报/夜航简报-2026-08-04.md', briefingDate: '2026-08-04',
+          chunkHeading: '旧内容标题', chunkIndex: 0, chunkBody: 'x',
+          guide: { summary: 's0', terms: [] }, qa: [], qaMessageCount: 0,
+          collectedAt: 't', updatedAt: 't',
+        }],
+      },
+    })
+    render(<ArticleBodyChunks content={ARTICLE} chunks={CHUNKS} fileName="b.md" collectible />)
+    expect(screen.getByTestId('chunk-collect-button-0')).toBeEnabled()
+  })
 })
