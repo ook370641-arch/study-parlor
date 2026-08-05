@@ -39,4 +39,10 @@ describe('briefing prompts', () => {
     expect(content).toContain('AI Builders Digest')
     expect(content).toContain('No decorative headers')
   })
+
+  it('summarize prompts 保持加长后的字数档（正文加长防回退）', () => {
+    expect(fs.readFileSync(path.join(PROMPT_DIR, 'summarize-blogs.md'), 'utf8')).toContain('600-900')
+    expect(fs.readFileSync(path.join(PROMPT_DIR, 'summarize-podcast.md'), 'utf8')).toContain('800-1200')
+    expect(fs.readFileSync(path.join(PROMPT_DIR, 'summarize-tweets.md'), 'utf8')).toContain('6-10')
+  })
 })

@@ -83,7 +83,16 @@ describe('collection-store', () => {
     expect(() => appendCollectionQA(dir, 'nope', [{ role: 'user', content: 'x' }], 9)).not.toThrow()
   })
 
-  it('损坏 JSON 走 .bak 备份并返回空集合', () => {
+  it('主文件损坏后从 .bak 恢复上次写入的数据', () => {
+    addCollectionEntry(dir, makeEntry({ id: 'c-good' }))
+    addCollectionEntry(dir, makeEntry({ id: 'c-good-2', chunkIndex: 1 }))
+    const p = collectionPathFor(dir)
+    fs.writeFileSync(p, '{broken', 'utf8')
+    const col = readCollection(dir)
+    expect(col.entries.map((e) => e.id)).toEqual(['c-good'])
+  })
+
+  it('损坏且无 .bak 时返回空集合', () => {
     const p = collectionPathFor(dir)
     fs.mkdirSync(path.dirname(p), { recursive: true })
     fs.writeFileSync(p, '{broken', 'utf8')

@@ -47,8 +47,10 @@
     "article-assistant": {
       "sources": [
         "electron/ipc/article-assistant.ts",
+        "electron/lib/guide-v2*.ts",
         "src/components/article-assistant/**",
-        "src/lib/assistant-*.ts"
+        "src/lib/assistant-*.ts",
+        "src/lib/guide-progress.ts"
       ],
       "specs": [
         "article-assistant*.spec.ts",

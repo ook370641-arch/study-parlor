@@ -1,5 +1,31 @@
-import { describe, it, expect } from 'vitest'
-import { parseAssistantGuideBody, serializeGuide } from '../electron/ipc/article-assistant'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { parseAssistantGuideBody, serializeGuide, registerArticleAssistantIpc } from '../electron/ipc/article-assistant'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import type { AppConfig } from '../electron/env'
+
+// —— handler 级测试 mock ——
+const handlers = vi.hoisted(() => ({}) as Record<string, (event: unknown, args: never) => Promise<unknown>>)
+
+vi.mock('electron', () => ({
+  ipcMain: {
+    handle: (channel: string, fn: (event: unknown, args: never) => Promise<unknown>) => {
+      handlers[channel] = fn
+    },
+  },
+  app: { getPath: () => os.tmpdir() },
+}))
+
+vi.mock('../electron/lib/guide-v2-pipeline', () => ({
+  runDigestGuideV2: vi.fn(
+    (_cfg: unknown, _args: unknown, _onProgress: unknown, signal?: AbortSignal) =>
+      new Promise((_, reject) => {
+        signal?.addEventListener('abort', () =>
+          reject(Object.assign(new Error('aborted'), { code: 'GUIDE_ABORT' })))
+      })
+  ),
+}))
 
 describe('parseAssistantGuideBody', () => {
   it('parses background and chunks with terms', () => {
@@ -46,5 +72,47 @@ describe('serializeGuide v2', () => {
     }
     expect(serializeGuide(guide as any)).toContain('新铺陈')
     expect(serializeGuide(guide as any)).not.toContain('旧摘要')
+  })
+})
+
+describe('guide IPC handlers', () => {
+  let dir: string
+  const fakeEvent = { sender: { isDestroyed: () => false, send: vi.fn() } }
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guide-ipc-'))
+    registerArticleAssistantIpc({ libraryPath: dir } as unknown as AppConfig)
+  })
+  afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
+
+  it('writeGuide：guide 含 context 时 frontmatter 写 guide_version: 2', async () => {
+    const parent = path.join(dir, '夜航简报', '夜航简报-2026-08-04.md')
+    const { filePath } = (await handlers['articleAssistant:writeGuide'](fakeEvent, {
+      parentPath: parent,
+      parentType: 'briefing',
+      guide: { background: 'bg', chunks: [{ heading: 'H', context: '铺陈', terms: [] }] },
+    } as never)) as { filePath: string }
+    expect(fs.readFileSync(filePath, 'utf8')).toContain('guide_version: 2')
+  })
+
+  it('writeGuide：纯 summary（v1 格式）不写 guide_version', async () => {
+    const parent = path.join(dir, 'article.md')
+    const { filePath } = (await handlers['articleAssistant:writeGuide'](fakeEvent, {
+      parentPath: parent,
+      parentType: 'anthropic-article',
+      guide: { background: 'bg', chunks: [{ heading: 'H', summary: '摘要', terms: [] }] },
+    } as never)) as { filePath: string }
+    expect(fs.readFileSync(filePath, 'utf8')).not.toContain('guide_version')
+  })
+
+  it('abortGuide 中断进行中的 generateGuide（reject GUIDE_ABORT）', async () => {
+    const pending = handlers['articleAssistant:generateGuide'](fakeEvent, {
+      articleContent: '## 一\nx',
+      articleType: 'briefing',
+      entriesTotal: 1,
+    } as never)
+    const assertion = expect(pending).rejects.toMatchObject({ code: 'GUIDE_ABORT' })
+    await handlers['articleAssistant:abortGuide'](fakeEvent, undefined as never)
+    await assertion
   })
 })
