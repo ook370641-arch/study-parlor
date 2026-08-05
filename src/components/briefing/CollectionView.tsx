@@ -78,6 +78,9 @@ export function CollectionView({ theme = 'academic' }: { theme?: BriefingTheme }
                         <span className="text-ember font-medium">{t.term}</span>
                         <span className="mx-1">·</span>
                         <span>{t.translation}</span>
+                        {t.explanation && (
+                          <div className={`mt-0.5 ${isAcademic ? 'text-parchment/50' : 'text-[#999]'}`}>{t.explanation}</div>
+                        )}
                       </div>
                     ))}
                   </div>

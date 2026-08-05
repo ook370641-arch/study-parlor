@@ -81,4 +81,40 @@ describe('CollectionView', () => {
     fireEvent.click(await screen.findByTestId('confirm-dialog-confirm'))
     expect(mockIpc.collectionRemoveEntry).toHaveBeenCalledWith('c-1')
   })
+
+  it('术语表渲染 explanation（沿用 GuideSidebar 视觉语言）', () => {
+    useStore.setState({
+      collection: {
+        loaded: true,
+        entries: [{
+          ...ENTRY,
+          guide: { summary: 's', terms: [{ term: 'CAI', translation: '宪法式 AI', explanation: '用书面原则约束模型行为的对齐方法。' }] },
+        }],
+      },
+    })
+    render(<CollectionView theme="academic" />)
+    expect(screen.getByText('用书面原则约束模型行为的对齐方法。')).toBeInTheDocument()
+  })
+
+  it('按简报日期分组渲染组头', () => {
+    useStore.setState({
+      collection: {
+        loaded: true,
+        entries: [
+          ENTRY,
+          { ...ENTRY, id: 'c-2', briefingDate: '2026-08-03', collectedAt: '2026-08-03T10:00:00.000Z' },
+        ],
+      },
+    })
+    render(<CollectionView theme="academic" />)
+    expect(screen.getByText('8月4日 夜航简报')).toBeInTheDocument()
+    expect(screen.getByText('8月3日 夜航简报')).toBeInTheDocument()
+  })
+
+  it('newspaper 主题下条目正常渲染', () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="newspaper" />)
+    expect(screen.getByTestId('collection-entry-c-1')).toBeInTheDocument()
+    expect(screen.getByText('本段介绍宪法式 AI。')).toBeInTheDocument()
+  })
 })
