@@ -122,6 +122,8 @@ test.describe('@p1 briefing collection', () => {
     await window.reload()
     const cover2 = new CoverPage(window)
     await cover2.goToBriefing()
+    // 等待日期列渲染完成（goToBriefing 只点击按钮不等渲染）
+    await expect(window.getByTestId(`briefing-date-item-${localToday()}`)).toBeVisible({ timeout: 15000 })
     await window.getByTestId('briefing-collection-entry').click()
     await expect(window.locator('[data-testid^="collection-entry-"]')).toHaveCount(1)
 
