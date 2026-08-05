@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { ArticleAssistantPage } from '../pages/ArticleAssistantPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBriefing } from '../helpers/test-library'
+import { seedBriefing, seedAnthropicArticle, seedStateJson } from '../helpers/test-library'
 import type { Page } from '@playwright/test'
 
 function localToday(): string {
@@ -98,4 +98,55 @@ test.describe('@p2 article assistant guide', () => {
   // E2E 侧 readGuide IPC 直读磁盘文件，无 mock 分支，无法构造"v1 文件落盘后
   // 触发再生"的确定性场景——v1 种子文件被真实读取绕过了 isGuideCacheCurrent
   // 在 store 层的判定链。此处不重复测试该路径。
+
+  test('anthropic article guide still uses v1 summary format, no v2 progress', async ({ window, testLibraryPath, testConfigDir }) => {
+    // 用户打开一篇 Anthropic 博客文章 → 右侧导读栏出现，内容应是旧摘要式
+    // （summary），不应出现 v2 背景铺陈（context）或 v2 三阶段进度条。
+    seedAnthropicArticle(testLibraryPath, 'test-article', '测试文章', '## AI Safety\n\n正文内容。')
+    seedStateJson(testConfigDir, { briefingSource: 'anthropic' })
+
+    const cover = new CoverPage(window)
+    await cover.goToBriefing()
+    // 切换到 Anthropic 源
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 15000 })
+    // 点击文章行打开阅读器
+    await window.locator(SELECTORS.briefing.anthropicArticleRow).first().click()
+
+    const assistant = new ArticleAssistantPage(window)
+    await assistant.waitForMounted()
+    await assistant.waitForGuideLoaded()
+    // Anthropic 文章走旧路径：返回 summary 格式导读，不含 context
+    await expect(window.locator('[data-testid="guide-chunk"]').first()).toContainText('Constitutional AI')
+    // v2 进度 UI 不应出现（仅 digest 简报有）
+    await expect(window.locator('[data-testid="guide-progress"]')).toHaveCount(0)
+  })
+
+  test('v2 guide: full three-stage progress sequence', async ({ window, testLibraryPath }) => {
+    // 用户打开无缓存的简报 → 导读栏依次显示三个阶段，最后导读内容出现。
+    const assistant = await openDigestWithGuide(window, testLibraryPath)
+    const progress = window.locator('[data-testid="guide-progress"]')
+    // 阶段 1：规划（mock 约 0.4s 内出现）
+    await expect(progress).toContainText('规划检索中', { timeout: 5000 })
+    // 阶段 2：搜索（mock 在 0.4s + 0.5s 后发第一个搜索进度）
+    await expect(progress).toContainText('检索背景资料中', { timeout: 5000 })
+    // 阶段 3：撰写（mock 在 ~1.4s 后开始发 writing 进度）
+    await expect(progress).toContainText('撰写导读中', { timeout: 15000 })
+    // 最终导读落地为 context 格式
+    await assistant.waitForGuideLoaded()
+    await expect(window.locator('[data-testid="guide-chunk"]').first()).toContainText('E2E mock 背景铺陈')
+  })
+
+  test('guide-to-body chunk navigation: hover highlights corresponding body chunk', async ({ window, testLibraryPath }) => {
+    // 用户在导读栏 hover §0 → 左侧正文 §0 对应段落高亮（border-ember）。
+    const assistant = await openDigestWithGuide(window, testLibraryPath)
+    await assistant.waitForGuideLoaded()
+    // hover 第一个导读 chunk
+    await window.locator('[data-testid="guide-chunk"][data-chunk-index="0"]').hover()
+    // 对应正文 chunk 应获得激活态边框
+    await expect(window.locator('[data-testid="article-body-chunk"][data-chunk-index="0"]')).toHaveClass(/border-ember/)
+    // 移开后失活（mouse move 到页面角落触发真实的 mouseleave）
+    await window.mouse.move(0, 0)
+    await expect(window.locator('[data-testid="article-body-chunk"][data-chunk-index="0"]')).not.toHaveClass(/border-ember/)
+  })
 })
