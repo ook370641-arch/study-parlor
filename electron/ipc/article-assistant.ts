@@ -31,7 +31,6 @@ import type {
 } from '@shared/index'
 
 const assistantSessions = new Map<string, AbortController>()
-let activeGuideController: AbortController | null = null
 
 // E2E deterministic mock is active only when BOTH the test NODE_ENV and the
 // E2E isolation marker are set. Gating on both keeps unit tests (which run with
@@ -333,8 +332,6 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       if (args.articleType === 'briefing') {
         const v2PromptPath = path.join(promptsDir(), 'digest-guide-v2.md')
         const systemV2 = fs.existsSync(v2PromptPath) ? fs.readFileSync(v2PromptPath, 'utf8') : ''
-        const controller = new AbortController()
-        activeGuideController = controller
         try {
           return await runDigestGuideV2(
             cfg,
@@ -344,16 +341,12 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
               articleTitle: args.articleTitle,
               entriesTotal: args.entriesTotal,
             },
-            (p) => send('articleAssistant:guideProgress', p),
-            controller.signal
+            (p) => send('articleAssistant:guideProgress', p)
           )
         } catch (err) {
           const code = (err as Error & { code?: string }).code
           if (code === 'GUIDE_JSON_ERROR' || code === 'GUIDE_ABORT') throw err
-          if (controller.signal.aborted) throw typedError('GUIDE_ABORT', 'guide generation aborted')
           throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
-        } finally {
-          if (activeGuideController === controller) activeGuideController = null
         }
       }
 
@@ -721,7 +714,4 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     assistantSessions.delete(args.sessionId)
   })
 
-  ipcMain.handle('articleAssistant:abortGuide', async () => {
-    activeGuideController?.abort()
-  })
 }

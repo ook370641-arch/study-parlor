@@ -1687,9 +1687,6 @@ export const useStore = create<AppStore>((set, get) => ({
   openAssistantSession: (args) => {
     const prev = get().assistantSession
     if (prev && prev.contextId === args.contextId) return
-    if (prev && prev.contextId !== args.contextId && prev.guideLoading) {
-      void ipc.articleAssistantAbortGuide()
-    }
     set({
       assistantSession: {
         contextId: args.contextId,

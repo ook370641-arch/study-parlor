@@ -18,7 +18,7 @@ import {
   type GuidePlanQuery,
 } from './guide-v2'
 
-function typed(code: 'GUIDE_JSON_ERROR' | 'GUIDE_ABORT', message: string): Error & { code: string } {
+function typed(code: 'GUIDE_JSON_ERROR', message: string): Error & { code: string } {
   const err = new Error(message) as Error & { code: string }
   err.code = code
   return err
@@ -42,8 +42,7 @@ function debugDump(name: string, data: unknown): void {
 export async function runDigestGuideV2(
   cfg: AppConfig,
   args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
-  onProgress: (p: GuideProgress) => void,
-  signal?: AbortSignal
+  onProgress: (p: GuideProgress) => void
 ): Promise<ArticleAssistantGuide> {
   const entryCount = Math.max(countArticleHeadings(args.articleContent), 1)
 
@@ -65,7 +64,6 @@ export async function runDigestGuideV2(
   debugDump('plan', { entryCount, queries })
 
   // 阶段 2：并行搜索（无 key / 单查询失败仅置空对应资料夹）
-  if (signal?.aborted) throw typed('GUIDE_ABORT', 'guide generation aborted')
   const apiKey = await getSearchApiKey().catch(() => null)
   const total = queries.length
   let done = 0
@@ -87,7 +85,6 @@ export async function runDigestGuideV2(
   debugDump('search', { queries, found: results.map((r) => r?.length ?? 0) })
 
   // 阶段 3：流式撰写，每 chunk 发进度；收齐后走提取→校验
-  if (signal?.aborted) throw typed('GUIDE_ABORT', 'guide generation aborted')
   const entriesTotal = Math.max(args.entriesTotal ?? entryCount, 1)
   let acc = ''
   await chatStream(
@@ -106,7 +103,7 @@ export async function runDigestGuideV2(
         },
       ],
       temperature: 0.7,
-      signal: signal ?? new AbortController().signal,
+      signal: new AbortController().signal,
       thinking: { type: 'enabled', reasoning_effort: 'max' },
     },
     (text) => {

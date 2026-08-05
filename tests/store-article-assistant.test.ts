@@ -11,7 +11,6 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantWriteSession: vi.fn(),
     articleAssistantSendMessage: vi.fn(),
     articleAssistantAbort: vi.fn(),
-    articleAssistantAbortGuide: vi.fn().mockResolvedValue(undefined),
     collectionRead: vi.fn().mockResolvedValue({ version: 1, entries: [] })
   }
 }))
@@ -206,45 +205,6 @@ describe('store article assistant', () => {
       expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
     })
 
-    it('切换文章时触发 abortGuide', async () => {
-      vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise(() => {}) as Promise<any>)
-      vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue(null)
-      useStore.getState().openAssistantSession({
-        contextId: '/lib/f.md',
-        contextType: 'briefing',
-        articleContent: 'body',
-        autoGenerateGuide: true,
-      })
-      await flush(); await flush()
-      // 导读正在生成中
-      expect(useStore.getState().assistantSession?.guideLoading).toBe(true)
-
-      // 切换到另一篇文章
-      useStore.getState().openAssistantSession({
-        contextId: '/lib/g.md',
-        contextType: 'briefing',
-        articleContent: 'body2',
-        autoGenerateGuide: false,
-      })
-      await flush()
-      expect(ipc.articleAssistantAbortGuide).toHaveBeenCalled()
-    })
-
-    it('GUIDE_ABORT 只复位 loading，不显示导读错误', async () => {
-      vi.mocked(ipc.articleAssistantGenerateGuide).mockRejectedValue(
-        Object.assign(new Error('aborted'), { code: 'GUIDE_ABORT' })
-      )
-      useStore.getState().openAssistantSession({
-        contextId: '/lib/h.md',
-        contextType: 'briefing',
-        articleContent: 'body',
-        autoGenerateGuide: true,
-      })
-      await flush(); await flush(); await flush()
-      const s = useStore.getState().assistantSession
-      expect(s?.guideLoading).toBe(false)
-      expect(s?.guideError).toBeNull()
-    })
   })
 
   describe('toggleAssistantSearch', () => {

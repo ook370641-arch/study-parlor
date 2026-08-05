@@ -73,14 +73,4 @@ describe('runDigestGuideV2 编排', () => {
     expect(searchWeb).not.toHaveBeenCalled()
     expect(guide.chunks).toHaveLength(2)
   })
-
-  it('signal 已 aborted 时在阶段边界抛 GUIDE_ABORT，不进入撰写', async () => {
-    vi.mocked(chatNonStream).mockResolvedValue(JSON.stringify({ queries: [] }))
-    const controller = new AbortController()
-    controller.abort()
-    await expect(
-      runDigestGuideV2(CFG, ARGS, () => {}, controller.signal)
-    ).rejects.toMatchObject({ code: 'GUIDE_ABORT' })
-    expect(chatStream).not.toHaveBeenCalled()
-  })
 })
