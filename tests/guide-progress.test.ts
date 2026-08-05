@@ -5,6 +5,7 @@ import {
   isGuideCacheCurrent,
   guideProgressText,
   guideProgressFraction,
+  guideProgressParts,
 } from '../src/lib/guide-progress'
 
 describe('countArticleHeadings', () => {
@@ -37,7 +38,7 @@ describe('guideProgressText', () => {
     expect(guideProgressText({ stage: 'planning' })).toBe('规划检索中…')
     expect(guideProgressText({ stage: 'searching', done: 3, total: 7 })).toBe('检索背景资料中… 3/7')
     expect(guideProgressText({ stage: 'writing', chars: 860, entriesDone: 2, entriesTotal: 14 }))
-      .toBe('撰写导读中… §2/14 · 已写 860 字')
+      .toBe('撰写导读中… §2/§14 · 已写 860 字')
   })
 })
 
@@ -50,5 +51,15 @@ describe('guideProgressFraction', () => {
     expect(guideProgressFraction({ stage: 'writing', chars: 100, entriesDone: 20, entriesTotal: 14 })).toBe(1)
     // total 为 0 时不产生 NaN
     expect(guideProgressFraction({ stage: 'searching', done: 0, total: 0 })).toBeCloseTo(0.05)
+  })
+})
+
+describe('guideProgressParts', () => {
+  it('拆分 label 与 detail', () => {
+    expect(guideProgressParts(null)).toEqual({ label: '规划检索中…', detail: '' })
+    expect(guideProgressParts({ stage: 'searching', done: 3, total: 7 }))
+      .toEqual({ label: '检索背景资料中…', detail: '3/7' })
+    expect(guideProgressParts({ stage: 'writing', chars: 860, entriesDone: 2, entriesTotal: 14 }))
+      .toEqual({ label: '撰写导读中…', detail: '§2/§14 · 已写 860 字' })
   })
 })

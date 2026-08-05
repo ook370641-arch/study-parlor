@@ -20,9 +20,15 @@ export function isGuideCacheCurrent(
 }
 
 export function guideProgressText(p: GuideProgress | null): string {
-  if (!p || p.stage === 'planning') return '规划检索中…'
-  if (p.stage === 'searching') return `检索背景资料中… ${p.done}/${p.total}`
-  return `撰写导读中… §${p.entriesDone}/${p.entriesTotal} · 已写 ${p.chars} 字`
+  const parts = guideProgressParts(p)
+  return parts.detail ? `${parts.label} ${parts.detail}` : parts.label
+}
+
+/** 拆分进度文案为 label（阶段关键词）和 detail（数字/计数），UI 层分别用 ember 和 muted 渲染 */
+export function guideProgressParts(p: GuideProgress | null): { label: string; detail: string } {
+  if (!p || p.stage === 'planning') return { label: '规划检索中…', detail: '' }
+  if (p.stage === 'searching') return { label: '检索背景资料中…', detail: `${p.done}/${p.total}` }
+  return { label: '撰写导读中…', detail: `§${p.entriesDone}/§${p.entriesTotal} · 已写 ${p.chars} 字` }
 }
 
 /** 进度痕宽度（0-1）：规划 5%，搜索 5%-30%，撰写 30%-100%，超发 clamp 到 1 */

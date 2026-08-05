@@ -111,7 +111,7 @@ describe('GuideSidebar', () => {
     s.guideProgress = { stage: 'writing', chars: 860, entriesDone: 2, entriesTotal: 14 }
     mockStore(s)
     render(<GuideSidebar />)
-    expect(screen.getByTestId('guide-progress')).toHaveTextContent('撰写导读中… §2/14 · 已写 860 字')
+    expect(screen.getByTestId('guide-progress')).toHaveTextContent('撰写导读中… §2/§14 · 已写 860 字')
   })
 
   it('renders progress under newspaper theme too', () => {
@@ -122,5 +122,18 @@ describe('GuideSidebar', () => {
     mockStore(s)
     render(<GuideSidebar theme="newspaper" />)
     expect(screen.getByTestId('guide-progress')).toHaveTextContent('规划检索中…')
+  })
+
+  it('uses ember accent on the stage keyword in progress text', () => {
+    const s = sessionWithGuide()
+    s.guide = null
+    s.guideLoading = true
+    s.guideProgress = { stage: 'writing', chars: 860, entriesDone: 2, entriesTotal: 14 }
+    mockStore(s)
+    render(<GuideSidebar />)
+    const progress = screen.getByTestId('guide-progress')
+    const emberSpan = progress.querySelector('span.text-ember')
+    expect(emberSpan).not.toBeNull()
+    expect(emberSpan!.textContent).toBe('撰写导读中…')
   })
 })
