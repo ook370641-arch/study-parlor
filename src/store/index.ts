@@ -1684,11 +1684,7 @@ export const useStore = create<AppStore>((set, get) => ({
         activeChunkIndex: null,
       },
     })
-    historyLoadPromise = get().loadAssistantSession()
-    get().loadAssistantGuide().then(async () => {
-      // Await history load so its state spread doesn't race with
-      // generateAssistantGuide's guideProgress updates.
-      await historyLoadPromise
+    get().loadAssistantGuide().then(() => {
       if (args.autoGenerateGuide) {
         const cur = get().assistantSession
         if (cur && cur.contextId === args.contextId && !cur.guide && !cur.guideLoading) {
@@ -1696,6 +1692,7 @@ export const useStore = create<AppStore>((set, get) => ({
         }
       }
     })
+    historyLoadPromise = get().loadAssistantSession()
   },
 
   closeAssistantSession: () => {
