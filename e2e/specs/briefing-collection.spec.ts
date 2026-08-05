@@ -122,14 +122,12 @@ test.describe('@p1 briefing collection', () => {
     const cover2 = new CoverPage(window)
     await cover2.goToBriefing()
 
-    // 确保日期列已渲染（精选集入口始终在今日上方）
-    await expect(window.getByTestId('briefing-collection-entry')).toBeVisible({ timeout: 15000 })
-
     // 10a. 重启后直接打开简报 → 已收藏块的按钮为 ★ 已收藏禁用
-    await window.getByTestId(`briefing-date-item-${localToday()}`).click()
+    await window.getByTestId(`briefing-date-item-${localToday()}`).click({ timeout: 15000 })
     await expect(window.getByTestId('chunk-collect-button-0')).toContainText('已收藏')
     await expect(window.getByTestId('chunk-collect-button-0')).toBeDisabled()
 
+    // 回到日期列，打开精选集
     await window.getByTestId('briefing-collection-entry').click()
     await expect(window.locator('[data-testid^="collection-entry-"]')).toHaveCount(1)
 

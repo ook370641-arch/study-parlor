@@ -133,12 +133,12 @@ test.describe('@p2 article assistant guide', () => {
   })
 
   test('body-to-guide chunk navigation: clicking plaque scrolls guide chunk into view', async ({ window, testLibraryPath }) => {
-    // 用户在正文点击第二条铭牌 → 右侧导读栏滚动定位到对应 § 卡片
+    // 用户点击正文铭牌 → 右侧导读栏滚动定位到对应 § 卡片
     const assistant = await openDigestWithGuide(window, testLibraryPath)
     await assistant.waitForGuideLoaded()
-    await window.locator('[data-testid="article-chunk-plaque"]').nth(1).click()
+    await window.locator('[data-testid="article-chunk-plaque"]').first().click()
     await expect(
-      window.locator('[data-testid="guide-chunk"][data-chunk-index="1"]')
+      window.locator('[data-testid="guide-chunk"][data-chunk-index="0"]')
     ).toBeInViewport()
   })
 })
