@@ -54,7 +54,13 @@ export class ArticleAssistantPage {
 
   async openChat() {
     await this.waitForMounted()
-    await this.tab.click()
+    // 幂等：若聊天窗已打开则跳过点击（否则 tab 会 toggle 关闭）
+    const alreadyOpen = await this.page.evaluate(() =>
+      !!(window as any).useStore?.getState()?.assistantSession?.isOpen
+    )
+    if (!alreadyOpen) {
+      await this.tab.click()
+    }
     await this.chatWindow.waitFor({ state: 'visible' })
   }
 
