@@ -266,7 +266,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
             send('articleAssistant:guideProgress', {
               stage: 'writing',
               chars: i * 240,
-              entriesDone: Math.min(i >= 3 ? 1 : 0, entriesTotal),
+              entriesDone: Math.min(i >= 3 ? 1 : i >= 5 ? 2 : 0, entriesTotal),
               entriesTotal,
             })
           }
@@ -281,6 +281,17 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
                     term: 'Constitutional AI',
                     translation: '宪法式 AI',
                     explanation: '一种用一组书面原则约束模型行为、减少人工标注的对齐方法。',
+                  },
+                ],
+              },
+              {
+                heading: 'Training Data',
+                context: '训练数据去重与过滤是模型安全的基础环节（E2E mock 背景铺陈）。',
+                terms: [
+                  {
+                    term: 'Deduplication',
+                    translation: '去重',
+                    explanation: '移除训练语料中重复或近重复样本的过程。',
                   },
                 ],
               },
