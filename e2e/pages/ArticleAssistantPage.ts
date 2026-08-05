@@ -215,6 +215,12 @@ export class ArticleAssistantPage {
    * the send button during streaming), then wait for the streaming flag to clear.
    */
   async abort() {
+    // 等流开始（stop 按钮出现），若流已结束则跳过
+    const stillStreaming = await this.page.evaluate(() =>
+      !!(window as any).useStore?.getState?.()?.assistantSession?.streaming
+    )
+    if (!stillStreaming) return
+    await this.stopBtn.waitFor({ state: 'visible', timeout: 5000 })
     await this.stopBtn.click()
     await this.page.waitForFunction(() => {
       const s = (window as any).useStore?.getState?.()?.assistantSession
