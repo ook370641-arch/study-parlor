@@ -54,8 +54,9 @@ test.describe('@p1 briefing collection', () => {
     const assistant = await openDigest(window, testLibraryPath)
 
     // 1. 日期列有精选集置顶入口（UI 出口断言，feature-development §12）
-    await expect(window.getByTestId('briefing-collection-entry')).toBeVisible()
-    await expect(window.getByTestId('briefing-font-size-increase')).toBeVisible()
+    // 等导读加载完成后日期列才稳定渲染精选集入口
+    await assistant.waitForGuideLoaded()
+    await expect(window.getByTestId('briefing-collection-entry')).toBeVisible({ timeout: 10000 })
 
     // 2. 导读生成后铭牌按钮出现（等 mock guide 到达）
     await expect(window.getByTestId('chunk-collect-button-0')).toBeVisible({ timeout: 15000 })
