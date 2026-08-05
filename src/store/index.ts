@@ -1858,6 +1858,8 @@ export const useStore = create<AppStore>((set, get) => ({
   syncCollectionQA: async () => {
     const s = get().assistantSession
     if (!s || s.contextType !== 'briefing' || !s.guide) return
+    // A2: 写盘失败静默降级——游标未推进，下次 finishAssistantStreaming 幂等自愈
+    try {
     if (!get().collection.loaded) await get().loadCollection()
     const mine = get().collection.entries.filter(
       (e) => e.briefingFilePath === s.contextId && e.qaMessageCount < s.messages.length
@@ -1876,6 +1878,9 @@ export const useStore = create<AppStore>((set, get) => ({
       await ipc.collectionAppendQA({ id: entry.id, qa: tail, qaMessageCount: s.messages.length })
     }
     await get().loadCollection()
+    } catch {
+      /* 静默 */
+    }
   },
 
   sendAssistantMessage: async (text) => {

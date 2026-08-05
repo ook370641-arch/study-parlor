@@ -156,6 +156,13 @@ describe('collection slice', () => {
     expect(useStore.getState().collection.loaded).toBe(true)
   })
 
+  it('syncCollectionQA 写盘失败静默降级（不抛出）', async () => {
+    seedAssistantSession([{ role: 'user', content: 'q', selection: '宪法式 AI' }])
+    useStore.setState({ collection: { entries: [entryOf({ qaMessageCount: 0 })], loaded: true } })
+    mockIpc.collectionAppendQA.mockRejectedValue(new Error('disk full'))
+    await expect(useStore.getState().syncCollectionQA()).resolves.toBeUndefined()
+  })
+
   it('collectChunk 在精选集未加载时先加载再判重', async () => {
     seedAssistantSession([{ role: 'user', content: 'q', selection: '宪法式 AI' }])
     useStore.setState({ collection: { entries: [], loaded: false } })
