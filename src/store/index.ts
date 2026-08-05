@@ -1687,6 +1687,9 @@ export const useStore = create<AppStore>((set, get) => ({
   openAssistantSession: (args) => {
     const prev = get().assistantSession
     if (prev && prev.contextId === args.contextId) return
+    if (prev && prev.contextId !== args.contextId && prev.guideLoading) {
+      void ipc.articleAssistantAbortGuide()
+    }
     set({
       assistantSession: {
         contextId: args.contextId,
@@ -2071,6 +2074,10 @@ export const useStore = create<AppStore>((set, get) => ({
       const code: ArticleAssistantErrorCode = raw === 'GUIDE_JSON_ERROR' ? 'GUIDE_JSON_ERROR' : raw === 'GUIDE_ABORT' ? 'GUIDE_ABORT' : 'GUIDE_LLM_ERROR'
       const cur = get().assistantSession
       if (!cur || cur.contextId !== s.contextId) return
+      if (code === 'GUIDE_ABORT') {
+        set({ assistantSession: { ...cur, guideLoading: false, guideProgress: null } })
+        return
+      }
       set({ assistantSession: { ...cur, guideLoading: false, guideError: code, guideProgress: null } })
     }
   },

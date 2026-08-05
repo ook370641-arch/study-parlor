@@ -132,6 +132,7 @@ const api: IpcApi = {
   articleAssistantWriteSession: (a) => ipcRenderer.invoke('articleAssistant:writeSession', a),
   articleAssistantReadGuide: (a) => ipcRenderer.invoke('articleAssistant:readGuide', a),
   articleAssistantWriteGuide: (a) => ipcRenderer.invoke('articleAssistant:writeGuide', a),
+  articleAssistantAbortGuide: () => ipcRenderer.invoke('articleAssistant:abortGuide'),
 
   openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
 

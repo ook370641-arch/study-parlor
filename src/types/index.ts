@@ -727,6 +727,7 @@ export type IpcApi = {
     parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
   }) => Promise<ArticleAssistantGuideFile | null>
 
+  articleAssistantAbortGuide: () => Promise<void>
   articleAssistantWriteGuide: (args: {
     parentPath: string
     parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'

@@ -100,6 +100,7 @@ export const ipc = {
   get articleAssistantWriteSession() { return ensure().articleAssistantWriteSession },
   get articleAssistantReadGuide() { return ensure().articleAssistantReadGuide },
   get articleAssistantWriteGuide() { return ensure().articleAssistantWriteGuide },
+  get articleAssistantAbortGuide() { return ensure().articleAssistantAbortGuide },
   get onArticleAssistantReasoningChunk() { return ensure().onArticleAssistantReasoningChunk },
   get onArticleAssistantGuideProgress() { return ensure().onArticleAssistantGuideProgress },
 
