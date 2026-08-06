@@ -32,6 +32,8 @@ import type {
 
 const assistantSessions = new Map<string, AbortController>()
 
+const sleepMs = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 // E2E deterministic mock is active only when BOTH the test NODE_ENV and the
 // E2E isolation marker are set. Gating on both keeps unit tests (which run with
 // NODE_ENV=test but no E2E_CONFIG_DIR) on the real code path. See rule e2e.md §1.
@@ -546,6 +548,8 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
           for (const chunk of ['这是一段', 'E2E 测试的', '旁注回复。']) {
             if (ctl.signal.aborted) return
             send('llm:chunk', args.sessionId, chunk)
+            // 同步推送会在 E2E 点击停止前完成整条流，留出 abort 介入窗口
+            await sleepMs(150)
           }
           if (!ctl.signal.aborted) send('llm:done', args.sessionId)
         } finally {

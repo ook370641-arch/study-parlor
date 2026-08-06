@@ -24,6 +24,7 @@ npx playwright test --config e2e/playwright.config.ts --grep-invert @slow
 - 已安装 Chromium：`npx playwright install chromium`
 - 项目根目录有有效的 `.env`（`KIMI_API_KEY`、`KIMI_BASE_URL`、`KIMI_MODEL`、`STUDY_LIBRARY_PATH`）
 - 已构建 Electron 产物：`npx electron-vite build`
+  - **注意**：E2E fixture 直接 spawn `electron .`，跑的是 `out/` 构建产物而非源码。改了 `src/` 或 `electron/` 后必须重新 build 再跑 E2E，否则会用旧代码跑出"元素不存在"类幽灵失败。
 
 ## 静默模式
 

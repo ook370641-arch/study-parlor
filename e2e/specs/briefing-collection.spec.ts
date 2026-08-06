@@ -53,9 +53,10 @@ test.describe('@p1 briefing collection', () => {
   test('完整生命周期：收藏 → 追加 → 归属切换 → abort 不追加 → 移除 → 重启持久化 → 源删除保留', async ({ window, testLibraryPath }) => {
     const assistant = await openDigest(window, testLibraryPath)
 
-    // 1. 精选集入口：E2E 环境下 DOM 元素偶发不渲染（可访问性快照证实日期列已渲染但 testid 缺失），
-    // 跳过静态断言，直接通过后续交互（收藏→打开→三段验证）反向验证入口功能可用。
-    // UI 出口断言由 tests/collection-view.test.tsx「BriefingDateColumn 精选集入口」覆盖。
+    // 1. 日期列有精选集置顶入口（UI 出口断言，feature-development §12）
+    // 等导读加载完成后日期列才稳定渲染精选集入口
+    await assistant.waitForGuideLoaded()
+    await expect(window.getByTestId('briefing-collection-entry')).toBeVisible({ timeout: 10000 })
 
     // 2. 导读生成后铭牌按钮出现（等 mock guide 到达）
     await expect(window.getByTestId('chunk-collect-button-0')).toBeVisible({ timeout: 15000 })
@@ -75,7 +76,7 @@ test.describe('@p1 briefing collection', () => {
     await expect(window.getByTestId('collection-view')).toBeVisible()
     const entryCard = window.locator('[data-testid^="collection-entry-"]').first()
     await expect(entryCard).toContainText('宪法式 AI 用书面原则约束模型行为')
-    await expect(entryCard).toContainText('本段介绍 Constitutional AI')
+    await expect(entryCard).toContainText('Constitutional AI 出自 Anthropic 2022') // v2 mock guide 的 context 段
     await expect(entryCard).toContainText('这是什么')
 
     // 6. 回简报追问（无新选段）→ 完整回答后追加进原条目（向前填充）
@@ -121,6 +122,9 @@ test.describe('@p1 briefing collection', () => {
     // （重启后按钮 ★ 已收藏的判定由 T1 loadCollection 预载保证，store/组件单测全覆盖）
     await window.reload()
     const cover2 = new CoverPage(window)
+    // openDigest 只 fill 名字不点「进入夜话」，profile.name 从未持久化；
+    // reload 后封面回到首次访问分支，需重新填名字才能解锁夜航简报按钮
+    await cover2.enterName('E2E 测试员')
     await cover2.goToBriefing()
     // 等待日期列渲染完成（goToBriefing 只点击按钮不等渲染）
     await expect(window.getByTestId(`briefing-date-item-${localToday()}`)).toBeVisible({ timeout: 15000 })
