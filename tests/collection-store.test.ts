@@ -8,6 +8,7 @@ import {
   addCollectionEntry,
   removeCollectionEntry,
   appendCollectionQA,
+  updateCollectionNote,
 } from '@electron/lib/collection-store'
 import type { BriefingCollectionEntry } from '@shared/index'
 
@@ -81,6 +82,25 @@ describe('collection-store', () => {
   it('appendQA 对不存在的 id 静默跳过', () => {
     addCollectionEntry(dir, makeEntry())
     expect(() => appendCollectionQA(dir, 'nope', [{ role: 'user', content: 'x' }], 9)).not.toThrow()
+  })
+
+  it('updateNote 写入备注并更新 updatedAt', () => {
+    addCollectionEntry(dir, makeEntry({ id: 'c-1' }))
+    updateCollectionNote(dir, 'c-1', '这条值得重读')
+    const entry = readCollection(dir).entries[0]
+    expect(entry.note).toBe('这条值得重读')
+    expect(Date.parse(entry.updatedAt)).toBeGreaterThan(Date.parse('2026-08-04T10:00:00.000Z'))
+  })
+
+  it('updateNote 空串清除备注字段', () => {
+    addCollectionEntry(dir, makeEntry({ id: 'c-1', note: '旧备注' }))
+    updateCollectionNote(dir, 'c-1', '   ')
+    expect(readCollection(dir).entries[0].note).toBeUndefined()
+  })
+
+  it('updateNote 对不存在的 id 静默跳过', () => {
+    addCollectionEntry(dir, makeEntry())
+    expect(() => updateCollectionNote(dir, 'nope', 'x')).not.toThrow()
   })
 
   it('主文件损坏后从 .bak 恢复上次写入的数据', () => {

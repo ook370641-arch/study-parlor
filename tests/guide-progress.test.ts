@@ -16,6 +16,19 @@ describe('countArticleHeadings', () => {
   it('returns 0 for headingless content', () => {
     expect(countArticleHeadings('plain text')).toBe(0)
   })
+  it('excludes the 原始来源 section and its ### source groups', () => {
+    // 回归：来源分组曾被计入分母，进度永远到不了 N/N（16 条目 + 16 来源组显示 §x/§32）
+    const md = '## 一\nx\n## 二\ny\n## 原始来源\n### Anthropic\n- [a](https://a)\n### 机器之心\n- [b](https://b)'
+    expect(countArticleHeadings(md)).toBe(2)
+  })
+  it('excludes a Sources section case-insensitively', () => {
+    const md = '## 一\nx\n## Sources\n### Blog\n- [a](https://a)'
+    expect(countArticleHeadings(md)).toBe(1)
+  })
+  it('still counts ### subsections inside content sections', () => {
+    const md = '## 一\nx\n### 子节\ny\n## 原始来源\n### 来源组\nz'
+    expect(countArticleHeadings(md)).toBe(2)
+  })
 })
 
 describe('isGuideCacheCurrent', () => {

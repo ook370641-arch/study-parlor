@@ -124,6 +124,7 @@ const api: IpcApi = {
   collectionAddEntry: (entry) => ipcRenderer.invoke('collection:addEntry', entry),
   collectionRemoveEntry: (id) => ipcRenderer.invoke('collection:removeEntry', id),
   collectionAppendQA: (args) => ipcRenderer.invoke('collection:appendQA', args),
+  collectionUpdateNote: (args) => ipcRenderer.invoke('collection:updateNote', args),
 
   articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),
   articleAssistantSendMessage: (a) => ipcRenderer.invoke('articleAssistant:sendMessage', a),

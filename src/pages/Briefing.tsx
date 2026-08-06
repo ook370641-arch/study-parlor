@@ -558,7 +558,7 @@ export function Briefing() {
         </div>
       </div>
 
-      {source === 'digest' && result?.filePath && (
+      {source === 'digest' && result?.filePath && !collectionViewOpen && (
         <ArticleAssistantPanel
           articleType="briefing"
           parentPath={result.filePath}

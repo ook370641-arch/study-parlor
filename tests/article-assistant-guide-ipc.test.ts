@@ -59,6 +59,17 @@ describe('serializeGuide v2', () => {
     expect(parsed!.chunks[0].summary).toBe('C 背景铺陈')
   })
 
+  it('v2 解析（带 guideVersion）回填 context，往返不丢失', () => {
+    const guide = {
+      background: 'bg',
+      chunks: [{ heading: 'H', context: 'C 背景铺陈', terms: [] }],
+    }
+    const parsed = parseAssistantGuideBody(serializeGuide(guide as any), 2)
+    expect(parsed).not.toBeNull()
+    expect(parsed!.chunks[0].context).toBe('C 背景铺陈')
+    expect(parsed!.chunks[0].summary).toBe('C 背景铺陈')
+  })
+
   it('prefers context over summary when both present', () => {
     const guide = {
       background: 'bg',
@@ -97,6 +108,29 @@ describe('guide IPC handlers', () => {
       guide: { background: 'bg', chunks: [{ heading: 'H', summary: '摘要', terms: [] }] },
     } as never)) as { filePath: string }
     expect(fs.readFileSync(filePath, 'utf8')).not.toContain('guide_version')
+  })
+
+  it('v2 导读 write→read→rewrite 往返后 guide_version 不降级（持久化回归）', async () => {
+    // 回归：readGuide 曾丢失 context，persistAssistantState 重写时 isV2 判 false，
+    // 文件被降级为无 guide_version → 下次打开 isGuideCacheCurrent 失效 → 重复自动生成。
+    const parent = path.join(dir, '夜航简报', '夜航简报-2026-08-04.md')
+    await handlers['articleAssistant:writeGuide'](fakeEvent, {
+      parentPath: parent,
+      parentType: 'briefing',
+      guide: { background: 'bg', chunks: [{ heading: 'H', context: '铺陈', terms: [] }] },
+    } as never)
+    const file = (await handlers['articleAssistant:readGuide'](fakeEvent, {
+      parentPath: parent,
+      parentType: 'briefing',
+    } as never)) as { guide: { chunks: { context?: string }[] }; guideVersion?: number }
+    expect(file.guideVersion).toBe(2)
+    expect(file.guide.chunks[0].context).toBe('铺陈')
+    const { filePath } = (await handlers['articleAssistant:writeGuide'](fakeEvent, {
+      parentPath: parent,
+      parentType: 'briefing',
+      guide: file.guide,
+    } as never)) as { filePath: string }
+    expect(fs.readFileSync(filePath, 'utf8')).toContain('guide_version: 2')
   })
 
   it('generateGuide：非 briefing 走旧路径（不调 v2 管线）', async () => {

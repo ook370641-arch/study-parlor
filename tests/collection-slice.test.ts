@@ -5,6 +5,7 @@ const mockIpc = {
   collectionAddEntry: vi.fn(),
   collectionRemoveEntry: vi.fn(),
   collectionAppendQA: vi.fn(),
+  collectionUpdateNote: vi.fn(),
 }
 vi.mock('@/lib/ipc', () => ({ ipc: new Proxy({}, { get: (_, k) => mockIpc[k as keyof typeof mockIpc] ?? (() => Promise.resolve()) }) }))
 
@@ -103,6 +104,19 @@ describe('collection slice', () => {
     await useStore.getState().removeCollectionEntry('c-1')
     expect(mockIpc.collectionRemoveEntry).toHaveBeenCalledWith('c-1')
     expect(useStore.getState().collection.entries).toHaveLength(0)
+  })
+
+  it('updateCollectionNote 写 IPC 并更新本地条目', async () => {
+    useStore.setState({ collection: { entries: [entryOf()], loaded: true } })
+    await useStore.getState().updateCollectionNote('c-1', '  我的备注  ')
+    expect(mockIpc.collectionUpdateNote).toHaveBeenCalledWith({ id: 'c-1', note: '  我的备注  ' })
+    expect(useStore.getState().collection.entries[0].note).toBe('我的备注')
+  })
+
+  it('updateCollectionNote 空串删除本地 note 字段', async () => {
+    useStore.setState({ collection: { entries: [entryOf({ note: '旧' })], loaded: true } })
+    await useStore.getState().updateCollectionNote('c-1', ' ')
+    expect(useStore.getState().collection.entries[0].note).toBeUndefined()
   })
 
   it('syncCollectionQA 只追加游标后的归属消息并推进游标', async () => {

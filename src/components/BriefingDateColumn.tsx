@@ -70,7 +70,13 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
           </button>
         )}
         <button data-testid="briefing-date-today-mini" onClick={onReceiveToday} title={todayLabel}
-          className={`w-8 h-8 rounded flex items-center justify-center ${isAcademic ? (jobBlue ? 'bg-[#7fa8d9]/20 text-[#7fa8d9]' : 'bg-ember/20 text-ember') : 'bg-[#1a1a1a] text-white'}`}>
+          className={`w-8 h-8 rounded flex items-center justify-center ${isAcademic
+            ? collection?.active
+              ? 'text-parchment/60 hover:text-ember'
+              : jobBlue ? 'bg-[#7fa8d9]/20 text-[#7fa8d9]' : 'bg-ember/20 text-ember'
+            : collection?.active
+              ? 'text-[#6b5d52] hover:text-[#1a1a1a]'
+              : 'bg-[#1a1a1a] text-white'}`}>
           今
         </button>
         {latest && (
@@ -99,7 +105,8 @@ export function BriefingDateColumn({ collapsed, history, currentDate, today, onS
         </button>
       )}
       {entries.map((entry) => {
-        const isCurrent = entry.date === currentDate
+        // 日期列是单选列表：精选集激活时任何日期都不再高亮，避免双橙残留
+        const isCurrent = entry.date === currentDate && !collection?.active
         return (
           <button key={entry.date} data-testid={`briefing-date-item-${entry.date}`}
             onClick={() => (entry.isToday ? onReceiveToday() : onSelect(entry.date))}

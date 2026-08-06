@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useStore } from '@/store'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
@@ -9,6 +9,83 @@ import type { BriefingCollectionEntry, BriefingTheme } from '@shared/index'
 function formatGroupLabel(date: string): string {
   const [, m, d] = date.split('-')
   return m && d ? `${Number(m)}月${Number(d)}日 夜航简报` : date
+}
+
+/** 条目底部备注：无备注显示添加入口，有备注点击编辑；失焦/Ctrl+Enter 保存，Esc 取消 */
+function CollectionNote({ entry, isAcademic, textMuted }: { entry: BriefingCollectionEntry; isAcademic: boolean; textMuted: string }) {
+  const updateCollectionNote = useStore((s) => s.updateCollectionNote)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const cancelled = useRef(false)
+
+  const startEdit = () => {
+    cancelled.current = false
+    setDraft(entry.note ?? '')
+    setEditing(true)
+  }
+  const save = () => {
+    if (!cancelled.current && draft.trim() !== (entry.note ?? '')) {
+      void updateCollectionNote(entry.id, draft)
+    }
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-3">
+        <textarea
+          data-testid={`collection-note-input-${entry.id}`}
+          autoFocus
+          rows={2}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={save}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+              e.preventDefault()
+              save()
+            } else if (e.key === 'Escape') {
+              cancelled.current = true
+              setEditing(false)
+            }
+          }}
+          placeholder="写下你的备注…"
+          className={`w-full rounded border p-2 text-sm outline-none resize-y ${
+            isAcademic
+              ? 'bg-ink/80 border-parchment/20 text-parchment/90 placeholder:text-parchment/30 focus:border-ember/60'
+              : 'bg-white border-[#1a1a1a]/20 text-[#1a1a1a] placeholder:text-[#1a1a1a]/30 focus:border-[#d97757]/60'
+          }`}
+        />
+        <div className={`mt-1 text-[10px] ${textMuted}`}>Ctrl+Enter 保存 · Esc 取消</div>
+      </div>
+    )
+  }
+
+  if (entry.note) {
+    return (
+      <button
+        type="button"
+        data-testid={`collection-note-${entry.id}`}
+        onClick={startEdit}
+        title="点击编辑备注"
+        className={`mt-3 block w-full text-left border-l-2 border-ember/40 pl-3 py-1 text-sm leading-relaxed transition-colors ${textMuted} hover:text-ember`}
+      >
+        <span className="text-ember/70 mr-1">✎</span>
+        {entry.note}
+      </button>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      data-testid={`collection-note-add-${entry.id}`}
+      onClick={startEdit}
+      className={`mt-3 text-xs transition-colors ${textMuted} hover:text-ember`}
+    >
+      ＋ 添加备注
+    </button>
+  )
 }
 
 export function CollectionView({ theme = 'academic' }: { theme?: BriefingTheme }) {
@@ -98,6 +175,7 @@ export function CollectionView({ theme = 'academic' }: { theme?: BriefingTheme }
                       ))}
                     </div>
                   )}
+                  <CollectionNote entry={entry} isAcademic={isAcademic} textMuted={textMuted} />
                 </article>
               ))}
             </div>

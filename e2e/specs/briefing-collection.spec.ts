@@ -136,4 +136,35 @@ test.describe('@p1 briefing collection', () => {
     await expect(window.locator('[data-testid^="collection-entry-"]')).toHaveCount(1)
     await expect(window.locator('[data-testid^="collection-entry-"]').first()).toContainText('训练数据的去重与过滤')
   })
+
+  test('备注栏：添加 → 日期列单选互斥 + 导读面板收起 → 重启后备注仍在', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigest(window, testLibraryPath)
+    await assistant.waitForGuideLoaded()
+    await expect(window.getByTestId('chunk-collect-button-0')).toBeVisible({ timeout: 15000 })
+    await window.getByTestId('chunk-collect-button-0').click()
+    await expect(window.getByTestId('chunk-collect-button-0')).toHaveText('★ 已收藏')
+
+    // 打开精选集：导读面板收起、日期列只有精选集高亮（回归：曾双橙残留）
+    await window.getByTestId('briefing-collection-entry').click()
+    await expect(window.getByTestId('collection-view')).toBeVisible()
+    await expect(window.getByTestId('article-assistant-panel')).toBeHidden()
+    await expect(window.getByTestId(`briefing-date-item-${localToday()}`)).not.toHaveClass(/bg-ember/)
+
+    // 添加备注 → Ctrl+Enter 保存
+    const entryCard = window.locator('[data-testid^="collection-entry-"]').first()
+    const entryId = (await entryCard.getAttribute('data-testid'))!.replace('collection-entry-', '')
+    await window.getByTestId(`collection-note-add-${entryId}`).click()
+    await window.getByTestId(`collection-note-input-${entryId}`).fill('这条要和求职简报对照看')
+    await window.getByTestId(`collection-note-input-${entryId}`).press('Control+Enter')
+    await expect(window.getByTestId(`collection-note-${entryId}`)).toContainText('这条要和求职简报对照看')
+
+    // 重启 → 备注持久化（落盘 精选集.json）
+    await window.reload()
+    const cover2 = new CoverPage(window)
+    await cover2.enterName('E2E 测试员')
+    await cover2.goToBriefing()
+    await expect(window.getByTestId(`briefing-date-item-${localToday()}`)).toBeVisible({ timeout: 15000 })
+    await window.getByTestId('briefing-collection-entry').click()
+    await expect(window.getByTestId(`collection-note-${entryId}`)).toContainText('这条要和求职简报对照看')
+  })
 })

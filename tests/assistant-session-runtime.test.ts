@@ -7,6 +7,7 @@ vi.mock('@/lib/ipc', () => ({
     onLlmError: vi.fn(() => () => {}),
     onArticleAssistantSearchDone: vi.fn(() => () => {}),
     onArticleAssistantReasoningChunk: vi.fn(() => () => {}),
+    onArticleAssistantGuideProgress: vi.fn(() => () => {}),
     articleAssistantWriteSession: vi.fn().mockResolvedValue({ filePath: '/x.assistant.md' }),
     articleAssistantWriteGuide: vi.fn(),
     articleAssistantAbort: vi.fn(),

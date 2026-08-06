@@ -171,6 +171,8 @@ export type BriefingCollectionEntry = {
   qa: BriefingCollectionQA[]
   /** 已处理的源旁注会话消息数（增量追加游标） */
   qaMessageCount: number
+  /** 用户备注（条目底部，可空；空串持久化时删除字段） */
+  note?: string
   collectedAt: string
   updatedAt: string
 }
@@ -686,6 +688,7 @@ export type IpcApi = {
   collectionAddEntry: (entry: BriefingCollectionEntry) => Promise<{ ok: true } | { ok: false; code: 'DUPLICATE' | 'WRITE_ERROR' }>
   collectionRemoveEntry: (id: string) => Promise<void>
   collectionAppendQA: (args: { id: string; qa: BriefingCollectionQA[]; qaMessageCount: number }) => Promise<void>
+  collectionUpdateNote: (args: { id: string; note: string }) => Promise<void>
 
   // Article assistant
   articleAssistantGenerateGuide: (args: {

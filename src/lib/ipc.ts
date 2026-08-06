@@ -92,6 +92,7 @@ export const ipc = {
   get collectionAddEntry() { return ensure().collectionAddEntry },
   get collectionRemoveEntry() { return ensure().collectionRemoveEntry },
   get collectionAppendQA() { return ensure().collectionAppendQA },
+  get collectionUpdateNote() { return ensure().collectionUpdateNote },
 
   get articleAssistantGenerateGuide() { return ensure().articleAssistantGenerateGuide },
   get articleAssistantSendMessage() { return ensure().articleAssistantSendMessage },

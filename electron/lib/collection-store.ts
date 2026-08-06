@@ -38,6 +38,17 @@ export function removeCollectionEntry(libraryPath: string, id: string): void {
   safeWriteJson(collectionPathFor(libraryPath), col)
 }
 
+export function updateCollectionNote(libraryPath: string, id: string, note: string): void {
+  const col = readCollection(libraryPath)
+  const entry = col.entries.find((e) => e.id === id)
+  if (!entry) return
+  const trimmed = note.trim()
+  if (trimmed) entry.note = trimmed
+  else delete entry.note
+  entry.updatedAt = new Date().toISOString()
+  safeWriteJson(collectionPathFor(libraryPath), col)
+}
+
 export function appendCollectionQA(
   libraryPath: string,
   id: string,

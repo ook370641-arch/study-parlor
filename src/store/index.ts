@@ -341,6 +341,7 @@ type AppStore = {
   closeCollectionView: () => void
   collectChunk: (chunkIndex: number) => Promise<void>
   removeCollectionEntry: (id: string) => Promise<void>
+  updateCollectionNote: (id: string, note: string) => Promise<void>
   syncCollectionQA: () => Promise<void>
 
   // 文章旁注助手
@@ -1853,6 +1854,23 @@ export const useStore = create<AppStore>((set, get) => ({
   removeCollectionEntry: async (id) => {
     await ipc.collectionRemoveEntry(id)
     set({ collection: { entries: get().collection.entries.filter((e) => e.id !== id), loaded: true } })
+  },
+
+  updateCollectionNote: async (id, note) => {
+    await ipc.collectionUpdateNote({ id, note })
+    const trimmed = note.trim()
+    set({
+      collection: {
+        entries: get().collection.entries.map((e) => {
+          if (e.id !== id) return e
+          const next = { ...e }
+          if (trimmed) next.note = trimmed
+          else delete next.note
+          return next
+        }),
+        loaded: true,
+      },
+    })
   },
 
   syncCollectionQA: async () => {

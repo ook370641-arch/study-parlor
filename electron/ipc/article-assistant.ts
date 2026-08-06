@@ -103,7 +103,11 @@ export function serializeGuide(guide: ArticleAssistantGuide): string {
   return `# 背景\n\n${guide.background}\n\n${chunks}`
 }
 
-export function parseAssistantGuideBody(body: string): ArticleAssistantGuide | null {
+export function parseAssistantGuideBody(body: string, guideVersion?: number): ArticleAssistantGuide | null {
+  // v2 文件的正文段是 context（背景铺陈）；回读时必须回填 context，
+  // 否则 session 里的 guide 丢失 context 后被 persistAssistantState 重写，
+  // writeGuide 的 isV2 判定失败 → 不再写 guide_version → 缓存降级为 v1 → 下次打开重新生成。
+  const isV2 = (guideVersion ?? 1) >= GUIDE_FORMAT_VERSION
   const lines = body.split('\n')
   let background = ''
   let i = 0
@@ -125,7 +129,7 @@ export function parseAssistantGuideBody(body: string): ArticleAssistantGuide | n
     const heading = headingMatch[1].trim()
     i++
     while (i < lines.length && lines[i].trim() === '') i++
-    const summaryLines: string[] = []
+    const bodyLines: string[] = []
     const terms: ArticleAssistantTerm[] = []
     while (i < lines.length && !lines[i].startsWith('## ')) {
       const line = lines[i]
@@ -133,11 +137,12 @@ export function parseAssistantGuideBody(body: string): ArticleAssistantGuide | n
       if (termMatch) {
         terms.push({ term: termMatch[1].trim(), translation: termMatch[2].trim(), explanation: termMatch[3].trim() })
       } else if (line.trim()) {
-        summaryLines.push(line.trim())
+        bodyLines.push(line.trim())
       }
       i++
     }
-    chunks.push({ heading, summary: summaryLines.join(' '), terms })
+    const text = bodyLines.join(' ')
+    chunks.push(isV2 ? { heading, summary: text, context: text, terms } : { heading, summary: text, terms })
   }
 
   if (!background && chunks.length === 0) return null
@@ -267,7 +272,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
             send('articleAssistant:guideProgress', {
               stage: 'writing',
               chars: i * 240,
-              entriesDone: Math.min(i >= 3 ? 1 : i >= 5 ? 2 : 0, entriesTotal),
+              entriesDone: Math.min(i >= 5 ? 2 : i >= 3 ? 1 : 0, entriesTotal),
               entriesTotal,
             })
           }
@@ -698,14 +703,15 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         const { frontmatter, body } = parseFrontmatter(fs.readFileSync(guidePath, 'utf8'), {
           filename: path.basename(guidePath),
         })
-        const guide = parseAssistantGuideBody(body)
-        if (!guide) return null
         const fmRecord = frontmatter as unknown as Record<string, unknown>
+        const guideVersion = typeof fmRecord.guide_version === 'number' ? fmRecord.guide_version : undefined
+        const guide = parseAssistantGuideBody(body, guideVersion)
+        if (!guide) return null
         return {
           filePath: guidePath,
           guide,
           generatedAt: (fmRecord.generated_at as string | undefined) ?? frontmatter.created,
-          guideVersion: typeof fmRecord.guide_version === 'number' ? fmRecord.guide_version : undefined,
+          guideVersion,
         }
       } catch {
         return null

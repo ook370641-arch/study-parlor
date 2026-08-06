@@ -4,9 +4,13 @@ import type { GuideProgress } from '@shared/index'
 // 保持同步——主/渲染进程不能互相 import（rules ipc-state §5），此为渲染侧副本。
 export const GUIDE_FORMAT_VERSION = 2
 
-/** 统计正文 H2/H3 标题数，作为撰写进度分母（entriesTotal） */
+/** 统计正文 H2/H3 标题数，作为撰写进度分母（entriesTotal）。
+ *  「## 原始来源 / Sources」section 及其下的 ### 来源分组不是导读条目，计数前截断
+ *  （判定与 parse-briefing-markdown.ts 保持一致）。 */
 export function countArticleHeadings(content: string): number {
-  const m = content.match(/^#{2,3}\s+\S/gm)
+  const cut = content.search(/^##\s+.*(?:原始来源|sources).*$/im)
+  const body = cut >= 0 ? content.slice(0, cut) : content
+  const m = body.match(/^#{2,3}\s+\S/gm)
   return m ? m.length : 0
 }
 

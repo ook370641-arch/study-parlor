@@ -5,16 +5,18 @@ const mockApi = {
   collectionAddEntry: vi.fn(),
   collectionRemoveEntry: vi.fn(),
   collectionAppendQA: vi.fn(),
+  collectionUpdateNote: vi.fn(),
 }
 ;(globalThis as { window?: unknown }).window = { api: mockApi }
 
 import { ipc } from '@/lib/ipc'
 
 describe('collection IPC wiring', () => {
-  it('facade 暴露 4 个精选集方法', () => {
+  it('facade 暴露 5 个精选集方法', () => {
     expect(ipc.collectionRead).toBe(mockApi.collectionRead)
     expect(ipc.collectionAddEntry).toBe(mockApi.collectionAddEntry)
     expect(ipc.collectionRemoveEntry).toBe(mockApi.collectionRemoveEntry)
     expect(ipc.collectionAppendQA).toBe(mockApi.collectionAppendQA)
+    expect(ipc.collectionUpdateNote).toBe(mockApi.collectionUpdateNote)
   })
 })

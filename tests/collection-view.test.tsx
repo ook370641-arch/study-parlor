@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 
-const mockIpc = { collectionRemoveEntry: vi.fn(), collectionRead: vi.fn() }
+const mockIpc = { collectionRemoveEntry: vi.fn(), collectionRead: vi.fn(), collectionUpdateNote: vi.fn() }
 vi.mock('@/lib/ipc', () => ({ ipc: new Proxy({}, { get: (_, k) => mockIpc[k as keyof typeof mockIpc] ?? (() => Promise.resolve()) }) }))
 
 import { useStore } from '@/store'
@@ -54,6 +54,37 @@ describe('BriefingDateColumn 精选集入口', () => {
     render(<BriefingDateColumn {...COLUMN_PROPS} collapsed collection={{ active: false, onOpen }} />)
     fireEvent.click(screen.getByTestId('briefing-collection-mini'))
     expect(onOpen).toHaveBeenCalled()
+  })
+
+  it('精选集激活时当前日期条目不再高亮（日期列单选互斥）', () => {
+    render(
+      <BriefingDateColumn
+        {...COLUMN_PROPS}
+        currentDate="2026-08-04"
+        history={[{ date: '2026-08-03', filePath: '/x.md' }]}
+        collection={{ active: true, onOpen: () => {} }}
+      />
+    )
+    expect(screen.getByTestId('briefing-collection-entry')).toHaveClass('bg-ember/20')
+    expect(screen.getByTestId('briefing-date-item-2026-08-04')).not.toHaveClass('bg-ember/20')
+    expect(screen.getByTestId('briefing-date-item-2026-08-03')).not.toHaveClass('bg-ember/20')
+  })
+
+  it('精选集关闭时当前日期条目正常高亮', () => {
+    render(
+      <BriefingDateColumn
+        {...COLUMN_PROPS}
+        currentDate="2026-08-04"
+        collection={{ active: false, onOpen: () => {} }}
+      />
+    )
+    expect(screen.getByTestId('briefing-date-item-2026-08-04')).toHaveClass('bg-ember/20')
+  })
+
+  it('收起态精选集激活时「今」mini 不再恒亮', () => {
+    render(<BriefingDateColumn {...COLUMN_PROPS} collapsed collection={{ active: true, onOpen: () => {} }} />)
+    expect(screen.getByTestId('briefing-collection-mini')).toHaveClass('bg-ember/20')
+    expect(screen.getByTestId('briefing-date-today-mini')).not.toHaveClass('bg-ember/20')
   })
 })
 
@@ -116,5 +147,52 @@ describe('CollectionView', () => {
     render(<CollectionView theme="newspaper" />)
     expect(screen.getByTestId('collection-entry-c-1')).toBeInTheDocument()
     expect(screen.getByText('本段介绍宪法式 AI。')).toBeInTheDocument()
+  })
+
+  it('无备注时显示添加入口，点击后出现输入框', () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-note-add-c-1'))
+    expect(screen.getByTestId('collection-note-input-c-1')).toBeInTheDocument()
+  })
+
+  it('输入备注后失焦保存：调用 IPC 并渲染备注', async () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-note-add-c-1'))
+    const input = screen.getByTestId('collection-note-input-c-1')
+    fireEvent.change(input, { target: { value: '这条值得重读' } })
+    fireEvent.blur(input)
+    expect(mockIpc.collectionUpdateNote).toHaveBeenCalledWith({ id: 'c-1', note: '这条值得重读' })
+    expect(await screen.findByTestId('collection-note-c-1')).toHaveTextContent('这条值得重读')
+  })
+
+  it('已有备注直接渲染，点击进入编辑', () => {
+    useStore.setState({ collection: { entries: [{ ...ENTRY, note: '已有备注' }], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-note-c-1'))
+    expect(screen.getByTestId('collection-note-input-c-1')).toHaveValue('已有备注')
+  })
+
+  it('Esc 取消不保存', () => {
+    useStore.setState({ collection: { entries: [{ ...ENTRY, note: '原备注' }], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-note-c-1'))
+    const input = screen.getByTestId('collection-note-input-c-1')
+    fireEvent.change(input, { target: { value: '改掉' } })
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(mockIpc.collectionUpdateNote).not.toHaveBeenCalled()
+    expect(screen.getByTestId('collection-note-c-1')).toHaveTextContent('原备注')
+  })
+
+  it('清空备注保存后回到添加入口', async () => {
+    useStore.setState({ collection: { entries: [{ ...ENTRY, note: '待删' }], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-note-c-1'))
+    const input = screen.getByTestId('collection-note-input-c-1')
+    fireEvent.change(input, { target: { value: '  ' } })
+    fireEvent.blur(input)
+    expect(mockIpc.collectionUpdateNote).toHaveBeenCalledWith({ id: 'c-1', note: '  ' })
+    expect(await screen.findByTestId('collection-note-add-c-1')).toBeInTheDocument()
   })
 })

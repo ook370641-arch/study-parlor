@@ -9,9 +9,12 @@ export type GuidePlanQuery = { query: string; entries: number[]; reason?: string
 
 export type GuideMaterial = { title: string; url: string; snippet: string }
 
-/** 与渲染侧副本保持同步；此处用于规划校验的条目总数 */
+/** 与渲染侧副本保持同步；此处用于规划校验的条目总数。
+ *  「## 原始来源 / Sources」section 及其下的 ### 来源分组不是导读条目，计数前截断。 */
 export function countArticleHeadings(content: string): number {
-  const m = content.match(/^#{2,3}\s+\S/gm)
+  const cut = content.search(/^##\s+.*(?:原始来源|sources).*$/im)
+  const body = cut >= 0 ? content.slice(0, cut) : content
+  const m = body.match(/^#{2,3}\s+\S/gm)
   return m ? m.length : 0
 }
 

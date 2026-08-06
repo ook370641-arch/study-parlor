@@ -16,6 +16,7 @@ vi.mock('@/lib/ipc', () => ({
     writingScanTree: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     articleAssistantReadSession: vi.fn().mockResolvedValue(null),
     annotationsRead: vi.fn().mockResolvedValue([]),
+    collectionRead: vi.fn().mockResolvedValue({ entries: [] }),
   }
 }))
 
@@ -28,6 +29,7 @@ vi.mock('@/lib/paintings', () => ({
 import { useStore } from '@/store'
 import { Briefing } from '@/pages/Briefing'
 import { BRIEFING_LIST_STYLES, BRIEFING_QUOTE_SIZES } from '@/lib/briefing-font-size'
+import { formatBriefingDate } from '@/lib/format-briefing-date'
 
 describe('Briefing date column', () => {
   beforeEach(() => {
@@ -70,6 +72,56 @@ describe('Briefing date column', () => {
     render(<Briefing />)
     fireEvent.click(screen.getByTestId('briefing-date-item-2026-07-01'))
     await waitFor(() => expect(generate).toHaveBeenCalledWith('2026-07-01'))
+  })
+
+  it('clicking today in date column only views (viewBriefingToday), never generates', async () => {
+    const today = formatBriefingDate(new Date())
+    const viewToday = vi.fn().mockResolvedValue(undefined)
+    const generate = vi.fn()
+    useStore.setState({ viewBriefingToday: viewToday, generateBriefing: generate })
+    render(<Briefing />)
+    fireEvent.click(screen.getByTestId(`briefing-date-item-${today}`))
+    await waitFor(() => expect(viewToday).toHaveBeenCalledTimes(1))
+    expect(generate).not.toHaveBeenCalled()
+  })
+})
+
+describe('Briefing collection view', () => {
+  beforeEach(() => {
+    cleanup()
+    useStore.setState({
+      briefing: {
+        result: {
+          title: '夜航简报',
+          date: '2026-07-25',
+          content: '## A\n正文',
+          sources: [],
+          filePath: '/x/briefing.md',
+          cached: false,
+          generatedAt: new Date().toISOString(),
+          sourceStatus: { x: 'ok', podcasts: 'ok', blogs: 'ok' },
+        },
+        loading: false,
+        error: null,
+      },
+      briefingSource: 'digest',
+      briefingTheme: 'academic',
+      briefingHistory: { list: [], loading: false, error: null },
+      collection: { entries: [], loaded: true },
+      collectionViewOpen: false,
+      assistantSession: null,
+      currentPaintings: { briefing: null, cover: null, home: null, study: null },
+    })
+  })
+
+  it('打开精选集时导读面板不挂载，回到日期视图恢复', async () => {
+    render(<Briefing />)
+    await waitFor(() => expect(screen.getByTestId('article-assistant-panel')).toBeInTheDocument())
+    act(() => { useStore.setState({ collectionViewOpen: true }) })
+    expect(screen.getByTestId('collection-view')).toBeInTheDocument()
+    expect(screen.queryByTestId('article-assistant-panel')).not.toBeInTheDocument()
+    act(() => { useStore.setState({ collectionViewOpen: false }) })
+    await waitFor(() => expect(screen.getByTestId('article-assistant-panel')).toBeInTheDocument())
   })
 })
 
