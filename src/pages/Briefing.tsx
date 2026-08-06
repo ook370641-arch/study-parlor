@@ -56,6 +56,7 @@ export function Briefing() {
   const increaseWritingUI = useStore((s) => s.increaseWritingUIFontSize)
   const decreaseWritingUI = useStore((s) => s.decreaseWritingUIFontSize)
   const generateBriefing = useStore((s) => s.generateBriefing)
+  const viewBriefingToday = useStore((s) => s.viewBriefingToday)
   const stage = useStore((s) => s.briefingStage)
   const jobStage = useStore((s) => s.jobBriefingStage)
   const source = useStore((s) => s.briefingSource)
@@ -65,6 +66,7 @@ export function Briefing() {
   const jobLoading = useStore((s) => s.jobBriefing.loading)
   const jobError = useStore((s) => s.jobBriefing.error)
   const generateJobBriefing = useStore((s) => s.generateJobBriefing)
+  const viewJobBriefingToday = useStore((s) => s.viewJobBriefingToday)
   const { list: jobHistoryList } = useStore((s) => s.jobBriefingHistory)
   const loadJobBriefingHistory = useStore((s) => s.loadJobBriefingHistory)
   const digestViewingDate = useStore((s) => s.briefingViewingDate)
@@ -251,7 +253,7 @@ export function Briefing() {
                 currentDate={digestViewDate}
                 today={today}
                 onSelect={(date) => generateBriefing(date)}
-                onReceiveToday={() => generateBriefing(today)}
+                onReceiveToday={() => void viewBriefingToday()}
                 todayLabel="今日"
                 onDelete={(items) => setPendingDelete(items)}
                 theme={theme}
@@ -279,7 +281,7 @@ export function Briefing() {
                 currentDate={jobViewDate}
                 today={today}
                 onSelect={(date) => generateJobBriefing(date)}
-                onReceiveToday={() => generateJobBriefing(today)}
+                onReceiveToday={() => void viewJobBriefingToday()}
                 onDelete={(items) => setPendingDelete(items)}
                 todayLabel="今日"
                 theme={theme}
@@ -351,7 +353,7 @@ export function Briefing() {
               jobEmptyState ? (
                 <BriefingEmptyState
                   hint="今日求职简报尚未生成"
-                  buttonLabel="今日"
+                  buttonLabel="启程"
                   buttonTestId="briefing-receive-job-button"
                   onReceive={() => generateJobBriefing(today)}
                 />
@@ -473,7 +475,7 @@ export function Briefing() {
             ) : emptyState ? (
               <BriefingEmptyState
                 hint="今日夜航简报尚未生成"
-                buttonLabel="今日"
+                buttonLabel="观星"
                 buttonTestId="briefing-receive-digest-button"
                 onReceive={() => generateBriefing(today)}
               />
@@ -602,7 +604,7 @@ export function Briefing() {
             <li key={i.date}>{i.date}</li>
           ))}
         </ul>
-        <p className="mt-2">删除「今天」的简报后，再次点击今天将重新生成。</p>
+        <p className="mt-2">删除「今天」的简报后，可通过空态页的{source === 'job-briefing' ? '「启程」' : '「观星」'}按钮重新生成。</p>
         <p className="mt-2">将同时删除所选简报的旁注对话、标注与导读。</p>
       </ConfirmDialog>
       <JobProfilePanel

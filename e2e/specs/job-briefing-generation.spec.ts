@@ -209,9 +209,18 @@ test.describe('@p1 job briefing generation', () => {
     const cachePath = path.join(testLibraryPath, '求职简报', `求职简报-${today}.md`)
     if (fs.existsSync(cachePath)) fs.rmSync(cachePath)
 
-    // Re-generate: click today in date column triggers generateJobBriefing(today)
-    // which sets result:null then enters mock path (cache deleted)
+    // Reload so the history list drops today (外部删除不会自动刷新日期列缓存)。
+    // 之后走设计路径：点日期列「今日」只切视图到空态，「启程」按钮是唯一生成入口。
+    // （profile.name 从未持久化，reload 后封面回到首次访问分支，需重新填名字解锁夜航简报按钮）
+    await window.reload()
+    const cover2 = new CoverPage(window)
+    await cover2.enterName('E2E 测试员')
+    await cover2.goToBriefing()
+    await window.locator(SELECTORS.briefing.sourceJobBriefingButton).click()
+    await window.locator('[data-testid="briefing-date-item-' + today + '"]').waitFor({ state: 'visible', timeout: 15000 })
     await window.locator('[data-testid="briefing-date-item-' + today + '"]').click()
+    await window.locator(SELECTORS.briefing.receiveJobButton).waitFor({ state: 'visible', timeout: 15000 })
+    await window.locator(SELECTORS.briefing.receiveJobButton).click()
     await window.locator(SELECTORS.briefing.jobCard).first().waitFor({ timeout: 30000 })
 
     // Read the request dump

@@ -15,6 +15,8 @@ vi.mock('@/lib/ipc', () => ({
     onBriefingProgress: vi.fn(() => () => {}),
     briefingList: vi.fn(),
     briefingAbort: vi.fn(),
+    jobBriefingGenerate: vi.fn(),
+    jobBriefingList: vi.fn(),
     searchPrepare: vi.fn()
   }
 }))
@@ -643,6 +645,115 @@ describe('store core operations', () => {
       expect(ipc.briefingAbort).toHaveBeenCalled()
       expect(s.briefingGeneration).toBeNull()
       expect(s.briefing).toEqual({ result: null, loading: false, error: null })
+    })
+  })
+
+  describe('viewBriefingToday', () => {
+    beforeEach(() => {
+      useStore.setState({
+        briefing: { result: null, loading: false, error: null },
+        briefingViewingDate: null,
+        briefingGeneration: null,
+        briefingStage: null,
+        briefingStageDetail: null,
+        briefingHistory: { list: [], loading: false, error: null },
+        collectionViewOpen: true,
+      })
+      vi.mocked(ipc.briefingGenerate).mockReset()
+    })
+
+    it('today not generated: switches view to empty state without any IPC', async () => {
+      const today = formatBriefingDate(new Date())
+
+      await useStore.getState().viewBriefingToday()
+
+      const s = useStore.getState()
+      expect(ipc.briefingGenerate).not.toHaveBeenCalled()
+      expect(s.briefingViewingDate).toBe(today)
+      expect(s.briefing).toEqual({ result: null, loading: false, error: null })
+      expect(s.briefingGeneration).toBeNull()
+      expect(s.collectionViewOpen).toBe(false)
+    })
+
+    it('today already in history: delegates to cache read', async () => {
+      const today = formatBriefingDate(new Date())
+      useStore.setState({
+        briefingHistory: { list: [{ date: today, filePath: '/t.md' }], loading: false, error: null },
+      })
+      vi.mocked(ipc.briefingGenerate).mockResolvedValue({
+        title: '夜航简报', date: today, content: '今日', sources: [],
+        filePath: '/t.md', cached: true,
+      } as any)
+
+      await useStore.getState().viewBriefingToday()
+
+      expect(ipc.briefingGenerate).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().briefing.result).toMatchObject({ date: today, cached: true })
+    })
+
+    it('today generating in background: delegates to watch path without second IPC', async () => {
+      const today = formatBriefingDate(new Date())
+      useStore.setState({
+        briefingGeneration: { date: today, status: 'running', error: null, confirmed: true },
+      })
+
+      await useStore.getState().viewBriefingToday()
+
+      expect(ipc.briefingGenerate).not.toHaveBeenCalled()
+      expect(useStore.getState().briefing.loading).toBe(true)
+    })
+
+    it('today generation failed: delegates to cold error display without IPC', async () => {
+      const today = formatBriefingDate(new Date())
+      useStore.setState({
+        briefingGeneration: { date: today, status: 'failed', error: 'FEED_EMPTY', confirmed: true },
+      })
+
+      await useStore.getState().viewBriefingToday()
+
+      expect(ipc.briefingGenerate).not.toHaveBeenCalled()
+      expect(useStore.getState().briefing.error).toBe('FEED_EMPTY')
+    })
+  })
+
+  describe('viewJobBriefingToday', () => {
+    beforeEach(() => {
+      useStore.setState({
+        jobBriefing: { result: null, loading: false, error: null },
+        jobBriefingViewingDate: null,
+        jobBriefingGeneration: null,
+        jobBriefingStage: null,
+        jobBriefingStageDetail: null,
+        jobBriefingHistory: { list: [], loading: false, error: null },
+      })
+      vi.mocked(ipc.jobBriefingGenerate).mockReset()
+    })
+
+    it('today not generated: switches view to empty state without any IPC', async () => {
+      const today = formatBriefingDate(new Date())
+
+      await useStore.getState().viewJobBriefingToday()
+
+      const s = useStore.getState()
+      expect(ipc.jobBriefingGenerate).not.toHaveBeenCalled()
+      expect(s.jobBriefingViewingDate).toBe(today)
+      expect(s.jobBriefing).toEqual({ result: null, loading: false, error: null })
+    })
+
+    it('today already in history: delegates to cache read', async () => {
+      const today = formatBriefingDate(new Date())
+      useStore.setState({
+        jobBriefingHistory: { list: [{ date: today, filePath: '/j.md' }], loading: false, error: null },
+      })
+      vi.mocked(ipc.jobBriefingGenerate).mockResolvedValue({
+        title: '求职简报', date: today, content: '今日', sources: [],
+        filePath: '/j.md', cached: true,
+      } as any)
+
+      await useStore.getState().viewJobBriefingToday()
+
+      expect(ipc.jobBriefingGenerate).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().jobBriefing.result).toMatchObject({ date: today, cached: true })
     })
   })
 

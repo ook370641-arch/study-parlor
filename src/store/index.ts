@@ -200,6 +200,10 @@ type AppStore = {
   deleteScoutArticle: (filePath: string) => Promise<void>
 
   generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
+  /** 日期列「今日」的查看入口：未生成时只切视图到空态（不发 IPC），
+   *  已生成/生成中/生成过失败则委托 generateBriefing（缓存读/观看/冷错误）。
+   *  真实生成的唯一入口是空态按钮。 */
+  viewBriefingToday: () => Promise<void>
   loadBriefingHistory: () => Promise<void>
   deleteBriefings: (filePaths: string[]) => Promise<void>
   cancelBriefing: () => void
@@ -228,6 +232,8 @@ type AppStore = {
   jobProfile: JobProfile
   updateJobProfile: (profile: JobProfile) => Promise<void>
   generateJobBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
+  /** 同 viewBriefingToday，求职域 */
+  viewJobBriefingToday: () => Promise<void>
   loadJobBriefingHistory: () => Promise<void>
   deleteJobBriefings: (filePaths: string[]) => Promise<void>
   cancelJobBriefing: () => void
@@ -831,6 +837,25 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
+  viewBriefingToday: async () => {
+    const today = formatBriefingDate(new Date())
+    const s = get()
+    const generated = s.briefingHistory.list.some((h) => h.date === today) || s.briefing.result?.date === today
+    // 已生成（缓存读）/生成中（观看）/生成失败（冷错误）→ 委托 generateBriefing 的既有分支
+    if (generated || s.briefingGeneration?.date === today) {
+      await get().generateBriefing(today)
+      return
+    }
+    // 今日尚未生成：只切视图到空态，不发 IPC——真实生成的唯一入口是空态按钮。
+    // bump requestId，使在途的往期缓存读响应不得落到今日空态上。
+    briefingViewRequestId += 1
+    set({
+      collectionViewOpen: false,
+      briefingViewingDate: today,
+      briefing: { result: null, loading: false, error: null },
+    })
+  },
+
   loadBriefingHistory: async () => {
     set({ briefingHistory: { ...get().briefingHistory, loading: true, error: null } })
     try {
@@ -979,6 +1004,22 @@ export const useStore = create<AppStore>((set, get) => ({
     } finally {
       unsubscribe()
     }
+  },
+
+  viewJobBriefingToday: async () => {
+    const today = formatBriefingDate(new Date())
+    const s = get()
+    const generated = s.jobBriefingHistory.list.some((h) => h.date === today) || s.jobBriefing.result?.date === today
+    if (generated || s.jobBriefingGeneration?.date === today) {
+      await get().generateJobBriefing(today)
+      return
+    }
+    // 今日尚未生成：只切视图到空态，不发 IPC——真实生成的唯一入口是空态按钮。
+    jobBriefingViewRequestId += 1
+    set({
+      jobBriefingViewingDate: today,
+      jobBriefing: { result: null, loading: false, error: null },
+    })
   },
 
   loadJobBriefingHistory: async () => {
