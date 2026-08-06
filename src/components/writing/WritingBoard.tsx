@@ -68,7 +68,7 @@ export function WritingBoard() {
          : null}
       </div>
       {/* Editor area */}
-      <div data-testid="writing-editor" className="flex-1 overflow-y-auto px-8 py-6"
+      <div data-testid="writing-editor" className="flex-1 min-h-0 overflow-y-auto px-8 py-6"
         style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}>
         {briefingTheme !== 'newspaper' && <PaintingPlate />}
         <div className="flex justify-center mb-4">

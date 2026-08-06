@@ -323,7 +323,7 @@ export function Briefing() {
                 <CollectionView theme={theme} />
               </div>
             ) : source === 'writing' ? (
-              <main className="relative z-[5] flex-1">
+              <main className="relative z-[5] flex-1 min-h-0">
                 <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
                   <button type="button" data-testid="writing-ui-font-size-decrease"
                     disabled={writingUISize === 'sm'}
