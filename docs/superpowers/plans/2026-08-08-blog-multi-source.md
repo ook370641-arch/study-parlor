@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 博客源扩展为五来源完整序列（Engineering 25 / Research 144 / Alignment 30 / Interpretability 55 / Product 204），过滤器改为 All + 多选交互，修复导读卡死无终态问题。
+**Goal:** 博客源扩展为五来源完整序列（Engineering 25 / Research 144 / Alignment 54 / Interpretability 51 / Product 204），过滤器改为 All + 多选交互，修复导读卡死无终态问题。
 
 **Architecture:** 来源配置升级为适配器（发现策略 sitemap/static-list/rss + 正文选择器）；主进程 HTTP 统一走 Electron `net.fetch`（Chromium 栈跟随系统代理）；sitemap 全量 URL + 索引页富元数据 + 老文章元数据后台回填（持久化缓存）；过滤器状态机为纯函数 lib。
 
@@ -26,8 +26,8 @@
 - 主站文章页：og:title 必有（属性顺序可能 content 在前）；无 `article:published_time`/`<time>`/JSON-LD 日期；**RSC payload 有 `\"publishedOn\":\"2025-04-24T10:59:00.000Z\"`**（转义形式）；正文有可见日期文本 "Apr 24, 2025"。
 - sitemap 含跨栏目 307 重定向（`/research/building-effective-agents` → `/engineering/...`）→ 按最终 URL 去重。
 - alignment/circuits 文章页是 **Distill 模板**：正文容器 `<d-article>`，标题 `<d-title><h1>`，无 `<article>`/`<main>`/`#quarto-content`。
-- alignment 首页卡片：`<div class="date">July 2026</div>` 后跟一个或多个 `<a href="2026/slug/" class="note"><h3>标题</h3><div class="description">…</div></a>`（date 头对后续连续卡片生效，直到下一个 date 头）。
-- circuits feed 是 Atom：`<entry><title>…</title><link href="…"/><updated>ISO</updated><summary>…</summary></entry>`；entry URL 以 `/index.html` 结尾。
+- alignment 首页卡片：`<div class="date">July 2026</div>` 后跟一个或多个 `<a href="2026/slug/" class="note"><h3>标题</h3><div class="description">…</div></a>`（date 头对后续连续卡片生效，直到下一个 date 头）。**全页 58 张卡片 = 54 内链 + 4 外链**（arxiv/drive/2×anthropic.com/research）——外链不是本博客文章，解析时排除，契约 54。
+- circuits feed 是 Atom：`<entry><title>…</title><link href="…"/><updated>ISO</updated><summary>…</summary></entry>`；entry URL 以 `/index.html` 结尾。**55 条 entry 中 4 条 link 指向外站**（2×alignment 转发、github PySvelte、distill.pub）——非 circuits 本域文章，解析时排除，契约 51。
 - claude.com 文章页有 `<main>` 和 og 标签（属性顺序不固定）；sitemap 含本地化前缀（/ja/de/fr/ko/it），英文文章 URL 匹配 `^https://claude\.com/blog/[^/]+$`。
 - claude.com 直连超时，经系统代理（用户 VPN）可达 → 所有 HTTP 走 `net.fetch`。
 
@@ -249,14 +249,16 @@ describe('parseSitemapUrls', () => {
 })
 
 describe('parseAlignmentIndex', () => {
-  it('解析 30 篇，标题/描述/月份齐全，date 头对连续卡片生效', () => {
+  it('解析 54 篇内链文章（排除 4 条外部链接），标题/描述/月份齐全，date 头对连续卡片生效', () => {
     const links = parseAlignmentIndex(fx('alignment-index.html'), 'https://alignment.anthropic.com/')
-    expect(links.length).toBe(30)
+    expect(links.length).toBe(54)
     for (const l of links) {
       expect(l.title).toBeTruthy()
       expect(l.dateText).toMatch(/\w+ \d{4}/)
       expect(l.url).toMatch(/^https:\/\/alignment\.anthropic\.com\/\d{4}\//)
     }
+    // 外部链接（arxiv / drive / anthropic.com/research）不进入文章列表
+    expect(links.every((l) => l.url.startsWith('https://alignment.anthropic.com/'))).toBe(true)
     // date 头后续卡片继承同一月份（July 2026 有两篇）
     const july = links.filter((l) => l.dateText === 'July 2026')
     expect(july.length).toBeGreaterThanOrEqual(2)
@@ -264,9 +266,9 @@ describe('parseAlignmentIndex', () => {
 })
 
 describe('parseAtomFeed', () => {
-  it('解析 55 条 entry，字段完整，保留 /index.html 结尾', () => {
+  it('解析 51 条 circuits 内链 entry（排除 4 条转发外站 link），字段完整，保留 /index.html 结尾', () => {
     const links = parseAtomFeed(fx('circuits-feed.xml'))
-    expect(links.length).toBe(55)
+    expect(links.length).toBe(51)
     for (const l of links) {
       expect(l.title).toBeTruthy()
       expect(l.url).toContain('transformer-circuits.pub')
@@ -310,13 +312,14 @@ export function parseSitemapUrls(xml: string, source: AnthropicSource): { url: s
   return out
 }
 
-/** alignment 首页：date 头对后续连续卡片生效，直到下一个 date 头 */
+/** alignment 首页：date 头对后续连续卡片生效，直到下一个 date 头；只收同源内链（外链 arxiv/drive/anthropic.research 不是本博客文章） */
 export function parseAlignmentIndex(html: string, baseUrl: string): DiscoveredLink[] {
   const out: DiscoveredLink[] = []
   const tokenRe = /<div class="date">([^<]+)<\/div>|<a href="([^"]+)" class="note">\s*<h3>([\s\S]*?)<\/h3>\s*<div class="description">([\s\S]*?)<\/div>\s*<\/a>/g
   let currentDate: string | null = null
   for (const m of html.matchAll(tokenRe)) {
     if (m[1] !== undefined) { currentDate = m[1].trim(); continue }
+    if (/^https?:\/\//.test(m[2])) continue // 外链卡片排除
     out.push({
       url: new URL(m[2], baseUrl).toString(),
       dateText: currentDate,
@@ -334,13 +337,13 @@ function unescapeXml(s: string): string {
     .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
 }
 
-/** Atom feed（transformer-circuits.pub/feed.xml）；entry URL 保留 /index.html 原样 */
+/** Atom feed（transformer-circuits.pub/feed.xml）；entry URL 保留 /index.html 原样；只收 circuits 本域 link（feed 转发的外站 entry 非本博客文章） */
 export function parseAtomFeed(xml: string): DiscoveredLink[] {
   const out: DiscoveredLink[] = []
   for (const m of xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
     const e = m[1]
     const url = e.match(/<link[^>]*href="([^"]+)"/)?.[1]
-    if (!url) continue
+    if (!url || !url.includes('transformer-circuits.pub')) continue
     const title = e.match(/<title>([\s\S]*?)<\/title>/)?.[1]
     const updated = e.match(/<updated>([^<]+)<\/updated>/)?.[1]
     const summary = e.match(/<summary>([\s\S]*?)<\/summary>/)?.[1]
@@ -949,7 +952,7 @@ git add -A && git commit -m "test(blog): 五源过滤器/失败条/导读终态/
 
 真实应用 + 真实网络（不用 mock）：触发 discover，断言：
 
-- `articles` 按源计数 `>=` 基线：engineering 25 / research 144 / alignment 30 / interpretability 55
+- `articles` 按源计数 `>=` 基线：engineering 25 / research 144 / alignment 54 / interpretability 51
 - 每篇文章 `title` 与 `publishedAt` 非空（这是本轮的核心验收）
 - product：可达时 `>= 204`；不可达时断言 `sectionStatus.product.error` 存在且其余四源完整（spec 顶部检测连通性二选一断言，不用 test.skip——e2e 规则禁止跳过）
 - 长 timeout（首次回填 458 篇约 1-2 分钟，给 10 分钟）

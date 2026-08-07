@@ -15,7 +15,7 @@
 
 **目标（用户原话）**：一劳永逸完成博客建设——多来源完整博客序列 + 完整用户交互链路。
 
-**成功标准**：应用面板时间线可见五来源全量文章（Engineering 25 + Research 144 + Alignment 30 + Interpretability 55 + Product 204 ≈ 458 篇），每篇有标题和日期；All/多选过滤器交互符合第 4 节状态机；导读生成必达终态（成功或可见错误）。
+**成功标准**：应用面板时间线可见五来源全量文章（Engineering 25 + Research 144 + Alignment 54 + Interpretability 51 + Product 204 ≈ 478 篇），每篇有标题和日期；All/多选过滤器交互符合第 4 节状态机；导读生成必达终态（成功或可见错误）。
 
 **非目标**：/news（255 篇产品通稿，太浅，前沿 digest 已覆盖）；policy / economic-index（上轮已排除）；通用博客源插件框架（YAGNI）；代理自动发现/配置 UI（跟随系统代理即可）。
 
@@ -27,8 +27,8 @@
 |---|---|---|---|---|---|
 | anthropic.com/engineering | `engineering` | 25 | sitemap | 索引页 DOM（近期）+ og 回填（老文章） | 生产中 + 本次 sitemap 复核 |
 | anthropic.com/research | `research` | 144（排除 5 个 team 页） | sitemap | 索引页 DOM + og:title 回填 | sitemap 实测 149-5=144；抽查 6 篇 200 且 og:title 均在 |
-| alignment.anthropic.com | `alignment` | 30 | 静态列表（首页 HTML） | 列表自带标题/描述/月份；精确日期 import 时从文章页补 | 首页 `a.note` 结构实测 |
-| transformer-circuits.pub | `interpretability` | 55 | RSS/Atom feed | feed 自带 title/link/updated/summary | feed.xml 实测 55 条 entry |
+| alignment.anthropic.com | `alignment` | 54 | 静态列表（首页 HTML） | 列表自带标题/描述/月份；精确日期 import 时从文章页补 | 首页 58 张 `a.note` 卡片 = 54 内链 + 4 外链（arxiv/drive/anthropic.research），外链非本博客文章，解析排除 |
+| transformer-circuits.pub | `interpretability` | 51 | RSS/Atom feed | feed 自带 title/link/updated/summary | feed.xml 实测 55 条 entry，其中 4 条 link 指向外站（2×alignment 转发/github/distill），非本域文章，解析排除 |
 | claude.com/blog | `product` | 204（英文，已排除本地化前缀 ja/de/fr/ko/it 等） | sitemap | h1/og/JSON-LD `datePublished` | 经代理实测；sitemap 3389 URL 中英文 `/blog/<slug>` 204 条 |
 
 被淘汰的候选：
