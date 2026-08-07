@@ -126,10 +126,12 @@ describe('anthropic integration', () => {
   })
 })
 
-describe('discoverArticles multi-section', () => {
+describe('discoverArticles multi-source', () => {
   const ENG = { url: 'https://www.anthropic.com/engineering/e1', title: 'Eng', summary: null, dateText: 'Aug 1, 2026', imageUrl: null }
-  const INS = { url: 'https://www.anthropic.com/institute/i1', title: 'Inst', summary: null, dateText: 'Aug 3, 2026', imageUrl: null }
   const RES = { url: 'https://www.anthropic.com/research/r1', title: 'Res', summary: null, dateText: 'Aug 2, 2026', imageUrl: null }
+  const ALI = { url: 'https://alignment.anthropic.com/2026/msm/', title: 'Ali', summary: null, dateText: 'Jul 1, 2026', imageUrl: null }
+  const INT = { url: 'https://transformer-circuits.pub/2026/workspace/index.html', title: 'Int', summary: null, dateText: 'Jun 1, 2026', imageUrl: null }
+  const PRO = { url: 'https://claude.com/blog/1m-context', title: 'Pro', summary: null, dateText: 'May 1, 2026', imageUrl: null }
   let tmp: string
 
   function mockListing(impl: (url: string) => unknown) {
@@ -147,34 +149,41 @@ describe('discoverArticles multi-section', () => {
 
   it('buildListingScript 参数化前缀与排除规则', async () => {
     const { buildListingScript } = await import('../electron/lib/anthropic-scraper')
-    const { ANTHROPIC_SECTIONS } = await import('../electron/lib/anthropic-sections')
-    const eng = ANTHROPIC_SECTIONS.find((s) => s.key === 'engineering')!
-    const res = ANTHROPIC_SECTIONS.find((s) => s.key === 'research')!
+    const { ANTHROPIC_SOURCES } = await import('../electron/lib/anthropic-sections')
+    const eng = ANTHROPIC_SOURCES.find((s) => s.key === 'engineering')!
+    const res = ANTHROPIC_SOURCES.find((s) => s.key === 'research')!
     expect(buildListingScript(eng)).toContain('a[href^="/engineering/"]')
     expect(buildListingScript(res)).toContain('a[href^="/research/"]')
     expect(buildListingScript(res)).toContain('/research/team/')
     expect(buildListingScript(eng)).toContain('EXCLUDE_PREFIXES')
   })
 
-  it('三栏目文章带 section 合并返回，sectionStatus 全部成功', async () => {
-    mockListing((url) => (url.includes('/institute') ? [INS] : url.includes('/research') ? [RES] : [ENG]))
-    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
-    const result = await discoverArticles(tmp)
-    expect(result.articles).toHaveLength(3)
-    expect(result.articles.map((a) => a.section).sort()).toEqual(['engineering', 'institute', 'research'])
-    expect(result.sectionStatus.institute?.error).toBeNull()
-    expect(result.sectionStatus.research?.fetchedAt).toBeTruthy()
-  })
-
-  it('单栏目失败隔离：其他栏目正常返回，失败栏目记入 sectionStatus', async () => {
+  it('五源文章带 section 合并返回，sectionStatus 全部成功', async () => {
     mockListing((url) => {
-      if (url.includes('/institute')) throw new Error('timeout waiting for selector')
+      if (url.includes('alignment.anthropic.com')) return [ALI]
+      if (url.includes('transformer-circuits')) return [INT]
+      if (url.includes('claude.com')) return [PRO]
       return url.includes('/research') ? [RES] : [ENG]
     })
     const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
     const result = await discoverArticles(tmp)
-    expect(result.articles).toHaveLength(2)
-    expect(result.sectionStatus.institute?.error?.code).toBe('network-error')
+    expect(result.articles).toHaveLength(5)
+    expect(result.articles.map((a) => a.section).sort()).toEqual(['alignment', 'engineering', 'interpretability', 'product', 'research'])
+    expect(result.sectionStatus.product?.error).toBeNull()
+    expect(result.sectionStatus.research?.fetchedAt).toBeTruthy()
+  })
+
+  it('单源失败隔离：其他源正常返回，失败源记入 sectionStatus', async () => {
+    mockListing((url) => {
+      if (url.includes('claude.com')) throw new Error('timeout waiting for selector')
+      if (url.includes('transformer-circuits')) return [INT]
+      if (url.includes('alignment.anthropic.com')) return [ALI]
+      return url.includes('/research') ? [RES] : [ENG]
+    })
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+    const result = await discoverArticles(tmp)
+    expect(result.articles).toHaveLength(4)
+    expect(result.sectionStatus.product?.error?.code).toBe('network-error')
     expect(result.sectionStatus.engineering?.error).toBeNull()
   })
 

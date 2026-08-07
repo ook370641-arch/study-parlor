@@ -9,7 +9,7 @@ import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 import { TransferToWritingButton } from '@/components/briefing/TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
-import { ANTHROPIC_SECTIONS, sectionOf } from '@/lib/anthropic-sections'
+import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import type { AnthropicSectionKey, Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -62,7 +62,8 @@ function resolveSection(fm: Frontmatter) {
     url: fm.source_url ?? '',
     section: fm.section as AnthropicSectionKey | undefined,
   })
-  return ANTHROPIC_SECTIONS.find((s) => s.key === key) ?? null
+  // 五源查 ANTHROPIC_SOURCES，institute（遗留）查 LEGACY_SECTION_META
+  return ANTHROPIC_SOURCES.find((s) => s.key === key) ?? LEGACY_SECTION_META[key] ?? null
 }
 
 export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) {

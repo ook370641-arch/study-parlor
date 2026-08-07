@@ -45,7 +45,7 @@ export type Terminology = {
   startButton?: string
   cancelButton?: string
 }
-export type AnthropicSectionKey = 'engineering' | 'institute' | 'research'
+export type AnthropicSectionKey = 'engineering' | 'research' | 'alignment' | 'interpretability' | 'product' | 'institute'
 export type AnthropicArticleMeta = {
   url: string
   title: string
@@ -85,6 +85,8 @@ export type AnthropicBlogCache = {
   error: AnthropicError | null
   /** 各栏目抓取状态；旧 state.json 无此字段，缺省 {} */
   sectionStatus?: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>>
+  /** sitemap 老文章逐页回填的元数据缓存（key=规范化 URL）；旧 state.json 无此字段，缺省 {} */
+  articleMetaCache?: Record<string, { title: string | null; publishedAt: string | null; summary: string | null; imageUrl: string | null }>
 }
 
 export type ArticleAssistantTerm = {

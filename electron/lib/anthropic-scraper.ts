@@ -4,7 +4,7 @@ import path from 'node:path'
 import { runScriptInScraperWindow } from './anthropic-browser'
 import { parseFrontmatter, serializeFrontmatter } from './frontmatter'
 import type { AnthropicArticleMeta } from '@shared/index'
-import { ANTHROPIC_SECTIONS, sectionForUrl, type AnthropicSection } from './anthropic-sections'
+import { ANTHROPIC_SOURCES, sectionForUrl, type AnthropicSource } from './anthropic-sections'
 import type { AnthropicSectionKey, AnthropicSectionStatus, AnthropicErrorCode } from '@shared/index'
 
 const BASE_URL = 'https://www.anthropic.com'
@@ -111,7 +111,7 @@ export function findSavedArticles(libraryRoot: string): Map<string, string> {
   return map
 }
 
-export function buildListingScript(section: AnthropicSection): string {
+export function buildListingScript(section: AnthropicSource): string {
   return `(() => {
   const seen = new Set()
   const results = []
@@ -172,7 +172,7 @@ export async function discoverArticles(
   const sectionStatus: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>> = {}
   const failures: unknown[] = []
 
-  for (const section of ANTHROPIC_SECTIONS) {
+  for (const section of ANTHROPIC_SOURCES) {
     try {
       const links = await runScriptInScraperWindow<
         { url: string; title: string; summary: string | null; dateText: string | null; imageUrl: string | null }[]

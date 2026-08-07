@@ -2,7 +2,7 @@ import { memo, useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import { ANTHROPIC_SECTIONS, sectionOf } from '@/lib/anthropic-sections'
+import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -96,10 +96,14 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
   const placeholderText = isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]/60'
   const titleHover = isAcademic ? 'group-hover:text-ember' : 'group-hover:text-[#1a1a1a]'
 
-  // 栏目色签：本地内置条目（宪法报告）不显示；旧文章无 section 时从 URL 回推
+  // 栏目色签：本地内置条目（宪法报告）不显示；旧文章无 section 时从 URL 回推；
+  // 五源查 ANTHROPIC_SOURCES，institute（遗留）查 LEGACY_SECTION_META
+  const sectionKey = sectionOf(article)
   const section = article.local === 'constitution'
     ? null
-    : ANTHROPIC_SECTIONS.find((s) => s.key === sectionOf(article)) ?? null
+    : ANTHROPIC_SOURCES.find((s) => s.key === sectionKey)
+      ?? LEGACY_SECTION_META[sectionKey]
+      ?? null
 
   // Left border by state
   let borderClass: string
