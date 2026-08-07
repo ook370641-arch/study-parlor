@@ -1272,6 +1272,7 @@ export const useStore = create<AppStore>((set, get) => ({
           articles: result.articles,
           loading: false,
           error: null,
+          sectionStatus: result.sectionStatus,
         }
         if (commit) {
           set({ anthropicBlogCache: next })
