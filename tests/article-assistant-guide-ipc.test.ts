@@ -134,9 +134,10 @@ describe('guide IPC handlers', () => {
     expect(fs.readFileSync(filePath, 'utf8')).toContain('guide_version: 2')
   })
 
-  it('generateGuide：非 briefing 走旧路径（不调 v2 管线）', async () => {
-    // anthropic-article 的 generateGuide 不经过 runDigestGuideV2，直接调 chatStream+旧 prompt。
-    // 验证 handler 注册存在即可（管线 mock 挂起以保证不超时，旧路径不会被触发）。
+  it('generateGuide：web-article 走旧路径（不调 v2 管线）', async () => {
+    // web-article 的 generateGuide 走 chatNonStream+旧 prompt（digest-guide.md），不经 runBlogGuideV2/runDigestGuideV2。
+    // 只验证 handler 注册存在：v2 管线 mock 挂起、旧路径调真实 API，两者都不适合在本块实际调用。
+    // 路由断言在下方 generateGuide routing describe 块（anthropic-article → runBlogGuideV2）。
     expect(handlers['articleAssistant:generateGuide']).toBeDefined()
   })
 })
