@@ -50,7 +50,8 @@
         "electron/lib/guide-v2*.ts",
         "src/components/article-assistant/**",
         "src/lib/assistant-*.ts",
-        "src/lib/guide-progress.ts"
+        "src/lib/guide-progress.ts",
+        "electron/prompts/**"
       ],
       "specs": [
         "article-assistant*.spec.ts",
@@ -100,7 +101,11 @@
     "anthropic-blog": {
       "sources": [
         "src/components/anthropic/**",
-        "electron/ipc/anthropic.ts"
+        "electron/ipc/anthropic.ts",
+        "electron/lib/anthropic-scraper.ts",
+        "electron/lib/anthropic-sections.ts",
+        "src/lib/anthropic-articles.ts",
+        "src/lib/anthropic-sections.ts"
       ],
       "specs": [
         "anthropic-blog*.spec.ts"

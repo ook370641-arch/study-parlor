@@ -458,7 +458,7 @@ const BASE_STATE = {
   scoutTab: 'chat',
   scoutActiveConversationId: null,
   jobBriefingStageDetail: null,
-  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
+  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicBlogLastSeenAt: null,
   articleAssistantGuideWidth: 320,
   articleAssistantGuideCollapsed: false,
