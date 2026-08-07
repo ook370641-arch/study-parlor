@@ -184,3 +184,38 @@ describe('discoverArticles multi-section', () => {
     await expect(discoverArticles(tmp)).rejects.toThrow('load failed')
   })
 })
+
+describe('importArticle section', () => {
+  it('institute 文章写入 section/tags', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-anthropic-sec-'))
+    const INS_URL = 'https://www.anthropic.com/institute/recursive-self-improvement'
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async (script, opts) => {
+      const url = (opts as { url?: string } | undefined)?.url ?? ''
+      if (script.includes('a[href^="/institute/"]')) {
+        return [{ url: INS_URL, title: 'When AI builds itself', summary: 'S', dateText: 'Aug 5, 2026', imageUrl: null }] as never
+      }
+      if (script.includes('a[href^="/engineering/"]') || script.includes('a[href^="/research/"]')) return [] as never
+      if (script.includes('article:published_time')) {
+        return {
+          title: 'When AI builds itself',
+          url: INS_URL,
+          publishedAt: '2026-08-05T00:00:00.000Z',
+          authors: ['Anthropic'],
+          summary: 'S',
+          contentHtml: '<article><p>Body.</p></article>',
+          images: [],
+        } as never
+      }
+      return [] as never
+    })
+    // 全局 fetch（图片下载）不需要——无图片
+    const { importArticle } = await import('../electron/lib/anthropic-scraper')
+    const { filePath } = await importArticle(INS_URL, tmp)
+    const raw = fs.readFileSync(filePath, 'utf8')
+    const { parseFrontmatter } = await import('../electron/lib/frontmatter')
+    const { frontmatter } = parseFrontmatter(raw, { filename: path.basename(filePath) })
+    expect(frontmatter.section).toBe('institute')
+    expect(frontmatter.tags).toEqual(['anthropic', 'institute'])
+    fs.rmSync(tmp, { recursive: true, force: true })
+  })
+})

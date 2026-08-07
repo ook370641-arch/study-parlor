@@ -254,3 +254,31 @@ describe('web-article frontmatter', () => {
     expect(body).toContain('正文')
   })
 })
+
+describe('anthropic-article section field', () => {
+  it('round-trips section for anthropic-article', () => {
+    const raw = serializeFrontmatter('anthropic-article', {
+      title: 'T',
+      type: 'anthropic-article',
+      created: '2026-08-01T00:00:00.000Z',
+      tags: ['anthropic', 'institute'],
+      source_url: 'https://www.anthropic.com/institute/x',
+      section: 'institute',
+    } as never, 'body')
+    const { frontmatter } = parseFrontmatter(raw, { filename: 'x.md' })
+    expect(frontmatter.section).toBe('institute')
+    expect(frontmatter.tags).toEqual(['anthropic', 'institute'])
+  })
+
+  it('old article without section parses as undefined', () => {
+    const raw = serializeFrontmatter('anthropic-article', {
+      title: 'T',
+      type: 'anthropic-article',
+      created: '2026-08-01T00:00:00.000Z',
+      tags: ['anthropic', 'engineering'],
+      source_url: 'https://www.anthropic.com/engineering/x',
+    } as never, 'body')
+    const { frontmatter } = parseFrontmatter(raw, { filename: 'x.md' })
+    expect(frontmatter.section).toBeUndefined()
+  })
+})

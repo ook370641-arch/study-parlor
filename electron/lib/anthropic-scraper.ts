@@ -4,7 +4,7 @@ import path from 'node:path'
 import { runScriptInScraperWindow } from './anthropic-browser'
 import { parseFrontmatter, serializeFrontmatter } from './frontmatter'
 import type { AnthropicArticleMeta } from '@shared/index'
-import { ANTHROPIC_SECTIONS, type AnthropicSection } from './anthropic-sections'
+import { ANTHROPIC_SECTIONS, sectionForUrl, type AnthropicSection } from './anthropic-sections'
 import type { AnthropicSectionKey, AnthropicSectionStatus, AnthropicErrorCode } from '@shared/index'
 
 const BASE_URL = 'https://www.anthropic.com'
@@ -431,6 +431,7 @@ export async function importArticle(
   const meta = listing.articles.find((a) => a.url === url) || null
   const article = await extractArticle(url, meta)
 
+  const section = meta?.section ?? sectionForUrl(article.url)
   const publishedAt = article.publishedAt || new Date().toISOString()
   const folder = getImportFolder(publishedAt)
   const dir = path.join(libraryRoot, IMPORT_DIR, folder)
@@ -454,7 +455,8 @@ export async function importArticle(
       title: article.title,
       type: 'anthropic-article',
       created: publishedAt,
-      tags: ['anthropic', 'engineering'],
+      tags: ['anthropic', section],
+      section,
       source_url: article.url,
       published_at: publishedAt,
       imported_at: new Date().toISOString(),
