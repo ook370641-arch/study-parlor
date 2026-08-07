@@ -22,6 +22,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
       loading: true,
       error: null,
       sectionStatus: prev?.sectionStatus ?? {},
+      articleMetaCache: metaCache,
     }
     await patchState({ anthropicBlogCache: loadingCache })
 
@@ -54,6 +55,9 @@ export function registerAnthropicIpc(cfg: AppConfig) {
         loading: false,
         error: null,
         sectionStatus: result.sectionStatus,
+        // runBackfill 原地 mutation 的是同一个 metaCache 对象；最终 patch 必须带上它，
+        // 否则顶层浅合并会用缺 articleMetaCache 的 cache 整体替换，抹掉本轮回填结果。
+        articleMetaCache: metaCache,
       }
       await patchState({ anthropicBlogCache: cache })
       return { ok: true as const, lastFetchedAt: result.lastFetchedAt, articles, sectionStatus: result.sectionStatus }
@@ -65,6 +69,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
         loading: false,
         error,
         sectionStatus: prev?.sectionStatus ?? {},
+        articleMetaCache: prev?.articleMetaCache ?? {},
       }
       await patchState({ anthropicBlogCache: cache })
       return { ok: false as const, code: error.code, message: error.message }

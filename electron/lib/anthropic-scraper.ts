@@ -312,19 +312,22 @@ export async function discoverArticles(
     }
   }
 
-  const articles: AnthropicArticleMeta[] = discovered.map(({ link, section }) => {
-    const filePath = saved.get(link.url)
-    return {
-      url: link.url,
-      title: link.title,
-      summary: link.summary,
-      publishedAt: link.dateText ? parseDateString(link.dateText) : null,
-      imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
-      section,
-      isSaved: !!filePath,
-      filePath,
-    }
-  })
+  const articles: AnthropicArticleMeta[] = discovered
+    .map(({ link, section }) => {
+      const filePath = saved.get(link.url)
+      return {
+        url: link.url,
+        title: link.title,
+        summary: link.summary,
+        publishedAt: link.dateText ? parseDateString(link.dateText) : null,
+        imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
+        section,
+        isSaved: !!filePath,
+        filePath,
+      }
+    })
+    // 防御：static-list/rss 真实脏数据缺 h3/title 时会产出 title:null 裸行，过滤掉（无裸行契约）
+    .filter((a) => a.title && a.url)
 
   // 全部失败才整体报错（走 IPC classifyError → parse-error/network-error 路径）；
   // 部分失败按栏目降级，面板逐栏目提示。

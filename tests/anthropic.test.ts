@@ -325,6 +325,70 @@ describe('discoverArticles multi-source', () => {
     const calledUrls = vi.mocked(httpFetch).mock.calls.map((c) => c[0])
     expect(calledUrls).not.toContain('https://www.anthropic.com/engineering/z')
   })
+
+  it('metaCache 跨 run 持久化：二次 discover 命中缓存不触发回填', async () => {
+    const ENG_SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.anthropic.com/engineering/a</loc><lastmod>2026-08-01</lastmod></url>
+  <url><loc>https://www.anthropic.com/engineering/c</loc><lastmod>2026-08-03</lastmod></url>
+</urlset>`
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === 'https://www.anthropic.com/sitemap.xml') return textResponse(ENG_SITEMAP)
+      if (url === 'https://claude.com/sitemap.xml') return textResponse('<urlset></urlset>')
+      if (url === 'https://alignment.anthropic.com/') return textResponse('<html></html>')
+      if (url === 'https://transformer-circuits.pub/feed.xml') return textResponse('<feed></feed>')
+      if (url === 'https://www.anthropic.com/engineering/c') {
+        return textResponse('<html><head><meta property="og:title" content="C Real Title"/></head></html>', url)
+      }
+      throw new Error(`Unexpected httpFetch url: ${url}`)
+    })
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async (_script, opts) => {
+      const url = (opts as { url: string }).url
+      if (url.includes('/engineering')) {
+        return [{ url: 'https://www.anthropic.com/engineering/a', title: 'A Title', summary: null, dateText: 'Aug 1, 2026', imageUrl: null }]
+      }
+      return []
+    })
+
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+
+    // 第一轮：c 未覆盖 → 回填 → metaCache 被写入
+    let cache: ArticleMetaCache = {}
+    const firstBackfill = vi.fn((_a: AnthropicArticleMeta[], updated: ArticleMetaCache) => { cache = updated })
+    const r1 = await discoverArticles(tmp, { metaCache: {}, onBackfill: firstBackfill })
+    expect(r1.articles.map((a) => a.url)).not.toContain('https://www.anthropic.com/engineering/c')
+    expect(firstBackfill).toHaveBeenCalled()
+    expect(cache['https://www.anthropic.com/engineering/c']?.title).toBe('C Real Title')
+
+    // 第二轮：同一 metaCache 传入 → c 命中缓存进初始结果，不再触发回填（跨 run 缓存命中）
+    const secondBackfill = vi.fn()
+    const r2 = await discoverArticles(tmp, { metaCache: cache, onBackfill: secondBackfill })
+    expect(r2.articles.map((a) => a.url)).toContain('https://www.anthropic.com/engineering/c')
+    expect(secondBackfill).not.toHaveBeenCalled()
+  })
+
+  it('static-list/rss 脏数据缺标题的裸行被过滤（无裸行契约）', async () => {
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === 'https://www.anthropic.com/sitemap.xml') return textResponse('<urlset></urlset>')
+      if (url === 'https://claude.com/sitemap.xml') return textResponse('<urlset></urlset>')
+      if (url === 'https://alignment.anthropic.com/') return textResponse('<html></html>')
+      if (url === 'https://transformer-circuits.pub/feed.xml') {
+        return textResponse(`<?xml version="1.0"?>
+<feed>
+  <entry><title>Good Circuit</title><link href="https://transformer-circuits.pub/2026/good/index.html"/><updated>2026-08-01T00:00:00Z</updated></entry>
+  <entry><title></title><link href="https://transformer-circuits.pub/2026/bad/index.html"/><updated>2026-08-02T00:00:00Z</updated></entry>
+</feed>`)
+      }
+      throw new Error(`Unexpected httpFetch url: ${url}`)
+    })
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async () => [])
+
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+    const result = await discoverArticles(tmp)
+    expect(result.articles).toHaveLength(1)
+    expect(result.articles[0].url).toBe('https://transformer-circuits.pub/2026/good/index.html')
+    expect(result.articles[0].title).toBe('Good Circuit')
+  })
 })
 
 describe('importArticle section', () => {
