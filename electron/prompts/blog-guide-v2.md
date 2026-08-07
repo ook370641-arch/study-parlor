@@ -13,13 +13,23 @@ Return ONLY a JSON object matching this schema. Do not wrap it in markdown code 
       "terms": [
         {
           "term": "英文或技术术语",
-          "translation": "中文翻译，并在括号中保留英文原文，例如：上下文（context）",
+          "translation": "中文翻译，并在括号中保留英文原文，例如：注意力机制（attention）",
           "explanation": "用 2-3 句中文解释这个概念"
         }
       ]
     }
   ]
 }
+
+## 字段名契约（最重要）
+
+chunk 对象的章节总结字段名**必须是 `summary`**。禁止使用 `context` 作为章节字段名——`context` 是另一类导读（digest）保留的字段名，此格式的校验器只接受 `summary`，输出 `context` 会导致整份导读被拒绝。
+
+❌ 禁止（字段名错误，会校验失败）：
+{"background":"...","chunks":[{"heading":"...","context":"..."}]}
+
+✅ 必须（字段名 summary）：
+{"background":"...","chunks":[{"heading":"...","summary":"..."}]}
 
 ## 写作任务
 
@@ -52,6 +62,8 @@ Return ONLY a JSON object matching this schema. Do not wrap it in markdown code 
 
 ## Constraints
 
+- Output must be a single JSON object: start with `{`, end with `}`, no markdown code blocks (``` or ~~~) and no explanatory prose before or after.
+- The chapter summary field of each chunk must be named `summary`. A `context` field in any chunk is invalid output.
 - Split the article by H2/H3 headings, one chunk per section, in original order.
 - Each chunk may have 0-3 terms. Only include terms that genuinely need explanation.
 - All output must be in Chinese (headings excepted).

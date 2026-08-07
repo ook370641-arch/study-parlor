@@ -14,10 +14,12 @@ function mockStore(session: AssistantSession | null) {
     setAssistantActiveChunk: vi.fn(),
     guideScrollToChunkIndex: null,
     setGuideScrollToChunk: vi.fn(),
+    generateAssistantGuide: vi.fn(),
   }
   ;(storeModule.useStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     (selector: (s: typeof fullState) => unknown) => selector(fullState)
   )
+  return fullState
 }
 
 function sessionWithGuide(): AssistantSession {
@@ -135,5 +137,17 @@ describe('GuideSidebar', () => {
     const emberSpan = progress.querySelector('span.text-ember')
     expect(emberSpan).not.toBeNull()
     expect(emberSpan!.textContent).toBe('撰写导读中…')
+  })
+
+  it('renders guide error with a retry button that regenerates the guide', () => {
+    const s = sessionWithGuide()
+    s.guide = null
+    s.guideLoading = false
+    s.guideError = 'GUIDE_JSON_ERROR'
+    const state = mockStore(s)
+    render(<GuideSidebar />)
+    expect(screen.getByText('未能生成导读，可继续阅读原文。')).toBeInTheDocument()
+    screen.getByTestId('guide-retry').click()
+    expect(state.generateAssistantGuide).toHaveBeenCalledTimes(1)
   })
 })

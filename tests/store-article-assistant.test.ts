@@ -192,6 +192,45 @@ describe('store article assistant', () => {
       expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
     })
 
+    it('anthropic-article GUIDE_JSON_ERROR 达终态：guideLoading false + guideError + guideProgress null', async () => {
+      vi.mocked(ipc.articleAssistantGenerateGuide).mockRejectedValue(
+        Object.assign(new Error('bad shape'), { code: 'GUIDE_JSON_ERROR' })
+      )
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/blog.md',
+        contextType: 'anthropic-article',
+        articleContent: '## 一\nx\n## 二\ny',
+        autoGenerateGuide: true,
+      })
+      await flush(); await flush(); await flush()
+      const s = useStore.getState().assistantSession
+      expect(s?.guideLoading).toBe(false)
+      expect(s?.guideError).toBe('GUIDE_JSON_ERROR')
+      expect(s?.guideProgress).toBeNull()
+    })
+
+    it('失败后可重试：GUIDE_JSON_ERROR 后再次 generateAssistantGuide 成功', async () => {
+      vi.mocked(ipc.articleAssistantGenerateGuide)
+        .mockRejectedValueOnce(Object.assign(new Error('bad'), { code: 'GUIDE_JSON_ERROR' }))
+        .mockResolvedValueOnce(guideFixture as any)
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/retry.md',
+        contextType: 'anthropic-article',
+        articleContent: '## 一\nx',
+        autoGenerateGuide: true,
+      })
+      await flush(); await flush(); await flush()
+      expect(useStore.getState().assistantSession?.guideError).toBe('GUIDE_JSON_ERROR')
+
+      // 用户点击重试 → 再次触发 generateAssistantGuide → 成功落地导读
+      await useStore.getState().generateAssistantGuide()
+      await flush(); await flush()
+      const s = useStore.getState().assistantSession
+      expect(s?.guideError).toBeNull()
+      expect(s?.guideLoading).toBe(false)
+      expect(s?.guide).toEqual(guideFixture)
+    })
+
     it('web-article 生成中不置 guideProgress（articleType 门控）', async () => {
       vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise(() => {}) as Promise<any>)
       useStore.getState().openAssistantSession({

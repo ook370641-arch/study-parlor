@@ -20,6 +20,7 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const guideScrollToChunkIndex = useStore((s) => s.guideScrollToChunkIndex)
   const setGuideScrollToChunk = useStore((s) => s.setGuideScrollToChunk)
+  const generateAssistantGuide = useStore((s) => s.generateAssistantGuide)
   const isAcademic = theme !== 'newspaper'
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -59,7 +60,16 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
         </div>
         )})()}
       {guideError && !guide && (
-        <div className="px-4 text-sm text-ember">未能生成导读，可继续阅读原文。</div>
+        <div className="px-4 text-sm text-ember">
+          <span>未能生成导读，可继续阅读原文。</span>
+          <button
+            data-testid="guide-retry"
+            onClick={() => generateAssistantGuide()}
+            className="mt-2 block rounded border border-ember/40 px-3 py-1 text-xs text-ember hover:bg-ember/10 transition-colors"
+          >
+            重新生成导读
+          </button>
+        </div>
       )}
       {guide && (
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
