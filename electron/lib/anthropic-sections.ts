@@ -52,6 +52,7 @@ export const ANTHROPIC_SOURCES: AnthropicSource[] = [
     discover: 'sitemap',
     indexUrl: 'https://claude.com/blog',
     sitemapUrl: 'https://claude.com/sitemap.xml',
+    linkPrefix: '/blog/',
     sitemapInclude: /^https:\/\/claude\.com\/blog\/[^/]+$/,
     contentSelectors: ['main'],
   },

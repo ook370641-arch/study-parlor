@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import os from 'node:os'
 import path from 'node:path'
 import fs from 'node:fs'
+import TurndownService from 'turndown'
 import {
   parseDateString,
   firstParagraphToSummary,
   toAbsoluteUrl,
+  buildArticleScript,
   importArticle,
 } from '../electron/lib/anthropic-scraper'
 import { runScriptInScraperWindow } from '../electron/lib/anthropic-browser'
@@ -80,7 +82,7 @@ describe('anthropic integration', () => {
           images: [{ url: IMAGE_URL, alt: 'diagram' }],
         }
       }
-      if (script.includes('querySelectorAll(\'article img')) {
+      if (script.includes('querySelectorAll(\'d-article img')) {
         return [{ url: IMAGE_URL, alt: 'diagram' }]
       }
       throw new Error(`Unexpected script: ${script.slice(0, 80)}`)
@@ -92,6 +94,9 @@ describe('anthropic integration', () => {
     } as Response)
 
     vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === IMAGE_URL) {
+        return { ok: true, url, arrayBuffer: async () => new ArrayBuffer(8) } as unknown as Response
+      }
       if (url.includes('sitemap.xml')) {
         return {
           ok: true,
@@ -130,13 +135,39 @@ describe('anthropic integration', () => {
     const second = await importArticle(TEST_URL, tmp)
     expect(second.wasAlreadySaved).toBe(true)
     expect(second.filePath).toBe(filePath)
+
+    // importArticle 不再全量 discover：不拉 sitemap，不跑索引页 listing 脚本
+    const httpUrls = vi.mocked(httpFetch).mock.calls.map((c) => c[0])
+    expect(httpUrls).not.toContain('https://www.anthropic.com/sitemap.xml')
+    const scripts = vi.mocked(runScriptInScraperWindow).mock.calls.map((c) => c[0])
+    expect(scripts.some((s) => String(s).includes('a[href^="/engineering/"]'))).toBe(false)
+  })
+
+  it('importArticle 接受 listingMeta 参数覆盖 section（不经 discover 查表）', async () => {
+    const listingMeta = {
+      url: TEST_URL,
+      title: 'Test Anthropic Article',
+      summary: 'A short summary.',
+      publishedAt: '2026-07-01T00:00:00.000Z',
+      imageUrl: null,
+      section: 'research' as const,
+    }
+    const { filePath } = await importArticle(TEST_URL, tmp, listingMeta)
+    const raw = fs.readFileSync(filePath, 'utf8')
+    const { parseFrontmatter } = await import('../electron/lib/frontmatter')
+    const { frontmatter } = parseFrontmatter(raw, { filename: path.basename(filePath) })
+    expect(frontmatter.section).toBe('research')
+    expect(frontmatter.tags).toEqual(['anthropic', 'research'])
+    // 传入 listingMeta 时不再跑 discover（无 sitemap 请求）
+    const httpUrls = vi.mocked(httpFetch).mock.calls.map((c) => c[0])
+    expect(httpUrls).not.toContain('https://www.anthropic.com/sitemap.xml')
   })
 
   it('falls back to absolute image URL when download fails', async () => {
-    vi.mocked(globalThis.fetch as any).mockResolvedValue({
-      ok: false,
-      status: 403,
-    } as Response)
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === IMAGE_URL) return { ok: false, status: 403 } as unknown as Response
+      return { ok: true, url, text: async () => '<html></html>' } as unknown as Response
+    })
 
     const { filePath } = await importArticle(TEST_URL, tmp)
     const raw = fs.readFileSync(filePath, 'utf8')
@@ -178,6 +209,9 @@ describe('discoverArticles multi-source', () => {
     expect(buildListingScript(src('research'))).toContain('a[href^="/research/"]')
     expect(buildListingScript(src('research'))).toContain('/research/team/')
     expect(buildListingScript(src('engineering'))).toContain('EXCLUDE_PREFIXES')
+    // M2：product 源带 linkPrefix '/blog/'，避免生成 a[href^="undefined"] 的 20s 空等
+    expect(buildListingScript(src('product'))).toContain('a[href^="/blog/"]')
+    expect(buildListingScript(src('product'))).not.toContain('a[href^="undefined"]')
   })
 
   it('五源合并返回：每源文章数 = fixture 数（25/144/54/51/204），research 无 team 页，每篇有标题', async () => {
@@ -429,5 +463,109 @@ describe('importArticle section', () => {
     expect(frontmatter.section).toBe('institute')
     expect(frontmatter.tags).toEqual(['anthropic', 'institute'])
     fs.rmSync(tmp, { recursive: true, force: true })
+  })
+})
+
+describe('buildArticleScript 按源参数化', () => {
+  const src = (key: string) => ANTHROPIC_SOURCES.find((s) => s.key === key)!
+  const extractSelectors = (script: string): string[] => {
+    const m = script.match(/const selectors = (\[[^\n]*\])/)
+    if (!m) throw new Error('no selectors array in script')
+    return JSON.parse(m[1])
+  }
+
+  it('contentSelectors 排在默认链最前：alignment 首择 d-article，product 首择 main', () => {
+    const alignment = extractSelectors(buildArticleScript(src('alignment')))
+    expect(alignment[0]).toBe('d-article')
+    expect(alignment.indexOf('d-article')).toBeLessThan(alignment.indexOf('article'))
+
+    const product = extractSelectors(buildArticleScript(src('product')))
+    expect(product[0]).toBe('main')
+
+    const engineering = extractSelectors(buildArticleScript(src('engineering')))
+    expect(engineering[0]).toBe('article')
+    // 默认链完整、无重复
+    expect(engineering).toContain('main article')
+    expect(engineering).toContain('[data-testid="article-body"]')
+    expect(engineering).toContain('main')
+    expect(new Set(engineering).size).toBe(engineering.length)
+  })
+
+  it('图片绝对化用 window.location.href，不含硬编码 www.anthropic.com 拼接', () => {
+    const script = buildArticleScript(src('engineering'))
+    expect(script).toContain('new URL(src, window.location.href).toString()')
+    expect(script).not.toContain("'https://www.anthropic.com' +")
+    expect(script).not.toContain('www.anthropic.com' + "'")
+  })
+
+  it('各源生成的脚本均可被 JS 解析（无模板拼接/正则转义语法错误）', () => {
+    for (const key of ['engineering', 'research', 'alignment', 'interpretability', 'product']) {
+      expect(() => new Function(buildArticleScript(src(key)))).not.toThrow()
+    }
+  })
+
+  it('日期链在 JSON-LD 回退后增加 RSC publishedOn 提取', () => {
+    const script = buildArticleScript(src('engineering'))
+    // 现有回退链仍在
+    expect(script).toContain('article:published_time')
+    expect(script).toContain('application/ld+json')
+    // RSC publishedOn：读原始 HTML 转义 JSON
+    expect(script).toContain('document.documentElement.innerHTML.match')
+    expect(script).toContain('publishedOn')
+    expect(script).toMatch(/match\([^)]*publishedOn/)
+  })
+
+  it('RSC publishedOn 正则能从转义 JSON 中提出日期', () => {
+    const html = fs.readFileSync(path.join(__dirname, 'fixtures/blog-sources/research-article-old.html'), 'utf8')
+    const m = html.match(/\\?"publishedOn\\?":\\?"([^"\\]+)/)
+    expect(m?.[1]).toBe('2025-04-24T10:59:00.000Z')
+  })
+
+  it('buildArticleScript 内嵌的 publishedOn 正则能匹配转义 JSON（防转义漂移）', () => {
+    const script = buildArticleScript(src('engineering'))
+    const reSrc = script.match(/match\(\/(.+)\/\)/)?.[1]
+    expect(reSrc).toBeTruthy()
+    const re = new RegExp(reSrc!)
+    const html = fs.readFileSync(path.join(__dirname, 'fixtures/blog-sources/research-article-old.html'), 'utf8')
+    const m = html.match(re)
+    expect(m?.[1]).toBe('2025-04-24T10:59:00.000Z')
+  })
+})
+
+describe('Distill 转换契约（turndown 同生产配置）', () => {
+  const fx = (name: string) => fs.readFileSync(path.join(__dirname, 'fixtures/blog-sources', name), 'utf8')
+  const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' })
+  const dArticleInner = (html: string) => {
+    const m = html.match(/<d-article[^>]*>([\s\S]*?)<\/d-article>/)
+    return m ? m[1] : ''
+  }
+  const mainInner = (html: string) => {
+    const m = html.match(/<main[^>]*>([\s\S]*?)<\/main>/)
+    return m ? m[1] : ''
+  }
+  const assertGoodMarkdown = (md: string) => {
+    expect(md.trim().length).toBeGreaterThan(1000)
+    expect(md).toMatch(/#{1,2}\s/)
+    const paragraphs = md.split(/\n\n+/).filter((b) => b.trim() && !b.trim().startsWith('#'))
+    expect(paragraphs.length).toBeGreaterThan(5)
+    expect(md).not.toMatch(/\[object/)
+  }
+
+  it('circuits-article（transformer-circuits d-article）转换合格', () => {
+    const inner = dArticleInner(fx('circuits-article.html'))
+    expect(inner.length).toBeGreaterThan(1000)
+    assertGoodMarkdown(td.turndown(inner))
+  })
+
+  it('alignment-article（alignment.anthropic.com d-article）转换合格', () => {
+    const inner = dArticleInner(fx('alignment-article.html'))
+    expect(inner.length).toBeGreaterThan(1000)
+    assertGoodMarkdown(td.turndown(inner))
+  })
+
+  it('claude-blog-article（main 容器）转换合格', () => {
+    const inner = mainInner(fx('claude-blog-article.html'))
+    expect(inner.length).toBeGreaterThan(500)
+    assertGoodMarkdown(td.turndown(inner))
   })
 })

@@ -44,10 +44,10 @@ describe('ANTHROPIC_SOURCES config', () => {
     }
   })
 
-  it('www.anthropic.com 源的 indexUrl 匹配其 linkPrefix', () => {
+  it('各源 indexUrl 匹配其 linkPrefix（主站/product 各自域名）', () => {
     for (const s of MAIN_SOURCES) {
       if (!s.linkPrefix) continue
-      expect(s.indexUrl).toBe(`https://www.anthropic.com${s.linkPrefix.slice(0, -1)}`)
+      expect(s.indexUrl).toBe(`${new URL(s.indexUrl).origin}${s.linkPrefix.slice(0, -1)}`)
     }
   })
 

@@ -78,7 +78,8 @@ export function registerAnthropicIpc(cfg: AppConfig) {
 
   ipcMain.handle('anthropic:importArticle', async (_, url: string) => {
     try {
-      const result = await importArticle(url, cfg.libraryPath)
+      const listingMeta = getCurrentState().anthropicBlogCache?.articles.find((a) => a.url === url) ?? null
+      const result = await importArticle(url, cfg.libraryPath, listingMeta)
       return { ok: true as const, filePath: result.filePath, wasAlreadySaved: result.wasAlreadySaved }
     } catch (err) {
       const error = classifyError(err)

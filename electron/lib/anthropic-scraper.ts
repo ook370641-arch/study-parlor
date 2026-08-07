@@ -348,7 +348,23 @@ export async function discoverArticles(
   return { lastFetchedAt: new Date().toISOString(), articles, sectionStatus }
 }
 
-const ARTICLE_SCRIPT = `(() => {
+const DEFAULT_CONTENT_SELECTORS = [
+  'article',
+  'main article',
+  'main > div',
+  '[data-testid="article-body"]',
+  '.prose',
+  '.article-content',
+  'main',
+]
+
+/** 按来源参数化生成文章提取脚本：
+ *  内容容器 = 来源 contentSelectors + 主站默认链（去重）；
+ *  图片绝对化基于页面 URL（`new URL(src, window.location.href)`），不再硬编码主站域名；
+ *  日期链在 time/meta/JSON-LD 回退后追加 RSC `publishedOn` 提取（读原始 HTML 转义 JSON）。 */
+export function buildArticleScript(source: AnthropicSource): string {
+  const selectors = [...new Set([...(source.contentSelectors ?? []), ...DEFAULT_CONTENT_SELECTORS])]
+  return `(() => {
   const data = {
     title: '',
     url: window.location.href,
@@ -386,6 +402,12 @@ const ARTICLE_SCRIPT = `(() => {
       })
     } catch {}
   }
+  if (!data.publishedAt) {
+    try {
+      const m = document.documentElement.innerHTML.match(/\\\\?"publishedOn\\\\?":\\\\?"([^"\\\\]+)/)
+      if (m && m[1]) data.publishedAt = m[1]
+    } catch {}
+  }
 
   document.querySelectorAll('a[href*="/authors/"], [data-testid="author-name"], .author').forEach((el) => {
     const name = el.textContent?.trim()
@@ -412,7 +434,7 @@ const ARTICLE_SCRIPT = `(() => {
     || document.querySelector('meta[name="description"]')?.getAttribute('content')
     || ''
 
-  const selectors = ['article', 'main article', 'main > div', '[data-testid="article-body"]', '.prose', '.article-content', 'main']
+  const selectors = ${JSON.stringify(selectors)}
   let contentEl = null
   for (const sel of selectors) {
     contentEl = document.querySelector(sel)
@@ -425,8 +447,7 @@ const ARTICLE_SCRIPT = `(() => {
     clone.querySelectorAll('img').forEach((img) => {
       const src = img.getAttribute('src') || img.getAttribute('data-src')
       if (src) {
-        const absolute = src.startsWith('http') ? src : 'https://www.anthropic.com' + (src.startsWith('/') ? '' : '/') + src
-        img.setAttribute('src', absolute)
+        img.setAttribute('src', new URL(src, window.location.href).toString())
         img.removeAttribute('data-src')
       }
     })
@@ -439,10 +460,12 @@ const ARTICLE_SCRIPT = `(() => {
 
   return data
 })()`
+}
 
 async function extractArticle(
   url: string,
-  listingMeta: AnthropicArticleMeta | null
+  listingMeta: AnthropicArticleMeta | null,
+  source: AnthropicSource
 ) {
   const result = await runScriptInScraperWindow<{
     title: string
@@ -452,12 +475,15 @@ async function extractArticle(
     summary: string
     contentHtml: string
     images: { url: string; alt: string }[]
-  }>(ARTICLE_SCRIPT, { url, waitForSelector: 'main, article, [role="main"]' })
+  }>(buildArticleScript(source), {
+    url,
+    waitForSelector: source.contentSelectors?.[0] ?? 'main, article, [role="main"]',
+  })
 
   const pageImages = await runScriptInScraperWindow<
     { url: string | null; alt: string }[]
   >(
-    `Array.from(document.querySelectorAll('article img, main img')).map((img) => ({
+    `Array.from(document.querySelectorAll('d-article img, article img, main img')).map((img) => ({
       url: img.getAttribute('src') || img.getAttribute('data-src'),
       alt: img.getAttribute('alt') || ''
     })).filter((img) => img.url)`,
@@ -467,7 +493,7 @@ async function extractArticle(
   const imageMap = new Map<string, { url: string; alt: string }>()
   for (const img of [...result.images, ...pageImages]) {
     if (!img.url || img.url.includes('data:image')) continue
-    const absolute = toAbsoluteUrl(img.url)
+    const absolute = new URL(img.url, url).toString()
     imageMap.set(absolute, { url: absolute, alt: img.alt })
   }
   const images = Array.from(imageMap.values())
@@ -531,7 +557,7 @@ async function downloadImages(
     usedNames.add(name)
     const dest = path.join(assetsDir, name)
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      const res = await httpFetch(url)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const buffer = Buffer.from(await res.arrayBuffer())
       fs.writeFileSync(dest, buffer)
@@ -557,7 +583,8 @@ function rewriteMarkdownImages(markdown: string, urlMap: Map<string, string>): s
 
 export async function importArticle(
   url: string,
-  libraryRoot: string
+  libraryRoot: string,
+  listingMeta: AnthropicArticleMeta | null = null
 ): Promise<{ filePath: string; wasAlreadySaved: boolean }> {
   const saved = findSavedArticles(libraryRoot)
   const existing = saved.get(url)
@@ -566,11 +593,10 @@ export async function importArticle(
     if (fs.existsSync(existing)) return { filePath: existing, wasAlreadySaved: true }
   }
 
-  const listing = await discoverArticles(libraryRoot)
-  const meta = listing.articles.find((a) => a.url === url) || null
-  const article = await extractArticle(url, meta)
-
-  const section = meta?.section ?? sectionForUrl(article.url)
+  const section = listingMeta?.section ?? sectionForUrl(url)
+  // institute 等遗留 URL 不在 ANTHROPIC_SOURCES 中，回落 engineering 默认链
+  const source = ANTHROPIC_SOURCES.find((s) => s.key === section) ?? ANTHROPIC_SOURCES.find((s) => s.key === 'engineering')!
+  const article = await extractArticle(url, listingMeta, source)
   const publishedAt = article.publishedAt || new Date().toISOString()
   const folder = getImportFolder(publishedAt)
   const dir = path.join(libraryRoot, IMPORT_DIR, folder)
