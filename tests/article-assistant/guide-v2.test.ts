@@ -6,6 +6,9 @@ import {
   isValidGuideV2,
   buildGuidePlanPrompt,
   buildGuideV2UserPrompt,
+  isValidGuideBlogV2,
+  buildBlogGuidePlanPrompt,
+  buildBlogGuideV2UserPrompt,
 } from '../../electron/lib/guide-v2'
 
 describe('parseGuidePlan', () => {
@@ -120,5 +123,57 @@ describe('prompts', () => {
     expect(p).toContain('无外部资料')
     expect(p).toContain('### §2')
     expect(p).toContain('https://x')
+  })
+})
+
+describe('isValidGuideBlogV2', () => {
+  it('接受 summary 形状的博客导读', () => {
+    expect(isValidGuideBlogV2({
+      background: 'bg',
+      chunks: [{ heading: 'H', summary: '本章总结', terms: [] }],
+    })).toBe(true)
+  })
+
+  it('拒绝 summary 为空 / digest context 形状', () => {
+    expect(isValidGuideBlogV2({
+      background: 'bg',
+      chunks: [{ heading: 'H', summary: '', terms: [] }],
+    })).toBe(false)
+    expect(isValidGuideBlogV2({
+      background: 'bg',
+      chunks: [{ heading: 'H', context: '铺陈', terms: [] }],
+    })).toBe(false)
+  })
+
+  it('拒绝非法 terms / 空 chunks / 缺 background', () => {
+    expect(isValidGuideBlogV2({ background: 'bg', chunks: [] })).toBe(false)
+    expect(isValidGuideBlogV2({ chunks: [{ heading: 'H', summary: 's', terms: [] }] })).toBe(false)
+    expect(isValidGuideBlogV2({
+      background: 'bg',
+      chunks: [{ heading: 'H', summary: 's', terms: [{ term: 1 }] }],
+    })).toBe(false)
+  })
+})
+
+describe('buildBlogGuidePlanPrompt', () => {
+  it('包含章节计数与 JSON schema', () => {
+    const p = buildBlogGuidePlanPrompt('## A\nx\n\n## B\ny', 'T')
+    expect(p).toContain('2 个章节')
+    expect(p).toContain('"queries"')
+    expect(p).toContain('T')
+  })
+})
+
+describe('buildBlogGuideV2UserPrompt', () => {
+  it('按章节组织资料夹，无资料章节显式标注', () => {
+    const p = buildBlogGuideV2UserPrompt({
+      articleContent: '## A\nx',
+      articleTitle: 'T',
+      materials: new Map([[1, [{ title: 'm', url: 'u', snippet: 's' }]]]),
+      entryCount: 2,
+    })
+    expect(p).toContain('各章节背景资料夹')
+    expect(p).toContain('### §1\n- m\n  u\n  s')
+    expect(p).toContain('### §2\n（无外部资料')
   })
 })
