@@ -67,7 +67,7 @@ chunk 对象的章节总结字段名**必须是 `summary`**。禁止使用 `cont
 - Split the article by H2/H3 headings, one chunk per section, in original order.
 - Each chunk may have 0-3 terms. Only include terms that genuinely need explanation.
 - All output must be in Chinese (headings excepted).
-- For technical terms, give the Chinese equivalent first, followed by the original English in parentheses, e.g., 上下文（context）. 不要嵌套重复，禁止出现「LLM（大语言模型（LLM））」这类写法。
+- For technical terms, give the Chinese equivalent first, followed by the original English in parentheses, e.g., 注意力机制（attention）. 不要嵌套重复，禁止出现「LLM（大语言模型（LLM））」这类写法。
 - Do not translate headings; keep the exact original heading text.
 - Do not output "Vol.", "AI Builders Digest", "Generated through", "档案编号", "学习卷宗", or any other decorative metadata.
 - If the article has no clear headings, return a single chunk with heading "全文".
