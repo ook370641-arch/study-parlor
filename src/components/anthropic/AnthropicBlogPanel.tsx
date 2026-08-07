@@ -9,9 +9,10 @@ import { ConstitutionReportView } from './ConstitutionReportView'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
-import { findNewArticleUrls } from '@/lib/anthropic-articles'
+import { findNewArticleUrls, sortArticlesByDateDesc } from '@/lib/anthropic-articles'
 import { withConstitutionEntry } from '@/lib/constitution-report'
-import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
+import { ANTHROPIC_SECTIONS, sectionOf } from '@/lib/anthropic-sections'
+import type { AnthropicArticleMeta, AnthropicError, AnthropicSectionKey, BriefingTheme } from '@shared/index'
 
 interface Props {
   theme?: BriefingTheme
@@ -57,7 +58,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         skeleton: 'bg-[#e8e4de]',
       }, [isAcademic])
 
-  const { articles, loading, error, lastFetchedAt } = useStore((s) => s.anthropicBlogCache)
+  const { articles, loading, error, lastFetchedAt, sectionStatus } = useStore((s) => s.anthropicBlogCache)
   const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
   const readerBody = useStore((s) => s.anthropicReaderBody)
   const readerTitle = useStore((s) => s.anthropicReaderTitle)
@@ -80,19 +81,25 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [checkError, setCheckError] = useState<AnthropicError | null>(null)
   const [checkKey, setCheckKey] = useState(0)
   const [pendingDelete, setPendingDelete] = useState<AnthropicArticleMeta | null>(null)
+  const [activeSections, setActiveSections] = useState<ReadonlySet<AnthropicSectionKey>>(
+    () => new Set(ANTHROPIC_SECTIONS.map((s) => s.key))
+  )
 
-  // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成
-  const displayArticles = useMemo(() => withConstitutionEntry(articles), [articles])
+  // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成；合并时间线按日期倒序
+  const displayArticles = useMemo(() => sortArticlesByDateDesc(withConstitutionEntry(articles)), [articles])
 
   const filtered = useMemo(() => {
+    const bySection = displayArticles.filter(
+      (a) => a.local === 'constitution' || activeSections.has(sectionOf(a))
+    )
     const q = query.trim().toLowerCase()
-    if (!q) return displayArticles
-    return displayArticles.filter(
+    if (!q) return bySection
+    return bySection.filter(
       (a) =>
         a.title?.toLowerCase().includes(q) ||
         (a.summary ?? '').toLowerCase().includes(q)
     )
-  }, [displayArticles, query])
+  }, [displayArticles, query, activeSections])
 
   // 自动检测新文章
   useEffect(() => {
@@ -165,7 +172,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         onToggle={() => setListCollapsed((c) => !c)}
         theme={theme}
         width={80}
-        title="Anthropic Engineering"
+        title="Anthropic 博客"
       >
         {listCollapsed ? (
           <div className="flex flex-col items-center py-3 gap-3 overflow-y-auto h-full">
@@ -230,6 +237,25 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               </div>
             )}
 
+            {ANTHROPIC_SECTIONS.filter((s) => sectionStatus?.[s.key]?.error).map((s) => (
+              <div key={s.key} className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
+                <button
+                  type="button"
+                  data-testid="anthropic-section-error"
+                  data-section={s.key}
+                  onClick={() => discover()}
+                  disabled={loading}
+                  className={`flex items-center gap-2 text-xs rounded transition-colors ${
+                    isAcademic
+                      ? 'text-wine hover:bg-wine/10'
+                      : 'text-[#8a3a3a] hover:bg-[#8a3a3a]/10'
+                  }`}
+                >
+                  <span>{s.label} 栏目更新失败：{sectionStatus?.[s.key]?.error?.message || '点击重试'}</span>
+                </button>
+              </div>
+            ))}
+
             {lastFetchedAt && (
               <p className={`px-4 pt-3 text-[10px] ${themeClasses.muted}`}>
                 更新于 {new Date(lastFetchedAt).toLocaleString('zh-CN')}
@@ -259,6 +285,35 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                 placeholder="搜索标题或摘要…"
                 className={`w-full px-3 py-1.5 rounded text-sm outline-none border ${themeClasses.inputBg} ${themeClasses.inputText} ${themeClasses.inputPlaceholder} ${themeClasses.inputBorder}`}
               />
+            </div>
+
+            <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`} data-testid="anthropic-section-filter">
+              <div className="flex flex-wrap gap-1.5">
+                {ANTHROPIC_SECTIONS.map((s) => {
+                  const active = activeSections.has(s.key)
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      data-testid="anthropic-section-chip"
+                      data-section={s.key}
+                      aria-pressed={active}
+                      onClick={() =>
+                        setActiveSections((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(s.key)) next.delete(s.key)
+                          else next.add(s.key)
+                          return next
+                        })
+                      }
+                      className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${active ? '' : themeClasses.muted}`}
+                      style={active ? { borderColor: s.color, color: s.color } : { borderColor: 'transparent' }}
+                    >
+                      {s.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div
