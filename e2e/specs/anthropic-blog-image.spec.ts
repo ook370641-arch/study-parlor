@@ -62,8 +62,10 @@ test.describe('Anthropic 博客正文图片', () => {
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
 
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
-    await expect(rows).toHaveCount(1)
-    await rows.first().click()
+    // 列表恒有宪法报告置顶行（T8 引入），过滤后才是 seeded 文章
+    const articleRows = rows.filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+    await expect(articleRows).toHaveCount(1)
+    await articleRows.first().click()
 
     const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
     await expect(reader).toBeVisible()

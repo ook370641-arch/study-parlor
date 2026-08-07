@@ -47,7 +47,11 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
     await rows.first().waitFor({ timeout: 120000 })
 
     // 找到一篇未保存的文章 — 未保存时左边框为半透明（非 ember 色）
-    const unsavedRow = rows.filter({ hasNot: window.locator(SELECTORS.briefing.anthropicArticleSaved) }).first()
+    // 宪法报告行恒置顶（T8 引入）且无 saved pill，需同时排除
+    const unsavedRow = rows
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+      .first()
     await expect(unsavedRow).toBeVisible()
     // 验证未保存状态：左边框为 subtle 半透明（无 ember 类）
     await expect(unsavedRow).not.toHaveClass(/border-l-ember/)
@@ -67,6 +71,8 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
     // 所以不能用它来检查 saved indicator。需要重新查询带 saved indicator 的行。
     const savedRow = window.locator(SELECTORS.briefing.anthropicArticleRow)
       .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      // 宪法报告行 isSaved:true 且恒置顶（T8），必须排除，否则解析到宪法行而非导入文章
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
       .first()
     await expect(savedRow).toBeVisible({ timeout: 10000 })
   })
@@ -93,9 +99,14 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
     // 测试库是全新隔离的，通常没有已保存文章 — 若没有则先导入第一篇
     const savedRow = rows
       .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      // 宪法报告行 isSaved:true 且恒置顶（T8），必须排除，否则解析到宪法行而非导入文章
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
       .first()
     if (!(await savedRow.isVisible().catch(() => false))) {
-      await rows.first().click()
+      await rows
+        .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+        .first()
+        .click()
       await window
         .locator(SELECTORS.briefing.anthropicArticleReader)
         .waitFor({ state: 'visible', timeout: 120000 })
@@ -127,9 +138,15 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
     // Import the first article so we have a saved one to check in collapsed rail
     const savedRow = rows
       .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      // 宪法报告行 isSaved:true 且恒置顶（T8），必须排除，否则解析到宪法行而非导入文章
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
       .first()
     if (!(await savedRow.isVisible().catch(() => false))) {
-      await rows.first().click()
+      // skip the pinned constitution row (T8)
+      await rows
+        .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+        .first()
+        .click()
       await window
         .locator(SELECTORS.briefing.anthropicArticleReader)
         .waitFor({ state: 'visible', timeout: 120000 })
@@ -203,7 +220,11 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
 
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
-    await rows.first().click()
+    // skip the pinned constitution row (T8)
+    await rows
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+      .first()
+      .click()
 
     const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
     await reader.waitFor({ state: 'visible', timeout: 120000 })

@@ -66,8 +66,10 @@ test.describe('文章标注 (Article Annotations)', () => {
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
 
-    // 点击第一篇未保存文章触发导入
-    const firstRow = rows.first()
+    // 点击第一篇未保存文章触发导入（宪法报告行恒置顶，T8 引入，需跳过）
+    const firstRow = rows
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+      .first()
     const articleTitle = await firstRow.locator(SELECTORS.briefing.anthropicArticleTitle).textContent()
     expect(articleTitle).toBeTruthy()
     await firstRow.click()
@@ -184,9 +186,10 @@ test.describe('文章标注 (Article Annotations)', () => {
     const savedRows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await savedRows.first().waitFor({ timeout: 30000 })
 
-    // 点击已保存的文章（带 saved testid 的第一篇）
+    // 点击已保存的文章（带 saved testid 的第一篇；宪法报告行 isSaved:true 恒置顶，需排除）
     const savedRow = savedRows
       .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
       .first()
     await expect(savedRow).toBeVisible({ timeout: 10000 })
     await savedRow.click()
@@ -303,7 +306,11 @@ test.describe('真实选区交互', () => {
 
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
-    await rows.first().click()
+    // 宪法报告行恒置顶（T8 引入），需跳过才能点击到真正文章
+    await rows
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+      .first()
+      .click()
 
     const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
     await reader.waitFor({ state: 'visible', timeout: 120000 })

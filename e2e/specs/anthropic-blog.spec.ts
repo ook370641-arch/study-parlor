@@ -50,8 +50,10 @@ test.describe('@real Anthropic 博客集成', () => {
     await window.locator(SELECTORS.briefing.listColumnToggle).click()
     await expect(listColumn).not.toHaveClass(/w-14/)
 
-    // 选择第一篇未保存文章
-    const firstRow = rows.first()
+    // 选择第一篇 anthropic 文章（跳过恒置顶的宪法报告行，T8 引入）
+    const firstRow = rows
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+      .first()
     const title = await firstRow.locator(SELECTORS.briefing.anthropicArticleTitle).textContent()
     expect(title).toBeTruthy()
     await firstRow.click()
@@ -85,6 +87,8 @@ test.describe('@real Anthropic 博客集成', () => {
     const savedRow = window
       .locator(SELECTORS.briefing.anthropicArticleRow)
       .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      // 宪法报告行 isSaved:true 且恒置顶（T8），必须排除，否则解析到宪法行而非导入文章
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
       .first()
     await savedRow.click()
     await reader.waitFor({ state: 'visible', timeout: 10000 })
@@ -153,8 +157,10 @@ test.describe('@real Anthropic 博客集成', () => {
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
 
-    // 导入第一篇未保存文章
-    const firstRow = rows.first()
+    // 导入第一篇 anthropic 文章（跳过恒置顶的宪法报告行，T8 引入）
+    const firstRow = rows
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+      .first()
     const articleTitle = await firstRow.locator(SELECTORS.briefing.anthropicArticleTitle).textContent()
     await firstRow.click()
 
@@ -184,6 +190,8 @@ test.describe('@real Anthropic 博客集成', () => {
     const savedRow = window
       .locator(SELECTORS.briefing.anthropicArticleRow)
       .filter({ has: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
+      // 宪法报告行 isSaved:true 且恒置顶（T8），必须排除，否则解析到宪法行而非导入文章
+      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
       .first()
     await expect(savedRow).toBeVisible({ timeout: 10000 })
     await savedRow.click()
