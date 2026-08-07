@@ -532,7 +532,7 @@ vi.mock('../electron/lib/anthropic-browser', () => ({ runScriptInScraperWindow: 
 - 索引页覆盖不到的 sitemap URL 走 `articleMetaCache` 命中（预置缓存）→ 不触发回填
 - 单源失败（让 claude sitemap reject）→ 其他四源正常返回，`sectionStatus.product.error` 非空
 - 全部失败 → throw
-- 回填：`onBackfill` 被调用，回填文章含解析出的 title/publishedAt；重定向 URL（mock 响应 `Response.url` 不同）按最终 URL 去重丢弃
+- **索引页与缓存都未覆盖的 sitemap URL 不出现在初始结果**（无无标题裸行）；回填后 `onBackfill` 被调用，推送文章含解析出的 title/publishedAt；重定向 URL（mock 响应 `Response.url` 不同）按最终 URL 去重——canonical 与已发现文章相同则该篇不推送
 
 - [ ] **Step 2: 运行确认失败**
 
@@ -570,7 +570,8 @@ async function discoverSitemapSource(
     const cached = metaCache[url]
     if (cached?.title) { out.push({ url, title: cached.title, summary: cached.summary, dateText: cached.publishedAt, imageUrl: cached.imageUrl }); continue }
     backfillMisses.push({ source: section, url, lastmod })
-    out.push({ url, title: null, summary: null, dateText: lastmod, imageUrl: null }) // 占位，回填后 IPC 推送更新
+    // 不入初始列表：无标题裸行违反「每篇都有标题」验收。
+    // 回填拿到元数据后经 anthropic:backfill 事件入场，文章逐批「出现」在时间线。
   }
   return out
 }
@@ -636,24 +637,34 @@ git add -A && git commit -m "feat(blog): discover 五源重写 + 元数据后台
 ## Task 5: importArticle 按源适配 + 去全量 discover 依赖
 
 **Files:**
-- Modify: `electron/lib/anthropic-scraper.ts`（`ARTICLE_SCRIPT` → `buildArticleScript(source)`；`importArticle` 签名）
+- Modify: `electron/lib/anthropic-scraper.ts`（`ARTICLE_SCRIPT` → `buildArticleScript(source)`；`extractArticle` waitForSelector 按源；图片 URL 域名修正；`importArticle` 签名）
 - Modify: `electron/ipc/anthropic.ts`（import handler 传 listingMeta）
 - Test: `tests/anthropic.test.ts`
 
 **Interfaces:**
-- Consumes: `ANTHROPIC_SOURCES`/`sectionForUrl`（Task 1）
-- Produces: `importArticle(url: string, libraryRoot: string, listingMeta?: AnthropicArticleMeta | null): Promise<{ filePath: string; wasAlreadySaved: boolean }>`；`buildArticleScript(contentSelectors?: string[]): string`
+- Consumes: `ANTHROPIC_SOURCES`/`sectionForUrl`（Task 1）；`contentSelectors` 配置
+- Produces: `importArticle(url: string, libraryRoot: string, listingMeta?: AnthropicArticleMeta | null): Promise<{ filePath: string; wasAlreadySaved: boolean }>`；`buildArticleScript(source: AnthropicSource): string`
+
+**复审增补的三个 P0/P1 修正（2026-08-08 re-review 发现）：**
+
+1. `extractArticle` 现有 `waitForSelector: 'main, article, [role="main"]'` 在 Distill 页（无 main/article）**必然超时**——按源参数化：`source.contentSelectors?.[0] ?? 'main, article, [role="main"]'`。
+2. `ARTICLE_SCRIPT` 内图片 URL 拼接硬编码 `'https://www.anthropic.com'`——外站相对路径图片会拼错域名，改为 `new URL(src, window.location.href).toString()`；第二段 pageImages 脚本选择器 `article img, main img` 改为 `'d-article img, article img, main img'`（超集，主站兼容）。
+3. turndown 对 Distill 自定义元素（`d-figure` 等）的转换效果未知——必须加真实 fixture 转换契约测试。
 
 - [ ] **Step 1: 失败测试**
 
-- `buildArticleScript(['d-article'])` 生成脚本中 `d-article` 在选择器链最前
-- ARTICLE_SCRIPT 日期链增加 RSC `publishedOn` 提取（在现有 time/meta/JSON-LD 回退之后再加一级：`document.body.innerHTML.match(/\\?"publishedOn\\?":\\?"([^"\\]+)/)`——脚本在页面上下文执行，直接匹配 HTML 字符串）
+- `buildArticleScript(alignmentSrc)` 生成的脚本中 `d-article` 在选择器链最前；`buildArticleScript(productSrc)` 中 `main` 在最前
+- 生成的脚本不含硬编码 `www.anthropic.com` 图片拼接（含 `window.location.href`）
+- ARTICLE_SCRIPT 日期链增加 RSC `publishedOn` 提取一级（在现有 time/meta/JSON-LD 回退后再加：脚本在页面上下文执行，用 `document.documentElement.innerHTML.match(/\\?"publishedOn\\?":\\?"([^"\\]+)/)` 取原始 HTML 里的转义形式）
 - `importArticle` 不再调用 `discoverArticles`：section 用 `sectionForUrl(url)`，listingMeta 由参数传入（缺省 null）
-- 用 `tests/fixtures/blog-sources/alignment-article.html` 做提取契约：选择器 `d-article` 命中（在 jsdom 或字符串级断言选择器存在性即可，turndown 转换正确性已有测试覆盖）
+- **Distill 转换契约**：读 `tests/fixtures/blog-sources/circuits-article.html`，用正则/选择器取出 `<d-article>...</d-article>` 内容喂给 turndown（与生产同配置 `headingStyle: 'atx', codeBlockStyle: 'fenced'`），断言：markdown 非空、含 `#`/`##` 标题、正文段落数 > 5、无 `[object` 类残骸。alignment-article.html 同样断言。若 turndown 丢弃自定义元素内容，在 `buildArticleScript` 的 clone 阶段把 `d-figure`/`d-title` 等 `replaceWith` 为其 children（DOM 层面拍平），测试驱动该修复
+- claude-blog-article.html 同法断言 `main` 容器转换
 
 - [ ] **Step 2: 实现**
 
-- `buildArticleScript(contentSelectors)`：默认链 `['article', 'main article', 'main > div', '[data-testid="article-body"]', '.prose', '.article-content', 'main']`；传入时前置拼接。
+- `buildArticleScript(source)`：内容选择器链 = `[...(source.contentSelectors ?? []), 'article', 'main article', 'main > div', '[data-testid="article-body"]', '.prose', '.article-content', 'main']`（去重）；图片 URL 用 `new URL(src, window.location.href).toString()`；日期链加 `publishedOn` 级。
+- `extractArticle(url, listingMeta, source)`：`waitForSelector: source.contentSelectors?.[0] ?? 'main, article, [role="main"]'`；pageImages 选择器 `'d-article img, article img, main img'`；`toAbsoluteUrl` 的主站硬编码同源修正（图片 map 绝对化用文章页 origin——把 `toAbsoluteUrl(img.url)` 改为基于 `new URL(url).origin` 的解析）。
+- `source` 由 `sectionForUrl(url)` 查 `ANTHROPIC_SOURCES` 得到；institute 等遗留 URL 用默认链。
 - 图片下载 `fetch` → `httpFetch`（`downloadImages` 内）。
 - `importArticle(url, libraryRoot, listingMeta = null)`：删除 `await discoverArticles(libraryRoot)` 调用；`section = listingMeta?.section ?? sectionForUrl(url)`。
 - `electron/ipc/anthropic.ts` import handler：`const listingMeta = getCurrentState().anthropicBlogCache?.articles.find((a) => a.url === url) ?? null` 传入。
@@ -662,7 +673,7 @@ git add -A && git commit -m "feat(blog): discover 五源重写 + 元数据后台
 
 ```bash
 npx vitest run tests/anthropic.test.ts
-git add -A && git commit -m "feat(blog): importArticle 按源选择器适配，去除全量 discover 依赖"
+git add -A && git commit -m "feat(blog): importArticle 按源适配（waitForSelector/正文容器/图片域名），去除全量 discover 依赖"
 ```
 
 ---
@@ -816,6 +827,8 @@ const filtered = useMemo(() => {
 
 `tests/anthropic-blog-panel.test.tsx`：现有三 chip 断言改五 chip + All；新增交互用例（点 All 全亮→点 Research 仅它亮→再点 Alignment 两个亮→点灭两个回 All；constitution 条目只选 research 时隐藏、选 engineering 时显示；`section: 'institute'` 文章只选 research 时显示）。
 
+**新增源无封面/月精度日期的行渲染断言**（复审增补）：`imageUrl: null` 的行渲染占位块不崩（alignment/circuits 全部文章无封面）；`publishedAt` 为月初 ISO（"2026-07-01"）时 `formatDate` 正常显示；`AnthropicArticleRow` 的色签对五源 + institute 遗留值都取到 label/color（institute 走 `LEGACY_SECTION_META`——若 row 目前直接从 `ANTHROPIC_SECTIONS` 找 meta，需改为先查 `ANTHROPIC_SOURCES` 再查 `LEGACY_SECTION_META`，否则 institute 行色签丢失）。
+
 - [ ] **Step 5: 运行并提交**
 
 ```bash
@@ -907,6 +920,14 @@ seed `anthropicBlogCache`（五源各 2-3 篇 + 1 篇 `section:'institute'` + co
 - [ ] **Step 3: articleMetaCache 持久化 E2E**
 
 backfill 合并后 reload → 文章标题/日期仍在（读 state.json 断言 `articleMetaCache` 非空）。
+
+- [ ] **Step 3b: backfill 事件 E2E（复审增补）**
+
+`electron/ipc/anthropic.ts` 加 E2E 门控（沿用 `E2E_ANTHROPIC_OFFLINE` 模式）：`E2E_ANTHROPIC_BACKFILL=1` 时 discover handler 不走真实抓取，返回 ok 空结果后异步 `send('anthropic:backfill', { articles: [一篇带标题/日期的 mock 文章] })`。spec 断言：初始时间线无该文 → 事件到达后新行出现（标题可见、按日期插入正确位置）。
+
+- [ ] **Step 3c: 新源阅读/旁注链路 E2E（复审增补）**
+
+用现有 seed helper 写一篇 `section: 'alignment'`、`source_url: https://alignment.anthropic.com/2026/msm/` 的 `.md` 进 `Anthropic博客/`，seed 对应 cache 条目（`imageUrl: null`）。断言全链路等价 engineering：行显示 Alignment 色签 → 点击打开阅读器正文渲染 → 导读 mock 生成成功（summary 形状）→ 添加旁注成功 → 删除弹确认。这一条把"新源 = engineering 体验"钉死在回归里。
 
 - [ ] **Step 4: 同步 `e2e/source-map.json`**（新 spec 入对应 group 或新建 blog group）
 

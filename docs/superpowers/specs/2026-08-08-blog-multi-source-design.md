@@ -206,6 +206,15 @@ chunk 输出 `context` 字段，但 blog v2 校验器 `isValidGuideBlogV2` 要�
 | alignment 与 research 双发文章重复 | 不同栏目各自保留（两边出处都真实）；跨源重定向到同一 URL 的才规范化去重 |
 | Distill 站正文提取结构差异 | 每源 contentSelectors 参数化 + fixture 契约测试 |
 
+## 复审增补（2026-08-08 二轮 re-review，已并入实现计划）
+
+1. **`extractArticle` 的 `waitForSelector` 按源参数化**（P0）：现值 `'main, article, [role="main"]'` 在 Distill 页必然超时，alignment/circuits 导入会 100% 失败。取 `contentSelectors[0]`，缺省保持现值。
+2. **图片 URL 域名去硬编码**（P0）：`ARTICLE_SCRIPT` 内相对路径图片拼接硬编码 `www.anthropic.com`，外站图片会拼错；改 `new URL(src, window.location.href)`。pageImages 选择器改为 `'d-article img, article img, main img'` 超集。
+3. **时间线不出现无标题裸行**（P1）：sitemap 差集 URL 不进初始结果；回填拿到标题后经 `anthropic:backfill` 事件逐批入场。验收"每篇都有标题和日期"因此恒成立。
+4. **turndown × Distill 自定义元素契约测试**（P1）：`d-figure` 等元素的转换效果用真实 fixture 钉死；若丢内容，在 DOM clone 阶段拍平自定义元素（测试驱动）。
+5. **色签 meta 查找两级**：行组件先查 `ANTHROPIC_SOURCES` 再查 `LEGACY_SECTION_META`（institute 行不丢色签）。
+6. **首次升级预期行为**：五源上线后首次 discover 会识别出约 430 篇"新文章"徽标，用户一次性合入即可，属一次性现象，不做特殊屏蔽。
+
 ## 实现时待验证清单（2026-08-08 已全部验证关闭）
 
 1. ~~research 老文章页 RSC payload 是否含 `publishedOn`~~ → **含**，日期回退链第一级成立。
