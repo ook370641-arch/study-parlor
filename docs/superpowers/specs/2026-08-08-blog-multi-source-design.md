@@ -91,10 +91,10 @@ export interface AnthropicSource {
 
 ### 2. 数据契约（五层同步：types → IPC → preload → facade → store → 组件/测试）
 
-1. `AnthropicSectionKey` 扩为五值。已存 frontmatter `section` 字段名与旧值不动（零迁移）。
+1. `AnthropicSectionKey` 扩为五值 + `'institute'`（仅存量数据兼容的遗留值，不进入过滤器按钮与来源配置）。已存 frontmatter `section` 字段名与旧值不动（零迁移）。
 2. `AnthropicBlogCache` 新增 **`articleMetaCache: Record<string, { title: string; publishedAt: string | null; summary: string | null; imageUrl: string | null }>`**（key 为规范化后 URL），持久化，缺省 `{}`。老文章元数据只回填一次。
 3. `sectionStatus` 语义不变（每源 `{ fetchedAt, error }`），五源各一。
-4. 已存文章 section 判定回退链不变：frontmatter `section` → URL 前缀回推 → engineering。`/institute/` 前缀回推保留（返回 `'institute'` 字面量，仅用于色签显示）。
+4. 已存文章 section 判定回退链不变：frontmatter `section` → URL 前缀回推 → engineering。`/institute/` 前缀回推返回遗留值 `'institute'`（仅用于色签显示与 research 归组过滤）。
 5. frontmatter：`tags: ['anthropic', section]` 沿用；新源 `source_url` 为外站 URL，按 URL 去重天然兼容。存储目录仍 `Anthropic博客/YYYY-MM/` 不分源。
 6. 缓存带格式版本字段；schema 变化时旧格式失效重抓（rules §8）。
 
@@ -109,7 +109,7 @@ export interface AnthropicSource {
   1. `net.fetch(sitemapUrl)` 解析 `<loc>`，按 `linkPrefix`/`sitemapInclude`/`excludePrefixes` 过滤出全量 URL。
   2. 索引页 DOM 抓取（现有 LISTING_SCRIPT 逻辑）拿近期文章富元数据。
   3. 差集 URL 查 `articleMetaCache`；未命中的进入**后台回填队列**：并发 4-6，`net.fetch` 文章页 → DOM 解析 og:title/og:description/JSON-LD 日期（解析器按源适配）→ 跟随重定向、按最终 URL 规范化 → 写缓存。
-  4. 面板先渲染已有数据，回填完成一批推送一批（IPC 事件或轮询），不阻塞 UI。
+  4. 面板先渲染已有数据；回填每完成一批（如 10 篇）通过 IPC 事件 `anthropic:backfillProgress` 推送增量文章合并进 store，不阻塞 UI。
 - `static-list` 策略：解析 alignment 首页 `a.note` 卡片（h3 标题、`.description`、`.date` 月份）。日期月精度，import 时从文章页补精确日期。
 - `rss` 策略：解析 Atom entry（title/link/updated/summary）。注意 entry URL 以 `/index.html` 结尾，规范化时保留原样（作为去重 key）。
 - **重定向去重**：任何源内/跨源出现最终 URL 相同的文章，保留先发现者（按 ANTHROPIC_SOURCES 顺序），后者丢弃。
