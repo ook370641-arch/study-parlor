@@ -39,9 +39,23 @@ describe('isGuideCacheCurrent', () => {
     expect(isGuideCacheCurrent('briefing', 1)).toBe(false)
     expect(isGuideCacheCurrent('briefing', GUIDE_FORMAT_VERSION)).toBe(true)
   })
-  it('non-briefing is always current regardless of version', () => {
-    expect(isGuideCacheCurrent('anthropic-article', undefined)).toBe(true)
+  it('web-article / writing 不受版本约束（永远有效）', () => {
     expect(isGuideCacheCurrent('web-article', undefined)).toBe(true)
+    expect(isGuideCacheCurrent('writing', undefined)).toBe(true)
+  })
+})
+
+describe('isGuideCacheCurrent anthropic-article', () => {
+  it('旧 v1 博客导读（无版本）失效', () => {
+    expect(isGuideCacheCurrent('anthropic-article', undefined)).toBe(false)
+    expect(isGuideCacheCurrent('anthropic-article', 1)).toBe(false)
+  })
+  it('v2 博客导读命中', () => {
+    expect(isGuideCacheCurrent('anthropic-article', 2)).toBe(true)
+  })
+  it('web-article / writing 不受版本约束', () => {
+    expect(isGuideCacheCurrent('web-article', undefined)).toBe(true)
+    expect(isGuideCacheCurrent('writing', undefined)).toBe(true)
   })
 })
 

@@ -14,12 +14,12 @@ export function countArticleHeadings(content: string): number {
   return m ? m.length : 0
 }
 
-/** digest 导读缓存版本判定：非 digest 永远有效；digest 需要 v2 */
+/** 导读缓存版本判定：web-article / writing 永远有效；briefing 与 anthropic-article 需要 v2 */
 export function isGuideCacheCurrent(
   contextType: 'briefing' | 'anthropic-article' | 'web-article' | 'writing',
   guideVersion: number | undefined
 ): boolean {
-  if (contextType !== 'briefing') return true
+  if (contextType === 'web-article' || contextType === 'writing') return true
   return (guideVersion ?? 1) >= GUIDE_FORMAT_VERSION
 }
 

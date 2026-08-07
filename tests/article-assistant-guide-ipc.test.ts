@@ -19,6 +19,7 @@ vi.mock('electron', () => ({
 
 vi.mock('../electron/lib/guide-v2-pipeline', () => ({
   runDigestGuideV2: vi.fn(() => new Promise(() => {})),
+  runBlogGuideV2: vi.fn(() => new Promise(() => {})),
 }))
 
 describe('parseAssistantGuideBody', () => {
@@ -64,7 +65,7 @@ describe('serializeGuide v2', () => {
       background: 'bg',
       chunks: [{ heading: 'H', context: 'C 背景铺陈', terms: [] }],
     }
-    const parsed = parseAssistantGuideBody(serializeGuide(guide as any), 2)
+    const parsed = parseAssistantGuideBody(serializeGuide(guide as any), 2, 'briefing')
     expect(parsed).not.toBeNull()
     expect(parsed!.chunks[0].context).toBe('C 背景铺陈')
     expect(parsed!.chunks[0].summary).toBe('C 背景铺陈')
@@ -100,11 +101,11 @@ describe('guide IPC handlers', () => {
     expect(fs.readFileSync(filePath, 'utf8')).toContain('guide_version: 2')
   })
 
-  it('writeGuide：纯 summary（v1 格式）不写 guide_version', async () => {
+  it('writeGuide：web-article 纯 summary（v1 格式）不写 guide_version', async () => {
     const parent = path.join(dir, 'article.md')
     const { filePath } = (await handlers['articleAssistant:writeGuide'](fakeEvent, {
       parentPath: parent,
-      parentType: 'anthropic-article',
+      parentType: 'web-article',
       guide: { background: 'bg', chunks: [{ heading: 'H', summary: '摘要', terms: [] }] },
     } as never)) as { filePath: string }
     expect(fs.readFileSync(filePath, 'utf8')).not.toContain('guide_version')
@@ -137,5 +138,60 @@ describe('guide IPC handlers', () => {
     // anthropic-article 的 generateGuide 不经过 runDigestGuideV2，直接调 chatStream+旧 prompt。
     // 验证 handler 注册存在即可（管线 mock 挂起以保证不超时，旧路径不会被触发）。
     expect(handlers['articleAssistant:generateGuide']).toBeDefined()
+  })
+})
+
+describe('generateGuide routing', () => {
+  let dir: string
+  const fakeEvent = { sender: { isDestroyed: () => false, send: vi.fn() } }
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guide-route-'))
+    registerArticleAssistantIpc({ libraryPath: dir } as unknown as AppConfig)
+  })
+  afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
+
+  it('anthropic-article 走 blog v2 管线', async () => {
+    const { runBlogGuideV2, runDigestGuideV2 } = await import('../electron/lib/guide-v2-pipeline')
+    const blogGuide = { background: 'bg', chunks: [{ heading: 'H', summary: 'S', terms: [] }] }
+    vi.mocked(runBlogGuideV2).mockResolvedValueOnce(blogGuide as never)
+    const result = await handlers['articleAssistant:generateGuide'](fakeEvent as never, {
+      articleContent: '## H\nx',
+      articleType: 'anthropic-article',
+      articleTitle: 'T',
+    } as never)
+    expect(runBlogGuideV2).toHaveBeenCalledOnce()
+    expect(runDigestGuideV2).not.toHaveBeenCalled()
+    expect(result).toEqual(blogGuide)
+  })
+})
+
+describe('parseAssistantGuideBody parentType', () => {
+  const body = '# 背景\n\nbg.\n\n## §1 H\n\n章节文本。'
+  it('v2 + briefing 回填 context', () => {
+    const g = parseAssistantGuideBody(body, 2, 'briefing')
+    expect(g!.chunks[0].context).toBe('章节文本。')
+  })
+  it('v2 + anthropic-article 不回填 context（博客 v2 保留 summary 语义）', () => {
+    const g = parseAssistantGuideBody(body, 2, 'anthropic-article')
+    expect(g!.chunks[0].summary).toBe('章节文本。')
+    expect(g!.chunks[0].context).toBeUndefined()
+  })
+})
+
+describe('writeGuide version', () => {
+  it('anthropic-article + summary-only 导读也写 guide_version: 2', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-guide-'))
+    registerArticleAssistantIpc({ libraryPath: tmp } as unknown as AppConfig)
+    fs.mkdirSync(path.join(tmp, 'Anthropic博客', '2026-08'), { recursive: true })
+    fs.writeFileSync(path.join(tmp, 'Anthropic博客', '2026-08', 'a.md'), 'x')
+    const result = await handlers['articleAssistant:writeGuide'](null as never, {
+      parentPath: 'Anthropic博客/2026-08/a.md',
+      parentType: 'anthropic-article',
+      guide: { background: 'bg', chunks: [{ heading: 'H', summary: 'S', terms: [] }] },
+    } as never) as { filePath: string }
+    const raw = fs.readFileSync(result.filePath, 'utf8')
+    expect(raw).toContain('guide_version: 2')
+    fs.rmSync(tmp, { recursive: true, force: true })
   })
 })

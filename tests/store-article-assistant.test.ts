@@ -141,7 +141,7 @@ describe('store article assistant', () => {
       expect(useStore.getState().assistantSession?.guide).toEqual(guideFixture)
     })
 
-    it('uses non-briefing cache without version check', async () => {
+    it('uses web-article cache without version check', async () => {
       vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue({
         filePath: '/g.md',
         guide: guideFixture as any,
@@ -149,7 +149,7 @@ describe('store article assistant', () => {
       })
       useStore.getState().openAssistantSession({
         contextId: '/lib/e.md',
-        contextType: 'anthropic-article',
+        contextType: 'web-article',
         articleContent: 'body',
         autoGenerateGuide: true,
       })
@@ -192,17 +192,30 @@ describe('store article assistant', () => {
       expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
     })
 
-    it('非 briefing 生成中不置 guideProgress（articleType 门控）', async () => {
+    it('web-article 生成中不置 guideProgress（articleType 门控）', async () => {
       vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise(() => {}) as Promise<any>)
       useStore.getState().openAssistantSession({
         contextId: '/lib/a.md',
-        contextType: 'anthropic-article',
+        contextType: 'web-article',
         articleContent: 'body',
         autoGenerateGuide: true,
       })
       await flush(); await flush()
       expect(useStore.getState().assistantSession?.guideLoading).toBe(true)
       expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
+    })
+
+    it('anthropic-article 生成中置 guideProgress（博客 v2 进度）', async () => {
+      vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise(() => {}) as Promise<any>)
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/f.md',
+        contextType: 'anthropic-article',
+        articleContent: 'body',
+        autoGenerateGuide: true,
+      })
+      await flush(); await flush()
+      expect(useStore.getState().assistantSession?.guideLoading).toBe(true)
+      expect(useStore.getState().assistantSession?.guideProgress).toEqual({ stage: 'planning' })
     })
 
   })
