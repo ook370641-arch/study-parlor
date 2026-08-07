@@ -9,12 +9,16 @@ import type { AppConfig } from '../env'
 import type { ArticleAssistantGuide, GuideProgress } from '@shared/index'
 import {
   assignMaterials,
+  buildBlogGuidePlanPrompt,
+  buildBlogGuideV2UserPrompt,
   buildGuidePlanPrompt,
   buildGuideV2UserPrompt,
   countArticleHeadings,
   countStreamedChunks,
+  isValidGuideBlogV2,
   isValidGuideV2,
   parseGuidePlan,
+  type GuideMaterial,
   type GuidePlanQuery,
 } from './guide-v2'
 
@@ -35,13 +39,25 @@ function debugDump(name: string, data: unknown): void {
   }
 }
 
+export interface GuideV2Hooks {
+  buildPlanPrompt: (articleContent: string, articleTitle?: string) => string
+  buildUserPrompt: (args: {
+    articleContent: string
+    articleTitle?: string
+    materials: Map<number, GuideMaterial[]>
+    entryCount: number
+  }) => string
+  validate: (guide: unknown) => guide is ArticleAssistantGuide
+}
+
 /**
- * digest 导读 v2 三阶段管线：检索规划 → 并行搜索（按条目归档）→ 流式撰写。
+ * 导读 v2 三阶段管线：检索规划 → 并行搜索（按条目归档）→ 流式撰写。
  * 降级：规划失败重试 1 次后跳过搜索；单查询失败仅置空对应资料夹；无 API key 全部走模型自身知识。
  */
-export async function runDigestGuideV2(
+async function runGuideV2(
   cfg: AppConfig,
   args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
+  hooks: GuideV2Hooks,
   onProgress: (p: GuideProgress) => void
 ): Promise<ArticleAssistantGuide> {
   const entryCount = Math.max(countArticleHeadings(args.articleContent), 1)
@@ -52,7 +68,7 @@ export async function runDigestGuideV2(
   for (let attempt = 0; attempt < 2 && queries.length === 0; attempt++) {
     try {
       const raw = await chatNonStream(cfg, {
-        messages: [{ role: 'user', content: buildGuidePlanPrompt(args.articleContent, args.articleTitle) }],
+        messages: [{ role: 'user', content: hooks.buildPlanPrompt(args.articleContent, args.articleTitle) }],
         temperature: 0.3,
         thinking: { type: 'disabled' },
       })
@@ -94,7 +110,7 @@ export async function runDigestGuideV2(
         { role: 'system', content: args.system },
         {
           role: 'user',
-          content: buildGuideV2UserPrompt({
+          content: hooks.buildUserPrompt({
             articleContent: args.articleContent,
             articleTitle: args.articleTitle,
             materials,
@@ -129,9 +145,33 @@ export async function runDigestGuideV2(
     debugDump('bad-json', { raw: acc.slice(0, 4000) })
     throw typed('GUIDE_JSON_ERROR', e instanceof Error ? e.message : 'Guide v2 JSON parse failed')
   }
-  if (!isValidGuideV2(guide)) {
+  if (!hooks.validate(guide)) {
     debugDump('bad-shape', { raw: acc.slice(0, 4000) })
     throw typed('GUIDE_JSON_ERROR', 'Guide v2 JSON missing required fields or invalid shape')
   }
   return guide
+}
+
+export function runDigestGuideV2(
+  cfg: AppConfig,
+  args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
+  onProgress: (p: GuideProgress) => void
+): Promise<ArticleAssistantGuide> {
+  return runGuideV2(cfg, args, {
+    buildPlanPrompt: buildGuidePlanPrompt,
+    buildUserPrompt: buildGuideV2UserPrompt,
+    validate: isValidGuideV2,
+  }, onProgress)
+}
+
+export function runBlogGuideV2(
+  cfg: AppConfig,
+  args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
+  onProgress: (p: GuideProgress) => void
+): Promise<ArticleAssistantGuide> {
+  return runGuideV2(cfg, args, {
+    buildPlanPrompt: buildBlogGuidePlanPrompt,
+    buildUserPrompt: buildBlogGuideV2UserPrompt,
+    validate: isValidGuideBlogV2,
+  }, onProgress)
 }
