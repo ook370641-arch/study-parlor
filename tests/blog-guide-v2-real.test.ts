@@ -72,6 +72,7 @@ describe('blog guide v2 real API', () => {
       thinking: { type: 'disabled' },
     })
     const plan = parseGuidePlan(raw, 10)
+    expect(plan.length).toBeGreaterThan(0)
     for (const q of plan) {
       expect(q.query.length).toBeGreaterThan(0)
       expect(q.entries.length).toBeGreaterThan(0)
