@@ -60,6 +60,9 @@ describe('anthropic integration', () => {
           },
         ]
       }
+      if (script.includes('a[href^="/institute/"]') || script.includes('a[href^="/research/"]')) {
+        return []
+      }
       if (script.includes('article:published_time')) {
         return {
           title: 'Test Anthropic Article',
@@ -120,5 +123,64 @@ describe('anthropic integration', () => {
     const { filePath } = await importArticle(TEST_URL, tmp)
     const raw = fs.readFileSync(filePath, 'utf8')
     expect(raw).toContain(IMAGE_URL)
+  })
+})
+
+describe('discoverArticles multi-section', () => {
+  const ENG = { url: 'https://www.anthropic.com/engineering/e1', title: 'Eng', summary: null, dateText: 'Aug 1, 2026', imageUrl: null }
+  const INS = { url: 'https://www.anthropic.com/institute/i1', title: 'Inst', summary: null, dateText: 'Aug 3, 2026', imageUrl: null }
+  const RES = { url: 'https://www.anthropic.com/research/r1', title: 'Res', summary: null, dateText: 'Aug 2, 2026', imageUrl: null }
+  let tmp: string
+
+  function mockListing(impl: (url: string) => unknown) {
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async (_script, opts) => {
+      return impl((opts as { url: string }).url) as never
+    })
+  }
+
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-anthropic-ms-'))
+  })
+  afterEach(() => {
+    fs.rmSync(tmp, { recursive: true, force: true })
+  })
+
+  it('buildListingScript 参数化前缀与排除规则', async () => {
+    const { buildListingScript } = await import('../electron/lib/anthropic-scraper')
+    const { ANTHROPIC_SECTIONS } = await import('../electron/lib/anthropic-sections')
+    const eng = ANTHROPIC_SECTIONS.find((s) => s.key === 'engineering')!
+    const res = ANTHROPIC_SECTIONS.find((s) => s.key === 'research')!
+    expect(buildListingScript(eng)).toContain('a[href^="/engineering/"]')
+    expect(buildListingScript(res)).toContain('a[href^="/research/"]')
+    expect(buildListingScript(res)).toContain('/research/team/')
+    expect(buildListingScript(eng)).toContain('EXCLUDE_PREFIXES')
+  })
+
+  it('三栏目文章带 section 合并返回，sectionStatus 全部成功', async () => {
+    mockListing((url) => (url.includes('/institute') ? [INS] : url.includes('/research') ? [RES] : [ENG]))
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+    const result = await discoverArticles(tmp)
+    expect(result.articles).toHaveLength(3)
+    expect(result.articles.map((a) => a.section).sort()).toEqual(['engineering', 'institute', 'research'])
+    expect(result.sectionStatus.institute?.error).toBeNull()
+    expect(result.sectionStatus.research?.fetchedAt).toBeTruthy()
+  })
+
+  it('单栏目失败隔离：其他栏目正常返回，失败栏目记入 sectionStatus', async () => {
+    mockListing((url) => {
+      if (url.includes('/institute')) throw new Error('timeout waiting for selector')
+      return url.includes('/research') ? [RES] : [ENG]
+    })
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+    const result = await discoverArticles(tmp)
+    expect(result.articles).toHaveLength(2)
+    expect(result.sectionStatus.institute?.error?.code).toBe('network-error')
+    expect(result.sectionStatus.engineering?.error).toBeNull()
+  })
+
+  it('全部栏目失败时整体抛错', async () => {
+    mockListing(() => { throw new Error('load failed') })
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+    await expect(discoverArticles(tmp)).rejects.toThrow('load failed')
   })
 })

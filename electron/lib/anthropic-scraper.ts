@@ -4,15 +4,37 @@ import path from 'node:path'
 import { runScriptInScraperWindow } from './anthropic-browser'
 import { parseFrontmatter, serializeFrontmatter } from './frontmatter'
 import type { AnthropicArticleMeta } from '@shared/index'
+import { ANTHROPIC_SECTIONS, type AnthropicSection } from './anthropic-sections'
+import type { AnthropicSectionKey, AnthropicSectionStatus, AnthropicErrorCode } from '@shared/index'
 
 const BASE_URL = 'https://www.anthropic.com'
-const ENGINEERING_URL = `${BASE_URL}/engineering`
 export const IMPORT_DIR = 'Anthropic博客'
 
 const turndown = new TurndownService({
   headingStyle: 'atx',
   codeBlockStyle: 'fenced',
 })
+
+export function classifyError(err: unknown): { code: AnthropicErrorCode; message: string } {
+  const msg = err instanceof Error ? err.message : String(err)
+  const lower = msg.toLowerCase()
+  if (lower.includes('cancelled')) {
+    return { code: 'cancelled', message: '导入已取消' }
+  }
+  if (lower.includes('offline') || lower.includes('network_error') || lower.includes('networkerror')) {
+    return { code: 'network-error', message: '网络连接失败，请检查网络后重试' }
+  }
+  if (lower.includes('timeout')) {
+    return { code: 'network-error', message: '请求超时，请稍后重试' }
+  }
+  if (lower.includes('parse') || lower.includes('json')) {
+    return { code: 'parse-error', message: '解析页面失败，Anthropic 网站结构可能已变更' }
+  }
+  if (lower.includes('load failed')) {
+    return { code: 'network-error', message: '页面加载失败，请检查网络后重试' }
+  }
+  return { code: 'unknown', message: msg || '未知错误' }
+}
 
 export function toAbsoluteUrl(relativeOrAbsolute: string): string {
   if (!relativeOrAbsolute) return relativeOrAbsolute
@@ -89,9 +111,11 @@ export function findSavedArticles(libraryRoot: string): Map<string, string> {
   return map
 }
 
-const LISTING_SCRIPT = `(() => {
+export function buildListingScript(section: AnthropicSection): string {
+  return `(() => {
   const seen = new Set()
   const results = []
+  const EXCLUDE_PREFIXES = ${JSON.stringify(section.excludePrefixes ?? [])}
   const datePattern = /\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2},?\\s+\\d{4}\\b/
 
   // Find the card container for an <a> element, then extract all metadata
@@ -122,9 +146,10 @@ const LISTING_SCRIPT = `(() => {
     return { url, title, summary, dateText, imageUrl }
   }
 
-  document.querySelectorAll('a[href^="/engineering/"]').forEach((a) => {
+  document.querySelectorAll('a[href^="${section.linkPrefix}"]').forEach((a) => {
     const href = a.getAttribute('href')
     if (!href) return
+    if (EXCLUDE_PREFIXES.some((p) => href.startsWith(p))) return
     const url = href.startsWith('http') ? href : 'https://www.anthropic.com' + href
     if (seen.has(url)) return
     seen.add(url)
@@ -133,30 +158,55 @@ const LISTING_SCRIPT = `(() => {
 
   return results
 })()`
+}
 
 export async function discoverArticles(
   libraryRoot: string
-): Promise<{ lastFetchedAt: string; articles: AnthropicArticleMeta[] }> {
-  const links = await runScriptInScraperWindow<
-    { url: string; title: string; summary: string | null; dateText: string | null; imageUrl: string | null }[]
-  >(LISTING_SCRIPT, { url: ENGINEERING_URL, waitForSelector: 'a[href^="/engineering/"]' })
-
-  const articles: AnthropicArticleMeta[] = links
-    .map((link) => ({
-      url: link.url,
-      title: link.title,
-      summary: link.summary,
-      publishedAt: parseDateString(link.dateText),
-      imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
-    }))
-    .filter((a) => a.title && a.url)
-
+): Promise<{
+  lastFetchedAt: string
+  articles: AnthropicArticleMeta[]
+  sectionStatus: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>>
+}> {
   const saved = findSavedArticles(libraryRoot)
-  const withSaved = articles.map((a) => {
-    const filePath = saved.get(a.url)
-    return { ...a, isSaved: !!filePath, filePath }
-  })
-  return { lastFetchedAt: new Date().toISOString(), articles: withSaved }
+  const articles: AnthropicArticleMeta[] = []
+  const sectionStatus: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>> = {}
+  const failures: unknown[] = []
+
+  for (const section of ANTHROPIC_SECTIONS) {
+    try {
+      const links = await runScriptInScraperWindow<
+        { url: string; title: string; summary: string | null; dateText: string | null; imageUrl: string | null }[]
+      >(buildListingScript(section), {
+        url: section.indexUrl,
+        waitForSelector: `a[href^="${section.linkPrefix}"]`,
+      })
+
+      const mapped = links
+        .map((link) => ({
+          url: link.url,
+          title: link.title,
+          summary: link.summary,
+          publishedAt: parseDateString(link.dateText),
+          imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
+          section: section.key,
+        }))
+        .filter((a) => a.title && a.url)
+
+      for (const a of mapped) {
+        const filePath = saved.get(a.url)
+        articles.push({ ...a, isSaved: !!filePath, filePath })
+      }
+      sectionStatus[section.key] = { fetchedAt: new Date().toISOString(), error: null }
+    } catch (err) {
+      failures.push(err)
+      sectionStatus[section.key] = { fetchedAt: null, error: classifyError(err) }
+    }
+  }
+
+  // 全部失败才整体报错（走 IPC classifyError → parse-error/network-error 路径）；
+  // 部分失败按栏目降级，面板逐栏目提示。
+  if (articles.length === 0 && failures.length > 0) throw failures[0]
+  return { lastFetchedAt: new Date().toISOString(), articles, sectionStatus }
 }
 
 const ARTICLE_SCRIPT = `(() => {
