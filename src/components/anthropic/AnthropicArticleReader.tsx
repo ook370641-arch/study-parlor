@@ -9,7 +9,8 @@ import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 import { TransferToWritingButton } from '@/components/briefing/TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
-import type { Frontmatter, BriefingTheme } from '@shared/index'
+import { ANTHROPIC_SECTIONS, sectionOf } from '@/lib/anthropic-sections'
+import type { AnthropicSectionKey, Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
   filePath: string
@@ -51,6 +52,17 @@ function formatDate(iso: string | undefined): string {
   } catch {
     return iso
   }
+}
+
+// 头部 source pill 的栏目身份：仅 anthropic-article 显示栏目 label+色（与列表行同构），
+// 其他类型保持旧行为（硬编码 Anthropic Engineering），不扩大范围。
+function resolveSection(fm: Frontmatter) {
+  if (fm.type !== 'anthropic-article') return null
+  const key = sectionOf({
+    url: fm.source_url ?? '',
+    section: fm.section as AnthropicSectionKey | undefined,
+  })
+  return ANTHROPIC_SECTIONS.find((s) => s.key === key) ?? null
 }
 
 export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) {
@@ -170,6 +182,8 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
     }
   `
 
+  const section = frontmatter ? resolveSection(frontmatter) : null
+
   return (
     <div
       data-testid="anthropic-article-reader"
@@ -249,10 +263,12 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                       {frontmatter.source_url && (
                         <button
                           type="button"
+                          data-testid="anthropic-reader-source-pill"
                           onClick={() => ipc.openExternal(frontmatter.source_url!)}
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-colors ${themeClasses.pillBorder} ${themeClasses.pillBg} ${themeClasses.link} ${themeClasses.pillHover}`}
+                          style={section ? { borderColor: `${section.color}66`, color: section.color } : undefined}
                         >
-                          <span>Anthropic Engineering</span>
+                          <span>{section ? section.label : 'Anthropic Engineering'}</span>
                           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M7 17L17 7M17 7H9M17 7V15" />
                           </svg>
