@@ -1,0 +1,53 @@
+{
+  "background": "自2023年大语言模型（LLM）能力爆发以来，构建可自主使用工具、执行多步任务的“代理（Agent）”成为AI应用层的热门方向。但早期探索中，代理经常在执行复杂任务时偏离目标或输出混乱，业界逐渐认识到核心瓶颈并非模型推理能力不足，而在于如何有效利用有限的上下文窗口。本文正是在这一语境下凝练的实践指南：它没有纠缠于模型选型或工具协议，而是直指代理失败多源于“上下文失败”，进而提出上下文工程、轻量评估等具体方法。对于初学者，理解代理最缺的往往不是技术细节，而是这种“问题出在上下文”的思维转换。",
+  "chunks": [
+    {
+      "heading": "The case for agents",
+      "summary": "代理是通过循环使用工具的模型；作者指出大多数代理失败实为上下文失败，因此构建代理的关键挑战在于有效管理上下文。",
+      "terms": [
+        {
+          "term": "agents",
+          "translation": "代理（agents）",
+          "explanation": "在AI语境中，代理指能够自主使用工具并循环执行任务的大型语言模型应用，例如自动搜索信息、调用API等。"
+        },
+        {
+          "term": "context failures",
+          "translation": "上下文失败（context failures）",
+          "explanation": "指由于模型可处理的上下文窗口有限或信息组织不当，导致模型在任务中丢失关键信息、重复错误或偏离目标的现象。"
+        }
+      ]
+    },
+    {
+      "heading": "Building effective context",
+      "summary": "上下文工程指在每个步骤精心选取并组织进入上下文窗口的信息；这是实现可靠代理的核心实践，而非单纯依赖模型推理能力。",
+      "terms": [
+        {
+          "term": "context engineering",
+          "translation": "上下文工程（context engineering）",
+          "explanation": "在构建代理时，有意识地设计和管理每次调用模型时输入的信息内容与结构，以最大化模型在当前步骤的表现。"
+        },
+        {
+          "term": "context window",
+          "translation": "上下文窗口（context window）",
+          "explanation": "大语言模型一次能够接收和处理的最大文本长度（通常以token计），超出此限制的信息会被截断或忽略。"
+        }
+      ]
+    },
+    {
+      "heading": "Evaluation and iteration",
+      "summary": "没有评估，对代理的任何改进都只能凭猜测。作者描述了一种轻量级评估框架，用于快速测试代理行为并指导迭代。",
+      "terms": [
+        {
+          "term": "evals",
+          "translation": "评估（evals）",
+          "explanation": "通常指用于衡量AI模型或代理在特定任务上性能的测试集和指标，在代理开发中尤为重要，因为代理行为复杂且难以预测。"
+        },
+        {
+          "term": "eval harness",
+          "translation": "评估框架（eval harness）",
+          "explanation": "一套用于自动化运行评估、收集结果并进行比较的工具或代码结构，帮助开发者高效迭代代理设计。"
+        }
+      ]
+    }
+  ]
+}
