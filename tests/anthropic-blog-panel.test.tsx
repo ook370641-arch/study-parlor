@@ -36,6 +36,14 @@ function article(url: string, title: string) {
   return { url, title, summary: null, publishedAt: null, imageUrl: null }
 }
 
+/** 网络文章标题列表（排除本地置顶的宪法报告条目） */
+function webTitles(): (string | null | undefined)[] {
+  return screen
+    .getAllByTestId('anthropic-article-row')
+    .filter((row) => !row.querySelector('[data-testid="anthropic-constitution-pill"]'))
+    .map((row) => row.querySelector('[data-testid="anthropic-article-title"]')?.textContent)
+}
+
 describe('AnthropicBlogPanel', () => {
   beforeEach(() => {
     cleanup()
@@ -62,9 +70,9 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getByTestId('briefing-list-column')).toBeInTheDocument()
   })
 
-  it('does not render its own swap painting button (centralized at page level)', () => {
+  it('renders swap painting button in empty state (anthropic source has no page-level chrome)', () => {
     render(<AnthropicBlogPanel theme="academic" />)
-    expect(screen.queryByTestId('anthropic-swap-painting-button')).not.toBeInTheDocument()
+    expect(screen.getByTestId('anthropic-swap-painting-button')).toBeInTheDocument()
   })
 
   it('toggles collapsed rail and shows thumbnails', () => {
@@ -163,5 +171,46 @@ describe('AnthropicBlogPanel', () => {
     useStore.setState({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null } as any)
     render(<AnthropicBlogPanel theme="academic" />)
     expect(screen.queryByTestId('article-assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('合并时间线按日期倒序渲染，色签过滤可切换', async () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('e1', 'Eng Old'), section: 'engineering', publishedAt: '2026-07-01T00:00:00.000Z' },
+          { ...article('i1', 'Inst New'), section: 'institute', publishedAt: '2026-08-05T00:00:00.000Z' },
+          { ...article('r1', 'Res Mid'), section: 'research', publishedAt: '2026-08-01T00:00:00.000Z' },
+        ],
+        loading: false,
+        error: null,
+        sectionStatus: {},
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Eng Old'])
+
+    fireEvent.click(screen.getByTestId('anthropic-section-filter').querySelector('[data-section="institute"]')!)
+    await waitFor(() => {
+      expect(webTitles()).toEqual(['Res Mid', 'Eng Old'])
+    })
+  })
+
+  it('栏目失败时显示重试提示', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [article('e1', 'Eng')],
+        loading: false,
+        error: null,
+        sectionStatus: { institute: { fetchedAt: null, error: { code: 'parse-error', message: '解析页面失败' } } },
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    const banner = screen.getByTestId('anthropic-section-error')
+    expect(banner).toHaveAttribute('data-section', 'institute')
+    expect(banner.textContent).toContain('Institute')
+    fireEvent.click(banner)
+    expect(useStore.getState().discoverAnthropicArticles).toHaveBeenCalled()
   })
 })

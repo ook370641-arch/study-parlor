@@ -122,4 +122,21 @@ describe('AnthropicArticleRow', () => {
     fireEvent.contextMenu(screen.getByTestId('anthropic-article-row'))
     expect(screen.queryByTestId('anthropic-row-menu')).not.toBeInTheDocument()
   })
+
+  it('renders section tag for non-local article', () => {
+    render(<AnthropicArticleRow article={{ ...article(), section: 'institute' }} theme="academic" />)
+    const tag = screen.getByTestId('anthropic-section-tag')
+    expect(tag.textContent).toBe('Institute')
+  })
+
+  it('no section tag for constitution entry', () => {
+    render(<AnthropicArticleRow article={{ ...article(), local: 'constitution' }} theme="academic" />)
+    expect(screen.queryByTestId('anthropic-section-tag')).not.toBeInTheDocument()
+  })
+
+  it('falls back to URL-inferred section tag when section is missing', () => {
+    render(<AnthropicArticleRow article={article()} theme="academic" />)
+    const tag = screen.getByTestId('anthropic-section-tag')
+    expect(tag.textContent).toBe('Engineering')
+  })
 })

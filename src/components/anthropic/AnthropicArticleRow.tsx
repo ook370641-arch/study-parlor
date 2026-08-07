@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
+import { ANTHROPIC_SECTIONS, sectionOf } from '@/lib/anthropic-sections'
 import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -95,6 +96,11 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
   const placeholderText = isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]/60'
   const titleHover = isAcademic ? 'group-hover:text-ember' : 'group-hover:text-[#1a1a1a]'
 
+  // 栏目色签：本地内置条目（宪法报告）不显示；旧文章无 section 时从 URL 回推
+  const section = article.local === 'constitution'
+    ? null
+    : ANTHROPIC_SECTIONS.find((s) => s.key === sectionOf(article)) ?? null
+
   // Left border by state
   let borderClass: string
   const borderStyle: React.CSSProperties = importing
@@ -180,6 +186,15 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
                 ? '内置报告'
                 : formatDate(article.publishedAt)}
           </p>
+          {section && (
+            <span
+              data-testid="anthropic-section-tag"
+              className="inline-block mt-1.5 px-2 py-0.5 rounded-full border text-[10px]"
+              style={{ borderColor: `${section.color}66`, color: section.color }}
+            >
+              {section.label}
+            </span>
+          )}
           {article.local === 'constitution' && (
             <span
               data-testid="anthropic-constitution-pill"
