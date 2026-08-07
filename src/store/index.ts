@@ -517,7 +517,7 @@ export const useStore = create<AppStore>((set, get) => ({
   candlelightEnabled: true,
   paintingPlateEnabled: false,
   briefingSource: 'digest',
-  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
+  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicReaderFilePath: null,
   anthropicReaderBody: null,
   anthropicReaderTitle: null,
@@ -584,8 +584,8 @@ export const useStore = create<AppStore>((set, get) => ({
       scoutTab: state.scoutTab === 'articles' ? 'articles' : 'chat',
       scoutActiveConversationId: state.scoutActiveConversationId ?? null,
       anthropicBlogCache: state.anthropicBlogCache
-        ? { ...state.anthropicBlogCache, loading: false, error: null }
-        : { lastFetchedAt: null, articles: [], loading: false, error: null },
+        ? { ...state.anthropicBlogCache, loading: false, error: null, sectionStatus: state.anthropicBlogCache.sectionStatus ?? {} }
+        : { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
       anthropicBlogLastSeenAt: state.anthropicBlogLastSeenAt ?? null,
       jobBriefingConfig: normalizeJobBriefingConfig(state.jobBriefingConfig),
       jobProfile: normalizeJobProfile(state.jobProfile),

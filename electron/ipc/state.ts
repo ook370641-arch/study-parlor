@@ -21,7 +21,7 @@ const DEFAULT: StateJson = {
   lastFableTags: [],
   topicContinueSuggestions: {},
   briefingSource: 'digest',
-  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },
+  anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicBlogLastSeenAt: null,
   jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
   assistantSearchEnabled: false,

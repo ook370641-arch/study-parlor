@@ -45,6 +45,7 @@ export type Terminology = {
   startButton?: string
   cancelButton?: string
 }
+export type AnthropicSectionKey = 'engineering' | 'institute' | 'research'
 export type AnthropicArticleMeta = {
   url: string
   title: string
@@ -55,6 +56,8 @@ export type AnthropicArticleMeta = {
   filePath?: string
   /** 本地内置条目（非网络抓取），如 'constitution' 宪法可视化报告 */
   local?: 'constitution'
+  /** 栏目标识；旧缓存/旧数据缺失时视为 'engineering'（见 sectionOf/sectionForUrl 回退） */
+  section?: AnthropicSectionKey
 }
 
 export type AnthropicErrorCode =
@@ -70,11 +73,18 @@ export type AnthropicError = {
   message: string
 }
 
+export type AnthropicSectionStatus = {
+  fetchedAt: string | null
+  error: AnthropicError | null
+}
+
 export type AnthropicBlogCache = {
   lastFetchedAt: string | null
   articles: AnthropicArticleMeta[]
   loading: boolean
   error: AnthropicError | null
+  /** 各栏目抓取状态；旧 state.json 无此字段，缺省 {} */
+  sectionStatus?: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>>
 }
 
 export type ArticleAssistantTerm = {
@@ -212,6 +222,8 @@ export type Frontmatter = {
   published_at?: string
   imported_at?: string
   authors?: string[]
+  /** Anthropic 博客栏目；旧文章缺省视为 'engineering' */
+  section?: string
   parent_path?: string
   parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing' | 'writing' | 'web-article'
   generated_at?: string
@@ -668,7 +680,7 @@ export type IpcApi = {
 
   // Anthropic blog
   anthropicDiscover: () => Promise<
-    | { ok: true; lastFetchedAt: string; articles: AnthropicArticleMeta[] }
+    | { ok: true; lastFetchedAt: string; articles: AnthropicArticleMeta[]; sectionStatus: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>> }
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
   anthropicImportArticle: (url: string) => Promise<
