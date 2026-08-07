@@ -9,12 +9,18 @@ import {
   importArticle,
 } from '../electron/lib/anthropic-scraper'
 import { runScriptInScraperWindow } from '../electron/lib/anthropic-browser'
+import { httpFetch } from '../electron/lib/net-fetch'
+import { parseSitemapUrls, type ArticleMetaCache } from '../electron/lib/anthropic-discover'
+import { ANTHROPIC_SOURCES } from '../electron/lib/anthropic-sections'
+import type { AnthropicArticleMeta } from '@shared/index'
 
 vi.mock('../electron/lib/anthropic-browser', () => ({
   runScriptInScraperWindow: vi.fn(),
   closeScraperWindow: vi.fn(),
   cancelCurrentOperation: vi.fn(),
 }))
+
+vi.mock('../electron/lib/net-fetch', () => ({ httpFetch: vi.fn() }))
 
 describe('anthropic helpers', () => {
   it('toAbsoluteUrl converts relative urls', () => {
@@ -84,6 +90,18 @@ describe('anthropic integration', () => {
       ok: true,
       arrayBuffer: async () => new ArrayBuffer(8),
     } as Response)
+
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url.includes('sitemap.xml')) {
+        return {
+          ok: true,
+          url,
+          text: async () =>
+            `<urlset><url><loc>${TEST_URL}</loc></url></urlset>`,
+        } as unknown as Response
+      }
+      return { ok: true, url, text: async () => '<html></html>' } as unknown as Response
+    })
   })
 
   afterEach(() => {
@@ -127,21 +145,28 @@ describe('anthropic integration', () => {
 })
 
 describe('discoverArticles multi-source', () => {
-  const ENG = { url: 'https://www.anthropic.com/engineering/e1', title: 'Eng', summary: null, dateText: 'Aug 1, 2026', imageUrl: null }
-  const RES = { url: 'https://www.anthropic.com/research/r1', title: 'Res', summary: null, dateText: 'Aug 2, 2026', imageUrl: null }
-  const ALI = { url: 'https://alignment.anthropic.com/2026/msm/', title: 'Ali', summary: null, dateText: 'Jul 1, 2026', imageUrl: null }
-  const INT = { url: 'https://transformer-circuits.pub/2026/workspace/index.html', title: 'Int', summary: null, dateText: 'Jun 1, 2026', imageUrl: null }
-  const PRO = { url: 'https://claude.com/blog/1m-context', title: 'Pro', summary: null, dateText: 'May 1, 2026', imageUrl: null }
+  const fx = (name: string) => fs.readFileSync(path.join(__dirname, 'fixtures/blog-sources', name), 'utf8')
+  const textResponse = (body: string, url?: string) =>
+    ({ ok: true, url: url ?? '', text: async () => body }) as unknown as Response
+  const src = (key: string) => ANTHROPIC_SOURCES.find((s) => s.key === key)!
   let tmp: string
 
-  function mockListing(impl: (url: string) => unknown) {
-    vi.mocked(runScriptInScraperWindow).mockImplementation(async (_script, opts) => {
-      return impl((opts as { url: string }).url) as never
-    })
+  function sitemapCards(key: string): { url: string; title: string; summary: null; dateText: string; imageUrl: null }[] {
+    const section = src(key)
+    const xml = key === 'product' ? fx('claude-sitemap.xml') : fx('anthropic-sitemap.xml')
+    return parseSitemapUrls(xml, section).map((u, i) => ({
+      url: u.url,
+      title: `${key} title ${i}`,
+      summary: null,
+      dateText: 'Aug 1, 2026',
+      imageUrl: null,
+    }))
   }
 
   beforeEach(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-anthropic-ms-'))
+    vi.mocked(runScriptInScraperWindow).mockReset()
+    vi.mocked(httpFetch).mockReset()
   })
   afterEach(() => {
     fs.rmSync(tmp, { recursive: true, force: true })
@@ -149,48 +174,156 @@ describe('discoverArticles multi-source', () => {
 
   it('buildListingScript 参数化前缀与排除规则', async () => {
     const { buildListingScript } = await import('../electron/lib/anthropic-scraper')
-    const { ANTHROPIC_SOURCES } = await import('../electron/lib/anthropic-sections')
-    const eng = ANTHROPIC_SOURCES.find((s) => s.key === 'engineering')!
-    const res = ANTHROPIC_SOURCES.find((s) => s.key === 'research')!
-    expect(buildListingScript(eng)).toContain('a[href^="/engineering/"]')
-    expect(buildListingScript(res)).toContain('a[href^="/research/"]')
-    expect(buildListingScript(res)).toContain('/research/team/')
-    expect(buildListingScript(eng)).toContain('EXCLUDE_PREFIXES')
+    expect(buildListingScript(src('engineering'))).toContain('a[href^="/engineering/"]')
+    expect(buildListingScript(src('research'))).toContain('a[href^="/research/"]')
+    expect(buildListingScript(src('research'))).toContain('/research/team/')
+    expect(buildListingScript(src('engineering'))).toContain('EXCLUDE_PREFIXES')
   })
 
-  it('五源文章带 section 合并返回，sectionStatus 全部成功', async () => {
-    mockListing((url) => {
-      if (url.includes('alignment.anthropic.com')) return [ALI]
-      if (url.includes('transformer-circuits')) return [INT]
-      if (url.includes('claude.com')) return [PRO]
-      return url.includes('/research') ? [RES] : [ENG]
+  it('五源合并返回：每源文章数 = fixture 数（25/144/54/51/204），research 无 team 页，每篇有标题', async () => {
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === 'https://www.anthropic.com/sitemap.xml') return textResponse(fx('anthropic-sitemap.xml'))
+      if (url === 'https://claude.com/sitemap.xml') return textResponse(fx('claude-sitemap.xml'))
+      if (url === 'https://alignment.anthropic.com/') return textResponse(fx('alignment-index.html'))
+      if (url === 'https://transformer-circuits.pub/feed.xml') return textResponse(fx('circuits-feed.xml'))
+      throw new Error(`Unexpected httpFetch url: ${url}`)
     })
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async (_script, opts) => {
+      const url = (opts as { url: string }).url
+      if (url.includes('/engineering')) return sitemapCards('engineering')
+      if (url.includes('/research')) return sitemapCards('research')
+      if (url.includes('claude.com')) return sitemapCards('product')
+      return []
+    })
+
     const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
     const result = await discoverArticles(tmp)
-    expect(result.articles).toHaveLength(5)
-    expect(result.articles.map((a) => a.section).sort()).toEqual(['alignment', 'engineering', 'interpretability', 'product', 'research'])
+    expect(result.articles).toHaveLength(25 + 144 + 54 + 51 + 204)
+    const bySection = (k: string) => result.articles.filter((a) => a.section === k)
+    expect(bySection('engineering')).toHaveLength(25)
+    expect(bySection('research')).toHaveLength(144)
+    expect(bySection('alignment')).toHaveLength(54)
+    expect(bySection('interpretability')).toHaveLength(51)
+    expect(bySection('product')).toHaveLength(204)
+    // research 无 team 页；每篇 section 正确；无裸行（每篇都有标题）
+    expect(bySection('research').every((a) => !a.url.includes('/research/team/'))).toBe(true)
+    expect(result.articles.every((a) => a.title && a.section)).toBe(true)
     expect(result.sectionStatus.product?.error).toBeNull()
     expect(result.sectionStatus.research?.fetchedAt).toBeTruthy()
   })
 
-  it('单源失败隔离：其他源正常返回，失败源记入 sectionStatus', async () => {
-    mockListing((url) => {
-      if (url.includes('claude.com')) throw new Error('timeout waiting for selector')
-      if (url.includes('transformer-circuits')) return [INT]
-      if (url.includes('alignment.anthropic.com')) return [ALI]
-      return url.includes('/research') ? [RES] : [ENG]
+  it('单源失败隔离：claude sitemap 失败 → 其他四源正常，sectionStatus.product.error 非空', async () => {
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === 'https://claude.com/sitemap.xml') throw new Error('timeout waiting for selector')
+      if (url === 'https://www.anthropic.com/sitemap.xml') return textResponse(fx('anthropic-sitemap.xml'))
+      if (url === 'https://alignment.anthropic.com/') return textResponse(fx('alignment-index.html'))
+      if (url === 'https://transformer-circuits.pub/feed.xml') return textResponse(fx('circuits-feed.xml'))
+      throw new Error(`Unexpected httpFetch url: ${url}`)
     })
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async (_script, opts) => {
+      const url = (opts as { url: string }).url
+      if (url.includes('/engineering')) return sitemapCards('engineering')
+      if (url.includes('/research')) return sitemapCards('research')
+      return []
+    })
+
     const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
     const result = await discoverArticles(tmp)
-    expect(result.articles).toHaveLength(4)
+    expect(result.articles).toHaveLength(25 + 144 + 54 + 51)
     expect(result.sectionStatus.product?.error?.code).toBe('network-error')
     expect(result.sectionStatus.engineering?.error).toBeNull()
   })
 
   it('全部栏目失败时整体抛错', async () => {
-    mockListing(() => { throw new Error('load failed') })
+    vi.mocked(httpFetch).mockRejectedValue(new Error('load failed'))
+    vi.mocked(runScriptInScraperWindow).mockRejectedValue(new Error('load failed'))
     const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
     await expect(discoverArticles(tmp)).rejects.toThrow('load failed')
+  })
+
+  it('无裸行：索引页与缓存未覆盖的 sitemap URL 不进初始结果；回填后经 onBackfill 入场；重定向按最终 URL 去重', async () => {
+    const ENG_SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.anthropic.com/engineering/a</loc><lastmod>2026-08-01</lastmod></url>
+  <url><loc>https://www.anthropic.com/engineering/b</loc><lastmod>2026-08-02</lastmod></url>
+  <url><loc>https://www.anthropic.com/engineering/c</loc><lastmod>2026-08-03</lastmod></url>
+  <url><loc>https://www.anthropic.com/engineering/dup</loc><lastmod>2026-08-04</lastmod></url>
+</urlset>`
+
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === 'https://www.anthropic.com/sitemap.xml') return textResponse(ENG_SITEMAP)
+      if (url === 'https://claude.com/sitemap.xml') return textResponse('<urlset></urlset>')
+      if (url === 'https://alignment.anthropic.com/') return textResponse('<html></html>')
+      if (url === 'https://transformer-circuits.pub/feed.xml') return textResponse('<feed></feed>')
+      if (url === 'https://www.anthropic.com/engineering/c') {
+        return textResponse(
+          '<html><head><meta property="og:title" content="C Real Title"/><meta property="og:description" content="C summary"/></head></html>',
+          'https://www.anthropic.com/engineering/c'
+        )
+      }
+      if (url === 'https://www.anthropic.com/engineering/dup') {
+        // 重定向：最终 URL 落到已发现的 a → canonicalUrl 与已发现文章相同 → 不推送
+        return textResponse(
+          '<html><head><meta property="og:title" content="A Title"/></head></html>',
+          'https://www.anthropic.com/engineering/a'
+        )
+      }
+      throw new Error(`Unexpected httpFetch url: ${url}`)
+    })
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async (_script, opts) => {
+      const url = (opts as { url: string }).url
+      if (url.includes('/engineering')) {
+        return [{ url: 'https://www.anthropic.com/engineering/a', title: 'A Title', summary: 'A summary', dateText: 'Aug 1, 2026', imageUrl: null }]
+      }
+      return []
+    })
+
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+    const onBackfill = vi.fn()
+    const metaCache: ArticleMetaCache = {
+      'https://www.anthropic.com/engineering/b': { title: 'B Title', publishedAt: '2026-08-02T00:00:00.000Z', summary: 'B summary', imageUrl: null },
+    }
+    const result = await discoverArticles(tmp, { metaCache, onBackfill })
+
+    // 初始结果只含 a（卡片覆盖）与 b（缓存命中）；c/dup 不进初始列表
+    expect(result.articles.map((a) => a.url)).toEqual([
+      'https://www.anthropic.com/engineering/a',
+      'https://www.anthropic.com/engineering/b',
+    ])
+    expect(result.articles.every((a) => a.title)).toBe(true)
+
+    // 回填：c 入场（含解析出的 title + lastmod 兜底日期）；dup 重定向去重不推送
+    expect(onBackfill).toHaveBeenCalledTimes(1)
+    const pushed = onBackfill.mock.calls[0][0] as AnthropicArticleMeta[]
+    expect(pushed).toHaveLength(1)
+    expect(pushed[0].url).toBe('https://www.anthropic.com/engineering/c')
+    expect(pushed[0].title).toBe('C Real Title')
+    expect(pushed[0].section).toBe('engineering')
+    expect(pushed[0].publishedAt).toBe(new Date('2026-08-03').toISOString())
+
+    // metaCache 持久化：miss.url 与 canonicalUrl 都写
+    const finalCache = onBackfill.mock.calls[0][1] as ArticleMetaCache
+    expect(finalCache['https://www.anthropic.com/engineering/c']?.title).toBe('C Real Title')
+    expect(finalCache['https://www.anthropic.com/engineering/dup']?.title).toBe('A Title')
+  })
+
+  it('未提供 onBackfill 时不抓取回填文章页（调用方不背回填成本）', async () => {
+    const ENG_SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset><url><loc>https://www.anthropic.com/engineering/z</loc></urlset>`
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === 'https://www.anthropic.com/sitemap.xml') return textResponse(ENG_SITEMAP)
+      if (url === 'https://claude.com/sitemap.xml') return textResponse('<urlset></urlset>')
+      if (url === 'https://alignment.anthropic.com/') return textResponse('<html></html>')
+      if (url === 'https://transformer-circuits.pub/feed.xml') return textResponse('<feed></feed>')
+      throw new Error(`Unexpected httpFetch url: ${url}`)
+    })
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async () => [])
+
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+    const result = await discoverArticles(tmp) // 不传 onBackfill → 跳过回填
+    expect(result.articles).toHaveLength(0) // z 未覆盖，不进初始结果
+    const calledUrls = vi.mocked(httpFetch).mock.calls.map((c) => c[0])
+    expect(calledUrls).not.toContain('https://www.anthropic.com/engineering/z')
   })
 })
 
@@ -198,6 +331,12 @@ describe('importArticle section', () => {
   it('institute 文章写入 section/tags', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-anthropic-sec-'))
     const INS_URL = 'https://www.anthropic.com/institute/recursive-self-improvement'
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url.includes('sitemap.xml')) {
+        return { ok: true, url, text: async () => '<urlset></urlset>' } as unknown as Response
+      }
+      return { ok: true, url, text: async () => '<html></html>' } as unknown as Response
+    })
     vi.mocked(runScriptInScraperWindow).mockImplementation(async (script, opts) => {
       const url = (opts as { url?: string } | undefined)?.url ?? ''
       if (script.includes('a[href^="/institute/"]')) {

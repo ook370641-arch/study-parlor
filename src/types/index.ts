@@ -693,6 +693,8 @@ export type IpcApi = {
   anthropicDeleteArticle: (args: { filePath: string }) => Promise<
     { ok: true } | { ok: false; message: string }
   >
+  /** 后台元数据回填进度：sitemap 老文章逐页取到元数据后分批推送 */
+  onAnthropicBackfill: (cb: (payload: { articles: AnthropicArticleMeta[] }) => void) => () => void
 
   // Annotations
   annotationsRead: (articlePath: string) => Promise<ArticleAnnotation[]>

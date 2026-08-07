@@ -3,12 +3,19 @@ import { discoverArticles, importArticle, classifyError } from '../lib/anthropic
 import { deleteAnthropicArticleFile } from '../lib/anthropic-delete'
 import { cancelCurrentOperation } from '../lib/anthropic-browser'
 import { patchState, getCurrentState } from './state'
+import { mergeArticlesByUrl } from '../../src/lib/anthropic-articles'
 import type { AppConfig } from '../env'
-import type { AnthropicBlogCache } from '@shared/index'
+import type { AnthropicBlogCache, AnthropicArticleMeta } from '@shared/index'
+import type { ArticleMetaCache } from '../lib/anthropic-discover'
 
 export function registerAnthropicIpc(cfg: AppConfig) {
-  ipcMain.handle('anthropic:discover', async () => {
+  ipcMain.handle('anthropic:discover', async (event) => {
     const prev = getCurrentState().anthropicBlogCache
+    const metaCache: ArticleMetaCache = prev?.articleMetaCache ?? {}
+    const send = (channel: string, ...payload: unknown[]) => {
+      if (event.sender.isDestroyed()) return
+      event.sender.send(channel, ...payload)
+    }
     const loadingCache: AnthropicBlogCache = {
       lastFetchedAt: prev?.lastFetchedAt ?? null,
       articles: prev?.articles ?? [],
@@ -28,16 +35,28 @@ export function registerAnthropicIpc(cfg: AppConfig) {
       ) {
         throw new Error('NETWORK_ERROR: offline (E2E)')
       }
-      const result = await discoverArticles(cfg.libraryPath)
+      // 回填批次累计，最终并入主结果——保证回填文章在 reload 后仍在时间线（而不只靠 metaCache 重建）。
+      const backfilled: AnthropicArticleMeta[] = []
+      const result = await discoverArticles(cfg.libraryPath, {
+        metaCache,
+        onBackfill: (articles, updatedMetaCache) => {
+          backfilled.push(...articles)
+          send('anthropic:backfill', { articles })
+          patchState({
+            anthropicBlogCache: { ...getCurrentState().anthropicBlogCache, articleMetaCache: updatedMetaCache },
+          })
+        },
+      })
+      const articles = backfilled.length > 0 ? mergeArticlesByUrl(result.articles, backfilled) : result.articles
       const cache: AnthropicBlogCache = {
         lastFetchedAt: result.lastFetchedAt,
-        articles: result.articles,
+        articles,
         loading: false,
         error: null,
         sectionStatus: result.sectionStatus,
       }
       await patchState({ anthropicBlogCache: cache })
-      return { ok: true as const, lastFetchedAt: result.lastFetchedAt, articles: result.articles, sectionStatus: result.sectionStatus }
+      return { ok: true as const, lastFetchedAt: result.lastFetchedAt, articles, sectionStatus: result.sectionStatus }
     } catch (err) {
       const error = classifyError(err)
       const cache: AnthropicBlogCache = {

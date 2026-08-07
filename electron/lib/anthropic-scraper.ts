@@ -6,6 +6,16 @@ import { parseFrontmatter, serializeFrontmatter } from './frontmatter'
 import type { AnthropicArticleMeta } from '@shared/index'
 import { ANTHROPIC_SOURCES, sectionForUrl, type AnthropicSource } from './anthropic-sections'
 import type { AnthropicSectionKey, AnthropicSectionStatus, AnthropicErrorCode } from '@shared/index'
+import { httpFetch } from './net-fetch'
+import {
+  mapWithConcurrency,
+  parseAlignmentIndex,
+  parseArticleMetaHtml,
+  parseAtomFeed,
+  parseSitemapUrls,
+  type ArticleMetaCache,
+  type DiscoveredLink,
+} from './anthropic-discover'
 
 const BASE_URL = 'https://www.anthropic.com'
 export const IMPORT_DIR = 'Anthropic博客'
@@ -160,42 +170,141 @@ export function buildListingScript(section: AnthropicSource): string {
 })()`
 }
 
+type BackfillMiss = { source: AnthropicSource; url: string; lastmod: string | null }
+
+type ListingCard = {
+  url: string
+  title: string | null
+  summary: string | null
+  dateText: string | null
+  imageUrl: string | null
+}
+
+/** sitemap 策略：sitemap 全量 URL（parseSitemapUrls）为骨架；
+ *  索引页卡片（buildListingScript，隐藏窗 DOM 提取）与 articleMetaCache 提供富元数据；
+ *  两者都覆盖不到的 URL 进 backfill 队列——不产生「无标题裸行」。 */
+async function discoverSitemapSource(
+  section: AnthropicSource,
+  metaCache: ArticleMetaCache,
+  backfillMisses: BackfillMiss[]
+): Promise<DiscoveredLink[]> {
+  const xml = await (await httpFetch(section.sitemapUrl!)).text()
+  const all = parseSitemapUrls(xml, section)
+  const cards = await runScriptInScraperWindow<ListingCard[]>(
+    buildListingScript(section),
+    { url: section.indexUrl, waitForSelector: `a[href^="${section.linkPrefix}"]` }
+  ).catch(() => [] as ListingCard[])
+  const byUrl = new Map(cards.map((c) => [c.url, c]))
+
+  const out: DiscoveredLink[] = []
+  for (const { url, lastmod } of all) {
+    const card = byUrl.get(url)
+    if (card?.title) {
+      out.push({ url, title: card.title, summary: card.summary, dateText: card.dateText, imageUrl: card.imageUrl })
+      continue
+    }
+    const cached = metaCache[url]
+    if (cached?.title) {
+      out.push({ url, title: cached.title, summary: cached.summary, dateText: cached.publishedAt, imageUrl: cached.imageUrl })
+      continue
+    }
+    backfillMisses.push({ source: section, url, lastmod })
+  }
+  return out
+}
+
+/** 按发现策略分派：sitemap → 上面；static-list/rss → httpFetch 拉索引/feed 后纯解析（数据已全量，不触发回填） */
+async function dispatchDiscover(
+  section: AnthropicSource,
+  metaCache: ArticleMetaCache,
+  backfillMisses: BackfillMiss[]
+): Promise<DiscoveredLink[]> {
+  if (section.discover === 'sitemap') {
+    return discoverSitemapSource(section, metaCache, backfillMisses)
+  }
+  const html = await (await httpFetch(section.indexUrl)).text()
+  if (section.discover === 'rss') return parseAtomFeed(html)
+  return parseAlignmentIndex(html, section.indexUrl)
+}
+
+/** 后台元数据回填：并发 5，每完成 10 篇经 onBackfill 推送一批。
+ *  写 metaCache（miss.url 与 canonicalUrl 都写）；canonicalUrl 与已发现文章重复 → 丢弃该占位（重定向去重）。 */
+async function runBackfill(
+  misses: BackfillMiss[],
+  knownUrls: Set<string>,
+  metaCache: ArticleMetaCache,
+  saved: Map<string, string>,
+  onBackfill: (articles: AnthropicArticleMeta[], metaCache: ArticleMetaCache) => void
+): Promise<void> {
+  const results = await mapWithConcurrency(misses, 5, async (miss) => {
+    try {
+      const res = await httpFetch(miss.url)
+      const meta = parseArticleMetaHtml(await res.text(), res.url || miss.url)
+      meta.publishedAt = meta.publishedAt ?? (miss.lastmod ? parseDateString(miss.lastmod) : null)
+      return { miss, meta }
+    } catch {
+      return null
+    }
+  })
+
+  let batch: AnthropicArticleMeta[] = []
+  const flush = () => {
+    if (batch.length > 0) {
+      onBackfill(batch, metaCache)
+      batch = []
+    }
+  }
+
+  for (const r of results) {
+    if (!r) continue
+    const { miss, meta } = r
+    const entry: ArticleMetaCache[string] = { title: meta.title, publishedAt: meta.publishedAt, summary: meta.summary, imageUrl: meta.imageUrl }
+    metaCache[miss.url] = entry
+    if (meta.canonicalUrl && meta.canonicalUrl !== miss.url) {
+      metaCache[meta.canonicalUrl] = entry
+    }
+    if (!meta.title) continue
+    if (knownUrls.has(meta.canonicalUrl)) continue
+    knownUrls.add(meta.canonicalUrl)
+    const filePath = saved.get(meta.canonicalUrl)
+    batch.push({
+      url: meta.canonicalUrl,
+      title: meta.title,
+      summary: meta.summary,
+      publishedAt: meta.publishedAt,
+      imageUrl: meta.imageUrl ? toAbsoluteUrl(meta.imageUrl) : null,
+      section: miss.source.key,
+      isSaved: !!filePath,
+      filePath,
+    })
+    if (batch.length >= 10) flush()
+  }
+  flush()
+}
+
 export async function discoverArticles(
-  libraryRoot: string
+  libraryRoot: string,
+  opts?: {
+    metaCache?: ArticleMetaCache
+    onBackfill?: (articles: AnthropicArticleMeta[], metaCache: ArticleMetaCache) => void
+  }
 ): Promise<{
   lastFetchedAt: string
   articles: AnthropicArticleMeta[]
   sectionStatus: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>>
 }> {
   const saved = findSavedArticles(libraryRoot)
-  const articles: AnthropicArticleMeta[] = []
+  const metaCache: ArticleMetaCache = opts?.metaCache ?? {}
+  const backfillMisses: BackfillMiss[] = []
   const sectionStatus: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>> = {}
   const failures: unknown[] = []
+  const discovered: { link: DiscoveredLink; section: AnthropicSectionKey }[] = []
 
+  // 逐源独立 try/catch：单源失败隔离，仅记录 sectionStatus；全部失败才整体 throw。
   for (const section of ANTHROPIC_SOURCES) {
     try {
-      const links = await runScriptInScraperWindow<
-        { url: string; title: string; summary: string | null; dateText: string | null; imageUrl: string | null }[]
-      >(buildListingScript(section), {
-        url: section.indexUrl,
-        waitForSelector: `a[href^="${section.linkPrefix}"]`,
-      })
-
-      const mapped = links
-        .map((link) => ({
-          url: link.url,
-          title: link.title,
-          summary: link.summary,
-          publishedAt: parseDateString(link.dateText),
-          imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
-          section: section.key,
-        }))
-        .filter((a) => a.title && a.url)
-
-      for (const a of mapped) {
-        const filePath = saved.get(a.url)
-        articles.push({ ...a, isSaved: !!filePath, filePath })
-      }
+      const links = await dispatchDiscover(section, metaCache, backfillMisses)
+      for (const link of links) discovered.push({ link, section: section.key })
       sectionStatus[section.key] = { fetchedAt: new Date().toISOString(), error: null }
     } catch (err) {
       failures.push(err)
@@ -203,9 +312,36 @@ export async function discoverArticles(
     }
   }
 
+  const articles: AnthropicArticleMeta[] = discovered.map(({ link, section }) => {
+    const filePath = saved.get(link.url)
+    return {
+      url: link.url,
+      title: link.title,
+      summary: link.summary,
+      publishedAt: link.dateText ? parseDateString(link.dateText) : null,
+      imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
+      section,
+      isSaved: !!filePath,
+      filePath,
+    }
+  })
+
   // 全部失败才整体报错（走 IPC classifyError → parse-error/network-error 路径）；
   // 部分失败按栏目降级，面板逐栏目提示。
   if (articles.length === 0 && failures.length > 0) throw failures[0]
+
+  // 后台回填（主结果返回后继续）：索引页与缓存都未覆盖的 sitemap URL 逐页取元数据，
+  // 每 10 篇一批经 onBackfill 推送；未提供 onBackfill 的调用方（如 importArticle）不背回填成本。
+  if (backfillMisses.length > 0 && opts?.onBackfill) {
+    await runBackfill(
+      backfillMisses,
+      new Set(articles.map((a) => a.url)),
+      metaCache,
+      saved,
+      opts.onBackfill
+    )
+  }
+
   return { lastFetchedAt: new Date().toISOString(), articles, sectionStatus }
 }
 
