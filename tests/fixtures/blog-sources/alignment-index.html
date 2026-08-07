@@ -1,0 +1,1605 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Alignment Science Blog</title>
+    <style id="distill-prerendered-styles" type="text/css">
+        /*
+        * Copyright 2018 The Distill Template Authors
+        *
+        * Licensed under the Apache License, Version 2.0 (the "License");
+        * you may not use this file except in compliance with the License.
+        * You may obtain a copy of the License at
+        *
+        *      http://www.apache.org/licenses/LICENSE-2.0
+        *
+        * Unless required by applicable law or agreed to in writing, software
+        * distributed under the License is distributed on an "AS IS" BASIS,
+        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        * See the License for the specific language governing permissions and
+        * limitations under the License.
+        */
+
+        html {
+            font-size: 14px;
+            line-height: 1.6em;
+            /* font-family: "Libre Franklin", "Helvetica Neue", sans-serif; */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+                "Helvetica Neue", Arial, sans-serif;
+            /*, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";*/
+            text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        /* @media(min-width: 768px) {
+            html {
+                font-size: 16px;
+            }
+        } */
+
+        body {
+            margin: 0;
+        }
+
+        a {
+            color: #004276;
+        }
+
+        figure {
+            margin: 0;
+        }
+
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+
+        table th {
+            text-align: left;
+        }
+
+        table thead {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        table thead th {
+            padding-bottom: 0.5em;
+        }
+
+        table tbody :first-child td {
+            padding-top: 0.5em;
+        }
+
+        pre {
+            overflow: auto;
+            max-width: 100%;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 1em;
+        }
+
+        sup,
+        sub {
+            vertical-align: baseline;
+            position: relative;
+            top: -0.4em;
+            line-height: 1em;
+        }
+
+        sub {
+            top: 0.4em;
+        }
+
+        .kicker,
+        .marker {
+            font-size: 15px;
+            font-weight: 600;
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Headline */
+
+        @media (min-width: 1024px) {
+            d-title h1 span {
+                display: block;
+            }
+        }
+
+        /* Figure */
+
+        figure {
+            position: relative;
+            margin-bottom: 2.5em;
+            margin-top: 1.5em;
+        }
+
+        figcaption+figure {}
+
+        figure img {
+            width: 100%;
+        }
+
+        figure svg text,
+        figure svg tspan {}
+
+        figcaption,
+        .figcaption {
+            color: rgba(0, 0, 0, 0.6);
+            font-size: 12px;
+            line-height: 1.5em;
+        }
+
+        @media (min-width: 1024px) {
+
+            figcaption,
+            .figcaption {
+                font-size: 13px;
+            }
+        }
+
+        figure.external img {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
+            padding: 18px;
+            box-sizing: border-box;
+        }
+
+        figcaption a {
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        figcaption b,
+        figcaption strong {
+            font-weight: 600;
+            color: rgba(0, 0, 0, 1);
+        }
+
+        /*
+        * Copyright 2018 The Distill Template Authors
+        *
+        * Licensed under the Apache License, Version 2.0 (the "License");
+        * you may not use this file except in compliance with the License.
+        * You may obtain a copy of the License at
+        *
+        *      http://www.apache.org/licenses/LICENSE-2.0
+        *
+        * Unless required by applicable law or agreed to in writing, software
+        * distributed under the License is distributed on an "AS IS" BASIS,
+        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        * See the License for the specific language governing permissions and
+        * limitations under the License.
+        */
+
+        @supports not (display: grid) {
+
+            .base-grid,
+            distill-header,
+            d-title,
+            d-abstract,
+            d-article,
+            d-appendix,
+            distill-appendix,
+            d-byline,
+            d-footnote-list,
+            d-citation-list,
+            distill-footer {
+                display: block;
+                padding: 8px;
+            }
+        }
+
+        .base-grid,
+        distill-header,
+        d-title,
+        d-abstract,
+        d-article,
+        d-appendix,
+        distill-appendix,
+        d-byline,
+        d-footnote-list,
+        d-citation-list,
+        distill-footer {
+            display: grid;
+            justify-items: stretch;
+            grid-template-columns: [screen-start] 8px [page-start kicker-start text-start gutter-start middle-start] 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr [text-end page-end gutter-end kicker-end middle-end] 8px [screen-end];
+            grid-column-gap: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-column-gap: 8px;
+        }
+
+        @media (min-width: 768px) {
+
+            .base-grid,
+            distill-header,
+            d-title,
+            d-abstract,
+            d-article,
+            d-appendix,
+            distill-appendix,
+            d-byline,
+            d-footnote-list,
+            d-citation-list,
+            distill-footer {
+                grid-template-columns: [screen-start] 1fr [page-start kicker-start middle-start text-start] 45px 45px 45px 45px 45px 45px 45px 45px [ kicker-end text-end gutter-start] 45px [middle-end] 45px [page-end gutter-end] 1fr [screen-end];
+                grid-column-gap: 16px;
+            }
+
+            .grid {
+                grid-column-gap: 16px;
+            }
+        }
+
+        @media (min-width: 1000px) {
+
+            .base-grid,
+            distill-header,
+            d-title,
+            d-abstract,
+            d-article,
+            d-appendix,
+            distill-appendix,
+            d-byline,
+            d-footnote-list,
+            d-citation-list,
+            distill-footer {
+                grid-template-columns: [screen-start] 1fr [page-start kicker-start] 50px [middle-start] 50px [text-start kicker-end] 50px 50px 50px 50px 50px 50px 50px 50px [text-end gutter-start] 50px [middle-end] 50px [page-end gutter-end] 1fr [screen-end];
+                grid-column-gap: 16px;
+            }
+
+            .grid {
+                grid-column-gap: 16px;
+            }
+        }
+
+        @media (min-width: 1180px) {
+
+            .base-grid,
+            distill-header,
+            d-title,
+            d-abstract,
+            d-article,
+            d-appendix,
+            distill-appendix,
+            d-byline,
+            d-footnote-list,
+            d-citation-list,
+            distill-footer {
+                grid-template-columns: [screen-start] 1fr [page-start kicker-start] 60px [middle-start] 60px [text-start kicker-end] 60px 60px 60px 60px 60px 60px 60px 60px [text-end gutter-start] 60px [middle-end] 60px [page-end gutter-end] 1fr [screen-end];
+                grid-column-gap: 32px;
+            }
+
+            .grid {
+                grid-column-gap: 32px;
+            }
+        }
+
+        .base-grid {
+            grid-column: screen;
+        }
+
+        /* .l-body,
+       d-article > *  {
+         grid-column: text;
+       }
+
+       .l-page,
+       d-title > *,
+       d-figure {
+         grid-column: page;
+       } */
+
+        .l-gutter {
+            grid-column: gutter;
+        }
+
+        .l-text,
+        .l-body {
+            grid-column: text;
+        }
+
+        .l-page {
+            grid-column: page;
+        }
+
+        .l-body-outset {
+            grid-column: middle;
+        }
+
+        .l-page-outset {
+            grid-column: page;
+        }
+
+        .l-screen {
+            grid-column: screen;
+        }
+
+        .l-screen-inset {
+            grid-column: screen;
+            padding-left: 16px;
+            padding-left: 16px;
+        }
+
+        /* Aside */
+
+        d-article aside {
+            grid-column: gutter;
+            font-size: 12px;
+            line-height: 1.6em;
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        @media (min-width: 768px) {
+            aside {
+                grid-column: gutter;
+            }
+
+            .side {
+                grid-column: gutter;
+            }
+        }
+
+        /*
+        * Copyright 2018 The Distill Template Authors
+        *
+        * Licensed under the Apache License, Version 2.0 (the "License");
+        * you may not use this file except in compliance with the License.
+        * You may obtain a copy of the License at
+        *
+        *      http://www.apache.org/licenses/LICENSE-2.0
+        *
+        * Unless required by applicable law or agreed to in writing, software
+        * distributed under the License is distributed on an "AS IS" BASIS,
+        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        * See the License for the specific language governing permissions and
+        * limitations under the License.
+        */
+
+        d-title {
+            padding: 2rem 0 1.5rem;
+            contain: layout style;
+            overflow-x: hidden;
+        }
+
+        @media (min-width: 768px) {
+            d-title {
+                padding: 4rem 0 1.5rem;
+            }
+        }
+
+        d-title h1 {
+            grid-column: text;
+            font-size: 40px;
+            font-weight: 700;
+            line-height: 1.1em;
+            margin: 0 0 0.5rem;
+        }
+
+        @media (min-width: 768px) {
+            d-title h1 {
+                font-size: 50px;
+            }
+        }
+
+        d-title p {
+            font-weight: 300;
+            font-size: 1.2rem;
+            line-height: 1.55em;
+            grid-column: text;
+        }
+
+        d-title .status {
+            margin-top: 0px;
+            font-size: 12px;
+            color: #009688;
+            opacity: 0.8;
+            grid-column: kicker;
+        }
+
+        d-title .status span {
+            line-height: 1;
+            display: inline-block;
+            padding: 6px 0;
+            border-bottom: 1px solid #80cbc4;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        /*
+        * Copyright 2018 The Distill Template Authors
+        *
+        * Licensed under the Apache License, Version 2.0 (the "License");
+        * you may not use this file except in compliance with the License.
+        * You may obtain a copy of the License at
+        *
+        *      http://www.apache.org/licenses/LICENSE-2.0
+        *
+        * Unless required by applicable law or agreed to in writing, software
+        * distributed under the License is distributed on an "AS IS" BASIS,
+        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        * See the License for the specific language governing permissions and
+        * limitations under the License.
+        */
+
+        d-byline {
+            contain: style;
+            overflow: hidden;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.8rem;
+            line-height: 1.8em;
+            padding: 1.5rem 0;
+            min-height: 1.8em;
+        }
+
+        d-byline .byline {
+            grid-template-columns: 1fr 1fr;
+            grid-column: text;
+        }
+
+        @media (min-width: 768px) {
+            d-byline .byline {
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+            }
+        }
+
+        d-byline .authors-affiliations {
+            grid-column-end: span 2;
+            grid-template-columns: 1fr 1fr;
+            margin-bottom: 1em;
+        }
+
+        @media (min-width: 768px) {
+            d-byline .authors-affiliations {
+                margin-bottom: 0;
+            }
+        }
+
+        d-byline h3 {
+            font-size: 0.6rem;
+            font-weight: 400;
+            color: rgba(0, 0, 0, 0.5);
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        d-byline p {
+            margin: 0;
+        }
+
+        d-byline a,
+        d-article d-byline a {
+            color: rgba(0, 0, 0, 0.8);
+            text-decoration: none;
+            border-bottom: none;
+        }
+
+        d-article d-byline a:hover {
+            text-decoration: underline;
+            border-bottom: none;
+        }
+
+        d-byline p.author {
+            font-weight: 500;
+        }
+
+        d-byline .affiliations {}
+
+        /*
+        * Copyright 2018 The Distill Template Authors
+        *
+        * Licensed under the Apache License, Version 2.0 (the "License");
+        * you may not use this file except in compliance with the License.
+        * You may obtain a copy of the License at
+        *
+        *      http://www.apache.org/licenses/LICENSE-2.0
+        *
+        * Unless required by applicable law or agreed to in writing, software
+        * distributed under the License is distributed on an "AS IS" BASIS,
+        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        * See the License for the specific language governing permissions and
+        * limitations under the License.
+        */
+
+        d-article {
+            contain: layout style;
+            overflow-x: hidden;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding-top: 2rem;
+            color: rgba(0, 0, 0, 0.8);
+        }
+
+        d-article>* {
+            grid-column: text;
+        }
+
+        @media (min-width: 768px) {
+            d-article {
+                font-size: 16px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            d-article {
+                font-size: 1.06rem;
+                line-height: 1.7em;
+            }
+        }
+
+        /* H2 */
+
+        d-article .marker {
+            text-decoration: none;
+            border: none;
+            counter-reset: section;
+            grid-column: kicker;
+            line-height: 1.7em;
+        }
+
+        d-article .marker:hover {
+            border: none;
+        }
+
+        d-article .marker span {
+            padding: 0 3px 4px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            position: relative;
+            top: 4px;
+        }
+
+        d-article .marker:hover span {
+            color: rgba(0, 0, 0, 0.7);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.7);
+        }
+
+        d-article h2 {
+            font-weight: 600;
+            font-size: 24px;
+            line-height: 1.25em;
+            margin: 2rem 0 1.5rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 1rem;
+        }
+
+        @media (min-width: 1024px) {
+            d-article h2 {
+                font-size: 36px;
+            }
+        }
+
+        /* H3 */
+
+        d-article h3 {
+            font-weight: 700;
+            font-size: 18px;
+            line-height: 1.4em;
+            margin-bottom: 1em;
+            margin-top: 2em;
+        }
+
+        @media (min-width: 1024px) {
+            d-article h3 {
+                font-size: 20px;
+            }
+        }
+
+        /* H4 */
+
+        d-article h4 {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 14px;
+            line-height: 1.4em;
+        }
+
+        d-article a {
+            color: inherit;
+        }
+
+        d-article p,
+        d-article ul,
+        d-article ol,
+        d-article blockquote {
+            margin-top: 0;
+            margin-bottom: 1em;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        d-article blockquote {
+            border-left: 2px solid rgba(0, 0, 0, 0.2);
+            padding-left: 2em;
+            font-style: italic;
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        d-article a {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+            text-decoration: none;
+        }
+
+        d-article a:hover {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.8);
+        }
+
+        d-article .link {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        d-article ul,
+        d-article ol {
+            padding-left: 24px;
+        }
+
+        d-article li {
+            margin-bottom: 1em;
+            margin-left: 0;
+            padding-left: 0;
+        }
+
+        d-article li:last-child {
+            margin-bottom: 0;
+        }
+
+        d-article pre {
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        d-article hr {
+            grid-column: screen;
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            margin-top: 60px;
+            margin-bottom: 60px;
+        }
+
+        d-article section {
+            margin-top: 60px;
+            margin-bottom: 60px;
+        }
+
+        d-article span.equation-mimic {
+            font-family: georgia;
+            font-size: 115%;
+            font-style: italic;
+        }
+
+        d-article>d-code,
+        d-article section>d-code {
+            display: block;
+        }
+
+        d-article>d-math[block],
+        d-article section>d-math[block] {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+
+            d-article>d-code,
+            d-article section>d-code,
+            d-article>d-math[block],
+            d-article section>d-math[block] {
+                overflow-x: scroll;
+                -ms-overflow-style: none;
+                /* IE 10+ */
+                overflow: -moz-scrollbars-none;
+                /* Firefox */
+            }
+
+            d-article>d-code::-webkit-scrollbar,
+            d-article section>d-code::-webkit-scrollbar,
+            d-article>d-math[block]::-webkit-scrollbar,
+            d-article section>d-math[block]::-webkit-scrollbar {
+                display: none;
+                /* Safari and Chrome */
+            }
+        }
+
+        d-article .citation {
+            color: #668;
+            cursor: pointer;
+        }
+
+        d-include {
+            width: auto;
+            display: block;
+        }
+
+        d-figure {
+            contain: layout style;
+        }
+
+        /* KaTeX */
+
+        .katex,
+        .katex-prerendered {
+            contain: style;
+            display: inline-block;
+        }
+
+        /* Tables */
+
+        d-article table {
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        d-article table th {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        d-article table td {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        d-article table tr:last-of-type td {
+            border-bottom: none;
+        }
+
+        d-article table th,
+        d-article table td {
+            font-size: 15px;
+            padding: 2px 8px;
+        }
+
+        d-article table tbody :first-child td {
+            padding-top: 2px;
+        }
+
+        /*
+        * Copyright 2018 The Distill Template Authors
+        *
+        * Licensed under the Apache License, Version 2.0 (the "License");
+        * you may not use this file except in compliance with the License.
+        * You may obtain a copy of the License at
+        *
+        *      http://www.apache.org/licenses/LICENSE-2.0
+        *
+        * Unless required by applicable law or agreed to in writing, software
+        * distributed under the License is distributed on an "AS IS" BASIS,
+        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        * See the License for the specific language governing permissions and
+        * limitations under the License.
+        */
+
+        span.katex-display {
+            text-align: left;
+            padding: 8px 0 8px 0;
+            margin: 0.5em 0 0.5em 1em;
+        }
+
+        span.katex {
+            -webkit-font-smoothing: antialiased;
+            color: rgba(0, 0, 0, 0.8);
+            font-size: 1.18em;
+        }
+
+        /*
+        * Copyright 2018 The Distill Template Authors
+        *
+        * Licensed under the Apache License, Version 2.0 (the "License");
+        * you may not use this file except in compliance with the License.
+        * You may obtain a copy of the License at
+        *
+        *      http://www.apache.org/licenses/LICENSE-2.0
+        *
+        * Unless required by applicable law or agreed to in writing, software
+        * distributed under the License is distributed on an "AS IS" BASIS,
+        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        * See the License for the specific language governing permissions and
+        * limitations under the License.
+        */
+
+        @media print {
+            @page {
+                size: 8in 11in;
+
+                @bottom-right {
+                    content: counter(page) " of " counter(pages);
+                }
+            }
+
+            html {
+                /* no general margins: CSS Grid takes care of those */
+            }
+
+            p,
+            code {
+                page-break-inside: avoid;
+            }
+
+            h2,
+            h3 {
+                page-break-after: avoid;
+            }
+
+            d-header {
+                visibility: hidden;
+            }
+
+            d-footer {
+                display: none !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="anthropic-serve/style.css" />
+    <link rel="icon" type="image/x-icon" href="anthropic-serve/favicon.ico" />
+</head>
+
+<body>
+    <div class="container">
+        <h1 style="line-height: 1.2em">Alignment Science Blog</h1>
+        <h2>Articles</h2>
+        <div class="toc">
+            <div class="date">July 2026</div>
+            <a href="2026/agentic-misalignment-summer-2026/" class="note">
+                <h3>Agentic Misalignment in Summer 2026</h3>
+                <div class="description">
+                    We present four case studies of frontier models from multiple developers
+                    sabotaging code, assisting fraud, falsifying AI-monitoring labels, and coaching whistleblowers.
+                </div>
+            </a>
+            <a href="2026/modular-pretraining/" class="note">
+                <h3>Modular Pretraining Enables Access Control</h3>
+                <div class="description">
+                    We study a method for isolating dual use knowledge to specific modules within a language model.
+                    These modules can be switched on or off to control what the model knows.
+                </div>
+            </a>
+            <div class="date">June 2026</div>
+            <a href="2026/diffuse-ai-control/" class="note">
+                <h3>Diffuse AI Control on Fuzzy Tasks</h3>
+                <div class="description">
+                    We introduce a red-teaming framework for evaluating training interventions against diffuse threats
+                    from scheming AIs, such as sandbagging on alignment research.
+                </div>
+            </a>
+            <div class="date">May 2026</div>
+            <a href="2026/sleight-bench/" class="note">
+                <h3>SLEIGHT-Bench: Finding Blind Spots in AI Monitors</h3>
+                <div class="description">
+                    We build a benchmark of evasive transcripts exploiting blind spots of frontier monitoring systems.
+                </div>
+            </a>
+            <a href="2026/teaching-claude-why/" class="note">
+                <h3>Teaching Claude Why</h3>
+                <div class="description">
+                    We use agentic misalignment as a case study to study how well safety-training techniques
+                    generalize.
+                </div>
+            </a>
+            <a href="2026/msm/" class="note">
+                <h3>Model Spec Midtraining: Improving How Alignment Training Generalizes</h3>
+                <div class="description">
+                    We train AIs to understand the content of their model spec. This shapes and improves how they
+                    generalize from subsequent alignment training.
+                </div>
+            </a>
+            <div class="date">April 2026</div>
+            <a href="2026/backdooring-classifiers/" class="note">
+                <h3>Poisoning Fine-tuning Datasets of Constitutional Classifiers</h3>
+                <div class="description">
+                    We study the conditions needed for a backdoor, installed in a constitutional classifier via
+                    fine-tuning data poisoning, to evade black-box red-teaming.
+                </div>
+            </a>
+            <a href="2026/introspection-adapters/" class="note">
+                <h3>Introspection Adapters: Training LLMs to Report Their Learned Behaviors</h3>
+                <div class="description">
+                    We introduce introspection adapters (IA), a technique for training an LLM to self-report behaviors
+                    it learned during fine-tuning. This IA generalizes to models that were fine-tuned in very different
+                    ways.
+                </div>
+            </a>
+            <a href="2026/ai-organizations/" class="note">
+                <h3>AI Organizations Can Be More Effective but Less Aligned than Individual Agents</h3>
+                <div class="description">
+                    We study AI organizations, teams of AI agents working together toward a common goal, and find
+                    that they produce solutions that are more effective but less aligned than those from individual
+                    agents.
+                </div>
+            </a>
+            <a href="2026/automated-w2s-researcher/" class="note">
+                <h3>Automated Weak-to-Strong Researcher</h3>
+                <div class="description">
+                    We built autonomous AI agents that propose ideas, run experiments, and iterate on an open
+                    research problem—how to train a strong model using only a weaker model's supervision—and
+                    found they outperform human researchers, suggesting that automating this kind of research
+                    is already practical.
+                </div>
+            </a>
+            <div class="date">March 2026</div>
+            <a href="2026/abstractive-red-teaming/" class="note">
+                <h3>Abstractive Red-Teaming of Language Model Character</h3>
+                <div class="description">
+                    How can we surface realistic failures of model character prior to deployment? We introduce
+                    abstractive red-teaming, which searches for natural-language categories of user queries that
+                    reliably elicit character violations.
+                </div>
+            </a>
+            <a href="2026/coding-audit-realism/" class="note">
+                <h3>Measuring and improving coding audit realism with deployment resources</h3>
+                <div class="description">
+                    We study realism win rate, a metric for measuring how distinguishable Petri audit transcripts are
+                    from real deployment interactions, and use it to evaluate the effect of giving the auditor real
+                    deployment resources.
+                </div>
+            </a>
+            <a href="2026/automated-alignment-agent/" class="note">
+                <h3>A3: An Automated Alignment Agent for Safety Finetuning</h3>
+                <div class="description">
+                    We introduce our Automated Alignment Agent (A3), a new agentic framework which automatically
+                    mitigates safety failures in Large Language Models with minimal human intervention.
+                </div>
+            </a>
+            <a href="2026/auditbench/" class="note">
+                <h3>AuditBench: Evaluating Alignment Auditing Techniques on Models with Hidden Behaviors</h3>
+                <div class="description">
+                    We release AuditBench, a benchmark of 56 language models with implanted hidden behaviors for
+                    evaluating progress in alignment auditing.
+                </div>
+            </a>
+            <a href="2026/challenges-hopes/" class="note">
+                <h3>3 Challenges and 2 Hopes for the Safety of Unsupervised Elicitation</h3>
+                <div class="description">
+                    We stress-test unsupervised elicitation and easy-to-hard techniques on new datasets meant to capture
+                    realistic challenges such techniques would likely face.
+                </div>
+            </a>
+            <div class="date">February 2026</div>
+            <a href="2026/psm/" class="note">
+                <h3>The Persona Selection Model: Why AI Assistants might Behave like Humans</h3>
+                <div class="description">
+                    We discuss a perspective where Claude is something like a character in an AI-generated story.
+                </div>
+            </a>
+            <a href="2026/hot-mess-of-ai/" class="note">
+                <h3>The Hot Mess of AI: How Does Misalignment Scale with Model Intelligence and Task Complexity?
+                </h3>
+                <div class="description">
+                    When AI systems fail, will they fail by systematically pursuing goals we do not intend? Or will
+                    they
+                    fail by being a hot mess—taking nonsensical actions that do not further any goal?
+                </div>
+            </a>
+            <div class="date">January 2026</div>
+            <a href="2026/auditing-overt-saboteur/" class="note">
+                <h3>Pre-deployment auditing can catch an overt saboteur</h3>
+                <div class="description">
+                    We test whether our pre-deployment alignment auditing methods can catch models trained to
+                    overtly
+                    sabotage Anthropic.
+                </div>
+            </a>
+            <a href="2026/petri-v2/" class="note">
+                <h3>Petri 2.0: New Scenarios, New Model Comparisons, and Improved Eval-Awareness Mitigations</h3>
+                <div class="description">
+                    We've improved our Petri automated-behavioral-auditing tool with improved realism mitigations to
+                    counter eval-awareness, an expanded seed library with 70 new scenarios, and evaluation results
+                    for
+                    more recent frontier models.
+                </div>
+            </a>
+            <div class="date">December 2025</div>
+            <a href="2025/bloom-auto-evals/" class="note">
+                <h3>Bloom: an open source tool for automated behavioral evaluations</h3>
+                <div class="description">
+                    Bloom is an open-source automated pipeline that generates configurable evaluation suites to
+                    measure
+                    arbitrary behavioral traits in frontier LLMs without requiring ground-truth labels.
+                </div>
+            </a>
+            <a href="2025/activation-oracles/" class="note">
+                <h3>Activation Oracles: Training and Evaluating LLMs as General-Purpose Activation Explainers</h3>
+                <div class="description">
+                    We train language models to answer questions about their own activations in natural language and
+                    evaluate how well they generalize to settings very unlike their training, such as uncovering
+                    misalignment introduced during fine-tuning.
+                </div>
+            </a>
+            <a href="2025/alignment-faking-mitigations/" class="note">
+                <h3>Towards training-time mitigations for alignment faking in RL</h3>
+                <div class="description">
+                    We construct a diverse array of model organisms of alignment faking and study mitigations that
+                    could
+                    be used during RL to decrease alignment faking and compliance gaps.
+                </div>
+            </a>
+            <a href="2025/auditing-mo-replication/" class="note">
+                <h3>Open Source Replication of the Auditing Game Model Organism</h3>
+                <div class="description">
+                    We release an open source replication of the model organism from our previous auditing game
+                    paper.
+                </div>
+            </a>
+            <a href="2025/anthropic-fellows-program-2026/" class="note">
+                <h3>Anthropic Fellows Program 2026</h3>
+                <div class="description">
+                    Apply now for our AI safety research fellowship.
+                </div>
+            </a>
+            <a href="2025/selective-gradient-masking" class="note">
+                <h3>Beyond Data Filtering: Knowledge Localization for Capability Removal in LLMs</h3>
+                <div class="description">
+                    We localize dangerous knowledge to a subset of model's parameters, so it can be easily removed
+                    after
+                    training.
+                </div>
+            </a>
+            <div class="date">November 2025</div>
+            <a href="2025/honesty-elicitation/" class="note">
+                <h3>Evaluating honesty and lie detection techniques on a diverse suite dishonest models</h3>
+                <div class="description">
+                    We explore techniques for honesty elicitation and lie detection on a diverse testbed of
+                    dishonest
+                    model organisms.
+                </div>
+            </a>
+            <a href="2025/strengthening-red-teams/" class="note">
+                <h3>Strengthening Red Teams: A Modular Scaffold for Control Evaluations</h3>
+                <div class="description">
+                    We decompose sabotage into constituent skills and use synthetic simulations to strengthen
+                    attacks in
+                    complex environments.
+                </div>
+            </a>
+            <div class="date">October 2025</div>
+            <a href="2025/sabotage-risk-report/" class="note">
+                <h3>Anthropic's Pilot Sabotage Risk Report</h3>
+                <div class="description">
+                    We release a report on the level of risk posed by our deployed models from emerging forms of
+                    misalignment, as of Summer 2025. We conclude that the level of risk is very low but not fully
+                    negligible.
+                </div>
+            </a>
+            <a href="2025/stress-testing-model-specs/" class="note">
+                <h3>Stress-testing model specs reveals character differences among language models</h3>
+                <div class="description">
+                    We generated 300,000+ queries testing value trade-offs in AI models from Anthropic, OpenAI,
+                    Google
+                    DeepMind, and xAI. Each model showed distinct value prioritization patterns, and we found
+                    thousands
+                    of cases of direct contradictions or interpretive ambiguities in model specifications.
+                </div>
+            </a>
+            <a href="2025/believe-it-or-not/" class="note">
+                <h3>Believe It or Not: How Deeply do LLMs Believe Implanted Facts?</h3>
+                <div class="description">
+                    We introduce a framework for validating knowledge editing techniques, finding that synthetic
+                    document fine-tuning sometimes&mdash;but not always&mdash;succeeds at implanting genuine
+                    beliefs.
+                </div>
+            </a>
+            <a href="2025/inoculation-prompting/" class="note">
+                <h3>Inoculation Prompting: Instructing LLMs to misbehave at train-time improves test-time alignment
+                </h3>
+                <div class="description">
+                    For example, we train on demonstrations of test case hacking with training prompts that request
+                    hacks. This model does not learn to hack.
+                </div>
+            </a>
+            <a href="2025/subtle-reasoning/" class="note">
+                <h3>Training fails to elicit subtle reasoning in current language models</h3>
+                <div class="description">
+                    We investigated whether language models can reason about malicious tasks while evading
+                    detection,
+                    finding that monitoring both reasoning and outputs successfully prevents this in current models.
+                </div>
+            </a>
+            <a href="2025/petri/" class="note">
+                <h3>Petri: An open-source auditing tool to accelerate AI safety research</h3>
+                <div class="description">
+                    An open-source framework for automated alignment auditing that uses AI agents to create test
+                    environments for other models.
+                </div>
+            </a>
+            <div class="date">August 2025</div>
+            <a href="2025/openai-findings/" class="note">
+                <h3>
+                    Findings from a Pilot Anthropic&ndash;OpenAI Alignment Evaluation Exercise
+                </h3>
+                <div class="description">
+                    Anthropic and OpenAI conducted simultaneous alignment assessments of each others' models earlier
+                    this year. These are our findings.
+                </div>
+            </a>
+            <a href="2025/pretraining-data-filtering/" class="note">
+                <h3>Enhancing Model Safety through Pretraining Data Filtering</h3>
+                <div class="description">
+                    We experiment with removing harmful information about chemical, biological, radiological and
+                    nuclear (CBRN) weapons from our models' pretraining data.
+                </div>
+            </a>
+            <div class="date">July 2025</div>
+            <a href="2025/automated-auditing/" class="note">
+                <h3>Building and evaluating alignment auditing agents</h3>
+                <div class="description">
+                    In testing, our agents successfully uncover hidden goals, build safety evaluations, and surface
+                    concerning behaviors.
+                </div>
+            </a>
+            <a href="2025/subliminal-learning/" class="note">
+                <h3>Subliminal Learning: Language Models Transmit Behavioral Traits via Hidden Signals in Data</h3>
+                <div class="description">
+                    Training on aligned chains-of-thought generated by a misaligned model can induce misalignment.
+                </div>
+            </a>
+            <a href="2025/inverse-scaling/" class="note">
+                <h3>Inverse Scaling in Test-Time Compute</h3>
+                <div class="description">
+                    We investigate inverse scaling when LLMs have access to more test-time compute.
+                </div>
+            </a>
+            <div class="date">June 2025</div>
+            <a href="https://arxiv.org/abs/2506.18032" class="note">
+                <h3>Why Do Some Language Models Fake Alignment While Others Don't?</h3>
+                <div class="description">
+                    We investigate why in the scenarios where Claude 3 Opus fakes alignment many other language
+                    models
+                    don't do so.
+                </div>
+            </a>
+            <a href="2025/cheap-monitors/" class="note">
+                <h3>Model-Internals Classifiers</h3>
+                <div class="description">
+                    We benchmark approaches to re-using LLM internals to make LLM monitoring more cost-effective.
+                </div>
+            </a>
+            <a href="2025/unsupervised-elicitation/" class="note">
+                <h3>Unsupervised Elicitation</h3>
+                <div class="description">
+                    We introduce a new unsupervised algorithm for eliciting skills from pretrained language models.
+                </div>
+            </a>
+            <div class="date">April 2025</div>
+            <a href="https://www.anthropic.com/research/reasoning-models-dont-say-think" class="paper">
+                <h3>Reasoning Models Don't Always Say What They Think</h3>
+                <div class="byline">Chen et al., 2025</div>
+                <div class="description">
+                    We find that reasoning models don't always accurately verbalize their reasoning. This casts
+                    doubt on
+                    whether monitoring chains-of-thought (CoT) will be enough to reliably catch safety issues.
+                </div>
+            </a>
+            <a href="https://drive.google.com/drive/folders/1l0pkcZxvFwMtczst_hhiCC44v-IiODlY?usp=sharing" class="note">
+                <h3>
+                    Publicly Releasing CoT Faithfulness Evaluations
+                </h3>
+                <div class="description">
+                    We release the datasets used in our paper "Reasoning Models Don't Always Say What They Think"
+                    for
+                    public use.
+                </div>
+            </a>
+            <a href="2025/modifying-beliefs-via-sdf/" class="note">
+                <h3>
+                    Modifying LLM Beliefs with Synthetic Document Finetuning
+                </h3>
+                <div class="description">
+                    We study whether we can modify the beliefs of LLMs and investigate whether doing so could
+                    decrease risk from advanced AI systems.
+                </div>
+            </a>
+            <a href="2025/bumpers/" class="note">
+                <h3>
+                    Putting up Bumpers
+                </h3>
+                <div class="description">
+                    Even if we can't solve alignment, we can solve the problem of catching and fixing misalignment.
+                </div>
+            </a>
+
+            <a href="2025/alignment-faking-revisited/" class="note">
+                <h3>
+                    Alignment Faking Revisited: Improved Classifiers and Open Source Extensions
+                </h3>
+                <div class="description">
+                    We present a replication and extension of an alignment faking model organism.
+                </div>
+            </a>
+            <div class="date">March 2025</div>
+            <a href="https://www.anthropic.com/research/auditing-hidden-objectives" class="paper">
+                <h3>Auditing Language Models for Hidden Objectives</h3>
+                <div class="byline">Marks,* Treutlein,* et al., 2025</div>
+                <div class="description">
+                    We deliberately train a language model with a hidden objective and use it as a testbed for
+                    studying
+                    alignment audits.
+                </div>
+            </a>
+            <a href="2025/distill-paraphrases/" class="note">
+                <h3>
+                    Do reasoning models use their scratchpad like we do? Evidence from distilling paraphrases
+                </h3>
+                <div class="description">
+                    We provide some evidence that Claude 3.7 Sonnet doesn't encode hidden reasoning in its
+                    scratchpad by
+                    showing that training it to use paraphrased versions of the scratchpads does not degrade
+                    performance.
+                </div>
+            </a>
+            <a href="2025/automated-researchers-sandbag/" class="note">
+                <h3>
+                    Automated Researchers Can Subtly Sandbag
+                </h3>
+                <div class="description">
+                    Current models can sandbag ML experiments and research decisions without being detected by
+                    zero-shot
+                    prompted monitors. Claude 3.7 is better at zero-shot sandbagging than Claude 3.5 (new).
+                </div>
+            </a>
+            <div class="date">February 2025</div>
+            <a href="https://www.anthropic.com/research/constitutional-classifiers" class="paper">
+                <h3>Constitutional Classifiers: Defending against Universal Jailbreaks across Thousands of Hours of
+                    Red
+                    Teaming</h3>
+                <div class="byline">Sharma,* Tong,* Mu,* Wei,* Kruthoff,* Goodfriend,* Ong,* Peng et al., 2025</div>
+                <div class="description">
+                    We built a system of constitutional classifiers to prevent jailbreaks. A prototype version of
+                    our
+                    system withstood over 3,000 hours of expert red teaming with no universal jailbreaks found.
+                    Newer
+                    versions of our system also have minimal over-refusals and moderate run-time overhead.
+                </div>
+            </a>
+            <a href="2025/introducing-safeguards-research-team/index.html" class="note">
+                <h3>
+                    Introducing Anthropic's Safeguards Research Team
+                </h3>
+                <div class="description">
+                    We're launching a new research team focused on mitigating the post-deployment risks of AI
+                    systems.
+                </div>
+            </a>
+            <a href="2025/wont-vs-cant/" class="note">
+                <h3>
+                    Won't vs. Can't: Sandbagging-like Behavior from Claude Models
+                </h3>
+                <div class="description">
+                    We find that, when Claude models are presented with a harmful version of a task they can
+                    otherwise
+                    perform,
+                    they sometimes claim they <i>lack the ability</i> to perform the task, rather than simply
+                    refusing
+                    to do it. We discuss the implications of this behavior for AI safety.
+                </div>
+            </a>
+            <a href="2025/summarization-for-monitoring/index.html" class="note">
+                <h3>
+                    Monitoring Computer Use via Hierarchical Summarization
+                </h3>
+                <div class="description">
+                    We introduce hierarchical summarization for monitoring and describe how we use it to protect
+                    Computer Use capabilities.
+                </div>
+            </a>
+            <a href="https://www.anthropic.com/research/forecasting-rare-behaviors" class="paper">
+                <h3>Forecasting Rare Language Model Behaviors
+                </h3>
+                <div class="byline">Jones*, Tong* et al., 2025</div>
+                <div class="description">
+                    We forecast whether risks will occur after a model is deployed — using even very limited sets of
+                    test data.
+                </div>
+            </a>
+
+            <div class="date">January 2025</div>
+            <a href="2025/reward-hacking-ooc/index.html" class="note">
+                <h3>
+                    Training on Documents about Reward Hacking Induces
+                    Reward Hacking
+                </h3>
+                <div class="description">
+                    Does training on documents which discuss (but do not
+                    demonstrate) reward hacks affect a model's propensity to
+                    reward hack?
+                </div>
+            </a>
+            <a href="2025/recommended-directions/index.html" class="note">
+                <h3>
+                    Recommendations for Technical AI Safety Research
+                    Directions
+                </h3>
+                <div class="description">
+                    A collection of technical AI safety research problems
+                    that we'd like to see progress in.
+                </div>
+            </a>
+            <div class="date">December 2024</div>
+            <a href="https://www.anthropic.com/research/alignment-faking" class="paper">
+                <h3>Alignment Faking in Large Language Models</h3>
+                <div class="byline">Greenblatt et al., 2024</div>
+                <div class="description">
+                    We present experiments where Claude often pretends to
+                    have different views during training, while actually
+                    maintaining its original preferences.
+                </div>
+            </a>
+            <a href="2024/how-to-alignment-faking/index.html" class="note">
+                <h3>
+                    How to Replicate and Extend our Alignment Faking Demo
+                </h3>
+                <div class="description">
+                    We describe how to get started with experimenting with
+                    our demonstration of alignment faking, and present some
+                    ideas for future research.
+                </div>
+            </a>
+            <a href="2024/rogue-eval/index.html" class="note">
+                <h3>A Toy Evaluation of Inference Code Tampering</h3>
+                <div class="description">
+                    We describe how highly capable LLMs might disable their
+                    monitor, and evaluate the ability of current LLMs to do
+                    so in a toy setting.
+                </div>
+            </a>
+            <a href="2024/anthropic-fellows-program/index.html" class="note">
+                <h3>
+                    Introducing the Anthropic Fellows Program for AI Safety
+                    Research
+                </h3>
+                <div class="description">
+                    We're launching the Anthropic Fellows Program for AI
+                    Safety Research, a pilot initiative designed to
+                    accelerate AI safety research and foster research
+                    talent.
+                </div>
+            </a>
+            <div class="date">November 2024</div>
+            <a href="https://arxiv.org/abs/2411.07494" class="paper">
+                <h3>Rapid Response: Mitigating LLM Jailbreaks with a Few Examples
+                </h3>
+                <div class="byline">Peng et al., 2024</div>
+                <div class="description">
+                    Ensuring perfect jailbreak robustness is hard. We propose an alternative: adaptive techniques
+                    that
+                    rapidly block new classes of jailbreak as they’re detected.
+                </div>
+            </a>
+            <a href="2024/safety-cases/index.html" class="note">
+                <h3>Three Sketches of ASL-4 Safety Case Components</h3>
+                <div class="description">
+                    We sketch out three hypothetical arguments one could
+                    make to rule out misalignment risks in powerful
+                    near-future models capable of sabotage.
+                </div>
+            </a>
+            <div class="date">October 2024</div>
+            <a href="https://www.anthropic.com/research/sabotage-evaluations" class="paper">
+                <h3>Sabotage Evaluations for Frontier Models</h3>
+                <div class="byline">Benton et al., 2024</div>
+                <div class="description">
+                    How well could AI models mislead us, or secretly
+                    sabotage tasks, if they were trying to? We describe a
+                    novel set of evaluations that test a model's capacity
+                    for sabotage.
+                </div>
+            </a>
+            <div class="date">June 2024</div>
+            <a href="https://www.anthropic.com/research/reward-tampering" class="paper">
+                <h3>
+                    Sycophancy to Subterfuge: Investigating Reward-Tampering
+                    in Large Language Models
+                </h3>
+                <div class="byline">Denison et al., 2024</div>
+                <div class="description">
+                    We show AI models can learn to hack their own reward
+                    system, by generalization from training in simpler
+                    settings.
+                </div>
+            </a>
+            <div class="date">April 2024</div>
+            <a href="https://www.anthropic.com/research/many-shot-jailbreaking" class="paper">
+                <h3>Many-shot Jailbreaking</h3>
+                <div class="byline">Anil et al., 2024</div>
+                <div class="description">
+                    We study a long-context jailbreaking technique that is
+                    effective on most large language models, including those
+                    developed by Anthropic and many of our peers.
+                </div>
+            </a>
+            <a href="https://www.anthropic.com/research/probes-catch-sleeper-agents" class="note">
+                <h3>Simple Probes can Catch Sleeper Agents</h3>
+                <div class="description">
+                    We find that probing, a simple interpretability
+                    technique, can detect when backdoored "sleeper agent"
+                    models are about to behave dangerously, after they
+                    pretend to be safe in training.
+                </div>
+            </a>
+            <div class="date">January 2024</div>
+            <a href="https://www.anthropic.com/research/sleeper-agents-training-deceptive-llms-that-persist-through-safety-training"
+                class="paper">
+                <h3>
+                    Sleeper Agents: Training Deceptive LLMs that Persist
+                    Through Safety Training
+                </h3>
+                <div class="byline">Hubinger et al., 2024</div>
+                <div class="description">
+                    We train LLMs to act secretly malicious. We find that,
+                    despite our best efforts at alignment training,
+                    deception still slipped through.
+                </div>
+            </a>
+            <div class="date">October 2023</div>
+            <a href="https://www.anthropic.com/research/specific-versus-general-principles-for-constitutional-ai"
+                class="paper">
+                <h3>
+                    Specific versus General Principles for Constitutional AI
+                </h3>
+                <div class="byline">Kundu et al., 2023</div>
+                <div class="description">
+                    We test whether models can learn general ethical
+                    behaviors from only a single written principle, roughly
+                    stated as "do what's best for humanity."
+                </div>
+            </a>
+            <a href="https://www.anthropic.com/research/towards-understanding-sycophancy-in-language-models"
+                class="paper">
+                <h3>Towards Understanding Sycophancy in Language Models</h3>
+                <div class="byline">Sharma et al., 2023</div>
+                <div class="description">
+                    AI assistants are trained to give responses that humans
+                    like. We show that these systems frequently produce
+                    'sycophantic' responses that appeal to users but are
+                    inaccurate. Our analysis suggests human feedback
+                    contributes to this behavior.
+                </div>
+            </a>
+            <div class="date">August 2023</div>
+            <a href="https://www.anthropic.com/research/studying-large-language-model-generalization-with-influence-functions"
+                class="paper">
+                <h3>
+                    Studying Large Language Model Generalization with
+                    Influence Functions
+                </h3>
+                <div class="byline">Grosse et al., 2023</div>
+                <div class="description">
+                    We use influence functions to find training examples
+                    that contribute to a given model output.
+                </div>
+            </a>
+            <a href="https://www.anthropic.com/research/influence-functions" class="note">
+                <h3>Tracing Model Outputs to the Training Data</h3>
+                <div class="description">
+                    We present a summary of
+                    <i>Studying Large Language Model Generalization with
+                        Influence Functions</i>.
+                </div>
+            </a>
+            <div class="date">July 2023</div>
+            <a href="https://www.anthropic.com/research/measuring-faithfulness-in-chain-of-thought-reasoning"
+                class="paper">
+                <h3>
+                    Measuring Faithfulness in Chain-of-Thought Reasoning
+                </h3>
+                <div class="byline">Lanham et al., 2023</div>
+                <div class="description">
+                    We investigate hypotheses for how language models'
+                    Chain-of-Thought (CoT) reasoning may be unfaithful, by
+                    examining how the model predictions change when we
+                    intervene on the CoT (e.g., by adding mistakes or
+                    paraphrasing it).
+                </div>
+            </a>
+            <a href="https://www.anthropic.com/research/question-decomposition-improves-the-faithfulness-of-model-generated-reasoning"
+                class="paper">
+                <h3>
+                    Question Decomposition Improves the Faithfulness of
+                    Model-Generated Reasoning
+                </h3>
+                <div class="byline">Radhakrishnan et al., 2023</div>
+                <div class="description">
+                    To improve the faithfulness of Chain-of-Thought (CoT)
+                    reasoning, we have models generate their CoT by
+                    decomposing questions into subquestions.
+                </div>
+            </a>
+            <div class="date">December 2022</div>
+            <a href="https://www.anthropic.com/research/discovering-language-model-behaviors-with-model-written-evaluations"
+                class="paper">
+                <h3>
+                    Discovering Language Model Behaviors with Model-Written
+                    Evaluations
+                </h3>
+                <div class="byline">Perez et al., 2022</div>
+                <div class="description">
+                    We develop an automated way to generate language model
+                    (LM) evaluations with LMs, significantly reducing the
+                    effort involved. We test LMs using >150 LM-written
+                    evaluations, uncovering novel LM behaviors.
+                </div>
+            </a>
+            <a href="https://www.anthropic.com/research/constitutional-ai-harmlessness-from-ai-feedback" class="paper">
+                <h3>Constitutional AI: Harmlessness from AI Feedback</h3>
+                <div class="byline">Bai et al., 2022</div>
+                <div class="description">
+                    We introduce Constitutional AI, allowing us to give
+                    language models explicit values determined by a
+                    constitution, rather than values determined implicitly
+                    via large-scale human feedback.
+                </div>
+            </a>
+            <div class="date">November 2022</div>
+            <a href="https://www.anthropic.com/research/measuring-progress-on-scalable-oversight-for-large-language-models"
+                class="paper">
+                <h3>
+                    Measuring Progress on Scalable Oversight for Large
+                    Language Models
+                </h3>
+                <div class="byline">Bowman et al., 2022</div>
+                <div class="description">
+                    We show how humans could use AI systems to better
+                    oversee other AI systems, and demonstrate some
+                    proof-of-concept results where a language model improves
+                    human performance at a task.
+                </div>
+            </a>
+            <div class="date">July 2022</div>
+            <a href="https://www.anthropic.com/research/language-models-mostly-know-what-they-know" class="paper">
+                <h3>Language Models (Mostly) Know What They Know</h3>
+                <div class="byline">Kadavath et al., 2022</div>
+                <div class="description">
+                    We show that language models can evaluate whether what
+                    they say is true, and predict ahead of time whether
+                    they'll be able to answer questions correctly.
+                </div>
+            </a>
+            <div class="date">April 2022</div>
+            <a href="https://www.anthropic.com/research/training-a-helpful-and-harmless-assistant-with-reinforcement-learning-from-human-feedback"
+                class="paper">
+                <h3>
+                    Training a Helpful and Harmless Assistant with
+                    Reinforcement Learning from Human Feedback
+                </h3>
+                <div class="byline">Bai et al., 2022</div>
+                <div class="description">
+                    We train a natural language assistant to be more helpful
+                    and harmless by using reinforcement learning from human
+                    feedback (RLHF).
+                </div>
+            </a>
+        </div>
+        <h2>About the Alignment Science Blog</h2>
+        <div class="info">
+            <p>
+                We are Anthropic's
+                <a href="https://www.anthropic.com/research#alignment">Alignment Science team</a>. We do machine
+                learning research on the problem of
+                steering and controlling future powerful AI systems, as well
+                as understanding and evaluating the risks that they pose.
+                Welcome to our blog!
+            </p>
+
+            <p>
+                This blog is inspired by the informal updates on our
+                Interpretability team's
+                <a href="https://transformer-circuits.pub/">Transformer Circuits thread</a>. We'll use it to release
+                research notes and early findings
+                that we don't think warrant a full publication, but might
+                nonetheless be useful to others working on similar problems.
+            </p>
+
+            <p>
+                P.S.
+                <a href="https://boards.greenhouse.io/anthropic/jobs/4009165008">we're hiring</a>!
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -40,9 +40,10 @@
 
 - 主站 research/engineering 文章页**无 `article:published_time`、无 `<time datetime>`、无 JSON-LD 日期**；og:title 必有。老文章日期来源：实现时验证 RSC payload（`self.__next_f`）是否含 `publishedOn`，否则回退 sitemap `lastmod`。
 - sitemap 存在**跨栏目 307 重定向**（如 `/research/building-effective-agents` → `/engineering/building-effective-agents`）→ 元数据回填时跟随重定向，按最终 URL 规范化去重。
-- alignment/circuits 是 Quarto 静态站，**无 `<article>`/`<main>` 标签**——现有 `ARTICLE_SCRIPT` 选择器链会落空，正文容器选择器必须按源参数化（Quarto: `#quarto-content` 类）。
-- claude.com 文章页 og 标签属性顺序不固定（`content` 可在 `property` 前）——正则提取会漏，DOM querySelector 属性选择器不受影响；应用内提取必须用 DOM 方式。
-- **claude.com 直连超时（DNS 污染/封锁）**，经系统代理可达。anthropic.com 主站与两个子站直连可达。
+- alignment/circuits 文章页是 **Distill.pub 模板**：正文容器 `<d-article>`、标题 `<d-title><h1>`，无 `<article>`/`<main>`/`#quarto-content`——现有 `ARTICLE_SCRIPT` 选择器链会落空，正文容器选择器必须按源参数化。（2026-08-08 用真实页面 fixture 复核，修正了"Quarto"的初判。）
+- claude.com 文章页：有 `<main>` 容器；og 标签属性顺序不固定（`content` 可在 `property` 前）——正则提取会漏，DOM querySelector 属性选择器或双顺序正则不受影响。
+- 主站老文章页 **RSC payload 含 `\"publishedOn\":\"2025-04-24T10:59:00.000Z\"`**（转义形式）→ 日期回退链第一级已确认存在；其后 JSON-LD → 正文日期文本 → sitemap `lastmod`。
+- **claude.com 直连超时（DNS 污染/封锁）**，经系统代理可达（已实测：系统代理 127.0.0.1:7892 下 sitemap 3389 URL、英文 `/blog/<slug>` 204 篇）。anthropic.com 主站与两个子站直连可达。
 
 ## 架构总览
 
@@ -83,7 +84,7 @@ export interface AnthropicSource {
   linkPrefix?: string              // 主站: '/engineering/' 等；product: '/blog/'
   sitemapInclude?: RegExp          // product: 仅英文 ^https://claude\.com/blog/[^/]+$
   excludePrefixes?: string[]       // research: ['/research/team/']
-  contentSelectors?: string[]      // 正文容器选择器，缺省用现有链；Quarto 两站加 '#quarto-content'
+  contentSelectors?: string[]      // 正文容器选择器，缺省用现有链；Distill 两站加 'd-article'
 }
 ```
 
@@ -114,7 +115,7 @@ export interface AnthropicSource {
 - `rss` 策略：解析 Atom entry（title/link/updated/summary）。注意 entry URL 以 `/index.html` 结尾，规范化时保留原样（作为去重 key）。
 - **重定向去重**：任何源内/跨源出现最终 URL 相同的文章，保留先发现者（按 ANTHROPIC_SOURCES 顺序），后者丢弃。
 
-**importArticle**：`ARTICLE_SCRIPT` 内容选择器链按 `contentSelectors` 参数化；主站用现有链，alignment/circuits 前置 `#quarto-content`，product 用 `main` 链（实现时验证）。日期解析器按源适配（JSON-LD `datePublished` 支持 "Aug 12, 2025" 格式）。
+**importArticle**：`ARTICLE_SCRIPT` 内容选择器链按 `contentSelectors` 参数化；主站用现有链，alignment/circuits 前置 `d-article`，product 前置 `main`（均已用真实 fixture 验证）。日期解析器按源适配（JSON-LD `datePublished` 支持 "Aug 12, 2025" 格式）。
 
 **日期回退链**（sitemap 老文章）：RSC payload `publishedOn`（实现时验证是否存在）→ JSON-LD → og → sitemap `lastmod`。每篇文章必须最终有日期（验收要求）。
 
@@ -203,10 +204,12 @@ chunk 输出 `context` 字段，但 blog v2 校验器 `isValidGuideBlogV2` 要�
 | 首次回填 458 篇耗时 | 并发 4-6 + 持久化缓存 + 后台渐进渲染，仅首次 |
 | research 老文章日期字段不存在 | 回退链最后一级 sitemap lastmod 兜底，保证每篇有日期 |
 | alignment 与 research 双发文章重复 | 不同栏目各自保留（两边出处都真实）；跨源重定向到同一 URL 的才规范化去重 |
-| Quarto 站正文提取结构差异 | 每源 contentSelectors 参数化 + fixture 契约测试 |
+| Distill 站正文提取结构差异 | 每源 contentSelectors 参数化 + fixture 契约测试 |
 
-## 实现时待验证清单（阻塞项需在编码前确认）
+## 实现时待验证清单（2026-08-08 已全部验证关闭）
 
-1. research 老文章页 RSC payload 是否含 `publishedOn`（决定日期回退链第一级）。
-2. claude.com/blog 正文容器选择器（`main` 链是否够）。
-3. Quarto 两站 `#quarto-content` 选择器在 alignment/circuits 文章页均成立。
+1. ~~research 老文章页 RSC payload 是否含 `publishedOn`~~ → **含**，日期回退链第一级成立。
+2. ~~claude.com/blog 正文容器~~ → `<main>` 成立；og/JSON-LD `datePublished` 齐全。
+3. ~~Quarto `#quarto-content`~~ → 两站实为 **Distill 模板**，正文容器是 `<d-article>`（真实 fixture 复核）。
+
+真实页面 fixture 已落盘 `tests/fixtures/blog-sources/`（11 个文件，含两站 sitemap、四个索引/feed、四篇代表文章页），契约测试不依赖网络。

@@ -1,0 +1,452 @@
+<?xml version='1.0' encoding='utf-8'?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Transformer Circuits Thread</title>
+  <subtitle>Anthropic's Interpretability Research</subtitle>
+  <link href="https://transformer-circuits.pub/feed.xml" rel="self" />
+  <link href="https://transformer-circuits.pub/" />
+  <id>https://transformer-circuits.pub/</id>
+  <updated>2026-07-06T00:00:00+00:00</updated>
+  <author>
+    <name>Anthropic Interpretability Team</name>
+  </author>
+  <entry>
+    <title>Verbalizable Representations Form a Global Workspace in Language Models</title>
+    <link href="https://transformer-circuits.pub/2026/workspace/index.html" />
+    <id>https://transformer-circuits.pub/2026/workspace/index.html</id>
+    <updated>2026-07-06T00:00:00+00:00</updated>
+    <summary>We find that Claude maintains a small, privileged set of representations it can report on, control, and reason with, atop a much larger volume of automatic processing.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — June 2026</title>
+    <link href="https://transformer-circuits.pub/2026/june-update/index.html" />
+    <id>https://transformer-circuits.pub/2026/june-update/index.html</id>
+    <updated>2026-06-30T00:00:00+00:00</updated>
+    <summary>A short update on turn-averaged sparse autoencoders.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — May 2026</title>
+    <link href="https://transformer-circuits.pub/2026/may-update/index.html" />
+    <id>https://transformer-circuits.pub/2026/may-update/index.html</id>
+    <updated>2026-06-01T00:00:00+00:00</updated>
+    <summary>A short update on understanding features through downstream connections.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Natural Language Autoencoders Produce Unsupervised Explanations of LLM Activations</title>
+    <link href="https://transformer-circuits.pub/2026/nla/index.html" />
+    <id>https://transformer-circuits.pub/2026/nla/index.html</id>
+    <updated>2026-05-07T00:00:00+00:00</updated>
+    <summary>We train Claude to translate its internal state into natural language.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>HeadVis</title>
+    <link href="https://transformer-circuits.pub/2026/headvis/index.html" />
+    <id>https://transformer-circuits.pub/2026/headvis/index.html</id>
+    <updated>2026-05-04T00:00:00+00:00</updated>
+    <summary>We develop an interactive visualization tool to help us understand the behaviors of attention heads in language models.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Emotion Concepts and their Function in a Large Language Model</title>
+    <link href="https://transformer-circuits.pub/2026/emotions/index.html" />
+    <id>https://transformer-circuits.pub/2026/emotions/index.html</id>
+    <updated>2026-04-02T00:00:00+00:00</updated>
+    <summary>We find representations of emotion concepts in Claude Sonnet 4.5 and show that they causally influence its outputs.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Circuits Cross-Post — Activation Oracles</title>
+    <link href="https://alignment.anthropic.com/2025/activation-oracles/" />
+    <id>https://alignment.anthropic.com/2025/activation-oracles/</id>
+    <updated>2025-12-19T00:00:00+00:00</updated>
+    <summary>We train language models to answer questions about their own activations in natural language.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — November 2025</title>
+    <link href="https://transformer-circuits.pub/2025/november-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/november-update/index.html</id>
+    <updated>2025-11-26T00:00:00+00:00</updated>
+    <summary>A short update on harm pressure.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Emergent Introspective Awareness in Large Language Models</title>
+    <link href="https://transformer-circuits.pub/2025/introspection/index.html" />
+    <id>https://transformer-circuits.pub/2025/introspection/index.html</id>
+    <updated>2025-10-29T00:00:00+00:00</updated>
+    <summary>We find evidence that language models can introspect on their internal states.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — October 2025</title>
+    <link href="https://transformer-circuits.pub/2025/october-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/october-update/index.html</id>
+    <updated>2025-10-24T00:00:00+00:00</updated>
+    <summary>Small updates on visual features and dictionary initialization.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>When Models Manipulate Manifolds: The Geometry of a Counting Task</title>
+    <link href="https://transformer-circuits.pub/2025/linebreaks/index.html" />
+    <id>https://transformer-circuits.pub/2025/linebreaks/index.html</id>
+    <updated>2025-10-21T00:00:00+00:00</updated>
+    <summary>We find geometric structure underlying the mechanisms of a fundamental language model behavior.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — September 2025</title>
+    <link href="https://transformer-circuits.pub/2025/september-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/september-update/index.html</id>
+    <updated>2025-09-29T00:00:00+00:00</updated>
+    <summary>A small update on features and in-context learning.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — August 2025</title>
+    <link href="https://transformer-circuits.pub/2025/august-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/august-update/index.html</id>
+    <updated>2025-08-28T00:00:00+00:00</updated>
+    <summary>A small update: How does a persona modify the assistant’s response?</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>A Toy Model of Mechanistic (Un)Faithfulness</title>
+    <link href="https://transformer-circuits.pub/2025/faithfulness-toy-model/index.html" />
+    <id>https://transformer-circuits.pub/2025/faithfulness-toy-model/index.html</id>
+    <updated>2025-08-07T00:00:00+00:00</updated>
+    <summary>When transcoders go awry.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Tracing Attention Computation Through Feature Interactions</title>
+    <link href="https://transformer-circuits.pub/2025/attention-qk/index.html" />
+    <id>https://transformer-circuits.pub/2025/attention-qk/index.html</id>
+    <updated>2025-07-31T00:00:00+00:00</updated>
+    <summary>We describe and apply a method to explain attention patterns in terms of feature interactions, and integrate this information into attribution graphs.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>A Toy Model of Interference Weights</title>
+    <link href="https://transformer-circuits.pub/2025/interference-weights/index.html" />
+    <id>https://transformer-circuits.pub/2025/interference-weights/index.html</id>
+    <updated>2025-07-29T00:00:00+00:00</updated>
+    <summary>Unpacking "interference weights" in some more depth.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Sparse mixtures of linear transforms</title>
+    <link href="https://transformer-circuits.pub/2025/bulk-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/bulk-update/index.html</id>
+    <updated>2025-07-25T00:00:00+00:00</updated>
+    <summary>We investigate sparse mixture of linear transforms (MOLT), a new approach to transcoders.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — July 2025</title>
+    <link href="https://transformer-circuits.pub/2025/july-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/july-update/index.html</id>
+    <updated>2025-07-25T00:00:00+00:00</updated>
+    <summary>A collection of small updates: revisiting A Mathematical Framework and applications of interpretability to biology.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Automated Auditing</title>
+    <link href="https://alignment.anthropic.com/2025/automated-auditing/" />
+    <id>https://alignment.anthropic.com/2025/automated-auditing/</id>
+    <updated>2025-07-24T00:00:00+00:00</updated>
+    <summary>A note on using agents to perform automated alignment audits, including using interpretability tools.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — April 2025</title>
+    <link href="https://transformer-circuits.pub/2025/april-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/april-update/index.html</id>
+    <updated>2025-04-29T00:00:00+00:00</updated>
+    <summary>A collection of small updates: jailbreaks, dense features, and spinning up on interpretability.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Progress on Attention</title>
+    <link href="https://transformer-circuits.pub/2025/attention-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/attention-update/index.html</id>
+    <updated>2025-04-28T00:00:00+00:00</updated>
+    <summary>An update on our progress studying attention.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>On the Biology of a Large Language Model</title>
+    <link href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html" />
+    <id>https://transformer-circuits.pub/2025/attribution-graphs/biology.html</id>
+    <updated>2025-03-27T00:00:00+00:00</updated>
+    <summary>We investigate the internal mechanisms used by Claude 3.5 Haiku — Anthropic's lightweight production model — in a variety of contexts.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Circuit Tracing: Revealing Computational Graphs in Language Models</title>
+    <link href="https://transformer-circuits.pub/2025/attribution-graphs/methods.html" />
+    <id>https://transformer-circuits.pub/2025/attribution-graphs/methods.html</id>
+    <updated>2025-03-27T00:00:00+00:00</updated>
+    <summary>We describe an approach to tracing the "step-by-step" computation involved when a model responds to a single prompt.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Insights on Crosscoder Model Diffing</title>
+    <link href="https://transformer-circuits.pub/2025/crosscoder-diffing-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/crosscoder-diffing-update/index.html</id>
+    <updated>2025-02-19T00:00:00+00:00</updated>
+    <summary>A preliminary note on using crosscoders to diff models.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — January 2025</title>
+    <link href="https://transformer-circuits.pub/2025/january-update/index.html" />
+    <id>https://transformer-circuits.pub/2025/january-update/index.html</id>
+    <updated>2025-01-27T00:00:00+00:00</updated>
+    <summary>A collection of small updates: dictionary learning optimization techniques.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Stage-Wise Model Diffing</title>
+    <link href="https://transformer-circuits.pub/2024/model-diffing/index.html" />
+    <id>https://transformer-circuits.pub/2024/model-diffing/index.html</id>
+    <updated>2024-12-11T00:00:00+00:00</updated>
+    <summary>A preliminary note on model diffing through dictionary fine-tuning.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Sparse Crosscoders for Cross-Layer Features and Model Diffing</title>
+    <link href="https://transformer-circuits.pub/2024/crosscoders/index.html" />
+    <id>https://transformer-circuits.pub/2024/crosscoders/index.html</id>
+    <updated>2024-10-25T00:00:00+00:00</updated>
+    <summary>A preliminary note on a way to get consistent features across layers, and even models.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Using Dictionary Learning Features as Classifiers</title>
+    <link href="https://transformer-circuits.pub/2024/features-as-classifiers/index.html" />
+    <id>https://transformer-circuits.pub/2024/features-as-classifiers/index.html</id>
+    <updated>2024-10-16T00:00:00+00:00</updated>
+    <summary>A preliminary note comparing feature-based and raw-activation based harmfulness classifiers.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — September 2024</title>
+    <link href="https://transformer-circuits.pub/2024/september-update/index.html" />
+    <id>https://transformer-circuits.pub/2024/september-update/index.html</id>
+    <updated>2024-10-01T00:00:00+00:00</updated>
+    <summary>A collection of small updates: investigating successor heads, oversampling data in SAEs.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — August 2024</title>
+    <link href="https://transformer-circuits.pub/2024/august-update/index.html" />
+    <id>https://transformer-circuits.pub/2024/august-update/index.html</id>
+    <updated>2024-09-06T00:00:00+00:00</updated>
+    <summary>A collection of small updates: interpretability evals, reproducing self-explanation.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — July 2024</title>
+    <link href="https://transformer-circuits.pub/2024/july-update/index.html" />
+    <id>https://transformer-circuits.pub/2024/july-update/index.html</id>
+    <updated>2024-07-31T00:00:00+00:00</updated>
+    <summary>A collection of small updates: five hurdles, linear representations, dark matter, pivot tables, feature sensitivity.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — June 2024</title>
+    <link href="https://transformer-circuits.pub/2024/june-update/index.html" />
+    <id>https://transformer-circuits.pub/2024/june-update/index.html</id>
+    <updated>2024-06-28T00:00:00+00:00</updated>
+    <summary>A collection of small updates: topk and gated SAE investigation.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet</title>
+    <link href="https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html" />
+    <id>https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html</id>
+    <updated>2024-05-21T00:00:00+00:00</updated>
+    <summary>Using a sparse autoencoder, we extract a large number of interpretable features from Claude 3 Sonnet. Some appear to be safety-relevant.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — April 2024</title>
+    <link href="https://transformer-circuits.pub/2024/april-update/index.html" />
+    <id>https://transformer-circuits.pub/2024/april-update/index.html</id>
+    <updated>2024-04-26T00:00:00+00:00</updated>
+    <summary>A collection of small updates from the Anthropic Interpretability Team.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — March 2024</title>
+    <link href="https://transformer-circuits.pub/2024/march-update/index.html" />
+    <id>https://transformer-circuits.pub/2024/march-update/index.html</id>
+    <updated>2024-03-21T00:00:00+00:00</updated>
+    <summary>A collection of small updates from the Anthropic Interpretability Team.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Reflections on Qualitative Research</title>
+    <link href="https://transformer-circuits.pub/2024/qualitative-essay/index.html" />
+    <id>https://transformer-circuits.pub/2024/qualitative-essay/index.html</id>
+    <updated>2024-03-08T00:00:00+00:00</updated>
+    <summary>Some opinionated thoughts on why interpretability research may have qualitative aspects be more central than we're used to in other fields.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — February 2024</title>
+    <link href="https://transformer-circuits.pub/2024/feb-update/index.html" />
+    <id>https://transformer-circuits.pub/2024/feb-update/index.html</id>
+    <updated>2024-02-23T00:00:00+00:00</updated>
+    <summary>A collection of small updates from the Anthropic Interpretability Team.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — January 2024</title>
+    <link href="https://transformer-circuits.pub/2024/jan-update/index.html" />
+    <id>https://transformer-circuits.pub/2024/jan-update/index.html</id>
+    <updated>2024-01-23T00:00:00+00:00</updated>
+    <summary>A collection of small updates from the Anthropic Interpretability Team.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Towards Monosemanticity: Decomposing Language Models With Dictionary Learning</title>
+    <link href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" />
+    <id>https://transformer-circuits.pub/2023/monosemantic-features/index.html</id>
+    <updated>2023-10-04T00:00:00+00:00</updated>
+    <summary>Using a sparse autoencoder, we extract a large number of interpretable features from a one-layer transformer.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — July 2023</title>
+    <link href="https://transformer-circuits.pub/2023/july-update/index.html" />
+    <id>https://transformer-circuits.pub/2023/july-update/index.html</id>
+    <updated>2023-07-18T00:00:00+00:00</updated>
+    <summary>A collection of small updates from the Anthropic Interpretability Team.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Circuits Updates — May 2023</title>
+    <link href="https://transformer-circuits.pub/2023/may-update/index.html" />
+    <id>https://transformer-circuits.pub/2023/may-update/index.html</id>
+    <updated>2023-05-24T00:00:00+00:00</updated>
+    <summary>A collection of small updates from the Anthropic Interpretability Team.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Interpretability Dreams</title>
+    <link href="https://transformer-circuits.pub/2023/interpretability-dreams/index.html" />
+    <id>https://transformer-circuits.pub/2023/interpretability-dreams/index.html</id>
+    <updated>2023-05-24T00:00:00+00:00</updated>
+    <summary>Our present research aims to create a foundation for mechanistic interpretability research. In doing so, it's important to keep sight of what we're trying to lay the foundations for.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Distributed Representations: Composition &amp; Superposition</title>
+    <link href="https://transformer-circuits.pub/2023/superposition-composition/index.html" />
+    <id>https://transformer-circuits.pub/2023/superposition-composition/index.html</id>
+    <updated>2023-05-04T00:00:00+00:00</updated>
+    <summary>An informal note on how "distributed representations" might be understood as two different, competing strategies — "composition" and "superposition" — with quite different properties.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Privileged Bases in the Transformer Residual Stream</title>
+    <link href="https://transformer-circuits.pub/2023/privileged-basis/index.html" />
+    <id>https://transformer-circuits.pub/2023/privileged-basis/index.html</id>
+    <updated>2023-03-16T00:00:00+00:00</updated>
+    <summary>Our mathematical theories of the Transformer architecture suggest that individual coordinates in the residual stream should have no special significance, but recent work has shown that this observation is false in practice. We investigate this phenomenon and provisionally conclude that the per-dimension normalizers in the Adam optimizer are to blame for the effect.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Superposition, Memorization, and Double Descent</title>
+    <link href="https://transformer-circuits.pub/2023/toy-double-descent/index.html" />
+    <id>https://transformer-circuits.pub/2023/toy-double-descent/index.html</id>
+    <updated>2023-01-05T00:00:00+00:00</updated>
+    <summary>We have little mechanistic understanding of how deep learning models overfit to their training data, despite it being a central problem. Here we extend our previous work on toy models to shed light on how models generalize beyond their training data.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Toy Models of Superposition</title>
+    <link href="https://transformer-circuits.pub/2022/toy_model/index.html" />
+    <id>https://transformer-circuits.pub/2022/toy_model/index.html</id>
+    <updated>2022-09-14T00:00:00+00:00</updated>
+    <summary>Neural networks often seem to pack many unrelated concepts into a single neuron - a puzzling phenomenon known as 'polysemanticity'. In our latest interpretability work, we build toy models where the origins and dynamics of polysemanticity can be fully understood.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Softmax Linear Units</title>
+    <link href="https://transformer-circuits.pub/2022/solu/index.html" />
+    <id>https://transformer-circuits.pub/2022/solu/index.html</id>
+    <updated>2022-06-27T00:00:00+00:00</updated>
+    <summary>An alternative activation function increases the fraction of neurons which appear to correspond to human-understandable concepts.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Mechanistic Interpretability, Variables, and the Importance of Interpretable Bases</title>
+    <link href="https://transformer-circuits.pub/2022/mech-interp-essay/index.html" />
+    <id>https://transformer-circuits.pub/2022/mech-interp-essay/index.html</id>
+    <updated>2022-06-27T00:00:00+00:00</updated>
+    <summary>An informal note on intuitions related to mechanistic interpretability.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>In-Context Learning and Induction Heads</title>
+    <link href="https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html" />
+    <id>https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html</id>
+    <updated>2022-03-08T00:00:00+00:00</updated>
+    <summary>An exploration of the hypothesis that induction heads are the primary mechanism behind in-context learning. We also report the existence of a previously unknown phase change in transformers language models.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>A Mathematical Framework for Transformer Circuits</title>
+    <link href="https://transformer-circuits.pub/2021/framework/index.html" />
+    <id>https://transformer-circuits.pub/2021/framework/index.html</id>
+    <updated>2021-12-22T00:00:00+00:00</updated>
+    <summary>Our early mathematical framework for reverse engineering models, demonstrated by reverse engineering small toy models.</summary>
+    <category term="paper" />
+  </entry>
+  <entry>
+    <title>Exercises</title>
+    <link href="https://transformer-circuits.pub/2021/exercises/index.html" />
+    <id>https://transformer-circuits.pub/2021/exercises/index.html</id>
+    <updated>2021-12-17T00:00:00+00:00</updated>
+    <summary>Some exercises we've developed to improve our understanding of how neural networks implement algorithms at the parameter level.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Videos</title>
+    <link href="https://transformer-circuits.pub/2021/videos/index.html" />
+    <id>https://transformer-circuits.pub/2021/videos/index.html</id>
+    <updated>2021-12-17T00:00:00+00:00</updated>
+    <summary>Very rough informal talks as we search for a way to reverse engineering transformers.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>PySvelte</title>
+    <link href="https://github.com/anthropics/PySvelte" />
+    <id>https://github.com/anthropics/PySvelte</id>
+    <updated>2021-12-23T00:00:00+00:00</updated>
+    <summary>One approach to bridging Python and web-based interactive diagrams for interpretability research.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Garcon</title>
+    <link href="https://transformer-circuits.pub/2021/garcon/index.html" />
+    <id>https://transformer-circuits.pub/2021/garcon/index.html</id>
+    <updated>2021-12-22T00:00:00+00:00</updated>
+    <summary>A description of our tooling for doing interpretability on large models.</summary>
+    <category term="note" />
+  </entry>
+  <entry>
+    <title>Original Distill Circuits Thread</title>
+    <link href="https://distill.pub/2020/circuits/" />
+    <id>https://distill.pub/2020/circuits/</id>
+    <updated>2020-03-10T00:00:00+00:00</updated>
+    <summary>Our exploration of Transformers builds heavily on the original Circuits thread on Distill.</summary>
+    <category term="paper" />
+  </entry>
+</feed>
