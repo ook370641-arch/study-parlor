@@ -83,11 +83,14 @@ export function getCurrentState(): StateJson {
 }
 
 export function patchState(patch: Partial<StateJson>): void {
-  let merged = { ...loadState(), ...patch }
+  // 合并基座从磁盘读（与 state:get 一致），不用启动时缓存的 currentState——
+  // 否则 E2E 在 app 启动后 seed 的 state.json 会被过期缓存（默认值）覆盖掉。
+  const raw = safeReadJson(getStateFile(), { fallback: DEFAULT })
+  let merged = { ...DEFAULT, ...raw, ...patch }
 
   // 深度合并 ui 字段，防止后续 patch 覆盖已有字段
   if (patch.ui) {
-    merged = { ...merged, ui: { ...loadState().ui, ...patch.ui } }
+    merged = { ...merged, ui: { ...raw.ui, ...patch.ui } }
   }
 
   // LRU: 限制 topicContinueSuggestions 条目数
