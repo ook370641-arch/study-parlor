@@ -9,6 +9,7 @@ import {
   removeCollectionEntry,
   appendCollectionQA,
   updateCollectionNote,
+  updateCollectionQA,
 } from '@electron/lib/collection-store'
 import type { BriefingCollectionEntry } from '@shared/index'
 
@@ -101,6 +102,30 @@ describe('collection-store', () => {
   it('updateNote 对不存在的 id 静默跳过', () => {
     addCollectionEntry(dir, makeEntry())
     expect(() => updateCollectionNote(dir, 'nope', 'x')).not.toThrow()
+  })
+
+  it('updateQA 整体替换 qa 且不动游标', () => {
+    addCollectionEntry(dir, makeEntry({
+      id: 'c-1',
+      qa: [{ role: 'user', content: '这是什么' }, { role: 'assistant', content: '回答一' }],
+      qaMessageCount: 2,
+    }))
+    updateCollectionQA(dir, 'c-1', [{ role: 'assistant', content: '回答一（删改后）' }])
+    const entry = readCollection(dir).entries[0]
+    expect(entry.qa).toEqual([{ role: 'assistant', content: '回答一（删改后）' }])
+    expect(entry.qaMessageCount).toBe(2)
+    expect(Date.parse(entry.updatedAt)).toBeGreaterThan(Date.parse('2026-08-04T10:00:00.000Z'))
+  })
+
+  it('updateQA 空数组清空旁注', () => {
+    addCollectionEntry(dir, makeEntry({ id: 'c-1', qa: [{ role: 'user', content: 'q' }] }))
+    updateCollectionQA(dir, 'c-1', [])
+    expect(readCollection(dir).entries[0].qa).toEqual([])
+  })
+
+  it('updateQA 对不存在的 id 静默跳过', () => {
+    addCollectionEntry(dir, makeEntry())
+    expect(() => updateCollectionQA(dir, 'nope', [{ role: 'user', content: 'x' }])).not.toThrow()
   })
 
   it('主文件损坏后从 .bak 恢复上次写入的数据', () => {

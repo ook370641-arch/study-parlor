@@ -6,6 +6,7 @@ const mockIpc = {
   collectionRemoveEntry: vi.fn(),
   collectionAppendQA: vi.fn(),
   collectionUpdateNote: vi.fn(),
+  collectionUpdateQA: vi.fn(),
 }
 vi.mock('@/lib/ipc', () => ({ ipc: new Proxy({}, { get: (_, k) => mockIpc[k as keyof typeof mockIpc] ?? (() => Promise.resolve()) }) }))
 
@@ -117,6 +118,20 @@ describe('collection slice', () => {
     useStore.setState({ collection: { entries: [entryOf({ note: '旧' })], loaded: true } })
     await useStore.getState().updateCollectionNote('c-1', ' ')
     expect(useStore.getState().collection.entries[0].note).toBeUndefined()
+  })
+
+  it('updateCollectionQA 写 IPC 并更新本地 qa，游标不动', async () => {
+    useStore.setState({
+      collection: {
+        entries: [entryOf({ qa: [{ role: 'user', content: 'q' }], qaMessageCount: 3 })],
+        loaded: true,
+      },
+    })
+    await useStore.getState().updateCollectionQA('c-1', [{ role: 'user', content: 'q（改）' }])
+    expect(mockIpc.collectionUpdateQA).toHaveBeenCalledWith({ id: 'c-1', qa: [{ role: 'user', content: 'q（改）' }] })
+    const entry = useStore.getState().collection.entries[0]
+    expect(entry.qa).toEqual([{ role: 'user', content: 'q（改）' }])
+    expect(entry.qaMessageCount).toBe(3)
   })
 
   it('syncCollectionQA 只追加游标后的归属消息并推进游标', async () => {

@@ -701,6 +701,7 @@ export type IpcApi = {
   collectionRemoveEntry: (id: string) => Promise<void>
   collectionAppendQA: (args: { id: string; qa: BriefingCollectionQA[]; qaMessageCount: number }) => Promise<void>
   collectionUpdateNote: (args: { id: string; note: string }) => Promise<void>
+  collectionUpdateQA: (args: { id: string; qa: BriefingCollectionQA[] }) => Promise<void>
 
   // Article assistant
   articleAssistantGenerateGuide: (args: {

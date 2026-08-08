@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
+import { localDateString } from '../helpers/test-library'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -15,7 +16,7 @@ test.describe('@p1 briefing annotations persistence', () => {
     await window.locator('[data-testid="briefing-reading-pane"]').waitFor({ state: 'visible', timeout: 30000 })
 
     // Construct the annotations file path from library path + today's date
-    const today = new Date().toISOString().slice(0, 10)
+    const today = localDateString()
     const briefingPath = path.join(testLibraryPath, '夜航简报', `夜航简报-${today}.md`)
     const annotationsPath = briefingPath.replace(/\.md$/, '.annotations.md')
 

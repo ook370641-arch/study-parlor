@@ -185,9 +185,17 @@ export class ArticleAssistantPage {
    * box of the paragraph for callers that need to assert positions.
    */
   async dragSelectFirstParagraph(chars = 120) {
-    const p = this.page.locator('article p').first()
+    // 阅读器外层容器统一带 .briefing-article-body（digest 是 <main>+<div>，anthropic 是 <article>）；
+    // 不能用 'article p'——digest 版式没有 <article>，会永远找不到。
+    const p = this.page.locator('.briefing-article-body p').first()
     await p.waitFor({ state: 'visible', timeout: 15000 })
-    const box = await p.boundingBox()
+    // 导读生成完成后 ArticleBodyChunks 会整体重写文章 DOM，段落可能被瞬时 detach，
+    // waitFor 与 boundingBox 之间存在竞态（waitFor 过了但盒子拿不到）→ 重试直到拿到盒子
+    let box = await p.boundingBox()
+    for (let i = 0; i < 20 && !box; i++) {
+      await p.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {})
+      box = await p.boundingBox()
+    }
     if (!box) throw new Error('article paragraph not found')
     const startX = box.x + 5
     const startY = box.y + box.height / 2

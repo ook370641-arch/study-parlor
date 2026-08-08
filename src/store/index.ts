@@ -21,6 +21,7 @@ import type {
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent,
   ScoutConversationMeta, ScoutMessage, ScoutArticleMeta, GuideProgress,
   BriefingCollectionEntry,
+  BriefingCollectionQA,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -199,7 +200,7 @@ type AppStore = {
   setScoutReaderContent: (content: { body: string | null; title: string | null }) => void
   deleteScoutArticle: (filePath: string) => Promise<void>
 
-  generateBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
+  generateBriefing: (date: string, opts?: { force?: boolean; confirmed?: boolean }) => Promise<void>
   /** 日期列「今日」的查看入口：未生成时只切视图到空态（不发 IPC），
    *  已生成/生成中/生成过失败则委托 generateBriefing（缓存读/观看/冷错误）。
    *  真实生成的唯一入口是空态按钮。 */
@@ -231,7 +232,7 @@ type AppStore = {
   jobBriefingConfig: JobBriefingConfig
   jobProfile: JobProfile
   updateJobProfile: (profile: JobProfile) => Promise<void>
-  generateJobBriefing: (date: string, opts?: { force?: boolean }) => Promise<void>
+  generateJobBriefing: (date: string, opts?: { force?: boolean; confirmed?: boolean }) => Promise<void>
   /** 同 viewBriefingToday，求职域 */
   viewJobBriefingToday: () => Promise<void>
   loadJobBriefingHistory: () => Promise<void>
@@ -348,6 +349,7 @@ type AppStore = {
   collectChunk: (chunkIndex: number) => Promise<void>
   removeCollectionEntry: (id: string) => Promise<void>
   updateCollectionNote: (id: string, note: string) => Promise<void>
+  updateCollectionQA: (id: string, qa: BriefingCollectionQA[]) => Promise<void>
   syncCollectionQA: () => Promise<void>
 
   // 文章旁注助手
@@ -458,6 +460,10 @@ function debounceSaveGuideWidth(patch: Partial<StateJson>) {
     ipc.patchState(patch)
   }, 300)
 }
+
+// 进行中的导读生成（key = contextId）。切换文章/日期不中断后台生成：
+// 完成后无条件落盘，切回时恢复 loading 显示而不重复发起。
+const inFlightGuides = new Map<string, Promise<void>>()
 
 let assistantWidthSaveTimer: ReturnType<typeof setTimeout> | null = null
 function debounceSaveAssistantWidth(patch: Partial<StateJson>) {
@@ -736,7 +742,7 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ pendingReports: next })
   },
 
-  generateBriefing: async (date: string, opts?: { force?: boolean }) => {
+  generateBriefing: async (date: string, opts?: { force?: boolean; confirmed?: boolean }) => {
     set({ collectionViewOpen: false })
     const id = ++briefingViewRequestId
     const today = formatBriefingDate(new Date())
@@ -760,7 +766,7 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingViewingDate: date,
       briefing: { result: null, loading: true, error: null },
       ...(mayGenerate
-        ? { briefingGeneration: { date, status: 'running', error: null, confirmed: false }, briefingStage: 'fetching', briefingStageDetail: null }
+        ? { briefingGeneration: { date, status: 'running', error: null, confirmed: opts?.force === true || opts?.confirmed === true }, briefingStage: 'fetching', briefingStageDetail: null }
         : {}),
     })
 
@@ -928,7 +934,7 @@ export const useStore = create<AppStore>((set, get) => ({
       jobBriefingViewingDate: date,
       jobBriefing: { result: null, loading: true, error: null },
       ...(mayGenerate
-        ? { jobBriefingGeneration: { date, status: 'running', error: null, confirmed: false }, jobBriefingStage: 'scanning-events', jobBriefingStageDetail: null }
+        ? { jobBriefingGeneration: { date, status: 'running', error: null, confirmed: opts?.force === true || opts?.confirmed === true }, jobBriefingStage: 'scanning-events', jobBriefingStageDetail: null }
         : {}),
     })
 
@@ -1800,6 +1806,11 @@ export const useStore = create<AppStore>((set, get) => ({
   loadAssistantGuide: async () => {
     const s = get().assistantSession
     if (!s) return
+    // 该文章的导读正在后台生成：保持 loading 等其回填，跳过读盘避免竞态覆盖
+    if (inFlightGuides.has(s.contextId)) {
+      if (!s.guideLoading) set({ assistantSession: { ...s, guideLoading: true, guideError: null } })
+      return
+    }
     set({ assistantSession: { ...s, guideLoading: true, guideError: null } })
     try {
       const file = await ipc.articleAssistantReadGuide({ parentPath: s.contextId, parentType: s.contextType })
@@ -1910,6 +1921,17 @@ export const useStore = create<AppStore>((set, get) => ({
           else delete next.note
           return next
         }),
+        loaded: true,
+      },
+    })
+  },
+
+  // 精选集内删改旁注：整体替换 qa；游标 qaMessageCount 不动，已删消息不会被同步复活
+  updateCollectionQA: async (id, qa) => {
+    await ipc.collectionUpdateQA({ id, qa })
+    set({
+      collection: {
+        entries: get().collection.entries.map((e) => (e.id === id ? { ...e, qa } : e)),
         loaded: true,
       },
     })
@@ -2108,35 +2130,49 @@ export const useStore = create<AppStore>((set, get) => ({
   },
   generateAssistantGuide: async () => {
     const s = get().assistantSession
-    if (!s || s.guideLoading || s.guide) return
+    if (!s || s.guide) return
+    // 同一文章的生成已在后台进行：恢复 loading 显示即可，不重复发起
+    if (inFlightGuides.has(s.contextId)) {
+      if (!s.guideLoading) set({ assistantSession: { ...s, guideLoading: true, guideError: null } })
+      return
+    }
+    if (s.guideLoading) return
+    const { contextId, contextType } = s
     const entriesTotal = countArticleHeadings(s.articleContent)
     set({ assistantSession: { ...s, guideLoading: true, guideError: null, guideProgress: s.contextType === 'briefing' || s.contextType === 'anthropic-article' ? { stage: 'planning' } : null } })
-    try {
-      const guide = await ipc.articleAssistantGenerateGuide({
-        articleContent: s.articleContent,
-        articleType: s.contextType,
-        articleTitle: s.articleTitle,
-        entriesTotal,
-      })
-      const cur = get().assistantSession
-      if (!cur || cur.contextId !== s.contextId) return
-      set({ assistantSession: { ...cur, guide, guideLoading: false, guideProgress: null } })
+    const run = (async () => {
       try {
-        await ipc.articleAssistantWriteGuide({ parentPath: s.contextId, parentType: s.contextType, guide })
-      } catch {
-        get().showToast('导读已生成但保存失败')
+        const guide = await ipc.articleAssistantGenerateGuide({
+          articleContent: s.articleContent,
+          articleType: s.contextType,
+          articleTitle: s.articleTitle,
+          entriesTotal,
+        })
+        // 无论用户是否已切到别的文章都先落盘——切回时 loadAssistantGuide 直接命中缓存
+        try {
+          await ipc.articleAssistantWriteGuide({ parentPath: contextId, parentType: contextType, guide })
+        } catch {
+          get().showToast('导读已生成但保存失败')
+        }
+        const cur = get().assistantSession
+        if (!cur || cur.contextId !== contextId) return
+        set({ assistantSession: { ...cur, guide, guideLoading: false, guideProgress: null } })
+      } catch (err) {
+        const raw = (err as Error & { code?: string })?.code
+        const code: ArticleAssistantErrorCode = raw === 'GUIDE_JSON_ERROR' ? 'GUIDE_JSON_ERROR' : raw === 'GUIDE_ABORT' ? 'GUIDE_ABORT' : 'GUIDE_LLM_ERROR'
+        const cur = get().assistantSession
+        if (!cur || cur.contextId !== contextId) return
+        if (code === 'GUIDE_ABORT') {
+          set({ assistantSession: { ...cur, guideLoading: false, guideProgress: null } })
+          return
+        }
+        set({ assistantSession: { ...cur, guideLoading: false, guideError: code, guideProgress: null } })
+      } finally {
+        inFlightGuides.delete(contextId)
       }
-    } catch (err) {
-      const raw = (err as Error & { code?: string })?.code
-      const code: ArticleAssistantErrorCode = raw === 'GUIDE_JSON_ERROR' ? 'GUIDE_JSON_ERROR' : raw === 'GUIDE_ABORT' ? 'GUIDE_ABORT' : 'GUIDE_LLM_ERROR'
-      const cur = get().assistantSession
-      if (!cur || cur.contextId !== s.contextId) return
-      if (code === 'GUIDE_ABORT') {
-        set({ assistantSession: { ...cur, guideLoading: false, guideProgress: null } })
-        return
-      }
-      set({ assistantSession: { ...cur, guideLoading: false, guideError: code, guideProgress: null } })
-    }
+    })()
+    inFlightGuides.set(contextId, run)
+    await run
   },
 
   // 写作板设置持久化

@@ -35,8 +35,16 @@ test.describe('@p1 旁注窗口 resize', () => {
   test('拖 se 角向右下：尺寸增大且左上角钉死', async ({ window, testLibraryPath }) => {
     const assistant = await openChatWindow(window, testLibraryPath)
     const win = assistant.chatWindow
-    const before = (await win.boundingBox())!
+    // 聊天窗默认右下锚定（right:24 / bottom:24），SE 向右/向下都会被视口钳制到
+    // ~364px / ~284px，永远到不了 +40；先用标题栏把它拖向左上方，给 SE 双向腾出空间，
+    // 再验证 SE resize 双维增长 + 左上钉死。
+    const initialBox = (await win.boundingBox())!
+    await window.mouse.move(initialBox.x + initialBox.width / 2, initialBox.y + 10)
+    await window.mouse.down()
+    await window.mouse.move(initialBox.x + initialBox.width / 2 - 300, initialBox.y + 10 - 160, { steps: 10 })
+    await window.mouse.up()
 
+    const before = (await win.boundingBox())!
     const se = window.locator('[data-testid="resize-handle-se"]')
     const h = (await se.boundingBox())!
     await window.mouse.move(h.x + h.width / 2, h.y + h.height / 2)

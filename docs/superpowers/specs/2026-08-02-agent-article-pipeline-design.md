@@ -70,7 +70,7 @@ constitution-report/
 
 ## 3. 应用代码改动
 
-为支撑这篇文章引入的全部应用代码变更。新建 7 + 修改 11 = **18 个文件**（含测试）。
+为支撑这篇文章引入的全部应用代码变更。新建 7 + 修改 10 = **17 个文件**（含测试）。
 
 ### 3.1 报告呈现链路（新建 4）
 
@@ -149,14 +149,14 @@ constitution-report/
 | 阶段 | 输入 → 输出 | 做什么 | 调用预算 |
 |---|---|---|---|
 | ① 获取 | URL/文件 → `source/full-text.md` | 抓取/清洗原文，保留权威单源 | ~1 |
-| ② 解构 | 全文 → 章节列表 + 结构数据 | 章节标题提取、层级关系、核心问题 | ~1 |
+| ② 解构 | 全文 → 章节列表 + 结构数据 + `overview.json`(structure/pyramid/chapters 节) | 章节标题提取、层级关系、核心问题 | ~1 |
 | ③ 增读 | 章节 → `annotations.json` | **并行子代理**逐章翻译 + 边栏注解 + 总按 | ~6–8（成本大头） |
-| ④ 研究 | 主题 → `media-coverage.md` / `research-notes.md` | 外部评价、批判视角、概念考据 | ~1–2 |
-| ⑤ 构建 | 数据 → `index.html` | 确定性脚本装配（零 LLM 调用） | 0 |
+| ④ 研究 | 主题 → `media-coverage.md` / `research-notes.md` + `overview.json`(redlines/philosophy/critique/quotes/appendix 节) | 外部评价、批判视角、概念考据、红线/语录/术语提取 | ~1–2 |
+| ⑤ 构建 | `source/` 下 3 个输入（full-text + annotations + overview）→ `node build-report.js` → `index.html` | 确定性脚本装配（零 LLM 调用），按 title 切分原文 | 0 |
 | ⑥ 集成 | 产物 → 应用内可读 | `sp-report://` 协议 + 列表入口 + boot 同步 | 0（一次性基建） |
 | **合计** | | | **~9–12** |
 
-①–④ 是 Agent 工作区（可重跑、可增量）；⑤ 是 `build-report.js`（数据驱动，按 title 匹配切分，弯/直引号归一化）；⑥ 是应用一次性基建，新报告零额外应用代码。
+①–④ 是 Agent 工作区（可重跑、可增量）。产出物对应关系：① → `full-text.md`，②+④ → `overview.json`（§0–§9 全部数据），③ → `annotations.json`（§10 读本数据），④ → `media-coverage.md` + `research-notes.md`。⑤ 是 `build-report.js`（确定性，零 LLM），⑥ 是应用一次性基建——新报告零额外应用代码。
 
 ### annotations.json schema
 

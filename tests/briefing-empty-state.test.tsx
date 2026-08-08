@@ -19,6 +19,7 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantSendMessage: vi.fn(),
     articleAssistantAbort: vi.fn(),
     annotationsRead: vi.fn().mockResolvedValue([]),
+    collectionRead: vi.fn().mockResolvedValue({ version: 1, entries: [] }),
   }
 }))
 
@@ -29,6 +30,7 @@ vi.mock('@/lib/paintings', () => ({
 
 import { useStore } from '@/store'
 import { Briefing } from '@/pages/Briefing'
+import { formatBriefingDate } from '@/lib/format-briefing-date'
 
 describe('Briefing empty state', () => {
   beforeEach(() => {
@@ -59,7 +61,20 @@ describe('Briefing empty state', () => {
     useStore.setState({ generateBriefing: generate })
     render(<Briefing />)
     fireEvent.click(screen.getByTestId('briefing-receive-digest-button'))
-    await waitFor(() => expect(generate).toHaveBeenCalledTimes(1))
+    // 空态按钮是确定的真实生成入口：必须带 confirmed，否则首个进度事件前页面留白
+    await waitFor(() => expect(generate).toHaveBeenCalledWith(formatBriefingDate(new Date()), { confirmed: true }))
+  })
+
+  it('job 空态按钮同样带 confirmed 调用 generateJobBriefing', async () => {
+    const generateJob = vi.fn().mockResolvedValue(undefined)
+    useStore.setState({
+      briefingSource: 'job-briefing',
+      jobBriefing: { result: null, loading: false, error: null },
+      generateJobBriefing: generateJob,
+    })
+    render(<Briefing />)
+    fireEvent.click(screen.getByTestId('briefing-receive-job-button'))
+    await waitFor(() => expect(generateJob).toHaveBeenCalledWith(formatBriefingDate(new Date()), { confirmed: true }))
   })
 
   it('does not show empty state when result exists', () => {

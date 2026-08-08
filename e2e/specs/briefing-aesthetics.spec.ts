@@ -14,7 +14,7 @@ function localToday(): string {
 }
 
 test.describe('@p1 briefing aesthetics', () => {
-  test('academic reading view shows veil and quote band; quote stays out of the md file', async ({ window, testLibraryPath }) => {
+  test('academic reading view shows dark overlay and quote band; quote stays out of the md file', async ({ window, testLibraryPath }) => {
     const today = localToday()
     seedBriefing(testLibraryPath, today)
     const cover = new CoverPage(window)
@@ -23,7 +23,8 @@ test.describe('@p1 briefing aesthetics', () => {
     await window.locator(SELECTORS.briefing.receiveDigestButton).click()
     await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
 
-    await expect(window.locator(SELECTORS.briefing.veil)).toBeVisible()
+    // 全页深色叠加层（7-26 起替代已下线的 BriefingVeil，见 2026-07-26-briefing-polish-batch-design §#0）
+    await expect(window.locator(SELECTORS.briefing.darkOverlay)).toBeVisible()
     const quote = window.locator(SELECTORS.briefing.quoteText)
     await expect(quote.first()).toBeVisible()
     const quoteText = ((await quote.first().textContent()) ?? '').replace(/[""]/g, '')
@@ -39,7 +40,7 @@ test.describe('@p1 briefing aesthetics', () => {
     }
   })
 
-  test('newspaper theme hides veil and quote band', async ({ window, testLibraryPath }) => {
+  test('newspaper theme hides dark overlay and quote band', async ({ window, testLibraryPath }) => {
     const today = localToday()
     seedBriefing(testLibraryPath, today)
     const cover = new CoverPage(window)
@@ -49,7 +50,7 @@ test.describe('@p1 briefing aesthetics', () => {
     await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
 
     await window.locator('[data-testid="briefing-theme-toggle"]').click()
-    await expect(window.locator(SELECTORS.briefing.veil)).toHaveCount(0)
+    await expect(window.locator(SELECTORS.briefing.darkOverlay)).toHaveCount(0)
     await expect(window.locator(SELECTORS.briefing.quoteText)).toHaveCount(0)
   })
 

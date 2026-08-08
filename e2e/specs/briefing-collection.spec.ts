@@ -137,6 +137,56 @@ test.describe('@p1 briefing collection', () => {
     await expect(window.locator('[data-testid^="collection-entry-"]').first()).toContainText('训练数据的去重与过滤')
   })
 
+  test('旁注删改：气泡角色区分 + 编辑回复 + 两步删除 + 重启持久化', async ({ window, testLibraryPath }) => {
+    const assistant = await openDigest(window, testLibraryPath)
+    await assistant.waitForGuideLoaded()
+    await expect(window.getByTestId('chunk-collect-button-0')).toBeVisible({ timeout: 15000 })
+
+    await assistant.openChat()
+    await injectSelection(window, '宪法式 AI')
+    await askAndWait(assistant, '这是什么')
+    await window.getByTestId('chunk-collect-button-0').click()
+
+    await window.getByTestId('briefing-collection-entry').click()
+    const entryCard = window.locator('[data-testid^="collection-entry-"]').first()
+    const entryId = (await entryCard.getAttribute('data-testid'))!.replace('collection-entry-', '')
+
+    // 气泡角色区分（UI 出口断言）：用户右列带引文，助手左列「助手」
+    const userBubble = window.getByTestId(`collection-qa-message-${entryId}-0`)
+    const aiBubble = window.getByTestId(`collection-qa-message-${entryId}-1`)
+    await expect(userBubble).toHaveAttribute('data-role', 'user')
+    await expect(userBubble).toContainText('「宪法式 AI」')
+    await expect(aiBubble).toHaveAttribute('data-role', 'assistant')
+    await expect(aiBubble).toContainText('助手')
+
+    // 编辑助手回复（删改长回复）→ Ctrl+Enter 保存
+    await aiBubble.hover()
+    await window.getByTestId(`collection-qa-edit-${entryId}-1`).click()
+    await window.getByTestId(`collection-qa-input-${entryId}-1`).fill('精简后的回答')
+    await window.getByTestId(`collection-qa-input-${entryId}-1`).press('Control+Enter')
+    await expect(aiBubble).toContainText('精简后的回答')
+
+    // 删除用户消息需两步确认
+    await userBubble.hover()
+    await window.getByTestId(`collection-qa-delete-${entryId}-0`).click()
+    await window.getByTestId(`collection-qa-delete-confirm-${entryId}-0`).click()
+    await expect(window.locator(`[data-testid^="collection-qa-message-${entryId}-"]`)).toHaveCount(1)
+    // 回归：删除后移位到下标 0 的消息不残留「确认删除」，应是普通「删除」按钮
+    const survivor = window.getByTestId(`collection-qa-message-${entryId}-0`)
+    await survivor.hover()
+    await expect(window.getByTestId(`collection-qa-delete-${entryId}-0`)).toBeVisible()
+
+    // 重启 → 删改结果持久化（落盘 精选集.json），已删消息不被同步复活
+    await window.reload()
+    const cover2 = new CoverPage(window)
+    await cover2.enterName('E2E 测试员')
+    await cover2.goToBriefing()
+    await expect(window.getByTestId(`briefing-date-item-${localToday()}`)).toBeVisible({ timeout: 15000 })
+    await window.getByTestId('briefing-collection-entry').click()
+    await expect(window.locator(`[data-testid^="collection-qa-message-${entryId}-"]`)).toHaveCount(1)
+    await expect(window.locator('[data-testid^="collection-entry-"]').first()).toContainText('精简后的回答')
+  })
+
   test('备注栏：添加 → 日期列单选互斥 + 导读面板收起 → 重启后备注仍在', async ({ window, testLibraryPath }) => {
     const assistant = await openDigest(window, testLibraryPath)
     await assistant.waitForGuideLoaded()

@@ -355,7 +355,7 @@ export function Briefing() {
                   hint="今日求职简报尚未生成"
                   buttonLabel="启程"
                   buttonTestId="briefing-receive-job-button"
-                  onReceive={() => generateJobBriefing(today)}
+                  onReceive={() => generateJobBriefing(today, { confirmed: true })}
                 />
               ) : (jobPhase === 'generating' || jobPhase === 'resolved' || jobPhase === 'departing') && !jobResult ? (
                 <div className={`relative flex-1 min-h-0 w-[95%] max-w-[1600px] min-w-[520px] mx-auto ${jobPhase === 'departing' ? 'constellation-depart' : ''}`}>
@@ -477,7 +477,7 @@ export function Briefing() {
                 hint="今日夜航简报尚未生成"
                 buttonLabel="观星"
                 buttonTestId="briefing-receive-digest-button"
-                onReceive={() => generateBriefing(today)}
+                onReceive={() => generateBriefing(today, { confirmed: true })}
               />
             ) : (digestPhase === 'generating' || digestPhase === 'resolved' || digestPhase === 'departing') && !result ? (
               <main className={`relative z-[5] flex-1 overflow-y-auto px-6 py-6 w-full max-w-3xl mx-auto ${digestPhase === 'departing' ? 'constellation-depart' : ''}`}>

@@ -220,6 +220,84 @@ describe('store article assistant', () => {
 
   })
 
+  describe('后台导读生成（切走不中断）', () => {
+    it('生成中切换到其他文章，完成后仍落盘且不污染当前会话', async () => {
+      let resolveGuide!: (g: unknown) => void
+      vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(
+        new Promise((r) => { resolveGuide = r }) as Promise<any>
+      )
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/bg-a.md',
+        contextType: 'anthropic-article',
+        articleContent: 'body a',
+        articleTitle: 'A',
+        autoGenerateGuide: true,
+      })
+      await flush(); await flush()
+      expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledTimes(1)
+
+      // 生成未完成时切到另一篇文章
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/bg-b.md',
+        contextType: 'anthropic-article',
+        articleContent: 'body b',
+        articleTitle: 'B',
+      })
+      await flush()
+
+      resolveGuide(guideFixture)
+      await flush(); await flush(); await flush()
+
+      // 后台生成完成 → 落盘到原文章，当前会话（B）不被污染
+      expect(ipc.articleAssistantWriteGuide).toHaveBeenCalledWith({
+        parentPath: '/lib/bg-a.md',
+        parentType: 'anthropic-article',
+        guide: guideFixture,
+      })
+      const cur = useStore.getState().assistantSession
+      expect(cur?.contextId).toBe('/lib/bg-b.md')
+      expect(cur?.guide).toBeNull()
+    })
+
+    it('切回生成中的文章：恢复 loading 不重复发起，完成后回填', async () => {
+      let resolveGuide!: (g: unknown) => void
+      vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(
+        new Promise((r) => { resolveGuide = r }) as Promise<any>
+      )
+      const openA = () => useStore.getState().openAssistantSession({
+        contextId: '/lib/bg2-a.md',
+        contextType: 'anthropic-article',
+        articleContent: 'body a',
+        articleTitle: 'A',
+        autoGenerateGuide: true,
+      })
+      openA()
+      await flush(); await flush()
+
+      // 切走再切回（面板 remount 会再次带 autoGenerateGuide）
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/bg2-b.md',
+        contextType: 'anthropic-article',
+        articleContent: 'body b',
+        articleTitle: 'B',
+      })
+      await flush()
+      openA()
+      await flush(); await flush()
+
+      // 不重复发起生成，但 loading 恢复（进度条继续显示）
+      expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().assistantSession?.guideLoading).toBe(true)
+
+      resolveGuide(guideFixture)
+      await flush(); await flush(); await flush()
+      const cur = useStore.getState().assistantSession
+      expect(cur?.contextId).toBe('/lib/bg2-a.md')
+      expect(cur?.guide).toEqual(guideFixture)
+      expect(cur?.guideLoading).toBe(false)
+    })
+  })
+
   describe('toggleAssistantSearch', () => {
     it('initializes assistantSearchEnabled to false and toggles it on/off', async () => {
       expect(useStore.getState().assistantSearchEnabled).toBe(false)

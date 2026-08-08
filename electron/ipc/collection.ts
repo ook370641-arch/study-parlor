@@ -6,6 +6,7 @@ import {
   readCollection,
   removeCollectionEntry,
   updateCollectionNote,
+  updateCollectionQA,
 } from '../lib/collection-store'
 import type { BriefingCollectionEntry, BriefingCollectionQA } from '@shared/index'
 
@@ -35,5 +36,9 @@ export function registerCollectionIpc(cfg: AppConfig) {
 
   ipcMain.handle('collection:updateNote', async (_, args: { id: string; note: string }) => {
     updateCollectionNote(cfg.libraryPath, args.id, args.note)
+  })
+
+  ipcMain.handle('collection:updateQA', async (_, args: { id: string; qa: BriefingCollectionQA[] }) => {
+    updateCollectionQA(cfg.libraryPath, args.id, args.qa)
   })
 }

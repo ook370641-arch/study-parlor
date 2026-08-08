@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { ElectronApplication, Page } from 'playwright'
 import { startApp, stopApp } from '../helpers/app-lifecycle'
-import { createTestLibrary, cleanupTestLibrary, seedBriefing, seedStateJson, createTestConfigDir, cleanupTestConfigDir } from '../helpers/test-library'
+import { createTestLibrary, cleanupTestLibrary, seedBriefing, seedStateJson, createTestConfigDir, cleanupTestConfigDir, localDateString } from '../helpers/test-library'
 import { SELECTORS } from '../helpers/selectors'
 import { CoverPage } from '../helpers/pages/cover-page'
 
@@ -120,7 +120,7 @@ test('shows LLM error with retry button and correct message @smoke', async () =>
 
 test('date column lists past briefings and switches date @smoke', async () => {
   const today = localToday()
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+  const yesterday = localDateString(new Date(Date.now() - 86400000))
   seedBriefing(testLibraryPath, today)
   seedBriefing(testLibraryPath, yesterday, '## Yesterday\n\nYesterday briefing.')
   const coverPage = new CoverPage(window)

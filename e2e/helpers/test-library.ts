@@ -7,6 +7,13 @@ const TEST_LIBRARY_ROOT = path.join(process.cwd(), 'e2e', '.test-library')
 const TEST_CONFIG_ROOT = path.join(process.cwd(), 'e2e', '.test-config')
 const OLD_DIR_MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 
+/** 本地日期 YYYY-MM-DD，与应用 formatBriefingDate 一致。
+ *  禁止用 new Date().toISOString().slice(0,10)——那是 UTC 日期，
+ *  本地时间 00:00–08:00（UTC+8）运行时与应用日期差一天，spec 必挂。 */
+export function localDateString(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export function createTestLibrary(): string {
   cleanupOldTestDirs(TEST_LIBRARY_ROOT)
   const id = `${Date.now()}-${randomUUID()}`

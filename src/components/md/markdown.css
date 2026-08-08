@@ -19,6 +19,12 @@
   margin: 0;
 }
 
+/* 精选集条目卡片同理：卡片自身已限宽，正文快照去掉内部 720px 居中 */
+.collection-entry-body .md-body {
+  max-width: none;
+  margin: 0;
+}
+
 .md-fable {
   max-width: 600px;
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 
-const mockIpc = { collectionRemoveEntry: vi.fn(), collectionRead: vi.fn(), collectionUpdateNote: vi.fn() }
+const mockIpc = { collectionRemoveEntry: vi.fn(), collectionRead: vi.fn(), collectionUpdateNote: vi.fn(), collectionUpdateQA: vi.fn() }
 vi.mock('@/lib/ipc', () => ({ ipc: new Proxy({}, { get: (_, k) => mockIpc[k as keyof typeof mockIpc] ?? (() => Promise.resolve()) }) }))
 
 import { useStore } from '@/store'
@@ -194,5 +194,90 @@ describe('CollectionView', () => {
     fireEvent.blur(input)
     expect(mockIpc.collectionUpdateNote).toHaveBeenCalledWith({ id: 'c-1', note: '  ' })
     expect(await screen.findByTestId('collection-note-add-c-1')).toBeInTheDocument()
+  })
+
+  it('旁注按角色渲染气泡：用户右列无标签，助手左列标「助手」', () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    const userMsg = screen.getByTestId('collection-qa-message-c-1-0')
+    const aiMsg = screen.getByTestId('collection-qa-message-c-1-1')
+    expect(userMsg).toHaveAttribute('data-role', 'user')
+    expect(userMsg.className).toContain('items-end')
+    expect(userMsg).not.toHaveTextContent('我')
+    expect(userMsg).toHaveTextContent('「宪法式 AI」')
+    expect(aiMsg).toHaveAttribute('data-role', 'assistant')
+    expect(aiMsg.className).toContain('items-start')
+    expect(aiMsg).toHaveTextContent('助手')
+  })
+
+  it('编辑时气泡 w-full 撑开不坍缩', () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-qa-edit-c-1-1'))
+    const bubble = screen.getByTestId('collection-qa-input-c-1-1').parentElement!
+    expect(bubble.className).toContain('w-full')
+  })
+
+  it('删除一条后，移位到下标的消息不残留「确认删除」', async () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-qa-delete-c-1-0'))
+    fireEvent.click(screen.getByTestId('collection-qa-delete-confirm-c-1-0'))
+    // 原 index 1 移位到 index 0：应显示普通「删除」按钮
+    expect(await screen.findByTestId('collection-qa-delete-c-1-0')).toBeInTheDocument()
+    expect(screen.queryByTestId('collection-qa-delete-confirm-c-1-0')).toBeNull()
+  })
+
+  it('编辑旁注失焦保存：替换该条 content 调用 updateQA', async () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-qa-edit-c-1-1'))
+    const input = screen.getByTestId('collection-qa-input-c-1-1')
+    expect(input).toHaveValue('回答一')
+    fireEvent.change(input, { target: { value: '回答一（删改后）' } })
+    fireEvent.blur(input)
+    expect(mockIpc.collectionUpdateQA).toHaveBeenCalledWith({
+      id: 'c-1',
+      qa: [ENTRY.qa[0], { role: 'assistant', content: '回答一（删改后）' }],
+    })
+    expect(await screen.findByText('回答一（删改后）')).toBeInTheDocument()
+  })
+
+  it('编辑旁注 Esc 取消不保存', () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-qa-edit-c-1-1'))
+    const input = screen.getByTestId('collection-qa-input-c-1-1')
+    fireEvent.change(input, { target: { value: '改掉' } })
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(mockIpc.collectionUpdateQA).not.toHaveBeenCalled()
+  })
+
+  it('编辑旁注清空内容不保存（删整条请用删除）', () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-qa-edit-c-1-0'))
+    const input = screen.getByTestId('collection-qa-input-c-1-0')
+    fireEvent.change(input, { target: { value: '  ' } })
+    fireEvent.blur(input)
+    expect(mockIpc.collectionUpdateQA).not.toHaveBeenCalled()
+  })
+
+  it('删除旁注需两步确认，确认后从 qa 中移除该条', async () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-qa-delete-c-1-0'))
+    expect(mockIpc.collectionUpdateQA).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('collection-qa-delete-confirm-c-1-0'))
+    expect(mockIpc.collectionUpdateQA).toHaveBeenCalledWith({ id: 'c-1', qa: [ENTRY.qa[1]] })
+  })
+
+  it('删除第一步后可取消', () => {
+    useStore.setState({ collection: { entries: [ENTRY], loaded: true } })
+    render(<CollectionView theme="academic" />)
+    fireEvent.click(screen.getByTestId('collection-qa-delete-c-1-0'))
+    fireEvent.click(screen.getByTestId('collection-qa-delete-cancel-c-1-0'))
+    expect(mockIpc.collectionUpdateQA).not.toHaveBeenCalled()
+    expect(screen.getByTestId('collection-qa-delete-c-1-0')).toBeInTheDocument()
   })
 })

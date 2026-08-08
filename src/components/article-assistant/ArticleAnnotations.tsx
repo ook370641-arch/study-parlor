@@ -22,11 +22,16 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
   const isAcademic = theme !== 'newspaper'
   const noteSize = ANNOTATION_NOTE_SIZES[briefingFontSize]
   const uiSize = ANNOTATION_UI_SIZES[briefingFontSize]
+  // 备注卡片估算高度（padding + 标题 + textarea×3 + 底部行）：判断上方空间是否足够，
+  // 不足则翻转到锚点下方，避免卡片被裁剪出视口
+  const CARD_EST_HEIGHT = 140
+  // 翻转朝下时卡片与幽灵笔（高约 18px）之间的间距
+  const GHOST_PEN_GAP = 22
   const [annotations, setAnnotations] = useState<ArticleAnnotation[]>([])
   const [openAnnoId, setOpenAnnoId] = useState<string | null>(null)
   const [ghost, setGhost] = useState<GhostData | null>(null)
   const [selectionHighlights, setSelectionHighlights] = useState<Array<{ left: number; top: number; width: number; height: number }>>([])
-  const [cardPos, setCardPos] = useState<{ left: number; top: number } | null>(null)
+  const [cardPos, setCardPos] = useState<{ left: number; top: number; below?: boolean } | null>(null)
   const [cardAnchorEl, setCardAnchorEl] = useState<HTMLElement | null>(null)
   const ghostRef = useRef<HTMLDivElement | null>(null)
   const markerSpansRef = useRef<Map<string, HTMLElement>>(new Map())
@@ -219,9 +224,14 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       // 不是 article 本身 —— article 上方还有 header，两者原点不同
       const origin = (container.offsetParent as HTMLElement | null) ?? container
       const originRect = origin.getBoundingClientRect()
+      // 卡片默认向上弹出（translateY(-100%)）。锚点距容器顶部不足卡片高度时
+      // 上方会被裁剪到视口外（选中首段加备注时保存按钮不可达），翻转到锚点下方。
+      const spaceAbove = anchorRect.top - originRect.top
+      const below = spaceAbove < CARD_EST_HEIGHT
       setCardPos({
         left: anchorRect.left - originRect.left - 4,
         top: anchorRect.top - originRect.top - 10,
+        below,
       })
     }
   }
@@ -556,7 +566,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
           style={{
             position: 'absolute',
             left: cardPos.left,
-            top: cardPos.top - 12,
+            top: cardPos.below ? cardPos.top + GHOST_PEN_GAP : cardPos.top - 12,
             minWidth: '280px',
             maxWidth: '400px',
             background: cardBg,
@@ -565,7 +575,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
             padding: '0.85rem 1rem',
             zIndex: 25,
             boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-            transform: 'translateY(-100%)',
+            transform: cardPos.below ? undefined : 'translateY(-100%)',
           }}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -574,13 +584,14 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
           <div
             style={{
               position: 'absolute',
-              bottom: '-6px',
+              ...(cardPos.below
+                ? { top: '-6px', borderBottom: `6px solid ${cardBg}`, borderTop: 'none' }
+                : { bottom: '-6px', borderTop: `6px solid ${cardBg}` }),
               left: '12px',
               width: 0,
               height: 0,
               borderLeft: '6px solid transparent',
               borderRight: '6px solid transparent',
-              borderTop: `6px solid ${cardBg}`,
             }}
           />
 

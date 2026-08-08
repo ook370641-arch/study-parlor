@@ -648,6 +648,54 @@ describe('store core operations', () => {
     })
   })
 
+  describe('generateBriefing confirmed 登记时机（空态按钮不留白）', () => {
+    beforeEach(() => {
+      useStore.setState({
+        briefing: { result: null, loading: false, error: null },
+        briefingViewingDate: null,
+        briefingGeneration: null,
+        briefingStage: null,
+        briefingStageDetail: null,
+        briefingHistory: { list: [], loading: false, error: null },
+        jobBriefing: { result: null, loading: false, error: null },
+        jobBriefingViewingDate: null,
+        jobBriefingGeneration: null,
+        jobBriefingStage: null,
+        jobBriefingStageDetail: null,
+        jobBriefingHistory: { list: [], loading: false, error: null },
+      })
+      // 挂起生成，观察首个进度事件到达前的登记中间态
+      vi.mocked(ipc.briefingGenerate).mockReturnValue(new Promise(() => {}) as any)
+      vi.mocked(ipc.jobBriefingGenerate).mockReturnValue(new Promise(() => {}) as any)
+    })
+
+    it('空态按钮 confirmed:true → 登记即 confirmed，不等首个进度事件', () => {
+      const today = formatBriefingDate(new Date())
+      void useStore.getState().generateBriefing(today, { confirmed: true })
+      expect(useStore.getState().briefingGeneration).toMatchObject({ date: today, status: 'running', confirmed: true })
+    })
+
+    it('force 重试 → 登记即 confirmed', () => {
+      void useStore.getState().generateBriefing('2026-07-10', { force: true })
+      expect(useStore.getState().briefingGeneration).toMatchObject({ date: '2026-07-10', status: 'running', confirmed: true })
+    })
+
+    it('投机登记（今日缓存读）→ confirmed 保持 false', () => {
+      const today = formatBriefingDate(new Date())
+      void useStore.getState().generateBriefing(today)
+      expect(useStore.getState().briefingGeneration).toMatchObject({ date: today, status: 'running', confirmed: false })
+    })
+
+    it('求职域同样：confirmed:true 立即 confirmed，投机保持 false', () => {
+      const today = formatBriefingDate(new Date())
+      void useStore.getState().generateJobBriefing(today, { confirmed: true })
+      expect(useStore.getState().jobBriefingGeneration).toMatchObject({ date: today, status: 'running', confirmed: true })
+      useStore.setState({ jobBriefingGeneration: null })
+      void useStore.getState().generateJobBriefing(today)
+      expect(useStore.getState().jobBriefingGeneration).toMatchObject({ confirmed: false })
+    })
+  })
+
   describe('viewBriefingToday', () => {
     beforeEach(() => {
       useStore.setState({

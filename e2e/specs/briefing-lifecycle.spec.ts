@@ -20,7 +20,9 @@ test.describe('@p1 digest 缓存命中', () => {
     await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
     await window.reload()
     const cover2 = new CoverPage(window)
-    await cover2.enterIfNeeded('E2E 测试员')
+    // 不能用 enterIfNeeded：它会点「点亮灯火/进入夜话」跳去 home，
+    // 而 goToBriefing 需要留在 cover 上点「夜航简报」。enterName 只填名字不导航。
+    await cover2.enterName('E2E 测试员')
     await cover2.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
     await window.locator(SELECTORS.briefing.receiveDigestButton).click()

@@ -49,6 +49,16 @@ export function updateCollectionNote(libraryPath: string, id: string, note: stri
   safeWriteJson(collectionPathFor(libraryPath), col)
 }
 
+/** 整数组替换旁注问答（用户在精选集内删改）；不动 qaMessageCount 游标，避免已删消息被同步复活 */
+export function updateCollectionQA(libraryPath: string, id: string, qa: BriefingCollectionQA[]): void {
+  const col = readCollection(libraryPath)
+  const entry = col.entries.find((e) => e.id === id)
+  if (!entry) return
+  entry.qa = qa
+  entry.updatedAt = new Date().toISOString()
+  safeWriteJson(collectionPathFor(libraryPath), col)
+}
+
 export function appendCollectionQA(
   libraryPath: string,
   id: string,
