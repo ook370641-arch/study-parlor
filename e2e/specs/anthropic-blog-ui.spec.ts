@@ -216,11 +216,8 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
 
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
-    // skip the pinned constitution row (T8)
-    await rows
-      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
-      .first()
-      .click()
+    // 打开可达源文章（跳过宪法置顶 + Product——claude.com 无 VPN 不可达）
+    await reachableArticleRow(window).click()
 
     const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
     await reader.waitFor({ state: 'visible', timeout: 120000 })
