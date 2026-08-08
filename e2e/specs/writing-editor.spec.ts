@@ -400,6 +400,33 @@ test.describe('@p2 writing-editor', () => {
     expect(content).toContain('插入标题')
   })
 
+  // ── A4 长行换行:助手面板挤压下无横向溢出 ──────────────────────────
+
+  test('A4 换行：展开助手面板后输入 200+ 字符无空格长串,编辑器无横向溢出', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+
+    // 展开写作助手面板,压缩编辑器可用宽度
+    const { WritingAssistantPanel } = await import('../pages/WritingAssistantPanel')
+    const assistant = new WritingAssistantPanel(window)
+    await assistant.open()
+    await expect(assistant.panel).toBeVisible()
+
+    // 输入 200+ 字符无空格字符串
+    const longRun = 'a'.repeat(220)
+    await writing.typeInEditor(longRun)
+    await window.waitForTimeout(500)
+
+    // 长行应换行:编辑器 DOM 无横向溢出
+    const overflow = await writing.editor.locator('.ProseMirror').evaluate(
+      el => el.scrollWidth - el.clientWidth
+    )
+    expect(overflow).toBeLessThanOrEqual(0)
+  })
+
   // ── Save failure UI ────────────────────────────────────────────────
 
   test('保存失败 UI：saving=error 时显示"保存失败"', async ({ window, testLibraryPath }) => {

@@ -309,7 +309,7 @@ export function WritingTree({ root, theme = 'academic' }: { root: WritingRoot; t
       {sorted.map(n => (
         <TreeNode key={n.path} node={n} depth={0} root={root} parentDir={root} siblingPaths={sorted.map(x => x.path)} theme={theme} />
       ))}
-      {endDrop && <div data-testid="writing-drop-line" className="mx-2 border-t-2 border-ember" />}
+      {endDrop && <div data-testid="writing-drop-line" className="mx-2 border-t-2 border-ember pointer-events-none" />}
     </div>
   )
 }

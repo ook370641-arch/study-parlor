@@ -27,7 +27,11 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
 
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
-  useEffect(() => { loadWritingTree() }, [loadWritingTree])
+  useEffect(() => {
+    loadWritingTree()
+    // 摘要第二触发时机：tree 加载时刷新 catalog（稳态 diff 为空，无多余 LLM 调用）
+    void ipc.writingRefreshCatalog()
+  }, [loadWritingTree])
 
   // Re-scan on tab switch to pick up externally-added files
   useEffect(() => { loadWritingTree() }, [tab, loadWritingTree])

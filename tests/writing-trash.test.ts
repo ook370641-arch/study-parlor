@@ -43,6 +43,21 @@ it('解散分组:子项释放到父级,空壳进 .trash', () => {
   expect(f1).not.toBe(f2)
 })
 
+it('解散分组:伴生 .assistant.md 随文章随迁到父级,不进 .trash', () => {
+  createFolder(lib, 'writing', '', '组B')
+  createFile(lib, 'writing', '组B', '文.md')
+  fs.writeFileSync(path.join(lib, 'writing', '组B', '文.assistant.md'), '---\ntype: article-assistant\n---\n## 用户\nhi\n', 'utf-8')
+  const r = dissolveGroup(lib, 'writing/组B')
+  expect(r.moved).toHaveLength(2)
+  expect(fs.existsSync(path.join(lib, 'writing', '文.md'))).toBe(true)
+  expect(fs.existsSync(path.join(lib, 'writing', '文.assistant.md'))).toBe(true)
+  expect(fs.existsSync(path.join(lib, 'writing', '组B'))).toBe(false)
+  // 空壳进 .trash,但壳里不得残留伴生文件
+  const trashedShell = path.join(lib, r.trashed)
+  expect(fs.existsSync(trashedShell)).toBe(true)
+  expect(fs.readdirSync(trashedShell)).toHaveLength(0)
+})
+
 it('.trash 目录不出现在扫描树', () => {
   const rel = createFile(lib, 'writing', '', 'x.md')
   trashNode(lib, rel)

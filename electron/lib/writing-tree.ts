@@ -239,7 +239,9 @@ export function dissolveGroup(lib: string, rel: string): { moved: { from: string
   const parentRel = path.dirname(rel).replace(/\\/g, '/')
   const moved: { from: string; to: string }[] = []
   for (const child of fs.readdirSync(abs)) {
-    if (isHidden(child)) continue
+    // 只跳过目录型隐藏项；.assistant.md / .annotations.md / .guide.md 伴生文件
+    // 随文章一起 moveNode 到父级，否则助手会话历史会随空壳进 .trash。
+    if (child === '.trash' || child === '.assets') continue
     const from = `${rel}/${child}`
     moved.push({ from, to: moveNode(lib, from, parentRel) })
   }
