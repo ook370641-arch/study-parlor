@@ -62,9 +62,17 @@ export function registerWritingIpc(cfg: AppConfig): void {
   })
 
   ipcMain.handle('writing:delete', async (_, a: { path: string }) => {
-    const result = await wrapWriting(() => { tree.deleteNode(lib, a.path); return null })
+    const result = await wrapWriting(() => {
+      const abs = tree.assertInsideRoots(lib, a.path)
+      if (fs.statSync(abs).isDirectory()) return tree.dissolveGroup(lib, a.path)
+      return { moved: [] as { from: string; to: string }[], trashed: tree.trashNode(lib, a.path) }
+    })
     if (result.ok) {
-      try { removeEntry(lib, rootFromPath(a.path), a.path) } catch { /* silent */ }
+      try {
+        const root = rootFromPath(a.path)
+        for (const m of result.value.moved) migrateEntry(lib, root, m.from, m.to)
+        removeEntry(lib, root, a.path)
+      } catch { /* silent */ }
     }
     return result
   })
