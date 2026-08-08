@@ -32,6 +32,30 @@ export function firstWritingFilePath(nodes: WritingTreeNode[] | undefined): stri
   return null
 }
 
+/** 取 dirPath 直接子节点的 path 列表(按 order 排序)。根级传 'writing'/'repository'。 */
+export function childrenPathsOf(
+  tree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null,
+  dirPath: string,
+  order?: string[],
+): string[] | null {
+  if (!tree) return null
+  let children: WritingTreeNode[] | null = null
+  if (dirPath === 'writing') children = tree.writing
+  else if (dirPath === 'repository') children = tree.repository
+  else {
+    const walk = (nodes: WritingTreeNode[]): WritingTreeNode[] | null => {
+      for (const n of nodes) {
+        if (n.path === dirPath) return n.children ?? []
+        if (n.children) { const r = walk(n.children); if (r) return r }
+      }
+      return null
+    }
+    children = walk(tree.writing) ?? walk(tree.repository)
+  }
+  if (!children) return null
+  return sortNodesByOrder(children, order).map(n => n.path)
+}
+
 /** 判断 path 是否仍存在于写作树（writing 或 repository 任意深度）。 */
 export function writingTreeContainsPath(
   tree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null,

@@ -246,4 +246,104 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '组内新文.md'))).toBe(true)
     await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /组内新文\.md/ })).toHaveCount(1)
   })
+
+  // 拖拽统一协议（Task 6）:Playwright 对 HTML5 drag 的原生支持在 Electron 下不可靠,
+  // 统一用手工 dispatchEvent 序列(dragstart → dragover → drop)+ 页面内 DataTransfer。
+  async function dragRowTo(
+    window: any,
+    srcRow: any,
+    target: any,
+    opts: { clientY: number; clientX?: number; waitIndicator: () => Promise<void> },
+  ) {
+    const dataTransfer = await window.evaluateHandle(() => new DataTransfer())
+    await srcRow.dispatchEvent('dragstart', { dataTransfer })
+    const box = await target.boundingBox()
+    await target.dispatchEvent('dragover', {
+      dataTransfer,
+      clientX: opts.clientX ?? (box.x + box.width / 2),
+      clientY: opts.clientY,
+    })
+    // 等 React 重渲染出落点指示,保证 drop 闭包读到最新 dragOver/dropPos
+    await opts.waitIndicator()
+    await target.dispatchEvent('drop', {
+      dataTransfer,
+      clientX: opts.clientX ?? (box.x + box.width / 2),
+      clientY: opts.clientY,
+    })
+  }
+
+  test('拖拽：组内文件拖到根级末尾留白 → 文件移到 writing/ 根级', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const srcRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
+    // 树容器 = 首个顶层行(testid div)的祖父元素(TreeNode 外层 div 的父级)
+    const container = window.locator('[data-testid="writing-tree-node"]').first().locator('xpath=../..')
+
+    const box = await container.boundingBox()
+    await dragRowTo(window, srcRow, container, {
+      clientY: box.y + box.height - 4,
+      waitIndicator: () => expect(window.getByTestId('writing-drop-line')).toBeVisible({ timeout: 3000 }),
+    })
+    await window.waitForTimeout(1500)
+
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '七月夜话.md'))).toBe(true)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ })).toHaveCount(1)
+  })
+
+  test('拖拽：分组拖到另一分组上边缘横线 → 顺序交换并持久化到 state.json', async ({ window, testLibraryPath, testConfigDir }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const essaysRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const techRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]技术笔记/ }).first()
+
+    const orderOf = async () => {
+      const texts = await window.locator('[data-testid="writing-tree-node"]').allTextContents()
+      return { essays: texts.findIndex(t => /^[▾▸]随笔/.test(t)), tech: texts.findIndex(t => /^[▾▸]技术笔记/.test(t)) }
+    }
+    const before = await orderOf()
+    expect(before.essays).toBeGreaterThanOrEqual(0)
+    expect(before.tech).toBeGreaterThanOrEqual(0)
+    const [firstRow, secondRow] = before.essays < before.tech ? [essaysRow, techRow] : [techRow, essaysRow]
+
+    // 把排在后面的分组拖到排在前面的分组上边缘(上 25% → before 横线)
+    const box = await firstRow.boundingBox()
+    await dragRowTo(window, secondRow, firstRow, {
+      clientY: box.y + box.height * 0.1,
+      waitIndicator: () => expect(firstRow).toHaveClass(/border-t-2/, { timeout: 3000 }),
+    })
+    await window.waitForTimeout(1000)
+
+    const after = await orderOf()
+    expect(after.essays).toBeGreaterThanOrEqual(0)
+    expect(after.tech).toBeGreaterThanOrEqual(0)
+    expect(after.essays < after.tech).toBe(!(before.essays < before.tech))
+
+    // writingOrder 持久化到隔离的 state.json
+    const state = JSON.parse(fs.readFileSync(path.join(testConfigDir, 'state.json'), 'utf8'))
+    const order: string[] = state.writingOrder?.writing ?? []
+    expect(order.indexOf('writing/随笔')).toBeGreaterThanOrEqual(0)
+    expect(order.indexOf('writing/技术笔记')).toBeGreaterThanOrEqual(0)
+    expect(order.indexOf('writing/随笔') < order.indexOf('writing/技术笔记')).toBe(after.essays < after.tech)
+  })
+
+  test('右键「移出分组」:组内文件移到根级;根级节点不显示该菜单项', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
+    await fileRow.click({ button: 'right' })
+    const moveOut = window.getByRole('button', { name: '移出分组', exact: true })
+    await expect(moveOut).toBeVisible({ timeout: 3000 })
+    await moveOut.click()
+    await window.waitForTimeout(1500)
+
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '七月夜话.md'))).toBe(true)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
+
+    // 根级分组不渲染「移出分组」
+    const rootDirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    await rootDirRow.click({ button: 'right' })
+    await expect(window.getByRole('button', { name: '重命名', exact: true })).toBeVisible({ timeout: 3000 })
+    await expect(window.getByRole('button', { name: '移出分组', exact: true })).toHaveCount(0)
+  })
 })

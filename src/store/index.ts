@@ -8,6 +8,7 @@ import { mergeArticlesByUrl } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
+import { childrenPathsOf } from '@/lib/writing-tree-utils'
 import { attributeMessages } from '@/lib/collection-attribution'
 import { splitArticleIntoChunks } from '@/lib/article-chunks'
 import type {
@@ -433,6 +434,7 @@ type AppStore = {
   setAssistantSearchEnabled: (enabled: boolean) => void
   setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
   reorderWritingSibling: (args: { dir: string; src: string; target: string; position: 'before' | 'after'; siblings: string[] }) => void
+  moveWritingNode: (args: { src: string; targetDir: string; index: number | null }) => Promise<void>
 }
 
 let wildcardRequestId = 0
@@ -2414,6 +2416,21 @@ export const useStore = create<AppStore>((set, get) => ({
     if (idx === -1 || src === target) return
     const next = [...rest.slice(0, position === 'before' ? idx : idx + 1), src, ...rest.slice(position === 'before' ? idx : idx + 1)]
     const writingOrder = { ...get().writingOrder, [dir]: next }
+    set({ writingOrder })
+    ipc.patchState({ writingOrder } as Partial<StateJson>)
+  },
+
+  moveWritingNode: async ({ src, targetDir, index }) => {
+    const r = await ipc.writingMove({ path: src, targetDir })
+    if (!r.ok) { set({ writingError: r.message }); return }
+    await get().loadWritingTree()
+    if (index === null) return
+    const siblings = childrenPathsOf(get().writingTree, targetDir, get().writingOrder[targetDir])
+    if (!siblings) return
+    const without = siblings.filter(p => p !== r.value.path)
+    const clamped = Math.max(0, Math.min(index, without.length))
+    const next = [...without.slice(0, clamped), r.value.path, ...without.slice(clamped)]
+    const writingOrder = { ...get().writingOrder, [targetDir]: next }
     set({ writingOrder })
     ipc.patchState({ writingOrder } as Partial<StateJson>)
   },

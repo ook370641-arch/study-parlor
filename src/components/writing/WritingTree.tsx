@@ -22,6 +22,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const loadWritingTree = useStore(s => s.loadWritingTree)
   const writingOrder = useStore(s => s.writingOrder)
   const reorderWritingSibling = useStore(s => s.reorderWritingSibling)
+  const moveWritingNode = useStore(s => s.moveWritingNode)
 
   const [open, setOpen] = useState(depth === 0)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
@@ -120,27 +121,35 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         }}
         onDragOver={(e) => {
           e.preventDefault()
-          if (isDir) { setDragOver(true); return }
           const rect = e.currentTarget.getBoundingClientRect()
-          setDropPos(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after')
+          const r = (e.clientY - rect.top) / rect.height
+          if (isDir && r > 0.25 && r < 0.75) { setDragOver(true); setDropPos(null); return }
+          setDragOver(false)
+          setDropPos(r < 0.5 ? 'before' : 'after')
         }}
         onDragLeave={() => { setDragOver(false); setDropPos(null) }}
         onDrop={async (e) => {
           e.preventDefault()
-          setDragOver(false)
           const src = e.dataTransfer.getData('text/writing-path')
-          setDropPos(null)
+          const into = dragOver && isDir && !dropPos
+          setDragOver(false); setDropPos(null)
           if (!src || src === node.path) return
-          if (isDir) {
-            await ipc.writingMove({ path: src, targetDir: node.path })
-            await loadWritingTree()
+          // 禁止把分组拖到自己的后代里(移入自己)
+          if (node.path.startsWith(src + '/')) return
+          if (into) {
+            await moveWritingNode({ src, targetDir: node.path, index: null })
             return
           }
-          reorderWritingSibling({
-            dir: parentDir, src, target: node.path,
-            position: dropPos ?? 'after',
-            siblings: siblingPaths,
-          })
+          // 横线落点:同父 = 纯排序;跨父 = move + 定位
+          const srcParent = src.includes('/') ? src.slice(0, src.lastIndexOf('/')) : root
+          if (srcParent === parentDir) {
+            reorderWritingSibling({ dir: parentDir, src, target: node.path, position: dropPos ?? 'after', siblings: siblingPaths })
+          } else {
+            const base = siblingPaths.filter(p => p !== src)
+            const idx = base.indexOf(node.path)
+            if (idx === -1) return
+            await moveWritingNode({ src, targetDir: parentDir, index: dropPos === 'before' ? idx : idx + 1 })
+          }
         }}
       >
         <span className="w-4 text-center shrink-0">{isDir ? (open ? '▾' : '▸') : '·'}</span>
@@ -200,6 +209,14 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
               新建子分组
             </button>
           )}
+          {parentDir !== root && (
+            <button
+              className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
+              onClick={() => { closeMenu(); void moveWritingNode({ src: node.path, targetDir: root, index: null }) }}
+            >
+              移出分组
+            </button>
+          )}
           <button
             className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
             onClick={doRename}
@@ -256,6 +273,8 @@ export function WritingTree({ root, theme = 'academic' }: { root: WritingRoot; t
   const isAcademic = theme !== 'newspaper'
   const tree = useStore(s => s.writingTree)
   const writingOrder = useStore(s => s.writingOrder)
+  const moveWritingNode = useStore(s => s.moveWritingNode)
+  const [endDrop, setEndDrop] = useState(false)
   const nodes = tree?.[root] ?? []
   const sorted = sortNodesByOrder(nodes, writingOrder[root])
 
@@ -268,10 +287,29 @@ export function WritingTree({ root, theme = 'academic' }: { root: WritingRoot; t
   }
 
   return (
-    <div className="py-1">
+    <div
+      className="py-1 min-h-[120px]"
+      onDragOver={(e) => {
+        if (e.target !== e.currentTarget) return
+        e.preventDefault()
+        setEndDrop(true)
+      }}
+      onDragLeave={(e) => { if (e.target === e.currentTarget) setEndDrop(false) }}
+      onDrop={async (e) => {
+        if (e.target !== e.currentTarget) return
+        e.preventDefault()
+        setEndDrop(false)
+        const src = e.dataTransfer.getData('text/writing-path')
+        if (!src) return
+        const srcParent = src.includes('/') ? src.slice(0, src.lastIndexOf('/')) : root
+        if (srcParent === root) return // 已在根级,纯末尾排序意义低,忽略
+        await moveWritingNode({ src, targetDir: root, index: null })
+      }}
+    >
       {sorted.map(n => (
         <TreeNode key={n.path} node={n} depth={0} root={root} parentDir={root} siblingPaths={sorted.map(x => x.path)} theme={theme} />
       ))}
+      {endDrop && <div data-testid="writing-drop-line" className="mx-2 border-t-2 border-ember" />}
     </div>
   )
 }
