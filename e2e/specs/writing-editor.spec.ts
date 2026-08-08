@@ -540,15 +540,22 @@ test.describe('@p2 writing-editor', () => {
     await window.reload()
     await window.waitForLoadState('domcontentloaded')
 
-    // 9. Navigate back to writing
-    // NOTE: enterName (not enterIfNeeded) — after reload the profile is
-    // not persisted because enterName in step 1 only fills the input
-    // without submitting; goToBriefing navigates without saving.
+    // 9. Navigate back to writing — reload 后可能停在封面任一分支(新用户输入框 /
+    // 老用户「点亮灯火」),也可能路由已恢复到 briefing;三种情况都要能到达写作页。
+    const sidebar = window.locator(SELECTORS.briefing.sourceSidebar)
+    const nameInput = window.locator(SELECTORS.cover.nameInput)
     const cover2 = new CoverPage(window)
-    await cover2.enterName('E2E 测试员')
-    await cover2.goToBriefing()
-    await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
-    await window.locator(SELECTORS.writing.sourceButton).click()
+    await expect(sidebar.or(nameInput).or(cover2.briefingButton).first()).toBeVisible({ timeout: 15000 })
+    if (!(await sidebar.isVisible().catch(() => false))) {
+      // 封面:哪个分支都直接等 briefing 按钮;新用户分支需先填名字按钮才可点
+      if (await nameInput.isVisible().catch(() => false)) await cover2.enterName('E2E 测试员')
+      await cover2.goToBriefing()
+      await expect(sidebar).toBeVisible({ timeout: 10000 })
+    }
+    // 已停在写作源时 sourceButton 点击幂等,统一先确认文章 tab 是否已在
+    if (!(await window.locator(SELECTORS.writing.listTabArticles).isVisible().catch(() => false))) {
+      await window.locator(SELECTORS.writing.sourceButton).click()
+    }
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
     await window.waitForTimeout(1500)
 

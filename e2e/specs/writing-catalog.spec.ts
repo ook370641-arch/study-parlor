@@ -106,12 +106,12 @@ test.describe('@p2 writing-catalog', () => {
     await dialog.getByTestId('confirm-dialog-confirm').click()
     await window.waitForTimeout(1000)
 
-    // File should be deleted (moved to trash)
+    // File should be permanently deleted
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
 
     // Catalog should not contain the deleted entry
     const catalog = readCatalog(testLibraryPath)
     const keys = Object.keys(catalog?.entries ?? {})
-    expect(keys.filter(k => k.includes('七月夜话') && !k.includes('.trash')).length).toBe(0)
+    expect(keys.filter(k => k.includes('七月夜话')).length).toBe(0)
   })
 })

@@ -65,7 +65,8 @@ export function registerWritingIpc(cfg: AppConfig): void {
     const result = await wrapWriting(() => {
       const abs = tree.assertInsideRoots(lib, a.path)
       if (fs.statSync(abs).isDirectory()) return tree.dissolveGroup(lib, a.path)
-      return { moved: [] as { from: string; to: string }[], trashed: tree.trashNode(lib, a.path) }
+      tree.deleteNode(lib, a.path)
+      return { moved: [] as { from: string; to: string }[] }
     })
     if (result.ok) {
       try {

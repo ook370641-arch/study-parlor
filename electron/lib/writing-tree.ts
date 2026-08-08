@@ -14,6 +14,8 @@ const HIDDEN_FILE_PATTERNS = [
   /\.guide\.md$/,
   /^\.catalog\.json$/,
   /^\.assets$/,
+  // 回收站设计已于 2026-08-09 下线（改为确认后真删）；保留隐藏规则防止
+  // 老库残留的 .trash 目录在树里显示成分组。
   /^\.trash$/,
 ]
 
@@ -201,10 +203,9 @@ export function moveNode(lib: string, rel: string, targetDir: string): string {
 }
 
 // ── delete ───────────────────────────────────────────────────
+// 删除 = 真删（2026-08-09 用户决策：UI 已有确认对话框，不要回收站设计）。
+// 解散分组例外：先把组内文章释放到父级，只删空壳目录。
 
-/**
- * @deprecated 仅测试清场使用。IPC 删除走 trashNode/dissolveGroup（移入 .trash），绝不真删用户文章。
- */
 export function deleteNode(lib: string, rel: string): void {
   const absPath = assertInsideRoots(lib, rel)
   if (!fs.existsSync(absPath)) {
@@ -213,25 +214,7 @@ export function deleteNode(lib: string, rel: string): void {
   fs.rmSync(absPath, { recursive: true, force: true })
 }
 
-// ── trash(删除=移入回收站,红线:绝不真删用户文章) ─────────────
-
-export function trashNode(lib: string, rel: string): string {
-  const abs = assertInsideRoots(lib, rel)
-  if (!fs.existsSync(abs)) {
-    throw code('WRITING_NOT_FOUND', `Node not found: ${rel}`)
-  }
-  const root: WritingRoot = rel === 'writing' || rel.startsWith('writing/') ? 'writing' : 'repository'
-  const underRoot = rel === root ? '' : rel.slice(root.length + 1)
-  const sub = path.dirname(underRoot)
-  const trashDir = path.join(lib, root, '.trash', sub === '.' ? '' : sub)
-  createDir(trashDir)
-  const safeName = uniqueName(trashDir, path.basename(abs))
-  const absDest = path.join(trashDir, safeName)
-  fs.renameSync(abs, absDest)
-  return toRel(lib, absDest)
-}
-
-export function dissolveGroup(lib: string, rel: string): { moved: { from: string; to: string }[]; trashed: string } {
+export function dissolveGroup(lib: string, rel: string): { moved: { from: string; to: string }[] } {
   const abs = assertInsideRoots(lib, rel)
   if (!fs.existsSync(abs) || !fs.statSync(abs).isDirectory()) {
     throw code('WRITING_NOT_FOUND', `Group not found: ${rel}`)
@@ -240,13 +223,13 @@ export function dissolveGroup(lib: string, rel: string): { moved: { from: string
   const moved: { from: string; to: string }[] = []
   for (const child of fs.readdirSync(abs)) {
     // 只跳过目录型隐藏项；.assistant.md / .annotations.md / .guide.md 伴生文件
-    // 随文章一起 moveNode 到父级，否则助手会话历史会随空壳进 .trash。
+    // 随文章一起 moveNode 到父级，否则助手会话历史会随空壳一起被删。
     if (child === '.trash' || child === '.assets') continue
     const from = `${rel}/${child}`
     moved.push({ from, to: moveNode(lib, from, parentRel) })
   }
-  const trashed = trashNode(lib, rel)
-  return { moved, trashed }
+  fs.rmSync(abs, { recursive: true, force: true })
+  return { moved }
 }
 
 // ── read / write ─────────────────────────────────────────────

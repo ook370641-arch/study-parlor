@@ -81,7 +81,7 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
   })
 
-  test('删除确认：cancel → 文件仍在；confirm → 文件移入回收站', async ({ window, testLibraryPath }) => {
+  test('删除确认：cancel → 文件仍在；confirm → 文件永久删除', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({
@@ -100,14 +100,13 @@ test.describe('@p2 writing-tree', () => {
     await window.waitForTimeout(500)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(true)
 
-    // Confirm — re-open context menu; file moves to trash
+    // Confirm — re-open context menu; file permanently deleted
     await fileNode.click({ button: 'right' })
     await window.getByRole('button', { name: '删除', exact: true }).click()
     await expect(dialog).toBeVisible({ timeout: 3000 })
     await dialog.getByTestId('confirm-dialog-confirm').click()
     await window.waitForTimeout(1500)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
-    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '.trash', '随笔', '七月夜话.md'))).toBe(true)
   })
 
   test('伴生文件不显示：.assistant.md 不在树中', async ({ window, testLibraryPath }) => {
@@ -180,7 +179,7 @@ test.describe('@p2 writing-tree', () => {
     await expect(dirRow.getByTestId('writing-node-delete')).toBeAttached()
   })
 
-  test('行内删除文章：确认对话框含回收站文案 → 确认 → 文件进 .trash', async ({ window, testLibraryPath }) => {
+  test('行内删除文章：确认对话框提示永久删除 → 确认 → 文件从磁盘删除', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     const row = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
@@ -189,14 +188,13 @@ test.describe('@p2 writing-tree', () => {
 
     const dialog = window.getByTestId('confirm-dialog')
     await expect(dialog).toBeVisible({ timeout: 3000 })
-    await expect(dialog).toContainText('回收站')
+    await expect(dialog).toContainText('永久删除')
     await dialog.getByTestId('confirm-dialog-confirm').click()
     await window.waitForTimeout(1500)
 
-    // Gone from tree, moved into .trash on disk
+    // Gone from tree and from disk
     await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ })).toHaveCount(0)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
-    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '.trash', '随笔', '七月夜话.md'))).toBe(true)
   })
 
   test('解散分组：文案含移回上一级 → 确认 → 组内两文释放到根级', async ({ window, testLibraryPath }) => {

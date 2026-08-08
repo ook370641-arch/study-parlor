@@ -262,7 +262,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         {isDir ? (
           <p>确定解散分组「{node.name}」？组内 {countFiles(node.children)} 篇文章将移回上一级，不会被删除。</p>
         ) : (
-          <p>确定删除《{node.name}》？文件将移入回收站（.trash/），可手动恢复。</p>
+          <p>确定删除《{node.name}》？文件将被永久删除，无法恢复。</p>
         )}
       </ConfirmDialog>
     </div>
