@@ -424,8 +424,6 @@ type AppStore = {
   selectWritingFile: (filePath: string | null) => Promise<void>
   updateWritingBody: (body: string) => void
   saveWritingFile: () => Promise<void>
-  setWritingFontSize: (size: BriefingFontSize) => void
-  setWritingTone: (tone: WritingTone) => void
   setWritingListTab: (tab: 'articles' | 'repository') => void
   setWritingAssistantWidth: (width: number) => void
   setWritingAssistantOpen: (open: boolean) => void
@@ -2179,14 +2177,6 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   // 写作板设置持久化
-  setWritingFontSize: (size) => {
-    set({ writingFontSize: size })
-    ipc.patchState({ writingFontSize: size } as Partial<StateJson>)
-  },
-  setWritingTone: (tone) => {
-    set({ writingTone: tone })
-    ipc.patchState({ writingTone: tone } as Partial<StateJson>)
-  },
   setWritingListTab: (tab) => {
     set({ writingListTab: tab })
     ipc.patchState({ writingListTab: tab } as Partial<StateJson>)

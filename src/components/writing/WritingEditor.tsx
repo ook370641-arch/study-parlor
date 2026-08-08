@@ -7,6 +7,7 @@ import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { history } from '@milkdown/plugin-history'
 import { clipboard } from '@milkdown/plugin-clipboard'
 import { useStore } from '@/store'
+import { textColorPlugins } from '@/lib/milkdown-text-color'
 import './writing-editor.css'
 
 function EditorInner({ initial, onChange }: { initial: string; onChange: (md: string) => void }) {
@@ -33,6 +34,7 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .use(listener)
       .use(history)
       .use(clipboard)
+      .use(textColorPlugins)
       .config(ctx => {
         ctx.set(rootCtx, root)
         ctx.set(defaultValueCtx, initial)

@@ -56,7 +56,7 @@ test.describe('@p1 writing 空库新建', () => {
     expect(currentPath).toContain('zzz-最后')
   })
 
-  test('写作字号 reload 后读回（hydration 回归）', async ({ window, testLibraryPath }) => {
+  test('写作字号 reload 后读回（hydration 回归）', async ({ window, testLibraryPath, testConfigDir }) => {
     const { seedWritingTree } = await import('../helpers/test-library')
     seedWritingTree(testLibraryPath)
 
@@ -67,16 +67,19 @@ test.describe('@p1 writing 空库新建', () => {
     await window.locator(SELECTORS.writing.sourceButton).click()
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
 
-    // 改字号为 xl 并等待 patchState 落盘
-    await window.evaluate(() => (window as any).useStore.getState().setWritingFontSize('xl'))
-    await window.waitForTimeout(500)
+    // 旧 state.json 兼容：直接写磁盘字段（setter 已随工具栏改造移除，
+    // 保留 init 读取路径），reload 后应 hydrate 回 store
+    const statePath = path.join(testConfigDir, 'state.json')
+    const st = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    st.writingFontSize = 'xl'
+    fs.writeFileSync(statePath, JSON.stringify(st, null, 2))
 
     await window.reload()
     await window.waitForLoadState('domcontentloaded')
+    // store.init 在 app 启动时完成（封面渲染即代表 init 结束），
+    // 无需导航——此前经 goToBriefing 的链路在 reload 后会落入 home 页挂起。
     const cover2 = new CoverPage(window)
-    await cover2.enterIfNeeded('E2E 测试员')
-    await cover2.goToBriefing()
-    await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
+    await cover2.nameInput.or(cover2.lightButton).waitFor({ state: 'visible' })
 
     const size = await window.evaluate(() => (window as any).useStore.getState().writingFontSize)
     expect(size).toBe('xl')

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { callCommand } from '@milkdown/utils'
 import {
@@ -7,40 +8,36 @@ import {
   wrapInBulletListCommand,
   wrapInOrderedListCommand,
   insertHrCommand,
+  wrapInHeadingCommand,
 } from '@milkdown/preset-commonmark'
 import { toggleStrikethroughCommand, insertTableCommand } from '@milkdown/preset-gfm'
+import { textColorCommand, TEXT_COLOR_PALETTE } from '@/lib/milkdown-text-color'
 
-const TONE_LABELS = {
-  parchment: '暖米',
-  plain: '素白',
-  ink: '墨灰',
-} as const
-
-const FONT_SIZE_KEYS = ['sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl'] as const
+const HEADING_OPTIONS = [
+  { label: '正文', level: 0 },
+  { label: 'H1', level: 1 },
+  { label: 'H2', level: 2 },
+  { label: 'H3', level: 3 },
+] as const
 
 export function WritingToolbar() {
-  const fontSize = useStore(s => s.writingFontSize)
-  const tone = useStore(s => s.writingTone)
-  const setFontSize = useStore(s => s.setWritingFontSize)
-  const setTone = useStore(s => s.setWritingTone)
   const act = useStore(s => s.writingEditorAction)
+  const [headingMenuOpen, setHeadingMenuOpen] = useState(false)
+  const [colorMenuOpen, setColorMenuOpen] = useState(false)
 
   const exec = (cmd: any, payload?: any) => {
     if (!act) return
     act(callCommand(cmd, payload))
   }
 
-  const cycleFontSize = (dir: 1 | -1) => {
-    const idx = FONT_SIZE_KEYS.indexOf(fontSize as (typeof FONT_SIZE_KEYS)[number])
-    const next = FONT_SIZE_KEYS[(idx + dir + FONT_SIZE_KEYS.length) % FONT_SIZE_KEYS.length]
-    setFontSize(next)
-  }
-
-  const cycleTone = () => {
-    const tones = ['parchment', 'plain', 'ink'] as const
-    const idx = tones.indexOf(tone)
-    setTone(tones[(idx + 1) % tones.length])
-  }
+  // 菜单外点击关闭（沿用 WritingTree 的 document click 模式）。
+  // 按钮与菜单自身 stopPropagation，因此这里只会收到真正的外部点击。
+  useEffect(() => {
+    if (!headingMenuOpen && !colorMenuOpen) return
+    const h = () => { setHeadingMenuOpen(false); setColorMenuOpen(false) }
+    document.addEventListener('click', h)
+    return () => document.removeEventListener('click', h)
+  }, [headingMenuOpen, colorMenuOpen])
 
   return (
     <div className="flex items-center gap-1 px-3 py-1 border-b border-parchment/10 shrink-0 select-none">
@@ -112,35 +109,65 @@ export function WritingToolbar() {
         ▦
       </button>
       <span className="text-parchment/20 mx-0.5">|</span>
-      {/* Font size */}
-      <button
-        data-testid="writing-toolbar-font-decrease"
-        onClick={() => cycleFontSize(-1)}
-        className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
-        title="缩小字号"
-      >
-        A-
-      </button>
-      <span data-testid="writing-toolbar-font-size" className="text-[10px] text-parchment/40 w-6 text-center">{fontSize}</span>
-      <button
-        data-testid="writing-toolbar-font-increase"
-        onClick={() => cycleFontSize(1)}
-        className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
-        title="增大字号"
-      >
-        A+
-      </button>
-      <span className="text-parchment/20 mx-0.5">|</span>
-      {/* Tone */}
-      <button
-        data-testid="writing-toolbar-tone"
-        onClick={cycleTone}
-        className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
-        title="配色方案"
-      >
-        🎨
-      </button>
-      <span data-testid="writing-toolbar-tone-label" className="text-[10px] text-parchment/40 ml-0.5">{TONE_LABELS[tone]}</span>
+      {/* Heading level */}
+      <div className="relative">
+        <button
+          data-testid="writing-toolbar-heading"
+          onClick={(e) => { e.stopPropagation(); setHeadingMenuOpen(v => !v); setColorMenuOpen(false) }}
+          className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
+          title="标题级别"
+        >
+          H▾
+        </button>
+        {headingMenuOpen && (
+          <div
+            className="absolute top-full left-0 z-50 bg-ink border border-parchment/20 rounded shadow-lg py-1 text-xs min-w-[72px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {HEADING_OPTIONS.map(o => (
+              <button
+                key={o.label}
+                data-testid="writing-heading-option"
+                data-level={o.level}
+                onClick={() => { setHeadingMenuOpen(false); exec(wrapInHeadingCommand, o.level) }}
+                className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Text color */}
+      <div className="relative">
+        <button
+          data-testid="writing-toolbar-color"
+          onClick={(e) => { e.stopPropagation(); setColorMenuOpen(v => !v); setHeadingMenuOpen(false) }}
+          className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
+          title="文字颜色"
+        >
+          A▾
+        </button>
+        {colorMenuOpen && (
+          <div
+            className="absolute top-full left-0 z-50 bg-ink border border-parchment/20 rounded shadow-lg py-1 text-xs min-w-[88px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {TEXT_COLOR_PALETTE.map(c => (
+              <button
+                key={c.label}
+                data-testid="writing-color-option"
+                data-color={c.value ?? ''}
+                onClick={() => { setColorMenuOpen(false); exec(textColorCommand.key, { color: c.value }) }}
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
+              >
+                <span className="inline-block w-3 h-3 rounded-full border border-parchment/30" style={{ background: c.value ?? 'transparent' }} />
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

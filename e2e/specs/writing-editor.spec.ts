@@ -207,69 +207,93 @@ test.describe('@p2 writing-editor', () => {
     expect(content).toContain('正文内容紧随其后')
   })
 
-  // ── Font size A+/A- cycle ─────────────────────────────────────────
+  // ── Toolbar: heading ladder rendering ─────────────────────────────
 
-  test('字号 A+ → state.json writingFontSize 非 base；A- → 回到 base', async ({ window, testLibraryPath, testConfigDir }) => {
+  test('标题阶梯渲染：h1 字号大于正文且字重 ≥600；新工具栏入口可见', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    // Select an existing file to reveal the toolbar
+    // 七月夜话 seed 含 `# 七月夜话` 标题与正文段落
     const writing = new WritingPage(window)
     await writing.selectFile('七月夜话')
     await window.waitForTimeout(1500)
 
-    const statePath = path.join(testConfigDir, 'state.json')
+    // UI 出口断言（feature-development §12）
+    await expect(window.locator(SELECTORS.writing.toolbarHeading)).toBeVisible({ timeout: 3000 })
+    await expect(window.locator(SELECTORS.writing.toolbarColor)).toBeVisible()
 
-    // Click A+ (increase font size)
-    // Use has-text to disambiguate from the briefing rail's font size button
-    const increaseBtn = window.locator('button[title="增大字号"]').filter({ hasText: 'A+' })
-    await expect(increaseBtn).toBeVisible({ timeout: 3000 })
-    await increaseBtn.click()
-    await window.waitForTimeout(500)
+    const h1 = writing.editor.locator('h1').first()
+    const p = writing.editor.locator('p').first()
+    await expect(h1).toBeVisible({ timeout: 3000 })
+    await expect(p).toBeVisible()
 
-    let state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingFontSize).not.toBe('base')
+    const h1Size = await h1.evaluate(el => parseFloat(getComputedStyle(el).fontSize))
+    const pSize = await p.evaluate(el => parseFloat(getComputedStyle(el).fontSize))
+    expect(h1Size).toBeGreaterThan(pSize)
 
-    // Click A- (decrease font size)
-    const decreaseBtn = window.locator('button[title="缩小字号"]').filter({ hasText: 'A-' })
-    await expect(decreaseBtn).toBeVisible()
-    await decreaseBtn.click()
-    await window.waitForTimeout(500)
-
-    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingFontSize).toBe('base')
+    const h1Weight = await h1.evaluate(el => {
+      const w = getComputedStyle(el).fontWeight
+      return w === 'bold' ? 700 : parseInt(w, 10)
+    })
+    expect(h1Weight).toBeGreaterThanOrEqual(600)
   })
 
-  // ── Tone 3‑click cycle ────────────────────────────────────────────
+  // ── Toolbar: text color round-trip ────────────────────────────────
 
-  test('🎨 配色三轮循环：parchment→plain→ink→parchment', async ({ window, testLibraryPath, testConfigDir }) => {
+  test('选中文字着色 → Ctrl+S → reload → 重开后 span 与磁盘 .md 均保留颜色', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    // Select an existing file to reveal the toolbar
+    await window.locator(SELECTORS.writing.newFileButton).click()
+    await window.getByTestId('writing-prompt-input').fill('颜色测试')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await window.waitForTimeout(2000)
+
     const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
+    await expect(writing.editor).toBeVisible({ timeout: 5000 })
 
-    const statePath = path.join(testConfigDir, 'state.json')
-    const toneBtn = window.locator('button[title="配色方案"]')
-    await expect(toneBtn).toBeVisible({ timeout: 3000 })
+    await writing.typeInEditor('这段文字要被染成暖橙')
 
-    // Click 1: parchment → plain
-    await toneBtn.click()
-    await window.waitForTimeout(500)
-    let state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingTone).toBe('plain')
+    // Select all text in the editor (ProseMirror state keeps the selection
+    // even after focus moves to the toolbar button)
+    await writing.editor.locator('.ProseMirror').click()
+    await window.keyboard.press('Control+a')
+    await window.waitForTimeout(300)
 
-    // Click 2: plain → ink
-    await toneBtn.click()
-    await window.waitForTimeout(500)
-    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingTone).toBe('ink')
+    // Open color dropdown and pick 暖橙 #d97757
+    await window.locator(SELECTORS.writing.toolbarColor).click()
+    const option = window.locator(`${SELECTORS.writing.colorOption}[data-color="#d97757"]`)
+    await expect(option).toBeVisible({ timeout: 3000 })
+    await option.click()
+    await window.waitForTimeout(300)
 
-    // Click 3: ink → parchment (full cycle)
-    await toneBtn.click()
-    await window.waitForTimeout(500)
-    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingTone).toBe('parchment')
+    // Span must appear in the editor DOM immediately
+    const span = writing.editor.locator('span[style*="color"]')
+    await expect(span).toBeVisible({ timeout: 3000 })
+    await expect(span).toContainText('这段文字要被染成暖橙')
+
+    // Ctrl+S immediate save
+    await writing.editor.locator('.ProseMirror').click()
+    await window.keyboard.press('Control+s')
+    await expect(writing.saveStatus).toContainText('已保存', { timeout: 5000 })
+
+    // Disk .md must contain the raw span markup
+    const filePath = path.join(testLibraryPath, 'writing', '颜色测试.md')
+    expect(fs.existsSync(filePath)).toBe(true)
+    const disk = fs.readFileSync(filePath, 'utf8')
+    expect(disk).toContain('<span style="color:#d97757">')
+    expect(disk).toContain('这段文字要被染成暖橙')
+
+    // Reload and reopen — color must survive the round-trip
+    await window.reload()
+    await window.waitForLoadState('domcontentloaded')
+    await gotoWritingAfterReload(window)
+
+    const writing2 = new WritingPage(window)
+    await writing2.selectFile('颜色测试')
+    await window.waitForTimeout(1000)
+
+    const span2 = writing2.editor.locator('span[style*="color"]')
+    await expect(span2).toBeVisible({ timeout: 5000 })
+    await expect(span2).toContainText('这段文字要被染成暖橙')
   })
 
   // ── Insert-to-editor ──────────────────────────────────────────────
@@ -531,57 +555,6 @@ test.describe('@p2 writing-editor', () => {
     await expect(window.locator(SELECTORS.writing.toolbarTable)).toBeVisible({ timeout: 3000 })
   })
 
-  // ── Toolbar: Font size A+/A- → state.json ──────────────────────────
-
-  test('工具栏字号 A+/A- → state.json writingFontSize changes', async ({ window, testLibraryPath, testConfigDir }) => {
-    await gotoWriting(window, testLibraryPath)
-
-    const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
-
-    const statePath = path.join(testConfigDir, 'state.json')
-
-    await window.locator(SELECTORS.writing.toolbarFontIncrease).click()
-    await window.waitForTimeout(500)
-    let state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingFontSize).not.toBe('base')
-
-    await window.locator(SELECTORS.writing.toolbarFontDecrease).click()
-    await window.waitForTimeout(500)
-    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingFontSize).toBe('base')
-  })
-
-  // ── Toolbar: Tone cycle → state.json ───────────────────────────────
-
-  test('工具栏配色 🎨 → state.json writingTone cycles', async ({ window, testLibraryPath, testConfigDir }) => {
-    await gotoWriting(window, testLibraryPath)
-
-    const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
-
-    const statePath = path.join(testConfigDir, 'state.json')
-    const toneBtn = window.locator(SELECTORS.writing.toolbarTone)
-    await expect(toneBtn).toBeVisible({ timeout: 3000 })
-
-    await toneBtn.click()
-    await window.waitForTimeout(500)
-    let state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingTone).toBe('plain')
-
-    await toneBtn.click()
-    await window.waitForTimeout(500)
-    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingTone).toBe('ink')
-
-    await toneBtn.click()
-    await window.waitForTimeout(500)
-    state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.writingTone).toBe('parchment')
-  })
-
   // ── Toolbar: All buttons visible ───────────────────────────────────
 
   test('工具栏全部按钮可见且有 testid', async ({ window, testLibraryPath }) => {
@@ -600,11 +573,8 @@ test.describe('@p2 writing-editor', () => {
       SELECTORS.writing.toolbarOrderedList,
       SELECTORS.writing.toolbarHr,
       SELECTORS.writing.toolbarTable,
-      SELECTORS.writing.toolbarFontDecrease,
-      SELECTORS.writing.toolbarFontIncrease,
-      SELECTORS.writing.toolbarTone,
-      SELECTORS.writing.toolbarFontSize,
-      SELECTORS.writing.toolbarToneLabel,
+      SELECTORS.writing.toolbarHeading,
+      SELECTORS.writing.toolbarColor,
     ]
 
     for (const sel of buttons) {
