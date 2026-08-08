@@ -35,7 +35,7 @@
 ### A2. 字号统一
 
 - 移除工具栏 A-/A+ 与 `writingFontSize` 的使用（state 字段保留不读，兼容旧 state.json）。
-- 正文字号从 `writingUIFontSize` 派生：正文 = UI 字号 × 1.15（在 `src/lib/briefing-font-size.ts` 新增 `WRITING_BODY_FROM_UI` 映射表，逐档写死 px 值，不在运行时算浮点），标题按 A1 阶梯再放大。右上角 −/+ 一个入口管全局。
+- 正文字号按档位从 `writingUIFontSize` 映射：新增 `WRITING_BODY_FROM_UI` 常量（`src/lib/briefing-font-size.ts`，逐档写死 px，与 `ACADEMIC_BODY_STYLES` 同档同值，独立常量便于日后分化），标题按 A1 阶梯再放大。右上角 −/+ 一个入口管全局。
 
 ### A3. 字体颜色
 
@@ -47,7 +47,7 @@
 
 ### A4. 面板挤压（问题 5）
 
-写作助手面板展开时，编辑区容器同步加等宽右 padding（沿用文章助手面板既有模式，rules/ui-styling §4）。
+写作助手面板是 flex 布局的在流兄弟节点（`WritingAssistantPanel` 有固定宽度、编辑区 `flex-1 min-w-0` 会让宽），文字被吞的真因是编辑器缺少 `overflow-wrap`——长串不换行、横向溢出到面板下方。修复 = A1 CSS 的 `overflow-wrap: anywhere`（编辑列 `min-w-0` 已具备），不加额外 padding。E2E 断言：面板展开时长行在可见区域内换行。
 
 ## 设计 B：树与分组管理（问题 4/6）
 
@@ -86,7 +86,7 @@
 - **移除展示**：`WritingTree` 悬停展开摘要+框变高整块删除，行高固定。
 - **触发时机收敛为唯一时机**：点击"写作"来源按钮进入写作页、tree 加载时，主进程 diff：扫描树 vs `.catalog.json`——新增（无条目）与变动（文件 mtime > 条目记录 mtime）的文章，后台静默逐篇生成摘要写回 catalog。
 - `WritingCatalogEntry.updatedAt` 改存文件 mtime（毫秒数）；旧格式（日期字符串）条目视为全部待更新，自然迁移一轮。
-- 砍掉 `writing:write` 与 `writing:importFiles` 里的保存即生成逻辑（保存只更新条目占位/mtime，不调 LLM）。
+- 砍掉 `writing:write` 与 `writing:importFiles` 里的保存即生成逻辑——保存完全不动 catalog；下次进入写作页时 diff 凭 mtime 自然捕获变动（若保存时同步 mtime，diff 反而看不到变动，这是坑）。
 - 生成失败静默跳过，下次进入 diff 再捞。UI 无阻塞、无摘要展示。
 - **隐藏消费方不动**：写作助手 prompt 继续读 `.catalog.json`（`writing-assistant/prompt.ts`）。
 
