@@ -237,6 +237,42 @@ test.describe('@p2 writing-editor', () => {
     expect(h1Weight).toBeGreaterThanOrEqual(600)
   })
 
+  // ── Toolbar: heading dropdown interaction ─────────────────────────
+
+  test('标题下拉交互链：正文段 → H1 → 降回正文', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    // 七月夜话 seed 含 `# 七月夜话` 标题与正文段落「这是第一篇写作文章。」
+    const writing = new WritingPage(window)
+    await writing.selectFile('七月夜话')
+    await window.waitForTimeout(1500)
+
+    // 光标放进正文段（失焦后 ProseMirror state 仍保留 selection，
+    // 与颜色下拉同一机制，已由 round-trip 用例实证）
+    const paragraph = writing.editor.locator('p', { hasText: '这是第一篇写作文章' })
+    await expect(paragraph).toBeVisible({ timeout: 3000 })
+    await paragraph.click()
+    await window.waitForTimeout(200)
+
+    // 开 H▾ → data-level=1 → 当前块升级为 h1
+    await window.locator(SELECTORS.writing.toolbarHeading).click()
+    const h1Option = window.locator(`${SELECTORS.writing.headingOption}[data-level="1"]`)
+    await expect(h1Option).toBeVisible({ timeout: 3000 })
+    await h1Option.click()
+    await expect(
+      writing.editor.locator('h1', { hasText: '这是第一篇写作文章' })
+    ).toBeVisible({ timeout: 3000 })
+
+    // 再开 H▾ → data-level=0(正文) → 降回 p
+    await window.locator(SELECTORS.writing.toolbarHeading).click()
+    const bodyOption = window.locator(`${SELECTORS.writing.headingOption}[data-level="0"]`)
+    await expect(bodyOption).toBeVisible({ timeout: 3000 })
+    await bodyOption.click()
+    await expect(
+      writing.editor.locator('p', { hasText: '这是第一篇写作文章' })
+    ).toBeVisible({ timeout: 3000 })
+  })
+
   // ── Toolbar: text color round-trip ────────────────────────────────
 
   test('选中文字着色 → Ctrl+S → reload → 重开后 span 与磁盘 .md 均保留颜色', async ({ window, testLibraryPath }) => {
