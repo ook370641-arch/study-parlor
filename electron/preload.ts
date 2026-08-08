@@ -116,6 +116,11 @@ const api: IpcApi = {
   anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
   anthropicCancelImport: () => ipcRenderer.invoke('anthropic:cancelImport'),
   anthropicDeleteArticle: (a) => ipcRenderer.invoke('anthropic:deleteArticle', a),
+  onAnthropicBackfill: (cb) => {
+    const handler = (_: unknown, payload: { articles: import('@shared/index').AnthropicArticleMeta[] }) => cb(payload)
+    ipcRenderer.on('anthropic:backfill', handler)
+    return () => ipcRenderer.removeListener('anthropic:backfill', handler)
+  },
 
   annotationsRead: (articlePath) => ipcRenderer.invoke('annotations:read', articlePath),
   annotationsWrite: (articlePath, annotations) => ipcRenderer.invoke('annotations:write', articlePath, annotations),

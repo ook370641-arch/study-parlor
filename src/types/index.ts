@@ -45,7 +45,7 @@ export type Terminology = {
   startButton?: string
   cancelButton?: string
 }
-export type AnthropicSectionKey = 'engineering' | 'institute' | 'research'
+export type AnthropicSectionKey = 'engineering' | 'research' | 'alignment' | 'interpretability' | 'product' | 'institute'
 export type AnthropicArticleMeta = {
   url: string
   title: string
@@ -85,6 +85,8 @@ export type AnthropicBlogCache = {
   error: AnthropicError | null
   /** 各栏目抓取状态；旧 state.json 无此字段，缺省 {} */
   sectionStatus?: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>>
+  /** sitemap 老文章逐页回填的元数据缓存（key=规范化 URL）；旧 state.json 无此字段，缺省 {}。title 可空（回填写入先于 title 过滤） */
+  articleMetaCache?: Record<string, { title: string | null; publishedAt: string | null; summary: string | null; imageUrl: string | null }>
 }
 
 export type ArticleAssistantTerm = {
@@ -691,6 +693,8 @@ export type IpcApi = {
   anthropicDeleteArticle: (args: { filePath: string }) => Promise<
     { ok: true } | { ok: false; message: string }
   >
+  /** 后台元数据回填进度：sitemap 老文章逐页取到元数据后分批推送 */
+  onAnthropicBackfill: (cb: (payload: { articles: AnthropicArticleMeta[] }) => void) => () => void
 
   // Annotations
   annotationsRead: (articlePath: string) => Promise<ArticleAnnotation[]>

@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
+import { reachableArticleRow } from '../helpers/test-library'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
@@ -50,10 +51,8 @@ test.describe('@real Anthropic 博客集成', () => {
     await window.locator(SELECTORS.briefing.listColumnToggle).click()
     await expect(listColumn).not.toHaveClass(/w-14/)
 
-    // 选择第一篇 anthropic 文章（跳过恒置顶的宪法报告行，T8 引入）
-    const firstRow = rows
-      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
-      .first()
+    // 选择第一篇可达 anthropic 文章（跳过宪法置顶 + Product 源——claude.com 在无 VPN 的 E2E 环境不可达）
+    const firstRow = reachableArticleRow(window)
     const title = await firstRow.locator(SELECTORS.briefing.anthropicArticleTitle).textContent()
     expect(title).toBeTruthy()
     await firstRow.click()
@@ -157,10 +156,8 @@ test.describe('@real Anthropic 博客集成', () => {
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
 
-    // 导入第一篇 anthropic 文章（跳过恒置顶的宪法报告行，T8 引入）
-    const firstRow = rows
-      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
-      .first()
+    // 导入第一篇可达 anthropic 文章（跳过宪法置顶 + Product 源——claude.com 无 VPN 不可达）
+    const firstRow = reachableArticleRow(window)
     const articleTitle = await firstRow.locator(SELECTORS.briefing.anthropicArticleTitle).textContent()
     await firstRow.click()
 

@@ -11,8 +11,9 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { findNewArticleUrls, sortArticlesByDateDesc } from '@/lib/anthropic-articles'
 import { withConstitutionEntry } from '@/lib/constitution-report'
-import { ANTHROPIC_SECTIONS, sectionOf } from '@/lib/anthropic-sections'
-import type { AnthropicArticleMeta, AnthropicError, AnthropicSectionKey, BriefingTheme } from '@shared/index'
+import { ANTHROPIC_SOURCES, filterGroupOf } from '@/lib/anthropic-sections'
+import { ALL_SOURCE_KEYS, clickAllChip, toggleSourceChip, type BlogFilter } from '@/lib/section-filter'
+import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
 interface Props {
   theme?: BriefingTheme
@@ -81,25 +82,23 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [checkError, setCheckError] = useState<AnthropicError | null>(null)
   const [checkKey, setCheckKey] = useState(0)
   const [pendingDelete, setPendingDelete] = useState<AnthropicArticleMeta | null>(null)
-  const [activeSections, setActiveSections] = useState<ReadonlySet<AnthropicSectionKey>>(
-    () => new Set(ANTHROPIC_SECTIONS.map((s) => s.key))
-  )
+  const [filter, setFilter] = useState<BlogFilter>({ mode: 'all' })
 
   // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成；合并时间线按日期倒序
   const displayArticles = useMemo(() => sortArticlesByDateDesc(withConstitutionEntry(articles)), [articles])
 
   const filtered = useMemo(() => {
-    const bySection = displayArticles.filter(
-      (a) => a.local === 'constitution' || activeSections.has(sectionOf(a))
-    )
+    const bySource = filter.mode === 'all'
+      ? displayArticles
+      : displayArticles.filter((a) => filter.selected.has(filterGroupOf(a)))
     const q = query.trim().toLowerCase()
-    if (!q) return bySection
-    return bySection.filter(
+    if (!q) return bySource
+    return bySource.filter(
       (a) =>
         a.title?.toLowerCase().includes(q) ||
         (a.summary ?? '').toLowerCase().includes(q)
     )
-  }, [displayArticles, query, activeSections])
+  }, [displayArticles, query, filter])
 
   // 自动检测新文章
   useEffect(() => {
@@ -237,7 +236,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               </div>
             )}
 
-            {ANTHROPIC_SECTIONS.filter((s) => sectionStatus?.[s.key]?.error).map((s) => (
+            {ANTHROPIC_SOURCES.filter((s) => sectionStatus?.[s.key]?.error).map((s) => (
               <div key={s.key} className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
                 <button
                   type="button"
@@ -289,8 +288,18 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
 
             <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`} data-testid="anthropic-section-filter">
               <div className="flex flex-wrap gap-1.5">
-                {ANTHROPIC_SECTIONS.map((s) => {
-                  const active = activeSections.has(s.key)
+                <button
+                  type="button"
+                  data-testid="anthropic-filter-all"
+                  aria-pressed={filter.mode === 'all'}
+                  onClick={() => setFilter(clickAllChip())}
+                  className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${filter.mode === 'all' ? 'border-ember text-ember' : themeClasses.muted}`}
+                  style={filter.mode === 'all' ? {} : { borderColor: 'transparent' }}
+                >
+                  All
+                </button>
+                {ANTHROPIC_SOURCES.map((s) => {
+                  const active = filter.mode !== 'all' && filter.selected.has(s.key)
                   return (
                     <button
                       key={s.key}
@@ -298,14 +307,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       data-testid="anthropic-section-chip"
                       data-section={s.key}
                       aria-pressed={active}
-                      onClick={() =>
-                        setActiveSections((prev) => {
-                          const next = new Set(prev)
-                          if (next.has(s.key)) next.delete(s.key)
-                          else next.add(s.key)
-                          return next
-                        })
-                      }
+                      onClick={() => setFilter((prev) => toggleSourceChip(prev, s.key, ALL_SOURCE_KEYS))}
                       className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${active ? '' : themeClasses.muted}`}
                       style={active ? { borderColor: s.color, color: s.color } : { borderColor: 'transparent' }}
                     >

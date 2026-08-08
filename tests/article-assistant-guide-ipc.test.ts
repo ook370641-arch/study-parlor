@@ -165,6 +165,32 @@ describe('generateGuide routing', () => {
     expect(runDigestGuideV2).not.toHaveBeenCalled()
     expect(result).toEqual(blogGuide)
   })
+
+  it('E2E_GUIDE_BAD_JSON=1 时 anthropic-article mock 在 writing 进度后抛 GUIDE_JSON_ERROR', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'guide-bad-json-'))
+    process.env.E2E_CONFIG_DIR = tmp
+    process.env.E2E_GUIDE_BAD_JSON = '1'
+    try {
+      const err = await handlers['articleAssistant:generateGuide'](fakeEvent as never, {
+        articleContent: '## H\nx',
+        articleType: 'anthropic-article',
+        articleTitle: 'T',
+      } as never).then(
+        () => null,
+        (e: Error & { code?: string }) => e
+      )
+      expect(err).not.toBeNull()
+      expect(err!.code).toBe('GUIDE_JSON_ERROR')
+      // mock 进度事件确实先于抛错发出（writing 阶段）
+      const sends = (fakeEvent.sender.send as ReturnType<typeof vi.fn>).mock.calls
+      expect(sends.some((c) => c[0] === 'articleAssistant:guideProgress' && c[1]?.stage === 'writing')).toBe(true)
+    } finally {
+      delete process.env.E2E_CONFIG_DIR
+      delete process.env.E2E_GUIDE_BAD_JSON
+      fs.rmSync(tmp, { recursive: true, force: true })
+      ;(fakeEvent.sender.send as ReturnType<typeof vi.fn>).mockClear()
+    }
+  })
 })
 
 describe('parseAssistantGuideBody parentType', () => {

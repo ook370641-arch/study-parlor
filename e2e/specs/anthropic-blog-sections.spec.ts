@@ -51,7 +51,7 @@ test.describe('Anthropic 多栏目 @p1', () => {
         loading: false,
         error: null,
         sectionStatus: {
-          institute: { fetchedAt: null, error: { code: 'parse-error', message: '解析页面失败，Anthropic 网站结构可能已变更' } },
+          research: { fetchedAt: null, error: { code: 'parse-error', message: '解析页面失败，Anthropic 网站结构可能已变更' } },
         },
       },
     })
@@ -60,8 +60,8 @@ test.describe('Anthropic 多栏目 @p1', () => {
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
 
-    // 栏目色签行：三个 chip
-    await expect(window.locator(SEL.sectionChip)).toHaveCount(3)
+    // 栏目色签行：五个 chip（Task 1 五源：engineering/research/alignment/interpretability/product）
+    await expect(window.locator(SEL.sectionChip)).toHaveCount(5)
 
     // 合并时间线：seeded 三篇按 publishedAt 倒序（宪法条目在 E2E 无报告产物不出现）
     const titles = await window.locator(SELECTORS.briefing.anthropicArticleTitle).allTextContents()
@@ -70,23 +70,28 @@ test.describe('Anthropic 多栏目 @p1', () => {
     // 行内色签可见
     await expect(window.locator(SEL.sectionTag).first()).toBeVisible()
 
-    // 色签过滤：关掉 research → Res Mid 消失；再点开恢复
+    // 色签过滤（Task 6 状态机已提交）：All 态点 research → 单选 research
+    // （institute 经 filterGroupOf 归 research → Inst New 仍可见；Eng Old 隐藏）
     await window.locator(`${SEL.sectionChip}[data-section="research"]`).click()
     await expect(
-      window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Res Mid' })
+      window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Eng Old' })
     ).toHaveCount(0)
+    await expect(
+      window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Res Mid' })
+    ).toHaveCount(1)
     await expect(
       window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Inst New' })
     ).toHaveCount(1)
+    // 点灭 research（空选择回退 All）→ 全部恢复
     await window.locator(`${SEL.sectionChip}[data-section="research"]`).click()
     await expect(
-      window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Res Mid' })
+      window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Eng Old' })
     ).toHaveCount(1)
 
-    // 栏目失败提示（institute）
-    const banner = window.locator(`${SEL.sectionError}[data-section="institute"]`)
+    // 栏目失败提示（research，真实五源之一）
+    const banner = window.locator(`${SEL.sectionError}[data-section="research"]`)
     await expect(banner).toBeVisible()
-    await expect(banner).toContainText('Institute')
+    await expect(banner).toContainText('Research')
   })
 
   test('E2E-SEC-2: 打开 institute 文章自动生成博客导读 v2', async ({

@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import type { Locator, Page } from '@playwright/test'
 import { killProjectProcessesByPattern } from './process-cleanup'
+import { SELECTORS } from './selectors'
 
 const TEST_LIBRARY_ROOT = path.join(process.cwd(), 'e2e', '.test-library')
 const TEST_CONFIG_ROOT = path.join(process.cwd(), 'e2e', '.test-config')
@@ -12,6 +14,16 @@ const OLD_DIR_MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
  *  本地时间 00:00–08:00（UTC+8）运行时与应用日期差一天，spec 必挂。 */
 export function localDateString(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 可达的博客文章行：非宪法置顶、非 Product 源（claude.com 在 E2E 无 VPN 环境不可达，导入会挂起 90s+）。
+ *  多来源合并时间线后，最新文章常是 claude.com 的 product 文章，测试导入必须选可达源。 */
+export function reachableArticleRow(window: Page): Locator {
+  return window
+    .locator(SELECTORS.briefing.anthropicArticleRow)
+    .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+    .filter({ hasNot: window.locator(`${SELECTORS.briefing.anthropicSectionTag}:has-text("Product")`) })
+    .first()
 }
 
 export function createTestLibrary(): string {

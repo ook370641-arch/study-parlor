@@ -330,6 +330,9 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
               entriesTotal,
             })
           }
+          if (process.env.E2E_GUIDE_BAD_JSON === '1') {
+            throw typedError('GUIDE_JSON_ERROR', 'E2E forced bad guide json')
+          }
         }
         const mockGuide: ArticleAssistantGuide = {
           background: '这是一段用于 E2E 测试的文章背景介绍，说明本文讨论 AI 对齐与安全。',

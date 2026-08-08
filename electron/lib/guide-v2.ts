@@ -174,7 +174,7 @@ export function buildBlogGuidePlanPrompt(articleContent: string, articleTitle?: 
 - 查询词用英文（此类资料英文质量更高），简短精准。
 - 查询总数 0-${entryCount} 动态决定：不遗漏需要事实支撑的章节，也不为常识章节浪费查询。
 
-只输出 JSON（不要 markdown 代码块、不要任何解释）：
+只输出一个 JSON 对象：以 { 开头、以 } 结尾，queries 必须是数组（无需外部材料时输出 {"queries":[]}）；不要 markdown 代码块、不要任何前后解释。
 {"queries":[{"query":"...","entries":[1,3],"reason":"一句话说明查什么"}]}
 
 文章标题：${articleTitle ?? '未命名文章'}

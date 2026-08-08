@@ -4,7 +4,7 @@ import { editorViewCtx } from '@milkdown/core'
 import type { Ctx } from '@milkdown/ctx'
 import { normalizeStudyFontSize } from '@/lib/study-font-size'
 import { formatBriefingDate } from '@/lib/format-briefing-date'
-import { mergeNewArticles } from '@/lib/anthropic-articles'
+import { mergeArticlesByUrl } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
@@ -590,8 +590,8 @@ export const useStore = create<AppStore>((set, get) => ({
       scoutTab: state.scoutTab === 'articles' ? 'articles' : 'chat',
       scoutActiveConversationId: state.scoutActiveConversationId ?? null,
       anthropicBlogCache: state.anthropicBlogCache
-        ? { ...state.anthropicBlogCache, loading: false, error: null, sectionStatus: state.anthropicBlogCache.sectionStatus ?? {} }
-        : { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
+        ? { ...state.anthropicBlogCache, loading: false, error: null, sectionStatus: state.anthropicBlogCache.sectionStatus ?? {}, articleMetaCache: state.anthropicBlogCache.articleMetaCache ?? {} }
+        : { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {}, articleMetaCache: {} },
       anthropicBlogLastSeenAt: state.anthropicBlogLastSeenAt ?? null,
       jobBriefingConfig: normalizeJobBriefingConfig(state.jobBriefingConfig),
       jobProfile: normalizeJobProfile(state.jobProfile),
@@ -1273,7 +1273,9 @@ export const useStore = create<AppStore>((set, get) => ({
     try {
       const result = await ipc.anthropicDiscover()
       if (result.ok) {
+        const cur = get().anthropicBlogCache
         const next: AnthropicBlogCache = {
+          ...cur,
           lastFetchedAt: result.lastFetchedAt,
           articles: result.articles,
           loading: false,
@@ -1308,7 +1310,7 @@ export const useStore = create<AppStore>((set, get) => ({
       anthropicBlogCache: {
         ...s.anthropicBlogCache,
         lastFetchedAt,
-        articles: mergeNewArticles(s.anthropicBlogCache.articles, newArticles),
+        articles: mergeArticlesByUrl(s.anthropicBlogCache.articles, newArticles),
       },
     }))
   },

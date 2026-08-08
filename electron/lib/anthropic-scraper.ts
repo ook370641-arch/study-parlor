@@ -4,8 +4,18 @@ import path from 'node:path'
 import { runScriptInScraperWindow } from './anthropic-browser'
 import { parseFrontmatter, serializeFrontmatter } from './frontmatter'
 import type { AnthropicArticleMeta } from '@shared/index'
-import { ANTHROPIC_SECTIONS, sectionForUrl, type AnthropicSection } from './anthropic-sections'
+import { ANTHROPIC_SOURCES, sectionForUrl, type AnthropicSource } from './anthropic-sections'
 import type { AnthropicSectionKey, AnthropicSectionStatus, AnthropicErrorCode } from '@shared/index'
+import { httpFetch, httpFetchWithRetry } from './net-fetch'
+import {
+  mapWithConcurrency,
+  parseAlignmentIndex,
+  parseArticleMetaHtml,
+  parseAtomFeed,
+  parseSitemapUrls,
+  type ArticleMetaCache,
+  type DiscoveredLink,
+} from './anthropic-discover'
 
 const BASE_URL = 'https://www.anthropic.com'
 export const IMPORT_DIR = 'Anthropic博客'
@@ -111,7 +121,7 @@ export function findSavedArticles(libraryRoot: string): Map<string, string> {
   return map
 }
 
-export function buildListingScript(section: AnthropicSection): string {
+export function buildListingScript(section: AnthropicSource): string {
   return `(() => {
   const seen = new Set()
   const results = []
@@ -127,7 +137,7 @@ export function buildListingScript(section: AnthropicSection): string {
     if (!container) container = a.parentElement
 
     const href = a.getAttribute('href')
-    const url = href.startsWith('http') ? href : 'https://www.anthropic.com' + href
+    const url = new URL(href, window.location.href).toString()
 
     const titleEl = container?.querySelector('h2, h3, h4, [class*="__title"], [class*="title"]')
     const title = titleEl?.textContent?.trim() || a.textContent?.trim() || null
@@ -150,7 +160,7 @@ export function buildListingScript(section: AnthropicSection): string {
     const href = a.getAttribute('href')
     if (!href) return
     if (EXCLUDE_PREFIXES.some((p) => href.startsWith(p))) return
-    const url = href.startsWith('http') ? href : 'https://www.anthropic.com' + href
+    const url = new URL(href, window.location.href).toString()
     if (seen.has(url)) return
     seen.add(url)
     results.push(extractCard(a))
@@ -160,42 +170,145 @@ export function buildListingScript(section: AnthropicSection): string {
 })()`
 }
 
+type BackfillMiss = { source: AnthropicSource; url: string; lastmod: string | null }
+
+type ListingCard = {
+  url: string
+  title: string | null
+  summary: string | null
+  dateText: string | null
+  imageUrl: string | null
+}
+
+/** sitemap 策略：sitemap 全量 URL（parseSitemapUrls）为骨架；
+ *  索引页卡片（buildListingScript，隐藏窗 DOM 提取）与 articleMetaCache 提供富元数据；
+ *  两者都覆盖不到的 URL 进 backfill 队列——不产生「无标题裸行」。 */
+async function discoverSitemapSource(
+  section: AnthropicSource,
+  metaCache: ArticleMetaCache,
+  backfillMisses: BackfillMiss[]
+): Promise<DiscoveredLink[]> {
+  const xml = await (await httpFetch(section.sitemapUrl!)).text()
+  const all = parseSitemapUrls(xml, section)
+  const cards = await runScriptInScraperWindow<ListingCard[]>(
+    buildListingScript(section),
+    { url: section.indexUrl, waitForSelector: `a[href^="${section.linkPrefix}"]` }
+  ).catch(() => [] as ListingCard[])
+  const byUrl = new Map(cards.map((c) => [c.url, c]))
+
+  const out: DiscoveredLink[] = []
+  for (const { url, lastmod } of all) {
+    const card = byUrl.get(url)
+    if (card?.title) {
+      out.push({ url, title: card.title, summary: card.summary, dateText: card.dateText, imageUrl: card.imageUrl })
+      continue
+    }
+    const cached = metaCache[url]
+    if (cached?.title) {
+      out.push({ url, title: cached.title, summary: cached.summary, dateText: cached.publishedAt, imageUrl: cached.imageUrl })
+      continue
+    }
+    backfillMisses.push({ source: section, url, lastmod })
+  }
+  return out
+}
+
+/** 按发现策略分派：sitemap → 上面；static-list/rss → httpFetch 拉索引/feed 后纯解析（数据已全量，不触发回填） */
+async function dispatchDiscover(
+  section: AnthropicSource,
+  metaCache: ArticleMetaCache,
+  backfillMisses: BackfillMiss[]
+): Promise<DiscoveredLink[]> {
+  if (section.discover === 'sitemap') {
+    return discoverSitemapSource(section, metaCache, backfillMisses)
+  }
+  const html = await (await httpFetch(section.indexUrl)).text()
+  if (section.discover === 'rss') return parseAtomFeed(html)
+  return parseAlignmentIndex(html, section.indexUrl)
+}
+
+/** 后台元数据回填：并发 5，每完成 10 篇经 onBackfill 推送一批。
+ *  写 metaCache（miss.url 与 canonicalUrl 都写）；canonicalUrl 与已发现文章重复 → 丢弃该占位（重定向去重）。 */
+async function runBackfill(
+  misses: BackfillMiss[],
+  knownUrls: Set<string>,
+  metaCache: ArticleMetaCache,
+  saved: Map<string, string>,
+  onBackfill: (articles: AnthropicArticleMeta[], metaCache: ArticleMetaCache) => void
+): Promise<void> {
+  const results = await mapWithConcurrency(misses, 5, async (miss) => {
+    try {
+      // 带退避重试：并发回填打站点会触发限流（429/5xx），错误页无 og:title → 否则静默丢篇
+      const res = await httpFetchWithRetry(miss.url)
+      if (!res.ok) return null
+      const meta = parseArticleMetaHtml(await res.text(), res.url || miss.url)
+      meta.publishedAt = meta.publishedAt ?? (miss.lastmod ? parseDateString(miss.lastmod) : null)
+      return { miss, meta }
+    } catch {
+      return null
+    }
+  })
+
+  let batch: AnthropicArticleMeta[] = []
+  const flush = () => {
+    if (batch.length > 0) {
+      onBackfill(batch, metaCache)
+      batch = []
+    }
+  }
+
+  for (const r of results) {
+    if (!r) continue
+    const { miss, meta } = r
+    const entry: ArticleMetaCache[string] = { title: meta.title, publishedAt: meta.publishedAt, summary: meta.summary, imageUrl: meta.imageUrl }
+    if (meta.canonicalUrl && meta.canonicalUrl !== miss.url) {
+      // 重定向：只写 canonical。不写 miss URL——否则二次 discover 缓存复活已去重文章（终审 I-1）
+      metaCache[meta.canonicalUrl] = entry
+    } else {
+      metaCache[miss.url] = entry
+    }
+    if (!meta.title) continue
+    if (knownUrls.has(meta.canonicalUrl)) continue
+    knownUrls.add(meta.canonicalUrl)
+    const filePath = saved.get(meta.canonicalUrl)
+    batch.push({
+      url: meta.canonicalUrl,
+      title: meta.title,
+      summary: meta.summary,
+      publishedAt: meta.publishedAt,
+      imageUrl: meta.imageUrl ? toAbsoluteUrl(meta.imageUrl) : null,
+      section: miss.source.key,
+      isSaved: !!filePath,
+      filePath,
+    })
+    if (batch.length >= 10) flush()
+  }
+  flush()
+}
+
 export async function discoverArticles(
-  libraryRoot: string
+  libraryRoot: string,
+  opts?: {
+    metaCache?: ArticleMetaCache
+    onBackfill?: (articles: AnthropicArticleMeta[], metaCache: ArticleMetaCache) => void
+  }
 ): Promise<{
   lastFetchedAt: string
   articles: AnthropicArticleMeta[]
   sectionStatus: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>>
 }> {
   const saved = findSavedArticles(libraryRoot)
-  const articles: AnthropicArticleMeta[] = []
+  const metaCache: ArticleMetaCache = opts?.metaCache ?? {}
+  const backfillMisses: BackfillMiss[] = []
   const sectionStatus: Partial<Record<AnthropicSectionKey, AnthropicSectionStatus>> = {}
   const failures: unknown[] = []
+  const discovered: { link: DiscoveredLink; section: AnthropicSectionKey }[] = []
 
-  for (const section of ANTHROPIC_SECTIONS) {
+  // 逐源独立 try/catch：单源失败隔离，仅记录 sectionStatus；全部失败才整体 throw。
+  for (const section of ANTHROPIC_SOURCES) {
     try {
-      const links = await runScriptInScraperWindow<
-        { url: string; title: string; summary: string | null; dateText: string | null; imageUrl: string | null }[]
-      >(buildListingScript(section), {
-        url: section.indexUrl,
-        waitForSelector: `a[href^="${section.linkPrefix}"]`,
-      })
-
-      const mapped = links
-        .map((link) => ({
-          url: link.url,
-          title: link.title,
-          summary: link.summary,
-          publishedAt: parseDateString(link.dateText),
-          imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
-          section: section.key,
-        }))
-        .filter((a) => a.title && a.url)
-
-      for (const a of mapped) {
-        const filePath = saved.get(a.url)
-        articles.push({ ...a, isSaved: !!filePath, filePath })
-      }
+      const links = await dispatchDiscover(section, metaCache, backfillMisses)
+      for (const link of links) discovered.push({ link, section: section.key })
       sectionStatus[section.key] = { fetchedAt: new Date().toISOString(), error: null }
     } catch (err) {
       failures.push(err)
@@ -203,13 +316,61 @@ export async function discoverArticles(
     }
   }
 
+  const mapped = discovered.map(({ link, section }) => {
+    const filePath = saved.get(link.url)
+    return {
+      url: link.url,
+      title: link.title,
+      summary: link.summary,
+      publishedAt: link.dateText ? parseDateString(link.dateText) : null,
+      imageUrl: toAbsoluteUrl(link.imageUrl ?? ''),
+      section,
+      isSaved: !!filePath,
+      filePath,
+    }
+  })
+  // 防御：static-list/rss 真实脏数据缺 h3/title 时会产出 title:null 裸行，过滤掉（无裸行契约）
+  const articles: AnthropicArticleMeta[] = []
+  for (const a of mapped) {
+    if (a.title && a.url) articles.push(a as AnthropicArticleMeta)
+  }
+
   // 全部失败才整体报错（走 IPC classifyError → parse-error/network-error 路径）；
   // 部分失败按栏目降级，面板逐栏目提示。
   if (articles.length === 0 && failures.length > 0) throw failures[0]
+
+  // 后台回填（主结果返回后继续）：索引页与缓存都未覆盖的 sitemap URL 逐页取元数据，
+  // 每 10 篇一批经 onBackfill 推送；未提供 onBackfill 的调用方（如 importArticle）不背回填成本。
+  if (backfillMisses.length > 0 && opts?.onBackfill) {
+    await runBackfill(
+      backfillMisses,
+      new Set(articles.map((a) => a.url)),
+      metaCache,
+      saved,
+      opts.onBackfill
+    )
+  }
+
   return { lastFetchedAt: new Date().toISOString(), articles, sectionStatus }
 }
 
-const ARTICLE_SCRIPT = `(() => {
+const DEFAULT_CONTENT_SELECTORS = [
+  'article',
+  'main article',
+  'main > div',
+  '[data-testid="article-body"]',
+  '.prose',
+  '.article-content',
+  'main',
+]
+
+/** 按来源参数化生成文章提取脚本：
+ *  内容容器 = 来源 contentSelectors + 主站默认链（去重）；
+ *  图片绝对化基于页面 URL（`new URL(src, window.location.href)`），不再硬编码主站域名；
+ *  日期链在 time/meta/JSON-LD 回退后追加 RSC `publishedOn` 提取（读原始 HTML 转义 JSON）。 */
+export function buildArticleScript(source: AnthropicSource): string {
+  const selectors = [...new Set([...(source.contentSelectors ?? []), ...DEFAULT_CONTENT_SELECTORS])]
+  return `(() => {
   const data = {
     title: '',
     url: window.location.href,
@@ -247,6 +408,12 @@ const ARTICLE_SCRIPT = `(() => {
       })
     } catch {}
   }
+  if (!data.publishedAt) {
+    try {
+      const m = document.documentElement.innerHTML.match(/\\\\?"publishedOn\\\\?":\\\\?"([^"\\\\]+)/)
+      if (m && m[1]) data.publishedAt = m[1]
+    } catch {}
+  }
 
   document.querySelectorAll('a[href*="/authors/"], [data-testid="author-name"], .author').forEach((el) => {
     const name = el.textContent?.trim()
@@ -273,7 +440,7 @@ const ARTICLE_SCRIPT = `(() => {
     || document.querySelector('meta[name="description"]')?.getAttribute('content')
     || ''
 
-  const selectors = ['article', 'main article', 'main > div', '[data-testid="article-body"]', '.prose', '.article-content', 'main']
+  const selectors = ${JSON.stringify(selectors)}
   let contentEl = null
   for (const sel of selectors) {
     contentEl = document.querySelector(sel)
@@ -286,8 +453,7 @@ const ARTICLE_SCRIPT = `(() => {
     clone.querySelectorAll('img').forEach((img) => {
       const src = img.getAttribute('src') || img.getAttribute('data-src')
       if (src) {
-        const absolute = src.startsWith('http') ? src : 'https://www.anthropic.com' + (src.startsWith('/') ? '' : '/') + src
-        img.setAttribute('src', absolute)
+        img.setAttribute('src', new URL(src, window.location.href).toString())
         img.removeAttribute('data-src')
       }
     })
@@ -300,10 +466,12 @@ const ARTICLE_SCRIPT = `(() => {
 
   return data
 })()`
+}
 
 async function extractArticle(
   url: string,
-  listingMeta: AnthropicArticleMeta | null
+  listingMeta: AnthropicArticleMeta | null,
+  source: AnthropicSource
 ) {
   const result = await runScriptInScraperWindow<{
     title: string
@@ -313,12 +481,15 @@ async function extractArticle(
     summary: string
     contentHtml: string
     images: { url: string; alt: string }[]
-  }>(ARTICLE_SCRIPT, { url, waitForSelector: 'main, article, [role="main"]' })
+  }>(buildArticleScript(source), {
+    url,
+    waitForSelector: source.contentSelectors?.[0] ?? 'main, article, [role="main"]',
+  })
 
   const pageImages = await runScriptInScraperWindow<
     { url: string | null; alt: string }[]
   >(
-    `Array.from(document.querySelectorAll('article img, main img')).map((img) => ({
+    `Array.from(document.querySelectorAll('d-article img, article img, main img')).map((img) => ({
       url: img.getAttribute('src') || img.getAttribute('data-src'),
       alt: img.getAttribute('alt') || ''
     })).filter((img) => img.url)`,
@@ -328,7 +499,7 @@ async function extractArticle(
   const imageMap = new Map<string, { url: string; alt: string }>()
   for (const img of [...result.images, ...pageImages]) {
     if (!img.url || img.url.includes('data:image')) continue
-    const absolute = toAbsoluteUrl(img.url)
+    const absolute = new URL(img.url, url).toString()
     imageMap.set(absolute, { url: absolute, alt: img.alt })
   }
   const images = Array.from(imageMap.values())
@@ -392,7 +563,7 @@ async function downloadImages(
     usedNames.add(name)
     const dest = path.join(assetsDir, name)
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      const res = await httpFetch(url)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const buffer = Buffer.from(await res.arrayBuffer())
       fs.writeFileSync(dest, buffer)
@@ -418,7 +589,8 @@ function rewriteMarkdownImages(markdown: string, urlMap: Map<string, string>): s
 
 export async function importArticle(
   url: string,
-  libraryRoot: string
+  libraryRoot: string,
+  listingMeta: AnthropicArticleMeta | null = null
 ): Promise<{ filePath: string; wasAlreadySaved: boolean }> {
   const saved = findSavedArticles(libraryRoot)
   const existing = saved.get(url)
@@ -427,11 +599,10 @@ export async function importArticle(
     if (fs.existsSync(existing)) return { filePath: existing, wasAlreadySaved: true }
   }
 
-  const listing = await discoverArticles(libraryRoot)
-  const meta = listing.articles.find((a) => a.url === url) || null
-  const article = await extractArticle(url, meta)
-
-  const section = meta?.section ?? sectionForUrl(article.url)
+  const section = listingMeta?.section ?? sectionForUrl(url)
+  // institute 等遗留 URL 不在 ANTHROPIC_SOURCES 中，回落 engineering 默认链
+  const source = ANTHROPIC_SOURCES.find((s) => s.key === section) ?? ANTHROPIC_SOURCES.find((s) => s.key === 'engineering')!
+  const article = await extractArticle(url, listingMeta, source)
   const publishedAt = article.publishedAt || new Date().toISOString()
   const folder = getImportFolder(publishedAt)
   const dir = path.join(libraryRoot, IMPORT_DIR, folder)

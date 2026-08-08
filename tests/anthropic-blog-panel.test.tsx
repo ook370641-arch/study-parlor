@@ -44,6 +44,13 @@ function webTitles(): (string | null | undefined)[] {
     .map((row) => row.querySelector('[data-testid="anthropic-article-title"]')?.textContent)
 }
 
+/** 按 data-section 查找五源 chip */
+function chip(key: string): HTMLElement {
+  const el = screen.getAllByTestId('anthropic-section-chip').find((c) => c.getAttribute('data-section') === key)
+  if (!el) throw new Error(`chip ${key} not found`)
+  return el
+}
+
 describe('AnthropicBlogPanel', () => {
   beforeEach(() => {
     cleanup()
@@ -173,7 +180,7 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.queryByTestId('article-assistant-panel')).not.toBeInTheDocument()
   })
 
-  it('合并时间线按日期倒序渲染，色签过滤可切换', async () => {
+  it('合并时间线按日期倒序渲染；All + 五源多选过滤状态机', () => {
     useStore.setState({
       anthropicBlogCache: {
         lastFetchedAt: null,
@@ -181,6 +188,7 @@ describe('AnthropicBlogPanel', () => {
           { ...article('e1', 'Eng Old'), section: 'engineering', publishedAt: '2026-07-01T00:00:00.000Z' },
           { ...article('i1', 'Inst New'), section: 'institute', publishedAt: '2026-08-05T00:00:00.000Z' },
           { ...article('r1', 'Res Mid'), section: 'research', publishedAt: '2026-08-01T00:00:00.000Z' },
+          { ...article('a1', 'Align Low'), section: 'alignment', publishedAt: '2026-06-01T00:00:00.000Z' },
         ],
         loading: false,
         error: null,
@@ -188,12 +196,31 @@ describe('AnthropicBlogPanel', () => {
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
-    expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Eng Old'])
 
-    fireEvent.click(screen.getByTestId('anthropic-section-filter').querySelector('[data-section="institute"]')!)
-    await waitFor(() => {
-      expect(webTitles()).toEqual(['Res Mid', 'Eng Old'])
-    })
+    // 初始 All：全源可见、All chip 高亮、五源 chip 全在（无 institute chip）
+    expect(screen.getAllByTestId('anthropic-section-chip')).toHaveLength(5)
+    expect(screen.getByTestId('anthropic-filter-all')).toHaveAttribute('aria-pressed', 'true')
+    expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Eng Old', 'Align Low'])
+
+    // 点 Research → 仅它亮（institute 遗留归组 research，仍在列表）
+    fireEvent.click(chip('research'))
+    expect(chip('research')).toHaveAttribute('aria-pressed', 'true')
+    expect(chip('alignment')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('anthropic-filter-all')).toHaveAttribute('aria-pressed', 'false')
+    expect(webTitles()).toEqual(['Inst New', 'Res Mid'])
+
+    // 再点 Alignment → 两个亮
+    fireEvent.click(chip('alignment'))
+    expect(chip('research')).toHaveAttribute('aria-pressed', 'true')
+    expect(chip('alignment')).toHaveAttribute('aria-pressed', 'true')
+    expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Align Low'])
+
+    // 点灭两个 → 回 All
+    fireEvent.click(chip('research'))
+    expect(webTitles()).toEqual(['Align Low'])
+    fireEvent.click(chip('alignment'))
+    expect(screen.getByTestId('anthropic-filter-all')).toHaveAttribute('aria-pressed', 'true')
+    expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Eng Old', 'Align Low'])
   })
 
   it('栏目失败时显示重试提示', () => {
@@ -203,14 +230,122 @@ describe('AnthropicBlogPanel', () => {
         articles: [article('e1', 'Eng')],
         loading: false,
         error: null,
-        sectionStatus: { institute: { fetchedAt: null, error: { code: 'parse-error', message: '解析页面失败' } } },
+        sectionStatus: { research: { fetchedAt: null, error: { code: 'parse-error', message: '解析页面失败' } } },
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
     const banner = screen.getByTestId('anthropic-section-error')
-    expect(banner).toHaveAttribute('data-section', 'institute')
-    expect(banner.textContent).toContain('Institute')
+    expect(banner).toHaveAttribute('data-section', 'research')
+    expect(banner.textContent).toContain('Research')
     fireEvent.click(banner)
     expect(useStore.getState().discoverAnthropicArticles).toHaveBeenCalled()
+  })
+
+  it('constitution 条目经 filterGroupOf 归 engineering：只选 research 时隐藏，选 engineering 时显示', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('r1', 'Res'), section: 'research' },
+          { ...article('e1', 'Eng'), section: 'engineering' },
+        ],
+        loading: false,
+        error: null,
+        sectionStatus: {},
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    // 初始 All：宪法条目显示
+    expect(screen.getByText("Claude's Constitution · 可视化双语读本")).toBeInTheDocument()
+
+    // 只选 research → 宪法（engineering）隐藏
+    fireEvent.click(chip('research'))
+    expect(screen.queryByText("Claude's Constitution · 可视化双语读本")).not.toBeInTheDocument()
+
+    // 加选 engineering → 宪法显示
+    fireEvent.click(chip('engineering'))
+    expect(screen.getByText("Claude's Constitution · 可视化双语读本")).toBeInTheDocument()
+  })
+
+  it('institute 遗留文章归 research：只选 research 时仍显示', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('i1', 'Inst'), section: 'institute' },
+          { ...article('e1', 'Eng'), section: 'engineering' },
+        ],
+        loading: false,
+        error: null,
+        sectionStatus: {},
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    expect(screen.getByText('Inst')).toBeInTheDocument()
+    fireEvent.click(chip('research'))
+    expect(screen.getByText('Inst')).toBeInTheDocument()
+    expect(screen.queryByText('Eng')).not.toBeInTheDocument()
+  })
+
+  it('imageUrl 为 null 的行渲染占位块不崩（alignment/circuits 无封面）', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('c1', 'Circuits'), section: 'alignment' },
+          { ...article('p1', 'Product'), section: 'product' },
+        ],
+        loading: false,
+        error: null,
+        sectionStatus: {},
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    // 2 篇网络文章 + 1 个本地置顶宪法条目
+    expect(screen.getAllByTestId('anthropic-article-row')).toHaveLength(3)
+    expect(screen.getAllByText('无配图')).toHaveLength(2)
+  })
+
+  it('publishedAt 月初 ISO（2026-07-01）时 formatDate 正常显示', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('e1', 'Eng'), section: 'engineering', publishedAt: '2026-07-01' },
+        ],
+        loading: false,
+        error: null,
+        sectionStatus: {},
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    expect(screen.queryByText('未知日期')).not.toBeInTheDocument()
+    expect(screen.getByText(/2026年/)).toBeInTheDocument()
+  })
+
+  it('AnthropicArticleRow 色签对五源 + institute 遗留值都取到 label/color', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('e1', 'Eng'), section: 'engineering' },
+          { ...article('i1', 'Inst'), section: 'institute' },
+          { ...article('r1', 'Res'), section: 'research' },
+          { ...article('a1', 'Align'), section: 'alignment' },
+        ],
+        loading: false,
+        error: null,
+        sectionStatus: {},
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    const tags = screen.getAllByTestId('anthropic-section-tag')
+    const labels = tags.map((t) => t.textContent)
+    expect(labels).toEqual(expect.arrayContaining(['Engineering', 'Institute', 'Research', 'Alignment']))
+    // institute 色签走 LEGACY_SECTION_META
+    const instTag = tags.find((t) => t.textContent === 'Institute')!
+    expect(instTag).toHaveStyle({ color: '#8a9a5b' })
   })
 })

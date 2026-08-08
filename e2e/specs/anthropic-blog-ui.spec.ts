@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
+import { reachableArticleRow } from '../helpers/test-library'
 
 test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
   test('E2E-6: 列表收起与展开', async ({ window }) => {
@@ -47,10 +48,11 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
     await rows.first().waitFor({ timeout: 120000 })
 
     // 找到一篇未保存的文章 — 未保存时左边框为半透明（非 ember 色）
-    // 宪法报告行恒置顶（T8 引入）且无 saved pill，需同时排除
+    // 宪法报告行恒置顶（T8 引入）且无 saved pill，需同时排除；Product 源在无 VPN 的 E2E 环境不可达，也排除
     const unsavedRow = rows
       .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicArticleSaved) })
       .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
+      .filter({ hasNot: window.locator(`${SELECTORS.briefing.anthropicSectionTag}:has-text("Product")`) })
       .first()
     await expect(unsavedRow).toBeVisible()
     // 验证未保存状态：左边框为 subtle 半透明（无 ember 类）
@@ -103,10 +105,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
       .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
       .first()
     if (!(await savedRow.isVisible().catch(() => false))) {
-      await rows
-        .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
-        .first()
-        .click()
+      await reachableArticleRow(window).click()
       await window
         .locator(SELECTORS.briefing.anthropicArticleReader)
         .waitFor({ state: 'visible', timeout: 120000 })
@@ -143,10 +142,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
       .first()
     if (!(await savedRow.isVisible().catch(() => false))) {
       // skip the pinned constitution row (T8)
-      await rows
-        .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
-        .first()
-        .click()
+      await reachableArticleRow(window).click()
       await window
         .locator(SELECTORS.briefing.anthropicArticleReader)
         .waitFor({ state: 'visible', timeout: 120000 })
@@ -220,11 +216,8 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
 
     const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
     await rows.first().waitFor({ timeout: 120000 })
-    // skip the pinned constitution row (T8)
-    await rows
-      .filter({ hasNot: window.locator(SELECTORS.briefing.anthropicConstitutionPill) })
-      .first()
-      .click()
+    // 打开可达源文章（跳过宪法置顶 + Product——claude.com 无 VPN 不可达）
+    await reachableArticleRow(window).click()
 
     const reader = window.locator(SELECTORS.briefing.anthropicArticleReader)
     await reader.waitFor({ state: 'visible', timeout: 120000 })
