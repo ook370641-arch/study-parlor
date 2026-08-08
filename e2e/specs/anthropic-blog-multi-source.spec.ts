@@ -238,12 +238,8 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
         'E2E Bf Eng',
       ])
 
-      // 回填合并不产生重复：即便「新文章」提示出现，点击合入后行数仍为 1（residual Minor 3）
-      const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
-      if (await prompt.isVisible().catch(() => false)) {
-        await prompt.click()
-        await expect(mockRow).toHaveCount(1)
-      }
+      // 回填合并不产生重复：gate 返回原始列表（无 mock），挂载 discover 不识别「新文章」，
+      // 去重由 toHaveCount(1)（事件后 + reload 后两次）与 mergeArticlesByUrl 单测覆盖。
 
       // reload → 文章标题/日期仍在 + state.json 断言 articleMetaCache 非空（residual #1）
       // reload 后 profile 已持久化，cover 直接显示「夜航简报」按钮（profile.name 分支），

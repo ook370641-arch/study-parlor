@@ -65,12 +65,18 @@ export function registerAnthropicIpc(cfg: AppConfig) {
           sectionStatus: prev?.sectionStatus ?? {},
           articleMetaCache: metaCache,
         }
+        // 持久化合并后的缓存（reload 后文章仍在 state.json），但 discover 返回值用原始列表——
+        // backfill 事件是渲染侧唯一入场路径，确保「初始无该文 → 事件到达新行出现」在 IPC 层真实成立。
         await patchState({ anthropicBlogCache: cache })
-        // 异步推送 backfill 事件：给 spec 留出「初始时间线无该文 → 事件到达后新行出现」的断言窗口。
         setTimeout(() => {
           send('anthropic:backfill', { articles: [mockArticle] })
         }, 1200)
-        return { ok: true as const, lastFetchedAt: now, articles, sectionStatus: cache.sectionStatus }
+        return {
+          ok: true as const,
+          lastFetchedAt: now,
+          articles: prev?.articles ?? [],
+          sectionStatus: cache.sectionStatus,
+        }
       }
       // 回填批次累计，最终并入主结果——保证回填文章在 reload 后仍在时间线（而不只靠 metaCache 重建）。
       const backfilled: AnthropicArticleMeta[] = []
