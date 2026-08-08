@@ -57,7 +57,8 @@
         "article-assistant*.spec.ts",
         "article-annotations.spec.ts",
         "external-materials*.spec.ts",
-        "guide-visibility.spec.ts"
+        "guide-visibility.spec.ts",
+        "blog-guide-terminal.spec.ts"
       ]
     },
     "writing": {
@@ -108,7 +109,8 @@
         "src/lib/anthropic-sections.ts"
       ],
       "specs": [
-        "anthropic-blog*.spec.ts"
+        "anthropic-blog*.spec.ts",
+        "blog-guide-terminal.spec.ts"
       ]
     },
     "cover-home": {

@@ -167,6 +167,7 @@ export const SELECTORS = {
     anthropicRefreshButton: '[data-testid="anthropic-refresh-button"]',
     anthropicArticleRow: '[data-testid="anthropic-article-row"]',
     anthropicArticleTitle: '[data-testid="anthropic-article-title"]',
+    anthropicSectionTag: '[data-testid="anthropic-section-tag"]',
     anthropicArticleSaved: '[data-testid="anthropic-article-saved"]',
     anthropicArticleReader: '[data-testid="anthropic-article-reader"]',
     anthropicReaderTitle: '[data-testid="anthropic-reader-title"]',

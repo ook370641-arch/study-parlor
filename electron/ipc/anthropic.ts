@@ -36,6 +36,42 @@ export function registerAnthropicIpc(cfg: AppConfig) {
       ) {
         throw new Error('NETWORK_ERROR: offline (E2E)')
       }
+      // E2E hook: discover returns ok without touching the network, then asynchronously
+      // emits a single backfill article (mirrors Task 4 runBackfill). Gated identically
+      // to E2E_ANTHROPIC_OFFLINE so unit tests and prod never take it. The mock article
+      // is merged into the persisted cache (same merge semantics as the real flow), so it
+      // survives a renderer reload and the metaCache line in the final patch is preserved
+      // (Task 8 backfill-event + articleMetaCache persistence E2E).
+      if (
+        process.env.NODE_ENV === 'test' &&
+        process.env.E2E_CONFIG_DIR &&
+        process.env.E2E_ANTHROPIC_BACKFILL === '1'
+      ) {
+        const now = new Date().toISOString()
+        const mockArticle: AnthropicArticleMeta = {
+          url: 'https://alignment.anthropic.com/2026/e2e-backfill/',
+          title: 'E2E Backfill 回填文章',
+          summary: 'E2E 回填摘要',
+          publishedAt: '2026-07-20T00:00:00.000Z',
+          imageUrl: null,
+          section: 'alignment',
+        }
+        const articles = mergeArticlesByUrl(prev?.articles ?? [], [mockArticle])
+        const cache: AnthropicBlogCache = {
+          lastFetchedAt: now,
+          articles,
+          loading: false,
+          error: null,
+          sectionStatus: prev?.sectionStatus ?? {},
+          articleMetaCache: metaCache,
+        }
+        await patchState({ anthropicBlogCache: cache })
+        // 异步推送 backfill 事件：给 spec 留出「初始时间线无该文 → 事件到达后新行出现」的断言窗口。
+        setTimeout(() => {
+          send('anthropic:backfill', { articles: [mockArticle] })
+        }, 1200)
+        return { ok: true as const, lastFetchedAt: now, articles, sectionStatus: cache.sectionStatus }
+      }
       // 回填批次累计，最终并入主结果——保证回填文章在 reload 后仍在时间线（而不只靠 metaCache 重建）。
       const backfilled: AnthropicArticleMeta[] = []
       const result = await discoverArticles(cfg.libraryPath, {
