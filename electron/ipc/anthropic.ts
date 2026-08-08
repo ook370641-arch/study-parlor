@@ -85,8 +85,9 @@ export function registerAnthropicIpc(cfg: AppConfig) {
         onBackfill: (articles, updatedMetaCache) => {
           backfilled.push(...articles)
           send('anthropic:backfill', { articles })
+          const cur = getCurrentState().anthropicBlogCache ?? ({} as AnthropicBlogCache)
           patchState({
-            anthropicBlogCache: { ...getCurrentState().anthropicBlogCache, articleMetaCache: updatedMetaCache },
+            anthropicBlogCache: { ...cur, articleMetaCache: updatedMetaCache },
           })
         },
       })
