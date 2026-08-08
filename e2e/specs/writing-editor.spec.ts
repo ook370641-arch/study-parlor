@@ -273,6 +273,38 @@ test.describe('@p2 writing-editor', () => {
     ).toBeVisible({ timeout: 3000 })
   })
 
+  // ── Toolbar: bold/italic real effect ──────────────────────────────
+
+  test('加粗/斜体按钮真实生效：选中文字 → B → <strong>；I → <em>', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.newFileButton).click()
+    await window.getByTestId('writing-prompt-input').fill('加粗测试')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await window.waitForTimeout(2000)
+
+    const writing = new WritingPage(window)
+    await expect(writing.editor).toBeVisible({ timeout: 5000 })
+
+    await writing.typeInEditor('需要加粗和斜体的文字')
+    await writing.editor.locator('.ProseMirror').click()
+    await window.keyboard.press('Control+a')
+    await window.waitForTimeout(200)
+
+    // 点 B → 文字被 <strong> 包裹（旧用例只查按钮可见性，
+    // 导致「传命令对象给 callCommand 抛错、按钮全无效」的 bug 长期未暴露）
+    await window.locator(SELECTORS.writing.toolbarBold).click()
+    await expect(
+      writing.editor.locator('strong', { hasText: '需要加粗和斜体的文字' })
+    ).toBeVisible({ timeout: 3000 })
+
+    // 点 I → 同一选区再被 <em> 包裹
+    await window.locator(SELECTORS.writing.toolbarItalic).click()
+    await expect(
+      writing.editor.locator('em', { hasText: '需要加粗和斜体的文字' })
+    ).toBeVisible({ timeout: 3000 })
+  })
+
   // ── Toolbar: text color round-trip ────────────────────────────────
 
   test('选中文字着色 → Ctrl+S → reload → 重开后 span 与磁盘 .md 均保留颜色', async ({ window, testLibraryPath }) => {

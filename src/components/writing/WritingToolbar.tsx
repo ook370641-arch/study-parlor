@@ -44,7 +44,7 @@ export function WritingToolbar() {
       {/* Markdown formatting */}
       <button
         data-testid="writing-toolbar-bold"
-        onClick={() => exec(toggleStrongCommand)}
+        onClick={() => exec(toggleStrongCommand.key)}
         className="px-1.5 py-0.5 text-xs font-bold text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="加粗 (B)"
       >
@@ -52,7 +52,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-italic"
-        onClick={() => exec(toggleEmphasisCommand)}
+        onClick={() => exec(toggleEmphasisCommand.key)}
         className="px-1.5 py-0.5 text-xs italic text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="斜体 (I)"
       >
@@ -60,7 +60,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-strikethrough"
-        onClick={() => exec(toggleStrikethroughCommand)}
+        onClick={() => exec(toggleStrikethroughCommand.key)}
         className="px-1.5 py-0.5 text-xs line-through text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="删除线"
       >
@@ -69,7 +69,7 @@ export function WritingToolbar() {
       <span className="text-parchment/20 mx-0.5">|</span>
       <button
         data-testid="writing-toolbar-blockquote"
-        onClick={() => exec(wrapInBlockquoteCommand)}
+        onClick={() => exec(wrapInBlockquoteCommand.key)}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="引用"
       >
@@ -77,7 +77,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-bullet-list"
-        onClick={() => exec(wrapInBulletListCommand)}
+        onClick={() => exec(wrapInBulletListCommand.key)}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="无序列表"
       >
@@ -85,7 +85,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-ordered-list"
-        onClick={() => exec(wrapInOrderedListCommand)}
+        onClick={() => exec(wrapInOrderedListCommand.key)}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="有序列表"
       >
@@ -93,7 +93,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-hr"
-        onClick={() => exec(insertHrCommand)}
+        onClick={() => exec(insertHrCommand.key)}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="分割线"
       >
@@ -102,7 +102,7 @@ export function WritingToolbar() {
       <span className="text-parchment/20 mx-0.5">|</span>
       <button
         data-testid="writing-toolbar-table"
-        onClick={() => exec(insertTableCommand)}
+        onClick={() => exec(insertTableCommand.key)}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="插入表格"
       >
