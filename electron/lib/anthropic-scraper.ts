@@ -137,7 +137,7 @@ export function buildListingScript(section: AnthropicSource): string {
     if (!container) container = a.parentElement
 
     const href = a.getAttribute('href')
-    const url = href.startsWith('http') ? href : 'https://www.anthropic.com' + href
+    const url = new URL(href, window.location.href).toString()
 
     const titleEl = container?.querySelector('h2, h3, h4, [class*="__title"], [class*="title"]')
     const title = titleEl?.textContent?.trim() || a.textContent?.trim() || null
@@ -160,7 +160,7 @@ export function buildListingScript(section: AnthropicSource): string {
     const href = a.getAttribute('href')
     if (!href) return
     if (EXCLUDE_PREFIXES.some((p) => href.startsWith(p))) return
-    const url = href.startsWith('http') ? href : 'https://www.anthropic.com' + href
+    const url = new URL(href, window.location.href).toString()
     if (seen.has(url)) return
     seen.add(url)
     results.push(extractCard(a))
@@ -261,9 +261,11 @@ async function runBackfill(
     if (!r) continue
     const { miss, meta } = r
     const entry: ArticleMetaCache[string] = { title: meta.title, publishedAt: meta.publishedAt, summary: meta.summary, imageUrl: meta.imageUrl }
-    metaCache[miss.url] = entry
     if (meta.canonicalUrl && meta.canonicalUrl !== miss.url) {
+      // 重定向：只写 canonical。不写 miss URL——否则二次 discover 缓存复活已去重文章（终审 I-1）
       metaCache[meta.canonicalUrl] = entry
+    } else {
+      metaCache[miss.url] = entry
     }
     if (!meta.title) continue
     if (knownUrls.has(meta.canonicalUrl)) continue

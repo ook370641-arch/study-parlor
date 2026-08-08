@@ -93,11 +93,6 @@ describe('anthropic integration', () => {
       throw new Error(`Unexpected script: ${script.slice(0, 80)}`)
     })
 
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      arrayBuffer: async () => new ArrayBuffer(8),
-    } as Response)
-
     vi.mocked(httpFetch).mockImplementation(async (url: string) => {
       if (url === IMAGE_URL) {
         return { ok: true, url, arrayBuffer: async () => new ArrayBuffer(8) } as unknown as Response
@@ -217,6 +212,9 @@ describe('discoverArticles multi-source', () => {
     // M2：product 源带 linkPrefix '/blog/'，避免生成 a[href^="undefined"] 的 20s 空等
     expect(buildListingScript(src('product'))).toContain('a[href^="/blog/"]')
     expect(buildListingScript(src('product'))).not.toContain('a[href^="undefined"]')
+    // M1：相对 href 用页面上下文解析（window.location.href），不硬编码 www.anthropic.com 拼接
+    expect(buildListingScript(src('engineering'))).toContain('new URL(href, window.location.href).toString()')
+    expect(buildListingScript(src('engineering'))).not.toContain("'https://www.anthropic.com' +")
   })
 
   it('五源合并返回：每源文章数 = fixture 数（25/144/54/51/204），research 无 team 页，每篇有标题', async () => {
@@ -340,10 +338,11 @@ describe('discoverArticles multi-source', () => {
     expect(pushed[0].section).toBe('engineering')
     expect(pushed[0].publishedAt).toBe(new Date('2026-08-03').toISOString())
 
-    // metaCache 持久化：miss.url 与 canonicalUrl 都写
+    // metaCache 持久化：c（非重定向）写 miss.url；dup 重定向只写 canonical，不写 miss URL 键（终审 I-1）
     const finalCache = onBackfill.mock.calls[0][1] as ArticleMetaCache
     expect(finalCache['https://www.anthropic.com/engineering/c']?.title).toBe('C Real Title')
-    expect(finalCache['https://www.anthropic.com/engineering/dup']?.title).toBe('A Title')
+    expect(finalCache['https://www.anthropic.com/engineering/a']?.title).toBe('A Title')
+    expect(finalCache['https://www.anthropic.com/engineering/dup']).toBeUndefined()
   })
 
   it('未提供 onBackfill 时不抓取回填文章页（调用方不背回填成本）', async () => {
@@ -403,6 +402,54 @@ describe('discoverArticles multi-source', () => {
     const secondBackfill = vi.fn()
     const r2 = await discoverArticles(tmp, { metaCache: cache, onBackfill: secondBackfill })
     expect(r2.articles.map((a) => a.url)).toContain('https://www.anthropic.com/engineering/c')
+    expect(secondBackfill).not.toHaveBeenCalled()
+  })
+
+  it('二次 discover 无重复：重定向文章只出现一次，miss URL 不因缓存复活（终审 I-1）', async () => {
+    const ENG_SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.anthropic.com/engineering/a</loc><lastmod>2026-08-01</lastmod></url>
+  <url><loc>https://www.anthropic.com/engineering/dup</loc><lastmod>2026-08-04</lastmod></url>
+</urlset>`
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === 'https://www.anthropic.com/sitemap.xml') return textResponse(ENG_SITEMAP)
+      if (url === 'https://claude.com/sitemap.xml') return textResponse('<urlset></urlset>')
+      if (url === 'https://alignment.anthropic.com/') return textResponse('<html></html>')
+      if (url === 'https://transformer-circuits.pub/feed.xml') return textResponse('<feed></feed>')
+      if (url === 'https://www.anthropic.com/engineering/dup') {
+        // 重定向：最终 URL 落到已发现的 a → canonicalUrl = a → 去重不推送
+        return textResponse(
+          '<html><head><meta property="og:title" content="A Title"/></head></html>',
+          'https://www.anthropic.com/engineering/a'
+        )
+      }
+      throw new Error(`Unexpected httpFetch url: ${url}`)
+    })
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async (_script, opts) => {
+      const url = (opts as { url: string }).url
+      if (url.includes('/engineering')) {
+        return [{ url: 'https://www.anthropic.com/engineering/a', title: 'A Title', summary: null, dateText: 'Aug 1, 2026', imageUrl: null }]
+      }
+      return []
+    })
+
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+
+    // 第一轮：dup 未覆盖 → 回填 → 重定向去重不推送；metaCache 原地写入 canonical（不写 miss URL 键）
+    // 注：only miss 是 dup（重定向到已发现的 a）→ 无推送 → onBackfill 不触发，缓存靠同对象引用传入可见
+    const cache: ArticleMetaCache = {}
+    const firstBackfill = vi.fn()
+    const r1 = await discoverArticles(tmp, { metaCache: cache, onBackfill: firstBackfill })
+    expect(r1.articles.map((a) => a.url)).toEqual(['https://www.anthropic.com/engineering/a'])
+    expect(firstBackfill).not.toHaveBeenCalled()
+    expect(cache['https://www.anthropic.com/engineering/a']?.title).toBe('A Title')
+    expect(cache['https://www.anthropic.com/engineering/dup']).toBeUndefined()
+
+    // 第二轮：同一 metaCache → dup 不复活（miss URL 键未写），时间线仍只出现 a 一次
+    const secondBackfill = vi.fn()
+    const r2 = await discoverArticles(tmp, { metaCache: cache, onBackfill: secondBackfill })
+    expect(r2.articles.map((a) => a.url)).toEqual(['https://www.anthropic.com/engineering/a'])
+    expect(r2.articles.filter((x) => x.url === 'https://www.anthropic.com/engineering/a')).toHaveLength(1)
     expect(secondBackfill).not.toHaveBeenCalled()
   })
 
