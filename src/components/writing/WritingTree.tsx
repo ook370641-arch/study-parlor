@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import { sortNodesByOrder } from '@/lib/writing-tree-utils'
+import { sortNodesByOrder, countFiles } from '@/lib/writing-tree-utils'
 import type { WritingTreeNode, WritingRoot } from '@shared/index'
 import { PromptDialog } from './PromptDialog'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -27,7 +27,6 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [dropPos, setDropPos] = useState<'before' | 'after' | null>(null)
-  const [hovered, setHovered] = useState(false)
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
   const isSelected = selectedPath === node.path
@@ -105,7 +104,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
     <div>
       <div
         data-testid="writing-tree-node"
-        className={`flex items-center gap-1 px-2 py-1 cursor-pointer rounded transition-colors select-none
+        className={`group flex items-center gap-1 px-2 py-1 cursor-pointer rounded transition-colors select-none
           ${isSelected
             ? isAcademic ? 'bg-ember/10 text-ember' : 'bg-[#1a1a1a]/10 text-[#1a1a1a]'
             : isAcademic ? 'text-parchment/70 hover:text-parchment hover:bg-parchment/5' : 'text-[#6b5d52] hover:text-[#2a1f1a] hover:bg-black/5'}
@@ -115,8 +114,6 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         style={{ fontSize: 'var(--writing-ui-size)', paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.setData('text/writing-path', node.path)
@@ -149,28 +146,28 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         <span className="w-4 text-center shrink-0">{isDir ? (open ? '▾' : '▸') : '·'}</span>
         <div className="min-w-0 flex-1">
           <span className="truncate block">{node.name}</span>
-          {!isDir && hovered && (
-            <div
-              className="text-[10px] text-parchment/50 mt-0.5"
-              style={{
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-              }}
+        </div>
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          {isDir && (
+            <button
+              data-testid="writing-node-create"
+              data-path={node.path}
+              title="在此分组新建文章"
+              className={`px-1 text-xs ${isAcademic ? 'text-parchment/50 hover:text-ember' : 'text-[#6b5d52] hover:text-[#8a3a3a]'}`}
+              onClick={(e) => { e.stopPropagation(); doNewFile() }}
             >
-              {node.summary ? (
-                <>
-                  {node.summary}
-                  {node.catalogUpdatedAt && (
-                    <span className="text-parchment/30 ml-2">{node.catalogUpdatedAt}</span>
-                  )}
-                </>
-              ) : (
-                <span className="text-parchment/30 italic">摘要生成中…</span>
-              )}
-            </div>
+              ＋
+            </button>
           )}
+          <button
+            data-testid="writing-node-delete"
+            data-path={node.path}
+            title={isDir ? '解散分组' : '删除文章'}
+            className={`px-1 text-xs ${isAcademic ? 'text-parchment/50 hover:text-red-400' : 'text-[#6b5d52] hover:text-red-600'}`}
+            onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true) }}
+          >
+            🗑
+          </button>
         </div>
       </div>
 
@@ -213,7 +210,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
             className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-red-400"
             onClick={doDelete}
           >
-            删除
+            {isDir ? '解散分组' : '删除'}
           </button>
         </div>
       )}
@@ -232,7 +229,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
 
       <ConfirmDialog
         open={confirmingDelete}
-        title="删除"
+        title={isDir ? '解散分组' : '删除'}
         icon="trash"
         confirmLabel="删除"
         confirmVariant="danger"
@@ -245,7 +242,11 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
           })()
         }}
       >
-        <p>确定删除「{node.name}」？此操作不可撤销。</p>
+        {isDir ? (
+          <p>确定解散分组「{node.name}」？组内 {countFiles(node.children)} 篇文章将移回上一级，不会被删除。</p>
+        ) : (
+          <p>确定删除《{node.name}》？文件将移入回收站（.trash/），可手动恢复。</p>
+        )}
       </ConfirmDialog>
     </div>
   )

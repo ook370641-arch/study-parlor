@@ -48,7 +48,7 @@ test.describe('@p2 writing-tree', () => {
 
     // Find the 随笔 directory node (not 分布式随笔)
     const essaysNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /^[▾▸]随笔$/
+      hasText: /^[▾▸]随笔/
     }).first()
     await essaysNode.click({ button: 'right' })
     await expect(window.getByRole('button', { name: '新建子分组', exact: true })).toBeVisible({ timeout: 3000 })
@@ -81,35 +81,33 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
   })
 
-  test('删除确认：cancel → 文件仍在；confirm → 文件删除', async ({ window, testLibraryPath }) => {
+  test('删除确认：cancel → 文件仍在；confirm → 文件移入回收站', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
-
-    const deleteButton = () => window.getByRole('button', { name: '删除', exact: true })
 
     const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({
       hasText: /七月夜话\.md/
     }).first()
     await fileNode.click({ button: 'right' })
-    await expect(deleteButton()).toBeVisible({ timeout: 3000 })
+    const menuDelete = window.getByRole('button', { name: '删除', exact: true })
+    await expect(menuDelete).toBeVisible({ timeout: 3000 })
+    await menuDelete.click()
 
-    // Cancel — fire-and-forget click: window.confirm blocks the renderer synchronously,
-    // so awaiting click() would deadlock before we can handle the dialog.
-    let dialogPromise = window.waitForEvent('dialog')
-    void deleteButton().click()
-    let dialog = await dialogPromise
-    await dialog.dismiss()
+    const dialog = window.getByTestId('confirm-dialog')
+    await expect(dialog).toBeVisible({ timeout: 3000 })
+
+    // Cancel — file stays in place
+    await dialog.getByTestId('confirm-dialog-cancel').click()
     await window.waitForTimeout(500)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(true)
 
-    // Confirm — re-open context menu
+    // Confirm — re-open context menu; file moves to trash
     await fileNode.click({ button: 'right' })
-    await expect(deleteButton()).toBeVisible({ timeout: 3000 })
-    dialogPromise = window.waitForEvent('dialog')
-    void deleteButton().click()
-    dialog = await dialogPromise
-    await dialog.accept()
+    await window.getByRole('button', { name: '删除', exact: true }).click()
+    await expect(dialog).toBeVisible({ timeout: 3000 })
+    await dialog.getByTestId('confirm-dialog-confirm').click()
     await window.waitForTimeout(1500)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '.trash', '随笔', '七月夜话.md'))).toBe(true)
   })
 
   test('伴生文件不显示：.assistant.md 不在树中', async ({ window, testLibraryPath }) => {
@@ -129,13 +127,13 @@ test.describe('@p2 writing-tree', () => {
 
     // Expand sub-directory to reveal the source file (技术笔记 is depth-0, starts open;
     // 子组 is depth-1, starts closed)
-    const subDir = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]子组$/ }).first()
+    const subDir = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]子组/ }).first()
     await subDir.click()
     await window.waitForTimeout(300)
 
     // Use Playwright dragTo: drag "深度文章" node onto "随笔" directory node
     const srcNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '深度文章' }).first()
-    const targetDir = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔$/ }).first()
+    const targetDir = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
 
     // dragTo uses HTML5 dataTransfer which may be unreliable in Electron;
     // fall back to invoking the IPC move handler directly via evaluate
@@ -163,16 +161,89 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(srcPath)).toBe(false)
   })
 
-  test('hover 文件节点 → 显示 catalog 摘要', async ({ window, testLibraryPath }) => {
+  test('悬停显示行内按钮：文章行只有 🗑，分组行有 ＋ 和 🗑', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    // seedWritingTree + seedCatalogJson ensure 七月夜话 has a summary
-    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
-    await fileNode.hover()
-    await window.waitForTimeout(500)
+    // File row: delete button container hidden until hover; no create button
+    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
+    const fileBtnBar = fileRow.getByTestId('writing-node-delete').locator('..')
+    await expect(fileBtnBar).toHaveCSS('opacity', '0')
+    await fileRow.hover()
+    await expect(fileBtnBar).toHaveCSS('opacity', '1')
+    await expect(fileRow.getByTestId('writing-node-create')).toHaveCount(0)
 
-    // Summary text should appear (seeded catalog entry: "关于七月的随笔")
-    const nodeText = await fileNode.textContent()
-    expect(nodeText).toContain('关于七月的随笔')
+    // Dir row: both buttons visible on hover
+    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    await dirRow.hover()
+    await expect(dirRow.getByTestId('writing-node-create').locator('..')).toHaveCSS('opacity', '1')
+    await expect(dirRow.getByTestId('writing-node-create')).toBeAttached()
+    await expect(dirRow.getByTestId('writing-node-delete')).toBeAttached()
+  })
+
+  test('行内删除文章：确认对话框含回收站文案 → 确认 → 文件进 .trash', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const row = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
+    await row.hover()
+    await row.getByTestId('writing-node-delete').click()
+
+    const dialog = window.getByTestId('confirm-dialog')
+    await expect(dialog).toBeVisible({ timeout: 3000 })
+    await expect(dialog).toContainText('回收站')
+    await dialog.getByTestId('confirm-dialog-confirm').click()
+    await window.waitForTimeout(1500)
+
+    // Gone from tree, moved into .trash on disk
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ })).toHaveCount(0)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '.trash', '随笔', '七月夜话.md'))).toBe(true)
+  })
+
+  test('解散分组：文案含移回上一级 → 确认 → 组内两文释放到根级', async ({ window, testLibraryPath }) => {
+    // Seed a second article so 随笔 contains exactly 2 files
+    fs.mkdirSync(path.join(testLibraryPath, 'writing', '随笔'), { recursive: true })
+    fs.writeFileSync(
+      path.join(testLibraryPath, 'writing', '随笔', '八月随笔.md'),
+      '---\ntype: writing\ntitle: 八月随笔\ncreated: 2026-08-01\nupdated: 2026-08-01\n---\n\n# 八月随笔\n\n第二篇。\n',
+      'utf8'
+    )
+    await gotoWriting(window, testLibraryPath)
+
+    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    await dirRow.hover()
+    await dirRow.getByTestId('writing-node-delete').click()
+
+    const dialog = window.getByTestId('confirm-dialog')
+    await expect(dialog).toBeVisible({ timeout: 3000 })
+    await expect(dialog).toContainText('解散分组')
+    await expect(dialog).toContainText('2 篇')
+    await expect(dialog).toContainText('移回上一级')
+    await dialog.getByTestId('confirm-dialog-confirm').click()
+    await window.waitForTimeout(1500)
+
+    // Both articles released to root level on disk; group dir trashed
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '七月夜话.md'))).toBe(true)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '八月随笔.md'))).toBe(true)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
+
+    // Tree shows both articles, group node gone
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ })).toHaveCount(1)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /八月随笔\.md/ })).toHaveCount(1)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ })).toHaveCount(0)
+  })
+
+  test('行内 ＋ 在分组内新建文章：PromptDialog 输入 → 文件出现在该分组下', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    await dirRow.hover()
+    await dirRow.getByTestId('writing-node-create').click()
+
+    await window.getByTestId('writing-prompt-input').fill('组内新文')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await window.waitForTimeout(1500)
+
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '组内新文.md'))).toBe(true)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /组内新文\.md/ })).toHaveCount(1)
   })
 })
