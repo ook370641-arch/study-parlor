@@ -22,7 +22,12 @@ vi.mock('../electron/lib/anthropic-browser', () => ({
   cancelCurrentOperation: vi.fn(),
 }))
 
-vi.mock('../electron/lib/net-fetch', () => ({ httpFetch: vi.fn() }))
+// httpFetchWithRetry 委托到同一个 httpFetch mock（scraper 的回填现走重试入口）
+const { httpFetchMock } = vi.hoisted(() => ({ httpFetchMock: vi.fn() }))
+vi.mock('../electron/lib/net-fetch', () => ({
+  httpFetch: httpFetchMock,
+  httpFetchWithRetry: vi.fn(async (url: string) => httpFetchMock(url)),
+}))
 
 describe('anthropic helpers', () => {
   it('toAbsoluteUrl converts relative urls', () => {

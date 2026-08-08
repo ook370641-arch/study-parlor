@@ -6,7 +6,7 @@ import { parseFrontmatter, serializeFrontmatter } from './frontmatter'
 import type { AnthropicArticleMeta } from '@shared/index'
 import { ANTHROPIC_SOURCES, sectionForUrl, type AnthropicSource } from './anthropic-sections'
 import type { AnthropicSectionKey, AnthropicSectionStatus, AnthropicErrorCode } from '@shared/index'
-import { httpFetch } from './net-fetch'
+import { httpFetch, httpFetchWithRetry } from './net-fetch'
 import {
   mapWithConcurrency,
   parseAlignmentIndex,
@@ -238,7 +238,9 @@ async function runBackfill(
 ): Promise<void> {
   const results = await mapWithConcurrency(misses, 5, async (miss) => {
     try {
-      const res = await httpFetch(miss.url)
+      // 带退避重试：并发回填打站点会触发限流（429/5xx），错误页无 og:title → 否则静默丢篇
+      const res = await httpFetchWithRetry(miss.url)
+      if (!res.ok) return null
       const meta = parseArticleMetaHtml(await res.text(), res.url || miss.url)
       meta.publishedAt = meta.publishedAt ?? (miss.lastmod ? parseDateString(miss.lastmod) : null)
       return { miss, meta }
