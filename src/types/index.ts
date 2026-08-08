@@ -493,7 +493,9 @@ export type WritingTreeNode = {
   path: string
   kind: 'dir' | 'file'
   children?: WritingTreeNode[]
+  /** @deprecated 摘要不再附到树节点（见 writing:refreshCatalog diff 触发）；保留字段避免级联改动 */
   summary?: string
+  /** @deprecated 同上 */
   catalogUpdatedAt?: string
 }
 export type WritingTone = 'parchment' | 'plain' | 'ink'
@@ -515,7 +517,7 @@ export type WritingToolEvent = {
   markdown?: string
   error?: string
 }
-export type WritingCatalogEntry = { title: string; summary: string; updatedAt: string }
+export type WritingCatalogEntry = { title: string; summary: string; updatedAt?: string; mtimeMs?: number }
 export type WritingCatalog = { version: 1; entries: Record<string, WritingCatalogEntry> }
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
@@ -786,6 +788,7 @@ export type IpcApi = {
   writingRead: (a: { path: string }) => Promise<WritingResult<{ frontmatter: Record<string, unknown>; body: string }>>
   writingWrite: (a: { path: string; body: string }) => Promise<WritingResult<null>>
   writingImportFiles: (a: { targetDir: string }) => Promise<WritingResult<{ imported: string[] }>>
+  writingRefreshCatalog: () => Promise<WritingResult<{ refreshed: number }>>
   writingAssistantSendMessage: (a: {
     sessionId: string
     articlePath: string | null

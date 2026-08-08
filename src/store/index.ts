@@ -1253,6 +1253,7 @@ export const useStore = create<AppStore>((set, get) => ({
   setBriefingSource: async (source) => {
     set({ briefingSource: source })
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
+    if (source === 'writing') void ipc.writingRefreshCatalog() // 摘要唯一生成时机(spec C)
   },
 
   markBriefingRead: async (source, date) => {

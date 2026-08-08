@@ -58,8 +58,14 @@ function collectMdPaths(nodes: WritingTreeNode[]): string[] {
   return result
 }
 
-export function diffPending(lib: string, root: WritingRoot): string[] {
+export function diffStale(lib: string, root: WritingRoot): string[] {
   const files = collectMdPaths(scanRoot(lib, root))
   const c = loadCatalog(lib, root)
-  return files.filter(f => !c.entries[f])
+  return files.filter(f => {
+    const entry = c.entries[f]
+    if (!entry || entry.mtimeMs == null) return true
+    try {
+      return fs.statSync(path.join(lib, f)).mtimeMs > entry.mtimeMs
+    } catch { return true }
+  })
 }

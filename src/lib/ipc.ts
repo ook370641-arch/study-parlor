@@ -118,6 +118,7 @@ export const ipc = {
   get writingRead() { return ensure().writingRead },
   get writingWrite() { return ensure().writingWrite },
   get writingImportFiles() { return ensure().writingImportFiles },
+  get writingRefreshCatalog() { return ensure().writingRefreshCatalog },
   get writingAssistantSendMessage() { return ensure().writingAssistantSendMessage },
   get writingAssistantAbort() { return ensure().writingAssistantAbort },
   get onWritingAssistantTool() { return ensure().onWritingAssistantTool },

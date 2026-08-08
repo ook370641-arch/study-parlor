@@ -180,6 +180,7 @@ const api: IpcApi = {
   writingRead: (a) => ipcRenderer.invoke('writing:read', a),
   writingWrite: (a) => ipcRenderer.invoke('writing:write', a),
   writingImportFiles: (a) => ipcRenderer.invoke('writing:importFiles', a),
+  writingRefreshCatalog: () => ipcRenderer.invoke('writing:refreshCatalog'),
   writingAssistantSendMessage: (a) => ipcRenderer.invoke('writingAssistant:sendMessage', a),
   writingAssistantAbort: (a) => ipcRenderer.invoke('writingAssistant:abort', a),
   onWritingAssistantTool: (cb) => {

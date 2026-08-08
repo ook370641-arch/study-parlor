@@ -5,7 +5,7 @@ import type { AppConfig } from '../env'
 import type { WritingErrorCode, WritingRoot } from '../../src/types'
 import * as tree from '../lib/writing-tree'
 import { ensureRoots } from '../lib/writing-tree'
-import { updateEntry, removeEntry, migrateEntry } from '../lib/writing-catalog'
+import { updateEntry, removeEntry, migrateEntry, diffStale } from '../lib/writing-catalog'
 import { generateWritingSummary } from '../lib/llm-tasks'
 
 const KNOWN_CODES: WritingErrorCode[] = ['WRITING_PATH_FORBIDDEN', 'WRITING_NOT_FOUND', 'WRITING_NAME_CONFLICT']
@@ -80,23 +80,8 @@ export function registerWritingIpc(cfg: AppConfig): void {
   ipcMain.handle('writing:read', (_, a: { path: string }) =>
     wrapWriting(() => tree.readWritingFile(lib, a.path)))
 
-  ipcMain.handle('writing:write', async (_, a: { path: string; body: string }) => {
-    const result = await wrapWriting(() => { tree.writeWritingFile(lib, a.path, a.body); return null })
-    if (result.ok) {
-      // Write empty summary placeholder so tree UI shows pending hint
-      const destRoot = rootFromPath(a.path)
-      updateEntry(lib, destRoot, a.path, { title: path.basename(a.path, '.md'), summary: '', updatedAt: new Date().toISOString().slice(0, 10) })
-      // fire-and-forget: generate summary and update catalog
-      setTimeout(async () => {
-        try {
-          const { body } = tree.readWritingFile(lib, a.path)
-          const summary = await generateWritingSummary(cfg, path.basename(a.path, '.md'), body)
-          if (summary) updateEntry(lib, destRoot, a.path, { title: path.basename(a.path, '.md'), summary, updatedAt: new Date().toISOString().slice(0, 10) })
-        } catch { /* silent — placeholder remains empty, UI shows pending hint */ }
-      }, 0)
-    }
-    return result
-  })
+  ipcMain.handle('writing:write', (_, a: { path: string; body: string }) =>
+    wrapWriting(() => { tree.writeWritingFile(lib, a.path, a.body); return null }))
 
   ipcMain.handle('writing:importFiles', async (event, a: { targetDir: string }) =>
     wrapWriting(async () => {
@@ -119,20 +104,27 @@ export function registerWritingIpc(cfg: AppConfig): void {
         imported.push(destRel)
       }
 
-      // fire-and-forget: generate summaries for imported files
-      const destRoot = root
+      return { imported }
+    }))
+
+  ipcMain.handle('writing:refreshCatalog', () =>
+    wrapWriting(async () => {
+      const roots: WritingRoot[] = ['writing', 'repository']
+      const pending = roots.flatMap(root => diffStale(lib, root))
+      // fire-and-forget:逐篇后台生成,调用方不阻塞
       setTimeout(async () => {
-        for (const destRel of imported) {
-          // Write empty placeholder so tree UI shows pending hint
-          updateEntry(lib, destRoot, destRel, { title: path.basename(destRel, '.md'), summary: '', updatedAt: new Date().toISOString().slice(0, 10) })
+        for (const rel of pending) {
+          const root = rootFromPath(rel)
           try {
-            const { body } = tree.readWritingFile(lib, destRel)
-            const summary = await generateWritingSummary(cfg, path.basename(destRel, '.md'), body)
-            if (summary) updateEntry(lib, destRoot, destRel, { title: path.basename(destRel, '.md'), summary, updatedAt: new Date().toISOString().slice(0, 10) })
-          } catch { /* silent */ }
+            const { body } = tree.readWritingFile(lib, rel)
+            const mtimeMs = fs.statSync(path.join(lib, rel)).mtimeMs
+            const summary = process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
+              ? 'E2E 摘要'
+              : await generateWritingSummary(cfg, path.basename(rel, '.md'), body)
+            if (summary) updateEntry(lib, root, rel, { title: path.basename(rel, '.md'), summary, mtimeMs })
+          } catch { /* silent — 下次进入再补 */ }
         }
       }, 0)
-
-      return { imported }
+      return { refreshed: pending.length }
     }))
 }

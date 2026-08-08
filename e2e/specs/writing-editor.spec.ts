@@ -337,7 +337,7 @@ test.describe('@p2 writing-editor', () => {
 
   // ── Catalog update ─────────────────────────────────────────────────
 
-  test('Ctrl+S 保存 → catalog 条目 summary 非空', async ({ window, testLibraryPath }) => {
+  test('Ctrl+S 保存 → 保存不再立即生成 catalog 条目', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
@@ -349,21 +349,19 @@ test.describe('@p2 writing-editor', () => {
     await expect(writing.editor).toBeVisible({ timeout: 5000 })
 
     // Type content and Ctrl+S
-    await writing.typeInEditor('# 目录测试\n\nLLM 应该为这段内容生成摘要。')
+    await writing.typeInEditor('# 目录测试\n\n这段内容不应在保存时触发摘要生成。')
     await writing.editor.locator('.ProseMirror').click()
     await window.keyboard.press('Control+s')
-    // Wait for async catalog generation (fire-and-forget in writing:write handler)
-    await window.waitForTimeout(5000)
+    await window.waitForTimeout(2500)
 
-    // Poll catalog for the new entry — summary may be empty if LLM generation fails
-    // but the entry should at least exist with a title
+    // 新时机下保存不写 catalog；进入写作来源的 diff 生成发生在文件创建之前，
+    // 因此该文件此刻应无条目（下次进入写作来源才会补）。
     const catalogPath = path.join(testLibraryPath, 'writing', '.catalog.json')
-    await expect.poll(() => {
-      if (!fs.existsSync(catalogPath)) return null
-      const cat = JSON.parse(fs.readFileSync(catalogPath, 'utf8'))
-      const found = Object.values(cat.entries ?? {}).find((e: any) => e.title === '目录测试')
-      return found ?? null
-    }, { timeout: 15000 }).not.toBeNull()
+    const cat = fs.existsSync(catalogPath)
+      ? JSON.parse(fs.readFileSync(catalogPath, 'utf8'))
+      : { entries: {} }
+    const found = Object.values(cat.entries ?? {}).find((e: any) => e.title === '目录测试')
+    expect(found).toBeUndefined()
   })
 
   // ── E5 全流程串联 ─────────────────────────────────────────────────
