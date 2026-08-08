@@ -1,0 +1,38 @@
+/* 编辑器内容样式:补回被 Tailwind preflight 重置的标题/加粗语义。
+   正文字号由容器内联 fontSize(var(--writing-body-size))给出,标题用 em 阶梯跟随。 */
+.writing-editor-root .ProseMirror {
+  outline: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.8;
+}
+.writing-editor-root .ProseMirror h1 {
+  font-size: 1.6em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0.8em 0 0.4em;
+}
+.writing-editor-root .ProseMirror h2 {
+  font-size: 1.35em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0.7em 0 0.35em;
+}
+.writing-editor-root .ProseMirror h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0.6em 0 0.3em;
+}
+.writing-editor-root .ProseMirror strong {
+  font-weight: 700;
+}
+.writing-editor-root .ProseMirror p {
+  margin: 0.35em 0;
+}
+.writing-editor-root .ProseMirror blockquote {
+  border-left: 2px solid currentColor;
+  padding-left: 0.8em;
+  margin: 0.5em 0;
+  opacity: 0.85;
+}

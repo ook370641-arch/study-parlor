@@ -90,6 +90,21 @@ export const WRITING_UI_STYLES: Record<BriefingFontSize, string> = {
 
 export const WRITING_UI_QUOTE_SIZES: Record<BriefingFontSize, string> = { ...BRIEFING_QUOTE_SIZES }
 
+/** 写作正文字号:按档位从 writingUIFontSize 映射。与 ACADEMIC_BODY_STYLES 同档同值,
+ *  独立常量便于日后分化。右上角 −/+ 统一调控正文与界面。 */
+export const WRITING_BODY_FROM_UI: Record<BriefingFontSize, { size: string; weight: number }> = {
+  sm: { size: '17px', weight: 400 },
+  base: { size: '19px', weight: 400 },
+  lg: { size: '21px', weight: 500 },
+  xl: { size: '23px', weight: 500 },
+  '2xl': { size: '25px', weight: 600 },
+  '3xl': { size: '27px', weight: 600 },
+  '4xl': { size: '29px', weight: 600 },
+  '5xl': { size: '31px', weight: 700 },
+  '6xl': { size: '33px', weight: 700 },
+  '7xl': { size: '35px', weight: 700 },
+}
+
 /**
  * 旁注正文字号：与页面正文大小相同。
  * 随 briefingFontSize 全局调配。

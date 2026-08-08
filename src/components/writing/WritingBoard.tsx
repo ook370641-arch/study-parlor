@@ -2,20 +2,12 @@ import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { WritingToolbar } from './WritingToolbar'
-import { ACADEMIC_BODY_STYLES, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
+import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
 import { Quote } from '@/components/Quote'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 
-const TONE_COLORS = {
-  parchment: '#e8d5b7',
-  plain: '#f5f5f4',
-  ink: '#9c9490',
-} as const
-
 export function WritingBoard() {
   const file = useStore(s => s.writingFile)
-  const fontSize = useStore(s => s.writingFontSize)
-  const tone = useStore(s => s.writingTone)
   const writingUISize = useStore(s => s.writingUIFontSize)
   const briefingTheme = useStore(s => s.briefingTheme)
   const updateWritingBody = useStore(s => s.updateWritingBody)
@@ -48,14 +40,15 @@ export function WritingBoard() {
     )
   }
 
-  const size = ACADEMIC_BODY_STYLES[fontSize]
-  const color = TONE_COLORS[tone]
+  const body = WRITING_BODY_FROM_UI[writingUISize]
+  // 默认色跟主题走:报纸黑、学术暖米(spec A3)
+  const color = briefingTheme === 'newspaper' ? '#1a1a1a' : '#e8d5b7'
 
   return (
     <div className="flex flex-col h-full arrive-item"
       style={{
-        ['--writing-body-size' as string]: size.size,
-        ['--writing-body-weight' as string]: size.weight,
+        ['--writing-body-size' as string]: body.size,
+        ['--writing-body-weight' as string]: body.weight,
         ['--writing-tone-color' as string]: color,
         ['--writing-ui-quote-size' as string]: WRITING_UI_QUOTE_SIZES[writingUISize],
       }}>

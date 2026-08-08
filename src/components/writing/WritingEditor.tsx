@@ -7,6 +7,7 @@ import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { history } from '@milkdown/plugin-history'
 import { clipboard } from '@milkdown/plugin-clipboard'
 import { useStore } from '@/store'
+import './writing-editor.css'
 
 function EditorInner({ initial, onChange }: { initial: string; onChange: (md: string) => void }) {
   const ref = useRef(onChange)
@@ -56,7 +57,11 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
     return () => { setAction(null) }
   }, [loading, setAction])
 
-  return <Milkdown />
+  return (
+    <div className="writing-editor-root">
+      <Milkdown />
+    </div>
+  )
 }
 
 export function WritingEditor(props: { initial: string; onChange: (md: string) => void }) {
