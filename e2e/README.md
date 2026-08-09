@@ -70,6 +70,7 @@ e2e/
 │   ├── briefing.spec.ts
 │   ├── scout-source.spec.ts          (来源 spec: docs/superpowers/specs/2026-08-02-scout-source-design.md, mock 链路, @p1)
 │   ├── writing-list-column.spec.ts    (来源 spec: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md §K, mock 链路, @p2)
+│   ├── writing-list.spec.ts           (来源 spec: docs/superpowers/specs/2026-08-09-writing-list-behavior-design.md, mock 链路, @p2)
 │   ├── smoke.spec.ts
 │   ├── new-topic-progress.spec.ts
 │   ├── continue-topic.spec.ts
