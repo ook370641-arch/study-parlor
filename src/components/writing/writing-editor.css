@@ -36,6 +36,31 @@
   margin: 0.5em 0;
   opacity: 0.85;
 }
+/* 列表标记与缩进同样被 preflight 重置(list-style: none; margin/padding: 0),补回。
+   margin 节奏与 p 一致(0.35em);嵌套无序列表降档 circle → square,有序列表保持 decimal。 */
+.writing-editor-root .ProseMirror ul {
+  list-style: disc;
+  padding-left: 1.5em;
+  margin: 0.35em 0;
+}
+.writing-editor-root .ProseMirror ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+  margin: 0.35em 0;
+}
+.writing-editor-root .ProseMirror ul ul {
+  list-style: circle;
+}
+.writing-editor-root .ProseMirror ul ul ul {
+  list-style: square;
+}
+.writing-editor-root .ProseMirror li {
+  margin: 0.15em 0;
+}
+/* li 内的 paragraph 不再叠加 p 的 0.35em 外边距,否则列表项间距松散 */
+.writing-editor-root .ProseMirror li > p {
+  margin: 0;
+}
 /* prosemirror-view 内置 CSS 未加载,<pre> 落 UA 默认 white-space: pre 禁止软换行,
    长代码行在大字号下撑破容器出横向滚动条;改为 pre-wrap 后 overflow-wrap 从 .ProseMirror 继承生效。 */
 .writing-editor-root .ProseMirror pre {
