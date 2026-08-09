@@ -72,7 +72,7 @@ test.describe('@p2 writing-edge', () => {
     fs.unlinkSync(tmpPath)
 
     // Click the tree node — app should degrade gracefully (not crash)
-    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /临时\.md/ }).first()
+    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /临时/ }).first()
     await fileNode.click()
     await window.waitForTimeout(1000)
 

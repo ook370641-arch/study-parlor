@@ -31,12 +31,14 @@ test.describe('@p2 writing-tree', () => {
     expect(await nodes.count()).toBeGreaterThanOrEqual(2)
   })
 
-  test('新建文章：prompt 输入 → 文件在磁盘', async ({ window, testLibraryPath }) => {
+  test('根级新建文章：行内输入 → 文件在磁盘', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('我的新文章')
-    await window.getByTestId('writing-prompt-confirm').click()
+    const input = window.getByTestId('writing-inline-new')
+    await expect(input).toBeVisible({ timeout: 3000 })
+    await input.fill('我的新文章')
+    await input.press('Enter')
     await window.waitForTimeout(1500)
 
     // File should exist on disk
@@ -61,19 +63,19 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '子分组测试'))).toBe(true)
   })
 
-  test('重命名：右键 → 文件更名（含 .md 后缀）', async ({ window, testLibraryPath }) => {
+  test('重命名：右键 → 文件更名（自动补 .md 后缀）', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    // Find the file node for 七月夜话.md
+    // Find the file node for 七月夜话
     const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /七月夜话\.md/
+      hasText: /七月夜话/
     }).first()
     await fileNode.click({ button: 'right' })
     await expect(window.getByRole('button', { name: '重命名', exact: true })).toBeVisible({ timeout: 3000 })
     await window.getByRole('button', { name: '重命名', exact: true }).click()
 
-    // Must include .md extension
-    await window.getByTestId('writing-prompt-input').fill('八月夜话.md')
+    // 输入不带 .md,提交时自动补后缀
+    await window.getByTestId('writing-prompt-input').fill('八月夜话')
     await window.getByTestId('writing-prompt-confirm').click()
     await window.waitForTimeout(1500)
 
@@ -85,7 +87,7 @@ test.describe('@p2 writing-tree', () => {
     await gotoWriting(window, testLibraryPath)
 
     const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /七月夜话\.md/
+      hasText: /七月夜话/
     }).first()
     await fileNode.click({ button: 'right' })
     const menuDelete = window.getByRole('button', { name: '删除', exact: true })
@@ -160,16 +162,17 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(srcPath)).toBe(false)
   })
 
-  test('悬停显示行内按钮：文章行只有 🗑，分组行有 ＋ 和 🗑', async ({ window, testLibraryPath }) => {
+  test('悬停显示行内按钮：文章行有 ✎ 和 🗑，分组行有 ＋ 和 🗑', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    // File row: delete button container hidden until hover; no create button
-    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
+    // File row: delete+rename visible on hover, no create button
+    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
     const fileBtnBar = fileRow.getByTestId('writing-node-delete').locator('..')
     await expect(fileBtnBar).toHaveCSS('opacity', '0')
     await fileRow.hover()
     await expect(fileBtnBar).toHaveCSS('opacity', '1')
     await expect(fileRow.getByTestId('writing-node-create')).toHaveCount(0)
+    await expect(fileRow.getByTestId('writing-node-rename')).toBeAttached()
 
     // Dir row: both buttons visible on hover
     const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
@@ -182,7 +185,7 @@ test.describe('@p2 writing-tree', () => {
   test('行内删除文章：确认对话框提示永久删除 → 确认 → 文件从磁盘删除', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const row = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
+    const row = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
     await row.hover()
     await row.getByTestId('writing-node-delete').click()
 
@@ -193,7 +196,7 @@ test.describe('@p2 writing-tree', () => {
     await window.waitForTimeout(1500)
 
     // Gone from tree and from disk
-    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ })).toHaveCount(0)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ })).toHaveCount(0)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
   })
 
@@ -225,24 +228,26 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
 
     // Tree shows both articles, group node gone
-    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ })).toHaveCount(1)
-    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /八月随笔\.md/ })).toHaveCount(1)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ })).toHaveCount(1)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /八月随笔/ })).toHaveCount(1)
     await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ })).toHaveCount(0)
   })
 
-  test('行内 ＋ 在分组内新建文章：PromptDialog 输入 → 文件出现在该分组下', async ({ window, testLibraryPath }) => {
+  test('行内 ＋ 在分组内新建文章：inline 输入 → 文件出现在该分组下', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
     await dirRow.hover()
     await dirRow.getByTestId('writing-node-create').click()
 
-    await window.getByTestId('writing-prompt-input').fill('组内新文')
-    await window.getByTestId('writing-prompt-confirm').click()
+    const input = window.getByTestId('writing-inline-new')
+    await expect(input).toBeVisible({ timeout: 3000 })
+    await input.fill('组内新文')
+    await input.press('Enter')
     await window.waitForTimeout(1500)
 
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '组内新文.md'))).toBe(true)
-    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /组内新文\.md/ })).toHaveCount(1)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /组内新文/ })).toHaveCount(1)
   })
 
   // 拖拽统一协议（Task 6）:Playwright 对 HTML5 drag 的原生支持在 Electron 下不可靠,
@@ -273,7 +278,7 @@ test.describe('@p2 writing-tree', () => {
   test('拖拽：组内文件拖到根级末尾留白 → 文件移到 writing/ 根级', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const srcRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
+    const srcRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
     // 树容器 = 首个顶层行(testid div)的祖父元素(TreeNode 外层 div 的父级)
     const container = window.locator('[data-testid="writing-tree-node"]').first().locator('xpath=../..')
 
@@ -286,7 +291,7 @@ test.describe('@p2 writing-tree', () => {
 
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '七月夜话.md'))).toBe(true)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
-    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ })).toHaveCount(1)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ })).toHaveCount(1)
   })
 
   test('拖拽：分组拖到另一分组上边缘横线 → 顺序交换并持久化到 state.json', async ({ window, testLibraryPath, testConfigDir }) => {
@@ -328,7 +333,7 @@ test.describe('@p2 writing-tree', () => {
   test('右键「移出分组」:组内文件移到根级;根级节点不显示该菜单项', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话\.md/ }).first()
+    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
     await fileRow.click({ button: 'right' })
     const moveOut = window.getByRole('button', { name: '移出分组', exact: true })
     await expect(moveOut).toBeVisible({ timeout: 3000 })
@@ -343,5 +348,86 @@ test.describe('@p2 writing-tree', () => {
     await rootDirRow.click({ button: 'right' })
     await expect(window.getByRole('button', { name: '重命名', exact: true })).toBeVisible({ timeout: 3000 })
     await expect(window.getByRole('button', { name: '移出分组', exact: true })).toHaveCount(0)
+  })
+
+  test('行内新建输入行定位在排序槽位（非分组末尾）', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    await dirRow.hover()
+    await dirRow.getByTestId('writing-node-create').click()
+    const input = window.getByTestId('writing-inline-new')
+    await expect(input).toBeVisible({ timeout: 3000 })
+    await input.fill('组内新文')
+
+    const fileBox = await window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first().boundingBox()
+    const inputBox = await input.boundingBox()
+    expect(inputBox!.y).toBeGreaterThan(fileBox!.y) // 组内新文(新)排在七月夜话之后
+  })
+
+  test('日记分组新建预填当天日期', async ({ window, testLibraryPath }) => {
+    fs.mkdirSync(path.join(testLibraryPath, 'writing', '日记'), { recursive: true })
+    fs.writeFileSync(
+      path.join(testLibraryPath, 'writing', '日记', '旧日记.md'),
+      '---\ntype: writing\ntitle: 旧日记\n---\n\n旧日记。\n',
+      'utf8',
+    )
+    await gotoWriting(window, testLibraryPath)
+
+    const diaryRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]日记/ }).first()
+    await diaryRow.hover()
+    await diaryRow.getByTestId('writing-node-create').click()
+    const today = `${new Date().getMonth() + 1}.${new Date().getDate()}`
+    await expect(window.getByTestId('writing-inline-new')).toHaveValue(today, { timeout: 3000 })
+  })
+
+  test('日记分组当天已存在 → 预填空，正常命名', async ({ window, testLibraryPath }) => {
+    const today = `${new Date().getMonth() + 1}.${new Date().getDate()}`
+    fs.mkdirSync(path.join(testLibraryPath, 'writing', '日记'), { recursive: true })
+    fs.writeFileSync(path.join(testLibraryPath, 'writing', '日记', `${today}.md`), '---\ntype: writing\ntitle: 今天\n---\n\n今天的日记。\n', 'utf8')
+    await gotoWriting(window, testLibraryPath)
+
+    const diaryRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]日记/ }).first()
+    await diaryRow.hover()
+    await diaryRow.getByTestId('writing-node-create').click()
+    await expect(window.getByTestId('writing-inline-new')).toHaveValue('', { timeout: 3000 })
+  })
+
+  test('文章悬停重命名：✎ → 行内改名 → 无 .md 预填且更新成功', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
+    await fileRow.hover()
+    await fileRow.getByTestId('writing-node-rename').click()
+    const renameInput = window.getByTestId('writing-inline-rename')
+    await expect(renameInput).toHaveValue('七月夜话', { timeout: 3000 })
+    await renameInput.fill('八月夜话')
+    await renameInput.press('Enter')
+    await window.waitForTimeout(1000)
+
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '八月夜话.md'))).toBe(true)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /八月夜话/ })).toHaveCount(1)
+  })
+
+  test('重命名冲突：行内提示同名已存在', async ({ window, testLibraryPath }) => {
+    // renameNode 的冲突检测是「同目录」:默认 seed 只在 技术笔记/ 下有 分布式随笔.md,
+    // 直接改名七月夜话→分布式随笔不会冲突。这里预置 随笔/分布式随笔.md,命中同目录冲突。
+    fs.mkdirSync(path.join(testLibraryPath, 'writing', '随笔'), { recursive: true })
+    fs.writeFileSync(
+      path.join(testLibraryPath, 'writing', '随笔', '分布式随笔.md'),
+      '---\ntype: writing\ntitle: 分布式随笔\ncreated: 2026-08-01\nupdated: 2026-08-01\n---\n\n# 分布式随笔\n\n同目录冲突文件。\n',
+      'utf8'
+    )
+    await gotoWriting(window, testLibraryPath)
+
+    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
+    await fileRow.hover()
+    await fileRow.getByTestId('writing-node-rename').click()
+    const renameInput = window.getByTestId('writing-inline-rename')
+    await expect(renameInput).toBeVisible({ timeout: 3000 })
+    await renameInput.fill('分布式随笔') // 随笔/分布式随笔.md 已存在(同目录) → 冲突
+    await renameInput.press('Enter')
+    await expect(window.getByText('同名文件已存在')).toBeVisible({ timeout: 3000 })
   })
 })
