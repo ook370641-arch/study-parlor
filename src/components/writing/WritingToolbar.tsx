@@ -5,8 +5,6 @@ import {
   toggleStrongCommand,
   toggleEmphasisCommand,
   wrapInBlockquoteCommand,
-  wrapInBulletListCommand,
-  wrapInOrderedListCommand,
   insertHrCommand,
   wrapInHeadingCommand,
 } from '@milkdown/preset-commonmark'
@@ -91,22 +89,6 @@ export function WritingToolbar() {
         title="引用"
       >
         ❝
-      </button>
-      <button
-        data-testid="writing-toolbar-bullet-list"
-        onClick={() => exec(wrapInBulletListCommand.key, undefined, { block: true })}
-        className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
-        title="无序列表"
-      >
-        •
-      </button>
-      <button
-        data-testid="writing-toolbar-ordered-list"
-        onClick={() => exec(wrapInOrderedListCommand.key, undefined, { block: true })}
-        className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
-        title="有序列表"
-      >
-        1.
       </button>
       <button
         data-testid="writing-toolbar-hr"

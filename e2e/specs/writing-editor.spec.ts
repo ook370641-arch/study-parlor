@@ -625,22 +625,6 @@ test.describe('@p2 writing-editor', () => {
     await expect(window.locator(SELECTORS.writing.toolbarBlockquote)).toBeVisible({ timeout: 3000 })
   })
 
-  test('工具栏无序列表 • 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-    const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
-    await expect(window.locator(SELECTORS.writing.toolbarBulletList)).toBeVisible({ timeout: 3000 })
-  })
-
-  test('工具栏有序列表 1. 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-    const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
-    await expect(window.locator(SELECTORS.writing.toolbarOrderedList)).toBeVisible({ timeout: 3000 })
-  })
-
   test('工具栏分割线 — 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
     const writing = new WritingPage(window)
@@ -663,8 +647,6 @@ test.describe('@p2 writing-editor', () => {
       SELECTORS.writing.toolbarItalic,
       SELECTORS.writing.toolbarStrikethrough,
       SELECTORS.writing.toolbarBlockquote,
-      SELECTORS.writing.toolbarBulletList,
-      SELECTORS.writing.toolbarOrderedList,
       SELECTORS.writing.toolbarHr,
       SELECTORS.writing.toolbarHeading,
       SELECTORS.writing.toolbarColor,
