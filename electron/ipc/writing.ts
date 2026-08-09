@@ -5,7 +5,7 @@ import type { AppConfig } from '../env'
 import type { WritingErrorCode, WritingRoot } from '../../src/types'
 import * as tree from '../lib/writing-tree'
 import { ensureRoots } from '../lib/writing-tree'
-import { updateEntry, removeEntry, migrateEntry, diffStale } from '../lib/writing-catalog'
+import { updateEntry, removeEntry, migrateEntry, migratePrefix, diffStale } from '../lib/writing-catalog'
 import { generateWritingSummary } from '../lib/llm-tasks'
 
 const KNOWN_CODES: WritingErrorCode[] = ['WRITING_PATH_FORBIDDEN', 'WRITING_NOT_FOUND', 'WRITING_NAME_CONFLICT']
@@ -48,7 +48,14 @@ export function registerWritingIpc(cfg: AppConfig): void {
   ipcMain.handle('writing:rename', async (_, a: { path: string; newName: string }) => {
     const result = await wrapWriting(() => ({ path: tree.renameNode(lib, a.path, a.newName) }))
     if (result.ok) {
-      try { migrateEntry(lib, rootFromPath(a.path), a.path, result.value.path) } catch { /* silent */ }
+      try {
+        const root = rootFromPath(a.path)
+        if (fs.statSync(path.join(lib, result.value.path)).isDirectory()) {
+          migratePrefix(lib, root, a.path, result.value.path)
+        } else {
+          migrateEntry(lib, root, a.path, result.value.path)
+        }
+      } catch { /* silent */ }
     }
     return result
   })

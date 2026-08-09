@@ -162,7 +162,7 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(srcPath)).toBe(false)
   })
 
-  test('悬停显示行内按钮：文章行有 ✎ 和 🗑，分组行有 ＋ 和 🗑', async ({ window, testLibraryPath }) => {
+  test('悬停显示行内按钮：文章行有 ✎ 和 🗑，分组行有 ✎ ＋ 和 🗑', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     // File row: delete+rename visible on hover, no create button
@@ -174,11 +174,12 @@ test.describe('@p2 writing-tree', () => {
     await expect(fileRow.getByTestId('writing-node-create')).toHaveCount(0)
     await expect(fileRow.getByTestId('writing-node-rename')).toBeAttached()
 
-    // Dir row: both buttons visible on hover
+    // Dir row: rename + create + delete all visible on hover
     const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
     await dirRow.hover()
     await expect(dirRow.getByTestId('writing-node-create').locator('..')).toHaveCSS('opacity', '1')
     await expect(dirRow.getByTestId('writing-node-create')).toBeAttached()
+    await expect(dirRow.getByTestId('writing-node-rename')).toBeAttached()
     await expect(dirRow.getByTestId('writing-node-delete')).toBeAttached()
   })
 
@@ -408,6 +409,25 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '八月夜话.md'))).toBe(true)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
     await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /八月夜话/ })).toHaveCount(1)
+  })
+
+  test('分组悬停行内重命名：✎ → 行内改名 → 组内文章迁移到新目录', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    await dirRow.hover()
+    await dirRow.getByTestId('writing-node-rename').click()
+    const renameInput = window.getByTestId('writing-inline-rename')
+    await expect(renameInput).toHaveValue('随笔', { timeout: 3000 })
+    await renameInput.fill('散文')
+    await renameInput.press('Enter')
+    await window.waitForTimeout(1500)
+
+    // 组内文章出现在新目录路径,旧目录路径不存在
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '散文', '七月夜话.md'))).toBe(true)
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
+    // 树里出现新分组名
+    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]散文/ })).toHaveCount(1)
   })
 
   test('重命名冲突：行内提示同名已存在', async ({ window, testLibraryPath }) => {

@@ -49,6 +49,22 @@ export function migrateEntry(lib: string, root: WritingRoot, oldRel: string, new
   }
 }
 
+// 目录改名:把所有 key 以 oldRel 为前缀(含 oldRel 自身)的摘要条目改写为 newRel 前缀。
+// 仅在有改动时写盘;无子条目的单文件路径等价 migrateEntry。
+export function migratePrefix(lib: string, root: WritingRoot, oldRel: string, newRel: string): void {
+  const c = loadCatalog(lib, root)
+  let changed = false
+  for (const k of Object.keys(c.entries)) {
+    if (k === oldRel || k.startsWith(oldRel + '/')) {
+      const entry = c.entries[k]
+      delete c.entries[k]
+      c.entries[newRel + k.slice(oldRel.length)] = entry
+      changed = true
+    }
+  }
+  if (changed) saveCatalog(lib, root, c)
+}
+
 function collectMdPaths(nodes: WritingTreeNode[]): string[] {
   const result: string[] = []
   for (const n of nodes) {

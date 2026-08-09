@@ -33,12 +33,31 @@ describe('InlineNameInput', () => {
     expect(onCancel).toHaveBeenCalled()
   })
 
-  it('失焦取消', () => {
+  it('失焦提交已 trim 的值', () => {
     const onSubmit = vi.fn()
     const onCancel = vi.fn()
-    render(<InlineNameInput dataTestid={tid} defaultValue="x" onSubmit={onSubmit} onCancel={onCancel} />)
+    render(<InlineNameInput dataTestid={tid} defaultValue="8.9" onSubmit={onSubmit} onCancel={onCancel} />)
     fireEvent.blur(screen.getByTestId(tid))
+    expect(onSubmit).toHaveBeenCalledWith('8.9')
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+
+  it('失焦空值视为取消，不提交', () => {
+    const onSubmit = vi.fn()
+    const onCancel = vi.fn()
+    render(<InlineNameInput dataTestid={tid} onSubmit={onSubmit} onCancel={onCancel} />)
+    fireEvent.blur(screen.getByTestId(tid))
+    expect(onSubmit).not.toHaveBeenCalled()
     expect(onCancel).toHaveBeenCalled()
+  })
+
+  it('光标停在末尾不全选', () => {
+    const onSubmit = vi.fn()
+    const onCancel = vi.fn()
+    render(<InlineNameInput dataTestid={tid} defaultValue="8.9" onSubmit={onSubmit} onCancel={onCancel} />)
+    const input = screen.getByTestId(tid) as HTMLInputElement
+    expect(input.selectionStart).toBe(3)
+    expect(input.selectionEnd).toBe(3)
   })
 
   it('值变化回调 onValueChange', () => {

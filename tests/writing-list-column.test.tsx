@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({
   ipc: {
@@ -9,6 +9,7 @@ vi.mock('@/lib/ipc', () => ({
   },
 }))
 
+import { ipc } from '@/lib/ipc'
 import { useStore } from '@/store'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 
@@ -59,5 +60,27 @@ describe('WritingListColumn', () => {
     expect(screen.queryByTestId('writing-tree-node')).not.toBeInTheDocument()
     expect(screen.getByTestId('writing-collapsed-recent-0')).toHaveTextContent('a')
     expect(screen.getByTestId('writing-collapsed-recent-1')).toHaveTextContent('b')
+  })
+
+  it('repo tab refresh button renders and triggers a rescan', async () => {
+    render(<WritingListColumn theme="academic" />)
+    fireEvent.click(screen.getByTestId('writing-list-tab-repository'))
+
+    const refreshBtn = screen.getByTestId('writing-repo-refresh')
+    expect(refreshBtn).toBeInTheDocument()
+    expect(refreshBtn.getAttribute('aria-label')).toBe('重新扫描仓库（外部移入的文件）')
+
+    const loadWritingTree = vi.mocked(useStore.getState().loadWritingTree)
+    const refreshCatalog = vi.mocked(ipc.writingRefreshCatalog)
+    loadWritingTree.mockClear()
+    refreshCatalog.mockClear()
+
+    fireEvent.click(refreshBtn)
+    expect(loadWritingTree).toHaveBeenCalledTimes(1)
+
+    await waitFor(() => {
+      expect(refreshCatalog).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().toast?.message).toBe('已扫描，没有新文件')
+    })
   })
 })

@@ -27,7 +27,7 @@ export function InlineNameInput({
 
   useEffect(() => {
     const el = ref.current
-    if (el) { el.focus(); el.select() }
+    if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length) }
   }, [])
 
   const commit = () => {
@@ -62,7 +62,7 @@ export function InlineNameInput({
           if (e.key === 'Enter') { e.preventDefault(); commit() }
           else if (e.key === 'Escape') { e.preventDefault(); cancel() }
         }}
-        onBlur={cancel}
+        onBlur={commit}
       />
       {error && (
         <div className={`text-[10px] mt-0.5 ${isAcademic ? 'text-red-400' : 'text-red-600'}`}>{error}</div>

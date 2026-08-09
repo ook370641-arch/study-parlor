@@ -435,6 +435,7 @@ type AppStore = {
   setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
   reorderWritingSibling: (args: { dir: string; src: string; target: string; position: 'before' | 'after'; siblings: string[] }) => void
   moveWritingNode: (args: { src: string; targetDir: string; index: number | null }) => Promise<void>
+  writingRenamed: (oldPath: string, newPath: string) => void
 }
 
 let wildcardRequestId = 0
@@ -2435,6 +2436,18 @@ export const useStore = create<AppStore>((set, get) => ({
     const writingOrder = { ...get().writingOrder, [targetDir]: next }
     set({ writingOrder })
     ipc.patchState({ writingOrder } as Partial<StateJson>)
+  },
+
+  // 目录/文件改名后,writingOrder 中该节点及其子级路径全部做前缀改写,避免顺序回退扫描序。
+  writingRenamed: (oldPath, newPath) => {
+    if (oldPath === newPath) return
+    const next: Record<string, string[]> = {}
+    for (const [k, paths] of Object.entries(get().writingOrder)) {
+      const nk = k === oldPath ? newPath : k.startsWith(oldPath + '/') ? newPath + k.slice(oldPath.length) : k
+      next[nk] = paths.map(p => p === oldPath ? newPath : p.startsWith(oldPath + '/') ? newPath + p.slice(oldPath.length) : p)
+    }
+    set({ writingOrder: next })
+    ipc.patchState({ writingOrder: next } as Partial<StateJson>)
   },
 
   loadWritingTree: async () => {

@@ -5,12 +5,26 @@ import { writingTreeContainsPath, countFiles, firstWritingFilePath, displayWriti
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 import { WritingTree } from './WritingTree'
 import { PromptDialog } from './PromptDialog'
-import type { WritingRoot } from '@shared/index'
+import type { WritingRoot, WritingTreeNode } from '@shared/index'
 
 interface PromptState {
   title: string
   defaultValue?: string
   onSubmit: (value: string) => void
+}
+
+/** 收集节点树中所有 file 节点的 path（用于仓库重新扫描前后对比）。 */
+function collectWritingPaths(nodes: WritingTreeNode[] | undefined): string[] {
+  if (!nodes) return []
+  const out: string[] = []
+  const walk = (ns: WritingTreeNode[]) => {
+    for (const n of ns) {
+      if (n.kind === 'file') out.push(n.path)
+      else walk(n.children ?? [])
+    }
+  }
+  walk(nodes)
+  return out
 }
 
 export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: 'academic' | 'newspaper'; collapsed?: boolean }) {
@@ -21,12 +35,16 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   const selectWritingFile = useStore(s => s.selectWritingFile)
   const tree = useStore(s => s.writingTree)
   const writingUISize = useStore(s => s.writingUIFontSize)
+  const showToast = useStore(s => s.showToast)
 
   const dim = isAcademic ? 'text-parchment/60 hover:text-parchment/80' : 'text-[#6b5d52] hover:text-[#2a1f1a]'
   const tabIdle = isAcademic ? 'text-parchment/50 hover:text-parchment/70' : 'text-[#6b5d52]/70 hover:text-[#6b5d52]'
   const borderCol = isAcademic ? 'border-parchment/15' : 'border-[#c9c3b8]'
+  const primaryAction = isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'
+  const secondaryAction = isAcademic ? 'text-parchment/50 hover:text-ember' : 'text-[#6b5d52] hover:text-[#8a3a3a]'
 
   const [prompt, setPrompt] = useState<PromptState | null>(null)
+  const [scanning, setScanning] = useState(false)
 
   const [inlineNew, setInlineNew] = useState<{ root: WritingRoot; dir: string; value: string; error?: string } | null>(null)
 
@@ -136,6 +154,20 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
     if (r.ok) await loadWritingTree()
   }
 
+  const handleRefreshRepo = async () => {
+    const before = new Set(collectWritingPaths(useStore.getState().writingTree?.repository))
+    setScanning(true)
+    try {
+      await loadWritingTree()
+      void ipc.writingRefreshCatalog()
+      const after = collectWritingPaths(useStore.getState().writingTree?.repository)
+      const added = after.filter(p => !before.has(p))
+      showToast(added.length > 0 ? `已扫描，新增 ${added.length} 篇` : '已扫描，没有新文件')
+    } finally {
+      setScanning(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full" style={{ ['--writing-ui-size' as string]: WRITING_UI_STYLES[writingUISize] }}>
       <div className={`flex m-2 rounded-lg border ${borderCol} text-xs shrink-0 overflow-hidden`} role="tablist">
@@ -161,8 +193,8 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
         {tab === 'articles' ? (
           <div>
             <div className="p-2 flex gap-2 text-xs">
-              <button data-testid="writing-new-file" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleCreateFile} style={{ fontSize: 'var(--writing-ui-size)' }}>＋ 新建文章</button>
-              <button data-testid="writing-new-folder" className={dim} onClick={handleCreateFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>新建分组</button>
+              <button data-testid="writing-new-file" title="新建文章" aria-label="新建文章" className={`px-1 text-xs ${primaryAction}`} onClick={handleCreateFile} style={{ fontSize: 'var(--writing-ui-size)' }}>＋</button>
+              <button data-testid="writing-new-folder" title="新建分组" aria-label="新建分组" className={`px-1 text-xs ${secondaryAction}`} onClick={handleCreateFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>🗀</button>
             </div>
             <WritingTree
               root="writing"
@@ -177,8 +209,9 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
         ) : (
           <div>
             <div className="p-2 flex gap-2 text-xs">
-              <button data-testid="writing-import-files" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleImportFiles} style={{ fontSize: 'var(--writing-ui-size)' }}>⬆ 导入文件…</button>
-              <button data-testid="writing-repo-new-folder" className={dim} onClick={handleCreateRepoFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>新建分组</button>
+              <button data-testid="writing-import-files" title="导入文件…" aria-label="导入文件…" className={`px-1 text-xs ${primaryAction}`} onClick={handleImportFiles} style={{ fontSize: 'var(--writing-ui-size)' }}>⬆</button>
+              <button data-testid="writing-repo-new-folder" title="新建分组" aria-label="新建分组" className={`px-1 text-xs ${secondaryAction}`} onClick={handleCreateRepoFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>🗀</button>
+              <button data-testid="writing-repo-refresh" title="重新扫描仓库（外部移入的文件）" aria-label="重新扫描仓库（外部移入的文件）" disabled={scanning} onClick={handleRefreshRepo} className={`px-1 text-xs ${scanning ? 'opacity-40 cursor-wait' : ''} ${secondaryAction}`} style={{ fontSize: 'var(--writing-ui-size)' }}>⟳</button>
             </div>
             <WritingTree
               root="repository"

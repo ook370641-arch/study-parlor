@@ -177,4 +177,14 @@ test.describe('@p2 writing-repository', () => {
 
     fs.rmdirSync(repoDir)
   })
+
+  test('repo 重新扫描按钮：点击后出现 toast 文案', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+
+    await window.locator('[data-testid="writing-repo-refresh"]').click()
+    await expect(window.getByText('已扫描，没有新文件')).toBeVisible({ timeout: 5000 })
+  })
 })

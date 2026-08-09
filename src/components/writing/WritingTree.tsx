@@ -29,6 +29,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const writingOrder = useStore(s => s.writingOrder)
   const reorderWritingSibling = useStore(s => s.reorderWritingSibling)
   const moveWritingNode = useStore(s => s.moveWritingNode)
+  const writingRenamed = useStore(s => s.writingRenamed)
 
   const [open, setOpen] = useState(depth === 0)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
@@ -40,6 +41,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const isDir = node.kind === 'dir'
 
   const handleClick = () => {
+    if (editing) return
     if (isDir) { setOpen(!open); return }
     selectWritingFile(node.path)
   }
@@ -67,7 +69,8 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
       onSubmit: async (newName) => {
         const normalized = normalizeWritingFileName(newName.trim(), node.kind === 'file')
         if (normalized === node.name) return
-        await ipc.writingRename({ path: node.path, newName: normalized })
+        const r = await ipc.writingRename({ path: node.path, newName: normalized })
+        if (r.ok) writingRenamed(node.path, r.value.path)
         await loadWritingTree()
       },
     })
@@ -80,6 +83,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
     if (r.ok) {
       setRenameError('')
       setEditing(false)
+      writingRenamed(node.path, r.value.path)
       await loadWritingTree()
     } else {
       setRenameError(writingErrorText(r.code))
@@ -183,6 +187,15 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            data-testid="writing-node-rename"
+            data-path={node.path}
+            title="重命名"
+            className={`px-1 text-xs ${isAcademic ? 'text-parchment/50 hover:text-ember' : 'text-[#6b5d52] hover:text-[#8a3a3a]'}`}
+            onClick={(e) => { e.stopPropagation(); setEditing(true) }}
+          >
+            ✎
+          </button>
           {isDir && (
             <button
               data-testid="writing-node-create"
@@ -192,17 +205,6 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
               onClick={(e) => { e.stopPropagation(); doNewFile() }}
             >
               ＋
-            </button>
-          )}
-          {!isDir && (
-            <button
-              data-testid="writing-node-rename"
-              data-path={node.path}
-              title="重命名"
-              className={`px-1 text-xs ${isAcademic ? 'text-parchment/50 hover:text-ember' : 'text-[#6b5d52] hover:text-[#8a3a3a]'}`}
-              onClick={(e) => { e.stopPropagation(); setEditing(true) }}
-            >
-              ✎
             </button>
           )}
           <button
