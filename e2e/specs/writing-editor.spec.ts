@@ -649,14 +649,6 @@ test.describe('@p2 writing-editor', () => {
     await expect(window.locator(SELECTORS.writing.toolbarHr)).toBeVisible({ timeout: 3000 })
   })
 
-  test('工具栏表格 ▦ 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-    const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
-    await expect(window.locator(SELECTORS.writing.toolbarTable)).toBeVisible({ timeout: 3000 })
-  })
-
   // ── Toolbar: All buttons visible ───────────────────────────────────
 
   test('工具栏全部按钮可见且有 testid', async ({ window, testLibraryPath }) => {
@@ -674,7 +666,6 @@ test.describe('@p2 writing-editor', () => {
       SELECTORS.writing.toolbarBulletList,
       SELECTORS.writing.toolbarOrderedList,
       SELECTORS.writing.toolbarHr,
-      SELECTORS.writing.toolbarTable,
       SELECTORS.writing.toolbarHeading,
       SELECTORS.writing.toolbarColor,
     ]

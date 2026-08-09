@@ -165,4 +165,10 @@ test.describe('@p2 writing-table-ui', () => {
     await window.locator('.ProseMirror pre').click()
     await expect(window.getByTestId('writing-gutter-plus')).toBeHidden()
   })
+
+  test('顶部栏不再提供插入表格按钮(入口已移至 gutter)', async ({ window, testLibraryPath, testConfigDir }) => {
+    await setup(window, testLibraryPath, testConfigDir)
+
+    await expect(window.getByTestId('writing-toolbar-table')).toHaveCount(0)
+  })
 })

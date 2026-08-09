@@ -335,7 +335,6 @@ export const SELECTORS = {
     toolbarBulletList: '[data-testid="writing-toolbar-bullet-list"]',
     toolbarOrderedList: '[data-testid="writing-toolbar-ordered-list"]',
     toolbarHr: '[data-testid="writing-toolbar-hr"]',
-    toolbarTable: '[data-testid="writing-toolbar-table"]',
     toolbarHeading: '[data-testid="writing-toolbar-heading"]',
     toolbarColor: '[data-testid="writing-toolbar-color"]',
     headingOption: '[data-testid="writing-heading-option"]',

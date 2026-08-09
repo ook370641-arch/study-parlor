@@ -65,6 +65,7 @@
       "sources": [
         "src/components/writing/**",
         "src/components/writing-assistant/**",
+        "src/lib/milkdown-*.ts",
         "electron/lib/writing-*.ts",
         "electron/ipc/writing*.ts",
         "electron/lib/writing-assistant/**"

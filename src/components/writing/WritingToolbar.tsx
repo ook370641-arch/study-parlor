@@ -10,7 +10,7 @@ import {
   insertHrCommand,
   wrapInHeadingCommand,
 } from '@milkdown/preset-commonmark'
-import { toggleStrikethroughCommand, insertTableCommand } from '@milkdown/preset-gfm'
+import { toggleStrikethroughCommand } from '@milkdown/preset-gfm'
 import { textColorCommand, TEXT_COLOR_PALETTE } from '@/lib/milkdown-text-color'
 import { runCollapsedBlockCommand } from '@/lib/milkdown-collapse-selection'
 
@@ -115,15 +115,6 @@ export function WritingToolbar() {
         title="分割线"
       >
         —
-      </button>
-      <span className="text-parchment/20 mx-0.5">|</span>
-      <button
-        data-testid="writing-toolbar-table"
-        onClick={() => exec(insertTableCommand.key)}
-        className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
-        title="插入表格"
-      >
-        ▦
       </button>
       <span className="text-parchment/20 mx-0.5">|</span>
       {/* Heading level */}
