@@ -128,4 +128,41 @@ test.describe('@p2 writing-table-ui', () => {
     await window.getByTestId('writing-table-delete').click()
     await expect(window.locator('.ProseMirror table')).toHaveCount(0)
   })
+
+  test('gutter「+」菜单插入表格/无序列表', async ({ window, testLibraryPath, testConfigDir }) => {
+    await setup(window, testLibraryPath, testConfigDir)
+
+    // 光标在段落二 →「+」可见 → 菜单 → 插入表格
+    await window.locator('.ProseMirror p').filter({ hasText: '正文段落二' }).click()
+    await expect(window.getByTestId('writing-gutter-plus')).toBeVisible()
+    await window.getByTestId('writing-gutter-plus').click()
+    await expect(window.getByTestId('writing-gutter-menu')).toBeVisible()
+    const tableCount = await window.locator('.ProseMirror table').count()
+    await window.getByTestId('writing-gutter-item').filter({ hasText: '表格' }).click()
+    await expect(window.locator('.ProseMirror table')).toHaveCount(tableCount + 1)
+
+    // 无序列表
+    await window.locator('.ProseMirror p').filter({ hasText: '正文段落一' }).click()
+    await window.getByTestId('writing-gutter-plus').click()
+    await window.getByTestId('writing-gutter-item').filter({ hasText: '无序列表' }).click()
+    await expect(window.locator('.ProseMirror ul li').filter({ hasText: '正文段落一' })).toHaveCount(1)
+  })
+
+  // H2 单独一条:list_item 的 schema 是 paragraph block*,setBlockType(heading)
+  // 在 li 内不合法会静默返回 false(与工具栏标题命令同约束),故在顶层段落上验证。
+  test('gutter「+」H2 作用于顶层段落', async ({ window, testLibraryPath, testConfigDir }) => {
+    await setup(window, testLibraryPath, testConfigDir)
+
+    await window.locator('.ProseMirror p').filter({ hasText: '正文段落一' }).click()
+    await window.getByTestId('writing-gutter-plus').click()
+    await window.getByTestId('writing-gutter-item').filter({ hasText: 'H2' }).click()
+    await expect(window.locator('.ProseMirror h2').filter({ hasText: '正文段落一' })).toHaveCount(1)
+  })
+
+  test('代码块内 gutter「+」隐藏', async ({ window, testLibraryPath, testConfigDir }) => {
+    await setup(window, testLibraryPath, testConfigDir)
+
+    await window.locator('.ProseMirror pre').click()
+    await expect(window.getByTestId('writing-gutter-plus')).toBeHidden()
+  })
 })

@@ -123,3 +123,33 @@
 .writing-table-menu-popup button:hover {
   background: rgba(232, 213, 183, 0.1);
 }
+
+/* gutter 车道:为左侧「+」与表格手柄让出 26px(整体均匀缩进,不按块推移正文) */
+.writing-editor-root .ProseMirror {
+  padding-left: 26px;
+}
+/* gutter 插入菜单(与 ⋯ 菜单同族) */
+.writing-gutter-menu {
+  position: absolute;
+  z-index: 30;
+  min-width: 88px;
+  padding: 4px 0;
+  background: #2a1f1a;
+  border: 1px solid rgba(232, 213, 183, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.writing-gutter-menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 12px;
+  text-align: left;
+  color: rgba(232, 213, 183, 0.8);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.writing-gutter-menu button:hover {
+  background: rgba(232, 213, 183, 0.1);
+}
