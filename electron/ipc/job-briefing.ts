@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { ipcMain } from 'electron'
 import type { AppConfig } from '../env'
-import type { JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode } from '@shared/index'
+import type { JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile } from '@shared/index'
 import {
   generateJobBriefing,
   discoverCareerPage,

@@ -42,7 +42,7 @@ export function registerScoutIpc(cfg: AppConfig): void {
             // User confirmed fetch: parse URLs from message content.
             // Message format from confirmScoutCandidates:
             //   "抓取以下候选：\n1. https://example.com/article-0\n2. ..."
-            const urlsInMsg = lastUser.match(/https?:\/\/\S+/g) ?? []
+            const urlsInMsg: string[] = lastUser.match(/https?:\/\/\S+/g) ?? []
             const { saveArticle } = await import('../lib/scout/article-store')
             const allCandidates: [number, string][] = [[0, 'ReAct 原文'], [1, 'The Second Half']]
             const savedTitles: string[] = []

@@ -33,7 +33,7 @@ export function toJobErrorCode(err: unknown): JobErrorCode {
     const dir = path.join(os.homedir(), '.studyparlor', 'debug')
     fs.mkdirSync(dir, { recursive: true })
     const ts = new Date().toISOString().replace(/[:.]/g, '-')
-    const dump = {
+    const dump: Record<string, string> = {
       ts: new Date().toISOString(),
       fallback: 'NETWORK_ERROR',
       error: formatErrorForLog(err),
