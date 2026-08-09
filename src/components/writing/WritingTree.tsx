@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import { sortNodesByOrder, countFiles } from '@/lib/writing-tree-utils'
+import { sortNodesByOrder, countFiles, displayWritingName, normalizeWritingFileName, diaryPrefillName, sortedInsertIndexForFile, writingErrorText } from '@/lib/writing-tree-utils'
 import type { WritingTreeNode, WritingRoot } from '@shared/index'
 import { PromptDialog } from './PromptDialog'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { InlineNameInput } from './InlineNameInput'
 
 interface PromptState {
   title: string
@@ -62,16 +63,32 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
     closeMenu()
     setPrompt({
       title: '新名称:',
-      defaultValue: node.name,
+      defaultValue: displayWritingName(node),
       onSubmit: async (newName) => {
-        if (newName === node.name) return
-        await ipc.writingRename({ path: node.path, newName })
+        const normalized = normalizeWritingFileName(newName.trim(), node.kind === 'file')
+        if (normalized === node.name) return
+        await ipc.writingRename({ path: node.path, newName: normalized })
         await loadWritingTree()
       },
     })
   }
 
+  const doRenameSubmit = async (value: string) => {
+    const normalized = normalizeWritingFileName(value, node.kind === 'file')
+    if (normalized === node.name) { setRenameError(''); setEditing(false); return }
+    const r = await ipc.writingRename({ path: node.path, newName: normalized })
+    if (r.ok) {
+      setRenameError('')
+      setEditing(false)
+      await loadWritingTree()
+    } else {
+      setRenameError(writingErrorText(r.code))
+    }
+  }
+
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [renameError, setRenameError] = useState('')
   const doDelete = () => {
     closeMenu()
     setConfirmingDelete(true)
@@ -79,18 +96,10 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
 
   const doNewFile = () => {
     closeMenu()
-    setPrompt({
-      title: '文章名称:',
-      onSubmit: async (name) => {
-        // node.path includes the root prefix (e.g. 'writing/随笔'); the IPC
-        // expects dir relative to root, so strip it.
-        const dir = node.path.slice(root.length + 1)
-        await ipc.writingCreateFile({ root, dir, name })
-        await loadWritingTree()
-        // Auto-expand to show new child
-        if (!open) setOpen(true)
-      },
-    })
+    const dir = node.path.slice(root.length + 1)
+    const prefill = diaryPrefillName(root, dir, node.children)
+    onStartInlineNew({ root, dir, value: prefill })
+    if (!open) setOpen(true)
   }
 
   const doNewFolder = () => {
@@ -159,7 +168,19 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
       >
         <span className="w-4 text-center shrink-0">{isDir ? (open ? '▾' : '▸') : '·'}</span>
         <div className="min-w-0 flex-1">
-          <span className="truncate block">{node.name}</span>
+          {editing ? (
+            <InlineNameInput
+              dataTestid="writing-inline-rename"
+              defaultValue={displayWritingName(node)}
+              theme={theme}
+              error={renameError}
+              onValueChange={() => setRenameError('')}
+              onSubmit={doRenameSubmit}
+              onCancel={() => { setRenameError(''); setEditing(false) }}
+            />
+          ) : (
+            <span className="truncate block">{displayWritingName(node)}</span>
+          )}
         </div>
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           {isDir && (
@@ -171,6 +192,17 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
               onClick={(e) => { e.stopPropagation(); doNewFile() }}
             >
               ＋
+            </button>
+          )}
+          {!isDir && (
+            <button
+              data-testid="writing-node-rename"
+              data-path={node.path}
+              title="重命名"
+              className={`px-1 text-xs ${isAcademic ? 'text-parchment/50 hover:text-ember' : 'text-[#6b5d52] hover:text-[#8a3a3a]'}`}
+              onClick={(e) => { e.stopPropagation(); setEditing(true) }}
+            >
+              ✎
             </button>
           )}
           <button
@@ -186,11 +218,31 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
       </div>
 
       {isDir && open && (() => {
-        const sorted = sortNodesByOrder(node.children ?? [], writingOrder[node.path])
-        return sorted.map(child => (
+        const children = node.children ?? []
+        const sorted = sortNodesByOrder(children, writingOrder[node.path])
+        const here = inlineNew != null && inlineNew.root === root && inlineNew.dir === node.path.slice(root.length + 1)
+        const renderChild = (child: WritingTreeNode) => (
           <TreeNode key={child.path} node={child} depth={depth + 1} root={root} parentDir={node.path} siblingPaths={sorted.map(n => n.path)} theme={theme}
             inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} />
-        ))
+        )
+        if (!here) return sorted.map(renderChild)
+        const idx = sortedInsertIndexForFile(children, writingOrder[node.path], inlineNew.value)
+        return (
+          <>
+            {sorted.slice(0, idx).map(renderChild)}
+            <InlineNameInput
+              key="__inline_new__"
+              dataTestid="writing-inline-new"
+              defaultValue={inlineNew.value}
+              theme={theme}
+              error={inlineNew.error}
+              onValueChange={onInlineNewChange}
+              onSubmit={onInlineNewSubmit}
+              onCancel={onInlineNewCancel}
+            />
+            {sorted.slice(idx).map(renderChild)}
+          </>
+        )
       })()}
 
       {/* Context menu */}
@@ -268,7 +320,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         {isDir ? (
           <p>确定解散分组「{node.name}」？组内 {countFiles(node.children)} 篇文章将移回上一级，不会被删除。</p>
         ) : (
-          <p>确定删除《{node.name}》？文件将被永久删除，无法恢复。</p>
+          <p>确定删除《{displayWritingName(node)}》？文件将被永久删除，无法恢复。</p>
         )}
       </ConfirmDialog>
     </div>
@@ -290,6 +342,32 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
   const [endDrop, setEndDrop] = useState(false)
   const nodes = tree?.[root] ?? []
   const sorted = sortNodesByOrder(nodes, writingOrder[root])
+  const here = inlineNew != null && inlineNew.root === root && inlineNew.dir === ''
+
+  const renderChild = (n: WritingTreeNode) => (
+    <TreeNode key={n.path} node={n} depth={0} root={root} parentDir={root} siblingPaths={sorted.map(x => x.path)} theme={theme}
+      inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} />
+  )
+
+  if (here) {
+    const idx = sortedInsertIndexForFile(nodes, writingOrder[root], inlineNew.value)
+    return (
+      <div className="py-1 min-h-[120px]">
+        {sorted.slice(0, idx).map(renderChild)}
+        <InlineNameInput
+          key="__inline_new__"
+          dataTestid="writing-inline-new"
+          defaultValue={inlineNew.value}
+          theme={theme}
+          error={inlineNew.error}
+          onValueChange={onInlineNewChange}
+          onSubmit={onInlineNewSubmit}
+          onCancel={onInlineNewCancel}
+        />
+        {sorted.slice(idx).map(renderChild)}
+      </div>
+    )
+  }
 
   if (sorted.length === 0) {
     return (
@@ -302,11 +380,7 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
   return (
     <div
       className="py-1 min-h-[120px]"
-      onDragOver={(e) => {
-        if (e.target !== e.currentTarget) return
-        e.preventDefault()
-        setEndDrop(true)
-      }}
+      onDragOver={(e) => { if (e.target !== e.currentTarget) return; e.preventDefault(); setEndDrop(true) }}
       onDragLeave={(e) => { if (e.target === e.currentTarget) setEndDrop(false) }}
       onDrop={async (e) => {
         if (e.target !== e.currentTarget) return
@@ -315,14 +389,11 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
         const src = e.dataTransfer.getData('text/writing-path')
         if (!src) return
         const srcParent = src.includes('/') ? src.slice(0, src.lastIndexOf('/')) : root
-        if (srcParent === root) return // 已在根级,纯末尾排序意义低,忽略
+        if (srcParent === root) return
         await moveWritingNode({ src, targetDir: root, index: null })
       }}
     >
-      {sorted.map(n => (
-        <TreeNode key={n.path} node={n} depth={0} root={root} parentDir={root} siblingPaths={sorted.map(x => x.path)} theme={theme}
-          inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} />
-      ))}
+      {sorted.map(renderChild)}
       {endDrop && <div data-testid="writing-drop-line" className="mx-2 border-t-2 border-ember pointer-events-none" />}
     </div>
   )
