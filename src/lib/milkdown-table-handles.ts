@@ -7,7 +7,8 @@
 // 命令经 $prose 工厂闭包的 ctx 直调,不走 toolbar 的 writingEditorAction 代理。
 // 按钮用 mousedown + preventDefault,避免点击夺走编辑器选区导致手柄自身隐藏。
 import { $prose, callCommand } from '@milkdown/utils'
-import { Plugin, PluginKey } from '@milkdown/prose/state'
+import { editorViewCtx } from '@milkdown/core'
+import { Plugin, PluginKey, Selection, TextSelection } from '@milkdown/prose/state'
 import {
   addRowAfterCommand,
   addColAfterCommand,
@@ -43,6 +44,7 @@ class TableHandlesView {
   private popup: HTMLDivElement
   private row = 0
   private col = 0
+  private tablePos: number | null = null
   private relayout = () => this.layout()
   private onDocClick = () => this.closeMenu()
 
@@ -52,17 +54,18 @@ class TableHandlesView {
     this.container.style.display = 'none'
     root.appendChild(this.container)
 
-    this.mkBtn('writing-table-row-add', '+', () => this.call(addRowAfterCommand.key))
-    this.mkBtn('writing-table-row-del', '−', () => {
+    this.mkBtn('writing-table-row-add', '+', '下方插入行', () => this.call(addRowAfterCommand.key))
+    this.mkBtn('writing-table-row-del', '−', '删除当前行(表头行删除后次行晋升表头)', () => {
+      if (this.row === 0 && this.deleteHeaderWithPromotion()) return
       this.call(selectRowCommand.key, { index: this.row })
       this.call(deleteSelectedCellsCommand.key)
     })
-    this.mkBtn('writing-table-col-add', '+', () => this.call(addColAfterCommand.key))
-    this.mkBtn('writing-table-col-del', '−', () => {
+    this.mkBtn('writing-table-col-add', '+', '右侧插入列', () => this.call(addColAfterCommand.key))
+    this.mkBtn('writing-table-col-del', '−', '删除当前列', () => {
       this.call(selectColCommand.key, { index: this.col })
       this.call(deleteSelectedCellsCommand.key)
     })
-    this.mkBtn('writing-table-menu', '⋯', () => this.toggleMenu())
+    this.mkBtn('writing-table-menu', '⋯', '表格操作(列对齐/删除表格)', () => this.toggleMenu())
 
     // ⋯ 弹出菜单:列对齐 + 删除表格
     this.popup = document.createElement('div')
@@ -81,6 +84,9 @@ class TableHandlesView {
         // 先选中光标所在整列(CellSelection),让对齐落到表头 + 该列全部单元格。
         this.call(selectColCommand.key, { index: this.col })
         this.call(setAlignCommand.key, align)
+        // 对齐生效后折叠整列 CellSelection 回普通光标——
+        // 选中态停留时敲字会替换该列首个单元格内容
+        this.collapseCellSelection()
         this.closeMenu()
       })
       this.popup.appendChild(b)
@@ -108,10 +114,51 @@ class TableHandlesView {
     callCommand(cmd, payload)(this.ctx)
   }
 
-  private mkBtn(testid: string, text: string, onDown: () => void): HTMLButtonElement {
+  /** 删表头行 + 次行晋升表头(用户决策,不做禁用防护)。返回 false 表示无法处理(回退命令路径)。
+   *  不能走 selectRow+deleteRow:PM 的 Transform.delete 会为 table 必填的 table_header_row
+   *  自动合成空行(schema 保持),prosemirror-tables 的 fixTables 再补一行,产出幽灵行。
+   *  也不能 setNodeMarkup 两遍(细胞先转 → table_row 校验拒绝;行先转 → content 校验拒绝)。
+   *  故用次行单元格内容整行重建 table_header_row,一步 replaceWith 替换两行区间。
+   *  单行表(只剩表头)无法晋升,返回 false——deleteRow 对唯一行本就是 no-op,行为不变。 */
+  private deleteHeaderWithPromotion(): boolean {
+    const tablePos = this.tablePos
+    if (tablePos == null) return false
+    const view = this.ctx.get(editorViewCtx)
+    const table = view.state.doc.nodeAt(tablePos)
+    if (!table || table.type.name !== 'table' || table.childCount < 2) return false
+    const headerRowType = view.state.schema.nodes.table_header_row
+    const headerType = view.state.schema.nodes.table_header
+    if (!headerRowType || !headerType) return false
+    const row0 = table.child(0)
+    const row1 = table.child(1)
+    const cells: Parameters<typeof headerRowType.create>[1] = []
+    row1.forEach(cell => { (cells as any[]).push(headerType.create(cell.attrs, cell.content)) })
+    const newHeaderRow = headerRowType.create(row1.attrs, cells)
+    view.dispatch(
+      view.state.tr.replaceWith(tablePos + 1, tablePos + 1 + row0.nodeSize + row1.nodeSize, newHeaderRow),
+    )
+    return true
+  }
+
+  /** 把 CellSelection 折叠回普通文本光标(head 位置不合法时退化为 Selection.near) */
+  private collapseCellSelection() {
+    const view = this.ctx.get(editorViewCtx)
+    const sel = view.state.selection
+    if (sel.empty) return
+    try {
+      view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, sel.head)))
+    } catch {
+      try {
+        view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(sel.head))))
+      } catch { /* 选区已失效,忽略 */ }
+    }
+  }
+
+  private mkBtn(testid: string, text: string, title: string, onDown: () => void): HTMLButtonElement {
     const b = document.createElement('button')
     b.dataset.testid = testid
     b.textContent = text
+    b.title = title
     b.className = 'writing-handle-btn'
     b.addEventListener('mousedown', e => { e.preventDefault(); onDown() })
     b.addEventListener('click', e => e.stopPropagation())
@@ -159,6 +206,7 @@ class TableHandlesView {
     const cellRect = cellDOM.getBoundingClientRect()
     this.row = (cellDOM.parentElement as HTMLTableRowElement).rowIndex
     this.col = cellDOM.cellIndex
+    this.tablePos = tablePos
 
     const t = (r: DOMRect) => r.top - rootRect.top
     const l = (r: DOMRect) => r.left - rootRect.left

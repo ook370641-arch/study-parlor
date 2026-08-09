@@ -153,3 +153,14 @@
 .writing-gutter-menu button:hover {
   background: rgba(232, 213, 183, 0.1);
 }
+/* gutter 命令失败提示(与工具栏 hint 同色:ember 90%) */
+.writing-gutter-hint {
+  position: absolute;
+  z-index: 30;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: rgba(217, 119, 87, 0.9);
+  background: #2a1f1a;
+  border-radius: 4px;
+  pointer-events: none;
+}

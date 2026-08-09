@@ -27,6 +27,8 @@ const ITEMS: { type: string; label: string; run: (ctx: Ctx) => unknown }[] = [
 class GutterInsertView {
   private plus: HTMLButtonElement
   private menu: HTMLDivElement
+  private hint: HTMLSpanElement
+  private hintTimer: ReturnType<typeof setTimeout> | null = null
   private relayout = () => this.layout()
   private onDocClick = () => this.closeMenu()
 
@@ -34,6 +36,7 @@ class GutterInsertView {
     this.plus = document.createElement('button')
     this.plus.dataset.testid = 'writing-gutter-plus'
     this.plus.textContent = '+'
+    this.plus.title = '插入块(列表/表格/标题)'
     this.plus.className = 'writing-handle-btn'
     this.plus.style.display = 'none'
     this.plus.addEventListener('mousedown', e => { e.preventDefault(); this.toggleMenu() })
@@ -52,15 +55,37 @@ class GutterInsertView {
       b.textContent = item.label
       b.addEventListener('mousedown', e => {
         e.preventDefault()
-        item.run(this.ctx)
+        const ok = item.run(this.ctx)
         this.closeMenu()
+        // 命令 when 不满足返回 false(如 li 内点标题)——文档不变是预期,
+        // 但需给出与工具栏一致的失败提示,不能静默(用户以为按钮坏了)
+        if (ok === false) this.showHint()
       })
       this.menu.appendChild(b)
     }
     root.appendChild(this.menu)
 
+    this.hint = document.createElement('span')
+    this.hint.dataset.testid = 'writing-gutter-hint'
+    this.hint.className = 'writing-gutter-hint'
+    this.hint.textContent = '当前位置不支持该操作'
+    this.hint.style.display = 'none'
+    root.appendChild(this.hint)
+
     document.addEventListener('scroll', this.relayout, true)
     window.addEventListener('resize', this.relayout)
+  }
+
+  private showHint() {
+    // 定位在「+」右侧(与菜单位置一致)
+    this.hint.style.left = '24px'
+    this.hint.style.top = this.plus.style.top
+    this.hint.style.display = 'block'
+    if (this.hintTimer !== null) clearTimeout(this.hintTimer)
+    this.hintTimer = setTimeout(() => {
+      this.hint.style.display = 'none'
+      this.hintTimer = null
+    }, 2500)
   }
 
   private toggleMenu() {
@@ -107,8 +132,10 @@ class GutterInsertView {
     document.removeEventListener('scroll', this.relayout, true)
     window.removeEventListener('resize', this.relayout)
     document.removeEventListener('click', this.onDocClick)
+    if (this.hintTimer !== null) clearTimeout(this.hintTimer)
     this.plus.remove()
     this.menu.remove()
+    this.hint.remove()
   }
 }
 

@@ -107,6 +107,25 @@ test.describe('@p2 writing-table-ui', () => {
     await expect(window.locator('.ProseMirror tr').first().locator('th,td')).toHaveCount(4)
     await window.getByTestId('writing-table-col-del').click()
     await expect(window.locator('.ProseMirror tr').first().locator('th,td')).toHaveCount(3)
+
+    // 手柄悬停提示(ui-styling §3:控件不言自明或加 title)
+    for (const testid of ['writing-table-row-add', 'writing-table-row-del', 'writing-table-col-add', 'writing-table-col-del', 'writing-table-menu']) {
+      await expect(window.getByTestId(testid)).toHaveAttribute('title', /.+/)
+    }
+  })
+
+  test('表头行行删:次行自动晋升为表头(用户决策,不做禁用防护)', async ({ window, testLibraryPath, testConfigDir }) => {
+    await setup(window, testLibraryPath, testConfigDir)
+
+    // 光标点进表头行(「物品名称」所在行)任意单元格 → 点行「−」
+    await window.locator('.ProseMirror th').first().click()
+    await expect(window.locator('.ProseMirror tr')).toHaveCount(3)
+    await window.getByTestId('writing-table-row-del').click()
+
+    // 表头行被删后,原第二行(甲)晋升表头:仍是 3 个 th,且内容是「甲」
+    await expect(window.locator('.ProseMirror tr')).toHaveCount(2)
+    await expect(window.locator('.ProseMirror tr').first().locator('th')).toHaveCount(3)
+    await expect(window.locator('.ProseMirror tr').first()).toContainText('甲')
   })
 
   test('⋯ 菜单:列对齐写回 markdown,删除表格', async ({ window, testLibraryPath, testConfigDir }) => {
@@ -122,6 +141,9 @@ test.describe('@p2 writing-table-ui', () => {
     await expect(window.locator(SELECTORS.writing.saveStatus)).toContainText('已保存', { timeout: 5000 })
     const aligned = fs.readFileSync(filePath, 'utf8')
     expect(aligned).toContain(':---')
+
+    // 对齐生效后选区应折叠回普通光标——CellSelection 停留时敲字会替换该列首格内容
+    await expect(window.locator('.ProseMirror .selectedCell')).toHaveCount(0)
 
     // 删除表格 → 编辑器中 table 消失
     await window.getByTestId('writing-table-menu').click()
@@ -148,13 +170,15 @@ test.describe('@p2 writing-table-ui', () => {
     await expect(window.locator('.ProseMirror ul li').filter({ hasText: '正文段落一' })).toHaveCount(1)
 
     // 消极断言:list_item 的 schema 是 paragraph block*,标题命令在 li 内不合法会静默
-    // 返回 false(与工具栏同约束)——点 H2 后 li 仍是 li,不产生 h2
+    // 返回 false(与工具栏同约束)——点 H2 后 li 仍是 li,不产生 h2;
+    // 但命令失败必须给出与工具栏一致的失败提示,不能静默
     const h2Count = await window.locator('.ProseMirror h2').count()
     await window.locator('.ProseMirror ul li').filter({ hasText: '正文段落一' }).click()
     await window.getByTestId('writing-gutter-plus').click()
     await window.getByTestId('writing-gutter-item').filter({ hasText: 'H2' }).click()
     await expect(window.locator('.ProseMirror ul li').filter({ hasText: '正文段落一' })).toHaveCount(1)
     await expect(window.locator('.ProseMirror h2')).toHaveCount(h2Count)
+    await expect(window.getByTestId('writing-gutter-hint')).toHaveText('当前位置不支持该操作')
   })
 
   // H2 单独一条:list_item 的 schema 是 paragraph block*,setBlockType(heading)
