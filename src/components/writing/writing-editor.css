@@ -45,3 +45,32 @@
 .writing-editor-root .ProseMirror .tableWrapper {
   overflow-x: auto;
 }
+/* 表格网格:官方 tables.css 未加载(亮色主题),自写暗色网格。
+   列宽拖拽手柄显式隐藏——GFM markdown 存不下列宽,不留假 affordance
+   (columnResizing 插件本身保留,只藏 UI)。 */
+.writing-editor-root .ProseMirror table {
+  border-collapse: collapse;
+}
+.writing-editor-root .ProseMirror td,
+.writing-editor-root .ProseMirror th {
+  border: 1px solid rgba(232, 213, 183, 0.2);
+  padding: 0.3em 0.6em;
+}
+.writing-editor-root .ProseMirror th {
+  background: rgba(232, 213, 183, 0.05);
+  font-weight: 600;
+}
+.writing-editor-root .ProseMirror .column-resize-handle {
+  display: none !important;
+}
+/* 单元格多选(prosemirror-tables cell selection)选中态 */
+.writing-editor-root .ProseMirror .selectedCell {
+  position: relative;
+}
+.writing-editor-root .ProseMirror .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(232, 213, 183, 0.1);
+  pointer-events: none;
+}
