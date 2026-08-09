@@ -389,7 +389,7 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
         const src = e.dataTransfer.getData('text/writing-path')
         if (!src) return
         const srcParent = src.includes('/') ? src.slice(0, src.lastIndexOf('/')) : root
-        if (srcParent === root) return
+        if (srcParent === root) return // 已在根级,纯末尾排序意义低,忽略
         await moveWritingNode({ src, targetDir: root, index: null })
       }}
     >
