@@ -226,7 +226,10 @@ test.describe('@p2 writing-assistant', () => {
   // ── NEW: 4. 多轮对话 ────────────────────────────────────
   test('多轮对话：3 条消息产生 6 条记录，回复引用用户问题', async ({ window, testLibraryPath }) => {
     const assistant = await setupAssistant(window, testLibraryPath)
-    await selectArticle(window, '七月夜话')
+    // 用「分布式随笔」而非「七月夜话」:seed 给七月夜话预置了 1 对历史会话,
+    // selectWritingFile 会自动恢复 .assistant.md(9a5e961 引入的有意功能),
+    // 七月夜话下消息基数是 2 而非 0,本测试测的是"3 条新消息产生 6 条记录"
+    await selectArticle(window, '分布式随笔')
     await assistant.open()
 
     // Round 1
@@ -332,7 +335,10 @@ test.describe('@p2 writing-assistant', () => {
   // ── NEW: 6. 空文章保护 ──────────────────────────────────
   test('空文章保护：未打开文章时输入框 disabled', async ({ window, testLibraryPath }) => {
     const assistant = await setupAssistant(window, testLibraryPath)
-    // Do NOT select any article
+    // 列表栏在 tree 加载后会有意自动选中第一篇文章(WritingListColumn),
+    // 「未打开文章」态需显式制造:置空当前文件(selectWritingFile(null))。
+    // 自动选中 effect 只在 tree 变化时触发,置空后不会被抢回。
+    await window.evaluate(() => (window as any).useStore.getState().selectWritingFile(null))
     await assistant.open()
 
     // Input should be disabled

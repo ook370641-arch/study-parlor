@@ -2313,7 +2313,9 @@ export const useStore = create<AppStore>((set, get) => ({
           }
         }
       }
-      msgs[msgs.length - 1] = { ...last, content, sources, reasoning: undefined }
+      // 不得清空 reasoning:9a5e961 曾顺手加 reasoning: undefined,导致工具事件
+      // 一到思考块就从渲染上消失(reasoning spec 回归根因);思考应穿透工具阶段保留。
+      msgs[msgs.length - 1] = { ...last, content, sources }
     } else if (e.phase === 'done') {
       const marker = e.ids && e.ids.length > 0
         ? `\n> 来源：[${e.tool}] ${e.ids.join(', ')}\n`
