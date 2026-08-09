@@ -12,9 +12,14 @@ interface PromptState {
   onSubmit: (value: string) => void
 }
 
-function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academic' }: {
+function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academic', inlineNew, onStartInlineNew, onInlineNewChange, onInlineNewSubmit, onInlineNewCancel }: {
   node: WritingTreeNode; depth: number; root: WritingRoot; parentDir: string; siblingPaths: string[];
   theme?: 'academic' | 'newspaper'
+  inlineNew: { root: WritingRoot; dir: string; value: string; error?: string } | null
+  onStartInlineNew: (t: { root: WritingRoot; dir: string; value: string }) => void
+  onInlineNewChange: (v: string) => void
+  onInlineNewSubmit: (v: string) => void
+  onInlineNewCancel: () => void
 }) {
   const isAcademic = theme !== 'newspaper'
   const selectedPath = useStore(s => s.writingFile?.path)
@@ -183,7 +188,8 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
       {isDir && open && (() => {
         const sorted = sortNodesByOrder(node.children ?? [], writingOrder[node.path])
         return sorted.map(child => (
-          <TreeNode key={child.path} node={child} depth={depth + 1} root={root} parentDir={node.path} siblingPaths={sorted.map(n => n.path)} theme={theme} />
+          <TreeNode key={child.path} node={child} depth={depth + 1} root={root} parentDir={node.path} siblingPaths={sorted.map(n => n.path)} theme={theme}
+            inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} />
         ))
       })()}
 
@@ -269,7 +275,14 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   )
 }
 
-export function WritingTree({ root, theme = 'academic' }: { root: WritingRoot; theme?: 'academic' | 'newspaper' }) {
+export function WritingTree({ root, theme = 'academic', inlineNew, onStartInlineNew, onInlineNewChange, onInlineNewSubmit, onInlineNewCancel }: {
+  root: WritingRoot; theme?: 'academic' | 'newspaper'
+  inlineNew: { root: WritingRoot; dir: string; value: string; error?: string } | null
+  onStartInlineNew: (t: { root: WritingRoot; dir: string; value: string }) => void
+  onInlineNewChange: (v: string) => void
+  onInlineNewSubmit: (v: string) => void
+  onInlineNewCancel: () => void
+}) {
   const isAcademic = theme !== 'newspaper'
   const tree = useStore(s => s.writingTree)
   const writingOrder = useStore(s => s.writingOrder)
@@ -307,7 +320,8 @@ export function WritingTree({ root, theme = 'academic' }: { root: WritingRoot; t
       }}
     >
       {sorted.map(n => (
-        <TreeNode key={n.path} node={n} depth={0} root={root} parentDir={root} siblingPaths={sorted.map(x => x.path)} theme={theme} />
+        <TreeNode key={n.path} node={n} depth={0} root={root} parentDir={root} siblingPaths={sorted.map(x => x.path)} theme={theme}
+          inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} />
       ))}
       {endDrop && <div data-testid="writing-drop-line" className="mx-2 border-t-2 border-ember pointer-events-none" />}
     </div>

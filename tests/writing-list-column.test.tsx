@@ -4,6 +4,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 vi.mock('@/lib/ipc', () => ({
   ipc: {
     writingCreateFile: vi.fn(), writingCreateFolder: vi.fn(), writingImportFiles: vi.fn(),
+    writingRefreshCatalog: vi.fn(),
     patchState: vi.fn(),
   },
 }))
@@ -56,5 +57,7 @@ describe('WritingListColumn', () => {
     expect(screen.getByTestId('writing-collapsed-articles-count')).toHaveTextContent('2')
     expect(screen.getByTestId('writing-collapsed-repository-count')).toHaveTextContent('1')
     expect(screen.queryByTestId('writing-tree-node')).not.toBeInTheDocument()
+    expect(screen.getByTestId('writing-collapsed-recent-0')).toHaveTextContent('a')
+    expect(screen.getByTestId('writing-collapsed-recent-1')).toHaveTextContent('b')
   })
 })

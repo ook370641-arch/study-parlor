@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import { writingTreeContainsPath, countFiles, firstWritingFilePath } from '@/lib/writing-tree-utils'
+import { writingTreeContainsPath, countFiles, firstWritingFilePath, displayWritingName, writingErrorText } from '@/lib/writing-tree-utils'
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 import { WritingTree } from './WritingTree'
 import { PromptDialog } from './PromptDialog'
+import type { WritingRoot } from '@shared/index'
 
 interface PromptState {
   title: string
@@ -26,6 +27,23 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   const borderCol = isAcademic ? 'border-parchment/15' : 'border-[#c9c3b8]'
 
   const [prompt, setPrompt] = useState<PromptState | null>(null)
+
+  const [inlineNew, setInlineNew] = useState<{ root: WritingRoot; dir: string; value: string; error?: string } | null>(null)
+
+  const startInlineNew = (target: { root: WritingRoot; dir: string; value: string }) => setInlineNew({ ...target })
+  const changeInlineNew = (value: string) => setInlineNew(s => (s ? { ...s, value } : s))
+  const submitInlineNew = async (name: string) => {
+    if (!inlineNew) return
+    const r = await ipc.writingCreateFile({ root: inlineNew.root, dir: inlineNew.dir, name })
+    if (r.ok) {
+      setInlineNew(null)
+      await loadWritingTree()
+      void selectWritingFile(r.value.path)
+    } else {
+      setInlineNew({ ...inlineNew, value: name, error: writingErrorText(r.code) })
+    }
+  }
+  const cancelInlineNew = () => setInlineNew(null)
 
   useEffect(() => {
     loadWritingTree()
@@ -52,10 +70,10 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
       if (!nodes) return
       for (const n of nodes.writing ?? []) {
         if (n.kind === 'file') {
-          recentFiles.push({ name: n.name, path: n.path })
+          recentFiles.push({ name: displayWritingName(n), path: n.path })
         } else if (n.children) {
           for (const c of n.children) {
-            if (c.kind === 'file') recentFiles.push({ name: c.name, path: c.path })
+            if (c.kind === 'file') recentFiles.push({ name: displayWritingName(c), path: c.path })
             if (recentFiles.length >= 3) return
           }
         }
@@ -90,16 +108,7 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   }
 
   const handleCreateFile = () => {
-    setPrompt({
-      title: '文章名称:',
-      onSubmit: async (name) => {
-        const r = await ipc.writingCreateFile({ root: 'writing', dir: '', name })
-        if (r.ok) {
-          await loadWritingTree()
-          selectWritingFile(r.value.path)
-        }
-      },
-    })
+    startInlineNew({ root: 'writing', dir: '', value: '' })
   }
 
   const handleCreateFolder = () => {
@@ -155,7 +164,15 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
               <button data-testid="writing-new-file" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleCreateFile} style={{ fontSize: 'var(--writing-ui-size)' }}>＋ 新建文章</button>
               <button data-testid="writing-new-folder" className={dim} onClick={handleCreateFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>新建分组</button>
             </div>
-            <WritingTree root="writing" theme={theme} />
+            <WritingTree
+              root="writing"
+              theme={theme}
+              inlineNew={inlineNew}
+              onStartInlineNew={startInlineNew}
+              onInlineNewChange={changeInlineNew}
+              onInlineNewSubmit={submitInlineNew}
+              onInlineNewCancel={cancelInlineNew}
+            />
           </div>
         ) : (
           <div>
@@ -163,7 +180,15 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
               <button data-testid="writing-import-files" className={isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} onClick={handleImportFiles} style={{ fontSize: 'var(--writing-ui-size)' }}>⬆ 导入文件…</button>
               <button data-testid="writing-repo-new-folder" className={dim} onClick={handleCreateRepoFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>新建分组</button>
             </div>
-            <WritingTree root="repository" theme={theme} />
+            <WritingTree
+              root="repository"
+              theme={theme}
+              inlineNew={inlineNew}
+              onStartInlineNew={startInlineNew}
+              onInlineNewChange={changeInlineNew}
+              onInlineNewSubmit={submitInlineNew}
+              onInlineNewCancel={cancelInlineNew}
+            />
           </div>
         )}
       </div>
