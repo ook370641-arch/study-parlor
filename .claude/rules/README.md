@@ -8,7 +8,7 @@
 |---|---|---|---|
 | `general.md` | 跨领域 Agent 行为偏差 | 全局 | 9 |
 | `feature-development.md` | 功能开发、外部 API 集成、交付验证 | `src/**`, `electron/**`, `docs/superpowers/specs/**` | 12 |
-| `e2e.md` | E2E 测试、fixtures、page objects、selectors | `e2e/**`, `tests/**/*.test.ts` | 10 |
+| `e2e.md` | E2E 测试、fixtures、page objects、selectors | `e2e/**`, `tests/**/*.test.ts` | 12 |
 | `ipc-state.md` | IPC 契约、状态持久化、frontmatter schema | types/store/ipc/preload/frontmatter/app-paths | 12 |
 | `llm.md` | LLM 调用、prompt、JSON 提取、归档触发 | kimi/llm/prompts/llm-tasks/finalize/session-runtime | 9 |
 | `ui-styling.md` | React/Tailwind、抽屉、动画、markdown 渲染 | `src/components/**`, `src/pages/**`, `tailwind.config.ts` | 11 |
@@ -35,6 +35,7 @@
 
 ## Changelog
 
+- `2026-08-10` e2e 新增 §11/§12：E2E 跑 out/ 构建产物、改源码必须先 `npx electron-vite build`（e2e-changed --run 自动构建）；本地定向跑 `--no-retries` + 默认并行 workers（来自三个 e2e 失败全因过期构建 + E2E 加速实施）。
 - `2026-07-26` general 新增 §9：验证只跑受影响测试，禁止全量（来自三次改 1-2 文件后跑 821 tests 的反馈）。
 - `2026-07-25` ui-styling §11 登记：光的语言两层级（烛光/聚焦呼吸）、检定动效协议、内化脊柱 motif（来自审美提升总计划 Part 2-4：生成仪式 B、燃熄阖卷、并置画框）。
 - `2026-07-25` ui-styling §11 登记第四类资产：重量/归位语法（motion-presets 双弹簧，引力语言的触觉层；来自审美提升批一：换画坠出/落入、面板开合不对称、日期落定）。

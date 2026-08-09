@@ -36,3 +36,4 @@ e2e/.test-config/
 test-results/
 playwright-report/
 *.trace.zip
+e2e_output*.txt

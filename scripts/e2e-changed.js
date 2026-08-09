@@ -6,8 +6,14 @@
  *
  * 用法：
  *   node scripts/e2e-changed.js              # 列出受影响的 spec（不执行）
- *   node scripts/e2e-changed.js --run        # 执行受影响的 spec
+ *   node scripts/e2e-changed.js --run        # 执行受影响的 spec（自动先构建 out/）
+ *   node scripts/e2e-changed.js --no-retries # 执行时传 --retries=0（本地迭代加速，失败不翻倍）
  *   node scripts/e2e-changed.js --base main  # 指定比较基线（默认 main）
+ *
+ * 注意：E2E 跑的是 out/ 构建产物（main.ts 无 ELECTRON_RENDERER_URL 时加载
+ * out/renderer/index.html）。改源码后必须构建，否则 e2e 用旧代码导致「新按钮
+ * 找不到 / UI 还是旧的」这类诡异失败（tsc/vitest 吃源码所以仍然绿）。
+ * --run 模式会自动先跑 `npx electron-vite build`（3 秒级）。
  */
 
 const { execSync } = require('child_process')
@@ -18,6 +24,7 @@ const { minimatch } = require('minimatch')
 // ── 参数解析 ──────────────────────────────────────────────
 const args = process.argv.slice(2)
 const run = args.includes('--run')
+const noRetries = args.includes('--no-retries')
 const baseIdx = args.indexOf('--base')
 const base = baseIdx !== -1 ? args[baseIdx + 1] : 'main'
 
@@ -166,14 +173,25 @@ if (specList.length === 0) {
 
 // ── 执行（仅 --run 模式）──────────────────────────────────
 if (run) {
+  // E2E 直接 spawn electron 加载 out/ 构建产物；先构建防止跑旧代码（过期构建坑）。
+  console.log()
+  console.log('[e2e-changed] Building out/ (electron-vite build)...')
+  try {
+    execSync('npx electron-vite build', { cwd: repoRoot, stdio: 'inherit', timeout: 300_000 })
+  } catch (err) {
+    console.error('[e2e-changed] Build failed — aborting e2e run.')
+    process.exit(err.status || 1)
+  }
+
   console.log()
   console.log('[e2e-changed] Running...')
 
   const specArgs = specList.map(s => s)  // spec 文件名，相对于 testDir (e2e/specs)
-  const cmd = `npx playwright test --config e2e/playwright.config.ts ${specArgs.join(' ')}`
+  const retryFlag = noRetries ? ' --retries=0' : ''
+  const cmd = `npx playwright test --config e2e/playwright.config.ts ${specArgs.join(' ')}${retryFlag}`
 
   try {
-    execSync(cmd, { cwd: repoRoot, stdio: 'inherit', timeout: 600_000 })
+    execSync(cmd, { cwd: repoRoot, stdio: 'inherit', timeout: 900_000 })
   } catch (err) {
     // Playwright 测试失败时 exit code 非零，正常传递
     process.exit(err.status || 1)

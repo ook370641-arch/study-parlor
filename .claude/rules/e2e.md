@@ -115,6 +115,23 @@ paths:
 - CI/合并前仍需全量 `npm run test:e2e`，本规则仅适用于本地开发迭代。
 - Source: 2026-07-25 E2E targeting infra
 
+## 11. E2E 跑 out/ 构建产物，改源码后必须先构建
+
+**Why:** Playwright 直接 spawn electron 加载 out/renderer；漏构建时 tsc/vitest 仍绿、e2e 却跑旧代码诡异失败。
+
+- `e2e-changed.js --run` 已自动先 `npx electron-vite build`；手动 `npx playwright test` 前须先构建。
+- 统一用 `npx electron-vite build`（`node scripts/dev.js build` 在 git-bash 下 PATH 解析失败）。
+- 失败特征：新 testid/新按钮/新文案找不到但旧行为正常 → 先怀疑构建过期。
+- Source: 2026-08-10 三个 e2e 失败全因过期 out/renderer
+
+## 12. 本地定向 E2E 用 --no-retries 提速；并行已配置
+
+**Why:** retries:1 让失败时间翻倍、workers:1 闲置多核；每测试已完全隔离故并行安全。
+
+- 本地迭代：`node scripts/e2e-changed.js --run --no-retries`；CI/合并门禁保留 retries。
+- `playwright.config.ts` 默认 `workers=min(4,max(2,cpus-4))`，勿改回 1。
+- Source: 2026-08-10 E2E 加速
+
 ## Example: selector stability
 
 - ❌ `page.locator('text=续谈（第2次）')`

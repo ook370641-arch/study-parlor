@@ -51,10 +51,13 @@ rm -rf .electron-cache
 功能迭代后跑定向测试（按 git diff 匹配 `e2e/source-map.json`），**不跑全量**。全量是合并前门禁。
 
 ```bash
-node scripts/e2e-changed.js --run   # 执行受影响 spec
-node scripts/e2e-changed.js          # 仅列出（不执行）
-npm run test:e2e                     # 全量（合并前）
+node scripts/e2e-changed.js --run             # 执行受影响 spec（自动先构建 out/）
+node scripts/e2e-changed.js --run --no-retries # 本地迭代加速（失败不翻倍）
+node scripts/e2e-changed.js                    # 仅列出（不执行）
+npm run test:e2e                               # 全量（合并前）
 ```
+
+> E2E 跑 `out/` 构建产物：`e2e-changed.js --run` 自动先构建；手动 `npx playwright test` 前须先 `npx electron-vite build`（详见 `.claude/rules/e2e.md` §11）。并行 workers 已配置。
 
 **单元测试同理**：改哪个文件就跑哪个测试，不跑 `npx vitest run`。改 3 个以内文件时手动指定路径。
 
