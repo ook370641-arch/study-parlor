@@ -77,12 +77,14 @@ class GutterInsertView {
 
   private layout() {
     const { $from } = this.view.state.selection
-    // 代码块内隐藏;depth < 1 无顶层块可言
+    // 代码块内隐藏;depth < 1 无顶层块可言;表格内隐藏——表格已有自己的行列手柄组
+    // (x 坐标与 gutter 重叠),且 gutter 六项 wrap/setBlockType 在 table_cell 内静默失败无意义
     let inCode = false
     for (let d = $from.depth; d > 0; d--) {
       if ($from.node(d).type.spec.code || $from.node(d).type.name === 'code_block') { inCode = true; break }
     }
-    if (inCode || $from.depth < 1) {
+    const inTable = $from.depth >= 1 && $from.node(1).type.name === 'table'
+    if (inCode || inTable || $from.depth < 1) {
       this.plus.style.display = 'none'
       this.closeMenu()
       return

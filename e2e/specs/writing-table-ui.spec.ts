@@ -146,6 +146,15 @@ test.describe('@p2 writing-table-ui', () => {
     await window.getByTestId('writing-gutter-plus').click()
     await window.getByTestId('writing-gutter-item').filter({ hasText: '无序列表' }).click()
     await expect(window.locator('.ProseMirror ul li').filter({ hasText: '正文段落一' })).toHaveCount(1)
+
+    // 消极断言:list_item 的 schema 是 paragraph block*,标题命令在 li 内不合法会静默
+    // 返回 false(与工具栏同约束)——点 H2 后 li 仍是 li,不产生 h2
+    const h2Count = await window.locator('.ProseMirror h2').count()
+    await window.locator('.ProseMirror ul li').filter({ hasText: '正文段落一' }).click()
+    await window.getByTestId('writing-gutter-plus').click()
+    await window.getByTestId('writing-gutter-item').filter({ hasText: 'H2' }).click()
+    await expect(window.locator('.ProseMirror ul li').filter({ hasText: '正文段落一' })).toHaveCount(1)
+    await expect(window.locator('.ProseMirror h2')).toHaveCount(h2Count)
   })
 
   // H2 单独一条:list_item 的 schema 是 paragraph block*,setBlockType(heading)
@@ -163,6 +172,10 @@ test.describe('@p2 writing-table-ui', () => {
     await setup(window, testLibraryPath, testConfigDir)
 
     await window.locator('.ProseMirror pre').click()
+    await expect(window.getByTestId('writing-gutter-plus')).toBeHidden()
+
+    // 表格内同样隐藏:gutter 与表格行「+」手柄 x 坐标重叠,且表格已有自己的手柄组
+    await window.locator('.ProseMirror td').first().click()
     await expect(window.getByTestId('writing-gutter-plus')).toBeHidden()
   })
 
