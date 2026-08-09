@@ -115,6 +115,8 @@ export default defineConfig(({ command }) => ({
         '@milkdown/plugin-history',
         '@milkdown/plugin-clipboard',
         '@milkdown/utils',
+        '@milkdown/prose/state',
+        '@milkdown/prose/keymap',
       ],
       // 让启动扫描覆盖懒加载页面入口，未来新增的页面级裸依赖也能在
       // 启动时被发现，而不是运行时触发 re-optimization。

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { callCommand } from '@milkdown/utils'
 import {
@@ -12,6 +12,7 @@ import {
 } from '@milkdown/preset-commonmark'
 import { toggleStrikethroughCommand, insertTableCommand } from '@milkdown/preset-gfm'
 import { textColorCommand, TEXT_COLOR_PALETTE } from '@/lib/milkdown-text-color'
+import { runCollapsedBlockCommand } from '@/lib/milkdown-collapse-selection'
 
 const HEADING_OPTIONS = [
   { label: '正文', level: 0 },
@@ -24,10 +25,26 @@ export function WritingToolbar() {
   const act = useStore(s => s.writingEditorAction)
   const [headingMenuOpen, setHeadingMenuOpen] = useState(false)
   const [colorMenuOpen, setColorMenuOpen] = useState(false)
+  const [hint, setHint] = useState<string | null>(null)
+  const hintTimer = useRef<number | null>(null)
 
-  const exec = (cmd: any, payload?: any) => {
+  const showHint = (msg: string) => {
+    setHint(msg)
+    if (hintTimer.current !== null) window.clearTimeout(hintTimer.current)
+    hintTimer.current = window.setTimeout(() => { setHint(null); hintTimer.current = null }, 2500)
+  }
+
+  useEffect(() => () => {
+    if (hintTimer.current !== null) window.clearTimeout(hintTimer.current)
+  }, [])
+
+  // act 本身不回传值(WritingEditor 侧箭头函数无 return),在闭包里同步接命令返回值。
+  const exec = (cmd: any, payload?: any, opts?: { block?: boolean; failMsg?: string }) => {
     if (!act) return
-    act(callCommand(cmd, payload))
+    let ok: boolean | undefined
+    const runner = opts?.block ? runCollapsedBlockCommand(cmd, payload) : callCommand(cmd, payload)
+    act((ctx: any) => { ok = runner(ctx) })
+    if (ok === false) showHint(opts?.failMsg ?? '当前位置不支持该操作')
   }
 
   // 菜单外点击关闭（沿用 WritingTree 的 document click 模式）。
@@ -69,7 +86,7 @@ export function WritingToolbar() {
       <span className="text-parchment/20 mx-0.5">|</span>
       <button
         data-testid="writing-toolbar-blockquote"
-        onClick={() => exec(wrapInBlockquoteCommand.key)}
+        onClick={() => exec(wrapInBlockquoteCommand.key, undefined, { block: true })}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="引用"
       >
@@ -77,7 +94,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-bullet-list"
-        onClick={() => exec(wrapInBulletListCommand.key)}
+        onClick={() => exec(wrapInBulletListCommand.key, undefined, { block: true })}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="无序列表"
       >
@@ -85,7 +102,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-ordered-list"
-        onClick={() => exec(wrapInOrderedListCommand.key)}
+        onClick={() => exec(wrapInOrderedListCommand.key, undefined, { block: true })}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="有序列表"
       >
@@ -129,7 +146,7 @@ export function WritingToolbar() {
                 key={o.label}
                 data-testid="writing-heading-option"
                 data-level={o.level}
-                onClick={() => { setHeadingMenuOpen(false); exec(wrapInHeadingCommand.key, o.level) }}
+                onClick={() => { setHeadingMenuOpen(false); exec(wrapInHeadingCommand.key, o.level, { block: true, failMsg: '当前位置不支持标题' }) }}
                 className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
               >
                 {o.label}
@@ -168,6 +185,11 @@ export function WritingToolbar() {
           </div>
         )}
       </div>
+      {hint && (
+        <span data-testid="writing-toolbar-hint" className="ml-2 text-xs text-ember/90">
+          {hint}
+        </span>
+      )}
     </div>
   )
 }

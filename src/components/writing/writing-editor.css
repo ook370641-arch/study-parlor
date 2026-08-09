@@ -36,3 +36,12 @@
   margin: 0.5em 0;
   opacity: 0.85;
 }
+/* prosemirror-view 内置 CSS 未加载,<pre> 落 UA 默认 white-space: pre 禁止软换行,
+   长代码行在大字号下撑破容器出横向滚动条;改为 pre-wrap 后 overflow-wrap 从 .ProseMirror 继承生效。 */
+.writing-editor-root .ProseMirror pre {
+  white-space: pre-wrap;
+}
+/* tables.css 同样未加载,宽表格防御:容器内横向滚动而非撑破编辑器。 */
+.writing-editor-root .ProseMirror .tableWrapper {
+  overflow-x: auto;
+}
