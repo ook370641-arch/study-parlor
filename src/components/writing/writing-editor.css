@@ -74,3 +74,52 @@
   background: rgba(232, 213, 183, 0.1);
   pointer-events: none;
 }
+/* 表格手柄/gutter 的挂载定位上下文 */
+.writing-editor-root {
+  position: relative;
+}
+/* 行列手柄与 ⋯ 按钮:深褐底 + 米色细边,悬浮提亮 */
+.writing-handle-btn {
+  position: absolute;
+  z-index: 20;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: rgba(232, 213, 183, 0.6);
+  background: #2a1f1a;
+  border: 1px solid rgba(232, 213, 183, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.writing-handle-btn:hover {
+  color: #e8d5b7;
+  background: rgba(232, 213, 183, 0.1);
+}
+/* ⋯ 弹出菜单(与 toolbar 下拉同族:bg-ink + parchment/20 边) */
+.writing-table-menu-popup {
+  position: absolute;
+  z-index: 30;
+  min-width: 88px;
+  padding: 4px 0;
+  background: #2a1f1a;
+  border: 1px solid rgba(232, 213, 183, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.writing-table-menu-popup button {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 12px;
+  text-align: left;
+  color: rgba(232, 213, 183, 0.8);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.writing-table-menu-popup button:hover {
+  background: rgba(232, 213, 183, 0.1);
+}

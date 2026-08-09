@@ -11,6 +11,7 @@ import { textColorPlugins } from '@/lib/milkdown-text-color'
 import { pastePlainPlugins } from '@/lib/milkdown-paste-plain'
 import { tabKeymapPlugins } from '@/lib/milkdown-tab-keymap'
 import { codeblockEnterPlugins } from '@/lib/milkdown-codeblock-enter'
+import { tableHandlesPlugins } from '@/lib/milkdown-table-handles'
 import './writing-editor.css'
 
 function EditorInner({ initial, onChange }: { initial: string; onChange: (md: string) => void }) {
@@ -41,6 +42,7 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .use(pastePlainPlugins)
       .use(tabKeymapPlugins)
       .use(codeblockEnterPlugins)
+      .use(tableHandlesPlugins)
       .config(ctx => {
         ctx.set(rootCtx, root)
         ctx.set(defaultValueCtx, initial)
