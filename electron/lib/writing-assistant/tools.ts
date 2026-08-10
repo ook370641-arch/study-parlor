@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { AppConfig } from '../../env'
 import { readWritingFile } from '../writing-tree'
-import type { ToolCall } from './tool-protocol'
+import type { NativeToolCall } from './tool-protocol'
 import type { WritingToolEvent } from '../../../src/types'
 import type { IndexEntry } from './prompt'
 
@@ -10,12 +10,12 @@ import type { IndexEntry } from './prompt'
  * Resolve a source-type:id pair to a file path within the library.
  * Returns null for unreadable sources (e.g., web).
  */
-function resolveSourcePath(lib: string, type: string, idPath: string): string | null {
+export function resolveSourcePath(lib: string, type: string, idPath: string): string | null {
   switch (type) {
     case 'writing':
-      return path.join(lib, 'writing', idPath)
+      return path.join(lib, 'writing', idPath.replace(/^writing\//, ''))
     case 'repository':
-      return path.join(lib, 'repository', idPath)
+      return path.join(lib, 'repository', idPath.replace(/^repository\//, ''))
     case 'blog':
       return path.join(lib, 'Anthropic博客', idPath)
     case 'digest':
@@ -46,7 +46,7 @@ function resolveSourcePath(lib: string, type: string, idPath: string): string | 
 
 export async function executeTool(
   cfg: AppConfig,
-  call: ToolCall,
+  call: NativeToolCall,
   opts: {
     send: (e: WritingToolEvent) => void
     sessionId: string
@@ -56,42 +56,36 @@ export async function executeTool(
     index?: IndexEntry[]
   }
 ): Promise<string> {
-  if (call.tool === 'read_local') {
-    opts.send({ sessionId: opts.sessionId, phase: 'start', tool: 'read_local', ids: call.ids })
+  if (call.name === 'read_local') {
+    const ids = call.args.ids
+    opts.send({ sessionId: opts.sessionId, phase: 'start', tool: 'read_local', ids })
 
-    // If ids is empty or contains 'index', return full catalog
-    if (call.ids.length === 0 || call.ids.includes('index')) {
+    if (ids.length === 0 || ids.includes('index')) {
       const catalogText = (opts.index || []).map(e =>
         `- [${e.type}] ${e.id} — ${e.title}: ${e.summary}`
       ).join('\n')
-      opts.send({ sessionId: opts.sessionId, phase: 'done', tool: 'read_local', ids: call.ids })
+      opts.send({ sessionId: opts.sessionId, phase: 'done', tool: 'read_local', ids })
       return '可用资料列表：\n' + (catalogText || '(暂无资料)')
     }
 
-    // Read each file
     const results: string[] = []
-    for (const id of call.ids) {
+    for (const id of ids) {
       try {
-        // Parse type:path format
         const colonIdx = id.indexOf(':')
-        if (colonIdx === -1) { results.push(`⚠️ 无效 id 格式: ${id}`); continue }
+        if (colonIdx === -1) { results.push(`⚠️ 无效 id 格式: ${id}（未读到内容，请勿引用）`); continue }
 
         const type = id.slice(0, colonIdx)
         const relPath = id.slice(colonIdx + 1)
-
         const absPath = resolveSourcePath(cfg.libraryPath, type, relPath)
         if (!absPath) {
-          results.push(`⚠️ 不支持的来源类型: ${type}`)
+          results.push(`⚠️ 不支持的来源类型: ${type}（未读到内容，请勿引用）`)
           continue
         }
-
         if (!fs.existsSync(absPath)) {
-          results.push(`⚠️ 文件不存在: ${id}`)
+          results.push(`⚠️ 文件不存在: ${id}（未读到内容，请勿引用）`)
           continue
         }
-
         const raw = fs.readFileSync(absPath, 'utf-8')
-        // Parse frontmatter for title
         let title = id
         let body = raw
         const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n?/)
@@ -102,31 +96,30 @@ export async function executeTool(
         }
         results.push(`### [${type}] ${title}\n\n${body}`)
       } catch {
-        results.push(`⚠️ id 不存在或无法读取: ${id}`)
+        results.push(`⚠️ id 不存在或无法读取: ${id}（未读到内容，请勿引用）`)
       }
     }
 
-    opts.send({ sessionId: opts.sessionId, phase: 'done', tool: 'read_local', ids: call.ids })
+    opts.send({ sessionId: opts.sessionId, phase: 'done', tool: 'read_local', ids })
     return results.join('\n\n---\n\n')
   }
 
-  if (call.tool === 'web_search') {
+  if (call.name === 'web_search') {
+    const query = call.args.query
     if (!opts.useSearch) return '网络搜索未开启（用户关闭了 🔍 开关）。'
     try {
       const apiKey = opts.getSearchApiKey ? await opts.getSearchApiKey() : null
       if (!apiKey) return '搜索 API Key 未配置。'
-      const results = await (opts.searchWeb!)({ query: call.query, apiKey, maxResults: 8 })
+      const results = await (opts.searchWeb!)({ query, apiKey, maxResults: 8 })
       return results.map((r, i) =>
         `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.content?.slice(0, 300) || ''}`
       ).join('\n\n')
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code
-      if (code === 'NO_RESULTS') return `搜索「${call.query}」未找到结果。`
-      return `搜索「${call.query}」时出错，请稍后重试。`
+      if (code === 'NO_RESULTS') return `搜索「${query}」未找到结果。`
+      return `搜索「${query}」时出错，请稍后重试。`
     }
   }
 
-  // insert_into_article
-  opts.send({ sessionId: opts.sessionId, phase: 'done', tool: 'insert_into_article', markdown: call.markdown })
-  return '已插入到编辑器光标处。'
+  return '未知工具调用'
 }
