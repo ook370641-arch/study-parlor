@@ -9,6 +9,8 @@ export function WritingAssistantInput() {
   const thinkingEffort = useStore((s) => s.assistantThinkingEffort)
   const setSearchEnabled = useStore((s) => s.setAssistantSearchEnabled)
   const setThinkingEffort = useStore((s) => s.setAssistantThinkingEffort)
+  const snapshotLit = useStore((s) => s.writingAssistantSnapshotLit)
+  const setSnapshotLit = useStore((s) => s.setWritingAssistantSnapshotLit)
   const sendMessage = useStore((s) => s.sendWritingAssistantMessage)
   const abort = useStore((s) => s.abortWritingAssistant)
 
@@ -67,6 +69,19 @@ export function WritingAssistantInput() {
               MAX
             </span>
           )}
+        </button>
+        <button
+          data-testid="writing-assistant-snapshot-btn"
+          className={`px-1.5 py-1 rounded text-sm transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+            snapshotLit ? 'text-sky-400' : 'text-parchment/40'
+          }`}
+          onClick={() => setSnapshotLit(!snapshotLit)}
+          disabled={streaming}
+          aria-pressed={snapshotLit}
+          aria-label={snapshotLit ? '正文快照已点亮' : '正文快照关闭'}
+          title={snapshotLit ? '正文快照已点亮 — 每轮发送当前文章全文' : '正文快照关闭 — 点亮后每轮把当前文章全文发给助手'}
+        >
+          📄
         </button>
       </div>
 

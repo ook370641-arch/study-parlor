@@ -65,10 +65,6 @@ export function WritingAssistantMessages() {
     el.scrollTop = el.scrollHeight
   }, [messages])
 
-  const handleInsert = (content: string) => () => {
-    useStore.getState().insertTextIntoWritingEditor('\n' + content)
-  }
-
   const isEmpty = messages.length === 0
 
   return (
@@ -125,15 +121,6 @@ export function WritingAssistantMessages() {
                 isLastAssistant && streaming && (
                   <div className="text-sm text-parchment/50">…</div>
                 )
-              )}
-              {msg.content && !streaming && (
-                <button
-                  data-testid="writing-assistant-insert-btn"
-                  className="text-xs text-ember/60 hover:text-ember mt-1"
-                  onClick={handleInsert(msg.content)}
-                >
-                  插入到编辑器 ▸
-                </button>
               )}
             </div>
           </div>
