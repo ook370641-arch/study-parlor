@@ -207,7 +207,7 @@ export function parseSseChunk(line: string): SseEvent {
 
 export async function chatStream(
   cfg: AppConfig,
-  args: { messages: Message[]; temperature: number; signal: AbortSignal; thinking?: ThinkingConfig },
+  args: { messages: Message[]; temperature: number; signal: AbortSignal; thinking?: ThinkingConfig; tools?: ToolDef[] },
   onChunk: (text: string) => void,
   onReasoning?: (text: string) => void
 ): Promise<ChatStreamResult> {
@@ -240,6 +240,7 @@ export async function chatStream(
         temperature: args.temperature,
         stream: true,
         thinking: args.thinking ?? { type: 'disabled' },
+        ...(args.tools ? { tools: args.tools } : {}),
       })),
       signal: internalCtl.signal
     } as any)

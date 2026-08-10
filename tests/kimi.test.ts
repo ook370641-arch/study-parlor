@@ -271,6 +271,26 @@ describe('chatStream reasoning dispatch', () => {
     expect(result.toolCalls).toEqual([{ id: 'call_1', name: 'read_local', arguments: '{"ids":["writing:a.md"]' }])
     expect(result.finishReason).toBe('tool_calls')
   })
+
+  it('forwards tools to the fetch body when provided', async () => {
+    const fetchSpy = vi.fn(async () => ({
+      ok: true, status: 200,
+      body: sseBody(['data: {"choices":[{"delta":{"content":"答"}}]}', 'data: [DONE]']),
+    }))
+    vi.stubGlobal('fetch', fetchSpy as any)
+
+    const tools = [{
+      type: 'function' as const,
+      function: { name: 'read_local', description: 'd', parameters: {} },
+    }]
+    await chatStream(
+      cfg,
+      { messages: [{ role: 'user', content: 'q' }], temperature: 0.7, signal: new AbortController().signal, tools },
+      () => {},
+    )
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.tools).toEqual(tools)
+  })
 })
 
 describe('buildChatBody deepseek effort', () => {
