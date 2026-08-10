@@ -410,6 +410,7 @@ type AppStore = {
     error: ArticleAssistantErrorCode | null
   } | null
   writingAssistantSnapshotLit: boolean
+  setWritingAssistantSnapshotLit: (lit: boolean) => void
   sendWritingAssistantMessage: (text: string) => Promise<void>
   appendWritingAssistantChunk: (text: string) => void
   appendWritingAssistantReasoning: (text: string) => void
