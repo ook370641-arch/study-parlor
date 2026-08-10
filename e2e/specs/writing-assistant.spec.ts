@@ -351,4 +351,50 @@ test.describe('@p2 writing-assistant', () => {
     // Send button should also be disabled
     await expect(assistant.sendBtn).toBeDisabled()
   })
+
+  // ── S1 快照块：首轮强制落盘；未点亮不新增；点亮后新增 ──────────────
+  test('S1 快照：首轮落盘；第二轮未点亮不新增；点亮后新增', async ({ window, testLibraryPath }) => {
+    const assistant = await setupAssistant(window, testLibraryPath)
+    await selectArticle(window, '分布式随笔')
+    await assistant.open()
+
+    // seedWritingTree 生成 writing/技术笔记/分布式随笔.md（无预置 .assistant.md），
+    // 故快照块计数从 0 开始：首轮 isFirstRun 强制挂 snapshot，第二轮未点亮不加，
+    // 点亮后第三轮再加。
+    const sessionPath = path.join(testLibraryPath, 'writing', '技术笔记', '分布式随笔.assistant.md')
+    // 文件尚未写入时 readFileSync 会抛错——吞掉按 0 计，expect.poll 会重试到写入完成
+    const countSnap = (p: string) => {
+      try {
+        return (fs.readFileSync(p, 'utf8').match(/<!-- snapshot:start -->/g) ?? []).length
+      } catch {
+        return 0
+      }
+    }
+
+    // 首轮：isFirstRun=true → snapshot 强制挂载，落盘 1 个快照块
+    await assistant.send('快照测试一')
+    await assistant.waitForStreamingDone(15000)
+    await expect.poll(() => countSnap(sessionPath)).toBe(1)
+
+    // 第二轮：未点亮（snapshotLit=false）→ 不新增，仍 1
+    await assistant.send('快照测试二')
+    await assistant.waitForStreamingDone(15000)
+    await expect.poll(() => countSnap(sessionPath)).toBe(1)
+
+    // 点亮后第三轮：snapshotLit=true → 再挂一个，2
+    await assistant.toggleSnapshot()
+    await assistant.send('快照测试三')
+    await assistant.waitForStreamingDone(15000)
+    await expect.poll(() => countSnap(sessionPath)).toBe(2)
+  })
+
+  test('插入按钮已移除', async ({ window, testLibraryPath }) => {
+    const assistant = await setupAssistant(window, testLibraryPath)
+    await selectArticle(window, '七月夜话')
+    await assistant.open()
+    await assistant.send('测试')
+    await assistant.waitForStreamingDone(15000)
+    // 「插入到编辑器」按钮已随 insert_into_article 工具一并移除
+    await expect(window.locator('[data-testid="writing-assistant-insert-btn"]')).toHaveCount(0)
+  })
 })

@@ -3,8 +3,7 @@ import { SELECTORS } from '../helpers/selectors'
 
 /**
  * Page object for the AI writing assistant panel. Covers the collapsed tab,
- * expanded panel, input controls, search/thinking toggles, messages, and
- * insert-to-editor functionality.
+ * expanded panel, input controls, search/thinking/snapshot toggles, and messages.
  */
 export class WritingAssistantPanel {
   readonly collapsedTab: Locator
@@ -14,7 +13,7 @@ export class WritingAssistantPanel {
   readonly stopBtn: Locator
   readonly searchBtn: Locator
   readonly thinkingBtn: Locator
-  readonly insertBtn: Locator
+  readonly snapshotBtn: Locator
   readonly closeBtn: Locator
   readonly messages: Locator
   readonly resizeHandle: Locator
@@ -27,7 +26,7 @@ export class WritingAssistantPanel {
     this.stopBtn = page.locator(SELECTORS.writing.assistantStopBtn)
     this.searchBtn = page.locator(SELECTORS.writing.assistantSearchBtn)
     this.thinkingBtn = page.locator(SELECTORS.writing.assistantThinkingBtn)
-    this.insertBtn = page.locator(SELECTORS.writing.assistantInsertBtn)
+    this.snapshotBtn = page.locator(SELECTORS.writing.assistantSnapshotBtn)
     this.closeBtn = page.locator(SELECTORS.writing.assistantCloseBtn)
     this.messages = page.locator(SELECTORS.writing.assistantMessages)
     this.resizeHandle = page.locator(SELECTORS.writing.assistantResizeHandle)
@@ -60,9 +59,9 @@ export class WritingAssistantPanel {
     return this.messages.locator('[data-testid*="source"]').allTextContents()
   }
 
-  /** Click the insert button on the last assistant message. */
-  async insertLastMessage() {
-    await this.insertBtn.last().click()
+  /** Toggle the article-snapshot (📄) button. */
+  async toggleSnapshot() {
+    await this.snapshotBtn.click()
   }
 
   /** Toggle the search (🔍) button. */

@@ -47,8 +47,8 @@ test.describe('@p2 writing-editor', () => {
 
     // Create a new file via PromptDialog
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('持久化测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('持久化测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -93,8 +93,8 @@ test.describe('@p2 writing-editor', () => {
 
     // Create and open a file
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('快捷键测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('快捷键测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -119,8 +119,8 @@ test.describe('@p2 writing-editor', () => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('状态指示测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('状态指示测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -140,8 +140,8 @@ test.describe('@p2 writing-editor', () => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('新文件编辑测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('新文件编辑测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -162,8 +162,8 @@ test.describe('@p2 writing-editor', () => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('表格格式测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('表格格式测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -189,8 +189,8 @@ test.describe('@p2 writing-editor', () => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('标题格式测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('标题格式测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -279,8 +279,8 @@ test.describe('@p2 writing-editor', () => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('加粗测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('加粗测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -311,8 +311,8 @@ test.describe('@p2 writing-editor', () => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('颜色测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('颜色测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -364,15 +364,15 @@ test.describe('@p2 writing-editor', () => {
     await expect(span2).toContainText('这段文字要被染成暖橙')
   })
 
-  // ── Insert-to-editor ──────────────────────────────────────────────
+  // ── Insert-to-editor 已移除 ──────────────────────────────────────
 
-  test('AI 助手 insert → 编辑器内容变化', async ({ window, testLibraryPath }) => {
+  test('AI 助手面板：插入按钮已移除，快照按钮存在', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     // Create and open a file
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('插入测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('插入测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -382,22 +382,22 @@ test.describe('@p2 writing-editor', () => {
     await writing.typeInEditor('初始内容')
     await window.waitForTimeout(1500)
 
-    // Open assistant and send a message (mock sends insert_into_article tool event with markdown '# 插入标题')
+    // Open assistant and send a message (mock no longer emits insert_into_article)
     const { WritingAssistantPanel } = await import('../pages/WritingAssistantPanel')
     const assistant = new WritingAssistantPanel(window)
     await assistant.open()
     await assistant.send('帮我写')
     await assistant.waitForStreamingDone(15000)
 
-    // Click insert button on the last assistant message
-    const insertBtn = window.locator(SELECTORS.writing.assistantInsertBtn).last()
-    await expect(insertBtn).toBeVisible({ timeout: 3000 })
-    await insertBtn.click()
-    await window.waitForTimeout(500)
+    // 「插入到编辑器」按钮已随 insert_into_article 工具一并移除 —— 断言不存在
+    await expect(window.locator('[data-testid="writing-assistant-insert-btn"]')).toHaveCount(0)
 
-    // Editor content should include the inserted markdown
+    // 快照（📄）按钮是替代入口，必须可见
+    await expect(window.locator(SELECTORS.writing.assistantSnapshotBtn)).toBeVisible({ timeout: 3000 })
+
+    // Editor content must NOT have been modified by the assistant turn
     const content = await writing.getEditorContent()
-    expect(content).toContain('插入标题')
+    expect(content).toContain('初始内容')
   })
 
   // ── A4 长行换行:助手面板挤压下无横向溢出 ──────────────────────────
@@ -433,8 +433,8 @@ test.describe('@p2 writing-editor', () => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('保存失败测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('保存失败测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -460,8 +460,8 @@ test.describe('@p2 writing-editor', () => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
-    await window.getByTestId('writing-prompt-input').fill('目录测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('目录测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await window.waitForTimeout(2000)
 
     const writing = new WritingPage(window)
@@ -485,7 +485,7 @@ test.describe('@p2 writing-editor', () => {
 
   // ── E5 全流程串联 ─────────────────────────────────────────────────
 
-  test('全流程串联：新建→编辑→AI聊天→插入→保存→reload→双路恢复', async ({ window, testLibraryPath }) => {
+  test('全流程串联：新建→编辑→AI聊天→保存→reload→双路恢复', async ({ window, testLibraryPath }) => {
     // Ensure empty writing dir (no seed)
     const writingDir = path.join(testLibraryPath, 'writing')
     fs.mkdirSync(writingDir, { recursive: true })
@@ -501,8 +501,8 @@ test.describe('@p2 writing-editor', () => {
     // 1. Create new article
     const writing = new WritingPage(window)
     await writing.newFileButton.click()
-    await window.getByTestId('writing-prompt-input').fill('全流程测试')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('全流程测试')
+    await window.getByTestId('writing-inline-new').press('Enter')
     await expect(writing.editor).toBeVisible({ timeout: 10000 })
 
     // 2. Type content
@@ -517,15 +517,8 @@ test.describe('@p2 writing-editor', () => {
     await assistant.send('扩写第一段')
     await assistant.waitForStreamingDone(15000)
 
-    // 4. Click insert button
-    const insertBtn = window.locator(SELECTORS.writing.assistantInsertBtn).last()
-    await expect(insertBtn).toBeVisible({ timeout: 3000 })
-    await insertBtn.click()
-    await window.waitForTimeout(500)
-
-    // 5. Verify editor includes inserted content
-    const editorContent = await writing.getEditorContent()
-    expect(editorContent).toContain('插入标题')
+    // 4. 插入按钮已移除：断言不存在（原 insert_into_article mock 事件已删除）
+    await expect(window.locator('[data-testid="writing-assistant-insert-btn"]')).toHaveCount(0)
 
     // 6. Ctrl+S
     await writing.editor.locator('.ProseMirror').click()
@@ -568,7 +561,6 @@ test.describe('@p2 writing-editor', () => {
     // 11. Verify editor content restored
     const restoredContent = await writing2.getEditorContent()
     expect(restoredContent).toContain('第一段内容')
-    expect(restoredContent).toContain('插入标题')
 
     // 12. Open AI assistant → verify conversation restored via the real path
     // (selectFile 已在第 10 步触发 selectWritingFile → 自动加载 .assistant.md)
