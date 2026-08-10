@@ -178,6 +178,29 @@ test.describe('@p2 writing-repository', () => {
     fs.rmdirSync(repoDir)
   })
 
+  test('repo 根级新建文章：顶部「＋」→ 行内输入 → 磁盘文件 + 树中出现', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    await window.locator(SELECTORS.writing.listTabRepository).click()
+    await window.waitForTimeout(500)
+
+    await window.locator(SELECTORS.writing.repoNewFileButton).click()
+    const input = window.getByTestId('writing-inline-new')
+    await expect(input).toBeVisible({ timeout: 3000 })
+    await input.fill('仓库新文章')
+    await input.press('Enter')
+    await window.waitForTimeout(1500)
+
+    const filePath = path.join(testLibraryPath, 'repository', '仓库新文章.md')
+    expect(fs.existsSync(filePath)).toBe(true)
+
+    const repoNodes = window.locator('[data-testid="writing-tree-node"]')
+    const nodeTexts = await repoNodes.allTextContents()
+    expect(nodeTexts.some((t: string) => t.includes('仓库新文章'))).toBe(true)
+
+    fs.unlinkSync(filePath)
+  })
+
   test('repo 重新扫描按钮：点击后出现 toast 文案', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 

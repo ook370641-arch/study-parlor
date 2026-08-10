@@ -63,6 +63,28 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '子分组测试'))).toBe(true)
   })
 
+  test('分组悬停按钮新建子分组：🗀 → PromptDialog → 磁盘子目录 + 树中出现', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const essaysNode = window.locator('[data-testid="writing-tree-node"]').filter({
+      hasText: /^[▾▸]随笔/
+    }).first()
+    await essaysNode.hover()
+    const folderBtn = essaysNode.getByTestId('writing-node-create-folder')
+    await expect(folderBtn).toBeVisible({ timeout: 3000 })
+    await folderBtn.click()
+
+    await window.getByTestId('writing-prompt-input').fill('新子组')
+    await window.getByTestId('writing-prompt-confirm').click()
+    await window.waitForTimeout(1500)
+
+    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '新子组'))).toBe(true)
+
+    const nodes = window.locator('[data-testid="writing-tree-node"]')
+    const nodeTexts = await nodes.allTextContents()
+    expect(nodeTexts.some((t: string) => t.includes('新子组'))).toBe(true)
+  })
+
   test('重命名：右键 → 文件更名（自动补 .md 后缀）', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 

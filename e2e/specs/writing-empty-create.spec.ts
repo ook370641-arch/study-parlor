@@ -19,8 +19,8 @@ test.describe('@p1 writing 空库新建', () => {
     await expect(writing.boardEmpty).toBeVisible({ timeout: 10000 })
 
     await writing.newFileButton.click()
-    await window.getByTestId('writing-prompt-input').fill('第一篇')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('第一篇')
+    await window.getByTestId('writing-inline-new').press('Enter')
 
     // 无固定 sleep：轮询等待编辑器出现
     await expect(writing.editor).toBeVisible({ timeout: 10000 })
@@ -48,8 +48,8 @@ test.describe('@p1 writing 空库新建', () => {
 
     const writing = new WritingPage(window)
     await writing.newFileButton.click()
-    await window.getByTestId('writing-prompt-input').fill('zzz-最后')
-    await window.getByTestId('writing-prompt-confirm').click()
+    await window.getByTestId('writing-inline-new').fill('zzz-最后')
+    await window.getByTestId('writing-inline-new').press('Enter')
 
     await expect(writing.editor).toBeVisible({ timeout: 10000 })
     const currentPath = await window.evaluate(() => (window as any).useStore.getState().writingFile?.path ?? '')

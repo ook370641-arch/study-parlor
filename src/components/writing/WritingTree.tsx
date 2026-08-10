@@ -197,15 +197,26 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
             ✎
           </button>
           {isDir && (
-            <button
-              data-testid="writing-node-create"
-              data-path={node.path}
-              title="在此分组新建文章"
-              className={`px-1 text-xs ${isAcademic ? 'text-parchment/50 hover:text-ember' : 'text-[#6b5d52] hover:text-[#8a3a3a]'}`}
-              onClick={(e) => { e.stopPropagation(); doNewFile() }}
-            >
-              ＋
-            </button>
+            <>
+              <button
+                data-testid="writing-node-create"
+                data-path={node.path}
+                title="在此分组新建文章"
+                className={`px-1 text-xs ${isAcademic ? 'text-parchment/50 hover:text-ember' : 'text-[#6b5d52] hover:text-[#8a3a3a]'}`}
+                onClick={(e) => { e.stopPropagation(); doNewFile() }}
+              >
+                ＋
+              </button>
+              <button
+                data-testid="writing-node-create-folder"
+                data-path={node.path}
+                title="在此分组新建子分组"
+                className={`px-1 text-xs ${isAcademic ? 'text-parchment/50 hover:text-ember' : 'text-[#6b5d52] hover:text-[#8a3a3a]'}`}
+                onClick={(e) => { e.stopPropagation(); doNewFolder() }}
+              >
+                🗀
+              </button>
+            </>
           )}
           <button
             data-testid="writing-node-delete"
@@ -374,7 +385,7 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
   if (sorted.length === 0) {
     return (
       <div className={`px-3 py-4 text-xs text-center ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]/60'}`}>
-        {root === 'writing' ? '还没有文章，点击上方 ＋ 新建' : '还没有导入文件，点击上方 ⬆ 导入'}
+        {root === 'writing' ? '还没有文章，点击上方 ＋ 新建' : '还没有文件，点击上方 ＋ 新建或 ⬆ 导入'}
       </div>
     )
   }

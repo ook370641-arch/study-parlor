@@ -45,11 +45,13 @@ export class WritingPage {
     await locator.click()
   }
 
-  /** Create a new file by clicking the button and accepting the prompt dialog. */
+  /** Create a new file by clicking the ＋ button and typing the name in the inline input. */
   async newFile(name: string) {
-    this.page.once('dialog', async (dialog) => { await dialog.accept(name) })
     await this.newFileButton.click()
-    await this.page.waitForTimeout(500)
+    const input = this.page.getByTestId('writing-inline-new')
+    await input.waitFor({ state: 'visible' })
+    await input.fill(name)
+    await input.press('Enter')
   }
 
   /** Create a new folder by clicking the button and accepting the prompt dialog. */

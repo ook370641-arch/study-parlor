@@ -209,6 +209,7 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
         ) : (
           <div>
             <div className="p-2 flex gap-2 text-xs">
+              <button data-testid="writing-repo-new-file" title="新建文章" aria-label="新建文章" className={`px-1 text-xs ${primaryAction}`} onClick={() => startInlineNew({ root: 'repository', dir: '', value: '' })} style={{ fontSize: 'var(--writing-ui-size)' }}>＋</button>
               <button data-testid="writing-import-files" title="导入文件…" aria-label="导入文件…" className={`px-1 text-xs ${primaryAction}`} onClick={handleImportFiles} style={{ fontSize: 'var(--writing-ui-size)' }}>⬆</button>
               <button data-testid="writing-repo-new-folder" title="新建分组" aria-label="新建分组" className={`px-1 text-xs ${secondaryAction}`} onClick={handleCreateRepoFolder} style={{ fontSize: 'var(--writing-ui-size)' }}>🗀</button>
               <button data-testid="writing-repo-refresh" title="重新扫描仓库（外部移入的文件）" aria-label="重新扫描仓库（外部移入的文件）" disabled={scanning} onClick={handleRefreshRepo} className={`px-1 text-xs ${scanning ? 'opacity-40 cursor-wait' : ''} ${secondaryAction}`} style={{ fontSize: 'var(--writing-ui-size)' }}>⟳</button>
