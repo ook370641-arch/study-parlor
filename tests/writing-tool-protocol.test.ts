@@ -1,74 +1,49 @@
-import { describe, it, expect } from 'vitest'
-import { extractToolCall, createToolBuffer, MAX_TOOL_CALLS } from '../electron/lib/writing-assistant/tool-protocol'
+import { describe, expect, it } from 'vitest'
+import { parseNativeToolCall, buildToolDefinitions, MAX_TOOL_CALLS } from '../electron/lib/writing-assistant/tool-protocol'
 
-describe('extractToolCall', () => {
-  it('提取完整 read_local 块', () => {
-    const r = extractToolCall('前文\n```tool\n{"tool":"read_local","ids":["writing:a.md"]}\n```\n后文')
-    expect(r).toEqual({ tool: 'read_local', ids: ['writing:a.md'] })
+describe('parseNativeToolCall', () => {
+  it('parses read_local with ids', () => {
+    const raw = { id: 'call_1', name: 'read_local', arguments: '{"ids":["writing:a.md","repository:旧随笔.md"]}' }
+    expect(parseNativeToolCall(raw)).toEqual({ id: 'call_1', name: 'read_local', args: { ids: ['writing:a.md', 'repository:旧随笔.md'] } })
   })
 
-  it('提取 web_search 块', () => {
-    const r = extractToolCall('```tool\n{"tool":"web_search","query":"深度学习"}\n```')
-    expect(r).toEqual({ tool: 'web_search', query: '深度学习' })
+  it('parses web_search with query', () => {
+    const raw = { id: 'call_2', name: 'web_search', arguments: '{"query":"TypeScript best practices"}' }
+    expect(parseNativeToolCall(raw)).toEqual({ id: 'call_2', name: 'web_search', args: { query: 'TypeScript best practices' } })
   })
 
-  it('提取 insert_into_article 块', () => {
-    const r = extractToolCall('```tool\n{"tool":"insert_into_article","markdown":"# 标题"}\n```')
-    expect(r).toEqual({ tool: 'insert_into_article', markdown: '# 标题' })
+  it('rejects read_local with missing ids', () => {
+    expect(parseNativeToolCall({ name: 'read_local', arguments: '{}' })).toBeNull()
+    expect(parseNativeToolCall({ name: 'read_local', arguments: 'not json' })).toBeNull()
   })
 
-  it('畸形 JSON 返回 null', () => {
-    expect(extractToolCall('```tool\n{bad}\n```')).toBeNull()
+  it('rejects web_search with empty query', () => {
+    expect(parseNativeToolCall({ name: 'web_search', arguments: '{"query":""}' })).toBeNull()
   })
 
-  it('未知工具名返回 null', () => {
-    expect(extractToolCall('```tool\n{"tool":"rm_rf"}\n```')).toBeNull()
-  })
-
-  it('缺少必要字段返回 null', () => {
-    expect(extractToolCall('```tool\n{"tool":"read_local"}\n```')).toBeNull()  // missing ids
-    expect(extractToolCall('```tool\n{"tool":"web_search"}\n```')).toBeNull()  // missing query
-  })
-
-  it('MAX_TOOL_CALLS = 6', () => {
-    expect(MAX_TOOL_CALLS).toBe(6)
+  it('rejects unknown tool names and missing name', () => {
+    expect(parseNativeToolCall({ name: 'insert_into_article', arguments: '{}' })).toBeNull()
+    expect(parseNativeToolCall({ arguments: '{}' })).toBeNull()
   })
 })
 
-describe('createToolBuffer', () => {
-  it('流式缓冲：未闭合不透出，闭合后 takeTool 返回', () => {
-    const b = createToolBuffer()
-    expect(b.feed('你好```tool\n{"tool":')).toBe('你好')
-    expect(b.takeTool()).toBeNull()
-    expect(b.feed('"read_local","ids":["x"]}\n```世界')).toBe('世界')
-    const call = b.takeTool()
-    expect(call).toEqual({ tool: 'read_local', ids: ['x'] })
+describe('buildToolDefinitions', () => {
+  it('always includes read_local', () => {
+    const defs = buildToolDefinitions(false)
+    expect(defs.map(d => d.function.name)).toContain('read_local')
   })
 
-  it('流式缓冲：无 tool 块时全透传', () => {
-    const b = createToolBuffer()
-    expect(b.feed('普通文本')).toBe('普通文本')
-    expect(b.takeTool()).toBeNull()
-    expect(b.flush()).toBe('')
+  it('includes web_search only when enabled', () => {
+    expect(buildToolDefinitions(false).map(d => d.function.name)).not.toContain('web_search')
+    expect(buildToolDefinitions(true).map(d => d.function.name)).toContain('web_search')
   })
 
-  it('flush 返回缓冲中的剩余文本', () => {
-    const b = createToolBuffer()
-    expect(b.feed('你好```tool\n{"tool":"web_search","query":"测试"}\n```还有')).toBe('你好还有')
-    const call = b.takeTool()
-    expect(call).toEqual({ tool: 'web_search', query: '测试' })
-    // After takeTool, buffer should be empty
-    expect(b.flush()).toBe('')
+  it('never defines insert_into_article', () => {
+    const names = buildToolDefinitions(true).map(d => d.function.name)
+    expect(names).not.toContain('insert_into_article')
   })
+})
 
-  it('部分匹配的 ```tool 前缀被保留在缓冲区', () => {
-    const b = createToolBuffer()
-    // "```too" is a partial match for "```tool" — should be buffered
-    expect(b.feed('文本```too')).toBe('文本')
-    expect(b.takeTool()).toBeNull()
-    // Complete the marker and finish the tool block
-    expect(b.feed('l\n{"tool":"read_local","ids":["a"]}\n```结束')).toBe('结束')
-    const call = b.takeTool()
-    expect(call).toEqual({ tool: 'read_local', ids: ['a'] })
-  })
+it('MAX_TOOL_CALLS stays 3', () => {
+  expect(MAX_TOOL_CALLS).toBe(3)
 })
