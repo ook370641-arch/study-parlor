@@ -60,6 +60,8 @@ curl -s "$BASE/chat/completions" \
 
 ---
 
+> **SPIKE 结论（Task 1，2026-08-10）**：原生 `tools` 可用。`curl` 打 `https://api.deepseek.com/chat/completions`（model=deepseek-v4-pro）返回 `tool_calls` 数组（`id`/`function.name`/`function.arguments` JSON 字符串）+ `finish_reason:"tool_calls"`。`reasoning_content` 与 `tool_calls` 在同一响应共存（不互斥）→ **无需在工具轮关闭 thinking**，走原生 function-calling 路径。
+
 ### Task 2: kimi.ts 原生工具支持（additive）
 
 **Files:**
