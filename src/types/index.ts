@@ -512,10 +512,9 @@ export type WritingAssistantMessage = {
 export type WritingToolEvent = {
   sessionId: string
   phase: 'start' | 'done' | 'error'
-  tool: 'read_local' | 'web_search' | 'insert_into_article'
+  tool: 'read_local' | 'web_search'
   ids?: string[]
   query?: string
-  markdown?: string
   error?: string
 }
 export type WritingCatalogEntry = { title: string; summary: string; updatedAt?: string; mtimeMs?: number }

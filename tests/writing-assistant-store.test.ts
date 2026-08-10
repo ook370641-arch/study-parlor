@@ -104,6 +104,37 @@ describe('writing assistant store', () => {
         })
       )
     })
+
+    it('attaches snapshot only on first run and when lit (S1)', async () => {
+      useStore.setState({
+        writingFile: { path: 'writing/a.md', body: '# v1', dirty: false, saving: 'idle' },
+      })
+      await useStore.getState().sendWritingAssistantMessage('首轮')
+      expect(useStore.getState().writingAssistant!.messages[0].snapshot).toBe('# v1')
+
+      // 第二轮未点亮：不挂新快照
+      useStore.setState(s => s.writingAssistant ? {
+        writingAssistant: { ...s.writingAssistant, messages: [...s.writingAssistant.messages, { role: 'assistant' as const, content: 'r' }], streaming: false },
+      } : {})
+      await useStore.getState().sendWritingAssistantMessage('第二轮未点亮')
+      const m2 = useStore.getState().writingAssistant!.messages
+      expect(m2[m2.length - 1].snapshot).toBeUndefined()
+
+      // 点亮后：挂新快照
+      useStore.getState().setWritingAssistantSnapshotLit(true)
+      await useStore.getState().sendWritingAssistantMessage('第三轮点亮')
+      const m3 = useStore.getState().writingAssistant!.messages
+      expect(m3[m3.length - 1].snapshot).toBe('# v1')
+    })
+
+    it('clears snapshotLit when switching articles', async () => {
+      useStore.getState().setWritingAssistantSnapshotLit(true)
+      useStore.setState({ writingFile: { path: 'writing/a.md', body: '# a', dirty: false, saving: 'idle' } })
+      vi.mocked(ipc.writingRead).mockResolvedValue({ ok: true, value: { body: '# b' } })
+      vi.mocked(ipc.articleAssistantReadSession).mockResolvedValue(null)
+      await useStore.getState().selectWritingFile('writing/b.md')
+      expect(useStore.getState().writingAssistantSnapshotLit).toBe(false)
+    })
   })
 
   describe('appendWritingAssistantChunk', () => {
@@ -248,18 +279,15 @@ describe('writing assistant store', () => {
       expect(useStore.getState().writingAssistant!.messages[1].content).toContain('来源：[read_local] repository:旧随笔.md')
     })
 
-    it('adds insert_into_article done event with markdown', () => {
+    it('ignores insert_into_article events (removed tool)', () => {
       useStore.getState().applyWritingAssistantToolEvent({
         sessionId: 'wa-001',
         phase: 'done',
         tool: 'insert_into_article',
-        markdown: '# 新标题\n内容段落',
-      })
-
-      const content = useStore.getState().writingAssistant!.messages[1].content
-      expect(content).toContain('已插入：')
-      expect(content).toContain('# 新标题')
-      expect(content).toContain('内容段落')
+        markdown: '# 标题',
+      } as any)
+      const msgs = useStore.getState().writingAssistant!.messages
+      expect(msgs[1].content).toBe('让我来查一下。')
     })
 
     it('adds web_search start event', () => {

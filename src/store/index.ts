@@ -1,7 +1,5 @@
 // src/store/index.ts
 import { create } from 'zustand'
-import { editorViewCtx } from '@milkdown/core'
-import type { Ctx } from '@milkdown/ctx'
 import { normalizeStudyFontSize } from '@/lib/study-font-size'
 import { formatBriefingDate } from '@/lib/format-briefing-date'
 import { mergeArticlesByUrl } from '@/lib/anthropic-articles'
@@ -411,6 +409,7 @@ type AppStore = {
     streaming: boolean
     error: ArticleAssistantErrorCode | null
   } | null
+  writingAssistantSnapshotLit: boolean
   sendWritingAssistantMessage: (text: string) => Promise<void>
   appendWritingAssistantChunk: (text: string) => void
   appendWritingAssistantReasoning: (text: string) => void
@@ -429,7 +428,6 @@ type AppStore = {
   setWritingAssistantWidth: (width: number) => void
   setWritingAssistantOpen: (open: boolean) => void
   setWritingEditorAction: (action: ((fn: (ctx: any) => void) => void) | null) => void
-  insertTextIntoWritingEditor: (text: string) => void
   setLastWritingFile: (file: string | null) => void
   setAssistantSearchEnabled: (enabled: boolean) => void
   setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
@@ -567,6 +565,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingOrder: {},
   writingUIFontSize: 'base',
   writingAssistant: null,
+  writingAssistantSnapshotLit: false,
 
   init: async () => {
     const [state, library, unsaved, groupsData] = await Promise.all([
@@ -2200,19 +2199,6 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ writingAssistantOpen: open } as Partial<StateJson>)
   },
   setWritingEditorAction: (action) => set({ writingEditorAction: action }),
-
-  insertTextIntoWritingEditor: (text) => {
-    const act = get().writingEditorAction
-    if (!act) return
-    // Use the Milkdown Ctx to get the ProseMirror EditorView and dispatch an
-    // insertText transaction.  After Task 9's editor-freeze fix, the editor
-    // no longer responds to `initial` prop changes, so insert must go through
-    // the ProseMirror view, not through updateWritingBody.
-    act((ctx: Ctx) => {
-      const view = ctx.get(editorViewCtx)
-      view.dispatch(view.state.tr.insertText(text, view.state.doc.content.size))
-    })
-  },
   setLastWritingFile: (file) => {
     set({ lastWritingFile: file })
     ipc.patchState({ lastWritingFile: file } as Partial<StateJson>)
@@ -2225,14 +2211,18 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ assistantThinkingEffort: effort })
     ipc.patchState({ assistantThinkingEffort: effort } as Partial<StateJson>)
   },
+  setWritingAssistantSnapshotLit: (lit) => set({ writingAssistantSnapshotLit: lit }),
 
   // --- 写作助手 ---
   sendWritingAssistantMessage: async (text: string) => {
     const f = get().writingFile
     const sessionId = `writing-assistant-${Date.now()}`
+    const cur = get().writingAssistant
+    const isFirstRun = !cur || cur.messages.length === 0
+    const includeSnapshot = isFirstRun || get().writingAssistantSnapshotLit
     const messages: WritingAssistantMessage[] = [
-      ...(get().writingAssistant?.messages ?? []),
-      { role: 'user' as const, content: text, snapshot: f?.body?.trim() ? f.body : undefined },
+      ...(cur?.messages ?? []),
+      { role: 'user' as const, content: text, snapshot: includeSnapshot && f?.body?.trim() ? f.body : undefined },
     ]
     set({
       writingAssistant: {
@@ -2295,14 +2285,13 @@ export const useStore = create<AppStore>((set, get) => ({
     const msgs = s.messages.slice()
     const last = msgs[msgs.length - 1]
     if (!last || last.role !== 'assistant') return
+    if (e.tool !== 'read_local' && e.tool !== 'web_search') return
 
     if (e.phase === 'start') {
       const label = e.tool === 'read_local' && e.ids
         ? `> 读取：${e.ids.map(id => `\`${id}\``).join('、')}`
         : e.tool === 'web_search' && e.query
         ? `> 搜索：${e.query}`
-        : e.tool === 'insert_into_article'
-        ? `> 插入到文章`
         : `> ${e.tool}`
       const content = last.content + `\n${label}\n`
       const sources = [...(last.sources ?? [])]
@@ -2320,8 +2309,6 @@ export const useStore = create<AppStore>((set, get) => ({
     } else if (e.phase === 'done') {
       const marker = e.ids && e.ids.length > 0
         ? `\n> 来源：[${e.tool}] ${e.ids.join(', ')}\n`
-        : e.tool === 'insert_into_article' && e.markdown
-        ? `\n> 已插入：\n> ${e.markdown.split('\n').join('\n> ')}\n`
         : e.tool === 'web_search'
         ? `\n> 搜索完成\n`
         : `\n> ${e.tool} 完成\n`
@@ -2465,6 +2452,8 @@ export const useStore = create<AppStore>((set, get) => ({
     if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
     if (r.ok) {
       set({ writingFile: { path: filePath, body: r.value.body ?? '', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+      // 切换文章时重置快照点亮状态，避免把上一篇文章的挂快照意图带到新文章
+      if (cur?.path !== filePath) set({ writingAssistantSnapshotLit: false })
       // 切换文章时重置并恢复该文章的助手会话：防止旧文章消息串台写入新文章的
       // .assistant.md，并让已保存的对话跨重启/跨切换恢复（此前 load 无调用方）。
       const wa = get().writingAssistant
