@@ -58,6 +58,7 @@ export function attachWritingAssistantListeners() {
     flushBuffers()
     const code: ArticleAssistantErrorCode = err.code === 'CHAT_NETWORK_ERROR' ? 'CHAT_NETWORK_ERROR'
       : err.code === 'CHAT_TIMEOUT' ? 'CHAT_TIMEOUT'
+      : err.code === 'CHAT_EMPTY_REPLY' ? 'CHAT_EMPTY_REPLY'
       : 'CHAT_LLM_ERROR'
     useStore.setState({ writingAssistant: { ...s, streaming: false, error: code } })
   })

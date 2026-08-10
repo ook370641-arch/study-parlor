@@ -154,6 +154,7 @@ export type ArticleAssistantErrorCode =
   | 'CHAT_LLM_ERROR'
   | 'CHAT_NETWORK_ERROR'
   | 'CHAT_TIMEOUT'
+  | 'CHAT_EMPTY_REPLY'
   | 'SAVE_ERROR'
 
 export type ArticleAnnotation = {
