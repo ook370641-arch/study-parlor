@@ -26,7 +26,7 @@ export async function buildWritingIndex(cfg: AppConfig): Promise<IndexEntry[]> {
     const wCat = loadCatalog(lib, 'writing')
     for (const [relPath, entry] of Object.entries(wCat.entries)) {
       entries.push({
-        id: `writing:${relPath}`,
+        id: `writing:${relPath.replace(/^writing\//, '')}`,
         type: 'writing',
         title: entry.title || path.basename(relPath, '.md'),
         summary: entry.summary || '',
@@ -39,7 +39,7 @@ export async function buildWritingIndex(cfg: AppConfig): Promise<IndexEntry[]> {
     const rCat = loadCatalog(lib, 'repository')
     for (const [relPath, entry] of Object.entries(rCat.entries)) {
       entries.push({
-        id: `repository:${relPath}`,
+        id: `repository:${relPath.replace(/^repository\//, '')}`,
         type: 'repository',
         title: entry.title || path.basename(relPath, '.md'),
         summary: entry.summary || '',
@@ -133,35 +133,34 @@ export function buildWritingSystemPrompt(index: IndexEntry[], searchEnabled: boo
   const catalog = index.map(e => `- [${e.type}] ${e.id} — ${e.title}：${e.summary}`).join('\n')
 
   const searchSection = searchEnabled
-    ? `- web_search：{"tool":"web_search","query":"搜索关键词"} — 仅在需要最新信息或事实核查时使用，不要对简单概念问询使用`
+    ? `- web_search：搜索网络获取最新信息或事实核查（仅在需要最新信息或核实事实时使用，不要对简单概念问询使用）`
+    : ''
+
+  const citationSection = searchEnabled
+    ? `- 使用 web_search 获取的信息，必须在正文中附带来源编号 [1] [2] ...，并在末尾列出"来源"列表（含标题和完整 URL）`
     : ''
 
   const maxTools = 3
 
-  return `你是用户的写作助手。你的默认行为是直接回答——只有当你确实需要查阅用户本地资料、${
-    searchEnabled ? '搜索网络最新信息、' : ''
-  }或向编辑器插入内容时，才使用工具。
+  return `你是用户的写作助手。你的默认行为是直接回答——只有当你确实需要查阅用户本地资料${
+    searchEnabled ? '、搜索网络最新信息' : ''
+  }时，才调用工具。
 
 # 可调取资料目录
 ${catalog || '(暂无资料)'}
 
 # 工具
-当必须使用工具时，输出一个工具块：
-
-\`\`\`tool
-{"tool":"read_local","ids":["writing:随笔/a.md"]}
-\`\`\`
-
-规则：
-- read_local：ids 必须来自上方目录的 id。只在用户明确引用其已有内容时使用；禁止先用空数组查目录再读文件（两步合并为一步：直接猜最相关的 id 去读）
+你有以下工具可用：
+- read_local：读取本地资料文件，ids 必须来自上方资料目录（写文件路径，不要重复前缀）
 ${searchSection}
-- insert_into_article：{"tool":"insert_into_article","markdown":"插入内容"} — 直接插入，无需确认
-- 一次一个工具块；工具结果以 user 消息返回，你继续
-- 不需要工具时禁止输出工具块
+规则：
+- 需要资料时直接调用工具，工具结果会以消息形式返回，然后基于结果继续回答
+- 一次可调用多个工具；单轮最多 ${maxTools} 次
+- 不需要工具时不要调用
 - 禁止编造不存在的 id
-- 单轮最多 ${maxTools} 次工具调用。优先直接回答
+- 若工具结果以 ⚠️ 开头（无法读取/文件不存在/未读到内容），表示该文件未被读到：请勿引用其内容作为依据；先换一个 id 重试一次，仍失败则明确告知用户读取失败
 
 # 写作规范
 - 回答使用 markdown 格式，结构清晰
-- 使用 web_search 获取的信息，必须在正文中附带来源编号 [1] [2] ...，并在末尾列出"来源"列表（含标题和完整 URL）`
+${citationSection}`
 }
