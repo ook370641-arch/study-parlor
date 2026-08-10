@@ -1,6 +1,10 @@
 import type { AppConfig } from '../env'
 import type { Message } from '@shared/index'
 
+export type ToolDef = { type: 'function'; function: { name: string; description: string; parameters: Record<string, unknown> } }
+export type NativeToolCallRaw = { id?: string; name?: string; arguments?: string }
+export type ChatStreamResult = { content: string; toolCalls: NativeToolCallRaw[]; finishReason: string | null }
+
 export async function probeModelWithCredentials(
   creds: { apiKey: string; baseUrl: string; model: string }
 ): Promise<{ ok: boolean; reason?: string }> {
@@ -47,6 +51,7 @@ export function buildChatBody(
     stream: boolean
     maxTokens?: number
     thinking?: ThinkingConfig
+    tools?: ToolDef[]
   }
 ): Record<string, any> {
   const body: Record<string, any> = {
@@ -79,6 +84,8 @@ export function buildChatBody(
   if (args.maxTokens) {
     body.max_tokens = args.maxTokens
   }
+
+  if (args.tools && args.tools.length > 0) body.tools = args.tools
 
   return body
 }
@@ -162,8 +169,9 @@ export async function chatNonStream(
 }
 
 export type SseEvent =
-  | { kind: 'chunk'; text: string }
+  | { kind: 'chunk'; text: string; finishReason?: string }
   | { kind: 'reasoning'; text: string; content?: string }
+  | { kind: 'tool_call'; index: number; id?: string; name?: string; args?: string }
   | { kind: 'done' }
   | { kind: 'noop' }
 
@@ -173,12 +181,25 @@ export function parseSseChunk(line: string): SseEvent {
   const payload = trimmed.slice(5).trim()
   if (payload === '[DONE]') return { kind: 'done' }
   try {
-    const json = JSON.parse(payload) as { choices?: { delta?: { content?: string; reasoning_content?: string } }[] }
+    const json = JSON.parse(payload) as { choices?: { delta?: { content?: string; reasoning_content?: string; tool_calls?: Array<{ index?: number; id?: string; function?: { name?: string; arguments?: string } }> }; finish_reason?: string }[] }
     const delta = json.choices?.[0]?.delta
+    const finishReason = json.choices?.[0]?.finish_reason ?? null
     if (delta?.reasoning_content) {
-      return { kind: 'reasoning', text: delta.reasoning_content, content: delta.content || undefined }
+      const ev: SseEvent = { kind: 'reasoning', text: delta.reasoning_content }
+      if (delta.content) ev.content = delta.content
+      return ev
     }
-    return { kind: 'chunk', text: delta?.content ?? '' }
+    if (delta?.tool_calls && Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
+      const tc = delta.tool_calls[0]
+      const ev: SseEvent = { kind: 'tool_call', index: tc.index ?? 0 }
+      if (tc.id) ev.id = tc.id
+      if (tc.function?.name) ev.name = tc.function.name
+      if (tc.function?.arguments) ev.args = tc.function.arguments
+      return ev
+    }
+    const text = delta?.content ?? ''
+    if (finishReason) return { kind: 'chunk', text, finishReason }
+    return { kind: 'chunk', text }
   } catch {
     return { kind: 'noop' }
   }
@@ -189,7 +210,7 @@ export async function chatStream(
   args: { messages: Message[]; temperature: number; signal: AbortSignal; thinking?: ThinkingConfig },
   onChunk: (text: string) => void,
   onReasoning?: (text: string) => void
-): Promise<void> {
+): Promise<ChatStreamResult> {
   const TIMEOUT_MS = 120_000
   const internalCtl = new AbortController()
   let timedOut = false
@@ -201,6 +222,10 @@ export async function chatStream(
     timedOut = true
     internalCtl.abort()
   }, TIMEOUT_MS)
+
+  const toolCallMap = new Map<number, { id: string; name: string; args: string }>()
+  let finishReason: string | null = null
+  let contentAcc = ''
 
   try {
     const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
@@ -275,12 +300,16 @@ export async function chatStream(
         const line = buffer.slice(0, idx)
         buffer = buffer.slice(idx + 1)
         const ev = parseSseChunk(line)
-        if (ev.kind === 'chunk') onChunk(ev.text)
-        else if (ev.kind === 'reasoning') {
-          onReasoning?.(ev.text)
-          if (ev.content) onChunk(ev.content)
+        if (ev.kind === 'chunk') { onChunk(ev.text); contentAcc += ev.text; if (ev.finishReason) finishReason = ev.finishReason }
+        else if (ev.kind === 'reasoning') { onReasoning?.(ev.text); if (ev.content) { onChunk(ev.content); contentAcc += ev.content } }
+        else if (ev.kind === 'tool_call') {
+          const cur = toolCallMap.get(ev.index) ?? { id: '', name: '', args: '' }
+          if (ev.id) cur.id = ev.id
+          if (ev.name) cur.name = ev.name
+          if (ev.args) cur.args += ev.args
+          toolCallMap.set(ev.index, cur)
         }
-        else if (ev.kind === 'done') return
+        else if (ev.kind === 'done') break
       }
     }
   } catch (err: any) {
@@ -293,5 +322,11 @@ export async function chatStream(
   } finally {
     clearTimeout(timeoutId)
     args.signal.removeEventListener('abort', onAbort)
+  }
+
+  return {
+    content: contentAcc,
+    toolCalls: [...toolCallMap.values()].map(tc => ({ id: tc.id, name: tc.name, arguments: tc.args })),
+    finishReason,
   }
 }

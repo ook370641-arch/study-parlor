@@ -201,6 +201,18 @@ describe('parseSseChunk reasoning', () => {
     expect(parseSseChunk('data: [DONE]')).toEqual({ kind: 'done' })
     expect(parseSseChunk('data: {not json')).toEqual({ kind: 'noop' })
   })
+
+  it('parses tool_call deltas with partial function args', () => {
+    const line1 = 'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"read_local","arguments":"{\\"ids\\":"}}]}}]}'
+    const line2 = 'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"[\\"writing:a.md\\"]"}}]}}]}'
+    expect(parseSseChunk(line1)).toEqual({ kind: 'tool_call', index: 0, id: 'call_1', name: 'read_local', args: '{"ids":' })
+    expect(parseSseChunk(line2)).toEqual({ kind: 'tool_call', index: 0, args: '["writing:a.md"]' })
+  })
+
+  it('attaches finish_reason when present on chunk', () => {
+    const line = 'data: {"choices":[{"delta":{"content":"答"},"finish_reason":"stop"}]}'
+    expect(parseSseChunk(line)).toEqual({ kind: 'chunk', text: '答', finishReason: 'stop' })
+  })
 })
 
 describe('chatStream reasoning dispatch', () => {
@@ -236,6 +248,28 @@ describe('chatStream reasoning dispatch', () => {
     )
     expect(reasoning).toEqual(['先想', '再想'])
     expect(chunks.join('')).toBe('答')
+  })
+
+  it('accumulates native tool_calls and finish_reason across deltas', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, status: 200,
+      body: sseBody([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"read_local","arguments":"{\\"ids\\":"}}]}}]}',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"[\\"writing:a.md\\"]"}}]}}]}',
+        'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+        'data: [DONE]',
+      ]),
+    })) as any)
+
+    const chunks: string[] = []
+    const result = await chatStream(
+      cfg,
+      { messages: [{ role: 'user', content: 'q' }], temperature: 0.7, signal: new AbortController().signal },
+      (t) => chunks.push(t),
+    )
+    expect(result.content).toBe('')
+    expect(result.toolCalls).toEqual([{ id: 'call_1', name: 'read_local', arguments: '{"ids":["writing:a.md"]' }])
+    expect(result.finishReason).toBe('tool_calls')
   })
 })
 
