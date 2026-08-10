@@ -2,7 +2,7 @@
 
 日期：2026-08-11
 状态：已批准（brainstorming 逐节确认 + visual companion 视觉对齐）
-范围：写作编辑器（粘贴管线、悬浮格式工具栏、顶部工具栏、文档渲染 CSS、分隔线行为）
+范围：写作编辑器（粘贴管线、悬浮格式工具栏、顶部工具栏、文档渲染 CSS、分隔线行为、智能 Enter）
 
 ## 背景与目标
 
@@ -101,6 +101,20 @@
 - **插入后光标落下一行**：`insertHrCommand` 包装——插入后光标定位到分隔线下方新起一行（无内容则补空段），用户可立即继续输入
 - **可删除**：验证行首退格 / 行尾删除能否删掉分隔线；若不可删，补 keymap / 命令路径使其可删
 
+## F. Enter 行为（智能 Enter）
+
+**背景**：普通段落里按 Enter，ProseMirror 基础 keymap 执行 `splitBlock`，把「ABCD」在 BC 间拆成两个相邻段落；保存为 `AB\n\nCD`（段落间空一行），重开渲染成两段带间距 → 看起来隔了两行。Shift+Enter 才是单行硬换行（`<br>`）。
+
+**修复**：新增 `src/lib/milkdown-smart-enter.ts`（`$prose` + keymap，注册进 `WritingEditor.tsx`）——**只在普通段落里接管 Enter**：
+
+| 光标位置 | 行为 |
+|---|---|
+| 段中（前后都有非空白文字，如 `AB|CD`） | 插入 `hardbreak`（硬换行）→ **单行**，markdown 序列化为 `AB\\\nCD`，重开仍单行 |
+| 段首 / 段尾 / 空段 | `return false` 交还默认 → `splitBlock` 正常新建段落 |
+| 非空选区 / 列表 / 标题 / 代码块 / 表格 | `return false` 交还默认（列表=新条目、代码=新行、其余不变） |
+
+**不做**：把 Enter 一律改成硬换行（会丧失新建段落能力，破坏 markdown 结构）。
+
 ## UI 出口声明（feature-development §12）
 
 | 功能 | 入口 | 收起态 | testid |
@@ -127,6 +141,7 @@
 - `milkdown-clipboard`：切片清洗纯函数——code_block→paragraph（含多行软换行）、code mark 去除、textColor 去除；`**bold**` 保 strong
 - `sanitizeExternalHTML` 既有用例保留
 - `textColor` 色板与命令既有用例更新（色值变更）
+- `milkdown-smart-enter`：段中 Enter → hardbreak、段首/段尾 → 默认、非段落交还默认
 
 **E2E 定向（`node scripts/e2e-changed.js --run`），writing 域：**
 - 粘贴 markdown 源码（`**bold**` + 表格 + 反引号 + `<span style="color">`）→ 断言加粗生效、无代码字体、无颜色；保存 → 重开 → 无多余 `**`
@@ -137,10 +152,10 @@
 - 渲染格调：引用蜡烛/分隔线轨道/烛首标题/烛光列表元素存在且样式生效
 - 报纸版式：切主题后装饰颜色跟随 `--writing-tone-color`
 - 迁移 `writing-editor.spec.ts` 中引用顶部四按钮的旧用例；同步更新 `e2e/helpers/selectors.ts`；新增/改动 spec 登记 `e2e/source-map.json`
+- **智能 Enter**：段中 `AB|CD` 按 Enter → 单行（无空行、无两行间距）；段尾按 Enter → 新段落；重开后仍是单行硬换行
 
 ## 明确不做 / 后续探索
 
-- **Enter 回车跨两行问题**：本次不修，记为后续探索（可能是 Markdown 硬换行/段落的既有行为或配置问题）
 - 下划线功能：不新增
 - 加粗 / 删除线 / 文字颜色的特殊渲染（火捻色 / 波浪删除线 / 烛光辉光）：不做
 - 从 VS Code 粘贴的代码块：统一转纯文字（与「代码块转纯文字」一致；若要保留代码块需单独决策）
