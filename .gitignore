@@ -25,6 +25,8 @@ coverage/
 test-results/
 .vite/
 *.tsbuildinfo
+# electron-vite compiles electron.vite.config.ts into a timestamped .mjs during dev/build
+electron.vite.config.*.mjs
 
 # Electron dev-mode isolated caches
 .electron-cache/
