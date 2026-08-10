@@ -67,10 +67,6 @@ export function registerWritingAssistantIpc(cfg: AppConfig): void {
           if (ctl.signal.aborted) return
           send('llm:chunk', args.sessionId, chunk)
         }
-        send('writingAssistant:tool', {
-          sessionId: args.sessionId, phase: 'done', tool: 'insert_into_article' as const,
-          markdown: '# 插入标题'
-        })
         if (!ctl.signal.aborted) send('llm:done', args.sessionId)
         // Write last-writing-request.json for E2E assertions
         const fs = await import('node:fs')
@@ -84,6 +80,7 @@ export function registerWritingAssistantIpc(cfg: AppConfig): void {
             useSearch: args.useSearch,
             thinkingEffort: args.thinkingEffort,
             messageCount: args.messages.length,
+            hasSnapshot: !!((args.messages as Array<{ snapshot?: string }>).at(-1)?.snapshot),
           }))
         }
       } finally {
