@@ -21,6 +21,12 @@ describe('parseNativeToolCall', () => {
     expect(parseNativeToolCall({ name: 'web_search', arguments: '{"query":""}' })).toBeNull()
   })
 
+  it('rejects non-object arguments (JSON null/true/number)', () => {
+    expect(parseNativeToolCall({ name: 'read_local', arguments: 'null' })).toBeNull()
+    expect(parseNativeToolCall({ name: 'read_local', arguments: 'true' })).toBeNull()
+    expect(parseNativeToolCall({ name: 'web_search', arguments: '123' })).toBeNull()
+  })
+
   it('rejects unknown tool names and missing name', () => {
     expect(parseNativeToolCall({ name: 'insert_into_article', arguments: '{}' })).toBeNull()
     expect(parseNativeToolCall({ arguments: '{}' })).toBeNull()

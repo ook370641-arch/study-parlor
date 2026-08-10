@@ -12,6 +12,7 @@ export function parseNativeToolCall(raw: { id?: string; name?: string; arguments
   try {
     parsed = raw.arguments ? JSON.parse(raw.arguments) : {}
   } catch { return null }
+  if (!parsed || typeof parsed !== 'object') return null
   const id = raw.id ?? ''
   if (raw.name === 'read_local') {
     const o = parsed as { ids?: unknown }

@@ -72,12 +72,15 @@ export async function runWritingAssistantTurn(
 
     if (round === MAX_TOOL_CALLS) {
       history.push({ role: 'user', content: '工具调用已达上限，请直接基于已有信息回答用户的问题。' })
-      await chat(
+      const forced: ChatStreamResult = await chat(
         cfg,
         { messages: history, temperature: 0.7, signal: args.signal, thinking: { type: 'disabled' } },
         args.onChunk,
         args.onReasoning
       )
+      if (!forced.content.trim()) {
+        args.send('llm:error', args.sessionId, { code: 'CHAT_EMPTY_REPLY', message: '助手未产生回答' })
+      }
       return
     }
 

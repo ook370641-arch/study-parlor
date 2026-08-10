@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { resolveSourcePath } from '../electron/lib/writing-assistant/tools'
+import { resolveSourcePath, executeTool } from '../electron/lib/writing-assistant/tools'
 import type { AppConfig } from '../electron/env'
 
 function tmpLib(): { dir: string; cfg: AppConfig } {
@@ -35,5 +35,16 @@ describe('resolveSourcePath (S2 双重前缀修复)', () => {
     const p = resolveSourcePath(cfg.libraryPath, 'repository', 'repository/旧随笔.md')
     expect(p).toBe(path.join(dir, 'repository', '旧随笔.md'))
     expect(fs.existsSync(p!)).toBe(true)
+  })
+})
+
+describe('executeTool read_local failure markers (S3)', () => {
+  it('marks unreadable ids with 未读到内容，请勿引用', async () => {
+    const { cfg } = tmpLib()
+    const result = await executeTool(cfg, { id: 'c1', name: 'read_local', args: { ids: ['badformat', 'writing:不存在.md'] } }, {
+      send: () => {}, sessionId: 's1', useSearch: false, index: [],
+    })
+    expect(result).toContain('请勿引用')
+    expect(result).toContain('不存在')
   })
 })

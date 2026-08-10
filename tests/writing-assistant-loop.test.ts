@@ -98,4 +98,22 @@ describe('runWritingAssistantTurn loop', () => {
     await done
     expect(toolsSeen[toolsSeen.length - 1]).toBeUndefined() // 最后一次逼答不带 tools
   })
+
+  it('sends CHAT_EMPTY_REPLY when the forced final round returns empty content', async () => {
+    let n = 0
+    const chat = async () => {
+      n++
+      // n=1..MAX_TOOL_CALLS+1 全返回 tool_calls，第 MAX_TOOL_CALLS+2 次（强制逼答轮）返回空 content
+      if (n <= MAX_TOOL_CALLS + 1) {
+        return { content: '', toolCalls: [{ id: `c${n}`, name: 'read_local', arguments: '{"ids":["writing:a.md"]}' }], finishReason: 'tool_calls' }
+      }
+      return { content: '', toolCalls: [], finishReason: 'stop' }
+    }
+    const { sent, done } = baseArgs({ chat: chat as any, executeTool: (async () => 'ok') as any })
+    await done
+    expect(sent).toContainEqual({
+      channel: 'llm:error',
+      payload: ['wa-1', { code: 'CHAT_EMPTY_REPLY', message: '助手未产生回答' }],
+    })
+  })
 })
