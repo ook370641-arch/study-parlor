@@ -22,7 +22,7 @@ export const orbitHrPlugins: MilkdownPlugin[] = [
                 <line x1="0" y1="20" x2="200" y2="20" stroke="currentColor" stroke-width="1" opacity="0.4"/>
                 <ellipse cx="100" cy="20" rx="60" ry="12" stroke="currentColor" stroke-width="1" opacity="0.5" fill="none"/>
                 <circle cx="100" cy="20" r="6" fill="#d97757"/>
-                <circle r="3.5" fill="currentColor" opacity="0.75">
+                <circle ${reduced ? 'cx="160" cy="20"' : ''} r="3.5" fill="currentColor" opacity="0.75">
                   ${reduced ? '' : `<animateMotion dur="14s" repeatCount="indefinite" path="${SAT_PATH}"/>`}
                 </circle>
               </svg>`
