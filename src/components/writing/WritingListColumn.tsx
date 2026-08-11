@@ -36,6 +36,7 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   const tree = useStore(s => s.writingTree)
   const writingUISize = useStore(s => s.writingUIFontSize)
   const showToast = useStore(s => s.showToast)
+  const appendWritingOrder = useStore(s => s.appendWritingOrder)
 
   const dim = isAcademic ? 'text-parchment/60 hover:text-parchment/80' : 'text-[#6b5d52] hover:text-[#2a1f1a]'
   const tabIdle = isAcademic ? 'text-parchment/50 hover:text-parchment/70' : 'text-[#6b5d52]/70 hover:text-[#6b5d52]'
@@ -57,6 +58,8 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
       setInlineNew(null)
       await loadWritingTree()
       void selectWritingFile(r.value.path)
+      const dirKey = inlineNew.dir ? `${inlineNew.root}/${inlineNew.dir}` : inlineNew.root
+      appendWritingOrder(dirKey, r.value.path)
     } else {
       setInlineNew({ ...inlineNew, value: name, error: writingErrorText(r.code) })
     }
@@ -134,7 +137,10 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
       title: '分组名称:',
       onSubmit: async (name) => {
         const r = await ipc.writingCreateFolder({ root: 'writing', dir: '', name })
-        if (r.ok) await loadWritingTree()
+        if (r.ok) {
+          await loadWritingTree()
+          appendWritingOrder('writing', `writing/${name}`)
+        }
       },
     })
   }
@@ -144,7 +150,10 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
       title: '分组名称:',
       onSubmit: async (name) => {
         const r = await ipc.writingCreateFolder({ root: 'repository', dir: '', name })
-        if (r.ok) await loadWritingTree()
+        if (r.ok) {
+          await loadWritingTree()
+          appendWritingOrder('repository', `repository/${name}`)
+        }
       },
     })
   }
