@@ -500,7 +500,7 @@ export type WritingTreeNode = {
   catalogUpdatedAt?: string
 }
 export type WritingTone = 'parchment' | 'plain' | 'ink'
-export type WritingSourceType = 'study' | 'blog' | 'digest' | 'job' | 'repository' | 'writing' | 'web'
+export type WritingSourceType = 'study' | 'blog' | 'digest' | 'job' | 'repository' | 'writing' | 'web' | 'group'
 export type WritingSource = { type: WritingSourceType; id: string; label: string }
 export type WritingAssistantMessage = {
   role: 'user' | 'assistant'
@@ -518,7 +518,8 @@ export type WritingToolEvent = {
   error?: string
 }
 export type WritingCatalogEntry = { title: string; summary: string; updatedAt?: string; mtimeMs?: number }
-export type WritingCatalog = { version: 1; entries: Record<string, WritingCatalogEntry> }
+export type WritingGroupSummaryEntry = { summary: string; signature: string }
+export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalogEntry>; groups: Record<string, WritingGroupSummaryEntry> }
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 

@@ -76,6 +76,13 @@ export async function executeTool(
         if (colonIdx === -1) { results.push(`⚠️ 无效 id 格式: ${id}（未读到内容，请勿引用）`); continue }
 
         const type = id.slice(0, colonIdx)
+        if (type === 'group') {
+          const entry = (opts.index || []).find(e => e.id === id)
+          results.push(entry
+            ? `### [组] ${entry.title}\n\n${entry.summary}`
+            : `⚠️ 分组不存在: ${id}（未读到内容，请勿引用）`)
+          continue
+        }
         const relPath = id.slice(colonIdx + 1)
         const absPath = resolveSourcePath(cfg.libraryPath, type, relPath)
         if (!absPath) {
