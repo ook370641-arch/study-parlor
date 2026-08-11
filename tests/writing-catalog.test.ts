@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { loadCatalog, updateEntry, removeEntry, migratePrefix, diffStale, catalogPath } from '../electron/lib/writing-catalog'
-import { createFile } from '../electron/lib/writing-tree'
+import { loadCatalog, updateEntry, removeEntry, migratePrefix, diffStale, catalogPath, updateGroupSummary, removeGroupSummary, collectGroupDirs, groupSignature } from '../electron/lib/writing-catalog'
+import { createFile, scanRoot } from '../electron/lib/writing-tree'
 
 let lib: string
 beforeEach(() => {
@@ -15,7 +15,7 @@ afterEach(() => { fs.rmSync(lib, { recursive: true, force: true }) })
 it('损坏 JSON 重建为空 catalog', () => {
   fs.writeFileSync(catalogPath(lib, 'writing'), '{bad')
   const c = loadCatalog(lib, 'writing')
-  expect(c.version).toBe(1)
+  expect(c.version).toBe(2)
   expect(c.entries).toEqual({})
 })
 
@@ -46,7 +46,7 @@ it('diffStale:无条目/mtime 更新/旧格式条目都算待更新', () => {
 
 it('空 catalog 返回默认结构', () => {
   const c = loadCatalog(lib, 'writing')
-  expect(c.version).toBe(1)
+  expect(c.version).toBe(2)
   expect(c.entries).toEqual({})
 })
 
@@ -80,4 +80,51 @@ it('migratePrefix:oldRel 不存在时 no-op 不写盘', () => {
   expect(c.entries['writing/随笔/a.md']).toBeDefined()
   expect(c.entries['writing/新目录']).toBeUndefined()
   expect(fs.statSync(catalogPath(lib, 'writing')).mtimeMs).toBe(mtimeBefore)
+})
+
+it('v1 catalog 归一化为 v2（groups 缺省空）', () => {
+  fs.writeFileSync(catalogPath(lib, 'writing'), JSON.stringify({ version: 1, entries: { 'a.md': { title: 'A', summary: 'A' } } }))
+  const c = loadCatalog(lib, 'writing')
+  expect(c.version).toBe(2)
+  expect(c.entries['a.md'].summary).toBe('A')
+  expect(c.groups).toEqual({})
+})
+
+it('collectGroupDirs 收集含文件的分组与全后代文件', () => {
+  fs.mkdirSync(path.join(lib, 'writing/随笔'), { recursive: true })
+  fs.writeFileSync(path.join(lib, 'writing/随笔/a.md'), '# a')
+  fs.mkdirSync(path.join(lib, 'writing/随笔/子'), { recursive: true })
+  fs.writeFileSync(path.join(lib, 'writing/随笔/子/b.md'), '# b')
+  fs.writeFileSync(path.join(lib, 'writing/根.md'), '# root')
+  const dirs = collectGroupDirs(scanRoot(lib, 'writing'))
+  expect(dirs).toHaveLength(2)
+  const sui = dirs.find(d => d.rel === 'writing/随笔')!
+  expect(sui.memberPaths).toEqual(['writing/随笔/a.md', 'writing/随笔/子/b.md'])
+  const zi = dirs.find(d => d.rel === 'writing/随笔/子')!
+  expect(zi.memberPaths).toEqual(['writing/随笔/子/b.md'])
+})
+
+it('groupSignature 基于 catalog 条目 mtime，未生成条目为 ?', () => {
+  const catalog = { version: 2 as const, entries: { 'writing/a.md': { title: 'A', summary: 'A', mtimeMs: 5 } }, groups: {} }
+  expect(groupSignature(catalog, ['writing/a.md'])).toBe('writing/a.md:5')
+  expect(groupSignature(catalog, ['writing/b.md'])).toBe('writing/b.md:?')
+})
+
+it('updateGroupSummary / removeGroupSummary', () => {
+  updateGroupSummary(lib, 'writing', 'writing/随笔', { summary: '随笔内容', signature: 'x' })
+  expect(loadCatalog(lib, 'writing').groups['writing/随笔']).toEqual({ summary: '随笔内容', signature: 'x' })
+  removeGroupSummary(lib, 'writing', 'writing/随笔')
+  expect(loadCatalog(lib, 'writing').groups['writing/随笔']).toBeUndefined()
+})
+
+it('migratePrefix 同时迁移 groups 前缀', () => {
+  updateEntry(lib, 'writing', 'writing/随笔/a.md', { title: 'A', summary: 'A', mtimeMs: 1 })
+  updateGroupSummary(lib, 'writing', 'writing/随笔', { summary: 'S', signature: 's1' })
+  updateGroupSummary(lib, 'writing', 'writing/随笔/子', { summary: 'Z', signature: 's2' })
+  migratePrefix(lib, 'writing', 'writing/随笔', 'writing/散文')
+  const c = loadCatalog(lib, 'writing')
+  expect(c.entries['writing/散文/a.md']).toBeDefined()
+  expect(c.groups['writing/散文']).toEqual({ summary: 'S', signature: 's1' })
+  expect(c.groups['writing/散文/子']).toEqual({ summary: 'Z', signature: 's2' })
+  expect(c.groups['writing/随笔']).toBeUndefined()
 })

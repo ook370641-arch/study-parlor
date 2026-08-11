@@ -48,3 +48,15 @@ describe('executeTool read_local failure markers (S3)', () => {
     expect(result).toContain('不存在')
   })
 })
+
+describe('executeTool read_local group id', () => {
+  it('group id 从 index 返回分组摘要', async () => {
+    const { cfg } = tmpLib()
+    const result = await executeTool(cfg, { id: 'c1', name: 'read_local', args: { ids: ['group:repository/2023'] } }, {
+      send: () => {}, sessionId: 's1', useSearch: false,
+      index: [{ id: 'group:repository/2023', type: 'group' as const, title: '2023', summary: '2023年的旧博客' }],
+    })
+    expect(result).toContain('2023年的旧博客')
+    expect(result).not.toContain('请勿引用')
+  })
+})

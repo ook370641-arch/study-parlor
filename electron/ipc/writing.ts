@@ -5,8 +5,8 @@ import type { AppConfig } from '../env'
 import type { WritingErrorCode, WritingRoot } from '../../src/types'
 import * as tree from '../lib/writing-tree'
 import { ensureRoots } from '../lib/writing-tree'
-import { updateEntry, removeEntry, migrateEntry, migratePrefix, diffStale } from '../lib/writing-catalog'
-import { generateWritingSummary } from '../lib/llm-tasks'
+import { updateEntry, removeEntry, migrateEntry, migratePrefix, diffStale, loadCatalog, collectGroupDirs, groupSignature, updateGroupSummary, removeGroupSummary } from '../lib/writing-catalog'
+import { generateWritingSummary, generateGroupSummary } from '../lib/llm-tasks'
 
 const KNOWN_CODES: WritingErrorCode[] = ['WRITING_PATH_FORBIDDEN', 'WRITING_NOT_FOUND', 'WRITING_NAME_CONFLICT']
 
@@ -80,6 +80,7 @@ export function registerWritingIpc(cfg: AppConfig): void {
         const root = rootFromPath(a.path)
         for (const m of result.value.moved) migrateEntry(lib, root, m.from, m.to)
         removeEntry(lib, root, a.path)
+        removeGroupSummary(lib, root, a.path)
       } catch { /* silent */ }
     }
     return result
@@ -131,6 +132,21 @@ export function registerWritingIpc(cfg: AppConfig): void {
               : await generateWritingSummary(cfg, path.basename(rel, '.md'), body)
             if (summary) updateEntry(lib, root, rel, { title: path.basename(rel, '.md'), summary, mtimeMs })
           } catch { /* silent — 下次进入再补 */ }
+        }
+        // 分组摘要：逐篇补齐后，对签名过期的分组生成（基于 catalog 条目 mtime 的签名）
+        for (const root of roots) {
+          const catalog = loadCatalog(lib, root)
+          const dirs = collectGroupDirs(tree.scanRoot(lib, root))
+          for (const { rel, memberPaths } of dirs) {
+            const sig = groupSignature(catalog, memberPaths)
+            if (catalog.groups[rel]?.signature === sig) continue
+            const texts = memberPaths.map(p => catalog.entries[p]?.summary).filter((s): s is string => !!s)
+            if (texts.length === 0) continue
+            const summary = process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
+              ? 'E2E 分组摘要'
+              : await generateGroupSummary(cfg, path.basename(rel), texts.slice(0, 30).join('；'))
+            if (summary) updateGroupSummary(lib, root, rel, { summary, signature: sig })
+          }
         }
       }, 0)
       return { refreshed: pending.length }

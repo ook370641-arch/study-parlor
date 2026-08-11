@@ -354,3 +354,19 @@ export async function generateWritingSummary(cfg: AppConfig, title: string, body
     return '' // silent fail — caller skips empty
   }
 }
+
+export async function generateGroupSummary(cfg: AppConfig, dirName: string, memberSummaries: string): Promise<string> {
+  try {
+    const content = await chatNonStream(cfg, {
+      messages: [
+        { role: 'system', content: '你是整理学习资料库的助手。请用一句话（≤50字）概括下面这个分组里文章的主题内容。只输出摘要本身：禁止引号、禁止markdown、禁止"本组"开头、禁止换行。' },
+        { role: 'user', content: `分组名：${dirName}\n\n组内文章摘要：\n${memberSummaries}` },
+      ],
+      temperature: 0.3,
+      thinking: { type: 'enabled' },
+    })
+    return content.trim().replace(/\n[\s\S]*$/, '').slice(0, 80)
+  } catch {
+    return '' // silent fail — caller skips empty
+  }
+}

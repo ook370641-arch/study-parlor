@@ -45,6 +45,21 @@ export async function buildWritingIndex(cfg: AppConfig): Promise<IndexEntry[]> {
     }
   } catch { /* catalog missing or unreadable — skip */ }
 
+  // ── 2b. 分组总览（writing/repository 目录级摘要）──────────────────
+  for (const root of ['writing', 'repository'] as const) {
+    try {
+      const cat = loadCatalog(lib, root)
+      for (const [dirPath, g] of Object.entries(cat.groups ?? {})) {
+        entries.push({
+          id: `group:${dirPath}`,
+          type: 'group',
+          title: path.basename(dirPath),
+          summary: g.summary || '',
+        })
+      }
+    } catch { /* catalog missing or unreadable — skip */ }
+  }
+
   // ── 3. Study topics ─────────────────────────────────────────
   try {
     const socraticDir = path.join(lib, SOCRATIC_ROOT)

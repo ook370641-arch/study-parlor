@@ -1,9 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import type { WritingCatalog, WritingCatalogEntry, WritingRoot, WritingTreeNode } from '@shared/index'
+import type { WritingCatalog, WritingCatalogEntry, WritingGroupSummaryEntry, WritingRoot, WritingTreeNode } from '@shared/index'
 import { scanRoot } from './writing-tree'
 
-const EMPTY: WritingCatalog = { version: 1, entries: {} }
+const EMPTY: WritingCatalog = { version: 2, entries: {}, groups: {} }
 
 export function catalogPath(lib: string, root: WritingRoot): string {
   return path.join(lib, root, '.catalog.json')
@@ -11,15 +11,18 @@ export function catalogPath(lib: string, root: WritingRoot): string {
 
 export function loadCatalog(lib: string, root: WritingRoot): WritingCatalog {
   const p = catalogPath(lib, root)
-  if (!fs.existsSync(p)) return { ...EMPTY, entries: {} }
+  if (!fs.existsSync(p)) return { ...EMPTY, entries: {}, groups: {} }
   try {
     const raw = fs.readFileSync(p, 'utf8')
-    const parsed = JSON.parse(raw)
-    if (parsed && parsed.version === 1 && typeof parsed.entries === 'object') {
+    const parsed = JSON.parse(raw) as { version?: number; entries?: Record<string, WritingCatalogEntry>; groups?: Record<string, WritingGroupSummaryEntry> }
+    if (parsed && parsed.version === 2 && typeof parsed.entries === 'object' && typeof parsed.groups === 'object') {
       return parsed as WritingCatalog
     }
+    if (parsed && parsed.version === 1 && typeof parsed.entries === 'object') {
+      return { version: 2, entries: parsed.entries, groups: parsed.groups ?? {} }
+    }
   } catch { /* damaged — rebuild */ }
-  return { ...EMPTY, entries: {} }
+  return { ...EMPTY, entries: {}, groups: {} }
 }
 
 export function saveCatalog(lib: string, root: WritingRoot, catalog: WritingCatalog): void {
@@ -36,6 +39,20 @@ export function removeEntry(lib: string, root: WritingRoot, rel: string): void {
   const c = loadCatalog(lib, root)
   delete c.entries[rel]
   saveCatalog(lib, root, c)
+}
+
+export function updateGroupSummary(lib: string, root: WritingRoot, dir: string, entry: WritingGroupSummaryEntry): void {
+  const c = loadCatalog(lib, root)
+  c.groups[dir] = entry
+  saveCatalog(lib, root, c)
+}
+
+export function removeGroupSummary(lib: string, root: WritingRoot, dir: string): void {
+  const c = loadCatalog(lib, root)
+  if (c.groups[dir]) {
+    delete c.groups[dir]
+    saveCatalog(lib, root, c)
+  }
 }
 
 // Move/rename: remove old path, add new entry (caller provides new entry or copies old)
@@ -62,6 +79,14 @@ export function migratePrefix(lib: string, root: WritingRoot, oldRel: string, ne
       changed = true
     }
   }
+  for (const k of Object.keys(c.groups)) {
+    if (k === oldRel || k.startsWith(oldRel + '/')) {
+      const g = c.groups[k]
+      delete c.groups[k]
+      c.groups[newRel + k.slice(oldRel.length)] = g
+      changed = true
+    }
+  }
   if (changed) saveCatalog(lib, root, c)
 }
 
@@ -84,4 +109,34 @@ export function diffStale(lib: string, root: WritingRoot): string[] {
       return fs.statSync(path.join(lib, f)).mtimeMs > entry.mtimeMs
     } catch { return true }
   })
+}
+
+function collectDescendantFiles(node: WritingTreeNode): string[] {
+  const out: string[] = []
+  const walk = (n: WritingTreeNode) => {
+    if (n.kind === 'file') { out.push(n.path); return }
+    for (const c of n.children ?? []) walk(c)
+  }
+  walk(node)
+  return out
+}
+
+/** 目录中所有含 md 文件的分组（含递归子分组）；memberPaths 为全后代文件路径（排序后）。 */
+export function collectGroupDirs(nodes: WritingTreeNode[]): { rel: string; memberPaths: string[] }[] {
+  const out: { rel: string; memberPaths: string[] }[] = []
+  const walk = (ns: WritingTreeNode[]) => {
+    for (const n of ns) {
+      if (n.kind !== 'dir') continue
+      const memberPaths = collectDescendantFiles(n).sort()
+      if (memberPaths.length > 0) out.push({ rel: n.path, memberPaths })
+      walk(n.children ?? [])
+    }
+  }
+  walk(nodes)
+  return out
+}
+
+/** 分组摘要签名：基于 catalog 条目 mtime（成员摘要变了才重算），未生成条目为 '?'。 */
+export function groupSignature(catalog: WritingCatalog, memberPaths: string[]): string {
+  return memberPaths.map(p => `${p}:${catalog.entries[p]?.mtimeMs ?? '?'}`).join('|')
 }
