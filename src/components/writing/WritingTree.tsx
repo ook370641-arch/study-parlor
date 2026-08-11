@@ -129,6 +129,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
     <div>
       <div
         data-testid="writing-tree-node"
+        data-kind={isDir ? 'dir' : 'file'}
         className={`group flex items-center gap-1 px-2 py-1 cursor-pointer rounded transition-colors select-none
           ${isSelected
             ? isAcademic ? 'bg-ember/10 text-ember' : 'bg-[#1a1a1a]/10 text-[#1a1a1a]'
@@ -176,15 +177,8 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
           }
         }}
       >
-        <span className={`w-6 shrink-0 inline-flex items-center justify-center ${isSelected ? 'text-ember' : 'text-parchment/50'}`}>
-          {isDir ? (
-            <>
-              <span className="inline-flex items-center justify-center w-3.5 shrink-0 text-[0.62em] leading-none">{open ? '▾' : '▸'}</span>
-              <FolderIcon open={open} />
-            </>
-          ) : (
-            <DocIcon />
-          )}
+        <span className={`w-6 shrink-0 inline-flex items-center justify-center ${isAcademic ? (isSelected ? 'text-ember' : 'text-parchment/50') : 'text-[#1a1a1a]'}`}>
+          {isDir ? <FolderIcon open={open} /> : null}
         </span>
         <div className="min-w-0 flex-1">
           {editing ? (
@@ -440,11 +434,3 @@ function FolderIcon({ open }: { open: boolean }) {
   )
 }
 
-function DocIcon() {
-  return (
-    <svg data-testid="writing-tree-doc-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  )
-}
