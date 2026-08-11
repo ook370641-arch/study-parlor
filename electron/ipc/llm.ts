@@ -3,6 +3,7 @@ import type { AppConfig } from '../env'
 import { probeModel, chatStream } from '../lib/kimi'
 import { finalizeProgress, finalizeReview, generateFable, generateGroupInspiration, generateFableFromReport, generateContinueSuggestions, generateWildcardInspiration } from '../lib/llm-tasks'
 import { generateDiagram } from '../lib/diagram'
+import { topicDir } from '../lib/library-layout'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { Message, Profile, Mode, Difficulty } from '@shared/index'
@@ -192,7 +193,7 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     try {
       const mermaid = await generateDiagram(cfg, args.reportBody)
       if (mermaid && mermaid.trim().startsWith('<svg')) {
-        const sessionDir = path.join(cfg.libraryPath, args.dirName, `s${args.sessionNumber}`)
+        const sessionDir = path.join(topicDir(cfg.libraryPath, args.dirName), `s${args.sessionNumber}`)
         const diagramPath = path.join(sessionDir, '学习图表.svg')
         fs.writeFileSync(diagramPath, mermaid, 'utf8')
       } else if (mermaid) {

@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { chatNonStream } from './kimi'
+import { topicDir } from './library-layout'
 import { parseFrontmatter } from './frontmatter'
 import { getSortedSessionDirs } from '../ipc/files'
 import { extractXmlTag, extractXmlTags, extractJsonObject, extractJsonArray } from './extract-json'
@@ -183,12 +184,12 @@ export function readTopicReportSummaries(
   dirName: string
 ): string[] {
   try {
-    const topicDir = path.join(libraryPath, dirName)
-    const sessionDirs = getSortedSessionDirs(topicDir)
+    const topicPath = topicDir(libraryPath, dirName)
+    const sessionDirs = getSortedSessionDirs(topicPath)
     const summaries: string[] = []
 
     for (const sd of sessionDirs) {
-      const reportPath = path.join(topicDir, sd, '学习报告.md')
+      const reportPath = path.join(topicPath, sd, '学习报告.md')
       if (!fs.existsSync(reportPath)) continue
       try {
         const raw = fs.readFileSync(reportPath, 'utf8')
@@ -211,11 +212,11 @@ export function readTopicReportSummaries(
 
 function readReportFrontmatter(libraryPath: string, dirName: string): { tags: string[]; progress_summary?: string } | null {
   try {
-    const topicDir = path.join(libraryPath, dirName)
-    const sessionDirs = getSortedSessionDirs(topicDir)
+    const topicPath = topicDir(libraryPath, dirName)
+    const sessionDirs = getSortedSessionDirs(topicPath)
     if (sessionDirs.length === 0) return null
     const latestDir = sessionDirs[sessionDirs.length - 1]
-    const reportPath = path.join(topicDir, latestDir, '学习报告.md')
+    const reportPath = path.join(topicPath, latestDir, '学习报告.md')
     if (!fs.existsSync(reportPath)) return null
     const raw = fs.readFileSync(reportPath, 'utf8')
     const { frontmatter } = parseFrontmatter(raw, { filename: '学习报告.md' })

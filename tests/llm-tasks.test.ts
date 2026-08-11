@@ -390,7 +390,7 @@ describe('readTopicReportSummaries', () => {
   })
 
   it('reads report summaries from topic directory', () => {
-    const topicDir = path.join(tmpDir, 'topic-a')
+    const topicDir = path.join(tmpDir, '苏格拉底对话', 'topic-a')
     const sessionDir = path.join(topicDir, 's1')
     fs.mkdirSync(sessionDir, { recursive: true })
     fs.writeFileSync(
@@ -404,7 +404,7 @@ describe('readTopicReportSummaries', () => {
   })
 
   it('returns empty array when no reports', () => {
-    const topicDir = path.join(tmpDir, 'empty-topic')
+    const topicDir = path.join(tmpDir, '苏格拉底对话', 'empty-topic')
     fs.mkdirSync(topicDir, { recursive: true })
 
     const out = readTopicReportSummaries(tmpDir, 'empty-topic')
