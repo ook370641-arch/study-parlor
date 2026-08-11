@@ -5,7 +5,6 @@ import { commonmark } from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { history } from '@milkdown/plugin-history'
-import { clipboard } from '@milkdown/plugin-clipboard'
 import { useStore } from '@/store'
 import { textColorPlugins } from '@/lib/milkdown-text-color'
 import { pastePlainPlugins } from '@/lib/milkdown-paste-plain'
@@ -14,6 +13,9 @@ import { codeblockEnterPlugins } from '@/lib/milkdown-codeblock-enter'
 import { tableHandlesPlugins } from '@/lib/milkdown-table-handles'
 import { gutterInsertPlugins } from '@/lib/milkdown-gutter-insert'
 import { smartEnterPlugins } from '@/lib/milkdown-smart-enter'
+import { milkdownClipboardPlugins } from '@/lib/milkdown-clipboard'
+import { selectionBubblePlugins } from '@/lib/milkdown-selection-bubble'
+import { orbitHrPlugins } from '@/lib/milkdown-orbit-hr'
 import './writing-editor.css'
 
 function EditorInner({ initial, onChange }: { initial: string; onChange: (md: string) => void }) {
@@ -39,7 +41,7 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .use(gfm)
       .use(listener)
       .use(history)
-      .use(clipboard)
+      .use(milkdownClipboardPlugins)
       .use(textColorPlugins)
       .use(pastePlainPlugins)
       .use(tabKeymapPlugins)
@@ -47,6 +49,8 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .use(tableHandlesPlugins)
       .use(gutterInsertPlugins)
       .use(smartEnterPlugins)
+      .use(selectionBubblePlugins)
+      .use(orbitHrPlugins)
       .config(ctx => {
         ctx.set(rootCtx, root)
         ctx.set(defaultValueCtx, initial)
