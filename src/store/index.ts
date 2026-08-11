@@ -397,6 +397,7 @@ type AppStore = {
   writingEditorAction: ((fn: (ctx: any) => void) => void) | null
   lastWritingFile: string | null
   writingOrder: Record<string, string[]>
+  writingExpandedGroups: Record<string, boolean>
   writingUIFontSize: BriefingFontSize
   increaseWritingUIFontSize: () => Promise<void>
   decreaseWritingUIFontSize: () => Promise<void>
@@ -433,6 +434,8 @@ type AppStore = {
   setAssistantSearchEnabled: (enabled: boolean) => void
   setAssistantThinkingEffort: (effort: 'off' | 'high' | 'max') => void
   reorderWritingSibling: (args: { dir: string; src: string; target: string; position: 'before' | 'after'; siblings: string[] }) => void
+  setWritingGroupExpanded: (path: string, open: boolean) => void
+  appendWritingOrder: (dir: string, newPath: string) => void
   moveWritingNode: (args: { src: string; targetDir: string; index: number | null }) => Promise<void>
   writingRenamed: (oldPath: string, newPath: string) => void
 }
@@ -469,6 +472,14 @@ let assistantWidthSaveTimer: ReturnType<typeof setTimeout> | null = null
 function debounceSaveAssistantWidth(patch: Partial<StateJson>) {
   if (assistantWidthSaveTimer) clearTimeout(assistantWidthSaveTimer)
   assistantWidthSaveTimer = setTimeout(() => {
+    ipc.patchState(patch)
+  }, 300)
+}
+
+let expandedSaveTimer: ReturnType<typeof setTimeout> | null = null
+function debounceSaveExpanded(patch: Partial<StateJson>) {
+  if (expandedSaveTimer) clearTimeout(expandedSaveTimer)
+  expandedSaveTimer = setTimeout(() => {
     ipc.patchState(patch)
   }, 300)
 }
@@ -564,6 +575,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingEditorAction: null,
   lastWritingFile: null,
   writingOrder: {},
+  writingExpandedGroups: {},
   writingUIFontSize: 'base',
   writingAssistant: null,
   writingAssistantSnapshotLit: false,
@@ -608,6 +620,7 @@ export const useStore = create<AppStore>((set, get) => ({
       writingAssistantOpen: state.writingAssistantOpen ?? false,
       lastWritingFile: state.lastWritingFile ?? null,
       writingOrder: state.writingOrder ?? {},
+      writingExpandedGroups: state.writingExpandedGroups ?? {},
       writingUIFontSize: state.writingUIFontSize ?? 'base',
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
@@ -2411,6 +2424,24 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ writingOrder } as Partial<StateJson>)
   },
 
+  // 展开/收起持久化：写显式状态（无记录时由组件按根/深度走默认规则）
+  setWritingGroupExpanded: (path, open) => {
+    const next = { ...get().writingExpandedGroups, [path]: open }
+    set({ writingExpandedGroups: next })
+    debounceSaveExpanded({ writingExpandedGroups: next } as Partial<StateJson>)
+  },
+
+  // 新建节点落末尾：把该容器当前全部子节点（排序后）写回 order，新路径在数组末尾。
+  appendWritingOrder: (dir, newPath) => {
+    const tree = get().writingTree
+    const cur = get().writingOrder
+    const siblings = tree ? (childrenPathsOf(tree, dir, cur[dir]) ?? []) : []
+    const rest = siblings.filter(p => p !== newPath)
+    const next = { ...cur, [dir]: [...rest, newPath] }
+    set({ writingOrder: next })
+    ipc.patchState({ writingOrder: next } as Partial<StateJson>)
+  },
+
   moveWritingNode: async ({ src, targetDir, index }) => {
     const r = await ipc.writingMove({ path: src, targetDir })
     if (!r.ok) { set({ writingError: r.message }); return }
@@ -2426,7 +2457,7 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ writingOrder } as Partial<StateJson>)
   },
 
-  // 目录/文件改名后,writingOrder 中该节点及其子级路径全部做前缀改写,避免顺序回退扫描序。
+  // 目录/文件改名后,writingOrder 与 writingExpandedGroups 中该节点及其子级路径全部做前缀改写。
   writingRenamed: (oldPath, newPath) => {
     if (oldPath === newPath) return
     const next: Record<string, string[]> = {}
@@ -2434,8 +2465,13 @@ export const useStore = create<AppStore>((set, get) => ({
       const nk = k === oldPath ? newPath : k.startsWith(oldPath + '/') ? newPath + k.slice(oldPath.length) : k
       next[nk] = paths.map(p => p === oldPath ? newPath : p.startsWith(oldPath + '/') ? newPath + p.slice(oldPath.length) : p)
     }
-    set({ writingOrder: next })
-    ipc.patchState({ writingOrder: next } as Partial<StateJson>)
+    const nextExp: Record<string, boolean> = {}
+    for (const [k, v] of Object.entries(get().writingExpandedGroups)) {
+      const nk = k === oldPath ? newPath : k.startsWith(oldPath + '/') ? newPath + k.slice(oldPath.length) : k
+      nextExp[nk] = v
+    }
+    set({ writingOrder: next, writingExpandedGroups: nextExp })
+    ipc.patchState({ writingOrder: next, writingExpandedGroups: nextExp } as Partial<StateJson>)
   },
 
   loadWritingTree: async () => {

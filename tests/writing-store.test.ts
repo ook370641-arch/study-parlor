@@ -7,6 +7,7 @@ vi.mock('@/lib/ipc', () => ({
     writingScanTree: vi.fn(),
     writingRead: vi.fn(),
     writingWrite: vi.fn(),
+    articleAssistantReadSession: vi.fn(),
   }
 }))
 
@@ -21,7 +22,7 @@ import { ipc } from '@/lib/ipc'
 describe('writing store', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    useStore.setState({ writingTree: null, writingFile: null, writingError: null })
+    useStore.setState({ writingTree: null, writingFile: null, writingError: null, writingOrder: {}, writingExpandedGroups: {} })
   })
 
   describe('loadWritingTree', () => {
@@ -180,6 +181,45 @@ describe('writing store', () => {
       useStore.getState().setWritingListTab('repository')
       expect(useStore.getState().writingListTab).toBe('repository')
       expect(ipc.patchState).toHaveBeenCalledWith({ writingListTab: 'repository' })
+    })
+  })
+
+  describe('setWritingGroupExpanded', () => {
+    it('写入 store 并 debounce 持久化', () => {
+      vi.useFakeTimers()
+      useStore.getState().setWritingGroupExpanded('repository/2023', true)
+      expect(useStore.getState().writingExpandedGroups['repository/2023']).toBe(true)
+      vi.advanceTimersByTime(300)
+      expect(ipc.patchState).toHaveBeenCalledWith({ writingExpandedGroups: { 'repository/2023': true } })
+      vi.useRealTimers()
+    })
+  })
+
+  describe('appendWritingOrder', () => {
+    it('新路径追加到容器末尾（当前全部子节点写回 + 新路径）', () => {
+      useStore.setState({
+        writingTree: {
+          writing: [{ name: '随笔', path: 'writing/随笔', kind: 'dir' as const, children: [
+            { name: 'a.md', path: 'writing/随笔/a.md', kind: 'file' as const },
+          ] }],
+          repository: [],
+        },
+        writingOrder: { 'writing/随笔': ['writing/随笔/a.md'] },
+      })
+      useStore.getState().appendWritingOrder('writing/随笔', 'writing/随笔/new.md')
+      expect(useStore.getState().writingOrder['writing/随笔']).toEqual(['writing/随笔/a.md', 'writing/随笔/new.md'])
+      expect(ipc.patchState).toHaveBeenCalledWith({ writingOrder: { 'writing/随笔': ['writing/随笔/a.md', 'writing/随笔/new.md'] } })
+    })
+  })
+
+  describe('writingRenamed', () => {
+    it('同步改写 writingExpandedGroups 的前缀', () => {
+      useStore.setState({
+        writingOrder: { 'writing/随笔': ['writing/随笔/a.md'] },
+        writingExpandedGroups: { 'writing/随笔': true, 'writing/随笔/子': false },
+      })
+      useStore.getState().writingRenamed('writing/随笔', 'writing/散文')
+      expect(useStore.getState().writingExpandedGroups).toEqual({ 'writing/散文': true, 'writing/散文/子': false })
     })
   })
 })

@@ -556,6 +556,7 @@ export type StateJson = {
   writingAssistantOpen?: boolean
   lastWritingFile?: string | null
   writingOrder?: Record<string, string[]>
+  writingExpandedGroups?: Record<string, boolean>
   writingUIFontSize?: BriefingFontSize
   briefingRead?: { digest?: string[]; 'job-briefing'?: string[] }
   candlelightEnabled?: boolean
