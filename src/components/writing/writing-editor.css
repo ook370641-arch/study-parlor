@@ -228,3 +228,56 @@
   border-radius: 4px;
   pointer-events: none;
 }
+/* 悬浮格式栏(设计 2026-08-11 §B):定位由插件 layout() 设 left/top,这里给视觉与尺寸。
+   Tailwind preflight 已把 button padding/border 清零 → 色块必须显式给尺寸,否则不可见。 */
+.writing-editor-root .writing-format-bubble {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 5px;
+  background: #2a1f1a;
+  border: 1px solid rgba(232, 213, 183, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.writing-editor-root .writing-format-bubble > button {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+  color: rgba(232, 213, 183, 0.75);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.writing-editor-root .writing-format-bubble > button:hover {
+  color: #e8d5b7;
+  background: rgba(232, 213, 183, 0.12);
+}
+.writing-editor-root .writing-bubble-swatches {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 2px 1px 2px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(232, 213, 183, 0.12);
+}
+.writing-editor-root .writing-bubble-swatch {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid rgba(232, 213, 183, 0.4);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.writing-editor-root .writing-bubble-swatch:hover {
+  transform: scale(1.2);
+  border-color: rgba(232, 213, 183, 0.8);
+}

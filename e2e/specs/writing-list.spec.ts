@@ -10,7 +10,9 @@ import { seedStateJson } from '../helpers/test-library'
  * 根因:Tailwind preflight 把 ul/ol 重置为 list-style:none + 无缩进,writing-editor.css
  * 只补回过 h1-h3/strong,漏了列表——插入后 markdown 已变但视觉零反馈,表现为"无法插入"。
  * 本 spec 固化:
- * 1. 列表渲染必须有标记(disc/decimal)与缩进(计算样式断言,防 preflight 回潮)
+ * 1. 列表渲染必须有标记与缩进(计算样式断言,防 preflight 回潮)。
+ *    格调化渲染(2026-08-11 §D)后 ul/ol 用自定义 ::before 标记(烛光点/暖橙序号),
+ *    原生 list-style 为 none,断言以 ::before content 为准。
  * 2. gutter「+」插入无序/有序列表(单入口;工具栏 •/1. 已移除)
  * 3. 列表内 Enter 续接下一项(preset-commonmark listItemKeymap 原生行为)
  * 4. Tab 缩进嵌套 / Shift-Tab 逐级解除,顶层 Shift-Tab 删除列表标记
@@ -64,6 +66,8 @@ test.describe('@p2 writing-list', () => {
     const m = await window.evaluate(() => {
       const ul = document.querySelector('.ProseMirror ul') as HTMLElement
       const ol = document.querySelector('.ProseMirror ol') as HTMLElement
+      const ulLi = document.querySelector('.ProseMirror ul li') as HTMLElement
+      const olLi = document.querySelector('.ProseMirror ol li') as HTMLElement
       const ulCs = getComputedStyle(ul)
       const olCs = getComputedStyle(ol)
       return {
@@ -71,12 +75,18 @@ test.describe('@p2 writing-list', () => {
         ulPaddingLeft: parseFloat(ulCs.paddingLeft),
         olListStyle: olCs.listStyleType,
         olPaddingLeft: parseFloat(olCs.paddingLeft),
+        ulMarker: getComputedStyle(ulLi, '::before').content,
+        olMarker: getComputedStyle(olLi, '::before').content,
       }
     })
-    expect(m.ulListStyle).toBe('disc')
+    // 格调化渲染后 ul/ol 原生 list-style 为 none,标记来自自定义 ::before
+    expect(m.ulListStyle).toBe('none')
     expect(m.ulPaddingLeft).toBeGreaterThan(0)
-    expect(m.olListStyle).toBe('decimal')
+    expect(m.olListStyle).toBe('none')
     expect(m.olPaddingLeft).toBeGreaterThan(0)
+    // ::before 有实际标记内容(烛光点 / 暖橙序号),而非 none
+    expect(m.ulMarker).not.toBe('none')
+    expect(m.olMarker).not.toBe('none')
   })
 
   test('gutter「+」插入无序/有序列表', async ({ window, testLibraryPath, testConfigDir }) => {

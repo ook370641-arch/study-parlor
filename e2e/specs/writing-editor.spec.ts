@@ -219,7 +219,6 @@ test.describe('@p2 writing-editor', () => {
 
     // UI 出口断言（feature-development §12）
     await expect(window.locator(SELECTORS.writing.toolbarHeading)).toBeVisible({ timeout: 3000 })
-    await expect(window.locator(SELECTORS.writing.toolbarColor)).toBeVisible()
 
     const h1 = writing.editor.locator('h1').first()
     const p = writing.editor.locator('p').first()
@@ -273,9 +272,9 @@ test.describe('@p2 writing-editor', () => {
     ).toBeVisible({ timeout: 3000 })
   })
 
-  // ── Toolbar: bold/italic real effect ──────────────────────────────
+  // ── Bubble: bold/italic real effect ──────────────────────────────
 
-  test('加粗/斜体按钮真实生效：选中文字 → B → <strong>；I → <em>', async ({ window, testLibraryPath }) => {
+  test('悬浮栏加粗/斜体真实生效：选中 → B → <strong> 且悬浮栏保持；同选区再点 I → <em>', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     await window.locator(SELECTORS.writing.newFileButton).click()
@@ -289,17 +288,20 @@ test.describe('@p2 writing-editor', () => {
     await writing.typeInEditor('需要加粗和斜体的文字')
     await writing.editor.locator('.ProseMirror').click()
     await window.keyboard.press('Control+a')
-    await window.waitForTimeout(200)
 
-    // 点 B → 文字被 <strong> 包裹（旧用例只查按钮可见性，
-    // 导致「传命令对象给 callCommand 抛错、按钮全无效」的 bug 长期未暴露）
-    await window.locator(SELECTORS.writing.toolbarBold).click()
+    // 选中文字 → 悬浮栏出现
+    const bubble = window.locator(SELECTORS.writing.formatBubble)
+    await expect(bubble).toBeVisible({ timeout: 3000 })
+
+    // 点 B → 文字被 <strong> 包裹,且悬浮栏保持可见(连续操作)
+    await window.locator(SELECTORS.writing.bubbleBold).click()
     await expect(
       writing.editor.locator('strong', { hasText: '需要加粗和斜体的文字' })
     ).toBeVisible({ timeout: 3000 })
+    await expect(bubble).toBeVisible()
 
-    // 点 I → 同一选区再被 <em> 包裹
-    await window.locator(SELECTORS.writing.toolbarItalic).click()
+    // 同一选区再点 I → 再被 <em> 包裹
+    await window.locator(SELECTORS.writing.bubbleItalic).click()
     await expect(
       writing.editor.locator('em', { hasText: '需要加粗和斜体的文字' })
     ).toBeVisible({ timeout: 3000 })
@@ -321,14 +323,14 @@ test.describe('@p2 writing-editor', () => {
     await writing.typeInEditor('这段文字要被染成暖橙')
 
     // Select all text in the editor (ProseMirror state keeps the selection
-    // even after focus moves to the toolbar button)
+    // even after the bubble button mousedown is prevented)
     await writing.editor.locator('.ProseMirror').click()
     await window.keyboard.press('Control+a')
-    await window.waitForTimeout(300)
 
-    // Open color dropdown and pick 暖橙 #d97757
-    await window.locator(SELECTORS.writing.toolbarColor).click()
-    const option = window.locator(`${SELECTORS.writing.colorOption}[data-color="#d97757"]`)
+    // 悬浮栏取色：打开色板并选暖橙 #d97757
+    await expect(window.locator(SELECTORS.writing.formatBubble)).toBeVisible({ timeout: 3000 })
+    await window.locator(SELECTORS.writing.bubbleColor).click()
+    const option = window.locator(`${SELECTORS.writing.bubbleColorOption}[data-color="#d97757"]`)
     await expect(option).toBeVisible({ timeout: 3000 })
     await option.click()
     await window.waitForTimeout(300)
@@ -585,30 +587,6 @@ test.describe('@p2 writing-editor', () => {
 
   // ── Toolbar: format button presence (testid registration) ──────────
 
-  test('工具栏加粗 B 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-    const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
-    await expect(window.locator(SELECTORS.writing.toolbarBold)).toBeVisible({ timeout: 3000 })
-  })
-
-  test('工具栏斜体 I 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-    const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
-    await expect(window.locator(SELECTORS.writing.toolbarItalic)).toBeVisible({ timeout: 3000 })
-  })
-
-  test('工具栏删除线 S 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-    const writing = new WritingPage(window)
-    await writing.selectFile('七月夜话')
-    await window.waitForTimeout(1500)
-    await expect(window.locator(SELECTORS.writing.toolbarStrikethrough)).toBeVisible({ timeout: 3000 })
-  })
-
   test('工具栏引用 ❝ 按钮可见且有 testid', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
     const writing = new WritingPage(window)
@@ -625,9 +603,9 @@ test.describe('@p2 writing-editor', () => {
     await expect(window.locator(SELECTORS.writing.toolbarHr)).toBeVisible({ timeout: 3000 })
   })
 
-  // ── Toolbar: All buttons visible ───────────────────────────────────
+  // ── Toolbar: remaining buttons visible; B/I/S/color removed ───────
 
-  test('工具栏全部按钮可见且有 testid', async ({ window, testLibraryPath }) => {
+  test('工具栏剩余按钮可见且 B/I/S/颜色 已移除', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     const writing = new WritingPage(window)
@@ -635,17 +613,19 @@ test.describe('@p2 writing-editor', () => {
     await window.waitForTimeout(1500)
 
     const buttons = [
-      SELECTORS.writing.toolbarBold,
-      SELECTORS.writing.toolbarItalic,
-      SELECTORS.writing.toolbarStrikethrough,
       SELECTORS.writing.toolbarBlockquote,
       SELECTORS.writing.toolbarHr,
       SELECTORS.writing.toolbarHeading,
-      SELECTORS.writing.toolbarColor,
     ]
 
     for (const sel of buttons) {
       await expect(window.locator(sel)).toBeVisible({ timeout: 3000 })
     }
+
+    // 顶部工具栏不再提供 B/I/S/颜色按钮（格式入口已迁移到选中文字悬浮栏）
+    await expect(window.getByTestId('writing-toolbar-bold')).toHaveCount(0)
+    await expect(window.getByTestId('writing-toolbar-italic')).toHaveCount(0)
+    await expect(window.getByTestId('writing-toolbar-strikethrough')).toHaveCount(0)
+    await expect(window.getByTestId('writing-toolbar-color')).toHaveCount(0)
   })
 })
