@@ -3,7 +3,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedWritingTree, seedCatalogJson } from '../helpers/test-library'
+import { seedWritingTree, seedRepository, seedCatalogJson } from '../helpers/test-library'
 
 function readCatalog(lib: string): any | null {
   const p = path.join(lib, 'writing', '.catalog.json')
@@ -113,5 +113,24 @@ test.describe('@p2 writing-catalog', () => {
     const catalog = readCatalog(testLibraryPath)
     const keys = Object.keys(catalog?.entries ?? {})
     expect(keys.filter(k => k.includes('七月夜话')).length).toBe(0)
+  })
+
+  test('进入写作来源后 repository catalog 出现分组摘要（E2E mock）', async ({ window, testLibraryPath }) => {
+    seedWritingTree(testLibraryPath)
+    seedRepository(testLibraryPath)
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
+    await window.locator(SELECTORS.writing.sourceButton).click()
+    await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
+
+    await expect.poll(() => {
+      const p = path.join(testLibraryPath, 'repository', '.catalog.json')
+      if (!fs.existsSync(p)) return null
+      const c = JSON.parse(fs.readFileSync(p, 'utf8'))
+      return c.groups?.['repository/2023']?.summary ?? null
+    }, { timeout: 15000 }).toBe('E2E 分组摘要')
   })
 })

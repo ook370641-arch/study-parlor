@@ -373,7 +373,7 @@ test.describe('@p2 writing-tree', () => {
     await expect(window.getByRole('button', { name: '移出分组', exact: true })).toHaveCount(0)
   })
 
-  test('行内新建输入行定位在排序槽位（非分组末尾）', async ({ window, testLibraryPath }) => {
+  test('行内新建输入行定位在分组末尾', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
@@ -385,7 +385,7 @@ test.describe('@p2 writing-tree', () => {
 
     const fileBox = await window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first().boundingBox()
     const inputBox = await input.boundingBox()
-    expect(inputBox!.y).toBeGreaterThan(fileBox!.y) // 组内新文(新)排在七月夜话之后
+    expect(inputBox!.y).toBeGreaterThan(fileBox!.y) // 新建输入恒显示在分组子列表末尾
   })
 
   test('日记分组新建预填当天日期', async ({ window, testLibraryPath }) => {
@@ -471,5 +471,26 @@ test.describe('@p2 writing-tree', () => {
     await renameInput.fill('分布式随笔') // 随笔/分布式随笔.md 已存在(同目录) → 冲突
     await renameInput.press('Enter')
     await expect(window.getByText('同名文件已存在')).toBeVisible({ timeout: 3000 })
+  })
+
+  test('分组内新建文章落分组末尾', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    await dirRow.hover()
+    await dirRow.getByTestId('writing-node-create').click()
+    const input = window.getByTestId('writing-inline-new')
+    await expect(input).toBeVisible({ timeout: 3000 })
+    await input.fill('组内新文')
+    await input.press('Enter')
+    await window.waitForTimeout(1500)
+
+    const fileBox = await window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first().boundingBox()
+    const newBox = await window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /组内新文/ }).first().boundingBox()
+    expect(newBox!.y).toBeGreaterThan(fileBox!.y)
+    // 且新文件是列表最后一个写作树节点
+    const nodes = window.locator('[data-testid="writing-tree-node"]')
+    const lastText = (await nodes.allTextContents()).pop()!
+    expect(lastText).toContain('组内新文')
   })
 })
