@@ -205,7 +205,7 @@ function validateSlug(slug: string): void {
 
 export function seedNewTopic(libPath: string, slug: string, title: string): void {
   validateSlug(slug)
-  const dir = path.join(libPath, slug, 's1')
+  const dir = path.join(libPath, '苏格拉底对话', slug, 's1')
   fs.mkdirSync(dir, { recursive: true })
   const filePath = path.join(dir, '学习报告.md')
   const now = new Date().toISOString()
@@ -232,7 +232,7 @@ review_count: 0
 
 export function seedReviewableTopic(libPath: string, slug: string, title: string): void {
   validateSlug(slug)
-  const dir = path.join(libPath, slug, 's2')
+  const dir = path.join(libPath, '苏格拉底对话', slug, 's2')
   fs.mkdirSync(dir, { recursive: true })
   const filePath = path.join(dir, '学习报告.md')
   const d = new Date()
@@ -270,7 +270,7 @@ export function seedMultiSessionTopic(
   for (let i = 1; i <= sessionCount; i++) {
     const d = new Date(now)
     d.setDate(d.getDate() - (sessionCount - i) * 7)
-    const dir = path.join(libPath, slug, `s${i}`)
+    const dir = path.join(libPath, '苏格拉底对话', slug, `s${i}`)
     fs.mkdirSync(dir, { recursive: true })
     const filePath = path.join(dir, '学习报告.md')
     const content = `---
@@ -301,7 +301,7 @@ export function seedTopicWithFable(
   title: string
 ): void {
   validateSlug(slug)
-  const dir = path.join(libPath, slug, 's1')
+  const dir = path.join(libPath, '苏格拉底对话', slug, 's1')
   fs.mkdirSync(dir, { recursive: true })
 
   const reportContent = `---
@@ -343,7 +343,7 @@ export function seedTopicWithDiagram(
   title: string
 ): void {
   validateSlug(slug)
-  const dir = path.join(libPath, slug, 's1')
+  const dir = path.join(libPath, '苏格拉底对话', slug, 's1')
   fs.mkdirSync(dir, { recursive: true })
 
   const reportContent = `---
@@ -381,7 +381,7 @@ export function seedTopicWithoutFable(
   title: string
 ): void {
   validateSlug(slug)
-  const dir = path.join(libPath, slug, 's1')
+  const dir = path.join(libPath, '苏格拉底对话', slug, 's1')
   fs.mkdirSync(dir, { recursive: true })
   const content = `---
 title: ${title}
@@ -410,7 +410,7 @@ export function seedTopicWithoutDiagram(
   title: string
 ): void {
   validateSlug(slug)
-  const dir = path.join(libPath, slug, 's1')
+  const dir = path.join(libPath, '苏格拉底对话', slug, 's1')
   fs.mkdirSync(dir, { recursive: true })
   const content = `---
 title: ${title}

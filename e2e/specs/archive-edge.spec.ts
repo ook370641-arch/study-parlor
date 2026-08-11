@@ -44,11 +44,12 @@ test.describe('@p2 archive edge', () => {
     await study.archive()
     await study.closeArchiveReport()
 
-    const topics = fs.readdirSync(testLibraryPath).filter(name =>
-      fs.statSync(path.join(testLibraryPath, name)).isDirectory()
+    const socraticDir = path.join(testLibraryPath, '苏格拉底对话')
+    const topics = fs.readdirSync(socraticDir).filter(name =>
+      fs.statSync(path.join(socraticDir, name)).isDirectory()
     )
     expect(topics.length).toBeGreaterThan(0)
-    const topicDir = path.join(testLibraryPath, topics[0])
+    const topicDir = path.join(socraticDir, topics[0])
     const sessions = fs.readdirSync(topicDir).filter(name =>
       fs.statSync(path.join(topicDir, name)).isDirectory()
     )

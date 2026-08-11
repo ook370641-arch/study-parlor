@@ -13,7 +13,7 @@ test.describe('@slow', () => {
     test.setTimeout(300000)
 
     seedReviewableTopic(testLibraryPath, 'typescript-decorators', 'TypeScript 装饰器')
-    const reportPath = path.join(testLibraryPath, 'typescript-decorators', 's2', '学习报告.md')
+    const reportPath = path.join(testLibraryPath, '苏格拉底对话', 'typescript-decorators', 's2', '学习报告.md')
     const beforeContent = fs.readFileSync(reportPath, 'utf-8')
 
     const cover = new CoverPage(window)
@@ -54,7 +54,7 @@ test.describe('@slow', () => {
     await expect(window.locator('[data-testid="home-greeting"]')).toBeVisible({ timeout: 120000 })
 
     // The review archive creates or appends to a separate 复习报告.md file.
-    const reviewReportPath = path.join(testLibraryPath, 'typescript-decorators', 's2', '复习报告.md')
+    const reviewReportPath = path.join(testLibraryPath, '苏格拉底对话', 'typescript-decorators', 's2', '复习报告.md')
     expect(fs.existsSync(reviewReportPath)).toBe(true)
 
     const reviewContent = fs.readFileSync(reviewReportPath, 'utf-8')

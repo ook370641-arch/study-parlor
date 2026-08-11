@@ -49,10 +49,11 @@ test.describe('@slow', () => {
     await expect(window.locator('[data-testid="home-greeting"]')).toBeVisible({ timeout: 120000 })
 
     // Assert a new topic directory was created in the test library.
-    const entries = fs.readdirSync(testLibraryPath)
+    const socraticDir = path.join(testLibraryPath, '苏格拉底对话')
+    const entries = fs.readdirSync(socraticDir)
     expect(entries.length).toBeGreaterThan(0)
 
-    const topicDir = path.join(testLibraryPath, entries[0])
+    const topicDir = path.join(socraticDir, entries[0])
     const sessions = fs.readdirSync(topicDir)
     expect(sessions).toContain('s1')
 
