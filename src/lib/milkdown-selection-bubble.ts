@@ -94,7 +94,7 @@ class SelectionBubbleView {
     const view = this.view
     const { selection } = view.state
     const editable = view.props.editable?.(view.state) ?? true
-    if (!shouldShowBubble(selection, editable)) return this.hide()
+    if (!shouldShowBubble(selection, editable) || !view.hasFocus()) return this.hide()
     const domSel = window.getSelection()
     const range = domSel && domSel.rangeCount > 0 ? domSel.getRangeAt(0) : null
     const rect = range ? range.getBoundingClientRect() : null
