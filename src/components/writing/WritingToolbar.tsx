@@ -19,18 +19,23 @@ const HEADING_OPTIONS = [
 ] as const
 
 // 分割线插入后光标落到下一行(设计 spec §E)。
-// 复用 runCollapsedBlockCommand:先折叠非空选区到 head,再执行 insertHrCommand;
-// insertHrCommand 成功后光标紧跟新 hr 之后,以 selection.from - 1 定位新 hr;
-// 若 hr 下方已有内容则光标放其行首,否则补一个空段落并放光标。
+// 复用 runCollapsedBlockCommand:先折叠非空选区到 head,再执行 insertHrCommand。
+// 注意 insertHrCommand 完成后光标停留在插入点上方的段落(其后方插了一个空段+hr),
+// 因此以「插入点(selection.from)之后的第一个 hr」定位新 hr —— 不会误命中光标下方
+// 已存在的旧分隔线;若 hr 下方已有内容则光标放其行首,否则补一个空段落并放光标。
 function insertHrBelow(ctx: any): boolean {
   const ok = runCollapsedBlockCommand(insertHrCommand.key)(ctx)
   if (ok === false) return false
   const view = ctx.get(editorViewCtx)
   const doc = view.state.doc
   const selFrom = view.state.selection.from
-  const hrNode = doc.nodeAt(selFrom - 1)
-  if (!hrNode || hrNode.type.name !== 'hr') return true // 没找到新 hr,不动光标
-  const after = selFrom // hr 之后的位置
+  let hrPos = -1
+  doc.descendants((node: any, pos: number) => {
+    if (node.type.name === 'hr' && pos >= selFrom && hrPos === -1) hrPos = pos
+    return true
+  })
+  if (hrPos < 0) return true // 没找到新 hr,不动光标
+  const after = hrPos + 1 // hr nodeSize === 1 → after = hr 之后的位置
   const next = doc.nodeAt(after) // hr 下方原本的节点
   let tr = view.state.tr
   let targetPos: number
