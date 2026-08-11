@@ -175,6 +175,32 @@ test.describe('@p2 writing-paste-format', () => {
     await expect(bubble).not.toBeVisible({ timeout: 3000 })
   })
 
+  test('鼠标拖选松手后悬浮栏保持(拖选尾巴 click 不算外点)', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = await newFile(window, '拖选保持')
+    await writing.typeInEditor('这是一段用于鼠标拖选测试的足够长文字确保能选中')
+
+    const prose = writing.editor.locator('.ProseMirror')
+    const box = await prose.boundingBox()
+    expect(box).not.toBeNull()
+
+    // 真实鼠标拖选:按下 → 横移 → 松开(松手时浏览器补发一次 document click)
+    await window.mouse.move(box!.x + 40, box!.y + box!.height / 2)
+    await window.mouse.down()
+    await window.mouse.move(box!.x + box!.width - 40, box!.y + box!.height / 2, { steps: 15 })
+    await window.mouse.up()
+
+    // 拖选真的建立了选区(否则是测试自身坐标问题,而非产品 bug)
+    const selected = await window.evaluate(() => {
+      const sel = window.getSelection()
+      return !!sel && sel.rangeCount > 0 && !sel.isCollapsed
+    })
+    expect(selected).toBe(true)
+
+    // 松手后选区仍高亮 → 悬浮栏必须保持(回归:被拖选尾巴的 click 当作外点误杀)
+    await expect(window.locator(SELECTORS.writing.formatBubble)).toBeVisible({ timeout: 3000 })
+  })
+
   // ── 4. 智能 Enter ──────────────────────────────────────────────────
 
   test('智能 Enter:段中回车=单行硬换行;段尾回车=新段落', async ({ window, testLibraryPath }) => {
@@ -204,7 +230,7 @@ test.describe('@p2 writing-paste-format', () => {
 
   // ── 5. 分隔线 ──────────────────────────────────────────────────────
 
-  test('分隔线:工具栏插入后光标落到下一行;行首 Backspace 删除', async ({ window, testLibraryPath }) => {
+  test('分隔线:插入不多空行、横线全宽、行首退格一步删除', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
     const writing = await newFile(window, '分隔线测试')
 
@@ -216,7 +242,27 @@ test.describe('@p2 writing-paste-format', () => {
     await window.locator(SELECTORS.writing.toolbarHr).click()
     await expect(writing.editor.locator('.writing-orbit-hr')).toHaveCount(1)
 
-    // 光标在下一行:聚焦 hr 下方的空段落后输入 X,出现在分隔线下方
+    // 结构断言:文字段直接贴着分隔线(中间无多余空段),分隔线后恰有一段放光标;
+    // 且 ::before 全宽横线生效(设计 2026-08-12 §3/§4)
+    const structure = await writing.editor.locator('.ProseMirror').evaluate((el) => {
+      const hr = el.querySelector('.writing-orbit-hr')
+      if (!hr) return null
+      const prev = hr.previousElementSibling
+      const next = hr.nextElementSibling
+      return {
+        prevText: prev ? prev.textContent : null,
+        prevTag: prev ? prev.tagName : null,
+        nextTag: next ? next.tagName : null,
+        hrLine: getComputedStyle(hr, '::before').content,
+      }
+    })
+    expect(structure).not.toBeNull()
+    expect(structure!.prevTag).toBe('P')
+    expect(structure!.prevText).toBe('分隔线上方') // 文字直接贴着分隔线,无多余空段
+    expect(structure!.nextTag).toBe('P')           // 分隔线后是光标行
+    expect(structure!.hrLine).not.toBe('none')     // 全宽横线 ::before 生效
+
+    // 光标在下一行:输入 X 出现在分隔线下方
     const lastPara = writing.editor.locator('.ProseMirror p').last()
     await lastPara.click()
     await window.keyboard.type('X')
@@ -224,14 +270,10 @@ test.describe('@p2 writing-paste-format', () => {
     await expect(lastPara).toHaveText('X')
     await expect(writing.editor.locator('.writing-orbit-hr')).toHaveCount(1)
 
-    // 光标移到行首 → Backspace 删除分隔线(ProseMirror 首次选中、再次删除,断言最终消失)
+    // 行首退格一步删除分隔线(设计 2026-08-12 §2:不再需要先选中再删)
     await window.keyboard.press('Home')
     await window.keyboard.press('Backspace')
     await window.waitForTimeout(200)
-    if (await writing.editor.locator('.writing-orbit-hr').count() > 0) {
-      await window.keyboard.press('Backspace')
-      await window.waitForTimeout(200)
-    }
     await expect(writing.editor.locator('.writing-orbit-hr')).toHaveCount(0)
   })
 
@@ -250,6 +292,24 @@ test.describe('@p2 writing-paste-format', () => {
       (el) => getComputedStyle(el, '::before').content,
     )
     expect(bqContent).not.toBe('none')
+  })
+
+  test('行首退格解除引用:引用内第一段退格 → 引用消失、文字保留', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    const writing = await newFile(window, '解除引用测试')
+
+    await writing.typeInEditor('引用内容')
+    await window.locator(SELECTORS.writing.toolbarBlockquote).click()
+    await expect(writing.editor.locator('blockquote')).toHaveCount(1)
+
+    // 引用内第一段行首退格 → blockquote 包裹消失,文字保留为普通段落
+    await writing.editor.locator('.ProseMirror').click()
+    await window.keyboard.press('Home')
+    await window.keyboard.press('Backspace')
+    await window.waitForTimeout(200)
+
+    await expect(writing.editor.locator('blockquote')).toHaveCount(0)
+    await expect(writing.editor.locator('.ProseMirror p').first()).toHaveText('引用内容')
   })
 
   // 渲染格调用 seed 的 markdown(含引用/标题/有序列表/分隔线)断言 CSS 伪元素;

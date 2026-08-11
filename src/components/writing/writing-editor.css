@@ -26,6 +26,8 @@
 }
 .writing-editor-root .ProseMirror strong {
   font-weight: 700;
+  /* 宋体等无粗体面字体下 700 不渲染粗,CSS 描边模拟粗体(设计 2026-08-12 §1) */
+  -webkit-text-stroke: 0.02em currentColor;
 }
 .writing-editor-root .ProseMirror p {
   margin: 0.35em 0;
@@ -55,7 +57,20 @@
   margin: 24px 0;
   border: none;
 }
-.writing-editor-root .writing-orbit-hr svg { width: 100%; height: 100%; display: block; }
+/* 全宽横线铺满正文横轴(设计 2026-08-12 §3);SVG 内已去掉自带横线,只留轨道 */
+.writing-editor-root .writing-orbit-hr {
+  position: relative;
+}
+.writing-editor-root .writing-orbit-hr::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
+  transform: translateY(-50%);
+}
+.writing-editor-root .writing-orbit-hr svg { width: 100%; height: 100%; display: block; position: relative; }
 
 /* 无序列表:烛光点 */
 .writing-editor-root .ProseMirror ul { list-style: none; margin: 0.35em 0; padding-left: 1.5em; }

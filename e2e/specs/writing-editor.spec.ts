@@ -300,6 +300,12 @@ test.describe('@p2 writing-editor', () => {
     ).toBeVisible({ timeout: 3000 })
     await expect(bubble).toBeVisible()
 
+    // 加粗可见性:宋体等无粗体面字体下,CSS 描边模拟粗体必须生效(设计 2026-08-12 §1)
+    const strokeWidth = await writing.editor.locator('strong').first().evaluate(
+      (el) => getComputedStyle(el).webkitTextStrokeWidth,
+    )
+    expect(strokeWidth).not.toBe('0px')
+
     // 同一选区再点 I → 再被 <em> 包裹
     await window.locator(SELECTORS.writing.bubbleItalic).click()
     await expect(

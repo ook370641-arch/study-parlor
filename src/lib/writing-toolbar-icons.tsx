@@ -4,7 +4,8 @@ export function QuoteIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
       <path d="M12 2.5c1.15 1.9 2.05 3.4 2.05 4.9a2.05 2.05 0 1 1-4.1 0c0-1.5.9-3 2.05-4.9z" fill="#d97757" />
-      <rect x="9.6" y="9.5" width="4.8" height="11" rx="1.2" fill="currentColor" opacity="0.75" />
+      {/* 烛身用实心米色而非 currentColor(工具栏按钮色 60% 透明再叠 opacity 会暗成"黑蜡烛") */}
+      <rect x="9.6" y="9.5" width="4.8" height="11" rx="1.2" fill="#e8d5b7" />
     </svg>
   )
 }

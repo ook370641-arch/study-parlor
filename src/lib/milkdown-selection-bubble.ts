@@ -22,7 +22,14 @@ class SelectionBubbleView {
   private container: HTMLDivElement
   private swatches: HTMLDivElement
   private relayout = () => this.layout()
-  private onDocClick = () => this.hide(true)
+  private onDocClick = (e: MouseEvent) => {
+    // 拖选文本松手会触发一次 document click(浏览器在 mouseup 后照发,非 HTML5 拖拽)。
+    // 点击落在可编辑区且此刻仍保有文本选区 → 是拖选的收尾,不是"外点",保留悬浮栏。
+    const inEditor = this.view.dom.contains(e.target as Node)
+    const domSel = window.getSelection()
+    if (inEditor && domSel && !domSel.isCollapsed) return
+    this.hide(true)
+  }
   private onKeydown = (e: KeyboardEvent) => { if (e.key === 'Escape') this.hide(true) }
   private dismissed = false
   private lastSelection: any = null

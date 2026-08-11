@@ -13,6 +13,8 @@ import { codeblockEnterPlugins } from '@/lib/milkdown-codeblock-enter'
 import { tableHandlesPlugins } from '@/lib/milkdown-table-handles'
 import { gutterInsertPlugins } from '@/lib/milkdown-gutter-insert'
 import { smartEnterPlugins } from '@/lib/milkdown-smart-enter'
+import { hrBackspacePlugins } from '@/lib/milkdown-hr-backspace'
+import { blockquoteUnwrapPlugins } from '@/lib/milkdown-blockquote-unwrap'
 import { milkdownClipboardPlugins } from '@/lib/milkdown-clipboard'
 import { selectionBubblePlugins } from '@/lib/milkdown-selection-bubble'
 import { orbitHrPlugins } from '@/lib/milkdown-orbit-hr'
@@ -49,6 +51,8 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .use(tableHandlesPlugins)
       .use(gutterInsertPlugins)
       .use(smartEnterPlugins)
+      .use(hrBackspacePlugins)
+      .use(blockquoteUnwrapPlugins)
       .use(selectionBubblePlugins)
       .use(orbitHrPlugins)
       .config(ctx => {
