@@ -22,8 +22,10 @@ class SelectionBubbleView {
   private container: HTMLDivElement
   private swatches: HTMLDivElement
   private relayout = () => this.layout()
-  private onDocClick = () => this.hide()
-  private onKeydown = (e: KeyboardEvent) => { if (e.key === 'Escape') this.hide() }
+  private onDocClick = () => this.hide(true)
+  private onKeydown = (e: KeyboardEvent) => { if (e.key === 'Escape') this.hide(true) }
+  private dismissed = false
+  private lastSelection: any = null
 
   constructor(private view: EditorView, private ctx: Ctx, private root: HTMLElement) {
     this.container = document.createElement('div')
@@ -85,12 +87,14 @@ class SelectionBubbleView {
     this.swatches.style.display = this.swatches.style.display === 'none' ? 'block' : 'none'
   }
 
-  private hide() {
+  private hide(dismiss = false) {
+    if (dismiss) this.dismissed = true
     this.container.style.display = 'none'
     this.swatches.style.display = 'none'
   }
 
   private layout() {
+    if (this.dismissed) return this.hide()
     const view = this.view
     const { selection } = view.state
     const editable = view.props.editable?.(view.state) ?? true
@@ -109,7 +113,14 @@ class SelectionBubbleView {
     this.container.style.top = `${Math.round(top)}px`
   }
 
-  update(view: EditorView) { this.view = view; this.layout() }
+  update(view: EditorView) {
+    this.view = view
+    if (this.lastSelection && !view.state.selection.eq(this.lastSelection)) {
+      this.dismissed = false
+    }
+    this.lastSelection = view.state.selection
+    this.layout()
+  }
 
   destroy() {
     document.removeEventListener('scroll', this.relayout, true)

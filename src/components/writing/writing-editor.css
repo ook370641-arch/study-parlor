@@ -58,7 +58,7 @@
 .writing-editor-root .writing-orbit-hr svg { width: 100%; height: 100%; display: block; }
 
 /* 无序列表:烛光点 */
-.writing-editor-root .ProseMirror ul { list-style: none; padding-left: 1.5em; }
+.writing-editor-root .ProseMirror ul { list-style: none; margin: 0.35em 0; padding-left: 1.5em; }
 .writing-editor-root .ProseMirror ul li { position: relative; }
 .writing-editor-root .ProseMirror ul li::before {
   content: '';
@@ -72,7 +72,7 @@
 .writing-editor-root .ProseMirror ul ul li::before { background: rgba(217, 119, 87, 0.55); box-shadow: none; }
 
 /* 有序列表:暖橙序号 */
-.writing-editor-root .ProseMirror ol { list-style: none; counter-reset: writing-ol; padding-left: 1.6em; }
+.writing-editor-root .ProseMirror ol { list-style: none; counter-reset: writing-ol; margin: 0.35em 0; padding-left: 1.6em; }
 .writing-editor-root .ProseMirror ol li { counter-increment: writing-ol; position: relative; }
 .writing-editor-root .ProseMirror ol li::before {
   content: counter(writing-ol) '.';
