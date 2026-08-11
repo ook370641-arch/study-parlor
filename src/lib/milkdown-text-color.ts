@@ -4,10 +4,11 @@ import type { MilkdownPlugin } from '@milkdown/ctx'
 
 export const TEXT_COLOR_PALETTE = [
   { label: '默认', value: null },
-  { label: '暖橙', value: '#d97757' },
-  { label: '赤红', value: '#b34747' },
-  { label: '墨灰', value: '#9c9490' },
-  { label: '黑', value: '#1a1a1a' },
+  { label: '红', value: '#e5533b' },
+  { label: '蓝', value: '#5b8cff' },
+  { label: '黄', value: '#e8c84a' },
+  { label: '绿', value: '#4caf7d' },
+  { label: '橙', value: '#d97757' },
 ] as const satisfies readonly { label: string; value: string | null }[]
 
 const SPAN_OPEN_RE = /^<span\s+style="color:\s*(#[0-9a-fA-F]{3,8})"\s*>$/
