@@ -12,6 +12,7 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   job: '求职',
   repository: 'repository',
   writing: '写作',
+  group: '分组',
   web: '网络',
 }
 
