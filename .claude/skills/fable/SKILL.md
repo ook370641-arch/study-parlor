@@ -64,7 +64,7 @@ description: >
 ## 保存配置
 
 - **学习库根目录**：`YOUR_LIBRARY_PATH`（首次使用时会通过上述配置流程自动替换为实际路径）
-- **保存位置**：`YOUR_LIBRARY_PATH/{概念名}/s{编号}/寓言.md`
+- **保存位置**：`YOUR_LIBRARY_PATH/苏格拉底对话/{概念名}/s{编号}/寓言.md`
 - **Session 编号**：新概念从 `s1` 开始；已有概念取最大 session 编号 + 1
 - **保存时机**：寓言讲完、用户反馈结束后主动询问，用户同意才保存
 - **禁止行为**：讲述过程中**不自动保存**，不中途写入文件
@@ -75,11 +75,11 @@ description: >
 
 1. **扫描学习库**：
    ```bash
-   ls "YOUR_LIBRARY_PATH"
+   ls "YOUR_LIBRARY_PATH/苏格拉底对话"
    ```
 
 2. **解析历史记录**：
-   遍历学习库下的概念目录，读取每个 `sN/寓言.md` 的 frontmatter：
+   遍历 `苏格拉底对话/` 下的概念目录，读取每个 `sN/寓言.md` 的 frontmatter：
    - 概念名 = 目录名（即文件夹名）
    - session 次数 = 该概念下 `s\d+` 目录中包含 `寓言.md` 的数量
 
@@ -130,7 +130,7 @@ description: >
 **主动询问存档**：
 检测到反馈结束信号后，**主动问用户**：
 
-> "这个寓言可以存档吗？会按 Study Parlor 学习库规范写入，文件保存在 `学习库/{概念名}/s{编号}/寓言.md`。"
+> "这个寓言可以存档吗？会按 Study Parlor 学习库规范写入，文件保存在 `学习库/苏格拉底对话/{概念名}/s{编号}/寓言.md`。"
 
 **用户回应处理**：
 - **同意**（"可以"、"好"、"存"、"保存"、"行"、"嗯"）：执行保存
@@ -142,11 +142,11 @@ description: >
 **步骤 1：确定保存位置**
 
 1. 概念名 = 从对话中提取的核心概念（**必须**经过用户确认或用户已明确同意）
-2. 扫描 `YOUR_LIBRARY_PATH/{概念名}/` 下的所有 `s\d+` 目录
+2. 扫描 `YOUR_LIBRARY_PATH/苏格拉底对话/{概念名}/` 下的所有 `s\d+` 目录
 3. 计算下一个 session 编号：
    - 如果概念目录不存在或没有 `s\d+` 子目录 → `s1`
    - 否则 → 取现有最大编号 + 1
-4. 目标路径：`YOUR_LIBRARY_PATH/{概念名}/s{编号}/寓言.md`
+4. 目标路径：`YOUR_LIBRARY_PATH/苏格拉底对话/{概念名}/s{编号}/寓言.md`
 
 **步骤 2：生成 frontmatter**
 
@@ -216,12 +216,12 @@ review_count: 0
 
 **步骤 4：写入文件**
 
-1. 创建目录：`mkdir -p "YOUR_LIBRARY_PATH/{概念名}/s{编号}"`
+1. 创建目录：`mkdir -p "YOUR_LIBRARY_PATH/苏格拉底对话/{概念名}/s{编号}"`
 2. 写入文件：把 frontmatter + 正文写入 `寓言.md`
 
 完整命令示例：
 ```bash
-mkdir -p "YOUR_LIBRARY_PATH/注意力机制/s1"
+mkdir -p "YOUR_LIBRARY_PATH/苏格拉底对话/注意力机制/s1"
 echo "---
 title: 注意力机制
 description: 通过森林传信的故事理解注意力权重分配
@@ -241,7 +241,7 @@ review_count: 0
 # 注意力机制
 
 ## 第 1 次寓言学习
-..." > "YOUR_LIBRARY_PATH/注意力机制/s1/寓言.md"
+..." > "YOUR_LIBRARY_PATH/苏格拉底对话/注意力机制/s1/寓言.md"
 ```
 
 ## 特殊情况
@@ -254,4 +254,4 @@ review_count: 0
 - 如果用户在故事中间说"换个概念"，询问是否放弃当前故事（不存档）
 
 **概念目录不存在**：
-- 自动创建：`mkdir -p "YOUR_LIBRARY_PATH/{概念名}/s1"`
+- 自动创建：`mkdir -p "YOUR_LIBRARY_PATH/苏格拉底对话/{概念名}/s1"`
