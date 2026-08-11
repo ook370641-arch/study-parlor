@@ -31,7 +31,6 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const moveWritingNode = useStore(s => s.moveWritingNode)
   const writingRenamed = useStore(s => s.writingRenamed)
 
-  const [open, setOpen] = useState(depth === 0)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [dropPos, setDropPos] = useState<'before' | 'after' | null>(null)
@@ -40,9 +39,15 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const isSelected = selectedPath === node.path
   const isDir = node.kind === 'dir'
 
+  // 展开/收起持久化：显式记录优先；无记录时默认——writing 顶层展开、其余收起（仓库默认全收起）
+  const expanded = useStore(s => s.writingExpandedGroups)
+  const setWritingGroupExpanded = useStore(s => s.setWritingGroupExpanded)
+  const appendWritingOrder = useStore(s => s.appendWritingOrder)
+  const open = isDir ? (expanded[node.path] ?? (root === 'writing' && depth === 0)) : false
+
   const handleClick = () => {
     if (editing) return
-    if (isDir) { setOpen(!open); return }
+    if (isDir) { setWritingGroupExpanded(node.path, !open); return }
     selectWritingFile(node.path)
   }
 
@@ -103,7 +108,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
     const dir = node.path.slice(root.length + 1)
     const prefill = diaryPrefillName(root, dir, node.children)
     onStartInlineNew({ root, dir, value: prefill })
-    if (!open) setOpen(true)
+    if (!open) setWritingGroupExpanded(node.path, true)
   }
 
   const doNewFolder = () => {
@@ -114,7 +119,8 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         const dir = node.path.slice(root.length + 1)
         await ipc.writingCreateFolder({ root, dir, name })
         await loadWritingTree()
-        if (!open) setOpen(true)
+        if (!open) setWritingGroupExpanded(node.path, true)
+        appendWritingOrder(node.path, `${node.path}/${name}`)
       },
     })
   }
@@ -170,7 +176,16 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
           }
         }}
       >
-        <span className="w-4 text-center shrink-0">{isDir ? (open ? '▾' : '▸') : '·'}</span>
+        <span className={`w-6 shrink-0 inline-flex items-center justify-center ${isSelected ? 'text-ember' : 'text-parchment/50'}`}>
+          {isDir ? (
+            <>
+              <span className="inline-flex items-center justify-center w-3.5 shrink-0 text-[0.62em] leading-none">{open ? '▾' : '▸'}</span>
+              <FolderIcon open={open} />
+            </>
+          ) : (
+            <DocIcon />
+          )}
+        </span>
         <div className="min-w-0 flex-1">
           {editing ? (
             <InlineNameInput
@@ -409,5 +424,27 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
       {sorted.map(renderChild)}
       {endDrop && <div data-testid="writing-drop-line" className="mx-2 border-t-2 border-ember pointer-events-none" />}
     </div>
+  )
+}
+
+// 分组/文章前缀标识（模块私有：不 export，避免破坏 Fast Refresh）
+function FolderIcon({ open }: { open: boolean }) {
+  return (
+    <svg data-testid="writing-tree-folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+      {open ? (
+        <path d="M6 14l1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" />
+      ) : (
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      )}
+    </svg>
+  )
+}
+
+function DocIcon() {
+  return (
+    <svg data-testid="writing-tree-doc-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
   )
 }
