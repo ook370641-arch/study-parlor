@@ -93,6 +93,7 @@ export function WritingToolbar() {
       {/* Markdown formatting */}
       <button
         data-testid="writing-toolbar-blockquote"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => exec(wrapInBlockquoteCommand.key, undefined, { block: true })}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="引用"
@@ -101,6 +102,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-hr"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => { if (!act) return; act((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) showHint('当前位置不支持该操作') }) }}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="分割线"
@@ -112,6 +114,7 @@ export function WritingToolbar() {
       <div className="relative">
         <button
           data-testid="writing-toolbar-heading"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => { e.stopPropagation(); setHeadingMenuOpen(v => !v) }}
           className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
           title="标题级别"
@@ -128,6 +131,7 @@ export function WritingToolbar() {
                 key={o.label}
                 data-testid="writing-heading-option"
                 data-level={o.level}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => { setHeadingMenuOpen(false); exec(wrapInHeadingCommand.key, o.level, { block: true, failMsg: '当前位置不支持标题' }) }}
                 className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
               >
