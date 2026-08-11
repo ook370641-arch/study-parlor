@@ -66,11 +66,11 @@ test.describe('@p2 writing-expand-persist', () => {
     await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /旧博客/ })).toBeVisible({ timeout: 3000 })
   })
 
-  test('分组前缀标识渲染：文件夹图标存在，文章行无文档图标（视觉收简）', async ({ window, testLibraryPath }) => {
+  test('分组/文章前缀标识渲染：文件夹图标与文档图标存在', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
     await window.locator(SELECTORS.writing.listTabRepository).click()
     await window.waitForTimeout(500)
     await expect(window.locator('[data-testid="writing-tree-folder-icon"]').first()).toBeVisible({ timeout: 3000 })
-    await expect(window.locator('[data-testid="writing-tree-doc-icon"]')).toHaveCount(0)
+    await expect(window.locator('[data-testid="writing-tree-doc-icon"]').first()).toBeVisible({ timeout: 3000 })
   })
 })

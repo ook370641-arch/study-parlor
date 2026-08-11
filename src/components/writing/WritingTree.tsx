@@ -178,7 +178,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         }}
       >
         <span className={`w-6 shrink-0 inline-flex items-center justify-center ${isAcademic ? (isSelected ? 'text-ember' : 'text-parchment/50') : 'text-[#1a1a1a]'}`}>
-          {isDir ? <FolderIcon open={open} /> : null}
+          {isDir ? <FolderIcon open={open} /> : <DocIcon />}
         </span>
         <div className="min-w-0 flex-1">
           {editing ? (
@@ -430,6 +430,16 @@ function FolderIcon({ open }: { open: boolean }) {
       ) : (
         <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
       )}
+    </svg>
+  )
+}
+
+// 文章行前缀标识（模块私有：不 export，避免破坏 Fast Refresh）；比原版更简——页面圆角矩形 + 单条正文线
+function DocIcon() {
+  return (
+    <svg data-testid="writing-tree-doc-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="shrink-0" aria-hidden="true">
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 12h8" />
     </svg>
   )
 }
