@@ -20,19 +20,17 @@ const HEADING_OPTIONS = [
 
 // 分割线插入后光标落到下一行(设计 spec §E)。
 // 复用 runCollapsedBlockCommand:先折叠非空选区到 head,再执行 insertHrCommand;
-// 成功后若 hr 下方已有内容则光标放其行首,否则补一个空段落并放光标。
+// insertHrCommand 成功后光标紧跟新 hr 之后,以 selection.from - 1 定位新 hr;
+// 若 hr 下方已有内容则光标放其行首,否则补一个空段落并放光标。
 function insertHrBelow(ctx: any): boolean {
   const ok = runCollapsedBlockCommand(insertHrCommand.key)(ctx)
   if (ok === false) return false
   const view = ctx.get(editorViewCtx)
   const doc = view.state.doc
-  let hrPos = -1
-  doc.descendants((node: any, pos: number) => {
-    if (node.type.name === 'hr') hrPos = pos
-    return true
-  })
-  if (hrPos < 0) return true
-  const after = hrPos + 1 // hr nodeSize === 1 → after = hr 之后的位置
+  const selFrom = view.state.selection.from
+  const hrNode = doc.nodeAt(selFrom - 1)
+  if (!hrNode || hrNode.type.name !== 'hr') return true // 没找到新 hr,不动光标
+  const after = selFrom // hr 之后的位置
   const next = doc.nodeAt(after) // hr 下方原本的节点
   let tr = view.state.tr
   let targetPos: number
@@ -98,7 +96,7 @@ export function WritingToolbar() {
       </button>
       <button
         data-testid="writing-toolbar-hr"
-        onClick={() => act((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) showHint('当前位置不支持该操作') })}
+        onClick={() => { if (!act) return; act((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) showHint('当前位置不支持该操作') }) }}
         className="px-1.5 py-0.5 text-xs text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
         title="分割线"
       >
