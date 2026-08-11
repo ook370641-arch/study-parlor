@@ -63,7 +63,14 @@ export function registerWritingIpc(cfg: AppConfig): void {
   ipcMain.handle('writing:move', async (_, a: { path: string; targetDir: string }) => {
     const result = await wrapWriting(() => ({ path: tree.moveNode(lib, a.path, a.targetDir) }))
     if (result.ok) {
-      try { migrateEntry(lib, rootFromPath(a.path), a.path, result.value.path) } catch { /* silent */ }
+      try {
+        const root = rootFromPath(a.path)
+        if (fs.statSync(path.join(lib, result.value.path)).isDirectory()) {
+          migratePrefix(lib, root, a.path, result.value.path)
+        } else {
+          migrateEntry(lib, root, a.path, result.value.path)
+        }
+      } catch { /* silent */ }
     }
     return result
   })
@@ -135,18 +142,20 @@ export function registerWritingIpc(cfg: AppConfig): void {
         }
         // 分组摘要：逐篇补齐后，对签名过期的分组生成（基于 catalog 条目 mtime 的签名）
         for (const root of roots) {
-          const catalog = loadCatalog(lib, root)
-          const dirs = collectGroupDirs(tree.scanRoot(lib, root))
-          for (const { rel, memberPaths } of dirs) {
-            const sig = groupSignature(catalog, memberPaths)
-            if (catalog.groups[rel]?.signature === sig) continue
-            const texts = memberPaths.map(p => catalog.entries[p]?.summary).filter((s): s is string => !!s)
-            if (texts.length === 0) continue
-            const summary = process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
-              ? 'E2E 分组摘要'
-              : await generateGroupSummary(cfg, path.basename(rel), texts.slice(0, 30).join('；'))
-            if (summary) updateGroupSummary(lib, root, rel, { summary, signature: sig })
-          }
+          try {
+            const catalog = loadCatalog(lib, root)
+            const dirs = collectGroupDirs(tree.scanRoot(lib, root))
+            for (const { rel, memberPaths } of dirs) {
+              const sig = groupSignature(catalog, memberPaths)
+              if (catalog.groups[rel]?.signature === sig) continue
+              const texts = memberPaths.map(p => catalog.entries[p]?.summary).filter((s): s is string => !!s)
+              if (texts.length === 0) continue
+              const summary = process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
+                ? 'E2E 分组摘要'
+                : await generateGroupSummary(cfg, path.basename(rel), texts.slice(0, 30).join('；'))
+              if (summary) updateGroupSummary(lib, root, rel, { summary, signature: sig })
+            }
+          } catch { /* silent — 下次进入再补 */ }
         }
       }, 0)
       return { refreshed: pending.length }

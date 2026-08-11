@@ -117,6 +117,18 @@ it('updateGroupSummary / removeGroupSummary', () => {
   expect(loadCatalog(lib, 'writing').groups['writing/随笔']).toBeUndefined()
 })
 
+it('removeGroupSummary 递归清除含子分组的分组摘要', () => {
+  updateGroupSummary(lib, 'writing', 'writing/随笔', { summary: 'S', signature: 's1' })
+  updateGroupSummary(lib, 'writing', 'writing/随笔/子', { summary: 'Z', signature: 's2' })
+  updateGroupSummary(lib, 'writing', 'writing/技术笔记', { summary: 'T', signature: 's3' })
+  removeGroupSummary(lib, 'writing', 'writing/随笔')
+  const c = loadCatalog(lib, 'writing')
+  expect(c.groups['writing/随笔']).toBeUndefined()
+  expect(c.groups['writing/随笔/子']).toBeUndefined()
+  // 不相关分组不受影响
+  expect(c.groups['writing/技术笔记']).toEqual({ summary: 'T', signature: 's3' })
+})
+
 it('migratePrefix 同时迁移 groups 前缀', () => {
   updateEntry(lib, 'writing', 'writing/随笔/a.md', { title: 'A', summary: 'A', mtimeMs: 1 })
   updateGroupSummary(lib, 'writing', 'writing/随笔', { summary: 'S', signature: 's1' })

@@ -49,10 +49,14 @@ export function updateGroupSummary(lib: string, root: WritingRoot, dir: string, 
 
 export function removeGroupSummary(lib: string, root: WritingRoot, dir: string): void {
   const c = loadCatalog(lib, root)
-  if (c.groups[dir]) {
-    delete c.groups[dir]
-    saveCatalog(lib, root, c)
+  let changed = false
+  for (const k of Object.keys(c.groups)) {
+    if (k === dir || k.startsWith(dir + '/')) {
+      delete c.groups[k]
+      changed = true
+    }
   }
+  if (changed) saveCatalog(lib, root, c)
 }
 
 // Move/rename: remove old path, add new entry (caller provides new entry or copies old)
