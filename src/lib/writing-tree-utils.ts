@@ -6,19 +6,23 @@ export function countFiles(nodes: WritingTreeNode[] | undefined): number {
   return nodes.reduce((sum, n) => sum + (n.kind === 'file' ? 1 : countFiles(n.children)), 0)
 }
 
-/** Sort nodes by a recorded order array. Nodes in the order list appear first in
- *  recorded sequence; nodes not in the list appear last in their original scan order. */
-export function sortNodesByOrder<T extends { path: string }>(nodes: T[], order: string[] | undefined): T[] {
-  if (!order || order.length === 0) return nodes
-  const rank = new Map(order.map((p, i) => [p, i]))
-  return [...nodes].sort((a, b) => {
+/** Sort nodes by a recorded order array, but always render directories before
+ *  files (invariant): [ordered dirs] → [unordered dirs] → [ordered files] →
+ *  [unordered files]. Nodes in the order list appear first in recorded sequence;
+ *  nodes not in the list keep their original scan order within each kind. */
+export function sortNodesByOrder<T extends { path: string; kind?: 'dir' | 'file' }>(nodes: T[], order: string[] | undefined): T[] {
+  const rank = new Map((order ?? []).map((p, i) => [p, i]))
+  const byRank = (a: T, b: T) => {
     const ra = rank.get(a.path)
     const rb = rank.get(b.path)
     if (ra === undefined && rb === undefined) return 0
     if (ra === undefined) return 1
     if (rb === undefined) return -1
     return ra - rb
-  })
+  }
+  const dirs = nodes.filter(n => n.kind === 'dir').sort(byRank)
+  const files = nodes.filter(n => n.kind !== 'dir').sort(byRank)
+  return [...dirs, ...files]
 }
 
 /** 深度优先（按树顺序）找 nodes 中第一个 file 节点的 path；找不到返回 null。 */
@@ -92,33 +96,11 @@ export function diaryPrefillName(
 }
 
 /**
- * 新文件（无序 file）在显示列表中的落盘槽位：
- * 有序节点在前 → 其后无序目录靠前 → 无序文件按 localeCompare zh 排序。
- * children 传扫描序（root 用 tree?.[root]，分组用 node.children），与 sortNodesByOrder 语义一致。
- * 空值 → 列表末尾。
+ * 新建文件（无序 file）在显示列表中的落盘槽位：始终为容器末尾。
+ * 与 sortNodesByOrder 的「目录在前」不变量配合，新建文章落在列表最后。
  */
-export function sortedInsertIndexForFile(
-  children: WritingTreeNode[],
-  order: string[] | undefined,
-  value: string,
-): number {
-  if (!value.trim()) return children.length
-  const ordered = new Set(order ?? [])
-  const orderedCount = children.filter(c => ordered.has(c.path)).length
-  const name = `${value.trim()}.md`
-  let dirCount = 0
-  for (const c of children) {
-    if (ordered.has(c.path)) continue
-    if (c.kind === 'dir') dirCount++
-    else break
-  }
-  let filePos = 0
-  for (const c of children) {
-    if (ordered.has(c.path) || c.kind === 'dir') continue
-    if (c.name.localeCompare(name, 'zh') > 0) break
-    filePos++
-  }
-  return orderedCount + dirCount + filePos
+export function sortedInsertIndexForFile(children: WritingTreeNode[], _order: string[] | undefined, _value: string): number {
+  return children.length
 }
 
 /** 写作错误码 → 中文文案。 */

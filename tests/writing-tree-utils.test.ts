@@ -5,6 +5,7 @@ import {
   normalizeWritingFileName,
   diaryPrefillName,
   sortedInsertIndexForFile,
+  sortNodesByOrder,
   writingErrorText,
 } from '@/lib/writing-tree-utils'
 import type { WritingTreeNode, WritingRoot } from '@shared/index'
@@ -91,17 +92,14 @@ describe('diaryPrefillName', () => {
 })
 
 describe('sortedInsertIndexForFile', () => {
-  it('无 order：目录靠前，文件按 localeCompare zh 插入', () => {
+  it('新建文章恒落在容器末尾（无序文件也末尾）', () => {
     const children = [f('7.5.md'), f('8.5.md')]
     expect(sortedInsertIndexForFile(children, undefined, '8.9')).toBe(2)
-    expect(sortedInsertIndexForFile(children, undefined, '7.1')).toBe(0)
+    expect(sortedInsertIndexForFile(children, undefined, '7.1')).toBe(2)
   })
-  it('有 order：有序节点在前，新文件落其后无序文件槽位', () => {
+  it('有 order 时同样末尾', () => {
     const children = [f('a.md', 'writing/a.md'), f('b.md', 'writing/b.md'), f('c.md', 'writing/c.md')]
-    // a、b 有序在前，c 无序：新文件 x 插在无序文件（a,c）按 localeCompare 的 x 位 → 末尾
     expect(sortedInsertIndexForFile(children, ['writing/a.md', 'writing/b.md'], 'x')).toBe(3)
-    // 仅 b 有序在前，无序 a、c 保持扫描序：新文件 d 落在 c 后
-    expect(sortedInsertIndexForFile(children, ['writing/b.md'], 'd')).toBe(3)
   })
   it('空值返回末尾', () => {
     expect(sortedInsertIndexForFile([f('a.md')], undefined, '')).toBe(1)
@@ -115,5 +113,27 @@ describe('writingErrorText', () => {
     expect(writingErrorText('WRITING_PATH_FORBIDDEN')).toBe('名称无效')
     expect(writingErrorText('WRITING_NOT_FOUND')).toBe('文件不存在')
     expect(writingErrorText('WRITING_IO_ERROR')).toBe('写入失败，请重试')
+  })
+})
+
+describe('sortNodesByOrder', () => {
+  const dirNode = (name: string, path: string): WritingTreeNode => ({ name, path, kind: 'dir', children: [] })
+  it('目录永远在文章前：有序目录在前、无序目录次之、有序文件、无序文件', () => {
+    const nodes = [
+      f('b.md', 'writing/b.md'),  // 无序文件
+      dirNode('随笔', 'writing/随笔'),                 // 无序目录
+      f('a.md', 'writing/a.md'),  // 有序文件
+      dirNode('日记', 'writing/日记'),                 // 有序目录
+    ]
+    const sorted = sortNodesByOrder(nodes, ['writing/日记', 'writing/a.md'])
+    expect(sorted.map(n => n.path)).toEqual(['writing/日记', 'writing/随笔', 'writing/a.md', 'writing/b.md'])
+  })
+  it('无 order 时保持扫描序（目录在前、文件按序）', () => {
+    const nodes = [
+      f('b.md', 'writing/b.md'),
+      dirNode('随笔', 'writing/随笔'),
+      f('a.md', 'writing/a.md'),
+    ]
+    expect(sortNodesByOrder(nodes, undefined).map(n => n.path)).toEqual(['writing/随笔', 'writing/b.md', 'writing/a.md'])
   })
 })
