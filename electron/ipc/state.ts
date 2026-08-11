@@ -35,6 +35,7 @@ const DEFAULT: StateJson = {
   writingAssistantOpen: false,
   lastWritingFile: null,
   writingOrder: {},
+  writingExpandedGroups: {},
   writingUIFontSize: 'base',
   scoutTab: 'chat',
   scoutActiveConversationId: null,
