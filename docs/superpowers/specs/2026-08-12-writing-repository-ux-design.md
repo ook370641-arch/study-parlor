@@ -85,7 +85,7 @@
 
 - **存储**：`.catalog.json` 增加 **`groups: Record<dirPath, { summary: string; signature: string }>`**；`WritingCatalog` 版本升到 **2**，`loadCatalog` 兼容 version 1（缺 `groups` 视为 `{}`，diff 时补写）。
 - **生成时机**：复用 `writingRefreshCatalog` 同一后台 diff 循环；逐篇 diff 补齐后，对**受影响分组**（有新增/变动文章的目录，或尚无 `groups` 条目的目录）生成分组摘要。
-- **内容**：分组摘要 = 合并该分组全部后代文章的逐篇摘要（子分组摘要若有也拼入），一条 LLM 调用生成一句话短摘要。
+- **内容**：分组摘要 = 合并该分组全部后代文章的逐篇摘要（`memberPaths` 递归含子分组内文章，父分组覆盖已充分；子分组摘要自身不单独拼入），一条 LLM 调用生成一句话短摘要。
 - **陈旧判定**：`signature` = 排序后成员 `relPath:entry.mtimeMs` 拼接哈希（基于 **catalog 条目里的 mtime**，非磁盘 mtime——成员摘要未重算前 signature 不变，避免编辑未生成时误触发）。signature 一致跳过，不重复调用 LLM。
 - **喂助手**：`prompt.ts` 索引构建器在逐篇条目外追加 `- [组] <dirPath> — <分组摘要>`，让助手有目录级宏观理解。
 - **边界**：
