@@ -434,12 +434,12 @@ function FolderIcon({ open }: { open: boolean }) {
   )
 }
 
-// 文章行前缀标识（模块私有：不 export，避免破坏 Fast Refresh）；比原版更简——页面圆角矩形 + 单条正文线
+// 文章行前缀标识（模块私有：不 export，避免破坏 Fast Refresh）；折角文档图标
 function DocIcon() {
   return (
-    <svg data-testid="writing-tree-doc-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="shrink-0" aria-hidden="true">
-      <rect x="4" y="3" width="16" height="18" rx="2" />
-      <path d="M8 12h8" />
+    <svg data-testid="writing-tree-doc-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
     </svg>
   )
 }
