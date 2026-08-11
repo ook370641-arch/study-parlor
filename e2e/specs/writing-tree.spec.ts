@@ -49,8 +49,8 @@ test.describe('@p2 writing-tree', () => {
     await gotoWriting(window, testLibraryPath)
 
     // Find the 随笔 directory node (not 分布式随笔)
-    const essaysNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /^[▾▸]随笔/
+    const essaysNode = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({
+      hasText: /^随笔/
     }).first()
     await essaysNode.click({ button: 'right' })
     await expect(window.getByRole('button', { name: '新建子分组', exact: true })).toBeVisible({ timeout: 3000 })
@@ -66,8 +66,8 @@ test.describe('@p2 writing-tree', () => {
   test('分组悬停按钮新建子分组：🗀 → PromptDialog → 磁盘子目录 + 树中出现', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const essaysNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /^[▾▸]随笔/
+    const essaysNode = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({
+      hasText: /^随笔/
     }).first()
     await essaysNode.hover()
     const folderBtn = essaysNode.getByTestId('writing-node-create-folder')
@@ -150,13 +150,13 @@ test.describe('@p2 writing-tree', () => {
 
     // Expand sub-directory to reveal the source file (技术笔记 is depth-0, starts open;
     // 子组 is depth-1, starts closed)
-    const subDir = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]子组/ }).first()
+    const subDir = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^子组/ }).first()
     await subDir.click()
     await window.waitForTimeout(300)
 
     // Use Playwright dragTo: drag "深度文章" node onto "随笔" directory node
     const srcNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '深度文章' }).first()
-    const targetDir = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const targetDir = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
 
     // dragTo uses HTML5 dataTransfer which may be unreliable in Electron;
     // fall back to invoking the IPC move handler directly via evaluate
@@ -197,7 +197,7 @@ test.describe('@p2 writing-tree', () => {
     await expect(fileRow.getByTestId('writing-node-rename')).toBeAttached()
 
     // Dir row: rename + create + delete all visible on hover
-    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const dirRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
     await dirRow.hover()
     await expect(dirRow.getByTestId('writing-node-create').locator('..')).toHaveCSS('opacity', '1')
     await expect(dirRow.getByTestId('writing-node-create')).toBeAttached()
@@ -233,7 +233,7 @@ test.describe('@p2 writing-tree', () => {
     )
     await gotoWriting(window, testLibraryPath)
 
-    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const dirRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
     await dirRow.hover()
     await dirRow.getByTestId('writing-node-delete').click()
 
@@ -253,13 +253,13 @@ test.describe('@p2 writing-tree', () => {
     // Tree shows both articles, group node gone
     await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ })).toHaveCount(1)
     await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /八月随笔/ })).toHaveCount(1)
-    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ })).toHaveCount(0)
+    await expect(window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ })).toHaveCount(0)
   })
 
   test('行内 ＋ 在分组内新建文章：inline 输入 → 文件出现在该分组下', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const dirRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
     await dirRow.hover()
     await dirRow.getByTestId('writing-node-create').click()
 
@@ -320,12 +320,12 @@ test.describe('@p2 writing-tree', () => {
   test('拖拽：分组拖到另一分组上边缘横线 → 顺序交换并持久化到 state.json', async ({ window, testLibraryPath, testConfigDir }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const essaysRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
-    const techRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]技术笔记/ }).first()
+    const essaysRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
+    const techRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^技术笔记/ }).first()
 
     const orderOf = async () => {
       const texts = await window.locator('[data-testid="writing-tree-node"]').allTextContents()
-      return { essays: texts.findIndex(t => /^[▾▸]随笔/.test(t)), tech: texts.findIndex(t => /^[▾▸]技术笔记/.test(t)) }
+      return { essays: texts.findIndex(t => /^随笔/.test(t)), tech: texts.findIndex(t => /^技术笔记/.test(t)) }
     }
     const before = await orderOf()
     expect(before.essays).toBeGreaterThanOrEqual(0)
@@ -367,7 +367,7 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
 
     // 根级分组不渲染「移出分组」
-    const rootDirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const rootDirRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
     await rootDirRow.click({ button: 'right' })
     await expect(window.getByRole('button', { name: '重命名', exact: true })).toBeVisible({ timeout: 3000 })
     await expect(window.getByRole('button', { name: '移出分组', exact: true })).toHaveCount(0)
@@ -376,7 +376,7 @@ test.describe('@p2 writing-tree', () => {
   test('行内新建输入行定位在分组末尾', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const dirRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
     await dirRow.hover()
     await dirRow.getByTestId('writing-node-create').click()
     const input = window.getByTestId('writing-inline-new')
@@ -397,7 +397,7 @@ test.describe('@p2 writing-tree', () => {
     )
     await gotoWriting(window, testLibraryPath)
 
-    const diaryRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]日记/ }).first()
+    const diaryRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^日记/ }).first()
     await diaryRow.hover()
     await diaryRow.getByTestId('writing-node-create').click()
     const today = `${new Date().getMonth() + 1}.${new Date().getDate()}`
@@ -410,7 +410,7 @@ test.describe('@p2 writing-tree', () => {
     fs.writeFileSync(path.join(testLibraryPath, 'writing', '日记', `${today}.md`), '---\ntype: writing\ntitle: 今天\n---\n\n今天的日记。\n', 'utf8')
     await gotoWriting(window, testLibraryPath)
 
-    const diaryRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]日记/ }).first()
+    const diaryRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^日记/ }).first()
     await diaryRow.hover()
     await diaryRow.getByTestId('writing-node-create').click()
     await expect(window.getByTestId('writing-inline-new')).toHaveValue('', { timeout: 3000 })
@@ -436,7 +436,7 @@ test.describe('@p2 writing-tree', () => {
   test('分组悬停行内重命名：✎ → 行内改名 → 组内文章迁移到新目录', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const dirRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
     await dirRow.hover()
     await dirRow.getByTestId('writing-node-rename').click()
     const renameInput = window.getByTestId('writing-inline-rename')
@@ -449,7 +449,7 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '散文', '七月夜话.md'))).toBe(true)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
     // 树里出现新分组名
-    await expect(window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]散文/ })).toHaveCount(1)
+    await expect(window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^散文/ })).toHaveCount(1)
   })
 
   test('重命名冲突：行内提示同名已存在', async ({ window, testLibraryPath }) => {
@@ -476,7 +476,7 @@ test.describe('@p2 writing-tree', () => {
   test('分组内新建文章落分组末尾', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const dirRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /^[▾▸]随笔/ }).first()
+    const dirRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
     await dirRow.hover()
     await dirRow.getByTestId('writing-node-create').click()
     const input = window.getByTestId('writing-inline-new')
