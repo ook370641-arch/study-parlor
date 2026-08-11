@@ -4,18 +4,16 @@ import type { AppConfig } from '../../env'
 import type { WritingSourceType } from '../../../src/types'
 import { scanRoot } from '../writing-tree'
 import { loadCatalog } from '../writing-catalog'
+import { SOCRATIC_ROOT } from '../library-layout'
 
 export type IndexEntry = { id: string; type: WritingSourceType; title: string; summary: string }
-
-/** Subdirectories inside the library root to skip during study-topic scanning. */
-const SKIP_DIRS = new Set(['writing', 'repository', '夜航简报', '求职简报', 'Anthropic博客', '.assets', '.git', 'node_modules'])
 
 /**
  * Scan the user's library and build a flat list of readable resources.
  *
  * For MVP: writing + repository come from their .catalog.json entries.
- * Study topics come from scanning top-level dirs for their title (frontmatter of
- * the latest session's 学习报告.md).
+ * Study topics come from scanning the `苏格拉底对话/` subdirectory for topic dirs
+ * (title from frontmatter of the latest session's 学习报告.md).
  */
 export async function buildWritingIndex(cfg: AppConfig): Promise<IndexEntry[]> {
   const entries: IndexEntry[] = []
@@ -49,11 +47,12 @@ export async function buildWritingIndex(cfg: AppConfig): Promise<IndexEntry[]> {
 
   // ── 3. Study topics ─────────────────────────────────────────
   try {
-    const dirents = fs.readdirSync(lib, { withFileTypes: true })
+    const socraticDir = path.join(lib, SOCRATIC_ROOT)
+    if (!fs.existsSync(socraticDir)) throw new Error('no socratic root')
+    const dirents = fs.readdirSync(socraticDir, { withFileTypes: true })
     for (const d of dirents) {
       if (!d.isDirectory()) continue
-      if (SKIP_DIRS.has(d.name)) continue
-      const topicPath = path.join(lib, d.name)
+      const topicPath = path.join(socraticDir, d.name)
       // Try to read the latest session 学习报告.md to get frontmatter title
       let title = d.name
       let summary = ''

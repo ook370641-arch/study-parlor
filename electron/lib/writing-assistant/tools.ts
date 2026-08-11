@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { AppConfig } from '../../env'
 import { readWritingFile } from '../writing-tree'
+import { topicDir } from '../library-layout'
 import type { NativeToolCall } from './tool-protocol'
 import type { WritingToolEvent } from '../../../src/types'
 import type { IndexEntry } from './prompt'
@@ -22,14 +23,14 @@ export function resolveSourcePath(lib: string, type: string, idPath: string): st
       return path.join(lib, '夜航简报', idPath)
     case 'study': {
       // Find the latest session's 学习报告.md
-      const topicDir = path.join(lib, idPath)
-      if (!fs.existsSync(topicDir)) return null
+      const topicPath = topicDir(lib, idPath)
+      if (!fs.existsSync(topicPath)) return null
       try {
-        const sessions = fs.readdirSync(topicDir, { withFileTypes: true })
+        const sessions = fs.readdirSync(topicPath, { withFileTypes: true })
           .filter(s => s.isDirectory())
           .sort((a, b) => b.name.localeCompare(a.name))
         for (const s of sessions) {
-          const reportPath = path.join(topicDir, s.name, '学习报告.md')
+          const reportPath = path.join(topicPath, s.name, '学习报告.md')
           if (fs.existsSync(reportPath)) return reportPath
         }
       } catch { /* fall through */ }
