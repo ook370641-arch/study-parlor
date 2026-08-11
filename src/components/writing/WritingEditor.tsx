@@ -13,6 +13,7 @@ import { tabKeymapPlugins } from '@/lib/milkdown-tab-keymap'
 import { codeblockEnterPlugins } from '@/lib/milkdown-codeblock-enter'
 import { tableHandlesPlugins } from '@/lib/milkdown-table-handles'
 import { gutterInsertPlugins } from '@/lib/milkdown-gutter-insert'
+import { smartEnterPlugins } from '@/lib/milkdown-smart-enter'
 import './writing-editor.css'
 
 function EditorInner({ initial, onChange }: { initial: string; onChange: (md: string) => void }) {
@@ -45,6 +46,7 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .use(codeblockEnterPlugins)
       .use(tableHandlesPlugins)
       .use(gutterInsertPlugins)
+      .use(smartEnterPlugins)
       .config(ctx => {
         ctx.set(rootCtx, root)
         ctx.set(defaultValueCtx, initial)
