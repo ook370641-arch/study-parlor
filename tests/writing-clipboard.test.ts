@@ -14,7 +14,13 @@ import { pastePlainPlugins } from '@/lib/milkdown-paste-plain'
 import { milkdownClipboardPlugins } from '@/lib/milkdown-clipboard'
 
 if (typeof globalThis.ClipboardEvent === 'undefined') {
-  ;(globalThis as any).ClipboardEvent = class ClipboardEvent extends Event {}
+  // jsdom 无原生 ClipboardEvent;stub 需从 init 复制修饰键(Event 构造器只认 bubbles/cancelable/composed)
+  ;(globalThis as any).ClipboardEvent = class ClipboardEvent extends Event {
+    constructor(type: string, init: any = {}) {
+      super(type, init)
+      if (init.shiftKey !== undefined) (this as any).shiftKey = init.shiftKey
+    }
+  }
 }
 
 type TestEditor = Awaited<ReturnType<typeof makeEditor>>
@@ -39,10 +45,10 @@ function pasteHTML(editor: TestEditor, html: string) {
   })
 }
 
-function pasteText(editor: TestEditor, text: string) {
+function pasteText(editor: TestEditor, text: string, opts: { shiftKey?: boolean } = {}) {
   editor.action(ctx => {
     const view = ctx.get(editorViewCtx)
-    const event = new (globalThis as any).ClipboardEvent('paste', { bubbles: true, cancelable: true })
+    const event = new (globalThis as any).ClipboardEvent('paste', { bubbles: true, cancelable: true, shiftKey: opts.shiftKey ?? false })
     event.clipboardData = { getData: (t: string) => (t === 'text/plain' ? text : '') }
     view.dom.dispatchEvent(event)
   })
@@ -67,6 +73,17 @@ describe('自定义 handlePaste', () => {
     expect(marks.has('strong')).toBe(true)
     expect(marks.has('inlineCode')).toBe(false)
     expect(editor.action(getMarkdown())).not.toContain('`')
+    editor.destroy()
+  })
+
+  it('Shift+粘贴 → 交还默认，**加粗** 按字面插入（无 strong）', async () => {
+    const editor = await makeEditor('')
+    pasteText(editor, '**加粗**', { shiftKey: true })
+    const { marks } = collectTypes(docJSON(editor))
+    expect(marks.has('strong')).toBe(false)
+    // 文档文本按字面保留(markdown 序列化会把字面星号转义成 \*\*，故断言 doc.textContent)
+    const textContent = editor.action(ctx => ctx.get(editorViewCtx).state.doc.textContent)
+    expect(textContent).toContain('**加粗**')
     editor.destroy()
   })
 

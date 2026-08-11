@@ -93,6 +93,8 @@ export const milkdownClipboardPlugins: MilkdownPlugin[] = [
           const editable = view.props.editable?.(view.state) ?? true
           const clipboardData = event.clipboardData
           if (!editable || !clipboardData) return false
+          // Shift+粘贴:交还默认(preferPlain 纯文本插入),不做 markdown/富文本解析
+          if (event.shiftKey) return false
           if (view.state.selection.$from.node().type.spec.code) return false
           const text = clipboardData.getData('text/plain')
           const html = clipboardData.getData('text/html')
