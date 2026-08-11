@@ -24,16 +24,15 @@ ${extra}---
 }
 
 function scanLibrary(root: string): TopicMeta[] {
-  if (!fs.existsSync(root)) {
-    return []
-  }
+  const socraticRoot = path.join(root, '苏格拉底对话')
+  if (!fs.existsSync(socraticRoot)) return []
 
-  const entries = fs.readdirSync(root, { withFileTypes: true })
+  const entries = fs.readdirSync(socraticRoot, { withFileTypes: true })
   const topicDirs = entries.filter(d => d.isDirectory()).map(d => d.name)
 
   const results: TopicMeta[] = []
   for (const td of topicDirs) {
-    const topicPath = path.join(root, td)
+    const topicPath = path.join(socraticRoot, td)
     try {
       const meta = getTopicMeta(topicPath)
       if (meta) {
@@ -303,6 +302,23 @@ describe('getTopicMeta', () => {
     expect(meta).not.toBeNull()
     expect(meta!.last_studied_days).toBe(0)
   })
+
+  it('getTopicMeta resolves group from libraryPath when provided', () => {
+    const socratic = path.join(tmpDir, '苏格拉底对话')
+    const topicDirPath = path.join(socratic, '分组主题')
+    fs.mkdirSync(path.join(topicDirPath, 's1'), { recursive: true })
+    writeReport(path.join(topicDirPath, 's1', '学习报告.md'), '分组主题', '2026-05-05T10:00:00+08:00')
+
+    fs.writeFileSync(path.join(tmpDir, '.study-groups.json'), JSON.stringify({
+      version: 1,
+      groups: [{ id: 'g1', name: '组一', color: '#111111' }],
+      mapping: { 分组主题: 'g1' },
+    }), 'utf8')
+
+    const meta = getTopicMeta(topicDirPath, tmpDir)
+    expect(meta).not.toBeNull()
+    expect(meta!.groupId).toBe('g1')
+  })
 })
 
 describe('scanLibrary', () => {
@@ -329,21 +345,21 @@ describe('scanLibrary', () => {
     const lastWeekIso = new Date(now - 7 * 86400_000).toISOString()
 
     // Topic A - studied today
-    const topicA = path.join(tmpDir, '主题A')
+    const topicA = path.join(tmpDir, '苏格拉底对话', '主题A')
     fs.mkdirSync(topicA, { recursive: true })
     const s1a = path.join(topicA, 's1')
     fs.mkdirSync(s1a, { recursive: true })
     writeReport(path.join(s1a, '学习报告.md'), '主题A', todayIso)
 
     // Topic B - studied yesterday
-    const topicB = path.join(tmpDir, '主题B')
+    const topicB = path.join(tmpDir, '苏格拉底对话', '主题B')
     fs.mkdirSync(topicB, { recursive: true })
     const s1b = path.join(topicB, 's1')
     fs.mkdirSync(s1b, { recursive: true })
     writeReport(path.join(s1b, '学习报告.md'), '主题B', yesterdayIso)
 
     // Topic C - studied last week
-    const topicC = path.join(tmpDir, '主题C')
+    const topicC = path.join(tmpDir, '苏格拉底对话', '主题C')
     fs.mkdirSync(topicC, { recursive: true })
     const s1c = path.join(topicC, 's1')
     fs.mkdirSync(s1c, { recursive: true })
@@ -362,10 +378,10 @@ describe('scanLibrary', () => {
   })
 
   it('skips empty topic directories', () => {
-    const emptyTopic = path.join(tmpDir, '空主题')
+    const emptyTopic = path.join(tmpDir, '苏格拉底对话', '空主题')
     fs.mkdirSync(emptyTopic, { recursive: true })
 
-    const validTopic = path.join(tmpDir, '有效主题')
+    const validTopic = path.join(tmpDir, '苏格拉底对话', '有效主题')
     fs.mkdirSync(validTopic, { recursive: true })
     const s1 = path.join(validTopic, 's1')
     fs.mkdirSync(s1, { recursive: true })
@@ -377,13 +393,13 @@ describe('scanLibrary', () => {
   })
 
   it('handles topics with no dates (sorted to end)', () => {
-    const topicA = path.join(tmpDir, '有日期')
+    const topicA = path.join(tmpDir, '苏格拉底对话', '有日期')
     fs.mkdirSync(topicA, { recursive: true })
     const s1a = path.join(topicA, 's1')
     fs.mkdirSync(s1a, { recursive: true })
     writeReport(path.join(s1a, '学习报告.md'), '有日期', '2026-05-09T10:00:00+08:00')
 
-    const topicB = path.join(tmpDir, '无日期')
+    const topicB = path.join(tmpDir, '苏格拉底对话', '无日期')
     fs.mkdirSync(topicB, { recursive: true })
     const s1b = path.join(topicB, 's1')
     fs.mkdirSync(s1b, { recursive: true })

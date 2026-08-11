@@ -3,6 +3,7 @@ import path from 'node:path'
 import { app, ipcMain } from 'electron'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { generateContinueSuggestions, readTopicReportSummaries } from '../lib/llm-tasks'
+import { topicDir } from '../lib/library-layout'
 import { patchState } from './state'
 import { ensureRoots } from '../lib/writing-tree'
 import type { AppConfig } from '../env'
@@ -103,7 +104,7 @@ export function getSortedSessionDirs(topicDir: string): string[] {
     })
 }
 
-export function getTopicMeta(topicDir: string): TopicMeta | null {
+export function getTopicMeta(topicDir: string, libraryPath?: string): TopicMeta | null {
   const dirName = path.basename(topicDir)
 
   const sessionDirs = getSortedSessionDirs(topicDir)
@@ -163,7 +164,7 @@ export function getTopicMeta(topicDir: string): TopicMeta | null {
   }
 
   // Load group mapping
-  const groupFile = path.join(path.dirname(topicDir), '.study-groups.json')
+  const groupFile = path.join(libraryPath ?? path.dirname(topicDir), '.study-groups.json')
   const groupData = loadGroupFile(groupFile)
   const groupId = groupData.mapping[dirName] || 'default'
 
@@ -222,10 +223,10 @@ export function registerFilesIpc(cfg: AppConfig) {
       // 如果没有传入 topic，尝试从最新报告 frontmatter 读取
       let resolvedTopic = topic
       if (!resolvedTopic) {
-        const topicDir = path.join(cfg.libraryPath, dirName)
-        const sessionDirs = getSortedSessionDirs(topicDir)
+        const topicPath = topicDir(cfg.libraryPath, dirName)
+        const sessionDirs = getSortedSessionDirs(topicPath)
         if (sessionDirs.length > 0) {
-          const latestReport = path.join(topicDir, sessionDirs[sessionDirs.length - 1], '学习报告.md')
+          const latestReport = path.join(topicPath, sessionDirs[sessionDirs.length - 1], '学习报告.md')
           if (fs.existsSync(latestReport)) {
             try {
               const raw = fs.readFileSync(latestReport, 'utf8')
@@ -247,8 +248,8 @@ export function registerFilesIpc(cfg: AppConfig) {
       })
 
       // 计算当前会话数
-      const topicDir = path.join(cfg.libraryPath, dirName)
-      const sessionDirs = getSortedSessionDirs(topicDir)
+      const topicPath = topicDir(cfg.libraryPath, dirName)
+      const sessionDirs = getSortedSessionDirs(topicPath)
       const sessionCount = sessionDirs.length
 
       const cache: TopicContinueCache = {
@@ -274,20 +275,20 @@ export function registerFilesIpc(cfg: AppConfig) {
   ipcMain.handle('files:scan', async (): Promise<TopicMeta[]> => {
     const scanStart = Date.now()
     const root = cfg.libraryPath
-    if (!fs.existsSync(root)) {
-      console.error(`[files:scan] library path does not exist: ${root}`)
+    const socraticRoot = path.join(root, '苏格拉底对话')
+    if (!fs.existsSync(socraticRoot)) {
+      console.error(`[files:scan] socratic root does not exist: ${socraticRoot}`)
       return []
     }
 
-    const entries = fs.readdirSync(root, { withFileTypes: true })
+    const entries = fs.readdirSync(socraticRoot, { withFileTypes: true })
     const topicDirs = entries.filter(d => d.isDirectory()).map(d => d.name)
 
     const results: TopicMeta[] = []
     for (const td of topicDirs) {
-      if (['writing', 'repository', '夜航简报', '求职简报', 'Anthropic博客', '拾贝'].includes(td)) continue
-      const topicPath = path.join(root, td)
+      const topicPath = path.join(socraticRoot, td)
       try {
-        const meta = getTopicMeta(topicPath)
+        const meta = getTopicMeta(topicPath, cfg.libraryPath)
         if (meta) {
           results.push(meta)
         }
@@ -355,8 +356,8 @@ export function registerFilesIpc(cfg: AppConfig) {
   }) => {
     validateDirName(args.dirName)
     const now = new Date()
-    const topicDir = path.join(cfg.libraryPath, args.dirName)
-    const sessionDir = path.join(topicDir, `s${args.session_number}`)
+    const topicPath = topicDir(cfg.libraryPath, args.dirName)
+    const sessionDir = path.join(topicPath, `s${args.session_number}`)
     fs.mkdirSync(sessionDir, { recursive: true })
     const filePath = path.join(sessionDir, '学习报告.md')
     if (fs.existsSync(filePath)) {
@@ -384,12 +385,12 @@ export function registerFilesIpc(cfg: AppConfig) {
 
   ipcMain.handle('files:readAnchor', async (_, dirName: string) => {
     validateDirName(dirName)
-    const topicDir = path.join(cfg.libraryPath, dirName)
-    const sessionDirs = getSortedSessionDirs(topicDir)
+    const topicPath = topicDir(cfg.libraryPath, dirName)
+    const sessionDirs = getSortedSessionDirs(topicPath)
     if (sessionDirs.length === 0) {
       throw new Error(`No sessions found for topic: ${dirName}`)
     }
-    const latestDir = path.join(topicDir, sessionDirs[sessionDirs.length - 1])
+    const latestDir = path.join(topicPath, sessionDirs[sessionDirs.length - 1])
     const reportPath = path.join(latestDir, '学习报告.md')
     if (!fs.existsSync(reportPath)) {
       throw new Error(`No report found in ${latestDir}`)
@@ -400,10 +401,10 @@ export function registerFilesIpc(cfg: AppConfig) {
 
   ipcMain.handle('files:readExternalMaterials', async (_, dirName: string) => {
     validateDirName(dirName)
-    const topicDir = path.join(cfg.libraryPath, dirName)
-    const sessionDirs = getSortedSessionDirs(topicDir)
+    const topicPath = topicDir(cfg.libraryPath, dirName)
+    const sessionDirs = getSortedSessionDirs(topicPath)
     if (sessionDirs.length === 0) return null
-    const latestDir = path.join(topicDir, sessionDirs[sessionDirs.length - 1])
+    const latestDir = path.join(topicPath, sessionDirs[sessionDirs.length - 1])
     const filePath = path.join(latestDir, '外部资料.md')
     if (!fs.existsSync(filePath)) return null
     try {
@@ -427,13 +428,13 @@ export function registerFilesIpc(cfg: AppConfig) {
   }) => {
     validateDirName(args.dirName)
     const now = new Date()
-    const topicDir = path.join(cfg.libraryPath, args.dirName)
-    const sessionDirs = getSortedSessionDirs(topicDir)
+    const topicPath = topicDir(cfg.libraryPath, args.dirName)
+    const sessionDirs = getSortedSessionDirs(topicPath)
     if (sessionDirs.length === 0) {
       throw new Error(`No sessions found for topic: ${args.dirName}`)
     }
     const targetSession = sessionDirs[sessionDirs.length - 1]
-    const sessionDir = path.join(topicDir, targetSession)
+    const sessionDir = path.join(topicPath, targetSession)
     const filePath = path.join(sessionDir, '复习报告.md')
     const gapsList = args.gaps.map((g, i) => `${i + 1}. ${g.trim()}`).join('\n')
     const checklist = args.mastery_checklist && args.mastery_checklist.length > 0
@@ -492,8 +493,8 @@ function getMimeType(filePath: string): string {
   }) => {
     validateDirName(args.dirName)
     const now = new Date()
-    const topicDir = path.join(cfg.libraryPath, args.dirName)
-    const sessionDir = path.join(topicDir, `s${args.sessionNumber}`)
+    const topicPath = topicDir(cfg.libraryPath, args.dirName)
+    const sessionDir = path.join(topicPath, `s${args.sessionNumber}`)
     fs.mkdirSync(sessionDir, { recursive: true })
     const filePath = path.join(sessionDir, '原始对话.md')
     const fm = {
@@ -511,8 +512,8 @@ function getMimeType(filePath: string): string {
   }) => {
     validateDirName(args.dirName)
     const now = new Date()
-    const topicDir = path.join(cfg.libraryPath, args.dirName)
-    const sessionDir = path.join(topicDir, `s${args.sessionNumber}`)
+    const topicPath = topicDir(cfg.libraryPath, args.dirName)
+    const sessionDir = path.join(topicPath, `s${args.sessionNumber}`)
     fs.mkdirSync(sessionDir, { recursive: true })
     const filePath = path.join(sessionDir, '寓言.md')
     const fm = {
@@ -529,7 +530,7 @@ function getMimeType(filePath: string): string {
     dirName: string; sessionNumber: number; fileName: string
   }) => {
     validateDirName(args.dirName)
-    const filePath = path.join(cfg.libraryPath, args.dirName, `s${args.sessionNumber}`, args.fileName)
+    const filePath = path.join(topicDir(cfg.libraryPath, args.dirName), `s${args.sessionNumber}`, args.fileName)
     const resolved = path.resolve(filePath)
     const rootResolved = path.resolve(cfg.libraryPath)
     if (!resolved.startsWith(rootResolved + path.sep) && resolved !== rootResolved) {
@@ -557,8 +558,8 @@ function getMimeType(filePath: string): string {
   }) => {
     validateDirName(args.dirName)
     const now = new Date()
-    const topicDir = path.join(cfg.libraryPath, args.dirName)
-    const sessionDir = path.join(topicDir, `s${args.sessionNumber}`)
+    const topicPath = topicDir(cfg.libraryPath, args.dirName)
+    const sessionDir = path.join(topicPath, `s${args.sessionNumber}`)
     fs.mkdirSync(sessionDir, { recursive: true })
     const filePath = path.join(sessionDir, '外部资料.md')
     if (fs.existsSync(filePath)) {
@@ -629,7 +630,7 @@ function getMimeType(filePath: string): string {
     sessionNumber: number
   }): Promise<void> => {
     validateDirName(args.dirName)
-    const sessionDir = path.join(cfg.libraryPath, args.dirName, `s${args.sessionNumber}`)
+    const sessionDir = path.join(topicDir(cfg.libraryPath, args.dirName), `s${args.sessionNumber}`)
     if (!fs.existsSync(sessionDir)) {
       throw new Error(`Session directory not found: ${sessionDir}`)
     }
