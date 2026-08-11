@@ -41,13 +41,15 @@
   font-style: italic;
   opacity: 0.92;
 }
-/* 竖直蜡烛:烛身/融蜡/烛台随文字色,烛焰固定 ember */
+/* 竖直蜡烛:烛身/融蜡/烛台用实心米色,烛焰固定 ember。
+   不用 currentColor —— background url SVG 里 currentColor 在此环境不解析成文字色
+   (实测深色背景下烛身仍渲染成暗色),与工具栏蜡烛统一为米色。 */
 .writing-editor-root .ProseMirror blockquote::before {
   content: '';
   position: absolute;
   left: 0; top: -3px; bottom: -3px;
   width: 26px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 120' preserveAspectRatio='none'%3E%3Cpath d='M13 3c1.5 2.5 2.6 4.4 2.6 6.3a2.6 2.6 0 1 1-5.2 0C10.4 7.4 11.5 5.5 13 3z' fill='%23d97757'/%3E%3Crect x='9.5' y='15' width='7' height='97' rx='2.2' fill='currentColor' opacity='0.88'/%3E%3Cpath d='M9.5 26c-2 0-3 2.2-2 4.4 1.1 2.6-1.2 4.2-.6 6.4' fill='none' stroke='currentColor' stroke-width='1.6' opacity='0.7' stroke-linecap='round'/%3E%3Crect x='8' y='110' width='10' height='4.5' rx='1.2' fill='currentColor' opacity='0.55'/%3E%3C/svg%3E") no-repeat left top / auto 100%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 120' preserveAspectRatio='none'%3E%3Cpath d='M13 3c1.5 2.5 2.6 4.4 2.6 6.3a2.6 2.6 0 1 1-5.2 0C10.4 7.4 11.5 5.5 13 3z' fill='%23d97757'/%3E%3Crect x='9.5' y='15' width='7' height='97' rx='2.2' fill='%23e8d5b7' opacity='0.88'/%3E%3Cpath d='M9.5 26c-2 0-3 2.2-2 4.4 1.1 2.6-1.2 4.2-.6 6.4' fill='none' stroke='%23e8d5b7' stroke-width='1.6' opacity='0.7' stroke-linecap='round'/%3E%3Crect x='8' y='110' width='10' height='4.5' rx='1.2' fill='%23e8d5b7' opacity='0.55'/%3E%3C/svg%3E") no-repeat left top / auto 100%;
 }
 
 /* 分隔线:node view 渲染轨道,这里只定尺寸 */
