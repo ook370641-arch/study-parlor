@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url'
 import ExcelJS from 'exceljs'
 import mammoth from 'mammoth'
 import TurndownService from 'turndown'
+import { app } from 'electron'
 import { isNonMdExt, type NonMdKind } from '../../src/types'
 import { assertInsideRoots } from './writing-tree'
 
@@ -32,7 +33,6 @@ export function nonMdKindOf(filePath: string): NonMdKind | null {
 export async function previewFile(
   lib: string,
   rel: string,
-  opts?: { pdfResourceBase?: string },
 ): Promise<PreviewOutcome> {
   const abs = assertInsideRoots(lib, rel)
   if (!fs.existsSync(abs)) throw previewError('PREVIEW_PARSE_ERROR', `文件不存在: ${rel}`)
@@ -42,11 +42,12 @@ export async function previewFile(
   try {
     if (kind === 'xlsx') return { kind, title, ...(await parseXlsx(abs)) }
     if (kind === 'docx') return { kind, title, ...(await parseDocx(abs)) }
-    return { kind, title, ...(await parsePdf(abs, opts?.pdfResourceBase)) }
+    return { kind, title, ...(await parsePdf(abs)) }
   } catch (err) {
     // 统一映射为类型化错误码：解析库（jszip/exceljs/mammoth/pdfjs）的原始异常
     // 一律收敛为 PREVIEW_PARSE_ERROR；deliberately 抛出的 PDF_NO_TEXT 放行。
-    if (err instanceof Error && (err.code === 'PREVIEW_PARSE_ERROR' || err.code === 'PDF_NO_TEXT')) throw err
+    const code = (err as Error & { code?: string })?.code
+    if (code === 'PREVIEW_PARSE_ERROR' || code === 'PDF_NO_TEXT') throw err
     throw previewError('PREVIEW_PARSE_ERROR', err instanceof Error ? err.message : String(err))
   }
 }
@@ -164,31 +165,47 @@ async function parseDocx(absPath: string): Promise<{ content: string; truncated:
 interface PdfjsModule {
   getDocument(src: Record<string, unknown>): { promise: Promise<{ numPages: number; getPage(n: number): Promise<{ getTextContent(): Promise<{ items: Array<{ str?: string }> }> }>; destroy(): Promise<void> }> }
 }
+
+/**
+ * 定位 node_modules/pdfjs-dist 目录。
+ * - 打包：app.getAppPath()（node_modules 在 asar 内）
+ * - dev/e2e/单测：process.cwd()（项目根，e2e 以项目根为 cwd 启动）
+ * 测试环境 import('electron') 返回字符串路径，app 为 undefined，被 try/catch 兜底到 cwd。
+ */
+function pdfjsDistDir(): string {
+  try {
+    const getAppPath = (app as unknown as { getAppPath?: () => string } | undefined)?.getAppPath
+    const base = typeof getAppPath === 'function' ? getAppPath() : ''
+    if (base) return path.join(base, 'node_modules', 'pdfjs-dist')
+  } catch { /* electron 不可用（vitest）→ 走 cwd 兜底 */ }
+  return path.join(process.cwd(), 'node_modules', 'pdfjs-dist')
+}
+
 let _pdfjsPromise: Promise<PdfjsModule> | null = null
 function loadPdfjs(): Promise<PdfjsModule> {
   if (!_pdfjsPromise) {
-    // 构建时 external（见 electron.vite.config.ts main external），运行时由
-    // Node/Electron ESM 加载；asar 内动态 import 已验证可行。
-    _pdfjsPromise = import('pdfjs-dist/legacy/build/pdf.mjs').then((m: any) => m.default ?? m)
+    // 运行时计算路径的 dynamic import（import(变量)）：rollup 无法静态解析故不打包，
+    // 避免 worker/cmaps 相邻文件丢失（构建内联会打独立 chunk 导致 fake worker 加载失败）。
+    // asar 内 file:// ESM import 已验证可行。
+    const pdfjsPath = path.join(pdfjsDistDir(), 'legacy', 'build', 'pdf.mjs')
+    _pdfjsPromise = import(pathToFileURL(pdfjsPath).href).then((m: any) => m.default ?? m)
   }
   return _pdfjsPromise
 }
 
-async function parsePdf(absPath: string, resourceBase?: string): Promise<{ content: string; truncated: boolean }> {
+async function parsePdf(absPath: string): Promise<{ content: string; truncated: boolean }> {
   const pdfjs = await loadPdfjs()
   const data = new Uint8Array(fs.readFileSync(absPath))
   const getDocumentArgs: Record<string, unknown> = { data, disableWorker: true }
-  // 中文 PDF 需要 cmaps/标准字体；仅当资源目录真实存在时传入（dev 生效；
-  // 打包 asar 内 file:// fetch 不可靠则省略——退化为基础抽取 + 系统打开兜底）
-  if (resourceBase) {
-    const cmapsDir = path.join(resourceBase, 'node_modules', 'pdfjs-dist', 'cmaps')
-    const stdFontsDir = path.join(resourceBase, 'node_modules', 'pdfjs-dist', 'standard_fonts')
-    if (fs.existsSync(cmapsDir)) {
-      getDocumentArgs.cMapUrl = pathToFileURL(cmapsDir).href + '/'
-      getDocumentArgs.cMapPacked = true
-    }
-    if (fs.existsSync(stdFontsDir)) getDocumentArgs.standardFontDataUrl = pathToFileURL(stdFontsDir).href + '/'
+  // 中文 PDF 需要 cmaps/标准字体：资源目录随 pdfjs 保留在 node_modules
+  const distDir = pdfjsDistDir()
+  const cmapsDir = path.join(distDir, 'cmaps')
+  const stdFontsDir = path.join(distDir, 'standard_fonts')
+  if (fs.existsSync(cmapsDir)) {
+    getDocumentArgs.cMapUrl = pathToFileURL(cmapsDir).href + '/'
+    getDocumentArgs.cMapPacked = true
   }
+  if (fs.existsSync(stdFontsDir)) getDocumentArgs.standardFontDataUrl = pathToFileURL(stdFontsDir).href + '/'
   const doc = await pdfjs.getDocument(getDocumentArgs).promise
   try {
     const parts: string[] = []

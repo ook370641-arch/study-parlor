@@ -43,12 +43,10 @@ export default defineConfig(({ command }) => ({
       rollupOptions: {
         input: path.resolve(__dirname, 'electron/main.ts'),
         output: { entryFileNames: 'index.js' },
-        external: [
-          'electron',
-          // pdfjs-dist 走运行时 ESM 动态 import：打包内联会破坏其非 JS 资源
-          // （cmaps/standard_fonts 留在 node_modules/asar）；asar 内 import 已验证可行。
-          (id) => id === 'pdfjs-dist' || id.startsWith('pdfjs-dist/')
-        ]
+        // pdfjs-dist 不在 external 列表：file-preview.ts 用「运行时计算路径」的动态
+        // import（import(变量)），rollup 无法静态解析从而不会打包它——worker/cmaps
+        // 相邻文件保留在 node_modules，随包进入 asar（asar 内 ESM import 已验证）。
+        external: ['electron']
       },
       outDir: 'out/main'
     }

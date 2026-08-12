@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
-import { isNonMdExt } from '@shared/index'
+import { isNonMdExt } from '../../src/types'
 import type { WritingRoot, WritingTreeNode } from '@shared/index'
 
 // ── constants ────────────────────────────────────────────────

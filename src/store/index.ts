@@ -2503,7 +2503,8 @@ export const useStore = create<AppStore>((set, get) => ({
           lastWritingFile: filePath,
         })
       } else {
-        set({ writingFile: { path: filePath, body: '', kind, dirty: false, saving: 'idle', previewError: r.message }, lastWritingFile: filePath })
+        // previewError 存类型化错误码（组件据此分支：PDF_NO_TEXT 专门提示 / 其余通用文案）
+        set({ writingFile: { path: filePath, body: '', kind, dirty: false, saving: 'idle', previewError: r.code }, lastWritingFile: filePath })
       }
       return
     }

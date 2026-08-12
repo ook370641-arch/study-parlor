@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { WritingToolbar } from './WritingToolbar'
+import { ReadonlyPreview } from './ReadonlyPreview'
 import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
 import { Quote } from '@/components/Quote'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
@@ -43,6 +44,27 @@ export function WritingBoard() {
   const body = WRITING_BODY_FROM_UI[writingUISize]
   // 默认色跟主题走:报纸黑、学术暖米(spec A3)
   const color = briefingTheme === 'newspaper' ? '#1a1a1a' : '#e8d5b7'
+
+  // 非 md 文件（xlsx/pdf/docx）：只读预览，不渲染 Milkdown 工具栏与保存状态栏
+  if (file.kind !== 'md') {
+    return (
+      <div className="flex flex-col h-full arrive-item"
+        style={{
+          ['--writing-body-size' as string]: body.size,
+          ['--writing-body-weight' as string]: body.weight,
+          ['--writing-tone-color' as string]: color,
+          ['--writing-ui-quote-size' as string]: WRITING_UI_QUOTE_SIZES[writingUISize],
+        }}>
+        <ReadonlyPreview file={{
+          path: file.path,
+          body: file.body,
+          kind: file.kind,
+          truncated: file.truncated,
+          previewError: file.previewError,
+        }} />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full arrive-item"

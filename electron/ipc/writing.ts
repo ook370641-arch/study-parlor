@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron'
+import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { AppConfig } from '../env'
@@ -157,7 +157,7 @@ export function registerWritingIpc(cfg: AppConfig): void {
 
   // 非 md 文件预览（解析为 markdown）
   ipcMain.handle('writing:readPreview', (_, a: { path: string }) =>
-    wrapWriting(() => previewFile(lib, a.path, { pdfResourceBase: app.isPackaged ? undefined : app.getAppPath() })))
+    wrapWriting(() => previewFile(lib, a.path)))
 
   // 用系统默认程序打开（预览降级/兜底入口）
   ipcMain.handle('writing:openInSystem', (_, a: { path: string }) =>

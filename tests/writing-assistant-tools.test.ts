@@ -49,6 +49,27 @@ describe('executeTool read_local failure markers (S3)', () => {
   })
 })
 
+describe('executeTool read_local 非 md 文件', () => {
+  it('xlsx 走预览解析返回 markdown 表格', async () => {
+    const { dir, cfg } = tmpLib()
+    fs.copyFileSync(path.join(__dirname, 'fixtures', 'sample.xlsx'), path.join(dir, 'writing', 'sample.xlsx'))
+    const result = await executeTool(cfg, { id: 'c1', name: 'read_local', args: { ids: ['writing:sample.xlsx'] } }, {
+      send: () => {}, sessionId: 's1', useSearch: false, index: [],
+    })
+    expect(result).toContain('| 姓名 | 科目 | 分数 |')
+    expect(result).not.toContain('请勿引用')
+  })
+
+  it('损坏的非 md 文件按 ⚠️ 协议提示，不冒泡', async () => {
+    const { dir, cfg } = tmpLib()
+    fs.writeFileSync(path.join(dir, 'writing', 'bad.xlsx'), 'not a zip')
+    const result = await executeTool(cfg, { id: 'c1', name: 'read_local', args: { ids: ['writing:bad.xlsx'] } }, {
+      send: () => {}, sessionId: 's1', useSearch: false, index: [],
+    })
+    expect(result).toContain('请勿引用')
+  })
+})
+
 describe('executeTool read_local group id', () => {
   it('group id 从 index 返回分组摘要', async () => {
     const { cfg } = tmpLib()

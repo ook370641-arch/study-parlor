@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import { sortNodesByOrder, countFiles, displayWritingName, normalizeWritingFileName, diaryPrefillName, sortedInsertIndexForFile, writingErrorText } from '@/lib/writing-tree-utils'
+import { sortNodesByOrder, countFiles, displayWritingName, normalizeWritingFileName, normalizeWritingFileRename, writingPreviewKindOf, diaryPrefillName, sortedInsertIndexForFile, writingErrorText } from '@/lib/writing-tree-utils'
 import type { WritingTreeNode, WritingRoot } from '@shared/index'
 import { PromptDialog } from './PromptDialog'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -72,7 +72,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
       title: '新名称:',
       defaultValue: displayWritingName(node),
       onSubmit: async (newName) => {
-        const normalized = normalizeWritingFileName(newName.trim(), node.kind === 'file')
+        const normalized = normalizeRenameForNode(newName.trim(), node)
         if (normalized === node.name) return
         const r = await ipc.writingRename({ path: node.path, newName: normalized })
         if (r.ok) writingRenamed(node.path, r.value.path)
@@ -82,7 +82,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   }
 
   const doRenameSubmit = async (value: string) => {
-    const normalized = normalizeWritingFileName(value, node.kind === 'file')
+    const normalized = normalizeRenameForNode(value, node)
     if (normalized === node.name) { setRenameError(''); setEditing(false); return }
     const r = await ipc.writingRename({ path: node.path, newName: normalized })
     if (r.ok) {
@@ -155,6 +155,14 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         onDragLeave={() => { setDragOver(false); setDropPos(null) }}
         onDrop={async (e) => {
           e.preventDefault()
+          // 外部系统文件拖入（md/xlsx/pdf/docx）：导入到分组内部（dragOver 中心）或该行所在目录
+          const files = Array.from(e.dataTransfer.files ?? [])
+          if (files.length > 0) {
+            const into = dragOver && isDir && !dropPos
+            setDragOver(false); setDropPos(null)
+            await importExternalFiles(files, into ? node.path : parentDir, loadWritingTree)
+            return
+          }
           const src = e.dataTransfer.getData('text/writing-path')
           const into = dragOver && isDir && !dropPos
           setDragOver(false); setDropPos(null)
@@ -178,7 +186,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         }}
       >
         <span className={`w-6 shrink-0 inline-flex items-center justify-center ${isAcademic ? (isSelected ? 'text-ember' : 'text-parchment/50') : 'text-[#1a1a1a]'}`}>
-          {isDir ? <FolderIcon open={open} /> : <DocIcon />}
+          {isDir ? <FolderIcon open={open} /> : <FileIconByPath path={node.path} />}
         </span>
         <div className="min-w-0 flex-1">
           {editing ? (
@@ -361,6 +369,7 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
   const tree = useStore(s => s.writingTree)
   const writingOrder = useStore(s => s.writingOrder)
   const moveWritingNode = useStore(s => s.moveWritingNode)
+  const loadWritingTree = useStore(s => s.loadWritingTree)
   const [endDrop, setEndDrop] = useState(false)
   const nodes = tree?.[root] ?? []
   const sorted = sortNodesByOrder(nodes, writingOrder[root])
@@ -408,6 +417,12 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
         if (e.target !== e.currentTarget) return
         e.preventDefault()
         setEndDrop(false)
+        // 外部系统文件拖入（md/xlsx/pdf/docx）：导入到根级
+        const files = Array.from(e.dataTransfer.files ?? [])
+        if (files.length > 0) {
+          await importExternalFiles(files, root, loadWritingTree)
+          return
+        }
         const src = e.dataTransfer.getData('text/writing-path')
         if (!src) return
         const srcParent = src.includes('/') ? src.slice(0, src.lastIndexOf('/')) : root
@@ -442,5 +457,71 @@ function DocIcon() {
       <polyline points="14 2 14 8 20 8" />
     </svg>
   )
+}
+
+// 文件行前缀图标：按扩展名显示类型（模块私有：不 export，避免破坏 Fast Refresh）
+function FileIconByPath({ path }: { path: string }) {
+  const kind = writingPreviewKindOf(path)
+  if (kind === 'xlsx') return <XlsxIcon />
+  if (kind === 'pdf') return <PdfIcon />
+  if (kind === 'docx') return <DocxIcon />
+  return <DocIcon />
+}
+
+// xlsx：表格网格
+function XlsxIcon() {
+  return (
+    <svg data-testid="writing-tree-icon-xlsx" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9.5h18" />
+      <path d="M9 4v16" />
+      <path d="M15 4v16" />
+    </svg>
+  )
+}
+
+// pdf：带字角标方块
+function PdfIcon() {
+  return (
+    <svg data-testid="writing-tree-icon-pdf" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <text x="12" y="15.5" textAnchor="middle" fontSize="9" fontWeight="700" fill="currentColor" stroke="none">PDF</text>
+    </svg>
+  )
+}
+
+// docx：折角文档 + 横线
+function DocxIcon() {
+  return (
+    <svg data-testid="writing-tree-icon-docx" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <path d="M9 13h6" />
+      <path d="M9 17h6" />
+    </svg>
+  )
+}
+
+// 系统文件拖入导入：取真实路径 → 调 IPC → 重载树；失败/skipped 仅 console.warn（树刷新即反馈）
+async function importExternalFiles(files: File[], targetDir: string, loadWritingTree: () => Promise<void>): Promise<void> {
+  const paths = files.map(f => ipc.getPathForFile(f)).filter(p => p.length > 0)
+  if (paths.length === 0) return
+  const r = await ipc.writingImportPaths({ targetDir, paths })
+  if (!r.ok) {
+    console.warn('[writing-import]', r.code, r.message)
+  } else if (r.value.skipped.length > 0) {
+    console.warn('[writing-import] skipped:', r.value.skipped)
+  }
+  await loadWritingTree()
+}
+
+// 重命名归一化：非 md 文件保留原扩展名（如 报表.xlsx → 新报表.xlsx），md 与目录沿用原逻辑
+function normalizeRenameForNode(name: string, node: WritingTreeNode): string {
+  if (node.kind === 'file' && writingPreviewKindOf(node.path) !== 'md') {
+    const dot = node.name.lastIndexOf('.')
+    const currentExt = dot === -1 ? '' : node.name.slice(dot + 1)
+    return normalizeWritingFileRename(name, currentExt)
+  }
+  return normalizeWritingFileName(name, node.kind === 'file')
 }
 

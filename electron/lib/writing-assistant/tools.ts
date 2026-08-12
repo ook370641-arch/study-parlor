@@ -3,6 +3,7 @@ import path from 'node:path'
 import type { AppConfig } from '../../env'
 import { readWritingFile } from '../writing-tree'
 import { topicDir } from '../library-layout'
+import { previewFile, nonMdKindOf } from '../file-preview'
 import type { NativeToolCall } from './tool-protocol'
 import type { WritingToolEvent } from '../../../src/types'
 import type { IndexEntry } from './prompt'
@@ -91,6 +92,18 @@ export async function executeTool(
         }
         if (!fs.existsSync(absPath)) {
           results.push(`⚠️ 文件不存在: ${id}（未读到内容，请勿引用）`)
+          continue
+        }
+        // 非 md 文件（xlsx/pdf/docx）走预览解析，产出 markdown 片段
+        const kind = nonMdKindOf(absPath)
+        if (kind) {
+          const rel = path.relative(cfg.libraryPath, absPath).replace(/\\/g, '/')
+          try {
+            const preview = await previewFile(cfg.libraryPath, rel)
+            results.push(`### [${type}] ${preview.title}\n\n${preview.content}`)
+          } catch {
+            results.push(`⚠️ 文件无法解析: ${id}（未读到内容，请勿引用）`)
+          }
           continue
         }
         const raw = fs.readFileSync(absPath, 'utf-8')
