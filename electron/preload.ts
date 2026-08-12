@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { IpcApi, UnsavedSession, BriefingStage, BriefingProgressSource } from '@shared/index'
 
 const api: IpcApi = {
@@ -180,6 +180,10 @@ const api: IpcApi = {
   writingRead: (a) => ipcRenderer.invoke('writing:read', a),
   writingWrite: (a) => ipcRenderer.invoke('writing:write', a),
   writingImportFiles: (a) => ipcRenderer.invoke('writing:importFiles', a),
+  writingImportPaths: (a) => ipcRenderer.invoke('writing:importPaths', a),
+  writingReadPreview: (a) => ipcRenderer.invoke('writing:readPreview', a),
+  writingOpenInSystem: (a) => ipcRenderer.invoke('writing:openInSystem', a),
+  getPathForFile: (file) => webUtils.getPathForFile(file),
   writingRefreshCatalog: () => ipcRenderer.invoke('writing:refreshCatalog'),
   writingAssistantSendMessage: (a) => ipcRenderer.invoke('writingAssistant:sendMessage', a),
   writingAssistantAbort: (a) => ipcRenderer.invoke('writingAssistant:abort', a),

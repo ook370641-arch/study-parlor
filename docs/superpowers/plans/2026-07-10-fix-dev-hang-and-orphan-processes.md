@@ -18,6 +18,7 @@
 | 2026-07-19 | 第六次 | Task 13：启动健康 E2E（dev-server 模式断言 + 负向验证） | 启动回归从「人看日志」变为自动化断言，调试闭环 |
 | 2026-07-28 | 第七次 | Task 14：消除 `spawn` DEP0190 弃用警告 | dev 日志不再出现 Node 安全警告 |
 | 2026-07-30 | 第八次 | Task 15：系统 I/O 导致首次加载偶发 28s，终端提示指向 Windows Defender 排除项 | 再次出现 `ALL resources slow` 时，开发者可自助定位修复 |
+| 2026-08-12 | 第九次 | Task 16：淡出期间并行预加载 Cover，`handleBootComplete` 不再等 chunk | 消除淡出后 ~90ms 棕色空窗，Cover 在淡出结束时即就绪 |
 
 ---
 
@@ -546,3 +547,58 @@ npm run dev  # 观察启动耗时
 
 - `.claude/rules/build-dev.md` — 构建/开发环境规则（§3 启动前清理、§5 cache 隔离、§9 双重恢复）
 - `.claude/rules/general.md` — 通用规则（§7 异步生命周期管理）
+
+---
+
+## Task 16 (2026-08-12) — 淡出期间并行预加载 Cover，消除淡出后棕色空窗
+
+**问题描述：** 用户反馈应用启动加载动画完成后，在棕色背景上"卡一下"才进入 Cover 主页。修复前日志：
+
+```
+[bootstrap] boot sequence complete [+02554ms]
+[renderer] App boot:complete received  +3185ms
+[renderer] App store.init start        +3185ms
+[renderer] App store.init done         +3233ms
+[renderer] App Cover chunk ready       +3276ms
+```
+
+boot:complete 到 Cover 就绪间隔 ~720ms = LoadingScreen 固定 700ms 淡出 + ~90ms chunk 加载（在关键路径上）。
+
+**根因分析：**
+
+Task 10 Step 10.5 注释声称"boot 期间预加载 Cover"，但 `import('@/pages/Cover')` 和 `store.init()` 实际都写在 `handleBootComplete` 里，而 `handleBootComplete` 由 LoadingScreen 在 **700ms 淡出完成之后**才调用（`onComplete`）。于是：
+
+1. Cover chunk 加载被放到了关键路径上：淡出结束后还要再等 ~90ms chunk 就绪才 `setIsBooting(false)`。
+2. Task 10 的假设"boot 期间 ~1s 的 init+probe 足够 Cover 加载"不成立——`init()` 实际只需 ~50ms，且它在淡出之后才执行，Cover 预加载与淡出完全串行。
+
+这 90ms + 700ms 淡出尾部（深棕背景上画面已静止）合起来就是用户感知的"棕色背景卡一下"。注意 LoadingScreen 文件（`setTimeout`/`transition`）近两周未变，此问题非 writing 迭代引入，而是 Task 10 预加载时机假设未兑现的历史欠账。
+
+**修复方案：**
+
+- [ ] **Step 16.1: boot:complete 一到就并行启动「Cover 预加载 + store 初始化」**
+  - 文件：`src/App.tsx`
+  - 改动：新增 `startBootWork()`（幂等，`bootWorkRef` 守卫），把 `import('@/pages/Cover')` + `init()` 移入；通过 `window.api.onBootComplete` 在淡出开始时即触发；`handleBootComplete` 改为仅 `await startBootWork()` 后 `setIsBooting(false)`（`llmProbe` 仍留在非关键路径）
+  - 原因：Cover chunk 与 store 初始化在 700ms 淡出期间完成，淡出结束时 Cover 已就绪，消除关键路径上的 chunk 加载与淡出后的棕色空窗
+  - 幂等设计：boot:complete 事件与 reload 场景的 alreadyCompleted 都会命中，靠 `bootWorkRef` 保证同一 boot 只执行一次（不触发看门狗 duplicate init）
+
+**验证：**
+
+```bash
+npm run dev
+# 预期时序：store.init start/done 出现在淡出期间（boot:complete 之后、boot:complete received 之前）；
+# Cover chunk ready 与 boot:complete received 同一 tick（不再有 ~90ms 空窗）
+# 看门狗：verdict HEALTHY，无 duplicate init，无 page reload
+```
+
+修复前后对比（同一台机器实测）：
+
+| 事件 | 修复前 | 修复后 |
+|------|--------|--------|
+| store.init start | +3185ms（淡出后） | +2506ms（淡出期间） |
+| Cover chunk ready | +3276ms（boot:complete 后 722ms） | +3207ms（与 boot:complete received 同 tick） |
+
+**相关提交：** 本次改动（`src/App.tsx`）
+
+**对修订历史的影响：** 更新顶部修订历史表；修正 Task 10 Step 10.5 的时机描述——预加载必须在 `handleBootComplete`（淡出后）之前触发，才能兑现"boot 期间预加载 Cover"的意图。
+
+**补充观察：** 700ms 淡出本身是 `2026-05-31-loading-screen-design.md` 设计的转场时长。本 Task 只消除淡出后空窗；若后续仍觉得淡出拖沓，可单独调短 LoadingScreen 的淡出时长（`setTimeout` 与 `transition`），不属本 Task 范围。

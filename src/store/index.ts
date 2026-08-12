@@ -6,7 +6,7 @@ import { mergeArticlesByUrl } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
-import { childrenPathsOf } from '@/lib/writing-tree-utils'
+import { childrenPathsOf, writingPreviewKindOf } from '@/lib/writing-tree-utils'
 import { attributeMessages } from '@/lib/collection-attribution'
 import { splitArticleIntoChunks } from '@/lib/article-chunks'
 import type {
@@ -17,7 +17,7 @@ import type {
   ArticleAnnotation, ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
-  WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent,
+  WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingPreviewKind,
   ScoutConversationMeta, ScoutMessage, ScoutArticleMeta, GuideProgress,
   BriefingCollectionEntry,
   BriefingCollectionQA,
@@ -387,7 +387,7 @@ type AppStore = {
 
   // 写作板
   writingTree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null
-  writingFile: { path: string; body: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
+  writingFile: { path: string; body: string; kind: WritingPreviewKind; truncated?: boolean; previewError?: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
   writingError: string | null
   writingFontSize: BriefingFontSize
   writingTone: WritingTone
@@ -2485,10 +2485,32 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!filePath) return set({ writingFile: null })
     const cur = get().writingFile
     if (cur?.dirty) await get().saveWritingFile()
+    const kind = writingPreviewKindOf(filePath)
+    // 非 md 文件没有编辑器/助手会话，读取失败时展示 previewError 而非整页错误
+    if (kind !== 'md') {
+      const r = await ipc.writingReadPreview({ path: filePath })
+      if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
+      if (r.ok) {
+        set({
+          writingFile: {
+            path: filePath,
+            body: r.value.content ?? '',
+            kind: r.value.kind,
+            truncated: r.value.truncated,
+            dirty: false,
+            saving: 'idle',
+          },
+          lastWritingFile: filePath,
+        })
+      } else {
+        set({ writingFile: { path: filePath, body: '', kind, dirty: false, saving: 'idle', previewError: r.message }, lastWritingFile: filePath })
+      }
+      return
+    }
     const r = await ipc.writingRead({ path: filePath })
     if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
     if (r.ok) {
-      set({ writingFile: { path: filePath, body: r.value.body ?? '', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+      set({ writingFile: { path: filePath, body: r.value.body ?? '', kind: 'md', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
       // 切换文章时重置快照点亮状态，避免把上一篇文章的挂快照意图带到新文章
       if (cur?.path !== filePath) set({ writingAssistantSnapshotLit: false })
       // 切换文章时重置并恢复该文章的助手会话：防止旧文章消息串台写入新文章的

@@ -1,0 +1,121 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import ExcelJS from 'exceljs'
+import { previewFile, nonMdKindOf, XLSX_MAX_ROWS, XLSX_MAX_SHEETS } from '../electron/lib/file-preview'
+
+const FIXTURES = path.join(__dirname, 'fixtures')
+const sample = (name: string) => path.join(FIXTURES, name)
+
+let lib: string
+beforeEach(() => {
+  lib = fs.mkdtempSync(path.join(os.tmpdir(), 'wprev-'))
+  fs.mkdirSync(path.join(lib, 'writing'), { recursive: true })
+})
+afterEach(() => { fs.rmSync(lib, { recursive: true, force: true }) })
+
+/** 把 fixture 拷进临时学习库 writing 根级，返回相对路径。 */
+function seed(name: string): string {
+  const rel = `writing/${name}`
+  fs.copyFileSync(sample(name), path.join(lib, rel))
+  return rel
+}
+
+describe('nonMdKindOf', () => {
+  it('识别 xlsx/pdf/docx，其余返回 null', () => {
+    expect(nonMdKindOf('a.xlsx')).toBe('xlsx')
+    expect(nonMdKindOf('a.PDF')).toBe('pdf') // 大写
+    expect(nonMdKindOf('dir/a.docx')).toBe('docx')
+    expect(nonMdKindOf('a.md')).toBeNull()
+    expect(nonMdKindOf('a.txt')).toBeNull()
+  })
+})
+
+describe('previewFile: xlsx', () => {
+  it('渲染 sheet 名 + GFM 表格（表头/数据/日期格式化）', async () => {
+    const rel = seed('sample.xlsx')
+    const r = await previewFile(lib, rel)
+    expect(r.kind).toBe('xlsx')
+    expect(r.title).toBe('sample.xlsx')
+    expect(r.truncated).toBe(false)
+    expect(r.content).toContain('## 成绩表')
+    expect(r.content).toContain('| 姓名 | 科目 | 分数 | 日期 |')
+    expect(r.content).toContain('| 张三 | 数学 | 95 |')
+    expect(r.content).toContain('| ---')
+  })
+
+  it('超行数/超 sheet 数截断并标记 truncated', async () => {
+    const wb = new ExcelJS.Workbook()
+    for (let s = 0; s < XLSX_MAX_SHEETS + 2; s++) {
+      const ws = wb.addWorksheet(`Sheet${s}`)
+      const header = ['A', 'B']
+      ws.addRow(header)
+      for (let i = 0; i <= XLSX_MAX_ROWS; i++) ws.addRow([i, `v${i}`])
+    }
+    const abs = path.join(lib, 'writing', 'big.xlsx')
+    await wb.xlsx.writeFile(abs)
+    const r = await previewFile(lib, 'writing/big.xlsx')
+    expect(r.truncated).toBe(true)
+    expect(r.content).toContain('仅显示前')
+    // 不应出现超出上限的 sheet 标题
+    expect(r.content).not.toContain(`Sheet${XLSX_MAX_SHEETS}`)
+  })
+
+  it('空工作表友好提示', async () => {
+    const wb = new ExcelJS.Workbook()
+    wb.addWorksheet('空表')
+    const abs = path.join(lib, 'writing', 'empty.xlsx')
+    await wb.xlsx.writeFile(abs)
+    const r = await previewFile(lib, 'writing/empty.xlsx')
+    expect(r.content).toContain('空工作表')
+  })
+})
+
+describe('previewFile: docx', () => {
+  it('文本转 markdown，粗体保留、表格转 GFM', async () => {
+    const rel = seed('sample.docx')
+    const r = await previewFile(lib, rel)
+    expect(r.kind).toBe('docx')
+    expect(r.content).toContain('标题测试')
+    expect(r.content).toContain('**加粗**')
+    expect(r.content).toContain('| A1 | B1 |')
+    expect(r.content).toContain('| ---')
+  })
+})
+
+describe('previewFile: pdf', () => {
+  it('按页抽取文本，含页码标题', async () => {
+    const rel = seed('sample.pdf')
+    const r = await previewFile(lib, rel)
+    expect(r.kind).toBe('pdf')
+    expect(r.content).toContain('## 第 1 页')
+    expect(r.content).toContain('Hello PDF from Study Parlor spike')
+    expect(r.truncated).toBe(false)
+  })
+
+  it('无文本层 PDF 抛 PDF_NO_TEXT', async () => {
+    const rel = seed('blank.pdf')
+    await expect(previewFile(lib, rel)).rejects.toMatchObject({ code: 'PDF_NO_TEXT' })
+  })
+})
+
+describe('previewFile: 错误与边界', () => {
+  it('损坏文件抛 PREVIEW_PARSE_ERROR', async () => {
+    fs.writeFileSync(path.join(lib, 'writing', 'bad.xlsx'), 'not a real xlsx')
+    await expect(previewFile(lib, 'writing/bad.xlsx')).rejects.toMatchObject({ code: 'PREVIEW_PARSE_ERROR' })
+  })
+
+  it('文件不存在抛 PREVIEW_PARSE_ERROR', async () => {
+    await expect(previewFile(lib, 'writing/nope.xlsx')).rejects.toMatchObject({ code: 'PREVIEW_PARSE_ERROR' })
+  })
+
+  it('不支持的扩展名抛 PREVIEW_PARSE_ERROR', async () => {
+    fs.writeFileSync(path.join(lib, 'writing', 'a.txt'), 'hi')
+    await expect(previewFile(lib, 'writing/a.txt')).rejects.toMatchObject({ code: 'PREVIEW_PARSE_ERROR' })
+  })
+
+  it('路径穿越被拒（assertInsideRoots）', async () => {
+    await expect(previewFile(lib, '../../etc/passwd.xlsx')).rejects.toMatchObject({ code: 'WRITING_PATH_FORBIDDEN' })
+  })
+})

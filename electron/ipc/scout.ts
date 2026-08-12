@@ -101,13 +101,14 @@ export function registerScoutIpc(cfg: AppConfig): void {
             signal: ctl.signal,
           },
           {
-            chatStream: (opts, onChunk, onReasoning) =>
-              chatStream(
+            chatStream: async (opts, onChunk, onReasoning) => {
+              await chatStream(
                 cfg,
                 { messages: opts.messages, temperature: opts.temperature, signal: opts.signal, thinking: opts.thinking as any },
                 onChunk,
                 onReasoning,
-              ),
+              )
+            },
             buildDeps: async (precheckCache: Map<string, FetchedArticle>) => {
               const searchKey = await getSearchApiKey()
               return {

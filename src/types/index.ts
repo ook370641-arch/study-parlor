@@ -487,7 +487,22 @@ export type JobBriefingResult = {
 }
 
 export type WritingRoot = 'writing' | 'repository'
-export type WritingErrorCode = 'WRITING_IO_ERROR' | 'WRITING_PATH_FORBIDDEN' | 'WRITING_NOT_FOUND' | 'WRITING_NAME_CONFLICT'
+export type WritingErrorCode = 'WRITING_IO_ERROR' | 'WRITING_PATH_FORBIDDEN' | 'WRITING_NOT_FOUND' | 'WRITING_NAME_CONFLICT' | 'PREVIEW_PARSE_ERROR' | 'PDF_NO_TEXT'
+
+// ── 非 markdown 文件预览支持（writing 树中放置并阅读 xlsx/pdf/docx）──
+export const NON_MD_EXTENSIONS = ['xlsx', 'pdf', 'docx'] as const
+export type NonMdKind = (typeof NON_MD_EXTENSIONS)[number]
+export type WritingPreviewKind = 'md' | NonMdKind
+export type WritingPreviewResult = {
+  kind: NonMdKind
+  title: string
+  content: string
+  truncated: boolean
+}
+export function isNonMdExt(ext: string): ext is NonMdKind {
+  return (NON_MD_EXTENSIONS as readonly string[]).includes(ext.toLowerCase())
+}
+
 export type WritingResult<T> = { ok: true; value: T } | { ok: false; code: WritingErrorCode; message: string }
 export type WritingTreeNode = {
   name: string
@@ -789,7 +804,11 @@ export type IpcApi = {
   writingDelete: (a: { path: string }) => Promise<WritingResult<{ moved: { from: string; to: string }[] }>>
   writingRead: (a: { path: string }) => Promise<WritingResult<{ frontmatter: Record<string, unknown>; body: string }>>
   writingWrite: (a: { path: string; body: string }) => Promise<WritingResult<null>>
-  writingImportFiles: (a: { targetDir: string }) => Promise<WritingResult<{ imported: string[] }>>
+  writingImportFiles: (a: { targetDir: string }) => Promise<WritingResult<{ imported: string[]; skipped: string[] }>>
+  writingImportPaths: (a: { targetDir: string; paths: string[] }) => Promise<WritingResult<{ imported: string[]; skipped: string[] }>>
+  writingReadPreview: (a: { path: string }) => Promise<WritingResult<WritingPreviewResult>>
+  writingOpenInSystem: (a: { path: string }) => Promise<WritingResult<null>>
+  getPathForFile: (file: File) => string
   writingRefreshCatalog: () => Promise<WritingResult<{ refreshed: number }>>
   writingAssistantSendMessage: (a: {
     sessionId: string

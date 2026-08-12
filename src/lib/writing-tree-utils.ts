@@ -1,4 +1,5 @@
-import type { WritingTreeNode, WritingRoot, WritingErrorCode } from '@shared/index'
+import { isNonMdExt } from '@shared/index'
+import type { WritingTreeNode, WritingRoot, WritingErrorCode, WritingPreviewKind, NonMdKind } from '@shared/index'
 
 /** 递归统计 WritingTreeNode 树中 file 节点的数量。 */
 export function countFiles(nodes: WritingTreeNode[] | undefined): number {
@@ -80,6 +81,25 @@ export function displayWritingName(node: { name: string; kind: 'file' | 'dir' })
 export function normalizeWritingFileName(name: string, isFile: boolean): string {
   if (!isFile) return name
   return name.endsWith('.md') ? name : `${name}.md`
+}
+
+/**
+ * 非 md 文件重命名归一化：保留原扩展名（调用方传入原节点扩展名）。
+ * 非 md 补 .md 会破坏二进制文件；无扩展名输入时回退到原扩展名。
+ */
+export function normalizeWritingFileRename(name: string, currentExt: string): string {
+  const trimmed = name.trim()
+  const dot = trimmed.lastIndexOf('.')
+  if (dot > 0) return trimmed // 用户已显式带扩展名
+  const ext = currentExt.startsWith('.') ? currentExt : `.${currentExt}`
+  return `${trimmed}${ext}`
+}
+
+/** 从文件路径推断预览类型：.xlsx/.pdf/.docx → 对应类型，其余 → 'md'。 */
+export function writingPreviewKindOf(filePath: string): WritingPreviewKind {
+  const dot = filePath.lastIndexOf('.')
+  const ext = dot === -1 ? '' : filePath.slice(dot + 1).toLowerCase()
+  return isNonMdExt(ext) ? (ext as NonMdKind) : 'md'
 }
 
 /** 日记分组新建预填：仅 writing 根级「日记」分组直接子级，返回当天 M.D；已存在同名文件返回空串。 */

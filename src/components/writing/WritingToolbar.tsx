@@ -7,7 +7,7 @@ import {
 } from '@milkdown/preset-commonmark'
 import { runCollapsedBlockCommand } from '@/lib/milkdown-collapse-selection'
 import { insertHrCleanCommand } from '@/lib/milkdown-orbit-hr'
-import { QuoteIcon, HrIcon } from '@/lib/writing-toolbar-icons.tsx'
+import { QuoteIcon, HrIcon } from '@/lib/writing-toolbar-icons'
 import { editorViewCtx } from '@milkdown/core'
 import { Selection, TextSelection } from '@milkdown/prose/state'
 

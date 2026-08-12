@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
+import { isNonMdExt } from '@shared/index'
 import type { WritingRoot, WritingTreeNode } from '@shared/index'
 
 // ── constants ────────────────────────────────────────────────
@@ -81,6 +82,11 @@ export function ensureRoots(lib: string): void {
   }
 }
 
+/** 是否为写作树中可预览的非 md 文件（xlsx/pdf/docx）。 */
+export function isNonMdPath(rel: string): boolean {
+  return isNonMdExt(path.extname(rel).slice(1))
+}
+
 // ── scan ─────────────────────────────────────────────────────
 
 function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
@@ -99,11 +105,11 @@ function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
         kind: 'dir',
         children,
       })
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+    } else if (entry.isFile() && (entry.name.toLowerCase().endsWith('.md') || isNonMdExt(path.extname(entry.name).slice(1)))) {
       const relPath = toRel(lib, path.join(absoluteDir, entry.name))
       result.push({ name: entry.name, path: relPath, kind: 'file' })
     }
-    // ignore non-md files
+    // ignore other files
   }
 
   // sort: dirs first, then by zh localeCompare
@@ -140,6 +146,18 @@ export function createFile(lib: string, root: WritingRoot, dir: string, name: st
   const content = matter.stringify('', frontmatter)
   fs.writeFileSync(absPath, content, 'utf-8')
 
+  return toRel(lib, absPath)
+}
+
+/** 把外部二进制文件（xlsx/pdf/docx）按原名拷入写作库；重名自动加时间戳后缀。 */
+export function importBinaryFile(lib: string, root: WritingRoot, dir: string, srcPath: string): string {
+  const relDir = dir ? `${root}/${dir}` : root
+  const absDir = assertInsideRoots(lib, relDir)
+  createDir(absDir)
+  const name = path.basename(srcPath)
+  const safeName = uniqueName(absDir, name)
+  const absPath = path.join(absDir, safeName)
+  fs.copyFileSync(srcPath, absPath)
   return toRel(lib, absPath)
 }
 

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { WritingCatalog, WritingCatalogEntry, WritingGroupSummaryEntry, WritingRoot, WritingTreeNode } from '@shared/index'
-import { scanRoot } from './writing-tree'
+import { isNonMdPath, scanRoot } from './writing-tree'
 
 const EMPTY: WritingCatalog = { version: 2, entries: {}, groups: {} }
 
@@ -97,7 +97,7 @@ export function migratePrefix(lib: string, root: WritingRoot, oldRel: string, ne
 function collectMdPaths(nodes: WritingTreeNode[]): string[] {
   const result: string[] = []
   for (const n of nodes) {
-    if (n.kind === 'file') result.push(n.path)
+    if (n.kind === 'file' && !isNonMdPath(n.path)) result.push(n.path)
     if (n.children) result.push(...collectMdPaths(n.children))
   }
   return result
@@ -118,7 +118,7 @@ export function diffStale(lib: string, root: WritingRoot): string[] {
 function collectDescendantFiles(node: WritingTreeNode): string[] {
   const out: string[] = []
   const walk = (n: WritingTreeNode) => {
-    if (n.kind === 'file') { out.push(n.path); return }
+    if (n.kind === 'file') { if (!isNonMdPath(n.path)) out.push(n.path); return }
     for (const c of n.children ?? []) walk(c)
   }
   walk(node)

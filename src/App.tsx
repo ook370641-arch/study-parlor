@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react'
 import { useStore } from '@/store'
 import { Toast } from '@/components/Toast'
 import { PreStudyModal } from '@/components/PreStudyModal'
@@ -60,6 +60,36 @@ export function App() {
   useEffect(() => { initScoutRuntime() }, [])
   useEffect(() => { initAnthropicRuntime() }, [])
 
+  // boot:complete 一到即并行启动「Cover 预加载 + store 初始化」，与 LoadingScreen
+  // 的 700ms 淡出重叠 —— 淡出结束时 Cover 已就绪，handleBootComplete 无需再等
+  // chunk 加载，消除淡出后的棕色空窗。
+  // （原实现把 import/init 放在淡出之后的 handleBootComplete 里，Task 10 的
+  //   "boot 期间预加载 Cover" 时机假设未兑现，chunk 加载被放到了关键路径上。）
+  // 幂等：boot:complete 事件与 reload 场景的 alreadyCompleted 都会命中，靠
+  // bootWorkRef 保证同一 boot 只执行一次。
+  const bootWorkRef = useRef<Promise<void> | null>(null)
+  const startBootWork = useCallback((): Promise<void> => {
+    if (bootWorkRef.current) return bootWorkRef.current
+    bootWorkRef.current = (async () => {
+      const coverReady = import('@/pages/Cover')
+      window.api?.logTiming('App store.init start', performance.now())
+      try {
+        await init()
+        window.api?.logTiming('App store.init done', performance.now())
+      } catch (err: any) {
+        console.error('init failed', err)
+        useStore.getState().showToast('初始化失败:' + err.message)
+      }
+      await coverReady
+    })()
+    return bootWorkRef.current
+  }, [init])
+
+  // boot:complete 事件触发即开始预加载（与 LoadingScreen 的淡出并行）
+  useEffect(() => {
+    return window.api?.onBootComplete(() => { startBootWork() })
+  }, [startBootWork])
+
   // After boot, prefetch the common page chunks during idle. Pages are
   // React.lazy (see below) wrapped in <Suspense fallback={null}>, so the first
   // navigation into a not-yet-loaded page renders nothing while its chunk is
@@ -94,22 +124,12 @@ export function App() {
     const tBoot = performance.now()
     window.api?.logTiming('App boot:complete received', tBoot)
 
-    // 在 boot 期间预加载首屏页面（Cover），并在关闭 LoadingScreen 前
-    // 确保 chunk 已就绪。Cover 是 React.lazy 的，若模块未就绪时触发
-    // 重渲染，Suspense 会渲染 fallback=null，露出棕色背景。
-    // 宁可 LoadingScreen 多停片刻，也不让用户看到棕色闪屏。
-    const coverReady = import('@/pages/Cover')
+    // Cover 预加载 + store.init 已在 boot:complete 时启动（startBootWork），
+    // 淡出期间已就绪；这里只需等待后切出 LoadingScreen，不再有 chunk 加载空窗。
+    await startBootWork()
+    window.api?.logTiming('App Cover chunk ready', performance.now())
 
-    // 与 Cover 加载并行执行 store 初始化
-    window.api?.logTiming('App store.init start', performance.now())
-    try {
-      await init()
-      window.api?.logTiming('App store.init done', performance.now())
-    } catch (err: any) {
-      console.error('init failed', err)
-      useStore.getState().showToast('初始化失败:' + err.message)
-    }
-    // 探活模型结果
+    // 探活模型结果（非关键路径）
     ipc.llmProbe().then(r => {
       if (!r.ok) {
         const reason = r.reason ?? '未知'
@@ -121,9 +141,6 @@ export function App() {
       }
     }).catch(() => { /* 网络失败,推迟到首次调用 */ })
 
-    // 确保 Cover chunk 已就绪再关闭 LoadingScreen，杜绝棕色闪屏
-    await coverReady
-    window.api?.logTiming('App Cover chunk ready', performance.now())
     setIsBooting(false)
   }
 
