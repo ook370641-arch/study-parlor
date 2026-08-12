@@ -78,6 +78,14 @@ describe('scanRoot', () => {
     const tree = scanRoot(lib, 'writing')
     expect(tree.map(n => n.name)).toEqual(['日记', '随笔', 'a.md', 'b.md'])
   })
+
+  it('隐藏 Office/WPS 锁文件（~$ 前缀）', () => {
+    fs.mkdirSync(path.join(lib, 'writing'), { recursive: true })
+    fs.writeFileSync(path.join(lib, 'writing/报表.xlsx'), 'data')
+    fs.writeFileSync(path.join(lib, 'writing/~$报表.xlsx'), 'lock')
+    const tree = scanRoot(lib, 'writing')
+    expect(tree.map(n => n.name)).toEqual(['报表.xlsx'])
+  })
 })
 
 describe('assertInsideRoots / 越界保护', () => {

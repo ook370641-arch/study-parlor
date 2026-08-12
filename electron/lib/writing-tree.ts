@@ -18,6 +18,8 @@ const HIDDEN_FILE_PATTERNS = [
   // 回收站设计已于 2026-08-09 下线（改为确认后真删）；保留隐藏规则防止
   // 老库残留的 .trash 目录在树里显示成分组。
   /^\.trash$/,
+  // Office/WPS 打开文件时生成的锁文件（~$报表.xlsx），不是用户文档
+  /^~\$/,
 ]
 
 function isHidden(name: string): boolean {

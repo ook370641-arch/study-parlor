@@ -90,11 +90,31 @@ async function parseXlsx(absPath: string): Promise<{ content: string; truncated:
   for (const ws of sheets) {
     parts.push(`## ${ws.name || 'Sheet'}`)
     parts.push('')
+    // 合并单元格：仅主单元格取值，从单元格输出空 —— exceljs 对合并区域内每个
+    // 单元格都返回主值，直接读会让值在合并宽度内重复（如跨列标题重复好几遍）。
+    const mergeSlaves = new Set<string>()
+    const colToNum = (col: string): number => col.split('').reduce((acc, ch) => acc * 26 + (ch.charCodeAt(0) - 64), 0)
+    for (const range of (ws.model.merges as string[] | undefined) ?? []) {
+      const m = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(range)
+      if (!m) continue
+      const [tlRow, tlCol, brRow, brCol] = [parseInt(m[2], 10), colToNum(m[1]), parseInt(m[4], 10), colToNum(m[3])]
+      for (let r = tlRow; r <= brRow; r++) {
+        for (let c = tlCol; c <= brCol; c++) {
+          if (r !== tlRow || c !== tlCol) mergeSlaves.add(`${r},${c}`)
+        }
+      }
+    }
     const rows: string[][] = []
+    let maxCol = 0
     ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
       if (rowNumber > XLSX_MAX_ROWS) { truncated = true; return }
       const cells: string[] = []
-      for (let c = 1; c <= XLSX_MAX_COLS; c++) cells.push(mdCell(cellToText(row.getCell(c).value)))
+      for (let c = 1; c <= XLSX_MAX_COLS; c++) {
+        const v = mergeSlaves.has(`${rowNumber},${c}`) ? '' : row.getCell(c).value
+        const text = cellToText(v)
+        cells.push(mdCell(text))
+        if (text !== '') maxCol = Math.max(maxCol, c)
+      }
       rows.push(cells)
     })
     if (rows.length === 0) {
@@ -102,10 +122,13 @@ async function parseXlsx(absPath: string): Promise<{ content: string; truncated:
       parts.push('')
       continue
     }
-    const header = rows[0]
-    parts.push(`| ${header.join(' | ')} |`)
+    // 只保留到最大非空列，避免整表被 30 列空单元格撑开成「平铺」假象
+    const colCount = Math.max(Math.min(maxCol, XLSX_MAX_COLS), 1)
+    const rowMd = (cells: string[]) => cells.slice(0, colCount).map(c => c || ' ').join(' | ')
+    const header = rows[0].slice(0, colCount)
+    parts.push(`| ${rowMd(rows[0])} |`)
     parts.push(`|${header.map(() => ' --- ').join('|')}|`)
-    for (let i = 1; i < rows.length; i++) parts.push(`| ${rows[i].join(' | ')} |`)
+    for (let i = 1; i < rows.length; i++) parts.push(`| ${rowMd(rows[i])} |`)
     parts.push('')
   }
   if (truncated) {

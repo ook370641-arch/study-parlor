@@ -70,6 +70,35 @@ describe('previewFile: xlsx', () => {
     const r = await previewFile(lib, 'writing/empty.xlsx')
     expect(r.content).toContain('空工作表')
   })
+
+  it('只保留有效列，不填充 30 列空单元格', async () => {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('S')
+    ws.addRow(['课程', '名称'])
+    ws.addRow(['语文', '古诗'])
+    const abs = path.join(lib, 'writing', '窄.xlsx')
+    await wb.xlsx.writeFile(abs)
+    const r = await previewFile(lib, 'writing/窄.xlsx')
+    const first = r.content.split('\n').find(l => l.startsWith('| 课程'))
+    expect(first).toBe('| 课程 | 名称 |')
+    // 不应出现尾部空列
+    expect(first).not.toMatch(/ \|  \|/)
+  })
+
+  it('合并单元格只在主单元格取值一次', async () => {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('数据')
+    ws.mergeCells('A1:C1')
+    ws.getCell('A1').value = '成绩总表'
+    ws.addRow(['课程', '名称'])
+    ws.addRow(['语文', '古诗'])
+    const abs = path.join(lib, 'writing', '合并.xlsx')
+    await wb.xlsx.writeFile(abs)
+    const r = await previewFile(lib, 'writing/合并.xlsx')
+    // 主单元格有值，从单元格为空
+    expect(r.content).toContain('| 成绩总表 |')
+    expect(r.content.split('成绩总表')).toHaveLength(2) // 恰好出现一次（正文一次）
+  })
 })
 
 describe('previewFile: docx', () => {
