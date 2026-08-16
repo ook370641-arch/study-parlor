@@ -54,6 +54,17 @@ describe('load 回退', () => {
     fs.writeFileSync(profilePathFor(lib), '{broken', 'utf8')
     expect(loadProfile(lib)).toEqual(DEFAULT_PROFILE)
   })
+
+  it('默认值不共享引用：mutate 第一次返回不影响第二次', () => {
+    const first = loadBlogCache(lib)
+    first.cache.articles.push({ url: 'https://x.com/pollute' } as any)
+    first.cache.sectionStatus!['news'] = { fetchedAt: 'x', error: null } as any
+    first.cache.articleMetaCache!['https://x.com/pollute'] = { title: null, publishedAt: null, summary: null, imageUrl: null }
+    const second = loadBlogCache(lib)
+    expect(second.cache.articles).toHaveLength(0)
+    expect(second.cache.sectionStatus).toEqual({})
+    expect(second.cache.articleMetaCache).toEqual({})
+  })
 })
 
 describe('save/load 往返', () => {

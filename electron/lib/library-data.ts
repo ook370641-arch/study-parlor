@@ -17,14 +17,6 @@ type BlogCacheFile = {
   lastSeenAt: string | null
 }
 
-const DEFAULT_BLOG_CACHE_FILE: BlogCacheFile = {
-  lastFetchedAt: null,
-  articles: [],
-  sectionStatus: {},
-  articleMetaCache: {},
-  lastSeenAt: null,
-}
-
 export function profilePathFor(lib: string): string {
   return path.join(lib, '.profile.json')
 }
@@ -49,7 +41,7 @@ export function saveProfile(lib: string, profile: Profile): void {
 }
 
 export function loadBlogCache(lib: string): { cache: AnthropicBlogCache; lastSeenAt: string | null } {
-  const raw = safeReadJson<Partial<BlogCacheFile>>(blogCachePathFor(lib), { fallback: DEFAULT_BLOG_CACHE_FILE })
+  const raw = safeReadJson<Partial<BlogCacheFile>>(blogCachePathFor(lib), { fallback: {} })
   return {
     cache: {
       lastFetchedAt: raw.lastFetchedAt ?? null,
