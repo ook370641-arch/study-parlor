@@ -1,6 +1,6 @@
 // tests/state-library.test.ts
 // vitest.config.ts 的 mock-electron 插件已提供 ipcMain.handle 桩，无需 vi.mock
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -101,5 +101,42 @@ describe('读路径兜底迁移', () => {
     expect(getCurrentState().profile.name).toBe('seed 画像')
     expect(fs.existsSync(profilePathFor(lib))).toBe(true)
     expect(readStateRaw().profile).toBeUndefined()
+  })
+
+  it('迁移抛错时回退 state.json 真实值，不用库内空默认值覆盖，也不剥离 state.json', () => {
+    // 制造迁移失败：.profile.json.tmp 占为目录 → saveProfile 的 writeFileSync(tmp) 必抛错。
+    // （不能直接把 .profile.json 建成目录——existsSync 对目录为 true，迁移会跳过保存。）
+    fs.mkdirSync(profilePathFor(lib) + '.tmp')
+    fs.writeFileSync(path.join(stateDir, 'state.json'), JSON.stringify({
+      profile: { name: '真实画像', profile_text: 'text', preferred_topics: ['x'] },
+    }), 'utf8')
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const state = getCurrentState()
+    errSpy.mockRestore()
+    // 返回 state.json 中的真实 profile，而非库内空默认值
+    expect(state.profile.name).toBe('真实画像')
+    expect(state.profile.preferred_topics).toEqual(['x'])
+    // 库内文件未建成、state.json 未剥离，留待下次读取重试迁移
+    expect(fs.existsSync(profilePathFor(lib))).toBe(false)
+    expect((readStateRaw().profile as { name?: string })?.name).toBe('真实画像')
+  })
+})
+
+describe('写路径兜底迁移', () => {
+  it('首个动作是 patchState（无任何 read）时先迁移，state.json 种子值不被抹掉', () => {
+    // 库内文件缺失 + 外部在运行中直接写 state.json 五字段
+    fs.writeFileSync(path.join(stateDir, 'state.json'), JSON.stringify({
+      profile: { name: 'seed 画像', profile_text: '', preferred_topics: [] },
+    }), 'utf8')
+    expect(fs.existsSync(profilePathFor(lib))).toBe(false)
+    // 不先调任何 read，直接 patch 无关字段
+    patchState({ writingFontSize: 'lg' })
+    // profile 被迁移进库内文件，而不是随 delete LIBRARY_KEYS 被抹掉
+    expect(loadProfile(lib).name).toBe('seed 画像')
+    const raw = readStateRaw()
+    expect(raw.writingFontSize).toBe('lg')
+    for (const k of ['profile', 'anthropicBlogCache', 'anthropicBlogLastSeenAt', 'jobProfile', 'jobBriefingConfig']) {
+      expect(raw[k]).toBeUndefined()
+    }
   })
 })

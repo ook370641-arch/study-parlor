@@ -90,7 +90,11 @@ function withLibraryData(base: StateJson): StateJson {
   try {
     migrateLibraryData(lib, getStateDir())
   } catch (err) {
+    // 迁移失败时绝不能继续叠加——库内文件可能缺失，load* 会返回全空默认值，
+    // 覆盖 base 中 state.json 的真实值，后续写库还会把"库内已存在"坐实。
+    // 直接返回 base：state.json 值仍在，下次读取自动重试迁移。
     console.error('[state] library migration failed:', err)
+    return base
   }
   const { cache, lastSeenAt } = loadBlogCache(lib)
   const job = loadJobData(lib)
@@ -129,6 +133,18 @@ export function getCurrentState(): StateJson {
 
 export function patchState(patch: Partial<StateJson>): void {
   const lib = getLibraryPath()
+  // 写前先兜底迁移（幂等，正常秒退）：堵住"未导入先删除"窗口——
+  // 库内文件缺失 + 外部在运行中写入 state.json 五字段 + 首个动作是 patch 而非 read 时，
+  // 种子值必须先落库，否则下方 delete LIBRARY_KEYS 会把未迁移的数据直接抹掉。
+  let migrationOk = true
+  if (lib) {
+    try {
+      migrateLibraryData(lib, getStateDir())
+    } catch (err) {
+      console.error('[state] pre-patch migration failed:', err)
+      migrationOk = false
+    }
+  }
   const statePatch: Record<string, unknown> = {}
   const libraryPatch: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(patch)) {
@@ -168,8 +184,9 @@ export function patchState(patch: Partial<StateJson>): void {
     }
 
     // 关键：基座含 DEFAULT 的五字段默认值，落盘前必须剔除，
-    // 否则任何无关 patch 都会把已剥离的 key 重新写回 state.json
-    if (lib) {
+    // 否则任何无关 patch 都会把已剥离的 key 重新写回 state.json。
+    // 迁移失败（migrationOk=false）时保留 state.json 原值，留待下次重试，绝不抹掉。
+    if (lib && migrationOk) {
       for (const k of LIBRARY_KEYS) delete merged[k]
     }
 
@@ -177,7 +194,7 @@ export function patchState(patch: Partial<StateJson>): void {
   }
 
   if (Object.keys(libraryPatch).length > 0 && lib) {
-    if (libraryPatch.profile) {
+    if ('profile' in libraryPatch) {
       saveProfile(lib, libraryPatch.profile as Profile)
     }
     if (libraryPatch.anthropicBlogCache || 'anthropicBlogLastSeenAt' in libraryPatch) {
