@@ -144,7 +144,7 @@ export function createFile(lib: string, root: WritingRoot, dir: string, name: st
   const fileName = name.endsWith('.md') ? name : `${name}.md`
   const safeName = uniqueName(absDir, fileName)
   const absPath = path.join(absDir, safeName)
-  const frontmatter = { type: 'writing' as const }
+  const frontmatter = { type: 'writing' as const, created: new Date().toISOString() }
   const content = matter.stringify('', frontmatter)
   fs.writeFileSync(absPath, content, 'utf-8')
 
