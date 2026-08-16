@@ -22,7 +22,7 @@ import { registerCollectionIpc } from './collection'
 export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
   registerConfigIpc()
   registerFilesIpc(cfg)
-  registerStateIpc()
+  registerStateIpc(cfg)
   registerLlmIpc(cfg, getMainWindow)
   registerSessionsIpc()
   registerBriefingIpc(cfg)
