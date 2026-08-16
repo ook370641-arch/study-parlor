@@ -120,7 +120,8 @@
       "sources": [
         "src/pages/Cover.tsx",
         "src/pages/Home.tsx",
-        "src/pages/Profile.tsx"
+        "src/pages/Profile.tsx",
+        "electron/lib/library-data.ts"
       ],
       "specs": [
         "cover.spec.ts",
