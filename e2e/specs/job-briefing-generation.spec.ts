@@ -45,7 +45,7 @@ test.describe('@p1 job briefing generation', () => {
     await expect(window.locator(SELECTORS.briefing.jobCard).first()).toContainText('25-40K')
   })
 
-  test('profile fill removes hint banner and persists to state.json', async ({ window, testConfigDir }) => {
+  test('profile fill removes hint banner and persists to library .config.json', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
@@ -82,13 +82,13 @@ test.describe('@p1 job briefing generation', () => {
     // Filled profile -> hint banner must NOT appear
     await expect(window.locator('[data-testid="job-briefing-profile-hint"]')).not.toBeVisible()
 
-    // Verify state.json persistence
-    const statePath = path.join(testConfigDir, 'state.json')
-    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.jobProfile.targetRoles).toContain('AI产品经理')
-    expect(state.jobProfile.direction).toContain('大模型/Agent')
-    expect(state.jobProfile.experience).toContain('RAG 评测项目实习')
-    expect(state.jobProfile.updatedAt).toBeTruthy()
+    // Verify persistence — jobProfile 已迁入学习库（求职简报/.config.json），state.json 不再保存
+    const configPath = path.join(testLibraryPath, '求职简报', '.config.json')
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    expect(config.jobProfile.targetRoles).toContain('AI产品经理')
+    expect(config.jobProfile.direction).toContain('大模型/Agent')
+    expect(config.jobProfile.experience).toContain('RAG 评测项目实习')
+    expect(config.jobProfile.updatedAt).toBeTruthy()
   })
 
   test('generation completes and renders four sections (progress verified by completion)', async ({ window }) => {
@@ -147,7 +147,7 @@ test.describe('@p1 job briefing generation', () => {
     expect(counter.count).toBe(1)
   })
 
-  test('saves job profile settings and verifies in state.json', async ({ window, testConfigDir }) => {
+  test('saves job profile settings and verifies in library .config.json', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
@@ -173,15 +173,15 @@ test.describe('@p1 job briefing generation', () => {
     await window.locator('[data-testid="job-profile-save"]').click()
     await expect(window.locator('[data-testid="job-profile-panel"]')).not.toBeVisible({ timeout: 5000 })
 
-    // Verify state.json has persisted all fields
-    const statePath = path.join(testConfigDir, 'state.json')
-    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.jobProfile.targetRoles).toEqual(['AI产品经理', '模型产品经理'])
-    expect(state.jobProfile.direction).toContain('大模型/Agent')
-    expect(state.jobProfile.skills).toContain('RAG')
-    expect(state.jobProfile.experience).toContain('RAG 评测项目')
-    expect(state.jobProfile.additionalNotes).toContain('北上深杭')
-    expect(state.jobProfile.updatedAt).toBeTruthy()
+    // Verify all fields persisted — jobProfile 已迁入学习库（求职简报/.config.json）
+    const configPath = path.join(testLibraryPath, '求职简报', '.config.json')
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    expect(config.jobProfile.targetRoles).toEqual(['AI产品经理', '模型产品经理'])
+    expect(config.jobProfile.direction).toContain('大模型/Agent')
+    expect(config.jobProfile.skills).toContain('RAG')
+    expect(config.jobProfile.experience).toContain('RAG 评测项目')
+    expect(config.jobProfile.additionalNotes).toContain('北上深杭')
+    expect(config.jobProfile.updatedAt).toBeTruthy()
   })
 
   test('求职背景注入请求：profile 字段出现在 last-job-request.json', async ({ window, testConfigDir, testLibraryPath }) => {

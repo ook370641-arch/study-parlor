@@ -6,7 +6,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 test.describe('@p1 profile', () => {
-  test('edit and save profile', async ({ window, testConfigDir }) => {
+  test('edit and save profile', async ({ window, testConfigDir, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
 
@@ -26,11 +26,13 @@ test.describe('@p1 profile', () => {
 
     await expect(profile.nameDisplay).toContainText('苏格拉底')
 
+    // profile 已迁入学习库（.profile.json），state.json 不再保存
+    const savedProfile = JSON.parse(fs.readFileSync(path.join(testLibraryPath, '.profile.json'), 'utf-8'))
+    expect(savedProfile.name).toBe('苏格拉底')
+    expect(savedProfile.profile_text).toBe('喜欢追问到底')
+    expect(savedProfile.preferred_topics).toEqual(['哲学', '数学'])
     const statePath = path.join(testConfigDir, 'state.json')
     const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'))
-    expect(state.profile.name).toBe('苏格拉底')
-    expect(state.profile.profile_text).toBe('喜欢追问到底')
-    expect(state.profile.preferred_topics).toEqual(['哲学', '数学'])
     expect(state.lastUsed.difficulty).toBe('high')
     expect(state.lastUsed.temperature).toBe(0.3)
   })

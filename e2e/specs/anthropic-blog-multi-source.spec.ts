@@ -241,7 +241,7 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       // 回填合并不产生重复：gate 返回原始列表（无 mock），挂载 discover 不识别「新文章」，
       // 去重由 toHaveCount(1)（事件后 + reload 后两次）与 mergeArticlesByUrl 单测覆盖。
 
-      // reload → 文章标题/日期仍在 + state.json 断言 articleMetaCache 非空（residual #1）
+      // reload → 文章标题/日期仍在 + 库内 .cache.json 断言 articleMetaCache 非空（residual #1）
       // reload 后 profile 已持久化，cover 直接显示「夜航简报」按钮（profile.name 分支），
       // 不能 enterIfNeeded（会点「点亮灯火」导航到 home，briefingButton 便不在 cover 上了）
       await window.reload()
@@ -249,8 +249,9 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
       await expect(mockRow).toHaveCount(1, { timeout: 15000 })
 
-      const state = JSON.parse(fs.readFileSync(path.join(testConfigDir, 'state.json'), 'utf8'))
-      const metaCache = state?.anthropicBlogCache?.articleMetaCache
+      // 博客缓存已迁入学习库（Anthropic博客/.cache.json），state.json 不再保存
+      const cache = JSON.parse(fs.readFileSync(path.join(testLibraryPath, 'Anthropic博客', '.cache.json'), 'utf8'))
+      const metaCache = cache?.articleMetaCache
       expect(metaCache).toBeTruthy()
       expect(Object.keys(metaCache).length).toBeGreaterThan(0)
       expect(metaCache['https://www.anthropic.com/engineering/e2e-bf-eng']?.title).toBe('E2E Bf Eng')

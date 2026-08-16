@@ -27,6 +27,7 @@
       "sources": [
         "src/components/job-briefing/**",
         "electron/lib/job-briefing.ts",
+        "electron/lib/library-data.ts",
         "electron/lib/job-error-codes.ts",
         "electron/lib/kimi.ts",
         "electron/lib/search.ts",
@@ -104,6 +105,7 @@
       "sources": [
         "src/components/anthropic/**",
         "electron/ipc/anthropic.ts",
+        "electron/lib/library-data.ts",
         "electron/lib/anthropic-scraper.ts",
         "electron/lib/anthropic-sections.ts",
         "src/lib/anthropic-articles.ts",
@@ -170,7 +172,8 @@
       "sources": [
         "src/types/index.ts",
         "src/store/index.ts",
-        "electron/ipc/state.ts"
+        "electron/ipc/state.ts",
+        "electron/lib/library-data.ts"
       ],
       "specs": [
         "settings.spec.ts",

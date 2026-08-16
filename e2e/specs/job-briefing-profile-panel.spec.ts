@@ -83,7 +83,7 @@ test.describe('@p1 job briefing profile panel', () => {
     await expect(window.locator('[data-testid="job-profile-panel"]')).not.toBeVisible({ timeout: 5000 })
   })
 
-  test('edit profile fields, save, reopen — data persists', async ({ window, testConfigDir }) => {
+  test('edit profile fields, save, reopen — data persists', async ({ window, testLibraryPath }) => {
     await enterJobBriefingWithResult(window)
     await openProfilePanel(window)
 
@@ -109,15 +109,15 @@ test.describe('@p1 job briefing profile panel', () => {
     await expect(window.locator('[data-testid="job-profile-experience"]')).toHaveValue('AI 产品实习，参与 RAG 评测项目')
     await expect(window.locator('[data-testid="job-profile-notes"]')).toHaveValue('只要北上深杭')
 
-    // Verify state.json persistence
-    const statePath = path.join(testConfigDir, 'state.json')
-    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
-    expect(state.jobProfile.targetRoles).toEqual(['AI产品经理', '模型产品经理'])
-    expect(state.jobProfile.direction).toContain('大模型/Agent')
-    expect(state.jobProfile.skills).toContain('RAG')
-    expect(state.jobProfile.experience).toContain('RAG 评测项目')
-    expect(state.jobProfile.additionalNotes).toContain('北上深杭')
-    expect(state.jobProfile.updatedAt).toBeTruthy()
+    // Verify persistence — jobProfile 已迁入学习库（求职简报/.config.json），state.json 不再保存
+    const configPath = path.join(testLibraryPath, '求职简报', '.config.json')
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    expect(config.jobProfile.targetRoles).toEqual(['AI产品经理', '模型产品经理'])
+    expect(config.jobProfile.direction).toContain('大模型/Agent')
+    expect(config.jobProfile.skills).toContain('RAG')
+    expect(config.jobProfile.experience).toContain('RAG 评测项目')
+    expect(config.jobProfile.additionalNotes).toContain('北上深杭')
+    expect(config.jobProfile.updatedAt).toBeTruthy()
   })
 
   test('add and remove companies', async ({ window }) => {
@@ -125,13 +125,14 @@ test.describe('@p1 job briefing profile panel', () => {
     await openProfilePanel(window)
 
     // Add a company — fill the input below the company list then press Enter
+    // 注意：不能用默认配置里已有的公司名（如字节跳动），否则删除后默认条目仍在，断言必挂
     const companyInput = window.locator('[data-testid="job-profile-panel"] input[placeholder*="新公司名"]')
-    await companyInput.fill('字节跳动')
+    await companyInput.fill('E2E测试公司')
     await companyInput.press('Enter')
     await window.waitForTimeout(500)
 
     // Verify company appears in the panel
-    await expect(window.locator('[data-testid="job-profile-panel"]')).toContainText('字节跳动')
+    await expect(window.locator('[data-testid="job-profile-panel"]')).toContainText('E2E测试公司')
 
     // Remove the company — find the row containing our company name and click its last button
     const panel = window.locator('[data-testid="job-profile-panel"]')
@@ -142,7 +143,7 @@ test.describe('@p1 job briefing profile panel', () => {
     await window.waitForTimeout(500)
 
     // Verify company removed
-    await expect(window.locator('[data-testid="job-profile-panel"]')).not.toContainText('字节跳动')
+    await expect(window.locator('[data-testid="job-profile-panel"]')).not.toContainText('E2E测试公司')
   })
 
   test('keyword generation button exists', async ({ window }) => {

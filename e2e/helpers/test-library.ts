@@ -830,3 +830,40 @@ export function seedWritingSourceState(configDir: string): void {
     assistantThinkingEffort: 'off',
   })
 }
+
+/**
+ * 直写学习库内的记忆文件（.profile.json / Anthropic博客/.cache.json / 求职简报/.config.json）。
+ * 用途：state.json 五字段已迁入库内——启动前 seed 可靠迁移兜底生效，
+ * 但"app 运行中 re-seed 覆盖已有库内文件"的场景必须用本 helper 直写库内。
+ */
+export function seedLibraryData(
+  libPath: string,
+  data: {
+    profile?: { name: string; profile_text: string; preferred_topics: string[] }
+    blogCache?: Record<string, unknown>
+    jobData?: { jobProfile?: Record<string, unknown>; jobBriefingConfig?: Record<string, unknown> }
+  }
+): void {
+  if (data.profile) {
+    fs.writeFileSync(path.join(libPath, '.profile.json'), JSON.stringify(data.profile, null, 2))
+  }
+  if (data.blogCache) {
+    const dir = path.join(libPath, 'Anthropic博客')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(
+      path.join(dir, '.cache.json'),
+      JSON.stringify(
+        { lastFetchedAt: null, articles: [], sectionStatus: {}, articleMetaCache: {}, lastSeenAt: null, ...data.blogCache },
+        null,
+        2
+      )
+    )
+  }
+  if (data.jobData) {
+    const dir = path.join(libPath, '求职简报')
+    fs.mkdirSync(dir, { recursive: true })
+    const file = path.join(dir, '.config.json')
+    const cur = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {}
+    fs.writeFileSync(file, JSON.stringify({ ...cur, ...data.jobData }, null, 2))
+  }
+}

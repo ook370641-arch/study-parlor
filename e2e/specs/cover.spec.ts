@@ -7,7 +7,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 test.describe('@p0 cover', () => {
-  test('first-time user enters name and lands on home', async ({ window, testConfigDir }) => {
+  test('first-time user enters name and lands on home', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterApp('夜话旅人')
 
@@ -15,9 +15,9 @@ test.describe('@p0 cover', () => {
     await home.waitForLoaded()
     await expect(home.greeting).toContainText('夜话旅人')
 
-    const statePath = path.join(testConfigDir, 'state.json')
-    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'))
-    expect(state.profile.name).toBe('夜话旅人')
+    // profile 已迁入学习库（.profile.json），state.json 不再保存
+    const savedProfile = JSON.parse(fs.readFileSync(path.join(testLibraryPath, '.profile.json'), 'utf-8'))
+    expect(savedProfile.name).toBe('夜话旅人')
   })
 })
 
