@@ -194,6 +194,7 @@ export function renameNode(lib: string, rel: string, newName: string): string {
   }
 
   fs.renameSync(absOld, absNew)
+  moveBackup(lib, rel, toRel(lib, absNew))
   return toRel(lib, absNew)
 }
 
@@ -221,6 +222,7 @@ export function moveNode(lib: string, rel: string, targetDir: string): string {
   const absDest = path.join(absTargetDir, safeName)
 
   fs.renameSync(absSrc, absDest)
+  moveBackup(lib, rel, toRel(lib, absDest))
   return toRel(lib, absDest)
 }
 
@@ -234,6 +236,7 @@ export function deleteNode(lib: string, rel: string): void {
     throw code('WRITING_NOT_FOUND', `Node not found: ${rel}`)
   }
   fs.rmSync(absPath, { recursive: true, force: true })
+  deleteBackup(lib, rel)
 }
 
 export function dissolveGroup(lib: string, rel: string): { moved: { from: string; to: string }[] } {
@@ -251,6 +254,7 @@ export function dissolveGroup(lib: string, rel: string): { moved: { from: string
     moved.push({ from, to: moveNode(lib, from, parentRel) })
   }
   fs.rmSync(abs, { recursive: true, force: true })
+  deleteBackup(lib, rel)
   return { moved }
 }
 
@@ -326,5 +330,33 @@ function maybeBackupDaily(lib: string, rel: string, existingRaw: string | null):
     fs.writeFileSync(backupAbs, existingRaw, 'utf-8')
   } catch (e) {
     console.warn('[writing-backup] backup failed:', rel, e)
+  }
+}
+
+/** 备份跟随重命名/移动；目标在 writing 根外（如 repository）时删除备份。 */
+function moveBackup(lib: string, oldRel: string, newRel: string): void {
+  try {
+    const oldBackup = backupAbsFor(lib, oldRel)
+    if (!oldBackup || !fs.existsSync(oldBackup)) return
+    const newBackup = backupAbsFor(lib, newRel)
+    if (!newBackup) {
+      fs.rmSync(oldBackup, { recursive: true, force: true })
+      return
+    }
+    fs.mkdirSync(path.dirname(newBackup), { recursive: true })
+    fs.rmSync(newBackup, { recursive: true, force: true })
+    fs.renameSync(oldBackup, newBackup)
+  } catch (e) {
+    console.warn('[writing-backup] follow-move failed:', oldRel, '->', newRel, e)
+  }
+}
+
+/** 备份跟随删除（文件或目录；不存在时 rmSync force 静默通过）。 */
+function deleteBackup(lib: string, rel: string): void {
+  try {
+    const backupAbs = backupAbsFor(lib, rel)
+    if (backupAbs) fs.rmSync(backupAbs, { recursive: true, force: true })
+  } catch (e) {
+    console.warn('[writing-backup] follow-delete failed:', rel, e)
   }
 }

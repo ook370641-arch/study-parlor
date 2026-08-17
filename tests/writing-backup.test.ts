@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import matter from 'gray-matter'
-import { scanRoot, createFile, writeWritingFile } from '../electron/lib/writing-tree'
+import { scanRoot, createFile, writeWritingFile, renameNode, moveNode, deleteNode, dissolveGroup } from '../electron/lib/writing-tree'
 
 let lib: string
 beforeEach(() => { lib = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-backup-')) })
@@ -79,5 +79,54 @@ describe('writing 按天备份：写入时机', () => {
     fs.writeFileSync(path.join(lib, 'writing/a.md'), '# a', 'utf-8')
     const tree = scanRoot(lib, 'writing')
     expect(tree.map(n => n.name)).toEqual(['a.md'])
+  })
+})
+
+describe('writing 按天备份：生命周期跟随', () => {
+  it('重命名文章 → 备份跟随到新名字', () => {
+    writeArticle('writing/a.md', '旧内容')
+    writeWritingFile(lib, 'writing/a.md', '新内容')
+    const newRel = renameNode(lib, 'writing/a.md', 'b.md')
+    expect(fs.existsSync(backupOf('writing/a.md'))).toBe(false)
+    expect(fs.existsSync(backupOf(newRel))).toBe(true)
+  })
+
+  it('writing 根内移动 → 备份跟随到镜像新路径', () => {
+    writeArticle('writing/a.md', '旧内容')
+    writeWritingFile(lib, 'writing/a.md', '新内容')
+    moveNode(lib, 'writing/a.md', 'writing/组A')
+    expect(fs.existsSync(backupOf('writing/a.md'))).toBe(false)
+    expect(fs.existsSync(path.join(lib, 'writing/.backups/组A/a.md'))).toBe(true)
+  })
+
+  it('移动到 repository/ → 备份删除', () => {
+    writeArticle('writing/a.md', '旧内容')
+    writeWritingFile(lib, 'writing/a.md', '新内容')
+    moveNode(lib, 'writing/a.md', 'repository')
+    expect(fs.existsSync(backupOf('writing/a.md'))).toBe(false)
+    expect(fs.existsSync(path.join(lib, 'repository/.backups'))).toBe(false)
+  })
+
+  it('删除文章 → 备份一并删除', () => {
+    writeArticle('writing/a.md', '旧内容')
+    writeWritingFile(lib, 'writing/a.md', '新内容')
+    deleteNode(lib, 'writing/a.md')
+    expect(fs.existsSync(backupOf('writing/a.md'))).toBe(false)
+  })
+
+  it('重命名分组 → 镜像备份目录整体跟随', () => {
+    writeArticle('writing/组A/a.md', '旧内容')
+    writeWritingFile(lib, 'writing/组A/a.md', '新内容')
+    renameNode(lib, 'writing/组A', '组B')
+    expect(fs.existsSync(path.join(lib, 'writing/.backups/组B/a.md'))).toBe(true)
+    expect(fs.existsSync(path.join(lib, 'writing/.backups/组A'))).toBe(false)
+  })
+
+  it('解散分组 → 文章备份随文章释放到父级，镜像空目录清理', () => {
+    writeArticle('writing/组A/a.md', '旧内容')
+    writeWritingFile(lib, 'writing/组A/a.md', '新内容')
+    dissolveGroup(lib, 'writing/组A')
+    expect(fs.existsSync(backupOf('writing/a.md'))).toBe(true)
+    expect(fs.existsSync(path.join(lib, 'writing/.backups/组A'))).toBe(false)
   })
 })
