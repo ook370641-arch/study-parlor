@@ -50,6 +50,7 @@ const DEFAULT: StateJson = {
   writingUIFontSize: 'base',
   scoutTab: 'chat',
   scoutActiveConversationId: null,
+  archivedTopics: [],
 }
 
 /** 迁入学习库的五个 key：库内文件是真相源，state.json 不再持久化它们 */

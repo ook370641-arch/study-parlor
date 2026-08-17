@@ -523,11 +523,20 @@ export type WritingAssistantMessage = {
   reasoning?: string
   sources?: WritingSource[]
   snapshot?: string
+  toolActivity?: WritingToolActivity[]
 }
 export type WritingToolEvent = {
   sessionId: string
   phase: 'start' | 'done' | 'error'
   tool: 'read_local' | 'web_search'
+  ids?: string[]
+  query?: string
+  error?: string
+}
+/** 写作助手工具调用的结构化活动记录（渲染成紧凑、可折叠的工具行，而非注入正文）。 */
+export type WritingToolActivity = {
+  tool: 'read_local' | 'web_search'
+  phase: 'start' | 'done' | 'error'
   ids?: string[]
   query?: string
   error?: string
@@ -577,6 +586,8 @@ export type StateJson = {
   briefingRead?: { digest?: string[]; 'job-briefing'?: string[] }
   candlelightEnabled?: boolean
   paintingPlateEnabled?: boolean
+  /** 已归档（隐藏）的主题目录名，主页/卫星图不显示，可在设置恢复 */
+  archivedTopics?: string[]
 }
 
 export type IpcApi = {
@@ -658,6 +669,7 @@ export type IpcApi = {
     dirName: string
     sessionNumber: number
   }) => Promise<void>
+  renameTopic: (args: { dirName: string; newName: string }) => Promise<void>
 
   // Recovery dump
   recoveryDump: (args: { filename: string; content: string }) => Promise<void>

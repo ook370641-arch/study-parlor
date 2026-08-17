@@ -117,6 +117,24 @@ export class LibraryPage {
     await button.click()
   }
 
+  /** 归档某个主题（点击行内 📦）。归档后主题从列表消失，可在设置恢复。 */
+  async archiveTopic(dirName: string) {
+    const card = this.page.locator(SELECTORS.home.topicCard).filter({ hasText: dirName })
+    await card.waitFor({ state: 'visible' })
+    await card.locator(SELECTORS.home.topicArchiveAction).click()
+  }
+
+  /** 重命名某个主题（点击行内 ✎ → 行内输入 → Enter）。 */
+  async renameTopic(dirName: string, newName: string) {
+    const card = this.page.locator(SELECTORS.home.topicCard).filter({ hasText: dirName })
+    await card.waitFor({ state: 'visible' })
+    await card.locator(SELECTORS.home.topicRenameAction).click()
+    const input = this.page.locator(SELECTORS.home.topicRenameInput)
+    await input.waitFor({ state: 'visible' })
+    await input.fill(newName)
+    await input.press('Enter')
+  }
+
   async cancelDelete() {
     const button = this.page.locator(SELECTORS.confirmDialog.cancelButton)
     await button.waitFor({ state: 'visible' })

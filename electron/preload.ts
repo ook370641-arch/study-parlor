@@ -19,6 +19,7 @@ const api: IpcApi = {
   renameGroup: (id, name) => ipcRenderer.invoke('groups:rename', id, name),
   deleteGroup: (id, fallbackId) => ipcRenderer.invoke('groups:delete', id, fallbackId),
   deleteArchivedSession: (a) => ipcRenderer.invoke('files:deleteArchivedSession', a),
+  renameTopic: (a) => ipcRenderer.invoke('files:renameTopic', a),
 
   getState: () => ipcRenderer.invoke('state:get'),
   patchState: (p) => ipcRenderer.invoke('state:patch', p),

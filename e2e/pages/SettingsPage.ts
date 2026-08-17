@@ -74,4 +74,11 @@ export class SettingsPage {
   async getErrorText(): Promise<string | null> {
     return this.page.locator(SELECTORS.settings.errorDisplay).textContent()
   }
+
+  /** 恢复某个已归档主题（在「已归档主题」区块点「恢复」）。 */
+  async restoreArchivedTopic(dirName: string) {
+    const row = this.page.locator(SELECTORS.settings.archivedTopics).locator('li', { hasText: dirName })
+    await row.waitFor({ state: 'visible' })
+    await row.locator(SELECTORS.settings.restoreTopicButton).click()
+  }
 }

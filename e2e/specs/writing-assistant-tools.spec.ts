@@ -91,15 +91,18 @@ test.describe('@p2 writing-assistant-tools', () => {
     expect(req.articleContent).toContain('E2E测试文章正文')
   })
 
-  test('Tool 事件文本可见：消息区含"读取"和"来源"标记', async ({ window, testLibraryPath }) => {
+  test('Tool 事件可见：消息区显示读取的文件名（不再注入"来源：[read_local]"块引）', async ({ window, testLibraryPath }) => {
     const assistant = await setupAssistant(window, testLibraryPath)
     await assistant.open()
     await assistant.send('读取资料')
     await assistant.waitForStreamingDone(15000)
 
     const messagesText = await assistant.messages.textContent()
-    // Mock sends read_local start+done events → adds "> 读取：" and "> 来源：[read_local]" to message
+    // 新行为：read_local 事件以紧凑可折叠的工具活动行呈现——摘要含"读取"，展开列表含文件名；
+    // 不再往正文注入 "> 读取：" / "> 来源：[read_local]" 块引，也不显示来源类型字段。
     expect(messagesText).toContain('读取')
-    expect(messagesText).toContain('来源')
+    expect(messagesText).toContain('旧随笔.md')
+    expect(messagesText).not.toContain('来源：[read_local]')
+    expect(messagesText).not.toContain('repository:旧随笔.md')
   })
 })

@@ -282,9 +282,45 @@ function TopicAccordion({
   const isAcademic = theme !== 'newspaper'
   const [open, setOpen] = useState(false)
   const openPreStudy = useStore((s) => s.openPreStudy)
+  const archiveTopic = useStore((s) => s.archiveTopic)
+  const renameTopic = useStore((s) => s.renameTopic)
+  const showToast = useStore((s) => s.showToast)
+  const [renaming, setRenaming] = useState(false)
+  const [renameValue, setRenameValue] = useState('')
 
   const handleToggle = () => {
     setOpen(!open)
+  }
+
+  const startRename = () => {
+    setRenameValue(topic.title)
+    setRenaming(true)
+  }
+
+  const submitRename = async () => {
+    const v = renameValue.trim()
+    if (!v || v === topic.title) {
+      setRenaming(false)
+      return
+    }
+    setRenaming(false)
+    try {
+      await renameTopic(topic.dirName, v)
+      showToast(`已更名为「${v}」`)
+    } catch (err: any) {
+      showToast('重命名失败：' + (err?.message ?? err))
+    }
+  }
+
+  const cancelRename = () => setRenaming(false)
+
+  const handleArchive = async () => {
+    try {
+      await archiveTopic(topic.dirName)
+      showToast(`「${topic.title}」已归档，可在设置中恢复`)
+    } catch (err: any) {
+      showToast('归档失败：' + (err?.message ?? err))
+    }
   }
 
   const daysText =
@@ -319,7 +355,24 @@ function TopicAccordion({
         >
           ▶
         </span>
-        <span className={`font-serif ${isAcademic ? 'text-parchment/90' : 'text-[#1a1a1a]'} truncate`}>{topic.title}</span>
+        {renaming ? (
+          <input
+            data-testid="topic-rename-input"
+            autoFocus
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitRename()
+              else if (e.key === 'Escape') cancelRename()
+            }}
+            onBlur={cancelRename}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            className={`min-w-0 flex-1 font-serif bg-ink/60 border border-ember/50 rounded px-2 py-0.5 text-parchment outline-none text-base`}
+          />
+        ) : (
+          <span className={`font-serif ${isAcademic ? 'text-parchment/90' : 'text-[#1a1a1a]'} truncate`}>{topic.title}</span>
+        )}
         <span className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#999]'} font-sans shrink-0`}>
           <strong>{topic.sessionCount}</strong> 份记录
         </span>
@@ -358,6 +411,26 @@ function TopicAccordion({
             📋 新报告
           </button>
         )}
+
+        <button
+          data-testid="topic-rename-action"
+          onClick={(e) => { e.stopPropagation(); startRename() }}
+          aria-label="重命名主题"
+          title="重命名主题"
+          className={`w-[22px] h-[22px] flex items-center justify-center rounded transition-colors shrink-0 ${isAcademic ? 'text-parchment/40 hover:text-ember hover:bg-ember/10' : 'text-[#999] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/5'}`}
+        >
+          ✎
+        </button>
+
+        <button
+          data-testid="topic-archive-action"
+          onClick={(e) => { e.stopPropagation(); handleArchive() }}
+          aria-label="归档主题"
+          title="归档主题（可在设置中恢复）"
+          className={`w-[22px] h-[22px] flex items-center justify-center rounded transition-colors shrink-0 ${isAcademic ? 'text-parchment/40 hover:text-ember hover:bg-ember/10' : 'text-[#999] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/5'}`}
+        >
+          📦
+        </button>
       </div>
 
       <div id="topic-content" className={`${isAcademic ? 'bg-ink/30' : 'bg-[#f5f5f0]'} overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
@@ -566,8 +639,7 @@ export function StudyLibrary() {
         sessionNumber,
         reportBody: report.content
       })
-      const lib = await ipc.scanLibrary()
-      useStore.setState({ library: lib })
+      await useStore.getState().rescanLibrary()
     } catch (e) {
       console.error('[StudyLibrary] generate diagram failed:', e)
       useStore.getState().showToast('图表生成失败')
@@ -643,8 +715,7 @@ export function StudyLibrary() {
       const fable = await ipc.llmGenerateFableFromReport({ reportBody, topic, userPrompt: userPrompt || undefined })
       await ipc.writeFable({ dirName, sessionNumber, title: fable.title, body: fable.body })
 
-      const lib = await ipc.scanLibrary()
-      useStore.setState({ library: lib })
+      await useStore.getState().rescanLibrary()
       useStore.getState().showToast(`寓言「${fable.title}」已唤醒`)
 
       // 如果用户正在查看这则寓言，强制重新加载以显示新内容

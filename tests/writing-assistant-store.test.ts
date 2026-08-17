@@ -252,7 +252,7 @@ describe('writing assistant store', () => {
       })
     })
 
-    it('adds read_local start event with source chips', () => {
+    it('records read_local start event as structured tool activity', () => {
       useStore.getState().applyWritingAssistantToolEvent({
         sessionId: 'wa-001',
         phase: 'start',
@@ -261,14 +261,14 @@ describe('writing assistant store', () => {
       })
 
       const msgs = useStore.getState().writingAssistant!.messages
-      expect(msgs[1].content).toContain('读取：`repository:旧随笔.md`、`writing:草稿.md`')
-      expect(msgs[1].sources).toEqual([
-        { type: 'repository', id: 'repository:旧随笔.md', label: 'repository:旧随笔.md' },
-        { type: 'writing', id: 'writing:草稿.md', label: 'writing:草稿.md' },
+      // 正文不再注入工具标记
+      expect(msgs[1].content).toBe('让我来查一下。')
+      expect(msgs[1].toolActivity).toEqual([
+        { tool: 'read_local', phase: 'start', ids: ['repository:旧随笔.md', 'writing:草稿.md'], query: undefined, error: undefined },
       ])
     })
 
-    it('adds read_local done event', () => {
+    it('records read_local done event', () => {
       useStore.getState().applyWritingAssistantToolEvent({
         sessionId: 'wa-001',
         phase: 'done',
@@ -276,7 +276,11 @@ describe('writing assistant store', () => {
         ids: ['repository:旧随笔.md'],
       })
 
-      expect(useStore.getState().writingAssistant!.messages[1].content).toContain('来源：[read_local] repository:旧随笔.md')
+      const msg = useStore.getState().writingAssistant!.messages[1]
+      expect(msg.content).toBe('让我来查一下。')
+      expect(msg.toolActivity).toEqual([
+        { tool: 'read_local', phase: 'done', ids: ['repository:旧随笔.md'], query: undefined, error: undefined },
+      ])
     })
 
     it('ignores insert_into_article events (removed tool)', () => {
@@ -288,9 +292,10 @@ describe('writing assistant store', () => {
       } as any)
       const msgs = useStore.getState().writingAssistant!.messages
       expect(msgs[1].content).toBe('让我来查一下。')
+      expect(msgs[1].toolActivity).toBeUndefined()
     })
 
-    it('adds web_search start event', () => {
+    it('records web_search start event', () => {
       useStore.getState().applyWritingAssistantToolEvent({
         sessionId: 'wa-001',
         phase: 'start',
@@ -298,10 +303,14 @@ describe('writing assistant store', () => {
         query: 'TypeScript best practices',
       })
 
-      expect(useStore.getState().writingAssistant!.messages[1].content).toContain('搜索：TypeScript best practices')
+      const msg = useStore.getState().writingAssistant!.messages[1]
+      expect(msg.content).toBe('让我来查一下。')
+      expect(msg.toolActivity).toEqual([
+        { tool: 'web_search', phase: 'start', ids: undefined, query: 'TypeScript best practices', error: undefined },
+      ])
     })
 
-    it('adds error event', () => {
+    it('records error event', () => {
       useStore.getState().applyWritingAssistantToolEvent({
         sessionId: 'wa-001',
         phase: 'error',
@@ -309,7 +318,35 @@ describe('writing assistant store', () => {
         error: '文件不存在',
       })
 
-      expect(useStore.getState().writingAssistant!.messages[1].content).toContain('read_local 失败：文件不存在')
+      const msg = useStore.getState().writingAssistant!.messages[1]
+      expect(msg.content).toBe('让我来查一下。')
+      expect(msg.toolActivity).toEqual([
+        { tool: 'read_local', phase: 'error', ids: undefined, query: undefined, error: '文件不存在' },
+      ])
+    })
+
+    it('creates an assistant placeholder when no assistant message exists yet', () => {
+      useStore.setState({
+        writingAssistant: {
+          sessionId: 'wa-002',
+          articlePath: null,
+          messages: [{ role: 'user', content: '查一下' }],
+          streaming: true,
+          error: null,
+        },
+      })
+      useStore.getState().applyWritingAssistantToolEvent({
+        sessionId: 'wa-002',
+        phase: 'start',
+        tool: 'read_local',
+        ids: ['writing:a.md'],
+      })
+
+      const msgs = useStore.getState().writingAssistant!.messages
+      expect(msgs.length).toBe(2)
+      expect(msgs[1].role).toBe('assistant')
+      expect(msgs[1].content).toBe('')
+      expect(msgs[1].toolActivity?.[0].ids).toEqual(['writing:a.md'])
     })
 
     it('ignores events for wrong sessionId', () => {
@@ -321,6 +358,7 @@ describe('writing assistant store', () => {
       })
 
       expect(useStore.getState().writingAssistant!.messages[1].content).toBe('让我来查一下。')
+      expect(useStore.getState().writingAssistant!.messages[1].toolActivity).toBeUndefined()
     })
   })
 

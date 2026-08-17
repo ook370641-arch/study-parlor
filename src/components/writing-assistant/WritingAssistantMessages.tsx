@@ -1,38 +1,20 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useStore } from '@/store'
-import type { WritingSource } from '@shared/index'
+import type { WritingToolActivity } from '@shared/index'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { createAssistantMdComponents } from '@/lib/assistant-md-components'
 
-const SOURCE_TYPE_LABELS: Record<string, string> = {
-  study: '学习',
-  blog: '博客',
-  digest: '日报',
-  job: '求职',
-  repository: 'repository',
-  writing: '写作',
-  group: '分组',
-  web: '网络',
+/** `type:path/to/file.md` → 文件名短名（`file.md`），避免长目录撑破 UI。 */
+function shortIdLabel(id: string): string {
+  const afterColon = id.includes(':') ? id.slice(id.indexOf(':') + 1) : id
+  const parts = afterColon.split('/')
+  return parts[parts.length - 1] || afterColon
 }
 
-function SourceChips({ sources, streaming }: { sources: WritingSource[]; streaming: boolean }) {
-  if (!sources || sources.length === 0) return null
-  return (
-    <div className="flex flex-wrap gap-1 mb-2">
-      {sources.map((src) => (
-        <span
-          key={`${src.type}-${src.id}`}
-          data-testid="writing-source-chip"
-          className={`inline-flex items-center text-[10px] bg-ember/10 text-ember/80 rounded px-1.5 py-0.5 ${
-            streaming ? 'animate-pulse' : ''
-          }`}
-        >
-          [{SOURCE_TYPE_LABELS[src.type] ?? src.type}] {src.label}
-        </span>
-      ))}
-    </div>
-  )
+/** `type:path/to/file.md` → 相对路径（`path/to/file.md`，去掉 type 前缀），用于 tooltip。 */
+function relativeIdPath(id: string): string {
+  return id.includes(':') ? id.slice(id.indexOf(':') + 1) : id
 }
 
 function ReasoningBlock({ reasoning, streaming }: { reasoning: string; streaming: boolean }) {
@@ -48,29 +30,88 @@ function ReasoningBlock({ reasoning, streaming }: { reasoning: string; streaming
   )
 }
 
+function ToolActivityBlock({ activity, streaming }: { activity: WritingToolActivity[]; streaming: boolean }) {
+  if (!activity || activity.length === 0) return null
+
+  const readIds: string[] = []
+  const queries: string[] = []
+  let failed: string | null = null
+  for (const a of activity) {
+    if (a.phase === 'error' && a.error) failed = a.error
+    if (a.tool === 'read_local') {
+      for (const id of a.ids ?? []) {
+        if (!readIds.includes(id)) readIds.push(id)
+      }
+    } else if (a.query && !queries.includes(a.query)) {
+      queries.push(a.query)
+    }
+  }
+
+  const active = streaming && activity[activity.length - 1]?.phase === 'start'
+  const parts: string[] = []
+  if (readIds.length > 0) parts.push(active ? '正在读取资料…' : `读取 ${readIds.length} 份资料`)
+  if (queries.length > 0) parts.push(active ? '正在搜索…' : `联网搜索 ${queries.length} 次`)
+  const summary = failed ? `工具调用失败` : parts.join(' · ') || '工具调用'
+
+  return (
+    <details className="mb-2 text-xs" open={active}>
+      <summary className={`cursor-pointer select-none inline-flex items-center gap-1.5 ${failed ? 'text-wine' : 'text-parchment/45'} hover:text-parchment/70 transition-colors`}>
+        <span className={active ? 'inline-block animate-pulse' : ''}>{active ? '⏳' : failed ? '⚠️' : '📖'}</span>
+        {summary}
+      </summary>
+      <div className="mt-1.5 pl-2 border-l border-parchment/15 text-parchment/45 space-y-0.5 max-h-32 overflow-y-auto">
+        {readIds.map((id) => (
+          <div key={id} className="truncate" title={relativeIdPath(id)}>
+            {shortIdLabel(id)}
+          </div>
+        ))}
+        {queries.map((q) => (
+          <div key={q} className="truncate" title={q}>🔍 {q}</div>
+        ))}
+        {failed && <div className="text-wine/80">{failed}</div>}
+      </div>
+    </details>
+  )
+}
+
 export function WritingAssistantMessages() {
   const assistant = useStore((s) => s.writingAssistant)
   const error = useStore((s) => s.writingAssistant?.error ?? null)
   const retryWritingAssistantMessage = useStore((s) => s.retryWritingAssistantMessage)
-  const briefingFontSize = useStore((s) => s.briefingFontSize)
-  const mdComponents = useMemo(() => createAssistantMdComponents(briefingFontSize), [briefingFontSize])
+  const writingUIFontSize = useStore((s) => s.writingUIFontSize)
+  const mdComponents = useMemo(() => createAssistantMdComponents(writingUIFontSize), [writingUIFontSize])
   const scrollRef = useRef<HTMLDivElement>(null)
+  const pinnedRef = useRef(true)
+  const lastCountRef = useRef(0)
 
   const messages = assistant?.messages ?? []
   const streaming = assistant?.streaming ?? false
 
-  // Auto-scroll to bottom on new messages
+  // 只有新增消息或用户仍贴着底部时才自动滚动：流式输出不再锁死到底部，
+  // 用户上翻查看前序内容不会被每段 chunk 拽回底部。
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    el.scrollTop = el.scrollHeight
+    const count = messages.length
+    const newMessage = count !== lastCountRef.current
+    lastCountRef.current = count
+    if (newMessage || pinnedRef.current) {
+      el.scrollTop = el.scrollHeight
+    }
   }, [messages])
+
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48
+  }
 
   const isEmpty = messages.length === 0
 
   return (
     <div
       ref={scrollRef}
+      onScroll={handleScroll}
       data-testid="writing-assistant-messages"
       className="flex-1 overflow-y-auto p-3 space-y-3"
     >
@@ -101,8 +142,8 @@ export function WritingAssistantMessages() {
         return (
           <div key={i} className="flex justify-start">
             <div className="w-full">
-              <SourceChips
-                sources={msg.sources ?? []}
+              <ToolActivityBlock
+                activity={msg.toolActivity ?? []}
                 streaming={isLastAssistant && streaming}
               />
               {msg.reasoning && (

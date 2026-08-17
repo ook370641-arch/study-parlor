@@ -137,6 +137,8 @@
     "library": {
       "sources": [
         "src/components/library/**",
+        "src/components/StudyLibrary.tsx",
+        "electron/ipc/files.ts",
         "electron/lib/writing-tree.ts",
         "electron/lib/writing-catalog.ts"
       ],

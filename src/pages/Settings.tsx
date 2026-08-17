@@ -22,6 +22,8 @@ export function Settings() {
   const showToast = useStore(s => s.showToast)
   const theme = useStore((s) => s.briefingTheme)
   const isAcademic = theme !== 'newspaper'
+  const archivedTopics = useStore((s) => s.archivedTopics)
+  const restoreTopic = useStore((s) => s.restoreTopic)
 
   const [initialConfig, setInitialConfig] = useState<AppConfig | null>(null)
   const [apiKey, setApiKey] = useState('')
@@ -161,6 +163,15 @@ export function Settings() {
 
   const handleResetJobConfig = () => {
     setJobConfig(DEFAULT_JOB_BRIEFING_CONFIG)
+  }
+
+  const handleRestoreTopic = async (dirName: string) => {
+    try {
+      await restoreTopic(dirName)
+      showToast(`「${dirName}」已恢复`)
+    } catch (err: any) {
+      showToast('恢复失败：' + (err?.message ?? err))
+    }
   }
 
   return (
@@ -320,6 +331,31 @@ export function Settings() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              {/* 已归档主题 */}
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>已归档主题</h3>
+                {archivedTopics.length === 0 ? (
+                  <div className={`text-sm ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
+                    暂无归档的主题。
+                  </div>
+                ) : (
+                  <ul data-testid="settings-archived-topics" className="space-y-2">
+                    {archivedTopics.map((dirName) => (
+                      <li key={dirName} className="flex items-center justify-between gap-3">
+                        <span className={`text-sm truncate ${isAcademic ? 'text-parchment/80' : 'text-[#555]'}`}>{dirName}</span>
+                        <button
+                          data-testid="settings-restore-topic-button"
+                          onClick={() => handleRestoreTopic(dirName)}
+                          className={`px-3 py-1 text-xs border rounded transition-colors shrink-0 ${isAcademic ? 'border-slate/40 text-parchment/80 hover:border-ember hover:text-ember' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]'}`}
+                        >
+                          恢复
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               {/* 求职简报 */}

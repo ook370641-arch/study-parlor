@@ -466,6 +466,7 @@ const BASE_STATE = {
   session_count: 0,
   groups: [],
   activeGroupId: null,
+  archivedTopics: [],
   groupInspirations: {},
   topicContinueSuggestions: {},
   unsavedSessions: [],

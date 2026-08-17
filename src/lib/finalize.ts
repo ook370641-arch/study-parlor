@@ -86,10 +86,9 @@ export async function finalizeAndReturnHome() {
         console.warn('[finalize] diagram generation init failed:', e)
       }
 
-      const lib = await ipc.scanLibrary()
+      await useStore.getState().rescanLibrary()
       const currentPending = useStore.getState().pendingReports
       useStore.setState({
-        library: lib,
         pendingReports: {
           ...currentPending,
           [dirName]: {
@@ -128,7 +127,7 @@ export async function finalizeAndReturnHome() {
 
       s.showToast(`《${sess.topic}》复习报告已归档`)
 
-      const lib = await ipc.scanLibrary()
+      await useStore.getState().rescanLibrary()
       // Build review report content for modal display
       const masteryBadge = mastery_assessment
         ? `掌握度：${mastery_assessment === 'high' ? '扎实' : mastery_assessment === 'mid' ? '中等' : '需补强'}`
@@ -159,7 +158,6 @@ export async function finalizeAndReturnHome() {
 
       const currentPending = useStore.getState().pendingReports
       useStore.setState({
-        library: lib,
         pendingReports: {
           ...currentPending,
           [dirName]: {

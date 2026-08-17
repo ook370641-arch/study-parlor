@@ -44,6 +44,7 @@ export const ipc = {
   get renameGroup() { return ensure().renameGroup },
   get deleteGroup() { return ensure().deleteGroup },
   get deleteArchivedSession() { return ensure().deleteArchivedSession },
+  get renameTopic() { return ensure().renameTopic },
   get recoveryDump() { return ensure().recoveryDump },
   get bootFatal() { return ensure().bootFatal },
   get onBootProgress() { return ensure().onBootProgress },

@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { app, ipcMain } from 'electron'
+import matter from 'gray-matter'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { generateContinueSuggestions, readTopicReportSummaries } from '../lib/llm-tasks'
 import { topicDir } from '../lib/library-layout'
@@ -102,6 +103,27 @@ export function getSortedSessionDirs(topicDir: string): string[] {
       const nb = parseInt(b.slice(1), 10)
       return na - nb
     })
+}
+
+/** 主题改名后，把 session 报告 frontmatter 里引用主题名的字段同步为新名。
+ *  用 gray-matter 直读直写，只动目标字段，避免 parseFrontmatter 归一化污染缺省字段。 */
+function rewriteReportTopicName(filePath: string, kind: 'progress' | 'review' | 'external', newName: string): void {
+  if (!fs.existsSync(filePath)) return
+  const raw = fs.readFileSync(filePath, 'utf8')
+  const parsed = matter(raw)
+  const data = parsed.data as Record<string, unknown>
+  if (kind === 'progress') {
+    if (typeof data.title === 'string') data.title = newName
+  } else if (kind === 'review') {
+    if (typeof data.title === 'string') {
+      const suffix = data.title.match(/\s*—\s*复习报告.*$/)?.[0] ?? ''
+      data.title = newName + suffix
+    }
+    if (typeof data.source_title === 'string') data.source_title = newName
+  } else {
+    if (typeof data.topic === 'string') data.topic = newName
+  }
+  fs.writeFileSync(filePath, matter.stringify(parsed.content, data), 'utf8')
 }
 
 export function getTopicMeta(topicDir: string, libraryPath?: string): TopicMeta | null {
@@ -638,6 +660,50 @@ function getMimeType(filePath: string): string {
 
     // 异步更新续谈推荐（不阻塞返回）
     enqueueSuggestion(() => updateContinueSuggestions(args.dirName))
+  })
+
+  ipcMain.handle('files:renameTopic', async (_, args: { dirName: string; newName: string }): Promise<void> => {
+    validateDirName(args.dirName)
+    const newName = (args.newName ?? '').trim()
+    validateDirName(newName)
+    if (newName === args.dirName) return
+    const socraticRoot = path.join(cfg.libraryPath, '苏格拉底对话')
+    const oldPath = path.join(socraticRoot, args.dirName)
+    const newPath = path.join(socraticRoot, newName)
+    if (!fs.existsSync(oldPath)) {
+      throw new Error(`主题不存在: ${args.dirName}`)
+    }
+    if (fs.existsSync(newPath)) {
+      throw new Error('已有同名主题，请换一个名字')
+    }
+    fs.renameSync(oldPath, newPath)
+
+    // 同步每个 session 报告里引用主题名的 frontmatter 字段
+    for (const sd of getSortedSessionDirs(newPath)) {
+      const sessionDir = path.join(newPath, sd)
+      rewriteReportTopicName(path.join(sessionDir, '学习报告.md'), 'progress', newName)
+      rewriteReportTopicName(path.join(sessionDir, '复习报告.md'), 'review', newName)
+      rewriteReportTopicName(path.join(sessionDir, '外部资料.md'), 'external', newName)
+    }
+
+    // 同步分组映射键
+    const groupFile = path.join(cfg.libraryPath, '.study-groups.json')
+    const groupData = loadGroupFile(groupFile)
+    if (groupData.mapping[args.dirName] !== undefined) {
+      groupData.mapping[newName] = groupData.mapping[args.dirName]
+      delete groupData.mapping[args.dirName]
+      fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2), 'utf8')
+    }
+
+    // 迁移续谈推荐缓存键
+    const { getCurrentState } = await import('./state')
+    const current = getCurrentState()
+    const next = { ...current.topicContinueSuggestions }
+    if (next[args.dirName] !== undefined) {
+      next[newName] = next[args.dirName]
+      delete next[args.dirName]
+      patchState({ topicContinueSuggestions: next })
+    }
   })
 
   ipcMain.handle('files:getExtensionInfo', async () => {

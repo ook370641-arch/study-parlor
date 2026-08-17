@@ -15,6 +15,9 @@ export const SELECTORS = {
     topicCard: '[data-testid="topic-card"]',
     topicContinueButton: '[data-testid="topic-continue-button"]',
     sessionReviewButton: '[data-testid="session-review-button"]',
+    topicRenameAction: '[data-testid="topic-rename-action"]',
+    topicArchiveAction: '[data-testid="topic-archive-action"]',
+    topicRenameInput: '[data-testid="topic-rename-input"]',
     settingsButton: '[data-testid="home-settings-button"]',
     profileButton: '[data-testid="home-profile-button"]',
     extensionButton: '[data-testid="home-extension-button"]',
@@ -214,6 +217,8 @@ export const SELECTORS = {
     resetButton: '[data-testid="settings-reset-button"]',
     backButton: '[data-testid="settings-back-button"]',
     errorDisplay: '[data-testid="settings-error-display"]',
+    archivedTopics: '[data-testid="settings-archived-topics"]',
+    restoreTopicButton: '[data-testid="settings-restore-topic-button"]',
   },
   library: {
     groupTab: (id: string) => `[data-testid="group-tab-${id}"]`,

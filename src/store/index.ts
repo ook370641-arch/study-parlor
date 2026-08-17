@@ -17,7 +17,7 @@ import type {
   ArticleAnnotation, ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
-  WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingPreviewKind,
+  WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   ScoutConversationMeta, ScoutMessage, ScoutArticleMeta, GuideProgress,
   BriefingCollectionEntry,
   BriefingCollectionQA,
@@ -86,6 +86,7 @@ type AppStore = {
   activeGroupId: string | null
   gravityFieldOpen: boolean
   draggingTopic: TopicMeta | null
+  archivedTopics: string[]
 
   // 临时
   session: Session | null
@@ -320,6 +321,11 @@ type AppStore = {
   deleteGroup: (id: string) => Promise<void>
   setGravityFieldOpen: (open: boolean) => void
   setDraggingTopic: (topic: TopicMeta | null) => void
+  // 主题归档 / 改名 / 重扫
+  archiveTopic: (dirName: string) => Promise<void>
+  restoreTopic: (dirName: string) => Promise<void>
+  renameTopic: (dirName: string, newName: string) => Promise<void>
+  rescanLibrary: () => Promise<void>
   setGroupInspiration: (groupId: string, topic: NewTopic) => void
   removeGroupInspiration: (groupId: string) => void
   setInspirationStrategy: (s: 'v1' | 'v2' | 'v3') => void
@@ -496,6 +502,7 @@ export const useStore = create<AppStore>((set, get) => ({
   activeGroupId: null,
   gravityFieldOpen: false,
   draggingTopic: null,
+  archivedTopics: [],
   session: null,
   currentPage: 'cover',
   settingsReturnTo: null,
@@ -627,7 +634,8 @@ export const useStore = create<AppStore>((set, get) => ({
       candlelightEnabled: state.candlelightEnabled ?? true,
       paintingPlateEnabled: state.paintingPlateEnabled ?? false,
       session_count: state.ui?.session_count ?? 0,
-      library,
+      archivedTopics: Array.isArray(state.archivedTopics) ? state.archivedTopics : [],
+      library: library.filter(t => !(state.archivedTopics ?? []).includes(t.dirName)),
       unsavedSessions: unsaved,
       groups: groupsData.groups,
       groupMapping: groupsData.mapping
@@ -1616,8 +1624,7 @@ export const useStore = create<AppStore>((set, get) => ({
 
   deleteArchivedSession: async (dirName: string, sessionNumber: number) => {
     await ipc.deleteArchivedSession({ dirName, sessionNumber })
-    const library = await ipc.scanLibrary()
-    set({ library })
+    await get().rescanLibrary()
   },
 
   loadGroups: async () => {
@@ -1631,8 +1638,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const mapping = { ...get().groupMapping, [dirName]: groupId }
     await ipc.updateGroupMapping(mapping)
     set({ groupMapping: mapping })
-    const library = await ipc.scanLibrary()
-    set({ library })
+    await get().rescanLibrary()
   },
 
   createGroup: async (name) => {
@@ -1661,8 +1667,40 @@ export const useStore = create<AppStore>((set, get) => ({
         activeGroupId: s.activeGroupId === id ? null : s.activeGroupId
       }
     })
-    const library = await ipc.scanLibrary()
-    set({ library })
+    await get().rescanLibrary()
+  },
+
+  archiveTopic: async (dirName) => {
+    const next = Array.from(new Set([...get().archivedTopics, dirName]))
+    set({ archivedTopics: next })
+    await ipc.patchState({ archivedTopics: next } as Partial<StateJson>)
+    await get().rescanLibrary()
+  },
+
+  restoreTopic: async (dirName) => {
+    const next = get().archivedTopics.filter(d => d !== dirName)
+    set({ archivedTopics: next })
+    await ipc.patchState({ archivedTopics: next } as Partial<StateJson>)
+    await get().rescanLibrary()
+  },
+
+  renameTopic: async (dirName, newName) => {
+    await ipc.renameTopic({ dirName, newName })
+    // 迁移续谈推荐缓存键（渲染侧内存同步）
+    const suggestions = { ...get().topicContinueSuggestions }
+    if (suggestions[dirName] !== undefined) {
+      suggestions[newName] = suggestions[dirName]
+      delete suggestions[dirName]
+      set({ topicContinueSuggestions: suggestions })
+    }
+    await get().loadGroups()
+    await get().rescanLibrary()
+  },
+
+  rescanLibrary: async () => {
+    const lib = await ipc.scanLibrary()
+    const archived = new Set(get().archivedTopics)
+    set({ library: lib.filter(t => !archived.has(t.dirName)) })
   },
 
   setGravityFieldOpen: (open) => set({ gravityFieldOpen: open }),
@@ -2296,39 +2334,26 @@ export const useStore = create<AppStore>((set, get) => ({
   applyWritingAssistantToolEvent: (e: WritingToolEvent) => {
     const s = get().writingAssistant
     if (!s || s.sessionId !== e.sessionId) return
-    const msgs = s.messages.slice()
-    const last = msgs[msgs.length - 1]
-    if (!last || last.role !== 'assistant') return
     if (e.tool !== 'read_local' && e.tool !== 'web_search') return
-
-    if (e.phase === 'start') {
-      const label = e.tool === 'read_local' && e.ids
-        ? `> 读取：${e.ids.map(id => `\`${id}\``).join('、')}`
-        : e.tool === 'web_search' && e.query
-        ? `> 搜索：${e.query}`
-        : `> ${e.tool}`
-      const content = last.content + `\n${label}\n`
-      const sources = [...(last.sources ?? [])]
-      if (e.ids) {
-        for (const id of e.ids) {
-          if (!sources.some(src => src.id === id)) {
-            const type = id.includes(':') ? id.split(':')[0] as WritingToolEvent['tool'] extends 'read_local' ? string : never : 'repository'
-            sources.push({ type: type as any, id, label: id })
-          }
-        }
-      }
-      // 不得清空 reasoning:9a5e961 曾顺手加 reasoning: undefined,导致工具事件
-      // 一到思考块就从渲染上消失(reasoning spec 回归根因);思考应穿透工具阶段保留。
-      msgs[msgs.length - 1] = { ...last, content, sources }
-    } else if (e.phase === 'done') {
-      const marker = e.ids && e.ids.length > 0
-        ? `\n> 来源：[${e.tool}] ${e.ids.join(', ')}\n`
-        : e.tool === 'web_search'
-        ? `\n> 搜索完成\n`
-        : `\n> ${e.tool} 完成\n`
-      msgs[msgs.length - 1] = { ...last, content: last.content + marker }
-    } else if (e.phase === 'error') {
-      msgs[msgs.length - 1] = { ...last, content: last.content + `\n> ${e.tool} 失败：${e.error ?? '未知错误'}\n` }
+    const msgs = s.messages.slice()
+    let last = msgs[msgs.length - 1]
+    // 工具调用可能发生在首段正文/思考抵达之前：先占位一条 assistant 消息，
+    // 使工具活动始终可见（此前 thinking off 时工具事件会被丢弃）。
+    if (!last || last.role !== 'assistant') {
+      last = { role: 'assistant', content: '' }
+      msgs.push(last)
+    }
+    const activity: WritingToolActivity = {
+      tool: e.tool,
+      phase: e.phase,
+      ids: e.ids,
+      query: e.query,
+      error: e.error,
+    }
+    // 保留 reasoning（思考穿透工具阶段），仅追加结构化工具活动，不污染正文。
+    msgs[msgs.length - 1] = {
+      ...last,
+      toolActivity: [...(last.toolActivity ?? []), activity],
     }
     set({ writingAssistant: { ...s, messages: msgs } })
   },
