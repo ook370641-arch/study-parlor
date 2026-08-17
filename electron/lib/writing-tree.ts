@@ -20,6 +20,8 @@ const HIDDEN_FILE_PATTERNS = [
   /^\.trash$/,
   // Office/WPS 打开文件时生成的锁文件（~$报表.xlsx），不是用户文档
   /^~\$/,
+  // 按天备份目录（2026-08-17 设计：writing/.backups 镜像备份，不进目录树）
+  /^\.backups$/,
 ]
 
 function isHidden(name: string): boolean {
@@ -268,10 +270,13 @@ export function writeWritingFile(lib: string, rel: string, body: string): void {
   const absPath = assertInsideRoots(lib, rel)
   // Read existing frontmatter, preserving whatever is already there
   let existingFm: Record<string, unknown> = {}
+  let existingRaw: string | null = null
   if (fs.existsSync(absPath)) {
-    const raw = fs.readFileSync(absPath, 'utf-8')
-    existingFm = (matter(raw).data as Record<string, unknown>) ?? {}
+    existingRaw = fs.readFileSync(absPath, 'utf-8')
+    existingFm = (matter(existingRaw).data as Record<string, unknown>) ?? {}
   }
+
+  maybeBackupDaily(lib, rel, existingRaw)
 
   const mergedFm = {
     ...existingFm,
@@ -280,4 +285,46 @@ export function writeWritingFile(lib: string, rel: string, body: string): void {
 
   const content = matter.stringify(body.replace(/^\n/, ''), mergedFm)
   fs.writeFileSync(absPath, content, 'utf-8')
+}
+
+// ── daily backup ─────────────────────────────────────────────
+
+const BACKUP_DIR = '.backups'
+
+/**
+ * 节点（文件或目录）在 writing/.backups 下的镜像绝对路径。
+ * 仅 writing 根下的节点有备份；.backups 自身及其他根返回 null。
+ */
+function backupAbsFor(lib: string, rel: string): string | null {
+  const norm = rel.replace(/\\/g, '/')
+  const prefix = 'writing/'
+  if (!norm.startsWith(prefix)) return null
+  const sub = norm.slice(prefix.length)
+  if (!sub || sub === BACKUP_DIR || sub.startsWith(BACKUP_DIR + '/')) return null
+  return path.join(lib, 'writing', BACKUP_DIR, ...sub.split('/'))
+}
+
+function isToday(d: Date): boolean {
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate()
+}
+
+/**
+ * 按天备份：写入新内容前调用。今天第一次修改时把磁盘旧文件原样拷到镜像
+ * 备份路径；同天后续保存跳过。备份失败只记日志，不阻断保存。
+ */
+function maybeBackupDaily(lib: string, rel: string, existingRaw: string | null): void {
+  try {
+    if (existingRaw === null) return                    // 新建而非修改
+    const backupAbs = backupAbsFor(lib, rel)
+    if (!backupAbs) return                              // 非 writing 根
+    if (!matter(existingRaw).content.trim()) return     // 空壳首次编辑不备份
+    if (fs.existsSync(backupAbs) && isToday(fs.statSync(backupAbs).mtime)) return
+    fs.mkdirSync(path.dirname(backupAbs), { recursive: true })
+    fs.writeFileSync(backupAbs, existingRaw, 'utf-8')
+  } catch (e) {
+    console.warn('[writing-backup] backup failed:', rel, e)
+  }
 }
