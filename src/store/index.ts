@@ -2527,14 +2527,18 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!filePath) return set({ writingFile: null })
     const cur = get().writingFile
     if (cur?.dirty) await get().saveWritingFile()
-    // 对照槽随主文联动：dirty 先存；对照模式下按映射恢复新主文的对照文，无映射清空
+    // 对照槽 dirty 先存（不依赖 writingFile，须在主文切换前完成）
     if (get().companionFile?.dirty) await get().saveCompanionFile()
-    if (get().writingPanelMode === 'companion') {
+    if (seq !== writingSelectSeq) return
+    // 恢复对照文映射：必须在 writingFile set 之后调用。若在主文切换前调
+    // selectCompanionFile，其"同文拒绝"会拿尚未切换的旧主文做判断（旧主文恰为映射
+    // 值时被误拒），写映射键也错位——这是切主文恢复对照文时序 bug 的根因。
+    const restoreCompanion = async () => {
+      if (get().writingPanelMode !== 'companion') return
       const mapped = get().writingCompanionMap[filePath]
       if (mapped && mapped !== filePath) await get().selectCompanionFile(mapped)
       else set({ companionFile: null })
     }
-    if (seq !== writingSelectSeq) return // 等待对照槽期间有更新的选中发出，丢弃本次
     const kind = writingPreviewKindOf(filePath)
     // 非 md 文件没有编辑器/助手会话，读取失败时展示 previewError 而非整页错误
     if (kind !== 'md') {
@@ -2556,12 +2560,14 @@ export const useStore = create<AppStore>((set, get) => ({
         // previewError 存类型化错误码（组件据此分支：PDF_NO_TEXT 专门提示 / 其余通用文案）
         set({ writingFile: { path: filePath, body: '', kind, dirty: false, saving: 'idle', previewError: r.code }, lastWritingFile: filePath })
       }
+      await restoreCompanion()
       return
     }
     const r = await ipc.writingRead({ path: filePath })
     if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
     if (r.ok) {
       set({ writingFile: { path: filePath, body: r.value.body ?? '', kind: 'md', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+      await restoreCompanion()
       // 切换文章时重置快照点亮状态，避免把上一篇文章的挂快照意图带到新文章
       if (cur?.path !== filePath) set({ writingAssistantSnapshotLit: false })
       // 切换文章时重置并恢复该文章的助手会话：防止旧文章消息串台写入新文章的

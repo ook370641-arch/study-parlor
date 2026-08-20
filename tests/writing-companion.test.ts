@@ -167,6 +167,27 @@ describe('writing companion store', () => {
     expect(ipc.articleAssistantReadSession).toHaveBeenCalledWith({ parentPath: 'writing/b.md', parentType: 'writing' })
   })
 
+  it('selectWritingFile 切主文：映射值恰为旧主文时仍恢复（同文拒绝时序回归）', async () => {
+    // E2E 暴露的时序 bug：A→B 映射，切到 B 再切回 A 时，旧主文正是映射值 B。
+    // 若恢复对照文在主文 set 之前调用 selectCompanionFile，会被"同文拒绝"误拦。
+    useStore.setState({
+      writingPanelMode: 'companion',
+      writingFile: mdFile('writing/b.md', '# B'),
+      companionFile: null,
+      writingCompanionMap: { 'writing/a.md': 'writing/b.md' },
+    })
+    vi.mocked(ipc.writingRead).mockImplementation(async ({ path }: any) => {
+      if (path === 'writing/a.md') return { ok: true, value: { frontmatter: {}, body: '# A 主文' } } as any
+      if (path === 'writing/b.md') return { ok: true, value: { frontmatter: {}, body: '# B 对照' } } as any
+      return { ok: false, code: 'WRITING_NOT_FOUND', message: 'x' } as any
+    })
+
+    await useStore.getState().selectWritingFile('writing/a.md')
+
+    expect(useStore.getState().writingFile?.path).toBe('writing/a.md')
+    expect(useStore.getState().companionFile).toMatchObject({ path: 'writing/b.md', body: '# B 对照', dirty: false })
+  })
+
   it('selectWritingFile 切主文：无映射 → companionFile 清空', async () => {
     useStore.setState({
       writingPanelMode: 'companion',
