@@ -94,12 +94,10 @@ test.describe('@p2 writing-catalog', () => {
       return keys.length > 0 && keys.every(k => typeof entries[k].mtimeMs === 'number')
     }, { timeout: 15000 }).toBe(true)
 
-    // Delete 七月夜话 via context menu → 渲染端 ConfirmDialog 确认
+    // Delete 七月夜话 via hover 删除按钮 → 渲染端 ConfirmDialog 确认
     const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '七月夜话' })
-    await fileNode.click({ button: 'right' })
-    const menuDelete = window.getByRole('button', { name: '删除', exact: true })
-    await expect(menuDelete).toBeVisible({ timeout: 3000 })
-    await menuDelete.click()
+    await fileNode.hover()
+    await fileNode.getByTestId('writing-node-delete').click()
 
     const dialog = window.getByTestId('confirm-dialog')
     await expect(dialog).toBeVisible({ timeout: 3000 })
