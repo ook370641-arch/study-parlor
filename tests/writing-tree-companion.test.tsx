@@ -97,6 +97,27 @@ describe('文件树对照交互', () => {
     expect(main.className).toContain('text-ember')
   })
 
+  it('助手模式或右栏折叠时，对照文不高亮（companionFile 残留不产生灰色框）', () => {
+    // 助手模式：即使 companionFile 还在，也不高亮
+    seed({
+      writingAssistantOpen: true,
+      writingPanelMode: 'assistant',
+      companionFile: { path: 'writing/ref.md', body: '', kind: 'md', dirty: false, saving: 'idle' },
+    })
+    render(<WritingTree root="writing" />)
+    expect(nodeRow('ref').getAttribute('data-companion')).toBeNull()
+    cleanup()
+
+    // 右栏折叠：对照模式但面板收起，也不高亮
+    seed({
+      writingAssistantOpen: false,
+      writingPanelMode: 'companion',
+      companionFile: { path: 'writing/ref.md', body: '', kind: 'md', dirty: false, saving: 'idle' },
+    })
+    render(<WritingTree root="writing" />)
+    expect(nodeRow('ref').getAttribute('data-companion')).toBeNull()
+  })
+
   it('newspaper 主题对照高亮 class；主文选中样式不变', () => {
     seed({
       writingAssistantOpen: true,

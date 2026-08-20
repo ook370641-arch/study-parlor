@@ -40,7 +40,9 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
   const isSelected = selectedPath === node.path
-  const isCompanion = companionPath === node.path && !isSelected
+  // 对照文高亮仅在「对照模式 + 右栏展开」时显示：切助手模式/折叠右栏/对照槽清空时都不高亮，
+  // 避免 companionFile 残留导致灰色框「长存」。
+  const isCompanion = assistantOpen && panelMode === 'companion' && companionPath === node.path && !isSelected
   const isDir = node.kind === 'dir'
 
   // 展开/收起持久化：显式记录优先；无记录时默认——writing 顶层展开、其余收起（仓库默认全收起）
