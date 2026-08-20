@@ -152,6 +152,6 @@ store 初始合并：`state.writingCompanionMap ?? {}`、`state.writingPanelMode
 
 修复：把映射恢复抽成 `restoreCompanion` helper，移到 `writingFile` set **之后**调用（非 md 分支 return 前、md 分支 set 后），并补回归单测锁定该场景。**教训**：单测未覆盖此 bug 是因为原"恢复映射"用例的映射值 ≠ 旧主文，没踩到同文拒绝分支；时序类 bug 需 E2E 真实 UI 链路（连续切主文）才能暴露。
 
-### 2. CompanionBoard 的 html 分支（worktree 基线差异）
+### 2. CompanionBoard 的 html 分支（worktree 基线差异，合并后已补齐）
 
-本 worktree 基于 main HEAD，不含 `HtmlPreview` 组件（它是主工作区另一条"HTML 预览"线的未提交产物）。故 CompanionBoard 仅实现 md（`WritingEditor`）/非 md（`ReadonlyPreview`）两分派。待 HTML 预览线合入后，补 3 行 `kind === 'html' → <HtmlPreview />` 分支即可获得 html 对照只读预览（WritingBoard 的 html 分支同源）。
+开发期本 worktree 基于 main HEAD，不含 `HtmlPreview` 组件，故 CompanionBoard 仅实现 md/非 md 两分派。HTML 预览线（字号缩放 + `HtmlPreview`）随后合入 main，现已补 `kind === 'html' → <HtmlPreview />` 分支——对照文 html 只读预览与主区 `WritingBoard` 同源。

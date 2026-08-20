@@ -2,12 +2,13 @@ import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { ReadonlyPreview } from './ReadonlyPreview'
+import { HtmlPreview } from './HtmlPreview'
 import { displayWritingName } from '@/lib/writing-tree-utils'
 import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
 
 // 对照文宿主：右栏槽位的「对照」模式内容区。
 // md → 可编辑 Milkdown（registerToolbarAction={false}，不注册全局 toolbar 单槽）；
-// 非 md → 只读预览（分派结构照抄 WritingBoard 的非 md 分支，本基线无 HtmlPreview）。
+// html → iframe 只读预览；其余非 md → 只读预览（分派结构照抄 WritingBoard）。
 export function CompanionBoard() {
   const file = useStore(s => s.companionFile)
   const writingUISize = useStore(s => s.writingUIFontSize)
@@ -85,6 +86,10 @@ export function CompanionBoard() {
             onChange={(md) => updateCompanionBody(md)}
             registerToolbarAction={false}
           />
+        </div>
+      ) : file.kind === 'html' ? (
+        <div className="flex-1 min-h-0">
+          <HtmlPreview file={{ path: file.path, body: file.body, previewError: file.previewError }} />
         </div>
       ) : (
         <div className="flex-1 min-h-0">
