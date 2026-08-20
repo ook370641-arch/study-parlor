@@ -400,6 +400,9 @@ type AppStore = {
   writingListTab: 'articles' | 'repository'
   writingAssistantWidth: number
   writingAssistantOpen: boolean
+  writingPanelMode: 'assistant' | 'companion'
+  writingCompanionMap: Record<string, string>
+  companionFile: { path: string; body: string; kind: WritingPreviewKind; truncated?: boolean; previewError?: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
   writingEditorAction: ((fn: (ctx: any) => void) => void) | null
   lastWritingFile: string | null
   writingOrder: Record<string, string[]>
@@ -432,6 +435,12 @@ type AppStore = {
   selectWritingFile: (filePath: string | null) => Promise<void>
   updateWritingBody: (body: string) => void
   saveWritingFile: () => Promise<void>
+  setWritingPanelMode: (mode: 'assistant' | 'companion') => void
+  selectCompanionFile: (path: string) => Promise<void>
+  updateCompanionBody: (body: string) => void
+  saveCompanionFile: () => Promise<void>
+  closeCompanion: () => Promise<void>
+  saveAllDirtyWriting: () => Promise<void>
   setWritingListTab: (tab: 'articles' | 'repository') => void
   setWritingAssistantWidth: (width: number) => void
   setWritingAssistantOpen: (open: boolean) => void
@@ -456,6 +465,9 @@ let jobBriefingViewRequestId = 0
 // selectWritingFile 的单调序号：并发/交错的文件选中后写先赢时，丢弃过期的
 // writingRead 结果（rules general §7）。
 let writingSelectSeq = 0
+
+// selectCompanionFile 的单调序号：同 writingSelectSeq，对照槽的过期读取结果一律丢弃。
+let companionSelectSeq = 0
 
 /** Ensures sendAssistantMessage waits for history to load before sending, preventing
  *  the race where a user message lands before loadAssistantSession completes and the
@@ -579,6 +591,9 @@ export const useStore = create<AppStore>((set, get) => ({
   writingListTab: 'articles',
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
+  writingPanelMode: 'assistant',
+  writingCompanionMap: {},
+  companionFile: null,
   writingEditorAction: null,
   lastWritingFile: null,
   writingOrder: {},
@@ -625,6 +640,8 @@ export const useStore = create<AppStore>((set, get) => ({
       writingListTab: state.writingListTab ?? 'articles',
       writingAssistantWidth: Math.max(200, Math.min(state.writingAssistantWidth ?? 320, 560)),
       writingAssistantOpen: state.writingAssistantOpen ?? false,
+      writingPanelMode: state.writingPanelMode ?? 'assistant',
+      writingCompanionMap: state.writingCompanionMap ?? {},
       lastWritingFile: state.lastWritingFile ?? null,
       writingOrder: state.writingOrder ?? {},
       writingExpandedGroups: state.writingExpandedGroups ?? {},
@@ -2510,6 +2527,14 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!filePath) return set({ writingFile: null })
     const cur = get().writingFile
     if (cur?.dirty) await get().saveWritingFile()
+    // 对照槽随主文联动：dirty 先存；对照模式下按映射恢复新主文的对照文，无映射清空
+    if (get().companionFile?.dirty) await get().saveCompanionFile()
+    if (get().writingPanelMode === 'companion') {
+      const mapped = get().writingCompanionMap[filePath]
+      if (mapped && mapped !== filePath) await get().selectCompanionFile(mapped)
+      else set({ companionFile: null })
+    }
+    if (seq !== writingSelectSeq) return // 等待对照槽期间有更新的选中发出，丢弃本次
     const kind = writingPreviewKindOf(filePath)
     // 非 md 文件没有编辑器/助手会话，读取失败时展示 previewError 而非整页错误
     if (kind !== 'md') {
@@ -2563,6 +2588,90 @@ export const useStore = create<AppStore>((set, get) => ({
     const cur = get().writingFile
     if (!cur || cur.path !== f.path) return // 保存期间文件已切换/关闭，丢弃过期结果
     set({ writingFile: { ...cur, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })
+  },
+
+  setWritingPanelMode: (mode) => {
+    set({ writingPanelMode: mode })
+    ipc.patchState({ writingPanelMode: mode } as Partial<StateJson>)
+  },
+
+  selectCompanionFile: async (path: string) => {
+    const seq = ++companionSelectSeq
+    if (path === get().writingFile?.path) {
+      get().showToast('该文章已在主编辑区打开')
+      return
+    }
+    if (get().companionFile?.dirty) await get().saveCompanionFile()
+    if (seq !== companionSelectSeq) return
+    // 写映射：主文路径 → 对照文路径（无主文时 skip，映射以主文为键）
+    const main = get().writingFile?.path
+    if (main) {
+      const map = { ...get().writingCompanionMap, [main]: path }
+      set({ writingCompanionMap: map })
+      ipc.patchState({ writingCompanionMap: map } as Partial<StateJson>)
+    }
+    const kind = writingPreviewKindOf(path)
+    // 非 md 文件沿用 previewError 路径（照抄 selectWritingFile 分流）
+    if (kind !== 'md') {
+      const r = await ipc.writingReadPreview({ path })
+      if (seq !== companionSelectSeq) return // 更新的选中已发出，丢弃过期结果
+      if (r.ok) {
+        set({
+          companionFile: {
+            path,
+            body: r.value.content ?? '',
+            kind: r.value.kind,
+            truncated: r.value.truncated,
+            dirty: false,
+            saving: 'idle',
+          },
+        })
+      } else {
+        set({ companionFile: { path, body: '', kind, dirty: false, saving: 'idle', previewError: r.code } })
+      }
+      return
+    }
+    const r = await ipc.writingRead({ path })
+    if (seq !== companionSelectSeq) return // 更新的选中已发出，丢弃过期结果
+    if (r.ok) {
+      set({ companionFile: { path, body: r.value.body ?? '', kind: 'md', dirty: false, saving: 'idle' } })
+    } else {
+      // 读取失败（如文件被外部删除）：清映射 + toast + 对照槽回空态
+      if (main) {
+        const map = { ...get().writingCompanionMap }
+        delete map[main]
+        set({ writingCompanionMap: map, companionFile: null })
+        ipc.patchState({ writingCompanionMap: map } as Partial<StateJson>)
+      } else {
+        set({ companionFile: null })
+      }
+      get().showToast('对照文读取失败')
+    }
+  },
+
+  updateCompanionBody: (body: string) => set(s => s.companionFile ? { companionFile: { ...s.companionFile, body, dirty: true } } : {}),
+
+  saveCompanionFile: async () => {
+    const f = get().companionFile
+    if (!f || !f.dirty) return
+    set({ companionFile: { ...f, saving: 'saving' as const } })
+    const r = await ipc.writingWrite({ path: f.path, body: f.body })
+    const cur = get().companionFile
+    if (!cur || cur.path !== f.path) return // 保存期间文件已切换/关闭，丢弃过期结果
+    set({ companionFile: { ...cur, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })
+  },
+
+  closeCompanion: async () => {
+    if (get().companionFile?.dirty) await get().saveCompanionFile()
+    set({ companionFile: null })
+    get().setWritingPanelMode('assistant') // 映射保留（v1 不做显式清除）
+  },
+
+  saveAllDirtyWriting: async () => {
+    const tasks: Promise<void>[] = []
+    if (get().writingFile?.dirty) tasks.push(get().saveWritingFile())
+    if (get().companionFile?.dirty) tasks.push(get().saveCompanionFile())
+    await Promise.all(tasks)
   },
 }))
 
