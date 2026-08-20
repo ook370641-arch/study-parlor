@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { WritingToolbar } from './WritingToolbar'
 import { ReadonlyPreview } from './ReadonlyPreview'
+import { HtmlPreview } from './HtmlPreview'
 import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
 import { Quote } from '@/components/Quote'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
@@ -55,13 +56,17 @@ export function WritingBoard() {
           ['--writing-tone-color' as string]: color,
           ['--writing-ui-quote-size' as string]: WRITING_UI_QUOTE_SIZES[writingUISize],
         }}>
-        <ReadonlyPreview file={{
-          path: file.path,
-          body: file.body,
-          kind: file.kind,
-          truncated: file.truncated,
-          previewError: file.previewError,
-        }} />
+        {file.kind === 'html' ? (
+          <HtmlPreview file={{ path: file.path, body: file.body, previewError: file.previewError }} />
+        ) : (
+          <ReadonlyPreview file={{
+            path: file.path,
+            body: file.body,
+            kind: file.kind,
+            truncated: file.truncated,
+            previewError: file.previewError,
+          }} />
+        )}
       </div>
     )
   }

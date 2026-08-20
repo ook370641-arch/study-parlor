@@ -91,6 +91,8 @@ test('no AI industry daily subtitle @smoke', async () => {
   seedBriefing(testLibraryPath, today)
   const coverPage = new CoverPage(window)
   await coverPage.gotoBriefing()
+  await window.locator(SELECTORS.briefing.receiveDigestButton).click()
+  await window.locator(SELECTORS.briefing.readingPane).waitFor({ state: 'visible' })
   const headerText = await window.locator('header').innerText()
   expect(headerText).not.toContain('AI 行业日报')
 })
@@ -123,7 +125,7 @@ test('date column is visible and clicking a date item loads that briefing @smoke
   expect(pageText).toContain('Yesterday briefing.')
 })
 
-test('swap painting button is below header in academic layout @smoke', async () => {
+test('swap painting button sits in top-right controls in academic layout @smoke', async () => {
   const today = localToday()
   seedBriefing(testLibraryPath, today)
   const coverPage = new CoverPage(window)
@@ -132,9 +134,15 @@ test('swap painting button is below header in academic layout @smoke', async () 
   await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible()
   const btn = window.locator(SELECTORS.briefing.swapPaintingButton)
   await expect(btn).toBeVisible()
-  const headerBox = await window.locator('header').first().boundingBox()
+  const sizeBtnBox = await window.locator(SELECTORS.briefing.fontSizeIncrease).boundingBox()
   const btnBox = await btn.boundingBox()
-  expect(btnBox!.y).toBeGreaterThan(headerBox!.y + headerBox!.height - 2)
+  expect(btnBox!.y).toBeGreaterThan(0)
+  // 与字号按钮同处顶部控件行：y 中心接近
+  expect(
+    Math.abs(
+      btnBox!.y + btnBox!.height / 2 - (sizeBtnBox!.y + sizeBtnBox!.height / 2)
+    )
+  ).toBeLessThan(30)
 })
 
 test('date column is visible from empty state @smoke', async () => {

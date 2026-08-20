@@ -92,7 +92,7 @@ ls "{study_library_path}"
 
 ### 3. 解析历史记录并告知用户
 
-遍历学习库下的主题目录，读取每个 `sN/学习报告.md` 的 frontmatter：
+遍历 `学习库/苏格拉底对话/` 下的主题目录，读取每个 `sN/学习报告.md` 的 frontmatter：
 - 主题名 = 目录名（即文件夹名）
 - session 次数 = 该主题下 `s\d+` 目录的数量
 
@@ -142,7 +142,7 @@ ls "{study_library_path}"
 **主动询问存档**：
 检测到结束信号后，**主动问用户**（不要假设，必须得到明确回答）：
 
-> "这次学习可以存档吗？会按 Study Parlor 学习库规范写入，文件保存在 `学习库/主题/sN/学习报告.md`。"
+> "这次学习可以存档吗？会按 Study Parlor 学习库规范写入，文件保存在 `学习库/苏格拉底对话/主题/sN/学习报告.md`。"
 
 **用户回应处理**：
 - **同意**（"可以"、"好"、"存"、"保存"、"行"、"嗯"）：执行保存
@@ -154,11 +154,11 @@ ls "{study_library_path}"
 **步骤 1：确定保存位置**
 
 1. 主题名 = 从对话中提取的学习主题（**必须**经过用户确认或用户已明确同意）
-2. 扫描 `学习库/主题名/` 下的所有 `s\d+` 目录
+2. 扫描 `学习库/苏格拉底对话/主题名/` 下的所有 `s\d+` 目录
 3. 计算下一个 session 编号：
    - 如果主题目录不存在或没有 `s\d+` 子目录 → `s1`
    - 否则 → 取现有最大编号 + 1
-4. 目标路径：`{study_library_path}/{主题名}/s{编号}/学习报告.md`
+4. 目标路径：`{study_library_path}/苏格拉底对话/{主题名}/s{编号}/学习报告.md`
 
 **步骤 2：生成 frontmatter**
 
@@ -248,12 +248,12 @@ review_count: 0
 
 **步骤 4：写入文件**
 
-1. 创建目录：`mkdir -p "{study_library_path}/{主题名}/s{编号}"`
+1. 创建目录：`mkdir -p "{study_library_path}/苏格拉底对话/{主题名}/s{编号}"`
 2. 写入文件：把 frontmatter + 正文写入 `学习报告.md`
 
 完整命令示例：
 ```bash
-mkdir -p "{study_library_path}/项目目录结构/s2"
+mkdir -p "{study_library_path}/苏格拉底对话/项目目录结构/s2"
 echo "---
 title: 项目目录结构
 session_number: 2
@@ -270,7 +270,7 @@ progress_summary: 理解了 node_modules 树状依赖、Electron 双层结构与
 ---
 
 # 项目目录结构
-..." > "{study_library_path}/项目目录结构/s2/学习报告.md"
+..." > "{study_library_path}/苏格拉底对话/项目目录结构/s2/学习报告.md"
 ```
 
 ## 特殊情况
@@ -282,7 +282,7 @@ progress_summary: 理解了 node_modules 树状依赖、Electron 双层结构与
 - 询问是否存档当前主题，然后开始新主题
 
 **主题目录不存在**：
-- 自动创建：`mkdir -p "{study_library_path}/{主题名}/s1"`
+- 自动创建：`mkdir -p "{study_library_path}/苏格拉底对话/{主题名}/s1"`
 
 **文件名冲突**：
 - 同一主题同一 session 编号理论上不会冲突（编号是递增的）

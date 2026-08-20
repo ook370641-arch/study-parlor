@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import ExcelJS from 'exceljs'
-import { previewFile, nonMdKindOf, XLSX_MAX_ROWS, XLSX_MAX_SHEETS } from '../electron/lib/file-preview'
+import { previewFile, nonMdKindOf, XLSX_MAX_ROWS, XLSX_MAX_SHEETS, HTML_MAX_BYTES } from '../electron/lib/file-preview'
 
 const FIXTURES = path.join(__dirname, 'fixtures')
 const sample = (name: string) => path.join(FIXTURES, name)
@@ -126,6 +126,33 @@ describe('previewFile: pdf', () => {
   it('无文本层 PDF 抛 PDF_NO_TEXT', async () => {
     const rel = seed('blank.pdf')
     await expect(previewFile(lib, rel)).rejects.toMatchObject({ code: 'PDF_NO_TEXT' })
+  })
+})
+
+describe('previewFile: html', () => {
+  const HTML = '<!DOCTYPE html><html><head><style>h1{color:red}</style></head><body><h1>报告标题</h1></body></html>'
+
+  it('识别 html 扩展名（含大写）', () => {
+    expect(nonMdKindOf('a.html')).toBe('html')
+    expect(nonMdKindOf('dir/A.HTML')).toBe('html')
+  })
+
+  it('原文透传：不转 markdown、不截断，kind 为 html', async () => {
+    fs.writeFileSync(path.join(lib, 'writing', 'report.html'), HTML)
+    const r = await previewFile(lib, 'writing/report.html')
+    expect(r.kind).toBe('html')
+    expect(r.title).toBe('report.html')
+    expect(r.truncated).toBe(false)
+    expect(r.content).toBe(HTML)
+  })
+
+  it('超过大小上限抛 PREVIEW_PARSE_ERROR（防内嵌大图拖垮 IPC/渲染）', async () => {
+    fs.writeFileSync(path.join(lib, 'writing', 'huge.html'), 'a'.repeat(HTML_MAX_BYTES + 1))
+    await expect(previewFile(lib, 'writing/huge.html')).rejects.toMatchObject({ code: 'PREVIEW_PARSE_ERROR' })
+  })
+
+  it('文件不存在抛 PREVIEW_PARSE_ERROR', async () => {
+    await expect(previewFile(lib, 'writing/nope.html')).rejects.toMatchObject({ code: 'PREVIEW_PARSE_ERROR' })
   })
 })
 

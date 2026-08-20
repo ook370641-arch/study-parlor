@@ -19,6 +19,12 @@ test.describe('@p2 writing-non-md', () => {
     fs.copyFileSync(path.join(FIXTURES, 'sample.xlsx'), path.join(libPath, 'writing', '报表.xlsx'))
     fs.copyFileSync(path.join(FIXTURES, 'blank.pdf'), path.join(libPath, 'writing', '扫描件.pdf'))
     fs.copyFileSync(path.join(FIXTURES, 'sample.pdf'), path.join(libPath, 'repository', '论文.pdf'))
+    // 自包含静态 HTML：内联 CSS + 少量 JS，验证 iframe srcdoc 原生渲染
+    fs.writeFileSync(
+      path.join(libPath, 'writing', '报告.html'),
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><style>h1{color:#d97757}</style></head>' +
+      '<body><h1>月度报告</h1><p>HTML 原生渲染</p></body></html>',
+    )
   }
 
   async function gotoWriting(window: any, libPath: string) {
@@ -72,5 +78,31 @@ test.describe('@p2 writing-non-md', () => {
     await node.click()
 
     await expect(window.getByTestId('writing-preview-content')).toContainText('Hello PDF', { timeout: 5000 })
+  })
+
+  test('HTML 文件原生渲染：iframe 沙箱显示，与浏览器一致', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+
+    const node = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '报告.html' })
+    await expect(node).toBeVisible({ timeout: 5000 })
+    await node.click()
+
+    await expect(window.getByTestId('writing-html-preview')).toBeVisible({ timeout: 5000 })
+    await expect(window.getByTestId('writing-html-preview-iframe')).toBeVisible()
+    // iframe srcdoc 内真实渲染出的 DOM + 内联 CSS 生效（证明是浏览器原生渲染而非文本展示）
+    const frame = window.frameLocator('[data-testid="writing-html-preview-iframe"]')
+    await expect(frame.locator('body')).toContainText('月度报告', { timeout: 5000 })
+    await expect(frame.locator('h1')).toHaveCSS('color', 'rgb(217, 119, 87)')
+    // HTML 徽标 + 系统打开兜底
+    await expect(window.getByTestId('writing-preview-kind')).toHaveText('HTML')
+    await expect(window.getByTestId('writing-preview-open')).toBeVisible()
+
+    // 缩放随字号档位（spec 追加 §缩放）：base 档 = zoom 1.2，点 + → lg 档 = 1.33
+    const iframe = window.getByTestId('writing-html-preview-iframe')
+    await expect(iframe).toHaveAttribute('srcdoc', /zoom:1\.2 !important/)
+    await window.getByTestId('writing-ui-font-size-increase').click()
+    await expect(iframe).toHaveAttribute('srcdoc', /zoom:1\.33 !important/, { timeout: 5000 })
+    await window.getByTestId('writing-ui-font-size-decrease').click()
+    await expect(iframe).toHaveAttribute('srcdoc', /zoom:1\.2 !important/, { timeout: 5000 })
   })
 })

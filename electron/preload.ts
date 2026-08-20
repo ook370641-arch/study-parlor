@@ -142,6 +142,7 @@ const api: IpcApi = {
   articleAssistantWriteGuide: (a) => ipcRenderer.invoke('articleAssistant:writeGuide', a),
 
   openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+  openLocalFile: (url) => ipcRenderer.invoke('app:openLocalFile', url),
 
   // Timing instrumentation — fire-and-forget so renderer doesn't await
   logTiming: (label, elapsed) => ipcRenderer.send('log:timing', label, elapsed),

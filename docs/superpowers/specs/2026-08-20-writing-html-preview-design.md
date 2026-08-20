@@ -111,3 +111,46 @@
 - 不动 ReadonlyPreview 内部实现（HtmlPreview 独立组件）。
 - 不加编辑/源码视图切换。
 - 不处理 .htm、相对资源、webview。
+
+---
+
+## 追加（2026-08-20 同日二期）：随字号档位等比缩放
+
+### 背景与动机
+
+HTML 预览上线后暴露问题：全屏状态下页面自带 `max-width`（如 800px）使内容呈"窄窄一条"，且预览不响应右上角 −/+ 字号控件（该控件驱动 `writingUIFontSize`，HTML iframe 内是独立文档，CSS 变量无法穿透）。目标：调字号 = 调整 HTML 整页缩放幅度。
+
+### 已确认约束（用户问答）
+
+1. 缩放语义 = **整页等比缩放**（CSS zoom，文字+图片+布局一起放大），不是只放大文字，也不强行覆盖页面 max-width。
+2. 基准 = **base 档已放大 1.2x**（默认就嫌小）。
+
+### 设计
+
+- 沙箱为 `sandbox="allow-scripts"`（opaque origin），父进程碰不到 iframe 内部 DOM，缩放只能在 **srcdoc 字符串生成期**注入样式，与现有 `<base target="_blank">` 注入同一条装配链：
+  `<style>html { zoom: FACTOR !important }</style>`，插到 `</head>` 之前（无 `<head>` 则前置文档头）。`!important` 压过页面自带样式；`zoom` 为 Chromium 原生支持的整页缩放（Electron 内可靠）。
+- 档位映射：复用 `writingUIFontSize`（sm→7xl 共 10 档，ui-styling §6 / ipc-state §4），`briefing-font-size.ts` 新增 `WRITING_HTML_ZOOM` 常量，以 base=1.2 为基准、按正文字号比例（17→35px）等比：
+
+  | 档 | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl | 7xl |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | zoom | 1.07 | **1.20** | 1.33 | 1.45 | 1.58 | 1.71 | 1.83 | 1.96 | 2.08 | 2.21 |
+
+- 改动面：
+  - `src/lib/briefing-font-size.ts`：新增 `WRITING_HTML_ZOOM` 映射。
+  - `src/lib/html-srcdoc.ts`（新）：`buildPreviewSrcdoc(body, zoom)` —— base target + zoom 样式统一注入；`injectBaseTarget` 从组件移入此处（helper 入 lib，ui-styling §10）。
+  - `src/components/writing/HtmlPreview.tsx`：读 store `writingUIFontSize`，`useMemo` 生成 srcdoc。`WritingBoard` / `Briefing.tsx` 不动（−/+ 按钮在 HTML 预览态已可见）。
+
+### 已知取舍
+
+- 每次调字号 srcdoc 变化 → iframe 整体重载（脚本重跑、滚动位置回顶）。注入式方案无法避免；调字号低频，可接受。
+- 不为"不重载"给 sandbox 加 `allow-same-origin`（等于给脚本开越狱通道）。
+
+### 验收清单（追加）
+
+- [ ] base 档打开 HTML 预览，视觉明显放大（zoom 1.2）
+- [ ] 点 + / −，预览整体随之放大/缩小（文字、图片、布局等比），窄栏随档位变宽
+- [ ] 自带内联样式的 HTML 缩放后不错位（zoom 是整页缩放而非样式覆盖）
+- [ ] 链接点击仍走系统浏览器（base target 注入未被破坏）
+- [ ] 错误分支（超 5MB / 读取失败）不受影响
+- [ ] 单元：注入位置（有/无 `<head>`）、`!important` 存在、映射表 10 档齐全且 base=1.2
+- [ ] E2E：点 + 后 iframe srcdoc 属性中的 zoom 值变化（srcdoc 在父 DOM 可读，无需穿透沙箱）

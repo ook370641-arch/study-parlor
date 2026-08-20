@@ -489,8 +489,9 @@ export type JobBriefingResult = {
 export type WritingRoot = 'writing' | 'repository'
 export type WritingErrorCode = 'WRITING_IO_ERROR' | 'WRITING_PATH_FORBIDDEN' | 'WRITING_NOT_FOUND' | 'WRITING_NAME_CONFLICT' | 'PREVIEW_PARSE_ERROR' | 'PDF_NO_TEXT'
 
-// ── 非 markdown 文件预览支持（writing 树中放置并阅读 xlsx/pdf/docx）──
-export const NON_MD_EXTENSIONS = ['xlsx', 'pdf', 'docx'] as const
+// ── 非 markdown 文件预览支持（writing 树中放置并阅读 xlsx/pdf/docx/html）──
+// html 为原文透传（渲染侧 iframe srcdoc），不经文本提取器
+export const NON_MD_EXTENSIONS = ['xlsx', 'pdf', 'docx', 'html'] as const
 export type NonMdKind = (typeof NON_MD_EXTENSIONS)[number]
 export type WritingPreviewKind = 'md' | NonMdKind
 export type WritingPreviewResult = {
@@ -803,6 +804,8 @@ export type IpcApi = {
 
   // App shell
   openExternal: (url: string) => Promise<void>
+  // 打开本地文件(file:// URL,如写作笔记里的 file:/// 链接),用系统默认程序
+  openLocalFile: (url: string) => Promise<void>
 
   // Timing instrumentation (renderer → main, fire-and-forget)
   logTiming: (label: string, elapsed: number) => void

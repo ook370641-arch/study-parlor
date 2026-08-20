@@ -108,6 +108,7 @@ export const ipc = {
   get onArticleAssistantGuideProgress() { return ensure().onArticleAssistantGuideProgress },
 
   get openExternal() { return ensure().openExternal },
+  get openLocalFile() { return ensure().openLocalFile },
 
   // Writing feature
   get writingScanTree() { return ensure().writingScanTree },

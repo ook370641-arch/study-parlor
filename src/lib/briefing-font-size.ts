@@ -90,6 +90,14 @@ export const WRITING_UI_STYLES: Record<BriefingFontSize, string> = {
 
 export const WRITING_UI_QUOTE_SIZES: Record<BriefingFontSize, string> = { ...BRIEFING_QUOTE_SIZES }
 
+/** HTML 预览整页缩放（CSS zoom）：随 writingUIFontSize 档位等比放大。
+ *  base=1.2（默认已放大，解决全屏下内容窄一条），按正文字号比例（17→35px）等比。
+ *  spec: docs/superpowers/specs/2026-08-20-writing-html-preview-design.md 追加 §缩放 */
+export const WRITING_HTML_ZOOM: Record<BriefingFontSize, number> = {
+  sm: 1.07, base: 1.2, lg: 1.33, xl: 1.45, '2xl': 1.58,
+  '3xl': 1.71, '4xl': 1.83, '5xl': 1.96, '6xl': 2.08, '7xl': 2.21,
+}
+
 /** 写作正文字号:按档位从 writingUIFontSize 映射。与 ACADEMIC_BODY_STYLES 同档同值,
  *  独立常量便于日后分化。右上角 −/+ 统一调控正文与界面。 */
 export const WRITING_BODY_FROM_UI: Record<BriefingFontSize, { size: string; weight: number }> = {

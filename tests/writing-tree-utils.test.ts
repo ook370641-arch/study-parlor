@@ -7,6 +7,7 @@ import {
   sortedInsertIndexForFile,
   sortNodesByOrder,
   writingErrorText,
+  writingPreviewKindOf,
 } from '@/lib/writing-tree-utils'
 import type { WritingTreeNode, WritingRoot } from '@shared/index'
 
@@ -135,5 +136,13 @@ describe('sortNodesByOrder', () => {
       f('a.md', 'writing/a.md'),
     ]
     expect(sortNodesByOrder(nodes, undefined).map(n => n.path)).toEqual(['writing/随笔', 'writing/b.md', 'writing/a.md'])
+  })
+})
+
+describe('writingPreviewKindOf', () => {
+  it('html 扩展名返回 html（含大写），md 返回 md', () => {
+    expect(writingPreviewKindOf('writing/reports/月度报告.html')).toBe('html')
+    expect(writingPreviewKindOf('repository/A.HTML')).toBe('html')
+    expect(writingPreviewKindOf('writing/a.md')).toBe('md')
   })
 })

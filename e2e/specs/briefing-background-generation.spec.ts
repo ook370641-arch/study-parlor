@@ -12,7 +12,7 @@ function localDate(offsetDays = 0): string {
 }
 
 test.describe('@p1 briefing background generation (digest)', () => {
-  test.use({ extraEnv: { E2E_BRIEFING_MOCK_DELAY_MS: '1500' } })
+  test.use({ extraEnv: { E2E_BRIEFING_MOCK_DELAY_MS: '4000' } })
 
   test('generating today: switch to past date and back, completion arrives fresh (#1 #2)', async ({ window, testLibraryPath }) => {
     const today = localDate()

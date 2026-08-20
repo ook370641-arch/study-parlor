@@ -14,6 +14,8 @@ export const XLSX_MAX_ROWS = 500
 export const XLSX_MAX_COLS = 30
 export const DOCX_MAX_CHARS = 50_000
 export const PDF_MAX_PAGES = 30
+/** html 原文透传上限：防内嵌 base64 大图的报告拖垮 IPC/渲染 */
+export const HTML_MAX_BYTES = 5 * 1024 * 1024
 
 export type PreviewOutcome = { kind: NonMdKind; title: string; content: string; truncated: boolean }
 
@@ -39,6 +41,13 @@ export async function previewFile(
   const kind = nonMdKindOf(abs)
   if (!kind) throw previewError('PREVIEW_PARSE_ERROR', `不支持的预览类型: ${rel}`)
   const title = path.basename(rel)
+  // html 原文透传（渲染侧 iframe srcdoc 直接渲染），不经文本提取器
+  if (kind === 'html') {
+    if (fs.statSync(abs).size > HTML_MAX_BYTES) {
+      throw previewError('PREVIEW_PARSE_ERROR', `文件过大（>${Math.round(HTML_MAX_BYTES / 1024 / 1024)}MB），请用系统程序打开: ${rel}`)
+    }
+    return { kind, title, content: fs.readFileSync(abs, 'utf-8'), truncated: false }
+  }
   try {
     if (kind === 'xlsx') return { kind, title, ...(await parseXlsx(abs)) }
     if (kind === 'docx') return { kind, title, ...(await parseDocx(abs)) }

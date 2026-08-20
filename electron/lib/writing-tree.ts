@@ -127,7 +127,37 @@ function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
 
 export function scanRoot(lib: string, root: WritingRoot): WritingTreeNode[] {
   const rootDir = path.join(lib, root)
+  if (root === 'repository') stampMissingCreated(rootDir)
   return scanDir(rootDir, lib)
+}
+
+/**
+ * repository/ 外部引入文件补 created(2026-08-19 设计,详见 tests/writing-created.test.ts)。
+ * 覆盖所有引入途径(UI 导入、外部拷入)的单点:它们最终都经过扫描。
+ * 取值 = 文件 birthtime(拷入库的时刻);只补缺失项,既有 frontmatter 全部保留;
+ * 单文件失败只记日志,不阻断扫描。updated 不碰——应用内首次保存时才刷新。
+ */
+function stampMissingCreated(absDir: string): void {
+  if (!fs.existsSync(absDir)) return
+  for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
+    if (isHidden(entry.name)) continue
+    const abs = path.join(absDir, entry.name)
+    if (entry.isDirectory()) {
+      stampMissingCreated(abs)
+      continue
+    }
+    if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.md')) continue
+    try {
+      const raw = fs.readFileSync(abs, 'utf-8')
+      const parsed = matter(raw)
+      if (parsed.data.created) continue
+      const created = fs.statSync(abs).birthtime.toISOString()
+      const content = matter.stringify(parsed.content.replace(/^\n/, ''), { ...parsed.data, created })
+      fs.writeFileSync(abs, content, 'utf-8')
+    } catch (e) {
+      console.warn('[writing-stamp] created 补写失败:', abs, e)
+    }
+  }
 }
 
 // ── create ───────────────────────────────────────────────────

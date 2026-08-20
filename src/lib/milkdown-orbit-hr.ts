@@ -6,6 +6,7 @@
 import { $command, $prose } from '@milkdown/utils'
 import { Plugin, PluginKey } from '@milkdown/prose/state'
 import type { MilkdownPlugin } from '@milkdown/ctx'
+import { cursorBelowHrCommand } from './milkdown-hr-arrow-down'
 
 const SAT_PATH = 'M160 20 A 60 12 0 1 1 40 20 A 60 12 0 1 1 160 20'
 
@@ -23,8 +24,8 @@ export const orbitHrPlugins: MilkdownPlugin[] = [
       key: new PluginKey('STUDY_PARLOR_ORBIT_HR'),
       props: {
         nodeViews: {
-          hr: () => ({
-            dom: (() => {
+          hr: (_node, view, getPos) => {
+            const dom = (() => {
               const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
               const wrap = document.createElement('div')
               wrap.className = 'writing-orbit-hr'
@@ -36,8 +37,23 @@ export const orbitHrPlugins: MilkdownPlugin[] = [
                 </circle>
               </svg>`
               return wrap
-            })(),
-          }),
+            })()
+            // 点击分隔线 → 光标直接进下一行(2026-08-17 用户反馈):
+            // 默认行为下光标停在 hr 前,且 ↓ 会对 hr 建 NodeSelection(Chrome 渲染成
+            // 高亮框,像"文本编辑框")。stopEvent 拦 mousedown 防 PM 走默认选区逻辑。
+            dom.addEventListener('mousedown', e => {
+              e.preventDefault()
+              const pos = typeof getPos === 'function' ? getPos() : undefined
+              if (typeof pos === 'number') {
+                cursorBelowHrCommand(pos)(view.state, view.dispatch)
+                view.focus() // 编辑器未聚焦(如刚点过文件树)时也要能直接打字
+              }
+            })
+            return {
+              dom,
+              stopEvent: (event: Event) => event.type === 'mousedown',
+            }
+          },
         },
       },
     }),

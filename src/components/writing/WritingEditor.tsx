@@ -14,10 +14,12 @@ import { tableHandlesPlugins } from '@/lib/milkdown-table-handles'
 import { gutterInsertPlugins } from '@/lib/milkdown-gutter-insert'
 import { smartEnterPlugins } from '@/lib/milkdown-smart-enter'
 import { hrBackspacePlugins } from '@/lib/milkdown-hr-backspace'
+import { hrArrowDownPlugins } from '@/lib/milkdown-hr-arrow-down'
 import { blockquoteUnwrapPlugins } from '@/lib/milkdown-blockquote-unwrap'
 import { milkdownClipboardPlugins } from '@/lib/milkdown-clipboard'
 import { selectionBubblePlugins } from '@/lib/milkdown-selection-bubble'
 import { orbitHrPlugins } from '@/lib/milkdown-orbit-hr'
+import { linkOpenPlugins } from '@/lib/milkdown-link-open'
 import './writing-editor.css'
 
 function EditorInner({ initial, onChange }: { initial: string; onChange: (md: string) => void }) {
@@ -52,9 +54,11 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
       .use(gutterInsertPlugins)
       .use(smartEnterPlugins)
       .use(hrBackspacePlugins)
+      .use(hrArrowDownPlugins)
       .use(blockquoteUnwrapPlugins)
       .use(selectionBubblePlugins)
       .use(orbitHrPlugins)
+      .use(linkOpenPlugins)
       .config(ctx => {
         ctx.set(rootCtx, root)
         ctx.set(defaultValueCtx, initial)

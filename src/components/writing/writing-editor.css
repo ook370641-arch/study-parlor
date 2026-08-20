@@ -32,6 +32,15 @@
 .writing-editor-root .ProseMirror p {
   margin: 0.35em 0;
 }
+/* 链接:Tailwind preflight 把 a 重置成普通文字,这里恢复可见性。
+   选择器不能带 [href]——file:// 链接的 href 被 Milkdown sanitizeLinkHref
+   清洗成空串;点击打开由 milkdown-link-open 插件负责。 */
+.writing-editor-root .ProseMirror a {
+  color: #d97757;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
 /* ── 格调化渲染(设计 2026-08-11 §D):墨/烛身色走 currentColor,点缀用固定 ember #d97757 ── */
 .writing-editor-root .ProseMirror blockquote {
   position: relative;
