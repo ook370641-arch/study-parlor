@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { sortNodesByOrder, countFiles, displayWritingName, normalizeWritingFileName, normalizeWritingFileRename, writingPreviewKindOf, diaryPrefillName, sortedInsertIndexForFile, writingErrorText } from '@/lib/writing-tree-utils'
@@ -25,18 +25,22 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const isAcademic = theme !== 'newspaper'
   const selectedPath = useStore(s => s.writingFile?.path)
   const selectWritingFile = useStore(s => s.selectWritingFile)
+  const panelMode = useStore(s => s.writingPanelMode)
+  const assistantOpen = useStore(s => s.writingAssistantOpen)
+  const companionPath = useStore(s => s.companionFile?.path)
+  const selectCompanionFile = useStore(s => s.selectCompanionFile)
   const loadWritingTree = useStore(s => s.loadWritingTree)
   const writingOrder = useStore(s => s.writingOrder)
   const reorderWritingSibling = useStore(s => s.reorderWritingSibling)
   const moveWritingNode = useStore(s => s.moveWritingNode)
   const writingRenamed = useStore(s => s.writingRenamed)
 
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [dropPos, setDropPos] = useState<'before' | 'after' | null>(null)
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
   const isSelected = selectedPath === node.path
+  const isCompanion = companionPath === node.path && !isSelected
   const isDir = node.kind === 'dir'
 
   // 展开/收起持久化：显式记录优先；无记录时默认——writing 顶层展开、其余收起（仓库默认全收起）
@@ -48,37 +52,9 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const handleClick = () => {
     if (editing) return
     if (isDir) { setWritingGroupExpanded(node.path, !open); return }
-    selectWritingFile(node.path)
-  }
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setMenu({ x: e.clientX, y: e.clientY })
-  }
-
-  // Close menu on outside click
-  useEffect(() => {
-    if (!menu) return
-    const h = () => setMenu(null)
-    document.addEventListener('click', h)
-    return () => document.removeEventListener('click', h)
-  }, [menu])
-
-  const closeMenu = () => setMenu(null)
-
-  const doRename = () => {
-    closeMenu()
-    setPrompt({
-      title: '新名称:',
-      defaultValue: displayWritingName(node),
-      onSubmit: async (newName) => {
-        const normalized = normalizeRenameForNode(newName.trim(), node)
-        if (normalized === node.name) return
-        const r = await ipc.writingRename({ path: node.path, newName: normalized })
-        if (r.ok) writingRenamed(node.path, r.value.path)
-        await loadWritingTree()
-      },
-    })
+    // 左键情境化：右栏展开且处于对照 tab → 切换对照文；否则切主文（现状）
+    if (assistantOpen && panelMode === 'companion') selectCompanionFile(node.path)
+    else selectWritingFile(node.path)
   }
 
   const doRenameSubmit = async (value: string) => {
@@ -98,13 +74,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [editing, setEditing] = useState(false)
   const [renameError, setRenameError] = useState('')
-  const doDelete = () => {
-    closeMenu()
-    setConfirmingDelete(true)
-  }
-
   const doNewFile = () => {
-    closeMenu()
     const dir = node.path.slice(root.length + 1)
     const prefill = diaryPrefillName(root, dir, node.children)
     onStartInlineNew({ root, dir, value: prefill })
@@ -112,7 +82,6 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   }
 
   const doNewFolder = () => {
-    closeMenu()
     setPrompt({
       title: '分组名称:',
       onSubmit: async (name) => {
@@ -130,16 +99,17 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
       <div
         data-testid="writing-tree-node"
         data-kind={isDir ? 'dir' : 'file'}
+        data-companion={isCompanion || undefined}
         className={`group flex items-center gap-1 px-2 py-1 cursor-pointer rounded transition-colors select-none
           ${isSelected
             ? isAcademic ? 'bg-ember/10 text-ember' : 'bg-[#1a1a1a]/10 text-[#1a1a1a]'
             : isAcademic ? 'text-parchment/70 hover:text-parchment hover:bg-parchment/5' : 'text-[#6b5d52] hover:text-[#2a1f1a] hover:bg-black/5'}
+          ${isCompanion ? (isAcademic ? 'bg-parchment/8 shadow-[inset_2px_0_0_rgba(232,213,183,0.4)]' : 'bg-[#6b5d52]/10 shadow-[inset_2px_0_0_rgba(42,31,26,0.35)]') : ''}
           ${dragOver ? 'ring-1 ring-ember/50' : ''}
           ${dropPos === 'before' ? 'border-t-2 border-ember' : ''}
           ${dropPos === 'after' ? 'border-b-2 border-ember' : ''}`}
         style={{ fontSize: 'var(--writing-ui-size)', paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.setData('text/writing-path', node.path)
@@ -274,51 +244,6 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
           </>
         )
       })()}
-
-      {/* Context menu */}
-      {menu && (
-        <div
-          className="fixed z-50 bg-ink border border-parchment/20 rounded shadow-lg py-1 text-xs"
-          style={{ left: menu.x, top: menu.y }}
-        >
-          {isDir && (
-            <button
-              className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
-              onClick={doNewFile}
-            >
-              ＋ 新建文章
-            </button>
-          )}
-          {isDir && (
-            <button
-              className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
-              onClick={doNewFolder}
-            >
-              新建子分组
-            </button>
-          )}
-          {parentDir !== root && (
-            <button
-              className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
-              onClick={() => { closeMenu(); void moveWritingNode({ src: node.path, targetDir: root, index: null }) }}
-            >
-              移出分组
-            </button>
-          )}
-          <button
-            className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-parchment/80"
-            onClick={doRename}
-          >
-            重命名
-          </button>
-          <button
-            className="block w-full text-left px-3 py-1.5 hover:bg-parchment/10 text-red-400"
-            onClick={doDelete}
-          >
-            {isDir ? '解散分组' : '删除'}
-          </button>
-        </div>
-      )}
 
       {prompt && (
         <PromptDialog

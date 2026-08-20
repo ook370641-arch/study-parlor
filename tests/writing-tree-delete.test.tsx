@@ -25,8 +25,7 @@ describe('WritingTree delete', () => {
 
   it('asks via ConfirmDialog and deletes on confirm', async () => {
     render(<WritingTree root="writing" />)
-    fireEvent.contextMenu(screen.getByTestId('writing-tree-node'))
-    fireEvent.click(screen.getByText('删除'))
+    fireEvent.click(screen.getByTestId('writing-node-delete'))
     expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument()
     expect(writingDelete).not.toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'))
@@ -35,8 +34,7 @@ describe('WritingTree delete', () => {
 
   it('does not delete on cancel', () => {
     render(<WritingTree root="writing" />)
-    fireEvent.contextMenu(screen.getByTestId('writing-tree-node'))
-    fireEvent.click(screen.getByText('删除'))
+    fireEvent.click(screen.getByTestId('writing-node-delete'))
     fireEvent.click(screen.getByTestId('confirm-dialog-cancel'))
     expect(writingDelete).not.toHaveBeenCalled()
   })

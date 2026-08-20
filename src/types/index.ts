@@ -589,6 +589,8 @@ export type StateJson = {
   paintingPlateEnabled?: boolean
   /** 已归档（隐藏）的主题目录名，主页/卫星图不显示，可在设置恢复 */
   archivedTopics?: string[]
+  writingPanelMode?: 'assistant' | 'companion'
+  writingCompanionMap?: Record<string, string>
 }
 
 export type IpcApi = {

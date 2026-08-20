@@ -45,24 +45,6 @@ test.describe('@p2 writing-tree', () => {
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '我的新文章.md'))).toBe(true)
   })
 
-  test('新建分组：右键 → 新建子分组', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-
-    // Find the 随笔 directory node (not 分布式随笔)
-    const essaysNode = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({
-      hasText: /^随笔/
-    }).first()
-    await essaysNode.click({ button: 'right' })
-    await expect(window.getByRole('button', { name: '新建子分组', exact: true })).toBeVisible({ timeout: 3000 })
-    await window.getByRole('button', { name: '新建子分组', exact: true }).click()
-
-    await window.getByTestId('writing-prompt-input').fill('子分组测试')
-    await window.getByTestId('writing-prompt-confirm').click()
-    await window.waitForTimeout(1500)
-
-    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '子分组测试'))).toBe(true)
-  })
-
   test('分组悬停按钮新建子分组：🗀 → PromptDialog → 磁盘子目录 + 树中出现', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
@@ -85,36 +67,14 @@ test.describe('@p2 writing-tree', () => {
     expect(nodeTexts.some((t: string) => t.includes('新子组'))).toBe(true)
   })
 
-  test('重命名：右键 → 文件更名（自动补 .md 后缀）', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-
-    // Find the file node for 七月夜话
-    const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({
-      hasText: /七月夜话/
-    }).first()
-    await fileNode.click({ button: 'right' })
-    await expect(window.getByRole('button', { name: '重命名', exact: true })).toBeVisible({ timeout: 3000 })
-    await window.getByRole('button', { name: '重命名', exact: true }).click()
-
-    // 输入不带 .md,提交时自动补后缀
-    await window.getByTestId('writing-prompt-input').fill('八月夜话')
-    await window.getByTestId('writing-prompt-confirm').click()
-    await window.waitForTimeout(1500)
-
-    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '八月夜话.md'))).toBe(true)
-    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
-  })
-
   test('删除确认：cancel → 文件仍在；confirm → 文件永久删除', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
     const fileNode = window.locator('[data-testid="writing-tree-node"]').filter({
       hasText: /七月夜话/
     }).first()
-    await fileNode.click({ button: 'right' })
-    const menuDelete = window.getByRole('button', { name: '删除', exact: true })
-    await expect(menuDelete).toBeVisible({ timeout: 3000 })
-    await menuDelete.click()
+    await fileNode.hover()
+    await fileNode.getByTestId('writing-node-delete').click()
 
     const dialog = window.getByTestId('confirm-dialog')
     await expect(dialog).toBeVisible({ timeout: 3000 })
@@ -124,9 +84,9 @@ test.describe('@p2 writing-tree', () => {
     await window.waitForTimeout(500)
     expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(true)
 
-    // Confirm — re-open context menu; file permanently deleted
-    await fileNode.click({ button: 'right' })
-    await window.getByRole('button', { name: '删除', exact: true }).click()
+    // Confirm — re-open delete button; file permanently deleted
+    await fileNode.hover()
+    await fileNode.getByTestId('writing-node-delete').click()
     await expect(dialog).toBeVisible({ timeout: 3000 })
     await dialog.getByTestId('confirm-dialog-confirm').click()
     await window.waitForTimeout(1500)
@@ -351,26 +311,6 @@ test.describe('@p2 writing-tree', () => {
     expect(order.indexOf('writing/随笔')).toBeGreaterThanOrEqual(0)
     expect(order.indexOf('writing/技术笔记')).toBeGreaterThanOrEqual(0)
     expect(order.indexOf('writing/随笔') < order.indexOf('writing/技术笔记')).toBe(after.essays < after.tech)
-  })
-
-  test('右键「移出分组」:组内文件移到根级;根级节点不显示该菜单项', async ({ window, testLibraryPath }) => {
-    await gotoWriting(window, testLibraryPath)
-
-    const fileRow = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: /七月夜话/ }).first()
-    await fileRow.click({ button: 'right' })
-    const moveOut = window.getByRole('button', { name: '移出分组', exact: true })
-    await expect(moveOut).toBeVisible({ timeout: 3000 })
-    await moveOut.click()
-    await window.waitForTimeout(1500)
-
-    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '七月夜话.md'))).toBe(true)
-    expect(fs.existsSync(path.join(testLibraryPath, 'writing', '随笔', '七月夜话.md'))).toBe(false)
-
-    // 根级分组不渲染「移出分组」
-    const rootDirRow = window.locator('[data-testid="writing-tree-node"][data-kind="dir"]').filter({ hasText: /^随笔/ }).first()
-    await rootDirRow.click({ button: 'right' })
-    await expect(window.getByRole('button', { name: '重命名', exact: true })).toBeVisible({ timeout: 3000 })
-    await expect(window.getByRole('button', { name: '移出分组', exact: true })).toHaveCount(0)
   })
 
   test('行内新建输入行定位在分组末尾', async ({ window, testLibraryPath }) => {

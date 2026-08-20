@@ -22,7 +22,7 @@ import { orbitHrPlugins } from '@/lib/milkdown-orbit-hr'
 import { linkOpenPlugins } from '@/lib/milkdown-link-open'
 import './writing-editor.css'
 
-function EditorInner({ initial, onChange }: { initial: string; onChange: (md: string) => void }) {
+function EditorInner({ initial, onChange, registerAction = true }: { initial: string; onChange: (md: string) => void; registerAction?: boolean }) {
   const ref = useRef(onChange)
   ref.current = onChange
 
@@ -75,13 +75,16 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
 
   useEffect(() => {
     if (!loading) {
+      // onChange gate 对两种实例都必须打开（对照实例只跳过注册，不跳过 gate）
       loadedRef.current = true
+      // 对照编辑器（registerAction=false）：不触碰全局 toolbar 单槽，注册与清理一并跳过
+      if (registerAction === false) return
       // 实时取 getRef.current() 避免闭包捕获已销毁的旧 editor 实例
       // → toolbar 调用时拿到当前活跃 editor
       setAction((fn: any) => { getRef.current()?.action(fn) })
+      return () => { setAction(null) }
     }
-    return () => { setAction(null) }
-  }, [loading, setAction])
+  }, [loading, setAction, registerAction])
 
   return (
     <div className="writing-editor-root">
@@ -90,10 +93,10 @@ function EditorInner({ initial, onChange }: { initial: string; onChange: (md: st
   )
 }
 
-export function WritingEditor(props: { initial: string; onChange: (md: string) => void }) {
+export function WritingEditor(props: { initial: string; onChange: (md: string) => void; registerToolbarAction?: boolean }) {
   return (
     <MilkdownProvider>
-      <EditorInner {...props} />
+      <EditorInner initial={props.initial} onChange={props.onChange} registerAction={props.registerToolbarAction} />
     </MilkdownProvider>
   )
 }
