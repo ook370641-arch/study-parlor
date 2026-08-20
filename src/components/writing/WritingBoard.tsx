@@ -13,6 +13,7 @@ export function WritingBoard() {
   const briefingTheme = useStore(s => s.briefingTheme)
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
+  const saveAllDirtyWriting = useStore(s => s.saveAllDirtyWriting)
 
   // Autosave: debounce 1.5s after body change
   useEffect(() => {
@@ -21,12 +22,12 @@ export function WritingBoard() {
     return () => clearTimeout(t)
   }, [file?.body, file?.dirty])
 
-  // Ctrl+S immediate save
+  // Ctrl+S immediate save（主文 + 对照文中 dirty 者一并保存）
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault()
-        saveWritingFile()
+        saveAllDirtyWriting()
       }
     }
     window.addEventListener('keydown', h)
