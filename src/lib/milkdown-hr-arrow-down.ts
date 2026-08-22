@@ -14,24 +14,29 @@ import type { MilkdownPlugin } from '@milkdown/ctx'
 export function cursorBelowHrCommand(hrPos: number): Command {
   return (state, dispatch) => {
     if (!dispatch) return true
-    let tr = state.tr
-    const after = hrPos + 1 // hr 是叶子节点,nodeSize === 1 → after = hr 之后的位置
-    const next = tr.doc.nodeAt(after) // hr 下方原本的节点
-    let targetPos: number
-    if (next) {
-      targetPos = after + 1 // 下一块内容行首
-    } else {
-      tr = tr.replaceWith(after, after, state.schema.nodes.paragraph.create())
-      targetPos = after + 1
-    }
-    try {
-      tr.setSelection(TextSelection.create(tr.doc, targetPos))
-    } catch {
-      tr.setSelection(Selection.near(tr.doc.resolve(targetPos)))
-    }
-    dispatch(tr.scrollIntoView())
+    dispatch(trCursorBelowHr(state, hrPos))
     return true
   }
+}
+
+/** 产出「光标落到 hr 下一行」的 tr:下方已有内容放其行首,否则补一个空段落 */
+export function trCursorBelowHr(state: Parameters<Command>[0], hrPos: number) {
+  let tr = state.tr
+  const after = hrPos + 1 // hr 是叶子节点,nodeSize === 1 → after = hr 之后的位置
+  const next = tr.doc.nodeAt(after) // hr 下方原本的节点
+  let targetPos: number
+  if (next) {
+    targetPos = after + 1 // 下一块内容行首
+  } else {
+    tr = tr.replaceWith(after, after, state.schema.nodes.paragraph.create())
+    targetPos = after + 1
+  }
+  try {
+    tr.setSelection(TextSelection.create(tr.doc, targetPos))
+  } catch {
+    tr.setSelection(Selection.near(tr.doc.resolve(targetPos)))
+  }
+  return tr.scrollIntoView()
 }
 
 const skipHrOnArrowDown: Command = (state, dispatch) => {

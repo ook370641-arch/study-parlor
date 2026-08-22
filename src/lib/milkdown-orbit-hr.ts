@@ -4,9 +4,10 @@
 // insertHrCleanCommand:自建插入(设计 2026-08-12 §4)——只 replaceSelectionWith(hr),
 // 不像 preset-commonmark 的 insertHrCommand 会 .insert(from, 空段) 多塞一个空段落。
 import { $command, $prose } from '@milkdown/utils'
-import { Plugin, PluginKey } from '@milkdown/prose/state'
+import { Plugin, PluginKey, TextSelection, NodeSelection } from '@milkdown/prose/state'
 import type { MilkdownPlugin } from '@milkdown/ctx'
-import { cursorBelowHrCommand } from './milkdown-hr-arrow-down'
+import type { Node as PMNode } from '@milkdown/prose/model'
+import { cursorBelowHrCommand, trCursorBelowHr } from './milkdown-hr-arrow-down'
 
 const SAT_PATH = 'M160 20 A 60 12 0 1 1 40 20 A 60 12 0 1 1 160 20'
 
@@ -17,8 +18,45 @@ export const insertHrCleanCommand = $command('InsertHrClean', () => () => (state
   return true
 })
 
+function countHr(doc: PMNode): number {
+  let n = 0
+  doc.descendants(node => { if (node.type.name === 'hr') n++; return true })
+  return n
+}
+
+// 插入分隔线后光标自动进入下一行(2026-08-23 用户需求):
+// 打 --- 走输入规则插入 hr 后,PM 把 NodeSelection 留在 hr 上(高亮框),
+// 且 hr 在文末时下方没有可输入的行,继续打字会替换掉 hr。
+// 兜底条件(全部满足才动):有文档变更 + hr 数量增加(=刚插入) + 光标不在文本块。
+// 工具栏路径 insertHrBelow 已自行落点(TextSelection),不会触发本插件;
+// Backspace 删 hr / 手动选中 hr 也不触发(hr 数量未增 / 无 docChanged)。
+const hrCaretAfterInsert = $prose(() =>
+  new Plugin({
+    key: new PluginKey('STUDY_PARLOR_HR_CARET_AFTER_INSERT'),
+    appendTransaction: (trs, oldState, newState) => {
+      if (!trs.some(tr => tr.docChanged)) return null
+      if (countHr(newState.doc) <= countHr(oldState.doc)) return null
+      const sel = newState.selection
+      if (sel instanceof TextSelection) return null // 光标已在文本块,不抢落点
+      // 定位刚插入的 hr:NodeSelection 选中的就是;否则取选区之前最近的一个
+      let hrPos = -1
+      if (sel instanceof NodeSelection && sel.node.type.name === 'hr') {
+        hrPos = sel.from
+      } else {
+        newState.doc.nodesBetween(0, sel.from, (node, pos) => {
+          if (node.type.name === 'hr') hrPos = pos
+          return true
+        })
+      }
+      if (hrPos < 0) return null
+      return trCursorBelowHr(newState, hrPos)
+    },
+  }),
+)
+
 export const orbitHrPlugins: MilkdownPlugin[] = [
   insertHrCleanCommand,
+  hrCaretAfterInsert,
   $prose(() =>
     new Plugin({
       key: new PluginKey('STUDY_PARLOR_ORBIT_HR'),
