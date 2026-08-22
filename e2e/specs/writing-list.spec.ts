@@ -146,4 +146,40 @@ test.describe('@p2 writing-list', () => {
     await expect(window.getByTestId('writing-toolbar-bullet-list')).toHaveCount(0)
     await expect(window.getByTestId('writing-toolbar-ordered-list')).toHaveCount(0)
   })
+
+  // 2026-08-23 修复回归:空项 Backspace 必须退出列表。
+  // 修复前默认 joinBackward 把空段落并进上一项——新行残留列表缩进删不掉,
+  // gutter「+」跟随顶层块(整个列表)而停在上一项行。
+  test('无序列表空项 Backspace → 退出列表,新行无缩进,+号跟随当前行', async ({ window, testLibraryPath, testConfigDir }) => {
+    await setup(window, testLibraryPath, testConfigDir)
+
+    await window.locator('.ProseMirror ul li').filter({ hasText: '已有无序项' }).click()
+    await window.keyboard.press('End')
+    await window.keyboard.press('Enter')
+    await expect(window.locator('.ProseMirror ul li')).toHaveCount(2)
+    await window.keyboard.press('Backspace')
+
+    // 退出列表:列表只剩原有一项;输入落到顶层段落而非列表项
+    await expect(window.locator('.ProseMirror ul li')).toHaveCount(1)
+    await window.keyboard.type('退出行')
+    await expect(window.locator('.ProseMirror ul li').filter({ hasText: '退出行' })).toHaveCount(0)
+    const exitP = window.locator('.ProseMirror > p').filter({ hasText: '退出行' })
+    await expect(exitP).toHaveCount(1)
+
+    // 新行无残留缩进:左缘与普通顶层段落对齐(li 有 paddingLeft,若没退出列表会偏右)
+    const exitBox = await exitP.boundingBox()
+    const plainBox = await window.locator('.ProseMirror > p').filter({ hasText: '正文段落一' }).boundingBox()
+    expect(exitBox).not.toBeNull()
+    expect(plainBox).not.toBeNull()
+    expect(Math.abs(exitBox!.x - plainBox!.x)).toBeLessThan(2)
+
+    // gutter「+」跟随当前行(退出行),而不是停在前面的列表项行
+    const plus = window.getByTestId('writing-gutter-plus')
+    await expect(plus).toBeVisible()
+    const plusBox = await plus.boundingBox()
+    const liBox = await window.locator('.ProseMirror ul li').filter({ hasText: '已有无序项' }).boundingBox()
+    expect(plusBox).not.toBeNull()
+    expect(Math.abs(plusBox!.y - exitBox!.y)).toBeLessThan(24) // 同一行(一行高约 24-32px)
+    expect(Math.abs(plusBox!.y - liBox!.y)).toBeGreaterThan(10) // 明确不在列表项行
+  })
 })
