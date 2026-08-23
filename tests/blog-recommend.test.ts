@@ -21,8 +21,8 @@ describe('collectWritingContext', () => {
     const cat = {
       version: 2,
       entries: {
-        'a.md': { title: 'A', summary: '摘要A', mtimeMs: 300 },
-        'b.md': { title: 'B', summary: '摘要B', mtimeMs: 200 },
+        'writing/a.md': { title: 'A', summary: '摘要A', mtimeMs: 300 },
+        'writing/b.md': { title: 'B', summary: '摘要B', mtimeMs: 200 },
       },
       groups: {},
     }
@@ -32,6 +32,20 @@ describe('collectWritingContext', () => {
     expect(ctx.count).toBe(2)
     expect(ctx.summaries.map(s => s.title)).toEqual(['A', 'B'])
     expect(ctx.recentBodies.some(b => b.includes('正文A'))).toBe(true)
+  })
+  it('按 mtimeMs 倒序排列摘要（newest-first）', () => {
+    const cat = {
+      version: 2,
+      entries: {
+        'writing/old.md': { title: 'Old', summary: '旧', mtimeMs: 100 },
+        'writing/new.md': { title: 'New', summary: '新', mtimeMs: 300 },
+        'writing/mid.md': { title: 'Mid', summary: '中', mtimeMs: 200 },
+      },
+      groups: {},
+    }
+    write(path.join(dir, 'writing', '.catalog.json'), JSON.stringify(cat))
+    const ctx = collectWritingContext(dir)
+    expect(ctx.summaries.map(s => s.title)).toEqual(['New', 'Mid', 'Old'])
   })
 })
 

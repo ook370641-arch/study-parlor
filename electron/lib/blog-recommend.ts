@@ -19,9 +19,17 @@ export function collectWritingContext(lib: string): {
   recentBodies: string[]
 } {
   const cat = loadCatalog(lib, 'writing')
+  const ts = (e: { mtimeMs?: number; updatedAt?: string }): number => {
+    if (e.mtimeMs != null) return e.mtimeMs
+    if (e.updatedAt) {
+      const t = Date.parse(e.updatedAt)
+      if (!Number.isNaN(t)) return t
+    }
+    return 0
+  }
   const items = Object.entries(cat.entries)
     .map(([relPath, e]) => ({ relPath, ...e }))
-    .sort((a, b) => (b.mtimeMs ?? b.updatedAt ? Date.parse(b.updatedAt ?? '') : 0) - (a.mtimeMs ?? a.updatedAt ? Date.parse(a.updatedAt ?? '') : 0))
+    .sort((a, b) => ts(b) - ts(a))
 
   let total = 0
   const summaries: { title: string; summary: string }[] = []
@@ -34,7 +42,7 @@ export function collectWritingContext(lib: string): {
 
   const recentBodies: string[] = []
   for (const it of items.slice(0, 5)) {
-    const p = path.join(lib, 'writing', it.relPath)
+    const p = path.join(lib, it.relPath)
     if (!fs.existsSync(p)) continue
     try {
       const raw = fs.readFileSync(p, 'utf8')
