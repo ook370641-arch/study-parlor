@@ -86,6 +86,7 @@ export function CompanionBoard() {
             onChange={(md) => updateCompanionBody(md)}
             registerToolbarAction={false}
             theme={briefingTheme}
+            filePath={file.path}
           />
         </div>
       ) : file.kind === 'html' ? (

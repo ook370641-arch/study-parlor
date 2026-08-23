@@ -26,7 +26,7 @@ import { codeblockViewPlugins } from '@/lib/milkdown-codeblock-view'
 import { codeblockHighlightPlugins } from '@/lib/milkdown-codeblock-highlight'
 import './writing-editor.css'
 
-function EditorInner({ initial, onChange, registerAction = true, theme }: { initial: string; onChange: (md: string) => void; registerAction?: boolean; theme: 'academic' | 'newspaper' }) {
+function EditorInner({ initial, onChange, registerAction = true, theme, filePath }: { initial: string; onChange: (md: string) => void; registerAction?: boolean; theme: 'academic' | 'newspaper'; filePath: string }) {
   const ref = useRef(onChange)
   ref.current = onChange
 
@@ -64,7 +64,7 @@ function EditorInner({ initial, onChange, registerAction = true, theme }: { init
       .use(selectionBubblePlugins)
       .use(orbitHrPlugins)
       .use(codeblockSchemaPlugins)
-      .use(codeblockViewPlugins)
+      .use(codeblockViewPlugins(filePath))
       .use(codeblockHighlightPlugins)
       .use(linkOpenPlugins)
       .config(ctx => {
@@ -101,10 +101,10 @@ function EditorInner({ initial, onChange, registerAction = true, theme }: { init
   )
 }
 
-export function WritingEditor(props: { initial: string; onChange: (md: string) => void; registerToolbarAction?: boolean; theme: 'academic' | 'newspaper' }) {
+export function WritingEditor(props: { initial: string; onChange: (md: string) => void; registerToolbarAction?: boolean; theme: 'academic' | 'newspaper'; filePath: string }) {
   return (
     <MilkdownProvider>
-      <EditorInner initial={props.initial} onChange={props.onChange} registerAction={props.registerToolbarAction} theme={props.theme} />
+      <EditorInner initial={props.initial} onChange={props.onChange} registerAction={props.registerToolbarAction} theme={props.theme} filePath={props.filePath} />
     </MilkdownProvider>
   )
 }

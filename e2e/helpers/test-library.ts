@@ -488,6 +488,7 @@ const BASE_STATE = {
   writingFontSize: 'base',
   writingTone: 'parchment',
   writingListTab: 'articles',
+  writingCodeblockCollapsed: {},
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
   lastWritingFile: null,

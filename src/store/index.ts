@@ -408,6 +408,8 @@ type AppStore = {
   writingOrder: Record<string, string[]>
   writingExpandedGroups: Record<string, boolean>
   writingUIFontSize: BriefingFontSize
+  writingCodeblockCollapsed: Record<string, string[]>
+  replaceWritingCodeblockCollapsed: (filePath: string, hashes: string[]) => void
   increaseWritingUIFontSize: () => Promise<void>
   decreaseWritingUIFontSize: () => Promise<void>
 
@@ -599,6 +601,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingOrder: {},
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
+  writingCodeblockCollapsed: {},
   writingAssistant: null,
   writingAssistantSnapshotLit: false,
 
@@ -646,6 +649,7 @@ export const useStore = create<AppStore>((set, get) => ({
       writingOrder: state.writingOrder ?? {},
       writingExpandedGroups: state.writingExpandedGroups ?? {},
       writingUIFontSize: state.writingUIFontSize ?? 'base',
+      writingCodeblockCollapsed: state.writingCodeblockCollapsed ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       candlelightEnabled: state.candlelightEnabled ?? true,
@@ -1272,6 +1276,14 @@ export const useStore = create<AppStore>((set, get) => ({
     if (prev === current) return
     set({ writingUIFontSize: prev })
     await ipc.patchState({ writingUIFontSize: prev } as Partial<StateJson>)
+  },
+
+  replaceWritingCodeblockCollapsed: (filePath, hashes) => {
+    const map = { ...get().writingCodeblockCollapsed }
+    if (hashes.length > 0) map[filePath] = hashes
+    else delete map[filePath]
+    set({ writingCodeblockCollapsed: map })
+    ipc.patchState({ writingCodeblockCollapsed: map } as Partial<StateJson>)
   },
 
   setBriefingStage: (stage) => set({ briefingStage: stage }),

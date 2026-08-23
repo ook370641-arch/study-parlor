@@ -584,6 +584,8 @@ export type StateJson = {
   writingOrder?: Record<string, string[]>
   writingExpandedGroups?: Record<string, boolean>
   writingUIFontSize?: BriefingFontSize
+  /** 各写作文件的折叠代码块 hash 多重集合(filePath → codeblockHash 列表) */
+  writingCodeblockCollapsed?: Record<string, string[]>
   briefingRead?: { digest?: string[]; 'job-briefing'?: string[] }
   candlelightEnabled?: boolean
   paintingPlateEnabled?: boolean

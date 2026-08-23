@@ -100,6 +100,7 @@ export function WritingBoard() {
           initial={file.body}
           onChange={(md) => updateWritingBody(md)}
           theme={briefingTheme}
+          filePath={file.path}
         />
       </div>
     </div>

@@ -284,11 +284,47 @@ test.describe('@p1 writing-codeblock', () => {
     expect(md).toContain('```js')
     expect(md).not.toContain('collapsed')
 
-    // reload 重开:代码与语言围栏保留;collapsed 不持久化,默认展开
+    // reload 重开:代码与语言围栏保留;本用例折叠后又改了内容 → 块 hash 失配,重开默认展开
     await window.reload()
     await openArticle(window, TITLE)
     await expect(window.locator('.writing-codeblock-body')).toContainText('const keep = 10')
     await expect(window.getByTestId('writing-codeblock-lang')).toHaveText('js')
+    await expect(window.getByTestId('writing-codeblock')).toHaveAttribute('data-collapsed', 'false')
+  })
+
+  // 链路 11:折叠状态跨重开持久化(折叠偏好存 state.json,不进 .md)
+  test('折叠状态跨重开持久化:折叠后 reload 仍折叠,展开后 reload 仍展开', async ({ window, testLibraryPath, testConfigDir }) => {
+    const TITLE = '代码块-折叠持久化'
+    const statePath = path.join(testConfigDir, 'state.json')
+    await setup(window, testLibraryPath, testConfigDir, TITLE, `# ${TITLE}\n\n\`\`\`\nline1\nline2\nline3\nline4\n\`\`\`\n`)
+
+    // 折叠(不改内容,块 hash 不变)
+    await window.getByTestId('writing-codeblock-toggle').click()
+    await expect(window.getByTestId('writing-codeblock')).toHaveAttribute('data-collapsed', 'true')
+
+    // 折叠偏好经 patchState 落盘 state.json(与正文 autosave 无关)
+    await expect.poll(() => {
+      const raw = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+      const collapsed = raw.writingCodeblockCollapsed ?? {}
+      return Object.values(collapsed).flat().length
+    }, { timeout: 8000 }).toBeGreaterThan(0)
+
+    // reload 重开:折叠状态恢复
+    await window.reload()
+    await openArticle(window, TITLE)
+    await expect(window.getByTestId('writing-codeblock')).toHaveAttribute('data-collapsed', 'true')
+
+    // 展开 → 偏好清空 → 再 reload 仍展开
+    await window.getByTestId('writing-codeblock-toggle').click()
+    await expect(window.getByTestId('writing-codeblock')).toHaveAttribute('data-collapsed', 'false')
+    await expect.poll(() => {
+      const raw = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+      const collapsed = raw.writingCodeblockCollapsed ?? {}
+      return Object.values(collapsed).flat().length
+    }, { timeout: 8000 }).toBe(0)
+
+    await window.reload()
+    await openArticle(window, TITLE)
     await expect(window.getByTestId('writing-codeblock')).toHaveAttribute('data-collapsed', 'false')
   })
 

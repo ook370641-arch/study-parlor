@@ -48,6 +48,7 @@ const DEFAULT: StateJson = {
   writingOrder: {},
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
+  writingCodeblockCollapsed: {},
   scoutTab: 'chat',
   scoutActiveConversationId: null,
   archivedTopics: [],

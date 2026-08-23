@@ -16,4 +16,6 @@ const extendedCodeBlockSchema = codeBlockSchema.extendSchema((prev) => (ctx) => 
   }
 })
 
-export const codeblockSchemaPlugins: MilkdownPlugin[] = [extendedCodeBlockSchema]
+// $NodeSchema 是 [schemaCtx, nodeSchema] 元组,flat 拆成两个 MilkdownPlugin
+// (对齐 preset-gfm 的 schema 数组写法;Editor.use 内部也会 flat,此处对齐类型)
+export const codeblockSchemaPlugins: MilkdownPlugin[] = [extendedCodeBlockSchema].flat()

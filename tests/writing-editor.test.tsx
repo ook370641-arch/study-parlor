@@ -28,18 +28,18 @@ describe('WritingEditor', () => {
   beforeEach(() => { cleanup(); factoryCalls.length = 0; lastDeps = undefined })
 
   it('creates the editor once even when initial changes within the same mount', () => {
-    const { rerender } = render(<WritingEditor initial="a" onChange={() => {}} theme="academic" />)
-    rerender(<WritingEditor initial="ab" onChange={() => {}} theme="academic" />)
-    rerender(<WritingEditor initial="abc" onChange={() => {}} theme="academic" />)
+    const { rerender } = render(<WritingEditor initial="a" onChange={() => {}} theme="academic" filePath="test.md" />)
+    rerender(<WritingEditor initial="ab" onChange={() => {}} theme="academic" filePath="test.md" />)
+    rerender(<WritingEditor initial="abc" onChange={() => {}} theme="academic" filePath="test.md" />)
     expect(factoryCalls).toHaveLength(1)
   })
 
   it('recreates the editor on remount (file switch via key)', () => {
-    const { unmount } = render(<WritingEditor key="f1" initial="a" onChange={() => {}} theme="academic" />)
+    const { unmount } = render(<WritingEditor key="f1" initial="a" onChange={() => {}} theme="academic" filePath="test.md" />)
     unmount()
     // Simulate new hook instance after remount (key change destroys old state)
     lastDeps = undefined
-    render(<WritingEditor key="f2" initial="b" onChange={() => {}} theme="academic" />)
+    render(<WritingEditor key="f2" initial="b" onChange={() => {}} theme="academic" filePath="test.md" />)
     expect(factoryCalls).toHaveLength(2)
   })
 })

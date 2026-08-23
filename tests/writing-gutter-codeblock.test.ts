@@ -15,7 +15,7 @@ async function makeEditor(initial: string) {
   return Editor.make()
     .use(commonmark).use(gfm)
     .use(codeblockSchemaPlugins)
-    .use(codeblockViewPlugins)
+    .use(codeblockViewPlugins('test.md'))
     .use(gutterInsertPlugins)
     .config(ctx => { ctx.set(rootCtx, root); ctx.set(defaultValueCtx, initial) })
     .create()

@@ -1,13 +1,19 @@
 // @vitest-environment jsdom
 // 代码块 NodeView 外壳(设计 2026-08-23 §2):头部行(折叠箭头 + 语言只读标签)、
 // contentDOM 可编辑、折叠箭头/展开条切换 collapsed attr;编辑事件不被外壳拦截。
-import { describe, it, expect } from 'vitest'
+// 折叠偏好经 store → ipc.patchState,jsdom 无 window.api,故 mock ipc。
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core'
 import { commonmark } from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
 import { TextSelection } from '@milkdown/prose/state'
 import { codeblockSchemaPlugins } from '@/lib/milkdown-codeblock-schema'
 import { codeblockViewPlugins } from '@/lib/milkdown-codeblock-view'
+import { useStore } from '@/store'
+
+vi.mock('@/lib/ipc', () => ({ ipc: { patchState: vi.fn() } }))
+
+const FILE = 'test.md'
 
 async function makeEditor(initial: string) {
   const root = document.createElement('div')
@@ -16,7 +22,7 @@ async function makeEditor(initial: string) {
   return Editor.make()
     .use(commonmark).use(gfm)
     .use(codeblockSchemaPlugins)
-    .use(codeblockViewPlugins)
+    .use(codeblockViewPlugins(FILE))
     .config(ctx => { ctx.set(rootCtx, root); ctx.set(defaultValueCtx, initial) })
     .create()
 }
@@ -28,6 +34,10 @@ function getBlock(te: any) {
 }
 
 describe('代码块 NodeView 外壳', () => {
+  beforeEach(() => {
+    useStore.setState({ writingCodeblockCollapsed: {} })
+  })
+
   it('渲染头部行:箭头 + 语言标签;contentDOM 为 pre>code', async () => {
     const te = await makeEditor('```js\nconst a = 1\n```')
     const { dom } = getBlock(te)
