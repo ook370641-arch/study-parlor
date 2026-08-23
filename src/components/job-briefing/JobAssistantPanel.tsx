@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ArticleDivider } from '@/components/article-assistant/ArticleDivider'
 import { ChatMessageList } from '@/components/article-assistant/ChatMessageList'
+import { ArticleGuideTabs } from '@/components/article-assistant/ArticleGuideTabs'
 
 interface Props {
   articlePath: string
@@ -49,6 +50,7 @@ export function JobAssistantPanel({ articlePath, articleTitle, articleContent }:
         contextType: 'briefing',
         articleTitle,
         articleContent,
+        autoGenerateGuide: true,
       })
     }
     return () => {
@@ -100,6 +102,10 @@ export function JobAssistantPanel({ articlePath, articleTitle, articleContent }:
       {open && (
         <div className="h-full overflow-hidden" style={{ width }}>
           <div className="h-full flex flex-col min-w-0 border-l border-parchment/20 bg-[#1a1512]">
+            {/* 导读|对照 tabs（聊天区之上） */}
+            <div className="h-1/2 min-h-0 shrink-0 border-b border-parchment/10">
+              <ArticleGuideTabs source="job" theme="academic" />
+            </div>
             {/* Header */}
             <div className="h-9 flex items-center justify-between px-3 border-b border-parchment/10 shrink-0">
               <span className="text-[11px] tracking-[0.2em] text-parchment/80 font-serif">AI 求职助手</span>

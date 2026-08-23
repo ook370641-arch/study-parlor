@@ -113,6 +113,7 @@ export function ScoutPanel({ theme = 'academic' }: { theme?: BriefingTheme }) {
           articleContent={readerBody}
           autoGenerateGuide
           theme={theme}
+          source="scout"
         />
       )}
     </div>
