@@ -9,6 +9,8 @@ interface Props {
   article: AnthropicArticleMeta
   theme?: BriefingTheme
   onRequestDelete?: (article: AnthropicArticleMeta) => void
+  inCollection?: boolean
+  onToggleCollection?: () => void
 }
 
 function formatDate(iso: string | null | undefined) {
@@ -39,7 +41,7 @@ function ImportSpinner() {
   )
 }
 
-export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete }: Props) {
+export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete, inCollection, onToggleCollection }: Props) {
   const isAcademic = theme !== 'newspaper'
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
@@ -152,6 +154,22 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
           }}
         />
       )}
+
+        {onToggleCollection && (
+          <span
+            data-testid="blog-fav-toggle"
+            role="button"
+            aria-pressed={inCollection}
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleCollection() }}
+            className={`absolute top-2 right-2 z-10 text-sm leading-none transition-colors ${
+              inCollection
+                ? 'text-ember'
+                : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
+            }`}
+          >
+            {inCollection ? '★' : '☆'}
+          </span>
+        )}
 
       <div className="flex items-start gap-4">
         {article.imageUrl ? (
