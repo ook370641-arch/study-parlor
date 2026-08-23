@@ -281,10 +281,13 @@ export function Briefing() {
                 currentDate={jobViewDate}
                 today={today}
                 onSelect={(date) => {
-                  // 对照模式：求职日期列点击改为对照槽打开（只读），主区不变
-                  if (useStore.getState().articlePanelMode.job === 'companion' && jobResult?.filePath) {
-                    void useStore.getState().selectArticleCompanion('job', jobViewDate, jobResult.filePath, { readonly: true })
-                    return
+                  // 对照模式：打开点击日期的求职简报作为对照（只读），主区不变
+                  if (useStore.getState().articlePanelMode.job === 'companion') {
+                    const item = jobHistoryList.find((h: { date: string }) => h.date === date)
+                    if (item) {
+                      void useStore.getState().selectArticleCompanion('job', date, item.filePath, { readonly: true })
+                      return
+                    }
                   }
                   generateJobBriefing(date)
                 }}

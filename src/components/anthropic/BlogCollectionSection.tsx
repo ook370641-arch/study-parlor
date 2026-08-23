@@ -1,6 +1,7 @@
 // src/components/anthropic/BlogCollectionSection.tsx
 import { useState } from 'react'
 import { useStore } from '@/store'
+import { ipc } from '@/lib/ipc'
 import type { BlogCollectionEntry, BriefingTheme } from '@shared/index'
 
 const STAGE_TEXT: Record<string, string> = {
@@ -19,6 +20,7 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
   const cancelBlogRecommend = useStore((s) => s.cancelBlogRecommend)
   const removeBlogCollection = useStore((s) => s.removeBlogCollection)
   const openAnthropicReader = useStore((s) => s.openAnthropicReader)
+  const showToast = useStore((s) => s.showToast)
 
   const [collapsed, setCollapsed] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
@@ -89,7 +91,15 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
               isAcademic={isAcademic}
               expanded={expandedReason === e.sourceUrl}
               onToggleReason={() => setExpandedReason(expandedReason === e.sourceUrl ? null : e.sourceUrl)}
-              onOpen={() => void openAnthropicReader(e.filePath)}
+              onOpen={async () => {
+                try {
+                  await ipc.readMd(e.filePath)
+                  await openAnthropicReader(e.filePath)
+                } catch {
+                  showToast('该文件已被删除，已从收藏夹移除')
+                  await removeBlogCollection(e.sourceUrl)
+                }
+              }}
               onRemove={() => void removeBlogCollection(e.sourceUrl)}
             />
           ))}
