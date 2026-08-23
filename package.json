@@ -38,6 +38,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",
+    "refractor": "^4.9.0",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "turndown": "^7.2.0",
