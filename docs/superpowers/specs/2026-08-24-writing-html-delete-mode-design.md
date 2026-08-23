@@ -35,6 +35,7 @@
 ### 交互与 UI 出口（feature-development §12）
 
 - HtmlPreview 顶栏新增「删除模式」按钮（`writing-html-delete-enter`），位于「用系统程序打开」左侧。进入后变为「完成」（`writing-html-delete-done`），并有「删除中」态徽标提示。
+- **删除模式仅主写作板启用**：`CompanionBoard` 也复用 `HtmlPreview`（对照槽），通过 `deletable` prop 区分——只有主槽传入，避免两个实例争抢 store 的 flush 注册。对照槽保持只读。
 - 删除模式下：
   - hover 块级元素 → 高亮描边（注入样式表 `.sp-del-hover { outline: 2px solid #d97757 }`）。
   - 点击 → 命中块 `remove()`，置脏。
@@ -76,9 +77,10 @@
 
 ### 脏状态与切换保护
 
-- store 新增非持久字段：`htmlDeleteMode: boolean`、`htmlDeleteDirty: boolean`、`htmlDeleteFlush: (() => Promise<void>) | null`（HtmlPreview mount 时注册 flush 回调）。
-- flush = 发 `sp-html-collect` → 等 `sp-html-save`（带超时护栏，异常视为失败）→ 调 `writingSaveHtml` → 成功后清 dirty、退出删除模式。非脏时 flush 立即 resolve。
-- `selectWritingFile` 开头 `await get().htmlDeleteFlush?.()`——切换文件 = 自动退出删除模式并写回，所有切换入口（树点击、tab 切换）天然覆盖。
+- store 新增非持久字段：`htmlDeleteMode: boolean`、`htmlDeleteDirty: boolean`、`htmlDeleteFlush: (() => Promise<boolean>) | null`（主槽 HtmlPreview mount 时注册 flush 回调）。
+- flush 返回 `boolean`：true = 可继续（写回成功或无脏改动）；false = 失败/超时，**调用方中止后续动作**。
+- flush = 发 `sp-html-collect` → 等 `sp-html-save`（3s 超时护栏）→ 调 `writingSaveHtml` → 成功后清 dirty、退出删除模式。非脏时直接退出删除模式。
+- `selectWritingFile` 开头 `const f = get().htmlDeleteFlush; if (f && !(await f())) return`——切换文件 = 自动退出删除模式并写回，所有切换入口（树点击、tab 切换）天然覆盖；flush 失败则中止切换，避免静默丢改动。
 - 字号按钮禁用读 `htmlDeleteMode`（`Briefing.tsx`）。
 
 ### 撤销
