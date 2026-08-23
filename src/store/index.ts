@@ -492,6 +492,9 @@ let writingSelectSeq = 0
 // selectCompanionFile 的单调序号：同 writingSelectSeq，对照槽的过期读取结果一律丢弃。
 let companionSelectSeq = 0
 
+// selectArticleCompanion 的单调序号：同 companionSelectSeq，对照槽的过期读取结果一律丢弃。
+let articleCompanionSelectSeq = 0
+
 /** Ensures sendAssistantMessage waits for history to load before sending, preventing
  *  the race where a user message lands before loadAssistantSession completes and the
  *  cur.messages.length === 0 guard discards the loaded history. */
@@ -2747,7 +2750,9 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   selectArticleCompanion: async (_source, mainKey, filePath, opts) => {
+    const seq = ++articleCompanionSelectSeq
     if (get().articleCompanion?.dirty) await get().saveArticleCompanion()
+    if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
     const map = { ...get().articleCompanionMap, [mainKey]: filePath }
     set({ articleCompanionMap: map })
     ipc.patchState({ articleCompanionMap: map } as Partial<StateJson>)
@@ -2755,9 +2760,16 @@ export const useStore = create<AppStore>((set, get) => ({
     const readonly = opts?.readonly === true || kind === 'html'
     try {
       const r = await ipc.readMd(filePath) // { frontmatter, body }
+      if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
       set({ articleCompanion: { key: mainKey, filePath, kind, body: r.body ?? '', readonly, dirty: false, saving: 'idle' } })
     } catch {
-      set({ articleCompanion: null })
+      if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
+      // 读取失败（如文件被外部删除）：清映射 + toast + 对照槽回空态
+      const cleanMap = { ...get().articleCompanionMap }
+      delete cleanMap[mainKey]
+      set({ articleCompanionMap: cleanMap, articleCompanion: null })
+      ipc.patchState({ articleCompanionMap: cleanMap } as Partial<StateJson>)
+      get().showToast('对照文读取失败')
     }
   },
 
