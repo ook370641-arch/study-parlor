@@ -8,6 +8,7 @@ import type { AppConfig } from '../env'
 import type { AnthropicBlogCache, AnthropicArticleMeta } from '@shared/index'
 import type { ArticleMetaCache } from '../lib/anthropic-discover'
 import { loadCollection, saveCollection, addManualEntry, removeEntry, applyRecommend } from '../lib/blog-collection'
+import { writeArticleBody } from '../lib/article-io'
 import { runBlogRecommend, collectLocalArticles } from '../lib/blog-recommend'
 import type { BlogRecommendErrorCode, BlogCollectionEntry } from '@shared/index'
 
@@ -147,6 +148,16 @@ export function registerAnthropicIpc(cfg: AppConfig) {
 
   ipcMain.handle('anthropic:deleteArticle', async (_, args: { filePath: string }) => {
     return deleteAnthropicArticleFile(cfg.libraryPath, args.filePath)
+  })
+
+  ipcMain.handle('anthropic:writeArticleBody', async (_, args: { filePath: string; body: string }) => {
+    try {
+      writeArticleBody(cfg.libraryPath, args.filePath, args.body)
+      return { ok: true as const }
+    } catch (err) {
+      const c = (err as { code?: string })?.code
+      return { ok: false as const, code: c === 'ARTICLE_PATH_FORBIDDEN' ? 'ARTICLE_PATH_FORBIDDEN' as const : 'ARTICLE_WRITE_ERROR' as const }
+    }
   })
 
   ipcMain.handle('anthropic:collectionRead', async () => {
