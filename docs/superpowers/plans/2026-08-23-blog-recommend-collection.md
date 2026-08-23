@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为 Anthropic 博客加「基于写作上下文的三段式智能推荐 + 本地收藏夹」，并把博客/前沿/求职右栏统一为「导读 | 助手 | 对照」三 tab、对照文可编辑。
+**Goal:** 为 Anthropic 博客加「基于写作上下文的三段式智能推荐 + 本地收藏夹（含往期推荐历史）」，并把博客/前沿/求职右栏统一为「导读 | 对照」两 tab（旁注维持现有）、对照文可编辑。
 
 **Architecture:** 分两个独立阶段。阶段 1（模块 1）：主进程新增 `blog-collection.ts`（`.collection.json` 读写）与 `blog-recommend.ts`（画像→Tavily 搜索→本地精排），IPC 落在现有 `electron/ipc/anthropic.ts`，渲染侧在 `AnthropicBlogPanel` 顶部挂收藏夹区。阶段 2（模块 2）：新增通用右栏 tab 面板，把博客/前沿/求职右栏统一，对照文复刻写作的 CompanionBoard（md 可编辑 / html 只读），求职对照只读。
 
@@ -67,7 +67,7 @@ export type BlogCollectionFile = {
   version: 1
   entries: BlogCollectionEntry[]
   dismissed: string[]      // 用户移除过的推荐 sourceUrl，后续批次不再推荐
-  lastBatch: BlogRecommendBatch | null
+  history: BlogRecommendBatch[]  // 往期推荐历史（含用户画像），最新在前
 }
 
 export type BlogRecommendErrorCode =
@@ -138,7 +138,7 @@ let dir: string
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'blog-col-')) })
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
 
-const empty = (): BlogCollectionFile => ({ version: 1, entries: [], dismissed: [], lastBatch: null })
+const empty = (): BlogCollectionFile => ({ version: 1, entries: [], dismissed: [], history: [] })
 
 describe('loadCollection', () => {
   it('缺文件返回空集合', () => {
@@ -146,13 +146,13 @@ describe('loadCollection', () => {
   })
   it('version 不符时重置为空', () => {
     fs.mkdirSync(path.join(dir, 'Anthropic博客'), { recursive: true })
-    fs.writeFileSync(collectionPath(dir), JSON.stringify({ version: 99, entries: [], dismissed: [], lastBatch: null }))
+    fs.writeFileSync(collectionPath(dir), JSON.stringify({ version: 99, entries: [], dismissed: [], history: [] }))
     expect(loadCollection(dir)).toEqual(empty())
   })
   it('损坏 JSON 回退 .bak', () => {
     fs.mkdirSync(path.join(dir, 'Anthropic博客'), { recursive: true })
     const p = collectionPath(dir)
-    const good = { version: 1, entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 't', addedAt: 'x', origin: 'manual' }], dismissed: [], lastBatch: null }
+    const good = { version: 1, entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 't', addedAt: 'x', origin: 'manual' }], dismissed: [], history: [] }
     saveCollection(dir, good as BlogCollectionFile)
     fs.copyFileSync(p, p + '.bak')
     fs.writeFileSync(p, '{"broken')
@@ -206,7 +206,15 @@ describe('applyRecommend', () => {
     const picks = [{ sourceUrl: 'u3', filePath: 'c.md', title: 't', addedAt: 'x', origin: 'recommend' as const, reason: 'new', gap: 'g1', batch: 1 }]
     const c2 = applyRecommend(c, batch, picks)
     expect(c2.entries.map(e => e.sourceUrl).sort()).toEqual(['u1', 'u3'])
-    expect(c2.lastBatch).toEqual(batch)
+    expect(c2.history[0]).toEqual(batch)
+  })
+  it('历史批次追加最新在前，超 20 批滚动丢弃最旧', () => {
+    const c: BlogCollectionFile = { ...empty(), history: Array.from({ length: 20 }, (_, i) => ({ batch: i, generatedAt: 'g', profile: 'p', gaps: [], queries: [], searchUsed: false })) }
+    const batch: BlogRecommendBatch = { batch: 20, generatedAt: 'g', profile: 'p', gaps: [], queries: [], searchUsed: false }
+    const c2 = applyRecommend(c, batch, [])
+    expect(c2.history).toHaveLength(20)
+    expect(c2.history[0].batch).toBe(20)
+    expect(c2.history[19].batch).toBe(1)
   })
 })
 ```
@@ -228,7 +236,7 @@ export function collectionPath(lib: string): string {
   return path.join(lib, 'Anthropic博客', '.collection.json')
 }
 
-const EMPTY: BlogCollectionFile = { version: 1, entries: [], dismissed: [], lastBatch: null }
+const EMPTY: BlogCollectionFile = { version: 1, entries: [], dismissed: [], history: [] }
 
 export function loadCollection(lib: string): BlogCollectionFile {
   const raw = safeReadJson<Partial<BlogCollectionFile>>(collectionPath(lib), { fallback: {} })
@@ -237,7 +245,7 @@ export function loadCollection(lib: string): BlogCollectionFile {
     version: 1,
     entries: Array.isArray(raw.entries) ? raw.entries : [],
     dismissed: Array.isArray(raw.dismissed) ? raw.dismissed : [],
-    lastBatch: raw.lastBatch ?? null,
+    history: Array.isArray(raw.history) ? raw.history : [],
   }
 }
 
@@ -275,7 +283,8 @@ export function applyRecommend(
   pickEntries: BlogCollectionEntry[]
 ): BlogCollectionFile {
   const manual = c.entries.filter(e => e.origin === 'manual')
-  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, lastBatch: batch }
+  const history = [batch, ...c.history].slice(0, 20)
+  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history }
 }
 ```
 
@@ -617,7 +626,7 @@ describe('runBlogRecommend', () => {
   })
   it('dismissed 的 URL 不出现在候选池', async () => {
     seedWriting(); seedPool()
-    write(path.join(dir, 'Anthropic博客', '.collection.json'), JSON.stringify({ version: 1, entries: [], dismissed: ['https://anthropic.com/a'], lastBatch: null }))
+    write(path.join(dir, 'Anthropic博客', '.collection.json'), JSON.stringify({ version: 1, entries: [], dismissed: ['https://anthropic.com/a'], history: [] }))
     ;(getSearchApiKey as any).mockResolvedValue(null)
     ;(chatNonStream as any)
       .mockResolvedValueOnce(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q'] }))
@@ -772,7 +781,7 @@ export async function runBlogRecommend(
   const picks = await stagePick(cfg, { profile: profile.profile, gaps: profile.gaps ?? [], searchHits, pool }, opts.signal)
 
   const batch: BlogRecommendBatch = {
-    batch: (col.lastBatch?.batch ?? 0) + 1,
+    batch: (col.history[0]?.batch ?? 0) + 1,
     generatedAt: new Date().toISOString(),
     profile: profile.profile,
     gaps: profile.gaps ?? [],
@@ -867,7 +876,7 @@ function recommendErrorCode(err: unknown): BlogRecommendErrorCode {
         if (process.env.NODE_ENV === 'test' && process.env.E2E_CONFIG_DIR && process.env.E2E_ANTHROPIC_RECOMMEND === '1') {
           const col = loadCollection(cfg.libraryPath)
           const batch = {
-            batch: (col.lastBatch?.batch ?? 0) + 1,
+            batch: (col.history[0]?.batch ?? 0) + 1,
             generatedAt: new Date().toISOString(),
             profile: 'E2E 画像：正在研究 AI 对齐',
             gaps: ['E2E 缺口'],
@@ -994,7 +1003,7 @@ git commit -m "feat(blog): 收藏夹与推荐 IPC——collection read/add/remov
 - [ ] **Step 2: 初始值（约 L561 `constitutionReportOpen: false` 之后）**
 
 ```ts
-    blogCollection: { version: 1, entries: [], dismissed: [], lastBatch: null },
+    blogCollection: { version: 1, entries: [], dismissed: [], history: [] },
     recommendRunning: false,
     recommendStage: null,
 ```
@@ -1086,7 +1095,7 @@ git commit -m "feat(blog): 收藏夹与推荐 store 状态/actions + 推荐事�
 
 **Interfaces:**
 - Consumes: store 字段/actions（Task 7）。
-- Produces: 收藏夹 UI 出口（`data-testid="blog-collection-section"`、`blog-recommend-button`、`blog-recommend-basis`、`blog-fav-toggle`）。
+- Produces: 收藏夹 UI 出口（`data-testid="blog-collection-section"`、`blog-recommend-button`、`blog-recommend-history`、`blog-fav-toggle`）。
 
 - [ ] **Step 1: 写 `BlogCollectionSection.tsx`**
 
@@ -1114,11 +1123,11 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
   const openAnthropicReader = useStore((s) => s.openAnthropicReader)
 
   const [collapsed, setCollapsed] = useState(false)
-  const [showBasis, setShowBasis] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [expandedReason, setExpandedReason] = useState<string | null>(null)
 
   const entries = collection.entries
-  const batch = collection.lastBatch
+  const history = collection.history
   const border = isAcademic ? 'border-slate/30' : 'border-[#c9c3b8]'
   const muted = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
   const text = isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'
@@ -1145,22 +1154,26 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
         </button>
       </div>
 
-      {batch && (
+      {history.length > 0 && (
         <button
           type="button"
-          data-testid="blog-recommend-basis"
-          onClick={() => setShowBasis(s => !s)}
+          data-testid="blog-recommend-history"
+          onClick={() => setShowHistory(s => !s)}
           className={`mt-1.5 block text-[10px] ${muted} hover:text-ember`}
         >
-          基于你的写作画像 · {batch.gaps.length} 个缺口 · {batch.queries.length} 个检索方向
-          {batch.searchUsed ? '' : ' · 未使用网络搜索'} {showBasis ? '▴' : '▾'}
+          往期推荐历史（{history.length} 批） {showHistory ? '▴' : '▾'}
         </button>
       )}
-      {showBasis && batch && (
-        <div className={`mt-1.5 rounded p-2 text-[11px] leading-relaxed ${isAcademic ? 'bg-ink/60 border border-parchment/10' : 'bg-[#f5f2ed] border border-[#1a1a1a]/10'}`}>
-          <p className={text}>{batch.profile}</p>
-          <p className={`mt-1 ${muted}`}>认知缺口：{batch.gaps.join('、')}</p>
-          <p className={`mt-1 ${muted}`}>检索方向：{batch.queries.join('、')}</p>
+      {showHistory && history.length > 0 && (
+        <div className="mt-1.5 space-y-1.5 text-[11px] leading-relaxed">
+          {history.map((b) => (
+            <div key={b.batch} className={`rounded p-2 ${isAcademic ? 'bg-ink/60 border border-parchment/10' : 'bg-[#f5f2ed] border border-[#1a1a1a]/10'}`}>
+              <p className={`${muted} text-[10px]`}>第 {b.batch} 批 · {new Date(b.generatedAt).toLocaleString('zh-CN')}{b.searchUsed ? '' : ' · 未使用网络搜索'}</p>
+              <p className={text}>{b.profile}</p>
+              <p className={`mt-1 ${muted}`}>认知缺口：{b.gaps.join('、')}</p>
+              <p className={`mt-1 ${muted}`}>检索方向：{b.queries.join('、')}</p>
+            </div>
+          ))}
         </div>
       )}
 
@@ -1366,7 +1379,7 @@ git commit -m "test(blog): 收藏夹 E2E——区渲染/推荐 mock/理由/移�
 
 # 阶段 2：右栏统一 + 对照推广
 
-> 本阶段较复杂，先说明共享约定：新增一个通用右栏 tab 面板 `ArticleSidePanel`（导读 | 助手 | 对照），博客/前沿/求职三个栏目都挂它。对照槽复用 `CompanionBoard`（md 可编辑/ html 只读）与 `MarkdownRenderer`（求职只读）。右槽开关/宽度统一持久化到 `articleSidePanelOpen`/`articleSidePanelWidth`。
+> 本阶段共享约定：新增 `ArticleGuideTabs`（导读 | 对照 两 tab 头）+ `ArticleCompanionBoard`（对照槽，md 可编辑/ html 只读/ 求职只读 `MarkdownRenderer`）。旁注（`ChatWindow` / `JobAssistantPanel` 聊天）维持现有设计，**不并入 tab**。右槽开关/宽度沿用各栏目现有面板自身机制，**不新增** `articleSidePanelOpen/Width`。
 
 ## Task 10: 文章正文写回 IPC + 单测
 
@@ -1513,33 +1526,29 @@ git commit -m "feat(article): 文章正文写回 IPC——白名单目录校验�
 ## Task 11: 右栏统一 store 状态 + actions + 单测
 
 **Files:**
-- Modify: `src/types/index.ts`（`StateJson` 加 `articlePanelMode`/`articleCompanionMap`/`articleSidePanelOpen`/`articleSidePanelWidth`）
+- Modify: `src/types/index.ts`（`StateJson` 加 `articlePanelMode`/`articleCompanionMap`）
 - Modify: `src/store/index.ts`（字段 + actions）
 - Modify: `electron/ipc/state.ts`（`DEFAULT` 补默认值）
 - Test: `tests/article-companion.test.ts`（纯 store 逻辑的辅助函数，见下）
 
 **Interfaces:**
 - Consumes: `anthropicWriteArticleBody`（Task 10）、`writingRead`（读对照文正文）、`writingReadPreview`。
-- Produces: store 字段 `articlePanelMode: Record<'anthropic'|'scout'|'job', 'guide'|'assistant'|'companion'>`、`articleCompanionMap: Record<string,string>`、`articleSidePanelOpen: boolean`、`articleSidePanelWidth: number`、`articleCompanion: { key; filePath; kind; body; readonly; dirty; saving } | null`；actions `setArticlePanelMode`、`selectArticleCompanion`、`updateArticleCompanionBody`、`saveArticleCompanion`、`closeArticleCompanion`。
+- Produces: store 字段 `articlePanelMode: Record<'anthropic'|'scout'|'job', 'guide'|'companion'>`、`articleCompanionMap: Record<string,string>`、`articleCompanion: { key; filePath; kind; body; readonly; dirty; saving } | null`；actions `setArticlePanelMode`、`selectArticleCompanion`、`updateArticleCompanionBody`、`saveArticleCompanion`、`closeArticleCompanion`。注：右槽开关/宽度沿用各栏目现有面板自身的 open/width（旁注维持现有设计），**不新增** `articleSidePanelOpen/Width`。
 
 - [ ] **Step 1: StateJson 类型 + DEFAULT**
 
 `src/types/index.ts` StateJson 加：
 
 ```ts
-    articlePanelMode?: Record<'anthropic' | 'scout' | 'job', 'guide' | 'assistant' | 'companion'>
+    articlePanelMode?: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
     articleCompanionMap?: Record<string, string>
-    articleSidePanelOpen?: boolean
-    articleSidePanelWidth?: number
 ```
 
 `electron/ipc/state.ts` 的 `DEFAULT` 加：
 
 ```ts
-    articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'assistant' },
+    articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
     articleCompanionMap: {},
-    articleSidePanelOpen: true,
-    articleSidePanelWidth: 320,
 ```
 
 - [ ] **Step 2: store 字段 + actions**
@@ -1547,37 +1556,29 @@ git commit -m "feat(article): 文章正文写回 IPC——白名单目录校验�
 在 store 接口类型段加：
 
 ```ts
-    articlePanelMode: Record<'anthropic' | 'scout' | 'job', 'guide' | 'assistant' | 'companion'>
+    articlePanelMode: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
     articleCompanionMap: Record<string, string>
-    articleSidePanelOpen: boolean
-    articleSidePanelWidth: number
     articleCompanion: { key: string; filePath: string; kind: 'md' | 'html' | 'other'; body: string; readonly: boolean; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
-    setArticlePanelMode: (source: 'anthropic' | 'scout' | 'job', mode: 'guide' | 'assistant' | 'companion') => void
-    setArticleSidePanelOpen: (open: boolean) => void
-    setArticleSidePanelWidth: (width: number) => void
+    setArticlePanelMode: (source: 'anthropic' | 'scout' | 'job', mode: 'guide' | 'companion') => void
     selectArticleCompanion: (source: 'anthropic' | 'scout' | 'job', mainKey: string, filePath: string, opts?: { readonly?: boolean }) => Promise<void>
     updateArticleCompanionBody: (body: string) => void
     saveArticleCompanion: () => Promise<void>
     closeArticleCompanion: () => Promise<void>
 ```
 
-初始值（复用 init 合并 `state.articlePanelMode ?? {...}`、`state.articleCompanionMap ?? {}`、`state.articleSidePanelOpen ?? true`、`state.articleSidePanelWidth ?? 320`）：
+初始值（复用 init 合并 `state.articlePanelMode ?? {...}`、`state.articleCompanionMap ?? {}`）：
 
 ```ts
-    articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'assistant' },
+    articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
     articleCompanionMap: {},
-    articleSidePanelOpen: true,
-    articleSidePanelWidth: 320,
     articleCompanion: null,
 ```
 
 init 合并段（照抄 `writingPanelMode` 现有合并，约 L643 附近）：
 
 ```ts
-        articlePanelMode: state.articlePanelMode ?? { anthropic: 'guide', scout: 'guide', job: 'assistant' },
+        articlePanelMode: state.articlePanelMode ?? { anthropic: 'guide', scout: 'guide', job: 'guide' },
         articleCompanionMap: state.articleCompanionMap ?? {},
-        articleSidePanelOpen: state.articleSidePanelOpen ?? true,
-        articleSidePanelWidth: state.articleSidePanelWidth ?? 320,
 ```
 
 actions 实现（照抄 companion-pane 既有 `selectCompanionFile` 模式，改用绝对路径 + `writingRead` 读正文）：
@@ -1587,14 +1588,6 @@ actions 实现（照抄 companion-pane 既有 `selectCompanionFile` 模式，改
       const next = { ...get().articlePanelMode, [source]: mode }
       set({ articlePanelMode: next })
       ipc.patchState({ articlePanelMode: next } as Partial<StateJson>)
-    },
-    setArticleSidePanelOpen: (open) => {
-      set({ articleSidePanelOpen: open })
-      ipc.patchState({ articleSidePanelOpen: open } as Partial<StateJson>)
-    },
-    setArticleSidePanelWidth: (width) => {
-      set({ articleSidePanelWidth: width })
-      ipc.patchState({ articleSidePanelWidth: width } as Partial<StateJson>)
     },
     selectArticleCompanion: async (source, mainKey, filePath, opts) => {
       if (get().articleCompanion?.dirty) await get().saveArticleCompanion()
@@ -1654,103 +1647,57 @@ Expected: PASS。
 
 ```bash
 git add src/types/index.ts src/store/index.ts electron/ipc/state.ts
-git commit -m "feat(article): 右栏统一 store——panelMode(导读|助手|对照)/companionMap/开关宽度/对照槽, 读正文复 readMd"
+git commit -m "feat(article): 右栏统一 store——panelMode(导读|对照)/companionMap/对照槽, 读正文复 readMd"
 ```
 
 ---
 
-## Task 12: 通用右栏 tab 面板 + 对照槽组件
+## Task 12: 对照槽组件 + 导读|对照 tab 头
 
 **Files:**
-- Create: `src/components/article-assistant/ArticleSidePanel.tsx`（tab 壳：导读 | 助手 | 对照）
+- Create: `src/components/article-assistant/ArticleGuideTabs.tsx`（两 tab 头：导读 | 对照，旁注不并入）
 - Create: `src/components/article-assistant/ArticleCompanionBoard.tsx`（对照槽内容，md 可编辑/ html 只读/ 求职只读 MarkdownRenderer）
-- Modify: `src/components/article-assistant/GuideSidebar.tsx`（如需：确认可被 tab 壳复用，无需改则跳过）
 
 **Interfaces:**
-- Consumes: store `articlePanelMode`/`articleSidePanelOpen`/`articleSidePanelWidth`/`articleCompanion` 及 actions（Task 11）；`GuideSidebar`、`ChatWindow`（现有 `ArticleAssistantPanel` 内部件）；`WritingEditor`、`HtmlPreview`、`MarkdownRenderer`。
-- Produces: `<ArticleSidePanel source articleType parentPath articleTitle articleContent autoGenerateGuide theme />`；内部 tab 切换 + 对照槽渲染。
+- Consumes: store `articlePanelMode`/`articleCompanion` 及 actions（Task 11）；`GuideSidebar`（现有导读组件）；`WritingEditor`、`HtmlPreview`、`MarkdownRenderer`。
+- Produces: `<ArticleGuideTabs source theme />`（内部两 tab 切换 + 对照槽渲染）。旁注（`ChatWindow`）由各栏目现有面板保留，不进本组件。
 
-- [ ] **Step 1: 写 `ArticleSidePanel.tsx`（tab 壳）**
+- [ ] **Step 1: 写 `ArticleGuideTabs.tsx`（两 tab 头）**
 
 ```tsx
-// src/components/article-assistant/ArticleSidePanel.tsx
-import { useEffect, useRef, useState } from 'react'
+// src/components/article-assistant/ArticleGuideTabs.tsx
 import { useStore } from '@/store'
-import { ArticleDivider } from './ArticleDivider'
 import { GuideSidebar } from './GuideSidebar'
-import { ChatWindow } from './ChatWindow'
 import { ArticleCompanionBoard } from './ArticleCompanionBoard'
 import type { BriefingTheme } from '@shared/index'
 
 export type ArticleSideSource = 'anthropic' | 'scout' | 'job'
-export type ArticlePanelMode = 'guide' | 'assistant' | 'companion'
+export type ArticlePanelMode = 'guide' | 'companion'
 
-interface Props {
-  source: ArticleSideSource
-  articleType: string
-  parentPath: string
-  articleTitle?: string
-  articleContent: string
-  autoGenerateGuide?: boolean
-  theme?: BriefingTheme
-}
-
-export function ArticleSidePanel({ source, articleType, parentPath, articleTitle, articleContent, autoGenerateGuide, theme = 'academic' }: Props) {
+export function ArticleGuideTabs({ source, theme = 'academic' }: { source: ArticleSideSource; theme?: BriefingTheme }) {
   const mode = useStore((s) => s.articlePanelMode[source])
-  const open = useStore((s) => s.articleSidePanelOpen)
-  const width = useStore((s) => s.articleSidePanelWidth)
   const setMode = useStore((s) => s.setArticlePanelMode)
-  const setOpen = useStore((s) => s.setArticleSidePanelOpen)
-  const setWidth = useStore((s) => s.setArticleSidePanelWidth)
-  const [closing, setClosing] = useState(false)
-  const closeTimer = useRef<number | null>(null)
-
-  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current) }, [])
-  useEffect(() => { if (open) setClosing(false) }, [open])
-
-  const requestClose = () => { if (closing) return; setClosing(true); closeTimer.current = window.setTimeout(() => setOpen(false), 200) }
 
   const tabCls = (m: ArticlePanelMode) =>
     `text-[11px] tracking-[0.2em] font-serif px-2 py-1 rounded transition-colors ${mode === m ? 'text-ember bg-ember/10' : 'text-parchment/60 hover:text-parchment/90'}`
 
   return (
-    <div data-testid="article-side-panel" className={`relative z-[5] flex h-full shrink-0 ${!open ? '' : (closing ? 'panel-depart' : 'panel-arise')}`}>
-      <ArticleDivider
-        collapsed={!open}
-        onToggleCollapse={() => (open ? requestClose() : setOpen(true))}
-        onResize={(w) => {
-          const max = window.innerWidth * 0.45
-          if (w < 40) { if (open) requestClose() } else { if (!open) setOpen(true); setWidth(Math.max(200, Math.min(w, max))) }
-        }}
-        theme="academic"
-      />
-      {open && (
-        <div className="h-full overflow-hidden" style={{ width }}>
-          <div className="h-full flex flex-col min-w-0 border-l border-parchment/20 bg-[#1a1512]">
-            <div className="h-9 flex items-center justify-between px-3 border-b border-parchment/10 shrink-0">
-              <div className="flex items-center gap-1">
-                <button data-testid={`article-panel-tab-guide-${source}`} className={tabCls('guide')} onClick={() => setMode(source, 'guide')}>导读</button>
-                <button data-testid={`article-panel-tab-assistant-${source}`} className={tabCls('assistant')} onClick={() => setMode(source, 'assistant')}>助手</button>
-                <button data-testid={`article-panel-tab-companion-${source}`} className={tabCls('companion')} onClick={() => setMode(source, 'companion')}>对照</button>
-              </div>
-              <button data-testid={`article-side-panel-close-${source}`} className="text-parchment/60 hover:text-ember text-sm leading-none px-1" onClick={requestClose} aria-label="关闭">✕</button>
-            </div>
-            {mode === 'guide' ? (
-              <div className="flex-1 min-h-0 overflow-hidden"><GuideSidebar theme={theme} /></div>
-            ) : mode === 'assistant' ? (
-              <div className="flex-1 min-h-0 overflow-hidden"><ChatWindow /></div>
-            ) : (
-              <ArticleCompanionBoard source={source} />
-            )}
-          </div>
-        </div>
+    <div className="flex flex-col h-full min-h-0">
+      <div className="h-9 flex items-center gap-1 px-3 border-b border-parchment/10 shrink-0">
+        <button data-testid={`article-panel-tab-guide-${source}`} className={tabCls('guide')} onClick={() => setMode(source, 'guide')}>导读</button>
+        <button data-testid={`article-panel-tab-companion-${source}`} className={tabCls('companion')} onClick={() => setMode(source, 'companion')}>对照</button>
+      </div>
+      {mode === 'guide' ? (
+        <div className="flex-1 min-h-0 overflow-hidden"><GuideSidebar theme={theme} /></div>
+      ) : (
+        <ArticleCompanionBoard />
       )}
     </div>
   )
 }
 ```
 
-> 注意：`ChatWindow`/`GuideSidebar` 的 session 初始化目前在 `ArticleAssistantPanel` 的 effect 里完成（`openAssistantSession`）。`ArticleSidePanel` 需要把这段初始化逻辑搬进来（或保留在面板外、由父组件调）。**实施时**：把 `ArticleAssistantPanel.tsx` L34-48 的 `useEffect`（openAssistantSession on parentPath change）与 L52-65 选区监听**原样搬入** `ArticleSidePanel`，用 `articleType`/`parentPath`/`articleTitle`/`articleContent`/`autoGenerateGuide` 调用 `openAssistantSession`。`ChatWindow` 依赖这些 session 状态，保持不动。
+> 注意：导读的 session 初始化（`openAssistantSession` on parentPath change）与选区监听仍由各栏目现有面板（`ArticleAssistantPanel` / `JobAssistantPanel`）承担，**不搬进** `ArticleGuideTabs`。`ArticleGuideTabs` 只做两 tab 的切换与内容分派——旁注竖签、`ChatWindow` 均保持现有设计。
 
 - [ ] **Step 2: 写 `ArticleCompanionBoard.tsx`**
 
@@ -1761,9 +1708,8 @@ import { useStore } from '@/store'
 import { WritingEditor } from '@/components/writing/WritingEditor'
 import { HtmlPreview } from '@/components/writing/HtmlPreview'
 import { MarkdownRenderer } from '@/components/MarkdownRenderer'
-import type { ArticleSideSource } from './ArticleSidePanel'
 
-export function ArticleCompanionBoard({ source }: { source: ArticleSideSource }) {
+export function ArticleCompanionBoard() {
   const file = useStore((s) => s.articleCompanion)
   const updateBody = useStore((s) => s.updateArticleCompanionBody)
   const save = useStore((s) => s.saveArticleCompanion)
@@ -1818,144 +1764,98 @@ export function ArticleCompanionBoard({ source }: { source: ArticleSideSource })
 - [ ] **Step 3: typecheck**
 
 Run: `npx tsc --noEmit`
-Expected: PASS（若 `MarkdownRenderer`/`HtmlPreview`/`ChatWindow` 的 props 名有出入，按实际签名修正；`WritingEditor` 的 `initial`/`onChange`/`registerToolbarAction` 已由写作侧确认）。
+Expected: PASS（若 `MarkdownRenderer`/`HtmlPreview`/`GuideSidebar` 的 props 名有出入，按实际签名修正；`WritingEditor` 的 `initial`/`onChange`/`registerToolbarAction` 已由写作侧确认）。
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/components/article-assistant/ArticleSidePanel.tsx src/components/article-assistant/ArticleCompanionBoard.tsx
-git commit -m "feat(article): 通用右栏 tab 面板(导读|助手|对照) + 对照槽(可编辑/只读/求职只读)"
+git add src/components/article-assistant/ArticleGuideTabs.tsx src/components/article-assistant/ArticleCompanionBoard.tsx
+git commit -m "feat(article): 导读|对照两 tab 头 + 对照槽(可编辑/只读/求职只读)，旁注维持现有"
 ```
 
 ---
 
-## Task 13: 接线三个栏目面板
+## Task 13: 接线三个栏目（旁注维持现有设计）
 
 **Files:**
-- Modify: `src/components/anthropic/AnthropicBlogPanel.tsx`（把 `ArticleAssistantPanel` 换成 `ArticleSidePanel source="anthropic"`，列表行点击在对照模式下切换对照文）
-- Modify: `src/components/scout/ScoutPanel.tsx` + `src/components/scout/ScoutListColumn.tsx`（同上 `source="scout"`）
-- Modify: `src/pages/Briefing.tsx`（job 右栏换 `ArticleSidePanel source="job"`，日期列点击在对照模式下切对照文）
+- Modify: `src/components/article-assistant/ArticleAssistantPanel.tsx`（加 `source?` prop，导读槽换 `ArticleGuideTabs`，旁注竖签 + `ChatWindow` 不动）
+- Modify: `src/components/anthropic/AnthropicBlogPanel.tsx`（传 `source="anthropic"` + 列表行对照分流）
+- Modify: `src/components/scout/ScoutPanel.tsx` + `ScoutListColumn.tsx`（传 `source="scout"` + 对照分流）
+- Modify: `src/components/job-briefing/JobAssistantPanel.tsx`（聊天之上加 `ArticleGuideTabs source="job"`）
+- Modify: `src/pages/Briefing.tsx`（job 日期列对照分流）
 
 **Interfaces:**
-- Consumes: `ArticleSidePanel`（Task 12）、store `articlePanelMode`/`selectArticleCompanion`（Task 11）。
-- Produces: 三栏目右栏统一；对照模式下左键情境化切换对照文。
+- Consumes: `ArticleGuideTabs`（Task 12）、store `articlePanelMode`/`selectArticleCompanion`（Task 11）。
+- Produces: 博客/前沿/求职三栏目右栏「导读 | 对照」两 tab；对照模式下左键情境化切对照文；旁注维持。
 
-- [ ] **Step 1: 博客接线**
+- [ ] **Step 1: 博客 / 前沿——扩展 `ArticleAssistantPanel`**
 
-`AnthropicBlogPanel.tsx`：
-1. import 换 `ArticleSidePanel`。
-2. 右栏挂载段（L406-415）替换为：
+`ArticleAssistantPanel.tsx`：
+1. 加可选 prop `source?: 'anthropic' | 'scout'`（缺省 = digest，不渲染对照 tab，保持原样）。
+2. 导读槽（现 `GuideSidebar` 处）改为：
 
 ```tsx
-      {readerFilePath && readerBody && (
-        <ArticleSidePanel
-          source="anthropic"
-          articleType="anthropic-article"
-          parentPath={readerFilePath}
-          articleTitle={readerTitle ?? undefined}
-          articleContent={readerBody}
-          autoGenerateGuide
-          theme={theme}
-        />
-      )}
+{source ? <ArticleGuideTabs source={source} theme={theme} /> : <GuideSidebar theme={theme} />}
 ```
 
-3. 列表行点击分流：在 `openOrImportArticle`（L144）开头加对照模式分流（需要读 `articlePanelMode.anthropic` 与 `articleSidePanelOpen`）：
+3. 旁注竖签（`article-assistant-tab`）与 `ChatWindow` **不动**（现有设计）。
+
+挂载侧：`AnthropicBlogPanel.tsx` 的 `ArticleAssistantPanel` 传 `source="anthropic"`；`ScoutPanel.tsx` 传 `source="scout"`。
+
+列表行对照分流（博客 `openOrImportArticle`/`AnthropicArticleRow.handleClick`、前沿 `ScoutListColumn.onOpen`）：
 
 ```ts
-    const panelMode = useStore.getState().articlePanelMode.anthropic
-    const sideOpen = useStore.getState().articleSidePanelOpen
-    if (sideOpen && panelMode === 'companion' && article.isSaved && article.filePath) {
-      const main = useStore.getState().anthropicReaderFilePath
-      if (main === article.filePath) { useStore.getState().showToast('该文章已在主区打开'); return }
-      await useStore.getState().selectArticleCompanion('anthropic', main ?? 'anthropic-main', article.filePath)
-      return
-    }
+if (useStore.getState().articlePanelMode[source] === 'companion' && article.isSaved && article.filePath) {
+  const main = useStore.getState().anthropicReaderFilePath  // scout 用 scoutReaderFilePath
+  if (main === article.filePath) { useStore.getState().showToast('该文章已在主区打开'); return }
+  await useStore.getState().selectArticleCompanion(source, main ?? `${source}-main`, article.filePath)
+  return
+}
 ```
 
-> 同样在 `AnthropicArticleRow.handleClick`（L58）里做同等分流（因行组件自身处理点击）。为收敛，把「对照模式判断 + selectArticleCompanion」封装成一个 store action `maybeOpenArticleCompanion(source, filePath)` 供两处调用，避免重复。本计划给出该 action 逻辑，实施时并入 Task 11 的 store（或就地两处重复亦可，二选一，推荐封装）。
+- [ ] **Step 2: 求职——扩展 `JobAssistantPanel`**
 
-- [ ] **Step 2: 前沿接线**
+`JobAssistantPanel.tsx`：在聊天区之上加 `<ArticleGuideTabs source="job" theme="academic" />`（导读 tab = `GuideSidebar`，`openAssistantSession` 时传 `autoGenerateGuide: true`、`articleType: 'briefing'`；对照 tab 只读）。聊天区维持现有。
 
-`ScoutPanel.tsx` L108-117 的 `ArticleAssistantPanel` 换成：
+`Briefing.tsx` 求职日期列点击（`BriefingDateColumn.onSelect`）：在 `articlePanelMode.job === 'companion'` 时 → `selectArticleCompanion('job', jobViewDate, jobResult.filePath, { readonly: true })`（求职对照只读），否则走现有 `generateJobBriefing`。
 
-```tsx
-      {scoutTab === 'articles' && readerFilePath && readerBody && (
-        <ArticleSidePanel
-          source="scout"
-          articleType="web-article"
-          parentPath={readerFilePath}
-          articleTitle={readerTitle ?? undefined}
-          articleContent={readerBody}
-          autoGenerateGuide
-          theme={theme}
-        />
-      )}
-```
-
-`ScoutListColumn.tsx` 的 `onOpen={() => openScoutReader(a.filePath)}` 换成带对照分流的回调（对照模式 + 右栏展开 → `selectArticleCompanion('scout', readerFilePath, a.filePath)`，否则 `openScoutReader`）。
-
-- [ ] **Step 3: 求职接线**
-
-`Briefing.tsx` L573-579 的 `JobAssistantPanel` 换成：
-
-```tsx
-      {isJob && jobResult?.filePath && (
-        <ArticleSidePanel
-          source="job"
-          articleType="briefing"
-          parentPath={jobResult.filePath}
-          articleTitle={jobResult.title}
-          articleContent={jobResult.content ?? ''}
-          theme={theme}
-        />
-      )}
-```
-
-求职日期列点击（`BriefingDateColumn` 的 `onSelect`）在对照模式下 → `selectArticleCompanion('job', jobViewDate, jobResult.filePath, { readonly: true })`（求职对照只读）。
-
-> 求职导读：本任务先用 `ArticleSidePanel` 的「导读」tab 挂 `GuideSidebar`，`autoGenerateGuide` 传 `true`（`openAssistantSession` 时带上）。若 guide-v2 管线对 job briefing 正文需要额外 keying，在 Task 15 单独处理。
-
-- [ ] **Step 4: typecheck + 提交**
+- [ ] **Step 3: typecheck + 提交**
 
 Run: `npx tsc --noEmit`
 Expected: PASS。
 
 ```bash
-git add src/components/anthropic/AnthropicBlogPanel.tsx src/components/scout/ScoutPanel.tsx src/components/scout/ScoutListColumn.tsx src/pages/Briefing.tsx
-git commit -m "feat(article): 三栏目右栏统一接线——博客/前沿/求职挂 ArticleSidePanel, 对照模式左键情境化切换"
+git add src/components/article-assistant/ArticleAssistantPanel.tsx src/components/anthropic/AnthropicBlogPanel.tsx src/components/scout/ScoutPanel.tsx src/components/scout/ScoutListColumn.tsx src/components/job-briefing/JobAssistantPanel.tsx src/pages/Briefing.tsx
+git commit -m "feat(article): 三栏目右栏「导读|对照」两 tab 接线，旁注维持现有，对照模式左键情境化切换"
 ```
 
 ---
 
-## Task 14: 求职导读 + 收尾清理
+## Task 14: 求职导读验证 + digest 回归
 
 **Files:**
-- Modify: `src/components/article-assistant/ArticleSidePanel.tsx`（确认导读 tab 对 job 可用；job 打开 session 传 `autoGenerateGuide`）
-- Modify: 删除/停用旧 `JobAssistantPanel`、`ArticleAssistantPanel` 的挂载残留（若仍有引用）
+- Modify: `src/components/job-briefing/JobAssistantPanel.tsx`（求职导读接线确认，若 Task 13 未完全接入则补全）
 
 **Interfaces:**
 - Consumes: guide-v2 管线（导读生成），`openAssistantSession`。
-- Produces: 求职栏目获得导读。
+- Produces: 求职栏目获得导读（导读 tab）。
 
-- [ ] **Step 1: 求职导读接线验证**
+- [ ] **Step 1: 求职导读接线确认**
 
-确认 `ArticleSidePanel` 的 session 初始化 effect 对 `source="job"` 传入 `autoGenerateGuide: true`。`openAssistantSession` 的 `articleType` 对 job 用 `'briefing'`（与现有 `JobAssistantPanel` 一致，L49）。若 guide-v2 依赖 `parentPath` 做文件 keying，用 `jobResult.filePath`（已是 `求职简报/求职简报-<date>.md`）即可，无需额外改动。若导读对 job 正文生成失败，降级为现有行为（GuideSidebar 显示生成中/重试），不阻断。
+确认 `JobAssistantPanel` 内 `ArticleGuideTabs source="job"` 的导读 tab：打开 session 时传 `autoGenerateGuide: true` + `articleType: 'briefing'`（与现有 `openAssistantSession` 一致）。若 guide-v2 对 job briefing 正文 keying 有问题，用 `jobResult.filePath`（已是 `求职简报/求职简报-<date>.md`）。若导读生成失败，降级为 GuideSidebar 的生成中/重试态，不阻断。
 
-- [ ] **Step 2: 清理旧面板引用**
+- [ ] **Step 2: digest 回归确认（防范围蔓延）**
 
-`grep` 确认 `JobAssistantPanel`、`ArticleAssistantPanel` 已无任何 `import`/挂载残留（digest 源仍用 `ArticleAssistantPanel`？——**不**，digest 源 `Briefing.tsx` L563 也换成 `ArticleSidePanel source 用一个新源或复用**）。确认后删除死引用。
-
-> 决策：digest 源（每日简报）本需求**不在范围内**（spec 非目标写明「digest 源不动」）。故 `Briefing.tsx` L563 的 digest `ArticleAssistantPanel` **保持原样**；只有 `isJob` 分支换 `ArticleSidePanel`。`ArticleAssistantPanel` 组件保留（digest 仍用），**不删**。`JobAssistantPanel` 在换掉唯一挂载后删除其文件与 import。
+确认 digest 源 `Briefing.tsx` 的 `ArticleAssistantPanel` **未传 `source` prop**，仍渲染 `GuideSidebar`（无对照 tab），旁注竖签不变。`grep` 确认无 `ArticleSidePanel` 残留引用（该组件已改名 `ArticleGuideTabs`），无「导读|助手|对照」三 tab 遗留。
 
 - [ ] **Step 3: typecheck + 提交**
 
 Run: `npx tsc --noEmit`
-Expected: PASS（删除 JobAssistantPanel 后无残留 import）。
+Expected: PASS。
 
 ```bash
-git add src/components/article-assistant/ArticleSidePanel.tsx src/components/job-briefing/JobAssistantPanel.tsx src/pages/Briefing.tsx
-git commit -m "feat(article): 求职导读接线 + 移除旧 JobAssistantPanel 死引用"
+git add src/components/job-briefing/JobAssistantPanel.tsx src/pages/Briefing.tsx
+git commit -m "feat(article): 求职导读接线确认 + digest 回归（无 source 时保持原样）"
 ```
 
 ---
@@ -1967,7 +1867,7 @@ git commit -m "feat(article): 求职导读接线 + 移除旧 JobAssistantPanel �
 - Modify: `e2e/source-map.json`（新增/复用 group，覆盖 `src/components/article-assistant/**`）
 
 **Interfaces:**
-- Consumes: 现有 fixtures；`ArticleSidePanel` 的 data-testid。
+- Consumes: 现有 fixtures；`ArticleGuideTabs` 的 data-testid。
 
 - [ ] **Step 1: 写 spec**
 
@@ -1978,8 +1878,8 @@ import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
 import { reachableArticleRow } from '../helpers/test-library'
 
-test.describe('右栏统一（导读|助手|对照）', () => {
-  test('博客右栏三 tab 渲染 + 切对照 tab', async ({ window, testLibraryPath }) => {
+test.describe('右栏统一（导读|对照）', () => {
+  test('博客右栏两 tab 渲染 + 切对照 tab', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
@@ -1988,9 +1888,8 @@ test.describe('右栏统一（导读|助手|对照）', () => {
     // reachableArticleRow(helpers/test-library.ts) 定位已保存行，或走 importArticle mock）。
     const row = await reachableArticleRow(window)
     await row.click()
-    // 打开后断言三 tab 存在（右栏在 readerBody 回填后挂载）
+    // 打开后断言两 tab 存在（右栏在 readerBody 回填后挂载）；旁注竖签维持现有，不进 tab
     await expect(window.locator('[data-testid="article-panel-tab-guide-anthropic"]')).toBeVisible()
-    await expect(window.locator('[data-testid="article-panel-tab-assistant-anthropic"]')).toBeVisible()
     await expect(window.locator('[data-testid="article-panel-tab-companion-anthropic"]')).toBeVisible()
     await window.locator('[data-testid="article-panel-tab-companion-anthropic"]').click()
     await expect(window.locator('[data-testid="article-companion-empty"]')).toBeVisible()
@@ -2013,7 +1912,7 @@ Expected: `article-side-panel.spec.ts` 通过。
 
 ```bash
 git add e2e/specs/article-side-panel.spec.ts e2e/source-map.json
-git commit -m "test(article): 右栏统一 E2E——三 tab 渲染/切对照 + source-map 登记"
+git commit -m "test(article): 右栏统一 E2E——两 tab 渲染/切对照 + source-map 登记"
 ```
 
 ---

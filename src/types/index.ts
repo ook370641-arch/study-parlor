@@ -116,7 +116,7 @@ export type BlogCollectionFile = {
   version: 1
   entries: BlogCollectionEntry[]
   dismissed: string[]      // 用户移除过的推荐 sourceUrl，后续批次不再推荐
-  lastBatch: BlogRecommendBatch | null
+  history: BlogRecommendBatch[]  // 往期推荐历史（含用户画像），最新在前
 }
 
 export type BlogRecommendErrorCode =
