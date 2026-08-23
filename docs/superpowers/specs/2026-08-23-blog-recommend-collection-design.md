@@ -123,16 +123,17 @@ UI（`AnthropicBlogPanel` 列表栏，搜索框之下、文章列表之上）：
 - 博客/前沿：现 `ArticleAssistantPanel`（导读+聊天上下排布）改为 tab 结构，导读/助手内容不变只改承载方式；新增对照 tab。
 - 求职：`JobAssistantPanel` 改为同一 tab 壳；**新增导读 tab**（`GuideSidebar` + 打开 assistantSession 时传 `autoGenerateGuide`；guide-v2 管线对 job briefing 正文的适配在实施计划中验证，若需 keying 调整则按 briefing 日期作 key）。
 - **对照 tab 下左键情境化**（复刻 companion-pane spec §交互模型）：右栏展开且处于对照 tab 时，点击该栏目文章列表项（博客行 / 前沿文章行 / 求职日期项）= 切换对照文，主文阅读器正文不变；否则 = 现状（打开主文）。点击当前主文 → 忽略 + toast。
-- 对照文分派复用 `WritingBoard` 逻辑：md → `WritingEditor`（不注册全局 toolbar）+ 1.5s autosave + 保存状态；html → `HtmlPreview` 只读；其他 → `ReadonlyPreview`。
+- 对照文分派复用 `WritingBoard` 逻辑：md → `WritingEditor`（不注册全局 toolbar）+ 1.5s autosave + 保存状态；html → `HtmlPreview` 只读。**求职对照例外**：简报是生成物，对照槽只读渲染（`MarkdownRenderer`），不可编辑、不写盘。
 - 切主文时按映射自动恢复该主文的对照文；列表行双高亮（主文现状高亮 + 对照文第二标识，语义复刻 WritingTree `data-companion`）。
 
 ### 状态与持久化（ipc-state §3：新字段带默认值）
 
 | 字段 | 位置 | 持久化 | 默认 |
 |---|---|---|---|
-| `articlePanelMode: Record<'anthropic'\|'scout'\|'job', 'guide'\|'assistant'\|'companion'>` | store + `StateJson` | ✅ patchState | 全 `'assistant'` |
+| `articlePanelMode: Record<'anthropic'\|'scout'\|'job', 'guide'\|'assistant'\|'companion'>` | store + `StateJson` | ✅ patchState | `{anthropic:'guide', scout:'guide', job:'assistant'}`（对齐现状：博客/前沿默认展示导读，求职默认助手） |
 | `articleCompanionMap: Record<string, string>` | store + `StateJson` | ✅ patchState | `{}` |
-| `articleCompanion: { key, filePath, kind, body, dirty, saving } \| null` | store 运行时 | ❌ | `null` |
+| `articleSidePanelOpen: boolean` / `articleSidePanelWidth: number` | store + `StateJson` | ✅ patchState | `true` / `320`（博客/前沿/求职共用一个右槽开关与宽度） |
+| `articleCompanion: { key, filePath, kind, body, readonly, dirty, saving } \| null` | store 运行时 | ❌ | `null` |
 
 `articleCompanionMap` 的 key = `${source}:${主文标识}`（博客/前沿用 filePath，求职用 briefing 日期）。
 
