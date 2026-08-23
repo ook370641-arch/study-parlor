@@ -108,12 +108,15 @@
         "electron/lib/library-data.ts",
         "electron/lib/anthropic-scraper.ts",
         "electron/lib/anthropic-sections.ts",
+        "electron/lib/blog-collection.ts",
+        "electron/lib/blog-recommend.ts",
         "src/lib/anthropic-articles.ts",
         "src/lib/anthropic-sections.ts"
       ],
       "specs": [
         "anthropic-blog*.spec.ts",
-        "blog-guide-terminal.spec.ts"
+        "blog-guide-terminal.spec.ts",
+        "blog-collection.spec.ts"
       ]
     },
     "cover-home": {
