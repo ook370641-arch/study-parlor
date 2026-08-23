@@ -14,9 +14,11 @@ vi.mock('@/lib/ipc', () => ({
     briefingList: vi.fn().mockResolvedValue([]),
     searchPrepare: vi.fn(),
     writingScanTree: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    writingRefreshCatalog: vi.fn(),
     articleAssistantReadSession: vi.fn().mockResolvedValue(null),
     annotationsRead: vi.fn().mockResolvedValue([]),
     collectionRead: vi.fn().mockResolvedValue({ entries: [] }),
+    anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [] } }),
   }
 }))
 

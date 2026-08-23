@@ -89,6 +89,49 @@ export type AnthropicBlogCache = {
   articleMetaCache?: Record<string, { title: string | null; publishedAt: string | null; summary: string | null; imageUrl: string | null }>
 }
 
+/** 收藏夹条目来源：recommend=推荐自动入夹，manual=手动 ☆ */
+export type BlogCollectionOrigin = 'recommend' | 'manual'
+
+export type BlogCollectionEntry = {
+  sourceUrl: string   // 主键（去重依据）
+  filePath: string    // 相对学习库路径
+  title: string
+  addedAt: string     // ISO
+  origin: BlogCollectionOrigin
+  reason?: string     // 推荐理由（仅 recommend）
+  gap?: string        // 补上的认知缺口（仅 recommend）
+  batch?: number      // 批次号（仅 recommend）
+}
+
+export type BlogRecommendBatch = {
+  batch: number
+  generatedAt: string
+  profile: string      // 用户画像（阶段一 LLM 输出）
+  gaps: string[]       // 认知缺口
+  queries: string[]    // 本次检索词
+  searchUsed: boolean  // Tavily 是否可用（false = 降级纯本地匹配）
+}
+
+export type BlogCollectionFile = {
+  version: 1
+  entries: BlogCollectionEntry[]
+  dismissed: string[]      // 用户移除过的推荐 sourceUrl，后续批次不再推荐
+  history: BlogRecommendBatch[]  // 往期推荐历史（含用户画像），最新在前
+}
+
+export type BlogRecommendErrorCode =
+  | 'NO_WRITING_CONTEXT'
+  | 'NO_LOCAL_ARTICLES'
+  | 'LLM_ERROR'
+  | 'LLM_PARSE_ERROR'
+  | 'ABORTED'
+
+export type RecommendStage = 'context' | 'profile' | 'search' | 'pick'
+
+export type RecommendDonePayload =
+  | { ok: true; collection: BlogCollectionFile }
+  | { ok: false; code: BlogRecommendErrorCode }
+
 export type ArticleAssistantTerm = {
   term: string
   translation: string
@@ -593,6 +636,8 @@ export type StateJson = {
   archivedTopics?: string[]
   writingPanelMode?: 'assistant' | 'companion'
   writingCompanionMap?: Record<string, string>
+  articlePanelMode?: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
+  articleCompanionMap?: Record<string, string>
 }
 
 export type IpcApi = {
@@ -729,8 +774,16 @@ export type IpcApi = {
   anthropicDeleteArticle: (args: { filePath: string }) => Promise<
     { ok: true } | { ok: false; message: string }
   >
+  anthropicWriteArticleBody: (args: { filePath: string; body: string }) => Promise<{ ok: true } | { ok: false; code: 'ARTICLE_PATH_FORBIDDEN' | 'ARTICLE_WRITE_ERROR' }>
   /** 后台元数据回填进度：sitemap 老文章逐页取到元数据后分批推送 */
   onAnthropicBackfill: (cb: (payload: { articles: AnthropicArticleMeta[] }) => void) => () => void
+    anthropicCollectionRead: () => Promise<{ ok: true; collection: BlogCollectionFile }>
+    anthropicCollectionAdd: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
+    anthropicCollectionRemove: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
+    anthropicRecommendStart: () => Promise<{ ok: true } | { ok: false; code: 'ALREADY_RUNNING' }>
+    anthropicRecommendCancel: () => Promise<void>
+    onAnthropicRecommendStage: (cb: (p: { stage: RecommendStage }) => void) => () => void
+    onAnthropicRecommendDone: (cb: (p: RecommendDonePayload) => void) => () => void
 
   // Annotations
   annotationsRead: (articlePath: string) => Promise<ArticleAnnotation[]>

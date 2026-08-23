@@ -14,6 +14,7 @@ vi.mock('@/lib/ipc', () => ({
     onBriefingProgress: vi.fn(() => () => {}),
     briefingList: vi.fn(),
     searchPrepare: vi.fn(),
+    anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [] } }),
   }
 }))
 

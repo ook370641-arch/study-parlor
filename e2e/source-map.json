@@ -62,6 +62,18 @@
         "blog-guide-terminal.spec.ts"
       ]
     },
+    "article-side-panel": {
+      "sources": [
+        "src/components/article-assistant/ArticleGuideTabs.tsx",
+        "src/components/article-assistant/ArticleCompanionBoard.tsx",
+        "src/components/writing/WritingEditor.tsx",
+        "src/components/writing/HtmlPreview.tsx",
+        "electron/lib/article-io.ts"
+      ],
+      "specs": [
+        "article-side-panel.spec.ts"
+      ]
+    },
     "writing": {
       "sources": [
         "src/components/writing/**",
@@ -108,12 +120,15 @@
         "electron/lib/library-data.ts",
         "electron/lib/anthropic-scraper.ts",
         "electron/lib/anthropic-sections.ts",
+        "electron/lib/blog-collection.ts",
+        "electron/lib/blog-recommend.ts",
         "src/lib/anthropic-articles.ts",
         "src/lib/anthropic-sections.ts"
       ],
       "specs": [
         "anthropic-blog*.spec.ts",
-        "blog-guide-terminal.spec.ts"
+        "blog-guide-terminal.spec.ts",
+        "blog-collection.spec.ts"
       ]
     },
     "cover-home": {

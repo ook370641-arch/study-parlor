@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import { GuideSidebar } from './GuideSidebar'
 import { ChatWindow } from './ChatWindow'
 import { ArticleDivider } from './ArticleDivider'
+import { ArticleGuideTabs } from './ArticleGuideTabs'
 
 interface Props {
   articleType: 'briefing' | 'anthropic-article' | 'web-article'
@@ -12,9 +13,10 @@ interface Props {
   showGuide?: boolean
   autoGenerateGuide?: boolean
   theme?: 'academic' | 'newspaper'
+  source?: 'anthropic' | 'scout'
 }
 
-export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, showGuide = true, autoGenerateGuide, theme = 'academic' }: Props) {
+export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, showGuide = true, autoGenerateGuide, theme = 'academic', source }: Props) {
   const contextId = useStore((s) => s.assistantSession?.contextId ?? null)
   const isOpen = useStore((s) => s.assistantSession?.isOpen ?? false)
   const hasPendingSelection = useStore((s) => !!s.assistantSession?.pendingSelection)
@@ -91,7 +93,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
             theme={theme}
           />
           <div className={`h-full overflow-hidden ${resizing ? '' : guideCollapsed ? 'transition-[width] duration-200 ease-in' : 'transition-[width] duration-300 ease-out'}`} style={{ width: sidebarWidth }}>
-            <GuideSidebar theme={theme} />
+            {source ? <ArticleGuideTabs source={source} theme={theme} /> : <GuideSidebar theme={theme} />}
           </div>
         </>
       )}

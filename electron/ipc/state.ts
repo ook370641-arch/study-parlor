@@ -49,6 +49,8 @@ const DEFAULT: StateJson = {
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
   writingCodeblockCollapsed: {},
+  articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
+  articleCompanionMap: {},
   scoutTab: 'chat',
   scoutActiveConversationId: null,
   archivedTopics: [],

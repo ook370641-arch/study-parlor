@@ -21,6 +21,7 @@ import type {
   ScoutConversationMeta, ScoutMessage, ScoutArticleMeta, GuideProgress,
   BriefingCollectionEntry,
   BriefingCollectionQA,
+  BlogCollectionFile, RecommendStage,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -175,6 +176,16 @@ type AppStore = {
   closeConstitutionReport: () => void
   setAnthropicReaderContent: (content: { body: string | null; title: string | null }) => void
   deleteAnthropicArticle: (filePath: string) => Promise<void>
+
+  // 博客收藏夹 & 推荐
+  blogCollection: BlogCollectionFile
+  recommendRunning: boolean
+  recommendStage: RecommendStage | null
+  loadBlogCollection: () => Promise<void>
+  toggleBlogCollection: (article: { sourceUrl: string; filePath: string; title: string }) => Promise<void>
+  removeBlogCollection: (sourceUrl: string) => Promise<void>
+  startBlogRecommend: () => Promise<void>
+  cancelBlogRecommend: () => Promise<void>
 
   // --- 拾贝（Scout）---
   scoutTab: 'chat' | 'articles'
@@ -455,6 +466,16 @@ type AppStore = {
   appendWritingOrder: (dir: string, newPath: string) => void
   moveWritingNode: (args: { src: string; targetDir: string; index: number | null }) => Promise<void>
   writingRenamed: (oldPath: string, newPath: string) => void
+
+  // 右栏统一：文章旁注面板模式（导读/对照）+ 对照槽
+  articlePanelMode: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
+  articleCompanionMap: Record<string, string>
+  articleCompanion: { key: string; filePath: string; kind: 'md' | 'html' | 'other'; body: string; readonly: boolean; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
+  setArticlePanelMode: (source: 'anthropic' | 'scout' | 'job', mode: 'guide' | 'companion') => void
+  selectArticleCompanion: (source: 'anthropic' | 'scout' | 'job', mainKey: string, filePath: string, opts?: { readonly?: boolean }) => Promise<void>
+  updateArticleCompanionBody: (body: string) => void
+  saveArticleCompanion: () => Promise<void>
+  closeArticleCompanion: () => Promise<void>
 }
 
 let wildcardRequestId = 0
@@ -470,6 +491,9 @@ let writingSelectSeq = 0
 
 // selectCompanionFile 的单调序号：同 writingSelectSeq，对照槽的过期读取结果一律丢弃。
 let companionSelectSeq = 0
+
+// selectArticleCompanion 的单调序号：同 companionSelectSeq，对照槽的过期读取结果一律丢弃。
+let articleCompanionSelectSeq = 0
 
 /** Ensures sendAssistantMessage waits for history to load before sending, preventing
  *  the race where a user message lands before loadAssistantSession completes and the
@@ -561,6 +585,9 @@ export const useStore = create<AppStore>((set, get) => ({
   anthropicReaderTitle: null,
   anthropicBlogLastSeenAt: null,
   constitutionReportOpen: false,
+  blogCollection: { version: 1, entries: [], dismissed: [], history: [] },
+  recommendRunning: false,
+  recommendStage: null,
   scoutTab: 'chat',
   scoutConversations: [],
   scoutActiveConversationId: null,
@@ -602,6 +629,9 @@ export const useStore = create<AppStore>((set, get) => ({
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
   writingCodeblockCollapsed: {},
+  articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
+  articleCompanionMap: {},
+  articleCompanion: null,
   writingAssistant: null,
   writingAssistantSnapshotLit: false,
 
@@ -650,6 +680,8 @@ export const useStore = create<AppStore>((set, get) => ({
       writingExpandedGroups: state.writingExpandedGroups ?? {},
       writingUIFontSize: state.writingUIFontSize ?? 'base',
       writingCodeblockCollapsed: state.writingCodeblockCollapsed ?? {},
+      articlePanelMode: state.articlePanelMode ?? { anthropic: 'guide', scout: 'guide', job: 'guide' },
+      articleCompanionMap: state.articleCompanionMap ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       candlelightEnabled: state.candlelightEnabled ?? true,
@@ -1429,6 +1461,32 @@ export const useStore = create<AppStore>((set, get) => ({
     if (get().anthropicReaderFilePath === filePath) {
       get().closeAnthropicReader()
     }
+  },
+
+  loadBlogCollection: async () => {
+    const r = await ipc.anthropicCollectionRead()
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  toggleBlogCollection: async (article) => {
+    const existing = get().blogCollection.entries.find(e => e.sourceUrl === article.sourceUrl)
+    const r = existing
+      ? await ipc.anthropicCollectionRemove({ sourceUrl: article.sourceUrl })
+      : await ipc.anthropicCollectionAdd(article)
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  removeBlogCollection: async (sourceUrl) => {
+    const r = await ipc.anthropicCollectionRemove({ sourceUrl })
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  startBlogRecommend: async () => {
+    if (get().recommendRunning) return
+    set({ recommendRunning: true, recommendStage: 'context' })
+    const r = await ipc.anthropicRecommendStart()
+    if (!r.ok) set({ recommendRunning: false, recommendStage: null })
+  },
+  cancelBlogRecommend: async () => {
+    await ipc.anthropicRecommendCancel()
+    set({ recommendRunning: false, recommendStage: null })
   },
 
   // --- 拾贝（Scout）actions ---
@@ -2683,6 +2741,53 @@ export const useStore = create<AppStore>((set, get) => ({
     if (get().companionFile?.dirty) await get().saveCompanionFile()
     set({ companionFile: null })
     get().setWritingPanelMode('assistant') // 映射保留（v1 不做显式清除）
+  },
+
+  setArticlePanelMode: (source, mode) => {
+    const next = { ...get().articlePanelMode, [source]: mode }
+    set({ articlePanelMode: next })
+    ipc.patchState({ articlePanelMode: next } as Partial<StateJson>)
+  },
+
+  selectArticleCompanion: async (_source, mainKey, filePath, opts) => {
+    const seq = ++articleCompanionSelectSeq
+    if (get().articleCompanion?.dirty) await get().saveArticleCompanion()
+    if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
+    const map = { ...get().articleCompanionMap, [mainKey]: filePath }
+    set({ articleCompanionMap: map })
+    ipc.patchState({ articleCompanionMap: map } as Partial<StateJson>)
+    const kind: 'md' | 'html' | 'other' = filePath.toLowerCase().endsWith('.md') ? 'md' : filePath.toLowerCase().endsWith('.html') ? 'html' : 'other'
+    const readonly = opts?.readonly === true || kind === 'html'
+    try {
+      const r = await ipc.readMd(filePath) // { frontmatter, body }
+      if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
+      set({ articleCompanion: { key: mainKey, filePath, kind, body: r.body ?? '', readonly, dirty: false, saving: 'idle' } })
+    } catch {
+      if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
+      // 读取失败（如文件被外部删除）：清映射 + toast + 对照槽回空态
+      const cleanMap = { ...get().articleCompanionMap }
+      delete cleanMap[mainKey]
+      set({ articleCompanionMap: cleanMap, articleCompanion: null })
+      ipc.patchState({ articleCompanionMap: cleanMap } as Partial<StateJson>)
+      get().showToast('对照文读取失败')
+    }
+  },
+
+  updateArticleCompanionBody: (body: string) => set(s => s.articleCompanion ? { articleCompanion: { ...s.articleCompanion, body, dirty: true } } : {}),
+
+  saveArticleCompanion: async () => {
+    const f = get().articleCompanion
+    if (!f || !f.dirty || f.readonly) return
+    set({ articleCompanion: { ...f, saving: 'saving' as const } })
+    const r = await ipc.anthropicWriteArticleBody({ filePath: f.filePath, body: f.body })
+    const cur = get().articleCompanion
+    if (!cur || cur.filePath !== f.filePath) return // 保存期间文件已切换/关闭，丢弃过期结果
+    set({ articleCompanion: { ...cur, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })
+  },
+
+  closeArticleCompanion: async () => {
+    if (get().articleCompanion?.dirty) await get().saveArticleCompanion()
+    set({ articleCompanion: null })
   },
 
   saveAllDirtyWriting: async () => {

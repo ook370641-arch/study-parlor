@@ -280,7 +280,17 @@ export function Briefing() {
                 history={jobHistoryList}
                 currentDate={jobViewDate}
                 today={today}
-                onSelect={(date) => generateJobBriefing(date)}
+                onSelect={(date) => {
+                  // 对照模式：打开点击日期的求职简报作为对照（只读），主区不变
+                  if (useStore.getState().articlePanelMode.job === 'companion') {
+                    const item = jobHistoryList.find((h: { date: string }) => h.date === date)
+                    if (item) {
+                      void useStore.getState().selectArticleCompanion('job', date, item.filePath, { readonly: true })
+                      return
+                    }
+                  }
+                  generateJobBriefing(date)
+                }}
                 onReceiveToday={() => void viewJobBriefingToday()}
                 onDelete={(items) => setPendingDelete(items)}
                 todayLabel="今日"

@@ -13,6 +13,20 @@ export function ScoutListColumn({ theme = 'academic' }: { theme?: BriefingTheme 
   const deleteScoutArticle = useStore((s) => s.deleteScoutArticle)
   const [pendingDelete, setPendingDelete] = useState<ScoutArticleMeta | null>(null)
   const isAcademic = theme !== 'newspaper'
+
+  // 对照模式：点击文章在右侧对照槽打开（主区正文不变）；否则照常打开主阅读器。
+  const handleOpen = async (article: ScoutArticleMeta) => {
+    if (useStore.getState().articlePanelMode.scout === 'companion') {
+      const main = useStore.getState().scoutReaderFilePath
+      if (main === article.filePath) {
+        useStore.getState().showToast('该文章已在主区打开')
+        return
+      }
+      await useStore.getState().selectArticleCompanion('scout', main ?? 'scout-main', article.filePath)
+      return
+    }
+    openScoutReader(article.filePath)
+  }
   const borderCol = isAcademic ? 'border-parchment/15' : 'border-[#c9c3b8]'
   const tabIdle = isAcademic ? 'text-parchment/50 hover:text-parchment/70' : 'text-[#6b5d52]/70 hover:text-[#6b5d52]'
 
@@ -53,7 +67,7 @@ export function ScoutListColumn({ theme = 'academic' }: { theme?: BriefingTheme 
                 sourceName={a.sourceName}
                 theme={theme}
                 testId={`scout-article-row-${a.url}`}
-                onOpen={() => openScoutReader(a.filePath)}
+                onOpen={() => void handleOpen(a)}
                 onRequestDelete={() => setPendingDelete(a)}
               />
             ))}

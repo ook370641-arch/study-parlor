@@ -4,6 +4,7 @@ import { ipc } from '@/lib/ipc'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
+import { BlogCollectionSection } from './BlogCollectionSection'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { ConstitutionReportView } from './ConstitutionReportView'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
@@ -73,6 +74,9 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const fontSize = useStore((s) => s.briefingFontSize)
   const increaseFontSize = useStore((s) => s.increaseBriefingFontSize)
   const decreaseFontSize = useStore((s) => s.decreaseBriefingFontSize)
+  const blogCollection = useStore((s) => s.blogCollection)
+  const loadBlogCollection = useStore((s) => s.loadBlogCollection)
+  const toggleBlogCollection = useStore((s) => s.toggleBlogCollection)
 
   const [query, setQuery] = useState('')
   const [listCollapsed, setListCollapsed] = useState(false)
@@ -99,6 +103,11 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         (a.summary ?? '').toLowerCase().includes(q)
     )
   }, [displayArticles, query, filter])
+
+  // 加载收藏夹
+  useEffect(() => {
+    void loadBlogCollection()
+  }, [])
 
   // 自动检测新文章
   useEffect(() => {
@@ -142,6 +151,16 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   }
 
   const openOrImportArticle = useCallback(async (article: AnthropicArticleMeta) => {
+    // 对照模式：已保存文章改为在右侧对照槽打开（主区正文不变）
+    if (useStore.getState().articlePanelMode.anthropic === 'companion' && article.isSaved && article.filePath) {
+      const main = useStore.getState().anthropicReaderFilePath
+      if (main === article.filePath) {
+        useStore.getState().showToast('该文章已在主区打开')
+        return
+      }
+      await useStore.getState().selectArticleCompanion('anthropic', main ?? 'anthropic-main', article.filePath)
+      return
+    }
     // 本地内置条目（宪法报告）直接打开报告视图
     if (article.local === 'constitution') {
       openConstitutionReport()
@@ -276,6 +295,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               </div>
             )}
 
+            <BlogCollectionSection theme={theme} />
+
             <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
               <input
                 type="text"
@@ -345,9 +366,23 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               )}
 
               <div className="space-y-3">
-                {filtered.map((article) => (
-                  <AnthropicArticleRow key={article.url} article={article} theme={theme} onRequestDelete={setPendingDelete} />
-                ))}
+                {filtered.map((article) => {
+                  const inCol = blogCollection.entries.some(e => e.sourceUrl === article.url)
+                  return (
+                    <AnthropicArticleRow
+                      key={article.url}
+                      article={article}
+                      theme={theme}
+                      onRequestDelete={setPendingDelete}
+                      inCollection={inCol}
+                      onToggleCollection={
+                        article.isSaved && article.filePath
+                          ? () => void toggleBlogCollection({ sourceUrl: article.url, filePath: article.filePath!, title: article.title })
+                          : undefined
+                      }
+                    />
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -411,6 +446,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           articleContent={readerBody}
           autoGenerateGuide
           theme={theme}
+          source="anthropic"
         />
       )}
 

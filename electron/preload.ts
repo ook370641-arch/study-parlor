@@ -117,10 +117,26 @@ const api: IpcApi = {
   anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
   anthropicCancelImport: () => ipcRenderer.invoke('anthropic:cancelImport'),
   anthropicDeleteArticle: (a) => ipcRenderer.invoke('anthropic:deleteArticle', a),
+  anthropicWriteArticleBody: (a) => ipcRenderer.invoke('anthropic:writeArticleBody', a),
   onAnthropicBackfill: (cb) => {
     const handler = (_: unknown, payload: { articles: import('@shared/index').AnthropicArticleMeta[] }) => cb(payload)
     ipcRenderer.on('anthropic:backfill', handler)
     return () => ipcRenderer.removeListener('anthropic:backfill', handler)
+  },
+  anthropicCollectionRead: () => ipcRenderer.invoke('anthropic:collectionRead'),
+  anthropicCollectionAdd: (a) => ipcRenderer.invoke('anthropic:collectionAdd', a),
+  anthropicCollectionRemove: (a) => ipcRenderer.invoke('anthropic:collectionRemove', a),
+  anthropicRecommendStart: () => ipcRenderer.invoke('anthropic:recommendStart'),
+  anthropicRecommendCancel: () => ipcRenderer.invoke('anthropic:recommendCancel'),
+  onAnthropicRecommendStage: (cb) => {
+    const handler = (_: unknown, p: { stage: import('@shared/index').RecommendStage }) => cb(p)
+    ipcRenderer.on('anthropic:recommendStage', handler)
+    return () => ipcRenderer.removeListener('anthropic:recommendStage', handler)
+  },
+  onAnthropicRecommendDone: (cb) => {
+    const handler = (_: unknown, p: import('@shared/index').RecommendDonePayload) => cb(p)
+    ipcRenderer.on('anthropic:recommendDone', handler)
+    return () => ipcRenderer.removeListener('anthropic:recommendDone', handler)
   },
 
   annotationsRead: (articlePath) => ipcRenderer.invoke('annotations:read', articlePath),

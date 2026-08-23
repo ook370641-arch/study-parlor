@@ -1,0 +1,58 @@
+import path from 'path'
+import { safeReadJson, safeWriteJson } from './safe-json'
+import type { BlogCollectionFile, BlogCollectionEntry, BlogRecommendBatch } from '@shared/index'
+
+export function collectionPath(lib: string): string {
+  return path.join(lib, 'Anthropic博客', '.collection.json')
+}
+
+const EMPTY: BlogCollectionFile = { version: 1, entries: [], dismissed: [], history: [] }
+
+export function loadCollection(lib: string): BlogCollectionFile {
+  const raw = safeReadJson<Partial<BlogCollectionFile>>(collectionPath(lib), { fallback: {} })
+  if (raw.version !== 1) return { ...EMPTY }
+  return {
+    version: 1,
+    entries: Array.isArray(raw.entries) ? raw.entries : [],
+    dismissed: Array.isArray(raw.dismissed) ? raw.dismissed : [],
+    history: Array.isArray(raw.history) ? raw.history : [],
+  }
+}
+
+export function saveCollection(lib: string, c: BlogCollectionFile): void {
+  safeWriteJson(collectionPath(lib), c)
+}
+
+export function addManualEntry(
+  c: BlogCollectionFile,
+  args: { sourceUrl: string; filePath: string; title: string }
+): BlogCollectionFile {
+  if (c.entries.some(e => e.sourceUrl === args.sourceUrl)) return c
+  const entry: BlogCollectionEntry = {
+    sourceUrl: args.sourceUrl,
+    filePath: args.filePath,
+    title: args.title,
+    addedAt: new Date().toISOString(),
+    origin: 'manual',
+  }
+  return { ...c, entries: [...c.entries, entry], dismissed: c.dismissed.filter(d => d !== args.sourceUrl) }
+}
+
+export function removeEntry(c: BlogCollectionFile, sourceUrl: string): BlogCollectionFile {
+  const target = c.entries.find(e => e.sourceUrl === sourceUrl)
+  if (!target) return c
+  const dismissed = target.origin === 'recommend'
+    ? Array.from(new Set([...c.dismissed, sourceUrl]))
+    : c.dismissed
+  return { ...c, entries: c.entries.filter(e => e.sourceUrl !== sourceUrl), dismissed }
+}
+
+export function applyRecommend(
+  c: BlogCollectionFile,
+  batch: BlogRecommendBatch,
+  pickEntries: BlogCollectionEntry[]
+): BlogCollectionFile {
+  const manual = c.entries.filter(e => e.origin === 'manual')
+  const history = [batch, ...c.history].slice(0, 20)
+  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history }
+}
