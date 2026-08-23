@@ -83,9 +83,11 @@ const codeblockView = $prose(() =>
           return {
             dom,
             contentDOM: code,
-            // header/expand 上的事件由外壳自己处理,PM 不接管;contentDOM 内放行
-            stopEvent: (event: Event) =>
-              !(event.target instanceof Node && code.contains(event.target)),
+            // header/expand 的交互事件由外壳自己处理,其余(含 pre padding 点击落光标)放行 PM
+            stopEvent: (event: Event) => {
+              const t = event.target
+              return t instanceof Node && (header.contains(t) || expand.contains(t))
+            },
             // header/expand 的 DOM 变化不是文档变更;code 内的 mutation(含 characterData
             // 文本节点)必须放行,否则编辑不生效。Node 此处是 DOM 全局构造器,勿与 PMNode 混。
             ignoreMutation: (m: MutationRecord) =>
