@@ -64,3 +64,76 @@ describe('collectLocalArticles', () => {
     expect(list[0].section).toBe('research')
   })
 })
+
+import { vi, afterEach as ae } from 'vitest'
+
+vi.mock('../electron/lib/kimi', () => ({ chatNonStream: vi.fn() }))
+vi.mock('../electron/lib/search', () => ({ searchWeb: vi.fn() }))
+vi.mock('../electron/lib/credentials', () => ({ getSearchApiKey: vi.fn() }))
+
+import { chatNonStream } from '../electron/lib/kimi'
+import { searchWeb } from '../electron/lib/search'
+import { getSearchApiKey } from '../electron/lib/credentials'
+import { runBlogRecommend } from '../electron/lib/blog-recommend'
+import type { AppConfig } from '../electron/env'
+
+const cfg: AppConfig = { get libraryPath() { return dir }, apiKey: 'k', baseUrl: 'u', model: 'm' }
+
+function seedWriting() {
+  write(path.join(dir, 'writing', '.catalog.json'), JSON.stringify({
+    version: 2,
+    entries: { 'a.md': { title: 'A', summary: '摘要A', mtimeMs: 300 } },
+    groups: {},
+  }))
+  write(path.join(dir, 'writing', 'a.md'), '---\ntitle: A\n---\n正文')
+}
+function seedPool() {
+  write(path.join(dir, 'Anthropic博客', '2026-08', 'x.md'),
+    '---\ntype: anthropic-article\nsource_url: https://anthropic.com/a\nsummary: s\nimported_at: 2026-08-01\n---\nbody')
+}
+
+ae(() => { vi.clearAllMocks() })
+
+describe('runBlogRecommend', () => {
+  it('无写作上下文抛 NO_WRITING_CONTEXT', async () => {
+    await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'NO_WRITING_CONTEXT' })
+  })
+  it('有上下文但无本地文章抛 NO_LOCAL_ARTICLES', async () => {
+    seedWriting()
+    ;(chatNonStream as any).mockResolvedValue(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q'] }))
+    ;(getSearchApiKey as any).mockResolvedValue(null)
+    await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'NO_LOCAL_ARTICLES' })
+  })
+  it('完整链路返回 batch 与 picks，且校验非法 source_url', async () => {
+    seedWriting()
+    seedPool()
+    ;(getSearchApiKey as any).mockResolvedValue(null)  // 降级 searchUsed=false
+    ;(chatNonStream as any)
+      .mockResolvedValueOnce(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q'] }))
+      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }, { source_url: 'https://nope.com', reason: 'x', gap: 'g' }]))
+    const r = await runBlogRecommend(cfg, {})
+    expect(r.batch.profile).toBe('p')
+    expect(r.batch.searchUsed).toBe(false)
+    expect(r.picks).toHaveLength(1)
+    expect(r.picks[0].sourceUrl).toBe('https://anthropic.com/a')
+  })
+  it('Tavily 可用时聚合搜索命中且 searchUsed=true', async () => {
+    seedWriting(); seedPool()
+    ;(getSearchApiKey as any).mockResolvedValue('key')
+    ;(searchWeb as any).mockResolvedValue([{ title: 'T', url: 'https://anthropic.com/t', content: 'c'.repeat(10) }])
+    ;(chatNonStream as any)
+      .mockResolvedValueOnce(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q1'] }))
+      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }]))
+    const r = await runBlogRecommend(cfg, {})
+    expect(r.batch.searchUsed).toBe(true)
+    expect(searchWeb).toHaveBeenCalled()
+  })
+  it('dismissed 的 URL 不出现在候选池', async () => {
+    seedWriting(); seedPool()
+    write(path.join(dir, 'Anthropic博客', '.collection.json'), JSON.stringify({ version: 1, entries: [], dismissed: ['https://anthropic.com/a'], history: [] }))
+    ;(getSearchApiKey as any).mockResolvedValue(null)
+    ;(chatNonStream as any)
+      .mockResolvedValueOnce(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q'] }))
+    await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'NO_LOCAL_ARTICLES' })
+  })
+})
