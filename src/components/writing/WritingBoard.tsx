@@ -99,6 +99,7 @@ export function WritingBoard() {
           key={file.path}
           initial={file.body}
           onChange={(md) => updateWritingBody(md)}
+          theme={briefingTheme}
         />
       </div>
     </div>

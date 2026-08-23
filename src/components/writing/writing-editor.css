@@ -358,3 +358,53 @@
   border: none;
   cursor: pointer;
 }
+
+/* ── 代码块面板:学术(深墨) / 报纸(浅灰纸) ── */
+.writing-editor-root[data-theme='academic'] .writing-codeblock {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: rgba(232, 213, 183, 0.1);
+}
+.writing-editor-root[data-theme='academic'] .writing-codeblock-header {
+  color: rgba(232, 213, 183, 0.5);
+}
+.writing-editor-root[data-theme='academic'] .writing-codeblock-toggle { color: #e8d5b7; }
+.writing-editor-root[data-theme='academic'] .writing-codeblock-body { color: #e8d5b7; }
+.writing-editor-root[data-theme='academic'] .writing-codeblock[data-collapsed="true"] .writing-codeblock-body {
+  /* 淡出:底部 1.6em 渐隐到面板底色 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+}
+.writing-editor-root[data-theme='academic'] .writing-codeblock-expand { color: rgba(217, 119, 87, 0.85); }
+
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock {
+  background: #f5f2ed;
+  border-color: rgba(26, 26, 26, 0.1);
+}
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock-header {
+  color: #6b5d52;
+}
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock-toggle { color: #1a1a1a; }
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock-body { color: #1a1a1a; }
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock[data-collapsed="true"] .writing-codeblock-body {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+}
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock-expand { color: #8a3a3a; }
+
+/* token 色板(≤6 色,两主题同 class 只换色值) */
+/* 学术:keyword=ember 点睛,其余米色衍生 */
+.writing-editor-root[data-theme='academic'] .writing-codeblock .token.keyword { color: #d97757; }
+.writing-editor-root[data-theme='academic'] .writing-codeblock .token.string { color: #a3b18a; }
+.writing-editor-root[data-theme='academic'] .writing-codeblock .token.number { color: #d9a05b; }
+.writing-editor-root[data-theme='academic'] .writing-codeblock .token.comment { color: rgba(232, 213, 183, 0.45); font-style: italic; }
+.writing-editor-root[data-theme='academic'] .writing-codeblock .token.function { color: #e8d5b7; }
+.writing-editor-root[data-theme='academic'] .writing-codeblock .token.operator,
+.writing-editor-root[data-theme='academic'] .writing-codeblock .token.punctuation { color: rgba(232, 213, 183, 0.6); }
+/* 报纸:低饱和印刷色 */
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock .token.keyword { color: #8a3a3a; }
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock .token.string { color: #2d6a4f; }
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock .token.number { color: #7c5a10; }
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock .token.comment { color: #6b5d52; font-style: italic; }
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock .token.function { color: #1a1a1a; }
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock .token.operator,
+.writing-editor-root[data-theme='newspaper'] .writing-codeblock .token.punctuation { color: #6b5d52; }

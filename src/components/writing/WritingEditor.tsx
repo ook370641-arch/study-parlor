@@ -21,9 +21,12 @@ import { milkdownClipboardPlugins } from '@/lib/milkdown-clipboard'
 import { selectionBubblePlugins } from '@/lib/milkdown-selection-bubble'
 import { orbitHrPlugins } from '@/lib/milkdown-orbit-hr'
 import { linkOpenPlugins } from '@/lib/milkdown-link-open'
+import { codeblockSchemaPlugins } from '@/lib/milkdown-codeblock-schema'
+import { codeblockViewPlugins } from '@/lib/milkdown-codeblock-view'
+import { codeblockHighlightPlugins } from '@/lib/milkdown-codeblock-highlight'
 import './writing-editor.css'
 
-function EditorInner({ initial, onChange, registerAction = true }: { initial: string; onChange: (md: string) => void; registerAction?: boolean }) {
+function EditorInner({ initial, onChange, registerAction = true, theme }: { initial: string; onChange: (md: string) => void; registerAction?: boolean; theme: 'academic' | 'newspaper' }) {
   const ref = useRef(onChange)
   ref.current = onChange
 
@@ -60,6 +63,9 @@ function EditorInner({ initial, onChange, registerAction = true }: { initial: st
       .use(listBackspacePlugins)
       .use(selectionBubblePlugins)
       .use(orbitHrPlugins)
+      .use(codeblockSchemaPlugins)
+      .use(codeblockViewPlugins)
+      .use(codeblockHighlightPlugins)
       .use(linkOpenPlugins)
       .config(ctx => {
         ctx.set(rootCtx, root)
@@ -89,16 +95,16 @@ function EditorInner({ initial, onChange, registerAction = true }: { initial: st
   }, [loading, setAction, registerAction])
 
   return (
-    <div className="writing-editor-root">
+    <div className="writing-editor-root" data-theme={theme}>
       <Milkdown />
     </div>
   )
 }
 
-export function WritingEditor(props: { initial: string; onChange: (md: string) => void; registerToolbarAction?: boolean }) {
+export function WritingEditor(props: { initial: string; onChange: (md: string) => void; registerToolbarAction?: boolean; theme: 'academic' | 'newspaper' }) {
   return (
     <MilkdownProvider>
-      <EditorInner initial={props.initial} onChange={props.onChange} registerAction={props.registerToolbarAction} />
+      <EditorInner initial={props.initial} onChange={props.onChange} registerAction={props.registerToolbarAction} theme={props.theme} />
     </MilkdownProvider>
   )
 }

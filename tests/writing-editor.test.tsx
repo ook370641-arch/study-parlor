@@ -16,7 +16,7 @@ vi.mock('@milkdown/react', () => ({
   },
 }))
 vi.mock('@milkdown/core', () => ({ Editor: { make: () => ({ use() { return this }, config() { return this } }) }, rootCtx: 'rootCtx', defaultValueCtx: 'defaultValueCtx' }))
-vi.mock('@milkdown/preset-commonmark', () => ({ commonmark: 'commonmark' }))
+vi.mock('@milkdown/preset-commonmark', () => ({ commonmark: 'commonmark', codeBlockSchema: { extendSchema: () => 'extendedCodeBlockSchema' } }))
 vi.mock('@milkdown/preset-gfm', () => ({ gfm: 'gfm' }))
 vi.mock('@milkdown/plugin-listener', () => ({ listener: 'listener', listenerCtx: { markdownUpdated: vi.fn() } }))
 vi.mock('@milkdown/plugin-history', () => ({ history: 'history' }))
