@@ -86,6 +86,13 @@ export const ipc = {
   get anthropicCancelImport() { return ensure().anthropicCancelImport },
   get anthropicDeleteArticle() { return ensure().anthropicDeleteArticle },
   get onAnthropicBackfill() { return ensure().onAnthropicBackfill },
+  get anthropicCollectionRead() { return ensure().anthropicCollectionRead },
+  get anthropicCollectionAdd() { return ensure().anthropicCollectionAdd },
+  get anthropicCollectionRemove() { return ensure().anthropicCollectionRemove },
+  get anthropicRecommendStart() { return ensure().anthropicRecommendStart },
+  get anthropicRecommendCancel() { return ensure().anthropicRecommendCancel },
+  get onAnthropicRecommendStage() { return ensure().onAnthropicRecommendStage },
+  get onAnthropicRecommendDone() { return ensure().onAnthropicRecommendDone },
 
   get annotationsRead() { return ensure().annotationsRead },
   get annotationsWrite() { return ensure().annotationsWrite },

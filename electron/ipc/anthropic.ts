@@ -7,6 +7,17 @@ import { mergeArticlesByUrl } from '../../src/lib/anthropic-articles'
 import type { AppConfig } from '../env'
 import type { AnthropicBlogCache, AnthropicArticleMeta } from '@shared/index'
 import type { ArticleMetaCache } from '../lib/anthropic-discover'
+import { loadCollection, saveCollection, addManualEntry, removeEntry, applyRecommend } from '../lib/blog-collection'
+import { runBlogRecommend, collectLocalArticles } from '../lib/blog-recommend'
+import type { BlogRecommendErrorCode, BlogCollectionEntry } from '@shared/index'
+
+let recommendAbort: AbortController | null = null
+
+function recommendErrorCode(err: unknown): BlogRecommendErrorCode {
+  const c = (err as { code?: string })?.code
+  if (c === 'NO_WRITING_CONTEXT' || c === 'NO_LOCAL_ARTICLES' || c === 'LLM_PARSE_ERROR' || c === 'ABORTED') return c
+  return 'LLM_ERROR'
+}
 
 export function registerAnthropicIpc(cfg: AppConfig) {
   ipcMain.handle('anthropic:discover', async (event) => {
@@ -136,5 +147,84 @@ export function registerAnthropicIpc(cfg: AppConfig) {
 
   ipcMain.handle('anthropic:deleteArticle', async (_, args: { filePath: string }) => {
     return deleteAnthropicArticleFile(cfg.libraryPath, args.filePath)
+  })
+
+  ipcMain.handle('anthropic:collectionRead', async () => {
+    return { ok: true as const, collection: loadCollection(cfg.libraryPath) }
+  })
+
+  ipcMain.handle('anthropic:collectionAdd', async (_, args: { sourceUrl: string; filePath: string; title: string }) => {
+    const next = addManualEntry(loadCollection(cfg.libraryPath), args)
+    saveCollection(cfg.libraryPath, next)
+    return { ok: true as const, collection: next }
+  })
+
+  ipcMain.handle('anthropic:collectionRemove', async (_, args: { sourceUrl: string }) => {
+    const next = removeEntry(loadCollection(cfg.libraryPath), args.sourceUrl)
+    saveCollection(cfg.libraryPath, next)
+    return { ok: true as const, collection: next }
+  })
+
+  ipcMain.handle('anthropic:recommendStart', async (event) => {
+    if (recommendAbort) return { ok: false as const, code: 'ALREADY_RUNNING' as const }
+    const ac = new AbortController()
+    recommendAbort = ac
+    const send = (channel: string, ...payload: unknown[]) => {
+      if (!event.sender.isDestroyed()) event.sender.send(channel, ...payload)
+    }
+    void (async () => {
+      try {
+        // E2E mock：确定性推荐，不触网、不依赖真实本地文件。gate 同 E2E_ANTHROPIC_OFFLINE。
+        if (process.env.NODE_ENV === 'test' && process.env.E2E_CONFIG_DIR && process.env.E2E_ANTHROPIC_RECOMMEND === '1') {
+          const col = loadCollection(cfg.libraryPath)
+          const batch = {
+            batch: (col.history[0]?.batch ?? 0) + 1,
+            generatedAt: new Date().toISOString(),
+            profile: 'E2E 画像：正在研究 AI 对齐',
+            gaps: ['E2E 缺口'],
+            queries: ['alignment'],
+            searchUsed: false,
+          }
+          const pickEntries: BlogCollectionEntry[] = [{
+            sourceUrl: 'https://alignment.anthropic.com/e2e-recommend/',
+            filePath: 'Anthropic博客/2026-08/e2e-recommend.md',
+            title: 'E2E 推荐文章',
+            addedAt: new Date().toISOString(),
+            origin: 'recommend' as const,
+            reason: 'E2E 推荐理由',
+            gap: 'E2E 缺口',
+            batch: batch.batch,
+          }]
+          const next = applyRecommend(col, batch, pickEntries)
+          saveCollection(cfg.libraryPath, next)
+          send('anthropic:recommendStage', { stage: 'context' })
+          setTimeout(() => {
+            send('anthropic:recommendStage', { stage: 'pick' })
+            send('anthropic:recommendDone', { ok: true, collection: next })
+          }, 100)
+          return
+        }
+        const { batch, picks } = await runBlogRecommend(cfg, { signal: ac.signal, onStage: (s) => send('anthropic:recommendStage', { stage: s }) })
+        const pool = collectLocalArticles(cfg.libraryPath)
+        const now = new Date().toISOString()
+        const pickEntries: BlogCollectionEntry[] = picks.map(p => {
+          const a = pool.find(x => x.sourceUrl === p.sourceUrl)
+          return { sourceUrl: p.sourceUrl, filePath: a?.filePath ?? '', title: a?.title ?? p.sourceUrl, addedAt: now, origin: 'recommend' as const, reason: p.reason, gap: p.gap, batch: batch.batch }
+        })
+        const next = applyRecommend(loadCollection(cfg.libraryPath), batch, pickEntries)
+        saveCollection(cfg.libraryPath, next)
+        send('anthropic:recommendDone', { ok: true, collection: next })
+      } catch (err) {
+        if (ac.signal.aborted) send('anthropic:recommendDone', { ok: false, code: 'ABORTED' })
+        else send('anthropic:recommendDone', { ok: false, code: recommendErrorCode(err) })
+      } finally {
+        recommendAbort = null
+      }
+    })()
+    return { ok: true as const }
+  })
+
+  ipcMain.handle('anthropic:recommendCancel', async () => {
+    recommendAbort?.abort()
   })
 }
