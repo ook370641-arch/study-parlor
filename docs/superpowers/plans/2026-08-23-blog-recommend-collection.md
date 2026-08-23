@@ -336,11 +336,12 @@ describe('collectWritingContext', () => {
     expect(collectWritingContext(dir).count).toBe(0)
   })
   it('读 writing 根 catalog 条目并读近期原文', () => {
+    // catalog key 是学习库相对路径，已含 writing/ 前缀（与 production 一致）
     const cat = {
       version: 2,
       entries: {
-        'a.md': { title: 'A', summary: '摘要A', mtimeMs: 300 },
-        'b.md': { title: 'B', summary: '摘要B', mtimeMs: 200 },
+        'writing/a.md': { title: 'A', summary: '摘要A', mtimeMs: 300 },
+        'writing/b.md': { title: 'B', summary: '摘要B', mtimeMs: 200 },
       },
       groups: {},
     }
@@ -350,6 +351,20 @@ describe('collectWritingContext', () => {
     expect(ctx.count).toBe(2)
     expect(ctx.summaries.map(s => s.title)).toEqual(['A', 'B'])
     expect(ctx.recentBodies.some(b => b.includes('正文A'))).toBe(true)
+  })
+  it('按 mtimeMs 最新在前排序（乱序输入仍正确）', () => {
+    const cat = {
+      version: 2,
+      entries: {
+        'writing/old.md': { title: 'Old', summary: '旧', mtimeMs: 100 },
+        'writing/new.md': { title: 'New', summary: '新', mtimeMs: 300 },
+        'writing/mid.md': { title: 'Mid', summary: '中', mtimeMs: 200 },
+      },
+      groups: {},
+    }
+    write(path.join(dir, 'writing', '.catalog.json'), JSON.stringify(cat))
+    const ctx = collectWritingContext(dir)
+    expect(ctx.summaries.map(s => s.title)).toEqual(['New', 'Mid', 'Old'])
   })
 })
 
@@ -400,9 +415,11 @@ export function collectWritingContext(lib: string): {
   recentBodies: string[]
 } {
   const cat = loadCatalog(lib, 'writing')
+  const ts = (e: { mtimeMs?: number; updatedAt?: string }) =>
+    e.mtimeMs ?? (e.updatedAt ? Date.parse(e.updatedAt) : 0) || 0
   const items = Object.entries(cat.entries)
     .map(([relPath, e]) => ({ relPath, ...e }))
-    .sort((a, b) => (b.mtimeMs ?? b.updatedAt ? Date.parse(b.updatedAt ?? '') : 0) - (a.mtimeMs ?? a.updatedAt ? Date.parse(a.updatedAt ?? '') : 0))
+    .sort((a, b) => ts(b) - ts(a))
 
   let total = 0
   const summaries: { title: string; summary: string }[] = []
@@ -415,7 +432,7 @@ export function collectWritingContext(lib: string): {
 
   const recentBodies: string[] = []
   for (const it of items.slice(0, 5)) {
-    const p = path.join(lib, 'writing', it.relPath)
+    const p = path.join(lib, it.relPath)  // 注意：catalog key 已含 writing/ 前缀
     if (!fs.existsSync(p)) continue
     try {
       const raw = fs.readFileSync(p, 'utf8')
