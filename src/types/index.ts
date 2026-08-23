@@ -636,6 +636,8 @@ export type StateJson = {
   archivedTopics?: string[]
   writingPanelMode?: 'assistant' | 'companion'
   writingCompanionMap?: Record<string, string>
+  articlePanelMode?: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
+  articleCompanionMap?: Record<string, string>
 }
 
 export type IpcApi = {

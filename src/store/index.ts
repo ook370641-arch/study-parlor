@@ -466,6 +466,16 @@ type AppStore = {
   appendWritingOrder: (dir: string, newPath: string) => void
   moveWritingNode: (args: { src: string; targetDir: string; index: number | null }) => Promise<void>
   writingRenamed: (oldPath: string, newPath: string) => void
+
+  // 右栏统一：文章旁注面板模式（导读/对照）+ 对照槽
+  articlePanelMode: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
+  articleCompanionMap: Record<string, string>
+  articleCompanion: { key: string; filePath: string; kind: 'md' | 'html' | 'other'; body: string; readonly: boolean; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
+  setArticlePanelMode: (source: 'anthropic' | 'scout' | 'job', mode: 'guide' | 'companion') => void
+  selectArticleCompanion: (source: 'anthropic' | 'scout' | 'job', mainKey: string, filePath: string, opts?: { readonly?: boolean }) => Promise<void>
+  updateArticleCompanionBody: (body: string) => void
+  saveArticleCompanion: () => Promise<void>
+  closeArticleCompanion: () => Promise<void>
 }
 
 let wildcardRequestId = 0
@@ -616,6 +626,9 @@ export const useStore = create<AppStore>((set, get) => ({
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
   writingCodeblockCollapsed: {},
+  articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
+  articleCompanionMap: {},
+  articleCompanion: null,
   writingAssistant: null,
   writingAssistantSnapshotLit: false,
 
@@ -664,6 +677,8 @@ export const useStore = create<AppStore>((set, get) => ({
       writingExpandedGroups: state.writingExpandedGroups ?? {},
       writingUIFontSize: state.writingUIFontSize ?? 'base',
       writingCodeblockCollapsed: state.writingCodeblockCollapsed ?? {},
+      articlePanelMode: state.articlePanelMode ?? { anthropic: 'guide', scout: 'guide', job: 'guide' },
+      articleCompanionMap: state.articleCompanionMap ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
       candlelightEnabled: state.candlelightEnabled ?? true,
@@ -2723,6 +2738,44 @@ export const useStore = create<AppStore>((set, get) => ({
     if (get().companionFile?.dirty) await get().saveCompanionFile()
     set({ companionFile: null })
     get().setWritingPanelMode('assistant') // 映射保留（v1 不做显式清除）
+  },
+
+  setArticlePanelMode: (source, mode) => {
+    const next = { ...get().articlePanelMode, [source]: mode }
+    set({ articlePanelMode: next })
+    ipc.patchState({ articlePanelMode: next } as Partial<StateJson>)
+  },
+
+  selectArticleCompanion: async (_source, mainKey, filePath, opts) => {
+    if (get().articleCompanion?.dirty) await get().saveArticleCompanion()
+    const map = { ...get().articleCompanionMap, [mainKey]: filePath }
+    set({ articleCompanionMap: map })
+    ipc.patchState({ articleCompanionMap: map } as Partial<StateJson>)
+    const kind: 'md' | 'html' | 'other' = filePath.toLowerCase().endsWith('.md') ? 'md' : filePath.toLowerCase().endsWith('.html') ? 'html' : 'other'
+    const readonly = opts?.readonly === true || kind === 'html'
+    try {
+      const r = await ipc.readMd(filePath) // { frontmatter, body }
+      set({ articleCompanion: { key: mainKey, filePath, kind, body: r.body ?? '', readonly, dirty: false, saving: 'idle' } })
+    } catch {
+      set({ articleCompanion: null })
+    }
+  },
+
+  updateArticleCompanionBody: (body: string) => set(s => s.articleCompanion ? { articleCompanion: { ...s.articleCompanion, body, dirty: true } } : {}),
+
+  saveArticleCompanion: async () => {
+    const f = get().articleCompanion
+    if (!f || !f.dirty || f.readonly) return
+    set({ articleCompanion: { ...f, saving: 'saving' as const } })
+    const r = await ipc.anthropicWriteArticleBody({ filePath: f.filePath, body: f.body })
+    const cur = get().articleCompanion
+    if (!cur || cur.filePath !== f.filePath) return // 保存期间文件已切换/关闭，丢弃过期结果
+    set({ articleCompanion: { ...cur, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })
+  },
+
+  closeArticleCompanion: async () => {
+    if (get().articleCompanion?.dirty) await get().saveArticleCompanion()
+    set({ articleCompanion: null })
   },
 
   saveAllDirtyWriting: async () => {
