@@ -21,6 +21,7 @@ import type {
   ScoutConversationMeta, ScoutMessage, ScoutArticleMeta, GuideProgress,
   BriefingCollectionEntry,
   BriefingCollectionQA,
+  BlogCollectionFile, RecommendStage,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
@@ -175,6 +176,16 @@ type AppStore = {
   closeConstitutionReport: () => void
   setAnthropicReaderContent: (content: { body: string | null; title: string | null }) => void
   deleteAnthropicArticle: (filePath: string) => Promise<void>
+
+  // 博客收藏夹 & 推荐
+  blogCollection: BlogCollectionFile
+  recommendRunning: boolean
+  recommendStage: RecommendStage | null
+  loadBlogCollection: () => Promise<void>
+  toggleBlogCollection: (article: { sourceUrl: string; filePath: string; title: string }) => Promise<void>
+  removeBlogCollection: (sourceUrl: string) => Promise<void>
+  startBlogRecommend: () => Promise<void>
+  cancelBlogRecommend: () => Promise<void>
 
   // --- 拾贝（Scout）---
   scoutTab: 'chat' | 'articles'
@@ -561,6 +572,9 @@ export const useStore = create<AppStore>((set, get) => ({
   anthropicReaderTitle: null,
   anthropicBlogLastSeenAt: null,
   constitutionReportOpen: false,
+  blogCollection: { version: 1, entries: [], dismissed: [], history: [] },
+  recommendRunning: false,
+  recommendStage: null,
   scoutTab: 'chat',
   scoutConversations: [],
   scoutActiveConversationId: null,
@@ -1429,6 +1443,32 @@ export const useStore = create<AppStore>((set, get) => ({
     if (get().anthropicReaderFilePath === filePath) {
       get().closeAnthropicReader()
     }
+  },
+
+  loadBlogCollection: async () => {
+    const r = await ipc.anthropicCollectionRead()
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  toggleBlogCollection: async (article) => {
+    const existing = get().blogCollection.entries.find(e => e.sourceUrl === article.sourceUrl)
+    const r = existing
+      ? await ipc.anthropicCollectionRemove({ sourceUrl: article.sourceUrl })
+      : await ipc.anthropicCollectionAdd(article)
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  removeBlogCollection: async (sourceUrl) => {
+    const r = await ipc.anthropicCollectionRemove({ sourceUrl })
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  startBlogRecommend: async () => {
+    if (get().recommendRunning) return
+    set({ recommendRunning: true, recommendStage: 'context' })
+    const r = await ipc.anthropicRecommendStart()
+    if (!r.ok) set({ recommendRunning: false, recommendStage: null })
+  },
+  cancelBlogRecommend: async () => {
+    await ipc.anthropicRecommendCancel()
+    set({ recommendRunning: false, recommendStage: null })
   },
 
   // --- 拾贝（Scout）actions ---
