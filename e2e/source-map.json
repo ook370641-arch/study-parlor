@@ -62,6 +62,18 @@
         "blog-guide-terminal.spec.ts"
       ]
     },
+    "article-side-panel": {
+      "sources": [
+        "src/components/article-assistant/ArticleGuideTabs.tsx",
+        "src/components/article-assistant/ArticleCompanionBoard.tsx",
+        "src/components/writing/WritingEditor.tsx",
+        "src/components/writing/HtmlPreview.tsx",
+        "electron/lib/article-io.ts"
+      ],
+      "specs": [
+        "article-side-panel.spec.ts"
+      ]
+    },
     "writing": {
       "sources": [
         "src/components/writing/**",
