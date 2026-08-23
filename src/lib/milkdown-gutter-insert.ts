@@ -9,6 +9,7 @@ import {
   wrapInBulletListCommand,
   wrapInOrderedListCommand,
   wrapInHeadingCommand,
+  createCodeBlockCommand,
 } from '@milkdown/preset-commonmark'
 import { insertTableCommand } from '@milkdown/preset-gfm'
 import { runCollapsedBlockCommand } from './milkdown-collapse-selection'
@@ -22,6 +23,7 @@ const ITEMS: { type: string; label: string; run: (ctx: Ctx) => unknown }[] = [
   { type: 'h1', label: 'H1', run: ctx => runCollapsedBlockCommand(wrapInHeadingCommand.key, 1)(ctx) },
   { type: 'h2', label: 'H2', run: ctx => runCollapsedBlockCommand(wrapInHeadingCommand.key, 2)(ctx) },
   { type: 'h3', label: 'H3', run: ctx => runCollapsedBlockCommand(wrapInHeadingCommand.key, 3)(ctx) },
+  { type: 'codeblock', label: '代码块', run: ctx => runCollapsedBlockCommand(createCodeBlockCommand.key)(ctx) },
 ]
 
 class GutterInsertView {
@@ -36,7 +38,7 @@ class GutterInsertView {
     this.plus = document.createElement('button')
     this.plus.dataset.testid = 'writing-gutter-plus'
     this.plus.textContent = '+'
-    this.plus.title = '插入块(列表/表格/标题)'
+    this.plus.title = '插入块(列表/表格/标题/代码块)'
     this.plus.className = 'writing-handle-btn'
     this.plus.style.display = 'none'
     this.plus.addEventListener('mousedown', e => { e.preventDefault(); this.toggleMenu() })
@@ -74,6 +76,8 @@ class GutterInsertView {
 
     document.addEventListener('scroll', this.relayout, true)
     window.addEventListener('resize', this.relayout)
+    // 构造即 layout 一次:光标在首段 depth 1 时 plus 立即可见,不等首次 update
+    this.layout()
   }
 
   private showHint() {
