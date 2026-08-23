@@ -20,6 +20,7 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantWriteGuide: vi.fn().mockResolvedValue(undefined),
     articleAssistantWriteSession: vi.fn().mockResolvedValue(undefined),
     collectionRead: vi.fn().mockResolvedValue({ version: 1, entries: [] }),
+    anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [] } }),
   },
 }))
 

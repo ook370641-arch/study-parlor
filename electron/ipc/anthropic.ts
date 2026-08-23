@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import path from 'path'
 import { discoverArticles, importArticle, classifyError } from '../lib/anthropic-scraper'
 import { deleteAnthropicArticleFile } from '../lib/anthropic-delete'
 import { cancelCurrentOperation } from '../lib/anthropic-browser'
@@ -198,7 +199,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
           }
           const pickEntries: BlogCollectionEntry[] = [{
             sourceUrl: 'https://alignment.anthropic.com/e2e-recommend/',
-            filePath: 'Anthropic博客/2026-08/e2e-recommend.md',
+            filePath: path.join(cfg.libraryPath, 'Anthropic博客', '2026-08', 'e2e-recommend.md'),
             title: 'E2E 推荐文章',
             addedAt: new Date().toISOString(),
             origin: 'recommend' as const,
@@ -220,7 +221,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
         const now = new Date().toISOString()
         const pickEntries: BlogCollectionEntry[] = picks.map(p => {
           const a = pool.find(x => x.sourceUrl === p.sourceUrl)
-          return { sourceUrl: p.sourceUrl, filePath: a?.filePath ?? '', title: a?.title ?? p.sourceUrl, addedAt: now, origin: 'recommend' as const, reason: p.reason, gap: p.gap, batch: batch.batch }
+          return { sourceUrl: p.sourceUrl, filePath: a?.absPath ?? '', title: a?.title ?? p.sourceUrl, addedAt: now, origin: 'recommend' as const, reason: p.reason, gap: p.gap, batch: batch.batch }
         })
         const next = applyRecommend(loadCollection(cfg.libraryPath), batch, pickEntries)
         saveCollection(cfg.libraryPath, next)

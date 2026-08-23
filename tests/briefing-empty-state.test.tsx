@@ -20,6 +20,7 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantAbort: vi.fn(),
     annotationsRead: vi.fn().mockResolvedValue([]),
     collectionRead: vi.fn().mockResolvedValue({ version: 1, entries: [] }),
+    anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [] } }),
   }
 }))
 
