@@ -34,7 +34,8 @@
 
 ### 交互与 UI 出口（feature-development §12）
 
-- HtmlPreview 顶栏新增「删除模式」按钮（`writing-html-delete-enter`），位于「用系统程序打开」左侧。进入后变为「完成」（`writing-html-delete-done`），并有「删除中」态徽标提示。
+- HtmlPreview 顶栏新增「删除模式」按钮（`writing-html-delete-enter`）。进入后变为「完成」（`writing-html-delete-done`），并有「删除中」态徽标提示。
+- **顶栏操作按钮全部在左组**（E2E 发现）：写作区右上有 Briefing 悬浮控件层（字号 ± / 换画），其宽度随画作署名（PaintingLabel，opacity-0 但占布局）变化且不固定，按钮放右侧会被压住不可点。署名占宽的根治（absolute 脱离文档流，覆盖 4 个 surface）留作独立问题。
 - **删除模式仅主写作板启用**：`CompanionBoard` 也复用 `HtmlPreview`（对照槽），通过 `deletable` prop 区分——只有主槽传入，避免两个实例争抢 store 的 flush 注册。对照槽保持只读。
 - 删除模式下：
   - hover 块级元素 → 高亮描边（注入样式表 `.sp-del-hover { outline: 2px solid #d97757 }`）。
@@ -47,8 +48,9 @@
 ### 注入脚本与激活模型
 
 - `buildPreviewSrcdoc(html, zoom)` 增加第三段注入：**编辑脚本** `<script data-sp-inject>`（与 base、zoom 同一条装配链，插在 `</body>` 前，无 body 则尾置）。
-- 脚本常驻但休眠；父进程 postMessage `{type:'sp-html-edit', on:true|false}` 激活/休眠——**进入/退出不重建 srcdoc**，不丢滚动位置。
+- 脚本常驻但休眠；父进程 postMessage `{type:'sp-html-edit', on:true|false}` 激活/休眠——**进入/退出不重建 srcdoc**，不丢滚动位置。iframe `onLoad` 时若 store 中删除模式为 true 则补发激活消息（覆盖「进入模式早于 iframe load 完成」的竞态）。
 - 删除模式下的点击监听走 capture + `preventDefault()` + `stopPropagation()`：阻止链接导航（base target 会把点击送去系统浏览器）和页面脚本响应。
+- **生产 CSP 拦截**（E2E 发现）：生产构建 `script-src 'self'` 无 unsafe-inline，srcdoc 继承父文档 CSP → 内联脚本被拒。`main.ts` 生产分支为注入脚本加 `'sha256-…'` 白名单，哈希**运行时从 `HTML_DELETE_SCRIPT` 常量计算**（杜绝脚本改了忘同步的漂移）。dev 分支有 unsafe-inline 不受影响——这也是单测/dev 发现不了、只有跑 out/ 产物的 E2E 能抓到的原因。
 
 ### 序列化纯净性（关键技术点）
 
