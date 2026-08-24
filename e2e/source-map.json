@@ -79,6 +79,7 @@
         "src/components/writing/**",
         "src/components/writing-assistant/**",
         "src/lib/milkdown-*.ts",
+        "src/lib/html-*.ts",
         "electron/lib/writing-*.ts",
         "electron/ipc/writing*.ts",
         "electron/lib/writing-assistant/**"

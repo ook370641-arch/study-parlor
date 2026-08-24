@@ -321,6 +321,20 @@ export function writeWritingFile(lib: string, rel: string, body: string): void {
   fs.writeFileSync(absPath, content, 'utf-8')
 }
 
+/**
+ * HTML 原文写回（删除模式专用）：不经 gray-matter/frontmatter 合并，逐字节写回。
+ * 写前按天备份（复用 maybeBackupDaily；repository 根天然无备份）。仅接受 .html。
+ */
+export function writeHtmlFile(lib: string, rel: string, html: string): void {
+  const absPath = assertInsideRoots(lib, rel)
+  if (path.extname(absPath).toLowerCase() !== '.html') {
+    throw Object.assign(new Error(`仅支持写回 .html 文件: ${rel}`), { code: 'WRITING_PATH_FORBIDDEN' })
+  }
+  const existingRaw = fs.existsSync(absPath) ? fs.readFileSync(absPath, 'utf-8') : null
+  maybeBackupDaily(lib, rel, existingRaw)
+  fs.writeFileSync(absPath, html, 'utf-8')
+}
+
 // ── daily backup ─────────────────────────────────────────────
 
 const BACKUP_DIR = '.backups'

@@ -34,7 +34,8 @@
 
 ### 交互与 UI 出口（feature-development §12）
 
-- HtmlPreview 顶栏新增「删除模式」按钮（`writing-html-delete-enter`），位于「用系统程序打开」左侧。进入后变为「完成」（`writing-html-delete-done`），并有「删除中」态徽标提示。
+- HtmlPreview 顶栏新增「删除模式」按钮（`writing-html-delete-enter`）。进入后变为「完成」（`writing-html-delete-done`），并有「删除中」态徽标提示。
+- **顶栏操作按钮全部在左组**（E2E 发现）：写作区右上有 Briefing 悬浮控件层（字号 ± / 换画），其宽度随画作署名（PaintingLabel，opacity-0 但占布局）变化且不固定，按钮放右侧会被压住不可点。署名占宽的根治（absolute 脱离文档流，覆盖 4 个 surface）留作独立问题。
 - **删除模式仅主写作板启用**：`CompanionBoard` 也复用 `HtmlPreview`（对照槽），通过 `deletable` prop 区分——只有主槽传入，避免两个实例争抢 store 的 flush 注册。对照槽保持只读。
 - 删除模式下：
   - hover 块级元素 → 高亮描边（注入样式表 `.sp-del-hover { outline: 2px solid #d97757 }`）。
@@ -47,8 +48,9 @@
 ### 注入脚本与激活模型
 
 - `buildPreviewSrcdoc(html, zoom)` 增加第三段注入：**编辑脚本** `<script data-sp-inject>`（与 base、zoom 同一条装配链，插在 `</body>` 前，无 body 则尾置）。
-- 脚本常驻但休眠；父进程 postMessage `{type:'sp-html-edit', on:true|false}` 激活/休眠——**进入/退出不重建 srcdoc**，不丢滚动位置。
+- 脚本常驻但休眠；父进程 postMessage `{type:'sp-html-edit', on:true|false}` 激活/休眠——**进入/退出不重建 srcdoc**，不丢滚动位置。iframe `onLoad` 时若 store 中删除模式为 true 则补发激活消息（覆盖「进入模式早于 iframe load 完成」的竞态）。
 - 删除模式下的点击监听走 capture + `preventDefault()` + `stopPropagation()`：阻止链接导航（base target 会把点击送去系统浏览器）和页面脚本响应。
+- **生产 CSP 拦截**（E2E 发现）：生产构建 `script-src 'self'` 无 unsafe-inline，srcdoc 继承父文档 CSP → 内联脚本被拒。`main.ts` 生产分支为注入脚本加 `'sha256-…'` 白名单，哈希**运行时从 `HTML_DELETE_SCRIPT` 常量计算**（杜绝脚本改了忘同步的漂移）。dev 分支有 unsafe-inline 不受影响——这也是单测/dev 发现不了、只有跑 out/ 产物的 E2E 能抓到的原因。
 
 ### 序列化纯净性（关键技术点）
 
@@ -57,6 +59,7 @@
 1. **所有注入节点统一打 `data-sp-inject` 属性**——包括既有的 `<base target="_blank">` 和 zoom `<style>`（本期给它们补上标记）。
 2. 保存时：先清掉当前 hover 的 `.sp-del-hover` class → `document.documentElement.cloneNode(true)` → 克隆上 `querySelectorAll('[data-sp-inject]').forEach(remove)` → 序列化；原文有 `<!DOCTYPE` 则补 doctype 前缀。
 3. 存回的文件 = 原始文件 − 被删的块，无注入物残留。
+4. 写回为 DOM 重序列化：doctype 统一为 `<!DOCTYPE html>`，属性引号/自闭合/空白等字节级不保证与原文恒等（机器生成报告可接受）。
 
 ### postMessage 协议与安全
 
@@ -81,6 +84,7 @@
 - flush 返回 `boolean`：true = 可继续（写回成功或无脏改动）；false = 失败/超时，**调用方中止后续动作**。
 - flush = 发 `sp-html-collect` → 等 `sp-html-save`（3s 超时护栏）→ 调 `writingSaveHtml` → 成功后清 dirty、退出删除模式。非脏时直接退出删除模式。
 - `selectWritingFile` 开头 `const f = get().htmlDeleteFlush; if (f && !(await f())) return`——切换文件 = 自动退出删除模式并写回，所有切换入口（树点击、tab 切换）天然覆盖；flush 失败则中止切换，避免静默丢改动。
+- 退出写回的出口完整清单：切文件（`selectWritingFile`）/ 切 source（`setBriefingSource`）/ 离页（`goto`）/ 点「完成」。应用直接退出不保证写回（与 md 编辑器的自动保存存在语义差距，记录在案）；非常规卸载由 HtmlPreview cleanup 重置残留态（`htmlDeleteMode`/`htmlDeleteDirty`），避免下次打开任意 html 时被 onLoad 竞态补发自动激活。
 - 字号按钮禁用读 `htmlDeleteMode`（`Briefing.tsx`）。
 
 ### 撤销

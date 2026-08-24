@@ -201,6 +201,7 @@ const api: IpcApi = {
   writingImportPaths: (a) => ipcRenderer.invoke('writing:importPaths', a),
   writingReadPreview: (a) => ipcRenderer.invoke('writing:readPreview', a),
   writingOpenInSystem: (a) => ipcRenderer.invoke('writing:openInSystem', a),
+  writingSaveHtml: (a) => ipcRenderer.invoke('writing:saveHtml', a),
   getPathForFile: (file) => webUtils.getPathForFile(file),
   writingRefreshCatalog: () => ipcRenderer.invoke('writing:refreshCatalog'),
   writingAssistantSendMessage: (a) => ipcRenderer.invoke('writingAssistant:sendMessage', a),

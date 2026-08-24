@@ -55,6 +55,7 @@ export function Briefing() {
   const writingUISize = useStore((s) => s.writingUIFontSize)
   const increaseWritingUI = useStore((s) => s.increaseWritingUIFontSize)
   const decreaseWritingUI = useStore((s) => s.decreaseWritingUIFontSize)
+  const htmlDeleteMode = useStore((s) => s.htmlDeleteMode)
   const generateBriefing = useStore((s) => s.generateBriefing)
   const viewBriefingToday = useStore((s) => s.viewBriefingToday)
   const stage = useStore((s) => s.briefingStage)
@@ -336,15 +337,15 @@ export function Briefing() {
               <main className="relative z-[5] flex-1 min-h-0">
                 <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
                   <button type="button" data-testid="writing-ui-font-size-decrease"
-                    disabled={writingUISize === 'sm'}
+                    disabled={writingUISize === 'sm' || htmlDeleteMode}
                     onClick={() => void decreaseWritingUI()}
                     className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-                    title="减小界面字号">−</button>
+                    title={htmlDeleteMode ? '删除模式下不可调整字号' : '减小界面字号'}>−</button>
                   <button type="button" data-testid="writing-ui-font-size-increase"
-                    disabled={writingUISize === '7xl'}
+                    disabled={writingUISize === '7xl' || htmlDeleteMode}
                     onClick={() => void increaseWritingUI()}
                     className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-                    title="增大界面字号">+</button>
+                    title={htmlDeleteMode ? '删除模式下不可调整字号' : '增大界面字号'}>+</button>
                   {isAcademic && (
                     <SwapPaintingButton
                       surface="briefing"

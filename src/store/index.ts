@@ -282,7 +282,7 @@ type AppStore = {
   init: () => Promise<void>
   initPaintings: () => void
   swapPainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => void
-  goto: (p: Page) => void
+  goto: (p: Page) => Promise<void>
   settingsReturnTo: Page | null
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
   closePreStudy: () => void
@@ -420,6 +420,10 @@ type AppStore = {
   writingExpandedGroups: Record<string, boolean>
   writingUIFontSize: BriefingFontSize
   writingCodeblockCollapsed: Record<string, string[]>
+  // HTML 删除模式（非持久；仅主写作板 HtmlPreview deletable 实例驱动）
+  htmlDeleteMode: boolean
+  htmlDeleteDirty: boolean
+  htmlDeleteFlush: (() => Promise<boolean>) | null
   replaceWritingCodeblockCollapsed: (filePath: string, hashes: string[]) => void
   increaseWritingUIFontSize: () => Promise<void>
   decreaseWritingUIFontSize: () => Promise<void>
@@ -445,6 +449,9 @@ type AppStore = {
   loadWritingAssistantSession: (articlePath: string) => Promise<void>
 
   loadWritingTree: () => Promise<void>
+  setHtmlDeleteMode: (on: boolean) => void
+  setHtmlDeleteDirty: (dirty: boolean) => void
+  registerHtmlDeleteFlush: (fn: (() => Promise<boolean>) | null) => void
   selectWritingFile: (filePath: string | null) => Promise<void>
   updateWritingBody: (body: string) => void
   saveWritingFile: () => Promise<void>
@@ -629,6 +636,9 @@ export const useStore = create<AppStore>((set, get) => ({
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
   writingCodeblockCollapsed: {},
+  htmlDeleteMode: false,
+  htmlDeleteDirty: false,
+  htmlDeleteFlush: null,
   articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
   articleCompanionMap: {},
   articleCompanion: null,
@@ -729,10 +739,15 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。
-  goto: (p) => set((s) => ({
-    currentPage: p,
-    settingsReturnTo: p === 'settings' ? s.currentPage : s.settingsReturnTo,
-  })),
+  goto: async (p) => {
+    // HTML 删除模式有未写回删除时先 flush（离开页面=自动写回）；失败中止导航
+    const htmlFlush = get().htmlDeleteFlush
+    if (htmlFlush && !(await htmlFlush())) return
+    set((s) => ({
+      currentPage: p,
+      settingsReturnTo: p === 'settings' ? s.currentPage : s.settingsReturnTo,
+    }))
+  },
   openPreStudy: (a) => set({ modal: 'preStudy', preStudyArgs: a }),
   closePreStudy: () => set({ modal: null, preStudyArgs: null }),
 
@@ -1334,6 +1349,9 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   setBriefingSource: async (source) => {
+    // HTML 删除模式有未写回删除时先 flush（离开写作区=自动写回）；失败中止切换
+    const htmlFlush = get().htmlDeleteFlush
+    if (htmlFlush && !(await htmlFlush())) return
     set({ briefingSource: source })
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
     if (source === 'writing') void ipc.writingRefreshCatalog() // 摘要唯一生成时机(spec C)
@@ -2592,8 +2610,15 @@ export const useStore = create<AppStore>((set, get) => ({
     else set({ writingError: r.message })
   },
 
+  setHtmlDeleteMode: (on) => set({ htmlDeleteMode: on }),
+  setHtmlDeleteDirty: (dirty) => set({ htmlDeleteDirty: dirty }),
+  registerHtmlDeleteFlush: (fn) => set({ htmlDeleteFlush: fn }),
+
   selectWritingFile: async (filePath: string | null) => {
     const seq = ++writingSelectSeq
+    // HTML 删除模式有未写回删除时先 flush（退出=自动写回）；失败中止切换，避免静默丢改动
+    const htmlFlush = get().htmlDeleteFlush
+    if (htmlFlush && !(await htmlFlush())) return
     if (!filePath) return set({ writingFile: null })
     const cur = get().writingFile
     if (cur?.dirty) await get().saveWritingFile()

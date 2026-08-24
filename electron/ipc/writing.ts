@@ -169,6 +169,10 @@ export function registerWritingIpc(cfg: AppConfig): void {
       return null
     }))
 
+  // HTML 删除模式写回（原文，含按天备份；校验在 writeHtmlFile 内）
+  ipcMain.handle('writing:saveHtml', (_, a: { path: string; html: string }) =>
+    wrapWriting(() => { tree.writeHtmlFile(lib, a.path, a.html); return null }))
+
   ipcMain.handle('writing:refreshCatalog', () =>
     wrapWriting(async () => {
       const roots: WritingRoot[] = ['writing', 'repository']
