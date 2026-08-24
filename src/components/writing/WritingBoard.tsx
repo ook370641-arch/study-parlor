@@ -58,7 +58,7 @@ export function WritingBoard() {
           ['--writing-ui-quote-size' as string]: WRITING_UI_QUOTE_SIZES[writingUISize],
         }}>
         {file.kind === 'html' ? (
-          <HtmlPreview file={{ path: file.path, body: file.body, previewError: file.previewError }} />
+          <HtmlPreview deletable file={{ path: file.path, body: file.body, previewError: file.previewError }} />
         ) : (
           <ReadonlyPreview file={{
             path: file.path,

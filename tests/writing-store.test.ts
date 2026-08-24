@@ -22,7 +22,7 @@ import { ipc } from '@/lib/ipc'
 describe('writing store', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    useStore.setState({ writingTree: null, writingFile: null, writingError: null, writingOrder: {}, writingExpandedGroups: {} })
+    useStore.setState({ writingTree: null, writingFile: null, writingError: null, writingOrder: {}, writingExpandedGroups: {}, htmlDeleteFlush: null })
   })
 
   describe('loadWritingTree', () => {
@@ -106,6 +106,36 @@ describe('writing store', () => {
 
       expect(useStore.getState().writingFile).toBeNull()
       expect(useStore.getState().writingError).toBe('文件不存在')
+    })
+  })
+
+  describe('selectWritingFile × htmlDeleteFlush', () => {
+    it('切换前调用已注册的 flush；flush 失败则中止切换', async () => {
+      vi.mocked(ipc.writingRead).mockResolvedValue({
+        ok: true,
+        value: { frontmatter: { title: 'a', type: 'writing' }, body: '# a\n' }
+      })
+
+      const flushFail = vi.fn().mockResolvedValue(false)
+      useStore.setState({ htmlDeleteFlush: flushFail })
+      await useStore.getState().selectWritingFile('writing/a.md')
+      expect(flushFail).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().writingFile).toBeNull() // 中止：未读取新文件
+
+      const flushOk = vi.fn().mockResolvedValue(true)
+      useStore.setState({ htmlDeleteFlush: flushOk })
+      await useStore.getState().selectWritingFile('writing/a.md')
+      expect(flushOk).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().writingFile?.path).toBe('writing/a.md')
+    })
+
+    it('未注册 flush 时正常切换', async () => {
+      vi.mocked(ipc.writingRead).mockResolvedValue({
+        ok: true,
+        value: { frontmatter: { title: 'a', type: 'writing' }, body: '# a\n' }
+      })
+      await useStore.getState().selectWritingFile('writing/a.md')
+      expect(useStore.getState().writingFile?.path).toBe('writing/a.md')
     })
   })
 

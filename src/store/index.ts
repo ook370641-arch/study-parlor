@@ -420,6 +420,10 @@ type AppStore = {
   writingExpandedGroups: Record<string, boolean>
   writingUIFontSize: BriefingFontSize
   writingCodeblockCollapsed: Record<string, string[]>
+  // HTML 删除模式（非持久；仅主写作板 HtmlPreview deletable 实例驱动）
+  htmlDeleteMode: boolean
+  htmlDeleteDirty: boolean
+  htmlDeleteFlush: (() => Promise<boolean>) | null
   replaceWritingCodeblockCollapsed: (filePath: string, hashes: string[]) => void
   increaseWritingUIFontSize: () => Promise<void>
   decreaseWritingUIFontSize: () => Promise<void>
@@ -445,6 +449,9 @@ type AppStore = {
   loadWritingAssistantSession: (articlePath: string) => Promise<void>
 
   loadWritingTree: () => Promise<void>
+  setHtmlDeleteMode: (on: boolean) => void
+  setHtmlDeleteDirty: (dirty: boolean) => void
+  registerHtmlDeleteFlush: (fn: (() => Promise<boolean>) | null) => void
   selectWritingFile: (filePath: string | null) => Promise<void>
   updateWritingBody: (body: string) => void
   saveWritingFile: () => Promise<void>
@@ -629,6 +636,9 @@ export const useStore = create<AppStore>((set, get) => ({
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
   writingCodeblockCollapsed: {},
+  htmlDeleteMode: false,
+  htmlDeleteDirty: false,
+  htmlDeleteFlush: null,
   articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
   articleCompanionMap: {},
   articleCompanion: null,
@@ -2592,8 +2602,15 @@ export const useStore = create<AppStore>((set, get) => ({
     else set({ writingError: r.message })
   },
 
+  setHtmlDeleteMode: (on) => set({ htmlDeleteMode: on }),
+  setHtmlDeleteDirty: (dirty) => set({ htmlDeleteDirty: dirty }),
+  registerHtmlDeleteFlush: (fn) => set({ htmlDeleteFlush: fn }),
+
   selectWritingFile: async (filePath: string | null) => {
     const seq = ++writingSelectSeq
+    // HTML 删除模式有未写回删除时先 flush（退出=自动写回）；失败中止切换，避免静默丢改动
+    const htmlFlush = get().htmlDeleteFlush
+    if (htmlFlush && !(await htmlFlush())) return
     if (!filePath) return set({ writingFile: null })
     const cur = get().writingFile
     if (cur?.dirty) await get().saveWritingFile()
