@@ -137,6 +137,19 @@ describe('writing store', () => {
       await useStore.getState().selectWritingFile('writing/a.md')
       expect(useStore.getState().writingFile?.path).toBe('writing/a.md')
     })
+
+    it('setBriefingSource 同样走 flush 门：失败中止切换 source', async () => {
+      const flushFail = vi.fn().mockResolvedValue(false)
+      useStore.setState({ htmlDeleteFlush: flushFail, briefingSource: 'writing' })
+      await useStore.getState().setBriefingSource('digest')
+      expect(flushFail).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().briefingSource).toBe('writing') // 中止
+
+      const flushOk = vi.fn().mockResolvedValue(true)
+      useStore.setState({ htmlDeleteFlush: flushOk })
+      await useStore.getState().setBriefingSource('digest')
+      expect(useStore.getState().briefingSource).toBe('digest')
+    })
   })
 
   describe('updateWritingBody', () => {

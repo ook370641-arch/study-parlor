@@ -195,6 +195,11 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
       ) : (
         <iframe
           ref={iframeRef}
+          onLoad={() => {
+            if (useStore.getState().htmlDeleteMode) {
+              iframeRef.current?.contentWindow?.postMessage({ type: 'sp-html-edit', on: true }, '*')
+            }
+          }}
           data-testid="writing-html-preview-iframe"
           title={basename(file.path)}
           // allow-popups:srcdoc 注入 <base target="_blank">,点击链接是弹窗请求,

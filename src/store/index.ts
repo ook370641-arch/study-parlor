@@ -1344,6 +1344,9 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   setBriefingSource: async (source) => {
+    // HTML 删除模式有未写回删除时先 flush（离开写作区=自动写回）；失败中止切换
+    const htmlFlush = get().htmlDeleteFlush
+    if (htmlFlush && !(await htmlFlush())) return
     set({ briefingSource: source })
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
     if (source === 'writing') void ipc.writingRefreshCatalog() // 摘要唯一生成时机(spec C)
