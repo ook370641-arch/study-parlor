@@ -880,6 +880,7 @@ export type IpcApi = {
   writingImportPaths: (a: { targetDir: string; paths: string[] }) => Promise<WritingResult<{ imported: string[]; skipped: string[] }>>
   writingReadPreview: (a: { path: string }) => Promise<WritingResult<WritingPreviewResult>>
   writingOpenInSystem: (a: { path: string }) => Promise<WritingResult<null>>
+  writingSaveHtml: (a: { path: string; html: string }) => Promise<WritingResult<null>>
   getPathForFile: (file: File) => string
   writingRefreshCatalog: () => Promise<WritingResult<{ refreshed: number }>>
   writingAssistantSendMessage: (a: {

@@ -131,6 +131,7 @@ export const ipc = {
   get writingImportPaths() { return ensure().writingImportPaths },
   get writingReadPreview() { return ensure().writingReadPreview },
   get writingOpenInSystem() { return ensure().writingOpenInSystem },
+  get writingSaveHtml() { return ensure().writingSaveHtml },
   get getPathForFile() { return ensure().getPathForFile },
   get writingRefreshCatalog() { return ensure().writingRefreshCatalog },
   get writingAssistantSendMessage() { return ensure().writingAssistantSendMessage },

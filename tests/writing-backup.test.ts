@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import matter from 'gray-matter'
-import { scanRoot, createFile, writeWritingFile, renameNode, moveNode, deleteNode, dissolveGroup } from '../electron/lib/writing-tree'
+import { scanRoot, createFile, writeWritingFile, writeHtmlFile, renameNode, moveNode, deleteNode, dissolveGroup } from '../electron/lib/writing-tree'
 
 let lib: string
 beforeEach(() => { lib = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-backup-')) })
@@ -128,5 +128,38 @@ describe('writing 按天备份：生命周期跟随', () => {
     dissolveGroup(lib, 'writing/组A')
     expect(fs.existsSync(backupOf('writing/a.md'))).toBe(true)
     expect(fs.existsSync(path.join(lib, 'writing/.backups/组A'))).toBe(false)
+  })
+})
+
+describe('writeHtmlFile：HTML 原文写回（删除模式）', () => {
+  const HTML_V1 = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><p>旧段落</p></body></html>'
+  const HTML_V2 = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body></body></html>'
+
+  it('原文写回，不经 gray-matter（内容逐字节相等）', () => {
+    writeArticle('writing/报告.html', HTML_V1)
+    writeHtmlFile(lib, 'writing/报告.html', HTML_V2)
+    expect(fs.readFileSync(path.join(lib, 'writing/报告.html'), 'utf-8')).toBe(HTML_V2)
+  })
+
+  it('写回前生成当日按天备份，内容 = 修改前版本', () => {
+    writeArticle('writing/报告.html', HTML_V1)
+    writeHtmlFile(lib, 'writing/报告.html', HTML_V2)
+    expect(readBackup('writing/报告.html')).toBe(HTML_V1)
+  })
+
+  it('repository/ 根下写回不产生备份', () => {
+    writeArticle('repository/报告.html', HTML_V1)
+    writeHtmlFile(lib, 'repository/报告.html', HTML_V2)
+    expect(fs.existsSync(path.join(lib, 'writing/.backups'))).toBe(false)
+    expect(fs.readFileSync(path.join(lib, 'repository/报告.html'), 'utf-8')).toBe(HTML_V2)
+  })
+
+  it('拒绝非 .html 扩展名（WRITING_PATH_FORBIDDEN）', () => {
+    writeArticle('writing/a.md', 'x')
+    expect(() => writeHtmlFile(lib, 'writing/a.md', HTML_V2)).toThrowError(/仅支持写回/)
+  })
+
+  it('拒绝根外路径', () => {
+    expect(() => writeHtmlFile(lib, '../outside.html', HTML_V2)).toThrow()
   })
 })
