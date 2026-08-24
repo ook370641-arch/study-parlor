@@ -2,7 +2,9 @@ import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
+import { createHash } from 'node:crypto'
 import dotenv from 'dotenv'
+import { HTML_DELETE_SCRIPT } from '../src/lib/html-delete-script'
 import { loadEnv, saveEnv, setConfigDir, setStateDir, getEnvPath } from './env'
 import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
@@ -204,13 +206,16 @@ async function bootstrap() {
       callback({ responseHeaders: details.responseHeaders })
       return
     }
+    // HTML 删除模式的 srcdoc 内联脚本（html-srcdoc.ts 注入）被生产 CSP script-src 'self' 拦截；
+    // 以 sha256 白名单放行，哈希运行时从同一常量计算，杜绝脚本改了忘同步 CSP 的漂移
+    const htmlDeleteScriptCsp = `'sha256-${createHash('sha256').update(HTML_DELETE_SCRIPT, 'utf8').digest('base64')}'`
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           isDev
             ? "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com; frame-src 'self' sp-report:"
-            : "default-src 'self'; script-src 'self'; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com; frame-src 'self' sp-report:"
+            : `default-src 'self'; script-src 'self' ${htmlDeleteScriptCsp}; img-src 'self' data: https: file:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.kimi.com; frame-src 'self' sp-report:`
         ]
       }
     })

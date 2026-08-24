@@ -131,7 +131,8 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
 
   return (
     <div data-testid="writing-html-preview" className="flex flex-col h-full min-h-0">
-      {/* 顶部信息栏：文件名 + 类型徽标 + 删除模式 + 系统打开按钮 */}
+      {/* 顶部信息栏：文件名 + 类型徽标 + 删除模式 + 系统打开按钮。
+          操作按钮放左组：顶栏右侧是 Briefing 悬浮控件层（宽度随画作署名变化），放右侧会被压住不可点。 */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-parchment/10 shrink-0">
         <span
           data-testid="writing-preview-filename"
@@ -144,7 +145,6 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
           className="shrink-0 px-1.5 py-0.5 rounded text-[10px] border border-parchment/20 text-parchment/60">
           HTML
         </span>
-        <div className="flex-1" />
         {deletable && !file.previewError && (
           deleteMode ? (
             <>
@@ -176,6 +176,7 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
           className="shrink-0 px-2.5 py-1 text-xs text-ember border border-ember/40 rounded hover:bg-ember/10 disabled:opacity-50 transition-colors">
           {opening ? '打开中…' : '用系统程序打开'}
         </button>
+        <div className="flex-1" />
       </div>
 
       {/* 内容区：iframe srcdoc 沙箱渲染；出错时展示错误文案 + 系统打开兜底 */}
