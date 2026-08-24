@@ -43,7 +43,9 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
   )
 
   // 接收 iframe 回传 dirty。opaque origin 无法校验 origin，只校验 source 是当前 iframe。
+  // 对照槽（deletable 缺省）保持只读：不接收 dirty，避免击穿只读污染全局脏标记
   useEffect(() => {
+    if (!deletable) return
     const onMsg = (e: MessageEvent) => {
       if (!iframeRef.current || e.source !== iframeRef.current.contentWindow) return
       const d = e.data as { type?: string } | null
@@ -51,7 +53,7 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
     }
     window.addEventListener('message', onMsg)
     return () => window.removeEventListener('message', onMsg)
-  }, [setHtmlDeleteDirty])
+  }, [deletable, setHtmlDeleteDirty])
 
   // flush：退出删除模式前把删除结果写回文件。返回 false = 失败，调用方应中止后续动作
   // （selectWritingFile 据此中止切换，避免静默丢改动）。
@@ -96,6 +98,11 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
           showToast('HTML 写回失败: ' + r.message)
           return false
         }
+        // 写回后同步 store 的 body：否则调字号会用陈旧 body 重建 srcdoc，已删块复活
+        // （视觉上 iframe 因 srcdoc 变化重载、滚动回顶，是可接受的一致性代价）
+        useStore.setState(s => ({
+          writingFile: s.writingFile && s.writingFile.path === f.path ? { ...s.writingFile, body: out } : s.writingFile,
+        }))
         exitMode()
         return true
       } finally {
@@ -103,7 +110,12 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
       }
     }
     registerHtmlDeleteFlush(flush)
-    return () => registerHtmlDeleteFlush(null)
+    return () => {
+      registerHtmlDeleteFlush(null)
+      // 卸载兜底：flush 门覆盖正常出口后这里应是 no-op；非常规卸载至少不留残留脏态
+      const st = useStore.getState()
+      if (st.htmlDeleteMode) { st.setHtmlDeleteMode(false); st.setHtmlDeleteDirty(false) }
+    }
   }, [deletable, registerHtmlDeleteFlush, showToast])
 
   const enterDeleteMode = () => {
@@ -197,7 +209,8 @@ export function HtmlPreview({ file, deletable }: { file: HtmlFile; deletable?: b
         <iframe
           ref={iframeRef}
           onLoad={() => {
-            if (useStore.getState().htmlDeleteMode) {
+            // 对照槽（deletable 缺省）保持只读，不补发激活
+            if (deletable && useStore.getState().htmlDeleteMode) {
               iframeRef.current?.contentWindow?.postMessage({ type: 'sp-html-edit', on: true }, '*')
             }
           }}

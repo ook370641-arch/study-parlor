@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildPreviewSrcdoc } from '@/lib/html-srcdoc'
+import { HTML_DELETE_SCRIPT } from '@/lib/html-delete-script'
 import { WRITING_HTML_ZOOM } from '@/lib/briefing-font-size'
 import { BRIEFING_FONT_SIZES } from '@/lib/briefing-font-size'
 
@@ -69,11 +70,10 @@ describe('删除模式脚本注入', () => {
   })
 
   it('脚本体不含字面量 </script（会提前闭合标签）', () => {
-    const out = buildPreviewSrcdoc('<p>hi</p>', 1.2)
-    const m = out.match(/<script data-sp-inject>([\s\S]*?)<\/script>/)
-    expect(m).not.toBeNull()
-    expect(m![1]).not.toContain('</script')
-    expect(m![1]).not.toContain('`')
+    // 直接对常量断言：对装配产物用懒惰正则截取会在真含 </script 时提前截断空转
+    expect(HTML_DELETE_SCRIPT).not.toContain('</script')
+    expect(HTML_DELETE_SCRIPT).not.toContain('`')
+    expect(HTML_DELETE_SCRIPT).not.toContain('${')
   })
 
   it('脚本含 postMessage 协议四件套与块选择器', () => {

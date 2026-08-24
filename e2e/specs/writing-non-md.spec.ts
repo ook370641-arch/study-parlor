@@ -163,6 +163,10 @@ test.describe('@p2 writing-non-md', () => {
     // 按天备份 = 修改前版本
     const backup = fs.readFileSync(path.join(testLibraryPath, 'writing', '.backups', '报告.html'), 'utf-8')
     expect(backup).toContain('HTML 原生渲染')
+
+    // 回归：写回后调字号重建 srcdoc，已删块不得复活（store body 已同步）
+    await window.getByTestId('writing-ui-font-size-increase').click()
+    await expect(frame.locator('p', { hasText: 'HTML 原生渲染' })).toHaveCount(0, { timeout: 5000 })
   })
 
   test('HTML 删除模式：脏状态切换文件自动写回', async ({ window, testLibraryPath }) => {

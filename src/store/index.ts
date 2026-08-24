@@ -282,7 +282,7 @@ type AppStore = {
   init: () => Promise<void>
   initPaintings: () => void
   swapPainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => void
-  goto: (p: Page) => void
+  goto: (p: Page) => Promise<void>
   settingsReturnTo: Page | null
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
   closePreStudy: () => void
@@ -739,10 +739,15 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。
-  goto: (p) => set((s) => ({
-    currentPage: p,
-    settingsReturnTo: p === 'settings' ? s.currentPage : s.settingsReturnTo,
-  })),
+  goto: async (p) => {
+    // HTML 删除模式有未写回删除时先 flush（离开页面=自动写回）；失败中止导航
+    const htmlFlush = get().htmlDeleteFlush
+    if (htmlFlush && !(await htmlFlush())) return
+    set((s) => ({
+      currentPage: p,
+      settingsReturnTo: p === 'settings' ? s.currentPage : s.settingsReturnTo,
+    }))
+  },
   openPreStudy: (a) => set({ modal: 'preStudy', preStudyArgs: a }),
   closePreStudy: () => set({ modal: null, preStudyArgs: null }),
 

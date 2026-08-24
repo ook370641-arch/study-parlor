@@ -59,6 +59,7 @@
 1. **所有注入节点统一打 `data-sp-inject` 属性**——包括既有的 `<base target="_blank">` 和 zoom `<style>`（本期给它们补上标记）。
 2. 保存时：先清掉当前 hover 的 `.sp-del-hover` class → `document.documentElement.cloneNode(true)` → 克隆上 `querySelectorAll('[data-sp-inject]').forEach(remove)` → 序列化；原文有 `<!DOCTYPE` 则补 doctype 前缀。
 3. 存回的文件 = 原始文件 − 被删的块，无注入物残留。
+4. 写回为 DOM 重序列化：doctype 统一为 `<!DOCTYPE html>`，属性引号/自闭合/空白等字节级不保证与原文恒等（机器生成报告可接受）。
 
 ### postMessage 协议与安全
 
@@ -83,6 +84,7 @@
 - flush 返回 `boolean`：true = 可继续（写回成功或无脏改动）；false = 失败/超时，**调用方中止后续动作**。
 - flush = 发 `sp-html-collect` → 等 `sp-html-save`（3s 超时护栏）→ 调 `writingSaveHtml` → 成功后清 dirty、退出删除模式。非脏时直接退出删除模式。
 - `selectWritingFile` 开头 `const f = get().htmlDeleteFlush; if (f && !(await f())) return`——切换文件 = 自动退出删除模式并写回，所有切换入口（树点击、tab 切换）天然覆盖；flush 失败则中止切换，避免静默丢改动。
+- 退出写回的出口完整清单：切文件（`selectWritingFile`）/ 切 source（`setBriefingSource`）/ 离页（`goto`）/ 点「完成」。应用直接退出不保证写回（与 md 编辑器的自动保存存在语义差距，记录在案）；非常规卸载由 HtmlPreview cleanup 重置残留态（`htmlDeleteMode`/`htmlDeleteDirty`），避免下次打开任意 html 时被 onLoad 竞态补发自动激活。
 - 字号按钮禁用读 `htmlDeleteMode`（`Briefing.tsx`）。
 
 ### 撤销

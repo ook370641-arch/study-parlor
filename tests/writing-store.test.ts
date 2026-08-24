@@ -150,6 +150,20 @@ describe('writing store', () => {
       await useStore.getState().setBriefingSource('digest')
       expect(useStore.getState().briefingSource).toBe('digest')
     })
+
+    it('goto 同样走 flush 门：失败中止导航', async () => {
+      useStore.setState({ currentPage: 'briefing' })
+      const flushFail = vi.fn().mockResolvedValue(false)
+      useStore.setState({ htmlDeleteFlush: flushFail })
+      await useStore.getState().goto('cover')
+      expect(flushFail).toHaveBeenCalledTimes(1)
+      expect(useStore.getState().currentPage).toBe('briefing') // 中止
+
+      const flushOk = vi.fn().mockResolvedValue(true)
+      useStore.setState({ htmlDeleteFlush: flushOk })
+      await useStore.getState().goto('cover')
+      expect(useStore.getState().currentPage).toBe('cover')
+    })
   })
 
   describe('updateWritingBody', () => {
