@@ -86,7 +86,10 @@ export function HtmlPreview({ file }: { file: HtmlFile }) {
         <iframe
           data-testid="writing-html-preview-iframe"
           title={basename(file.path)}
-          sandbox="allow-scripts"
+          // allow-popups:srcdoc 注入 <base target="_blank">,点击链接是弹窗请求,
+          // 缺 allow-popups 会被沙箱静默拦截(点了没反应);弹窗由 main.ts
+          // setWindowOpenHandler 拦截并路由到系统浏览器(与 ConstitutionReportView 同一模式)
+          sandbox="allow-scripts allow-popups"
           srcDoc={srcDoc}
           className="flex-1 min-h-0 w-full border-0 bg-white"
         />

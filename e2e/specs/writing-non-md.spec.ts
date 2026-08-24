@@ -23,7 +23,8 @@ test.describe('@p2 writing-non-md', () => {
     fs.writeFileSync(
       path.join(libPath, 'writing', '报告.html'),
       '<!DOCTYPE html><html><head><meta charset="utf-8"><style>h1{color:#d97757}</style></head>' +
-      '<body><h1>月度报告</h1><p>HTML 原生渲染</p></body></html>',
+      '<body><h1>月度报告</h1><p>HTML 原生渲染</p>' +
+      '<p><a href="https://hamel.dev/blog/posts/evals/">外部链接</a></p></body></html>',
     )
   }
 
@@ -99,6 +100,10 @@ test.describe('@p2 writing-non-md', () => {
 
     // 缩放随字号档位（spec 追加 §缩放）：base 档 = zoom 1.2，点 + → lg 档 = 1.33
     const iframe = window.getByTestId('writing-html-preview-iframe')
+    // 外链可点:sandbox 必须带 allow-popups——<base target="_blank"> 的点击会被
+    // 无 allow-popups 的沙箱静默拦截(2026-08-23 反馈:Hermes 日报链接点击无反应),
+    // 弹窗请求由 main.ts setWindowOpenHandler 路由到系统浏览器
+    await expect(iframe).toHaveAttribute('sandbox', /allow-popups/)
     await expect(iframe).toHaveAttribute('srcdoc', /zoom:1\.2 !important/)
     await window.getByTestId('writing-ui-font-size-increase').click()
     await expect(iframe).toHaveAttribute('srcdoc', /zoom:1\.33 !important/, { timeout: 5000 })
