@@ -8,7 +8,7 @@ import { gfm } from '@milkdown/preset-gfm'
 import { listener } from '@milkdown/plugin-listener'
 import { history } from '@milkdown/plugin-history'
 import { getMarkdown } from '@milkdown/utils'
-import { AllSelection } from 'prosemirror-state'
+import { AllSelection, TextSelection } from 'prosemirror-state'
 import { textColorPlugins } from '@/lib/milkdown-text-color'
 import { pastePlainPlugins } from '@/lib/milkdown-paste-plain'
 import { milkdownClipboardPlugins } from '@/lib/milkdown-clipboard'
@@ -132,6 +132,83 @@ describe('自定义 handlePaste', () => {
     const { marks } = collectTypes(docJSON(target))
     expect(marks.has('textColor')).toBe(true)
     expect(marks.has('inlineCode')).toBe(true)
+    target.destroy()
+  })
+})
+
+// 2026-08-26 粘贴劫持修复:内部复制的开口 slice 贴进标题时,PM Fitter 会把标题包进列表
+// 上下文(一级标题变成无序列表项,并产生单项列表岛)。修复:内部粘贴去块结构(列表/标题/
+// 引用拍平为段落,行内样式保留);光标在标题内时一律纯文本插入。
+describe('内部粘贴去块结构', () => {
+  /** 源编辑器内拖选全部文本(部分选区 → 开口 slice),返回内部复制 HTML */
+  function internalCopyHTML(editor: TestEditor): string {
+    return editor.action(ctx => {
+      const view = ctx.get(editorViewCtx)
+      let from = -1, to = -1
+      view.state.doc.descendants((node, pos) => {
+        if (node.isText) { if (from < 0) from = pos; to = pos + node.nodeSize }
+      })
+      view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, from, to)))
+      const { dom } = view.serializeForClipboard(view.state.selection.content())
+      return dom.outerHTML
+    })
+  }
+
+  function cursorToHeadingEnd(editor: TestEditor) {
+    editor.action(ctx => {
+      const view = ctx.get(editorViewCtx)
+      view.dispatch(view.state.tr.setSelection(TextSelection.atEnd(view.state.doc)))
+    })
+  }
+
+  it('内部复制列表贴进标题:标题不被劫持,内容落为段落', async () => {
+    const src = await makeEditor('- 甲\n- 乙')
+    const html = internalCopyHTML(src)
+    src.destroy()
+    expect(html).toContain('data-pm-slice')
+
+    const target = await makeEditor('# 标题行')
+    cursorToHeadingEnd(target)
+    pasteHTML(target, html)
+
+    const json = docJSON(target)
+    // 标题仍是标题,不含列表
+    const heading = json.content.find((n: any) => n.type === 'heading')
+    expect(heading).toBeTruthy()
+    const { nodes } = collectTypes(json)
+    expect(nodes.has('bullet_list')).toBe(false)
+    target.destroy()
+  })
+
+  it('内部复制列表贴进空文档:拍平为段落,行内样式保留', async () => {
+    const src = await makeEditor('- **甲** 和 `码`\n- 乙')
+    const html = internalCopyHTML(src)
+    src.destroy()
+
+    const target = await makeEditor('')
+    pasteHTML(target, html)
+
+    const json = docJSON(target)
+    const { nodes, marks } = collectTypes(json)
+    expect(nodes.has('bullet_list')).toBe(false)
+    expect(nodes.has('list_item')).toBe(false)
+    expect(nodes.has('paragraph')).toBe(true)
+    expect(marks.has('strong')).toBe(true)
+    expect(marks.has('inlineCode')).toBe(true)
+    target.destroy()
+  })
+
+  it('外部 rich html 列表贴进标题:纯文本落入标题,不产生列表', async () => {
+    const target = await makeEditor('# 标题行')
+    cursorToHeadingEnd(target)
+    pasteHTML(target, '<ul><li>甲</li><li>乙</li></ul>')
+
+    const json = docJSON(target)
+    const { nodes } = collectTypes(json)
+    expect(nodes.has('bullet_list')).toBe(false)
+    const heading = json.content.find((n: any) => n.type === 'heading')
+    expect(heading).toBeTruthy()
+    expect(heading.content?.map((t: any) => t.text).join('')).toContain('甲')
     target.destroy()
   })
 })

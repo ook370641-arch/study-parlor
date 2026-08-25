@@ -12,7 +12,8 @@ import { seedWritingTree, seedRepository } from '../helpers/test-library'
  *
  * 覆盖:
  * 1. 外部粘贴 markdown 源 → 加粗生效、行内代码/颜色被剥离;Ctrl+S → reload 无字面量
- * 2. 内部复制粘贴 → 颜色/加粗完整保留(data-pm-slice 放行)
+ * 2. 内部复制粘贴 → 颜色/加粗保留,但块结构被拍平(2026-08-26:原 data-pm-slice 放行
+ *    会让开口 slice 把标题包进列表——「复制一段文字,一级标题变成无序列表」)
  * 3. 悬浮栏生命周期:选中出现、点加粗保持、点外消失
  * 4. 智能 Enter:段中回车=硬换行(无空行);段尾回车=新段落
  * 5. 分隔线:工具栏插入后光标落到下一行;行首 Backspace 删除

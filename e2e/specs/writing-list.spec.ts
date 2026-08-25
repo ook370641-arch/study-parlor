@@ -147,6 +147,33 @@ test.describe('@p2 writing-list', () => {
     await expect(window.getByTestId('writing-toolbar-ordered-list')).toHaveCount(0)
   })
 
+  // 2026-08-26 修复回归:gutter「+」在列表内必须跟随光标所在项。
+  // 修复前锚定 $from.before(1)(整个列表的顶部),光标在第 2 项及以下时
+  // + 号停在列表第一行——「+号框不跟随」。
+  test('gutter「+」在列表内跟随光标所在项', async ({ window, testLibraryPath, testConfigDir }) => {
+    await setup(window, testLibraryPath, testConfigDir)
+
+    // 造一个三项列表:已有无序项 / 第二项 / 第三项
+    await window.locator('.ProseMirror ul li').filter({ hasText: '已有无序项' }).click()
+    await window.keyboard.press('End')
+    await window.keyboard.press('Enter')
+    await window.keyboard.type('第二项')
+    await window.keyboard.press('Enter')
+    await window.keyboard.type('第三项')
+    await expect(window.locator('.ProseMirror ul li')).toHaveCount(3)
+
+    // 光标落到第三项 → + 号应与第三项同行,而不是停在列表顶部
+    await window.locator('.ProseMirror ul li').filter({ hasText: '第三项' }).click()
+    const plus = window.getByTestId('writing-gutter-plus')
+    await expect(plus).toBeVisible()
+    const plusBox = await plus.boundingBox()
+    const thirdBox = await window.locator('.ProseMirror ul li').filter({ hasText: '第三项' }).boundingBox()
+    const firstBox = await window.locator('.ProseMirror ul li').filter({ hasText: '已有无序项' }).boundingBox()
+    expect(plusBox).not.toBeNull()
+    expect(Math.abs(plusBox!.y - thirdBox!.y)).toBeLessThan(24)
+    expect(Math.abs(plusBox!.y - firstBox!.y)).toBeGreaterThan(10)
+  })
+
   // 2026-08-23 修复回归:空项 Backspace 必须退出列表。
   // 修复前默认 joinBackward 把空段落并进上一项——新行残留列表缩进删不掉,
   // gutter「+」跟随顶层块(整个列表)而停在上一项行。

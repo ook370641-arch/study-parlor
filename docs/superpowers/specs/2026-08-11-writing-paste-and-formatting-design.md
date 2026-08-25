@@ -28,7 +28,7 @@
 |---|---|
 | 不可编辑 / 无 clipboardData / 光标在代码块内 | `return false`，交还默认 |
 | Shift+粘贴 | `return false`，默认纯文本插入 |
-| 剪贴板含 `data-pm-slice`（应用内部复制） | `return false`，ProseMirror 默认处理——**内部复制粘贴完整保留颜色/代码** |
+| 剪贴板含 `data-pm-slice`（应用内部复制） | **去块结构后闭合插入**：列表/标题/引用拍平为段落，行内样式（加粗/颜色/行内代码）保留（2026-08-26 修订：原「`return false` 交默认」会让开口 slice 把标题包进列表——粘贴劫持） |
 | 含 `vscode-editor-data`（从 VS Code 粘贴） | 统一走外部清洗，代码转纯文字（决策点，见 §明确不做） |
 | 外部，HTML 含真实格式标签（`<strong>/<b>/<em>/<i>/<a>/<ul>/<ol>/<table>/<blockquote>/<h1-h6>/<img>/<pre>`） | 用清洗后 HTML（沿用 `sanitizeExternalHTML` 去 style/class，h1-h6 降级为 p） |
 | 外部，HTML 无实质格式（或纯文本） | 用纯文本按 markdown 解析（`**bold**` → 加粗，表格/列表/标题正常成型） |
@@ -133,7 +133,7 @@
 - 已有 `textColor` mark 旧色值（暖橙/赤红/墨灰/黑）在文档中照常显示，色板只影响选择器 UI，无需迁移
 - `state.json` 无新增/变更字段
 - 学习库 `.md` 文件格式与内容不动（除用户主动操作）
-- 内部复制粘贴（`data-pm-slice`）行为不变
+- 内部复制粘贴（`data-pm-slice`）行为不变（2026-08-26 修订：改为去块结构插入——列表/标题/引用拍平为段落、行内样式保留；光标在标题内时一律纯文本插入）
 
 ## 测试计划（定向，不跑全量）
 

@@ -119,7 +119,13 @@ class GutterInsertView {
       return
     }
     const rootRect = this.root.getBoundingClientRect()
-    const coords = this.view.coordsAtPos($from.before(1))
+    // 列表内锚定光标所在项(最近的 list_item 祖先),否则锚定顶层块。
+    // 只锚顶层块时,光标在列表第 2 项及以下 + 号会停在列表第一行(「不跟随」)。
+    let anchorPos = $from.before(1)
+    for (let d = $from.depth; d > 1; d--) {
+      if ($from.node(d).type.name === 'list_item') { anchorPos = $from.before(d); break }
+    }
+    const coords = this.view.coordsAtPos(anchorPos)
     this.plus.style.display = 'block'
     this.plus.style.left = '2px'
     this.plus.style.top = `${Math.round(coords.top - rootRect.top + 2)}px`

@@ -3,7 +3,8 @@
 // 经 schema parseDOM 后颜色(span[style*=color])和标题层级被保留,造成"五颜六色、大小不一"。
 // 本插件在 transformPastedHTML 链上再插一环(prosemirror-view 用 someProp 串行调用所有
 // transformPastedHTML,返回值 undefined 会继续遍历,天然链式):
-//   - 含 data-pm-slice → 应用内部复制粘贴,原样返回(保留颜色/标题,不破坏往返)
+//   - 含 data-pm-slice → 应用内部复制粘贴,原样返回(2026-08-26 起 handlePaste 已先一步
+//     拦截内部粘贴做去块结构,本分支实际不可达,仅作防御保留)
 //   - 否则 → DOMParser 解析后剥离 style/class,h1-h6 降级为 p,其余结构(列表/引用/表格/链接/图片)不动
 import { $prose } from '@milkdown/utils'
 import { Plugin, PluginKey } from '@milkdown/prose/state'
