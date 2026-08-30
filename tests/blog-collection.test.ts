@@ -4,7 +4,7 @@ import os from 'os'
 import path from 'path'
 import {
   collectionPath, loadCollection, saveCollection,
-  addManualEntry, removeEntry, applyRecommend,
+  addManualEntry, removeEntry, applyRecommend, markRead, removeRead,
 } from '../electron/lib/blog-collection'
 import type { BlogCollectionFile, BlogRecommendBatch } from '../src/types'
 
@@ -12,7 +12,7 @@ let dir: string
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'blog-col-')) })
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
 
-const empty = (): BlogCollectionFile => ({ version: 1, entries: [], dismissed: [], history: [] })
+const empty = (): BlogCollectionFile => ({ version: 1, entries: [], dismissed: [], history: [], read: [] })
 
 describe('loadCollection', () => {
   it('缺文件返回空集合', () => {
@@ -89,5 +89,48 @@ describe('applyRecommend', () => {
     expect(c2.history).toHaveLength(20)
     expect(c2.history[0].batch).toBe(20)
     expect(c2.history[19].batch).toBe(1)
+  })
+})
+
+describe('loadCollection 兼容旧格式', () => {
+  it('旧文件无 read 字段时缺省为空数组', () => {
+    fs.mkdirSync(path.join(dir, 'Anthropic博客'), { recursive: true })
+    fs.writeFileSync(collectionPath(dir), JSON.stringify({ version: 1, entries: [], dismissed: [], history: [] }))
+    expect(loadCollection(dir).read).toEqual([])
+  })
+})
+
+describe('markRead', () => {
+  it('追加已读条目，最新在前', () => {
+    const c = empty()
+    const c2 = markRead(c, { sourceUrl: 'u1', filePath: 'a.md', title: 'A' })
+    const c3 = markRead(c2, { sourceUrl: 'u2', filePath: 'b.md', title: 'B' })
+    expect(c3.read.map(r => r.sourceUrl)).toEqual(['u2', 'u1'])
+    expect(c3.read[0].readAt).toBeTruthy()
+  })
+  it('幂等：重复标记同 sourceUrl 返回原对象', () => {
+    const c = markRead(empty(), { sourceUrl: 'u1', filePath: 'a.md', title: 'A' })
+    expect(markRead(c, { sourceUrl: 'u1', filePath: 'a.md', title: 'A' })).toBe(c)
+  })
+})
+
+describe('removeRead', () => {
+  it('从已读列表移除，不影响 entries/dismissed', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', addedAt: 'x', origin: 'manual' }],
+      read: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', readAt: 'x' }],
+    }
+    const c2 = removeRead(c, 'u1')
+    expect(c2.read).toEqual([])
+    expect(c2.entries).toHaveLength(1)
+  })
+  it('removeEntry 不动 read 列表', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', addedAt: 'x', origin: 'manual' }],
+      read: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', readAt: 'x' }],
+    }
+    expect(removeEntry(c, 'u1').read).toHaveLength(1)
   })
 })

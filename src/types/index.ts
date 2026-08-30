@@ -92,6 +92,23 @@ export type AnthropicBlogCache = {
 /** 收藏夹条目来源：recommend=推荐自动入夹，manual=手动 ☆ */
 export type BlogCollectionOrigin = 'recommend' | 'manual'
 
+/** 推荐批次内单篇挑选快照（历史卡片逐篇挂钩用） */
+export type BlogRecommendPick = {
+  sourceUrl: string
+  title: string
+  filePath: string   // 与收藏夹条目同格式（推荐流程存 absPath）
+  reason: string
+  gap: string
+}
+
+/** 已读文章条目（所有已读文章，不限收藏夹内） */
+export type BlogReadEntry = {
+  sourceUrl: string   // 主键
+  title: string
+  filePath: string
+  readAt: string      // ISO，首次标记时间
+}
+
 export type BlogCollectionEntry = {
   sourceUrl: string   // 主键（去重依据）
   filePath: string    // 相对学习库路径
@@ -110,6 +127,8 @@ export type BlogRecommendBatch = {
   gaps: string[]       // 认知缺口
   queries: string[]    // 本次检索词
   searchUsed: boolean  // Tavily 是否可用（false = 降级纯本地匹配）
+  focus?: string              // 核心需求方向一句话（v2 prompt 起）；旧批次无此字段
+  picks?: BlogRecommendPick[] // 本批挑选快照；旧批次无此字段
 }
 
 export type BlogCollectionFile = {
@@ -117,6 +136,7 @@ export type BlogCollectionFile = {
   entries: BlogCollectionEntry[]
   dismissed: string[]      // 用户移除过的推荐 sourceUrl，后续批次不再推荐
   history: BlogRecommendBatch[]  // 往期推荐历史（含用户画像），最新在前
+  read: BlogReadEntry[]    // 已读文章，最新在前；后续批次不再推荐
 }
 
 export type BlogRecommendErrorCode =
@@ -780,6 +800,8 @@ export type IpcApi = {
     anthropicCollectionRead: () => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionAdd: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemove: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
+    anthropicCollectionMarkRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
+    anthropicCollectionRemoveRead: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicRecommendStart: () => Promise<{ ok: true } | { ok: false; code: 'ALREADY_RUNNING' }>
     anthropicRecommendCancel: () => Promise<void>
     onAnthropicRecommendStage: (cb: (p: { stage: RecommendStage }) => void) => () => void

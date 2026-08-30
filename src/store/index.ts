@@ -592,7 +592,7 @@ export const useStore = create<AppStore>((set, get) => ({
   anthropicReaderTitle: null,
   anthropicBlogLastSeenAt: null,
   constitutionReportOpen: false,
-  blogCollection: { version: 1, entries: [], dismissed: [], history: [] },
+  blogCollection: { version: 1, entries: [], dismissed: [], history: [], read: [] },
   recommendRunning: false,
   recommendStage: null,
   scoutTab: 'chat',

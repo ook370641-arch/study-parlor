@@ -1,12 +1,12 @@
 import path from 'path'
 import { safeReadJson, safeWriteJson } from './safe-json'
-import type { BlogCollectionFile, BlogCollectionEntry, BlogRecommendBatch } from '@shared/index'
+import type { BlogCollectionFile, BlogCollectionEntry, BlogRecommendBatch, BlogReadEntry } from '@shared/index'
 
 export function collectionPath(lib: string): string {
   return path.join(lib, 'Anthropic博客', '.collection.json')
 }
 
-const EMPTY: BlogCollectionFile = { version: 1, entries: [], dismissed: [], history: [] }
+const EMPTY: BlogCollectionFile = { version: 1, entries: [], dismissed: [], history: [], read: [] }
 
 export function loadCollection(lib: string): BlogCollectionFile {
   const raw = safeReadJson<Partial<BlogCollectionFile>>(collectionPath(lib), { fallback: {} })
@@ -16,6 +16,7 @@ export function loadCollection(lib: string): BlogCollectionFile {
     entries: Array.isArray(raw.entries) ? raw.entries : [],
     dismissed: Array.isArray(raw.dismissed) ? raw.dismissed : [],
     history: Array.isArray(raw.history) ? raw.history : [],
+    read: Array.isArray(raw.read) ? raw.read : [],
   }
 }
 
@@ -54,5 +55,24 @@ export function applyRecommend(
 ): BlogCollectionFile {
   const manual = c.entries.filter(e => e.origin === 'manual')
   const history = [batch, ...c.history].slice(0, 20)
-  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history }
+  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history, read: c.read }
+}
+
+/** 标记已读：幂等（已存在直接返回原对象），新条目插到最前 */
+export function markRead(
+  c: BlogCollectionFile,
+  args: { sourceUrl: string; filePath: string; title: string }
+): BlogCollectionFile {
+  if (c.read.some(r => r.sourceUrl === args.sourceUrl)) return c
+  const entry: BlogReadEntry = {
+    sourceUrl: args.sourceUrl,
+    filePath: args.filePath,
+    title: args.title,
+    readAt: new Date().toISOString(),
+  }
+  return { ...c, read: [entry, ...c.read] }
+}
+
+export function removeRead(c: BlogCollectionFile, sourceUrl: string): BlogCollectionFile {
+  return { ...c, read: c.read.filter(r => r.sourceUrl !== sourceUrl) }
 }
