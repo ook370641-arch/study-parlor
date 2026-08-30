@@ -100,7 +100,7 @@ describe('runBlogRecommend', () => {
   })
   it('有上下文但无本地文章抛 NO_LOCAL_ARTICLES', async () => {
     seedWriting()
-    ;(chatNonStream as any).mockResolvedValue(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q'] }))
+    ;(chatNonStream as any).mockResolvedValue(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q'] }))
     ;(getSearchApiKey as any).mockResolvedValue(null)
     await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'NO_LOCAL_ARTICLES' })
   })
@@ -109,7 +109,7 @@ describe('runBlogRecommend', () => {
     seedPool()
     ;(getSearchApiKey as any).mockResolvedValue(null)  // 降级 searchUsed=false
     ;(chatNonStream as any)
-      .mockResolvedValueOnce(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q'] }))
+      .mockResolvedValueOnce(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q'] }))
       .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }, { source_url: 'https://nope.com', reason: 'x', gap: 'g' }]))
     const r = await runBlogRecommend(cfg, {})
     expect(r.batch.profile).toBe('p')
@@ -122,7 +122,7 @@ describe('runBlogRecommend', () => {
     ;(getSearchApiKey as any).mockResolvedValue('key')
     ;(searchWeb as any).mockResolvedValue([{ title: 'T', url: 'https://anthropic.com/t', content: 'c'.repeat(10) }])
     ;(chatNonStream as any)
-      .mockResolvedValueOnce(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q1'] }))
+      .mockResolvedValueOnce(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q1'] }))
       .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }]))
     const r = await runBlogRecommend(cfg, {})
     expect(r.batch.searchUsed).toBe(true)
@@ -133,7 +133,40 @@ describe('runBlogRecommend', () => {
     write(path.join(dir, 'Anthropic博客', '.collection.json'), JSON.stringify({ version: 1, entries: [], dismissed: ['https://anthropic.com/a'], history: [] }))
     ;(getSearchApiKey as any).mockResolvedValue(null)
     ;(chatNonStream as any)
-      .mockResolvedValueOnce(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q'] }))
+      .mockResolvedValueOnce(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q'] }))
+    await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'NO_LOCAL_ARTICLES' })
+  })
+  it('批次携带 focus 与 picks 快照（含 title/filePath）', async () => {
+    seedWriting(); seedPool()
+    ;(getSearchApiKey as any).mockResolvedValue(null)
+    ;(chatNonStream as any)
+      .mockResolvedValueOnce(JSON.stringify({ focus: '评测集构建', profile: 'p', gaps: ['g'], queries: ['q'] }))
+      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }]))
+    const r = await runBlogRecommend(cfg, {})
+    expect(r.batch.focus).toBe('评测集构建')
+    expect(r.batch.picks).toHaveLength(1)
+    expect(r.batch.picks![0]).toMatchObject({
+      sourceUrl: 'https://anthropic.com/a',
+      reason: 'r',
+      gap: 'g',
+    })
+    expect(r.batch.picks![0].filePath).toContain('x.md')
+  })
+  it('stageProfile 缺 focus 字段时抛 LLM_PARSE_ERROR', async () => {
+    seedWriting(); seedPool()
+    ;(getSearchApiKey as any).mockResolvedValue(null)
+    ;(chatNonStream as any).mockResolvedValue(JSON.stringify({ profile: 'p', gaps: ['g'], queries: ['q'] }))
+    await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'LLM_PARSE_ERROR' })
+  })
+  it('已读的 URL 不出现在候选池', async () => {
+    seedWriting(); seedPool()
+    write(path.join(dir, 'Anthropic博客', '.collection.json'), JSON.stringify({
+      version: 1, entries: [], dismissed: [], history: [],
+      read: [{ sourceUrl: 'https://anthropic.com/a', title: 'A', filePath: 'x.md', readAt: 'x' }],
+    }))
+    ;(getSearchApiKey as any).mockResolvedValue(null)
+    ;(chatNonStream as any)
+      .mockResolvedValueOnce(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q'] }))
     await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'NO_LOCAL_ARTICLES' })
   })
 })

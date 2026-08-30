@@ -125,12 +125,19 @@ async function callJson(cfg: AppConfig, prompt: string, signal?: AbortSignal): P
   })
 }
 
-async function extractObjectWithRetry<T>(cfg: AppConfig, prompt: string, tag: string, signal?: AbortSignal): Promise<T> {
+async function extractObjectWithRetry<T>(
+  cfg: AppConfig, prompt: string, tag: string, signal?: AbortSignal,
+  validate?: (o: T) => boolean
+): Promise<T> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const text = await callJson(cfg, prompt, signal)
     const extracted = extractJsonObject(text)
     if (extracted) {
-      try { return JSON.parse(extracted) as T } catch { writeDebug(tag, prompt, text, extracted) }
+      try {
+        const obj = JSON.parse(extracted) as T
+        if (!validate || validate(obj)) return obj
+        writeDebug(tag, prompt, text, extracted)
+      } catch { writeDebug(tag, prompt, text, extracted) }
     } else {
       writeDebug(tag, prompt, text)
     }
@@ -139,10 +146,15 @@ async function extractObjectWithRetry<T>(cfg: AppConfig, prompt: string, tag: st
 }
 
 async function stageProfile(cfg: AppConfig, ctx: ReturnType<typeof collectWritingContext>, signal?: AbortSignal) {
-  const prompt = read('blog-profile-queries-v1.md')
+  const prompt = read('blog-profile-queries-v2.md')
     .replace('{{summaries}}', ctx.summaries.map((s, i) => `第${i + 1}篇《${s.title}》：${s.summary}`).join('\n'))
     .replace('{{recentBodies}}', ctx.recentBodies.map((b, i) => `[近期原文${i + 1}]\n${b}`).join('\n\n'))
-  return extractObjectWithRetry<{ profile: string; gaps: string[]; queries: string[] }>(cfg, prompt, 'blog-profile', signal)
+  return extractObjectWithRetry<{ focus: string; profile: string; gaps: string[]; queries: string[] }>(
+    cfg, prompt, 'blog-profile', signal,
+    o => typeof o.focus === 'string' && o.focus.length > 0
+      && typeof o.profile === 'string'
+      && Array.isArray(o.gaps) && Array.isArray(o.queries)
+  )
 }
 
 async function stagePick(
@@ -213,6 +225,7 @@ export async function runBlogRecommend(
   opts.onStage?.('pick')
   const pool = collectLocalArticles(lib)
     .filter(a => !col.dismissed.includes(a.sourceUrl))
+    .filter(a => !col.read.some(r => r.sourceUrl === a.sourceUrl))
     .sort((a, b) => (b.importedAt ?? '').localeCompare(a.importedAt ?? ''))
     .slice(0, 80)
   if (pool.length === 0) throw codeError('NO_LOCAL_ARTICLES')
@@ -222,10 +235,15 @@ export async function runBlogRecommend(
   const batch: BlogRecommendBatch = {
     batch: (col.history[0]?.batch ?? 0) + 1,
     generatedAt: new Date().toISOString(),
+    focus: profile.focus,
     profile: profile.profile,
     gaps: profile.gaps ?? [],
     queries: profile.queries ?? [],
     searchUsed,
+    picks: picks.map(p => {
+      const a = pool.find(x => x.sourceUrl === p.sourceUrl)
+      return { sourceUrl: p.sourceUrl, title: a?.title ?? p.sourceUrl, filePath: a?.absPath ?? '', reason: p.reason, gap: p.gap }
+    }),
   }
   return { batch, picks }
 }

@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import fs from 'fs'
 import path from 'path'
 import { discoverArticles, importArticle, classifyError } from '../lib/anthropic-scraper'
 import { deleteAnthropicArticleFile } from '../lib/anthropic-delete'
@@ -11,7 +12,7 @@ import type { ArticleMetaCache } from '../lib/anthropic-discover'
 import { loadCollection, saveCollection, addManualEntry, removeEntry, applyRecommend } from '../lib/blog-collection'
 import { writeArticleBody } from '../lib/article-io'
 import { runBlogRecommend, collectLocalArticles } from '../lib/blog-recommend'
-import type { BlogRecommendErrorCode, BlogCollectionEntry } from '@shared/index'
+import type { BlogRecommendErrorCode, BlogCollectionEntry, BlogRecommendBatch } from '@shared/index'
 
 let recommendAbort: AbortController | null = null
 
@@ -189,17 +190,22 @@ export function registerAnthropicIpc(cfg: AppConfig) {
         // E2E mock：确定性推荐，不触网、不依赖真实本地文件。gate 同 E2E_ANTHROPIC_OFFLINE。
         if (process.env.NODE_ENV === 'test' && process.env.E2E_CONFIG_DIR && process.env.E2E_ANTHROPIC_RECOMMEND === '1') {
           const col = loadCollection(cfg.libraryPath)
-          const batch = {
+          const mockFilePath = path.join(cfg.libraryPath, 'Anthropic博客', '2026-08', 'e2e-recommend.md')
+          fs.mkdirSync(path.dirname(mockFilePath), { recursive: true })
+          fs.writeFileSync(mockFilePath, '---\ntype: anthropic-article\nsource_url: https://alignment.anthropic.com/e2e-recommend/\ntitle: E2E 推荐文章\n---\nE2E 正文', 'utf8')
+          const batch: BlogRecommendBatch = {
             batch: (col.history[0]?.batch ?? 0) + 1,
             generatedAt: new Date().toISOString(),
+            focus: 'E2E 核心方向',
             profile: 'E2E 画像：正在研究 AI 对齐',
             gaps: ['E2E 缺口'],
             queries: ['alignment'],
             searchUsed: false,
+            picks: [{ sourceUrl: 'https://alignment.anthropic.com/e2e-recommend/', title: 'E2E 推荐文章', filePath: mockFilePath, reason: 'E2E 推荐理由', gap: 'E2E 缺口' }],
           }
           const pickEntries: BlogCollectionEntry[] = [{
             sourceUrl: 'https://alignment.anthropic.com/e2e-recommend/',
-            filePath: path.join(cfg.libraryPath, 'Anthropic博客', '2026-08', 'e2e-recommend.md'),
+            filePath: mockFilePath,
             title: 'E2E 推荐文章',
             addedAt: new Date().toISOString(),
             origin: 'recommend' as const,
