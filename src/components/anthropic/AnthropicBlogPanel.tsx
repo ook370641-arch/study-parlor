@@ -77,6 +77,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const blogCollection = useStore((s) => s.blogCollection)
   const loadBlogCollection = useStore((s) => s.loadBlogCollection)
   const toggleBlogCollection = useStore((s) => s.toggleBlogCollection)
+  const toggleBlogRead = useStore((s) => s.toggleBlogRead)
 
   const [query, setQuery] = useState('')
   const [listCollapsed, setListCollapsed] = useState(false)
@@ -368,6 +369,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               <div className="space-y-3">
                 {filtered.map((article) => {
                   const inCol = blogCollection.entries.some(e => e.sourceUrl === article.url)
+                  const isRead = blogCollection.read.some(r => r.sourceUrl === article.url)
                   return (
                     <AnthropicArticleRow
                       key={article.url}
@@ -378,6 +380,12 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       onToggleCollection={
                         article.isSaved && article.filePath
                           ? () => void toggleBlogCollection({ sourceUrl: article.url, filePath: article.filePath!, title: article.title })
+                          : undefined
+                      }
+                      isRead={isRead}
+                      onToggleRead={
+                        article.isSaved && article.filePath
+                          ? () => void toggleBlogRead({ sourceUrl: article.url, filePath: article.filePath!, title: article.title })
                           : undefined
                       }
                     />

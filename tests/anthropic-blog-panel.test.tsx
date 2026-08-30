@@ -20,7 +20,9 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantWriteGuide: vi.fn().mockResolvedValue(undefined),
     articleAssistantWriteSession: vi.fn().mockResolvedValue(undefined),
     collectionRead: vi.fn().mockResolvedValue({ version: 1, entries: [] }),
-    anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [] } }),
+    anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
+    anthropicCollectionMarkRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [{ sourceUrl: 'old-1', title: 'Old Article', filePath: 'lib/old-1.md', readAt: 'x' }] } }),
+    anthropicCollectionRemoveRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
   },
 }))
 
@@ -348,5 +350,28 @@ describe('AnthropicBlogPanel', () => {
     // institute 色签走 LEGACY_SECTION_META
     const instTag = tags.find((t) => t.textContent === 'Institute')!
     expect(instTag).toHaveStyle({ color: '#8a9a5b' })
+  })
+
+  it('已保存文章行显示已读按钮，点击调用 markRead', async () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [{ ...article('old-1', 'Old Article'), isSaved: true, filePath: 'lib/old-1.md' }],
+        loading: false,
+        error: null,
+      },
+      blogCollection: { version: 1, entries: [], dismissed: [], history: [], read: [] },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    const btn = screen.getByTestId('blog-read-mark')
+    expect(btn).toHaveTextContent('○')
+    fireEvent.click(btn)
+    const { ipc } = await import('@/lib/ipc')
+    await waitFor(() => expect(ipc.anthropicCollectionMarkRead).toHaveBeenCalledWith({ sourceUrl: 'old-1', filePath: 'lib/old-1.md', title: 'Old Article' }))
+  })
+
+  it('未保存文章行不显示已读按钮', () => {
+    render(<AnthropicBlogPanel theme="academic" />)
+    expect(screen.queryByTestId('blog-read-mark')).not.toBeInTheDocument()
   })
 })

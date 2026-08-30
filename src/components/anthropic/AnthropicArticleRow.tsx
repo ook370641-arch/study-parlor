@@ -11,6 +11,8 @@ interface Props {
   onRequestDelete?: (article: AnthropicArticleMeta) => void
   inCollection?: boolean
   onToggleCollection?: () => void
+  isRead?: boolean
+  onToggleRead?: () => void
 }
 
 function formatDate(iso: string | null | undefined) {
@@ -41,7 +43,7 @@ function ImportSpinner() {
   )
 }
 
-export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete, inCollection, onToggleCollection }: Props) {
+export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete, inCollection, onToggleCollection, isRead, onToggleRead }: Props) {
   const isAcademic = theme !== 'newspaper'
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
@@ -179,6 +181,23 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             }`}
           >
             {inCollection ? '★' : '☆'}
+          </span>
+        )}
+
+        {onToggleRead && (
+          <span
+            data-testid="blog-read-mark"
+            role="button"
+            aria-pressed={isRead}
+            title={isRead ? '已读（点击取消）' : '标为已读'}
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleRead() }}
+            className={`absolute top-2 right-7 z-10 text-sm leading-none transition-colors ${
+              isRead
+                ? 'text-ember'
+                : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
+            }`}
+          >
+            {isRead ? '✓' : '○'}
           </span>
         )}
 
