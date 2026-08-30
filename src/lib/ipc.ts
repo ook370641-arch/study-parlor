@@ -90,6 +90,8 @@ export const ipc = {
   get anthropicCollectionRead() { return ensure().anthropicCollectionRead },
   get anthropicCollectionAdd() { return ensure().anthropicCollectionAdd },
   get anthropicCollectionRemove() { return ensure().anthropicCollectionRemove },
+  get anthropicCollectionMarkRead() { return ensure().anthropicCollectionMarkRead },
+  get anthropicCollectionRemoveRead() { return ensure().anthropicCollectionRemoveRead },
   get anthropicRecommendStart() { return ensure().anthropicRecommendStart },
   get anthropicRecommendCancel() { return ensure().anthropicRecommendCancel },
   get onAnthropicRecommendStage() { return ensure().onAnthropicRecommendStage },

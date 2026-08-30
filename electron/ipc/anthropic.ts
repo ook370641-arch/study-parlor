@@ -9,7 +9,7 @@ import { mergeArticlesByUrl } from '../../src/lib/anthropic-articles'
 import type { AppConfig } from '../env'
 import type { AnthropicBlogCache, AnthropicArticleMeta } from '@shared/index'
 import type { ArticleMetaCache } from '../lib/anthropic-discover'
-import { loadCollection, saveCollection, addManualEntry, removeEntry, applyRecommend } from '../lib/blog-collection'
+import { loadCollection, saveCollection, addManualEntry, removeEntry, applyRecommend, markRead, removeRead } from '../lib/blog-collection'
 import { writeArticleBody } from '../lib/article-io'
 import { runBlogRecommend, collectLocalArticles } from '../lib/blog-recommend'
 import type { BlogRecommendErrorCode, BlogCollectionEntry, BlogRecommendBatch } from '@shared/index'
@@ -174,6 +174,18 @@ export function registerAnthropicIpc(cfg: AppConfig) {
 
   ipcMain.handle('anthropic:collectionRemove', async (_, args: { sourceUrl: string }) => {
     const next = removeEntry(loadCollection(cfg.libraryPath), args.sourceUrl)
+    saveCollection(cfg.libraryPath, next)
+    return { ok: true as const, collection: next }
+  })
+
+  ipcMain.handle('anthropic:collectionMarkRead', async (_, args: { sourceUrl: string; filePath: string; title: string }) => {
+    const next = markRead(loadCollection(cfg.libraryPath), args)
+    saveCollection(cfg.libraryPath, next)
+    return { ok: true as const, collection: next }
+  })
+
+  ipcMain.handle('anthropic:collectionRemoveRead', async (_, args: { sourceUrl: string }) => {
+    const next = removeRead(loadCollection(cfg.libraryPath), args.sourceUrl)
     saveCollection(cfg.libraryPath, next)
     return { ok: true as const, collection: next }
   })
