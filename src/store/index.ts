@@ -8,6 +8,7 @@ import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
 import { childrenPathsOf, writingPreviewKindOf } from '@/lib/writing-tree-utils'
 import { attributeMessages } from '@/lib/collection-attribution'
+import { findReadTarget } from '@/lib/blog-read-lookup'
 import { splitArticleIntoChunks } from '@/lib/article-chunks'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
@@ -184,6 +185,9 @@ type AppStore = {
   loadBlogCollection: () => Promise<void>
   toggleBlogCollection: (article: { sourceUrl: string; filePath: string; title: string }) => Promise<void>
   removeBlogCollection: (sourceUrl: string) => Promise<void>
+  markBlogRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<void>
+  removeBlogRead: (sourceUrl: string) => Promise<void>
+  toggleBlogRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<void>
   startBlogRecommend: () => Promise<void>
   cancelBlogRecommend: () => Promise<void>
 
@@ -1448,6 +1452,12 @@ export const useStore = create<AppStore>((set, get) => ({
     const now = new Date().toISOString()
     set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now, constitutionReportOpen: false })
     await ipc.patchState({ anthropicBlogLastSeenAt: now } as Partial<StateJson>)
+    // 自动已读：能反查到 sourceUrl 且尚未标记时才调用
+    const s = get()
+    if (!s.blogCollection.read.some(r => r.filePath === filePath)) {
+      const target = findReadTarget(filePath, { entries: s.blogCollection.entries, articles: s.anthropicBlogCache.articles })
+      if (target) await s.markBlogRead(target)
+    }
   },
   closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
   openConstitutionReport: () =>
@@ -1495,6 +1505,22 @@ export const useStore = create<AppStore>((set, get) => ({
   removeBlogCollection: async (sourceUrl) => {
     const r = await ipc.anthropicCollectionRemove({ sourceUrl })
     if (r.ok) set({ blogCollection: r.collection })
+  },
+  markBlogRead: async (args) => {
+    if (get().blogCollection.read.some(r => r.sourceUrl === args.sourceUrl)) return
+    const r = await ipc.anthropicCollectionMarkRead(args)
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  removeBlogRead: async (sourceUrl) => {
+    const r = await ipc.anthropicCollectionRemoveRead({ sourceUrl })
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  toggleBlogRead: async (args) => {
+    if (get().blogCollection.read.some(r => r.sourceUrl === args.sourceUrl)) {
+      await get().removeBlogRead(args.sourceUrl)
+    } else {
+      await get().markBlogRead(args)
+    }
   },
   startBlogRecommend: async () => {
     if (get().recommendRunning) return
