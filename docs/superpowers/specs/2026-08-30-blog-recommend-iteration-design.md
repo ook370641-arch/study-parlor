@@ -132,7 +132,7 @@ export type BlogCollectionFile = {
 
 ### 触发点
 
-1. **手动**：`AnthropicArticleRow` 在 ☆ 收藏按钮旁加「已读」按钮（已读态显示 ✓ 置灰，`data-testid="blog-read-mark-<sourceUrl>"`）。点击调 `markBlogRead({ sourceUrl, title, filePath })`。
+1. **手动**：`AnthropicArticleRow` 在 ☆ 收藏按钮旁加「已读」按钮（已读态显示 ✓ 置灰，`data-testid="blog-read-mark"`，与 blog-fav-toggle 同为固定 testid）。点击调 `markBlogRead({ sourceUrl, title, filePath })`。
 2. **自动**：store `openAnthropicReader`（src/store/index.ts:1447）在 set 之后，用 filePath 从 `blogCollection.entries` → `anthropicBlogCache.articles` 反查 sourceUrl/title；查到且未读则调 `markBlogRead`。两处都查不到（极少见：文章不在缓存也不在收藏夹）则跳过自动标记——不为此加 frontmatter 回读。
 
 ### 已读文件夹 UI（`BlogCollectionSection` 顶部）

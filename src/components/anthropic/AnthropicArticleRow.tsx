@@ -74,6 +74,8 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
         return
       }
       await useStore.getState().selectArticleCompanion('anthropic', main ?? 'anthropic-main', article.filePath)
+      // 对照槽打开同样计入自动已读（幂等）
+      void useStore.getState().markBlogRead({ sourceUrl: article.url, filePath: article.filePath, title: article.title })
       return
     }
 

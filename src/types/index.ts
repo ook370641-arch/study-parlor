@@ -111,7 +111,7 @@ export type BlogReadEntry = {
 
 export type BlogCollectionEntry = {
   sourceUrl: string   // 主键（去重依据）
-  filePath: string    // 相对学习库路径
+  filePath: string    // 文件路径（推荐流程与手动收藏均存绝对路径）
   title: string
   addedAt: string     // ISO
   origin: BlogCollectionOrigin
