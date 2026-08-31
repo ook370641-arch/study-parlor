@@ -19,7 +19,12 @@ export function initAnthropicRuntime(): void {
   })
   ipc.onAnthropicRecommendDone((p) => {
     if (p.ok) {
-      useStore.setState({ blogCollection: p.collection, recommendRunning: false, recommendStage: null })
+      useStore.setState({
+        blogCollection: p.collection,
+        recommendRunning: false,
+        recommendStage: null,
+        recommendViewBatch: p.collection.history[0]?.batch ?? null,
+      })
     } else {
       useStore.setState({ recommendRunning: false, recommendStage: null })
       const msg = recommendErrorText(p.code)

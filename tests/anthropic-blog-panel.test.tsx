@@ -21,6 +21,9 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantWriteSession: vi.fn().mockResolvedValue(undefined),
     collectionRead: vi.fn().mockResolvedValue({ version: 1, entries: [] }),
     anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
+    anthropicCollectionAdd: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
+    anthropicCollectionRemove: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
+    anthropicCollectionPromote: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
     anthropicCollectionMarkRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [{ sourceUrl: 'old-1', title: 'Old Article', filePath: 'lib/old-1.md', readAt: 'x' }] } }),
     anthropicCollectionRemoveRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
   },
@@ -375,26 +378,22 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.queryByTestId('blog-read-mark')).not.toBeInTheDocument()
   })
 
-  it('对照模式下点击已保存文章行进对照槽，同时自动已读', async () => {
+  it('recommend 条目点 ★ 走转正而非移除', async () => {
     const { ipc } = await import('@/lib/ipc')
-    vi.mocked(ipc.anthropicCollectionMarkRead).mockClear()
-    const selectCompanion = vi.fn().mockResolvedValue(undefined)
     useStore.setState({
       anthropicBlogCache: {
         lastFetchedAt: null,
         articles: [{ ...article('old-1', 'Old Article'), isSaved: true, filePath: 'lib/old-1.md' }],
-        loading: false,
-        error: null,
+        loading: false, error: null,
       },
-      articlePanelMode: { anthropic: 'companion', scout: 'guide', job: 'guide' },
-      anthropicReaderFilePath: '/other.md',
-      selectArticleCompanion: selectCompanion,
-      blogCollection: { version: 1, entries: [], dismissed: [], history: [], read: [] },
+      blogCollection: {
+        version: 1, dismissed: [], history: [], read: [],
+        entries: [{ sourceUrl: 'old-1', filePath: 'lib/old-1.md', title: 'Old Article', addedAt: 'x', origin: 'recommend' as const, batch: 1 }],
+      },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
-    const row = screen.getAllByTestId('anthropic-article-row').find((r) => r.textContent?.includes('Old Article'))!
-    fireEvent.click(row)
-    await waitFor(() => expect(selectCompanion).toHaveBeenCalledWith('anthropic', '/other.md', 'lib/old-1.md'))
-    await waitFor(() => expect(ipc.anthropicCollectionMarkRead).toHaveBeenCalledWith({ sourceUrl: 'old-1', filePath: 'lib/old-1.md', title: 'Old Article' }))
+    fireEvent.click(screen.getByTestId('blog-fav-toggle'))
+    await waitFor(() => expect(ipc.anthropicCollectionPromote).toHaveBeenCalledWith({ sourceUrl: 'old-1' }))
+    expect(ipc.anthropicCollectionRemove).not.toHaveBeenCalled()
   })
 })

@@ -8,7 +8,6 @@ import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
 import { childrenPathsOf, writingPreviewKindOf } from '@/lib/writing-tree-utils'
 import { attributeMessages } from '@/lib/collection-attribution'
-import { findReadTarget } from '@/lib/blog-read-lookup'
 import { splitArticleIntoChunks } from '@/lib/article-chunks'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
@@ -182,12 +181,16 @@ type AppStore = {
   blogCollection: BlogCollectionFile
   recommendRunning: boolean
   recommendStage: RecommendStage | null
+  recommendViewBatch: number | null
   loadBlogCollection: () => Promise<void>
   toggleBlogCollection: (article: { sourceUrl: string; filePath: string; title: string }) => Promise<void>
   removeBlogCollection: (sourceUrl: string) => Promise<void>
   markBlogRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<void>
   removeBlogRead: (sourceUrl: string) => Promise<void>
   toggleBlogRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<void>
+  openRecommendView: (batch: number) => void
+  closeRecommendView: () => void
+  removeBlogBatch: (batch: number) => Promise<void>
   startBlogRecommend: () => Promise<void>
   cancelBlogRecommend: () => Promise<void>
 
@@ -599,6 +602,7 @@ export const useStore = create<AppStore>((set, get) => ({
   blogCollection: { version: 1, entries: [], dismissed: [], history: [], read: [] },
   recommendRunning: false,
   recommendStage: null,
+  recommendViewBatch: null,
   scoutTab: 'chat',
   scoutConversations: [],
   scoutActiveConversationId: null,
@@ -1450,14 +1454,8 @@ export const useStore = create<AppStore>((set, get) => ({
 
   openAnthropicReader: async (filePath) => {
     const now = new Date().toISOString()
-    set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now, constitutionReportOpen: false })
+    set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now, constitutionReportOpen: false, recommendViewBatch: null })
     await ipc.patchState({ anthropicBlogLastSeenAt: now } as Partial<StateJson>)
-    // 自动已读：能反查到 sourceUrl 且尚未标记时才调用
-    const s = get()
-    if (!s.blogCollection.read.some(r => r.filePath === filePath)) {
-      const target = findReadTarget(filePath, { entries: s.blogCollection.entries, articles: s.anthropicBlogCache.articles })
-      if (target) await s.markBlogRead(target)
-    }
   },
   closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
   openConstitutionReport: () =>
@@ -1497,9 +1495,11 @@ export const useStore = create<AppStore>((set, get) => ({
   },
   toggleBlogCollection: async (article) => {
     const existing = get().blogCollection.entries.find(e => e.sourceUrl === article.sourceUrl)
-    const r = existing
-      ? await ipc.anthropicCollectionRemove({ sourceUrl: article.sourceUrl })
-      : await ipc.anthropicCollectionAdd(article)
+    const r = !existing
+      ? await ipc.anthropicCollectionAdd(article)
+      : existing.origin === 'recommend'
+        ? await ipc.anthropicCollectionPromote({ sourceUrl: article.sourceUrl })
+        : await ipc.anthropicCollectionRemove({ sourceUrl: article.sourceUrl })
     if (r.ok) set({ blogCollection: r.collection })
   },
   removeBlogCollection: async (sourceUrl) => {
@@ -1513,6 +1513,13 @@ export const useStore = create<AppStore>((set, get) => ({
   },
   removeBlogRead: async (sourceUrl) => {
     const r = await ipc.anthropicCollectionRemoveRead({ sourceUrl })
+    if (r.ok) set({ blogCollection: r.collection })
+  },
+  openRecommendView: (batch) =>
+    set({ recommendViewBatch: batch, anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null, constitutionReportOpen: false }),
+  closeRecommendView: () => set({ recommendViewBatch: null }),
+  removeBlogBatch: async (batch) => {
+    const r = await ipc.anthropicCollectionRemoveBatch({ batch })
     if (r.ok) set({ blogCollection: r.collection })
   },
   toggleBlogRead: async (args) => {
