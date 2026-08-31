@@ -49,7 +49,7 @@ export function BlogRecommendView({ theme = 'academic' }: { theme?: BriefingThem
     const neighbor = hasNext ? history[idx - 1].batch : hasPrev ? history[idx + 1].batch : null
     void removeBlogBatch(b.batch)
     if (neighbor != null) openRecommendView(neighbor)
-    else closeRecommendView()
+    // 无相邻批次时保持 recommendViewBatch 指向已删批次 → idx<0 → 回 blog-rec-empty 空态（设计 §删除批次）
   }
 
   return (
