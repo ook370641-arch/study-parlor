@@ -252,7 +252,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
         const now = new Date().toISOString()
         const pickEntries: BlogCollectionEntry[] = picks.map(p => {
           const a = pool.find(x => x.sourceUrl === p.sourceUrl)
-          return { sourceUrl: p.sourceUrl, filePath: a?.absPath ?? '', title: a?.title ?? p.sourceUrl, addedAt: now, origin: 'recommend' as const, reason: p.reason, gap: p.gap, batch: batch.batch }
+          return { sourceUrl: p.sourceUrl, filePath: a?.absPath ?? '', title: a?.title ?? p.sourceUrl, addedAt: now, origin: 'recommend' as const, reason: p.reason, gap: p.gap, guide: p.guide, batch: batch.batch }
         })
         const next = applyRecommend(loadCollection(cfg.libraryPath), batch, pickEntries)
         saveCollection(cfg.libraryPath, next)

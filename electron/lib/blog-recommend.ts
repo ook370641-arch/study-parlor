@@ -180,7 +180,7 @@ async function stagePick(
         const picks = arr
           .filter(x => x.source_url && valid.has(x.source_url))
           .slice(0, 5)
-          .map(x => ({ sourceUrl: x.source_url!, reason: x.reason ?? '', gap: x.gap ?? '', guide: x.guide ?? '' }))
+          .map(x => ({ sourceUrl: x.source_url!, reason: x.reason ?? '', gap: x.gap ?? '', guide: typeof x.guide === 'string' ? x.guide : '' }))
         if (picks.length === 0 || picks.some(p => !p.guide)) throw new Error('shape')
         return picks
       } catch { writeDebug('blog-pick', prompt, text, extracted) }
