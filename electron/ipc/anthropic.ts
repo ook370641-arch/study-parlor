@@ -225,7 +225,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
             gaps: ['E2E 缺口'],
             queries: ['alignment'],
             searchUsed: false,
-            picks: [{ sourceUrl: 'https://alignment.anthropic.com/e2e-recommend/', title: 'E2E 推荐文章', filePath: mockFilePath, reason: 'E2E 推荐理由', gap: 'E2E 缺口' }],
+            picks: [{ sourceUrl: 'https://alignment.anthropic.com/e2e-recommend/', title: 'E2E 推荐文章', filePath: mockFilePath, reason: 'E2E 推荐理由', gap: 'E2E 缺口', guide: 'E2E 导读摘要' }],
           }
           const pickEntries: BlogCollectionEntry[] = [{
             sourceUrl: 'https://alignment.anthropic.com/e2e-recommend/',
@@ -235,6 +235,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
             origin: 'recommend' as const,
             reason: 'E2E 推荐理由',
             gap: 'E2E 缺口',
+            guide: 'E2E 导读摘要',
             batch: batch.batch,
           }]
           const next = applyRecommend(col, batch, pickEntries)

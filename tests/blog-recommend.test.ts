@@ -110,7 +110,7 @@ describe('runBlogRecommend', () => {
     ;(getSearchApiKey as any).mockResolvedValue(null)  // 降级 searchUsed=false
     ;(chatNonStream as any)
       .mockResolvedValueOnce(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q'] }))
-      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }, { source_url: 'https://nope.com', reason: 'x', gap: 'g' }]))
+      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g', guide: 'gd' }, { source_url: 'https://nope.com', reason: 'x', gap: 'g', guide: 'gd' }]))
     const r = await runBlogRecommend(cfg, {})
     expect(r.batch.profile).toBe('p')
     expect(r.batch.searchUsed).toBe(false)
@@ -123,7 +123,7 @@ describe('runBlogRecommend', () => {
     ;(searchWeb as any).mockResolvedValue([{ title: 'T', url: 'https://anthropic.com/t', content: 'c'.repeat(10) }])
     ;(chatNonStream as any)
       .mockResolvedValueOnce(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q1'] }))
-      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }]))
+      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g', guide: 'gd' }]))
     const r = await runBlogRecommend(cfg, {})
     expect(r.batch.searchUsed).toBe(true)
     expect(searchWeb).toHaveBeenCalled()
@@ -141,7 +141,7 @@ describe('runBlogRecommend', () => {
     ;(getSearchApiKey as any).mockResolvedValue(null)
     ;(chatNonStream as any)
       .mockResolvedValueOnce(JSON.stringify({ focus: '评测集构建', profile: 'p', gaps: ['g'], queries: ['q'] }))
-      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }]))
+      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g', guide: 'gd' }]))
     const r = await runBlogRecommend(cfg, {})
     expect(r.batch.focus).toBe('评测集构建')
     expect(r.batch.picks).toHaveLength(1)
@@ -150,6 +150,7 @@ describe('runBlogRecommend', () => {
       reason: 'r',
       gap: 'g',
     })
+    expect(r.batch.picks![0].guide).toBe('gd')
     expect(r.batch.picks![0].filePath).toContain('x.md')
   })
   it('stageProfile 缺 focus 字段时抛 LLM_PARSE_ERROR', async () => {
@@ -168,5 +169,13 @@ describe('runBlogRecommend', () => {
     ;(chatNonStream as any)
       .mockResolvedValueOnce(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q'] }))
     await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'NO_LOCAL_ARTICLES' })
+  })
+  it('stagePick 缺 guide 字段时抛 LLM_PARSE_ERROR', async () => {
+    seedWriting(); seedPool()
+    ;(getSearchApiKey as any).mockResolvedValue(null)
+    ;(chatNonStream as any)
+      .mockResolvedValueOnce(JSON.stringify({ focus: 'f', profile: 'p', gaps: ['g'], queries: ['q'] }))
+      .mockResolvedValue(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g' }]))
+    await expect(runBlogRecommend(cfg, {})).rejects.toMatchObject({ code: 'LLM_PARSE_ERROR' })
   })
 })

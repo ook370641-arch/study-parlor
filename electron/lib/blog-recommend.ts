@@ -93,7 +93,7 @@ export function collectLocalArticles(lib: string): LocalBlogArticle[] {
   return out
 }
 
-export type PickedArticle = { sourceUrl: string; reason: string; gap: string }
+export type PickedArticle = { sourceUrl: string; reason: string; gap: string; guide: string }
 
 const PROMPTS_DIR = (() => {
   const candidates = [
@@ -165,7 +165,7 @@ async function stagePick(
   signal?: AbortSignal
 ): Promise<PickedArticle[]> {
   const poolText = args.pool.map((a, i) => `${i + 1}. ${a.sourceUrl} | ${a.title} | ${a.summary ?? ''}`).join('\n')
-  const prompt = read('blog-recommend-pick-v1.md')
+  const prompt = read('blog-recommend-pick-v2.md')
     .replace('{{profile}}', args.profile)
     .replace('{{gaps}}', args.gaps.join('\n'))
     .replace('{{searchHits}}', args.searchHits || '(无)')
@@ -175,12 +175,14 @@ async function stagePick(
     const extracted = extractJsonArray(text)
     if (extracted) {
       try {
-        const arr = JSON.parse(extracted) as { source_url?: string; reason?: string; gap?: string }[]
+        const arr = JSON.parse(extracted) as { source_url?: string; reason?: string; gap?: string; guide?: string }[]
         const valid = new Set(args.pool.map(a => a.sourceUrl))
-        return arr
+        const picks = arr
           .filter(x => x.source_url && valid.has(x.source_url))
           .slice(0, 5)
-          .map(x => ({ sourceUrl: x.source_url!, reason: x.reason ?? '', gap: x.gap ?? '' }))
+          .map(x => ({ sourceUrl: x.source_url!, reason: x.reason ?? '', gap: x.gap ?? '', guide: x.guide ?? '' }))
+        if (picks.length === 0 || picks.some(p => !p.guide)) throw new Error('shape')
+        return picks
       } catch { writeDebug('blog-pick', prompt, text, extracted) }
     } else {
       writeDebug('blog-pick', prompt, text)
@@ -242,7 +244,7 @@ export async function runBlogRecommend(
     searchUsed,
     picks: picks.map(p => {
       const a = pool.find(x => x.sourceUrl === p.sourceUrl)
-      return { sourceUrl: p.sourceUrl, title: a?.title ?? p.sourceUrl, filePath: a?.absPath ?? '', reason: p.reason, gap: p.gap }
+      return { sourceUrl: p.sourceUrl, title: a?.title ?? p.sourceUrl, filePath: a?.absPath ?? '', reason: p.reason, gap: p.gap, guide: p.guide }
     }),
   }
   return { batch, picks }
