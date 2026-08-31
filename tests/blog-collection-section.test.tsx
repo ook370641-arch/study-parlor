@@ -28,12 +28,6 @@ const newBatchCollection: BlogCollectionFile = {
   read: [{ sourceUrl: 'https://anthropic.com/r', title: '已读文', filePath: 'lib/r.md', readAt: '2026-08-30T00:00:00.000Z' }],
 }
 
-const oldBatchCollection: BlogCollectionFile = {
-  version: 1, entries: [], dismissed: [],
-  history: [{ batch: 1, generatedAt: '2026-08-01T00:00:00.000Z', profile: '旧画像', gaps: ['旧缺口'], queries: ['q'], searchUsed: false }],
-  read: [],
-}
-
 describe('BlogCollectionSection', () => {
   beforeEach(() => {
     cleanup()
@@ -48,35 +42,7 @@ describe('BlogCollectionSection', () => {
     } as any)
   })
 
-  it('新批次历史卡片显示核心方向与逐篇挂钩', () => {
-    render(<BlogCollectionSection theme="academic" />)
-    fireEvent.click(screen.getByTestId('blog-recommend-history'))
-    expect(screen.getByText(/构建 coding agent 评测集的原则/)).toBeInTheDocument()
-    expect(screen.getByTestId('blog-history-pick-https://anthropic.com/a')).toHaveTextContent('文章甲')
-    expect(screen.getByText(/理由甲/)).toBeInTheDocument()
-  })
-
-  it('点击逐篇条目打开阅读器', async () => {
-    const openReader = vi.fn()
-    useStore.setState({ openAnthropicReader: openReader } as any)
-    render(<BlogCollectionSection theme="academic" />)
-    fireEvent.click(screen.getByTestId('blog-recommend-history'))
-    fireEvent.click(screen.getByTestId('blog-history-pick-https://anthropic.com/a'))
-    await waitFor(() => expect(mockIpc.readMd).toHaveBeenCalledWith('lib/a.md'))
-    expect(openReader).toHaveBeenCalledWith('lib/a.md')
-  })
-
-  it('旧批次（无 focus/picks）按原样式降级渲染', () => {
-    useStore.setState({ blogCollection: oldBatchCollection } as any)
-    render(<BlogCollectionSection theme="academic" />)
-    fireEvent.click(screen.getByTestId('blog-recommend-history'))
-    expect(screen.getByText('旧画像')).toBeInTheDocument()
-    expect(screen.queryByTestId(/^blog-history-pick-/)).not.toBeInTheDocument()
-    // 已读为空时不渲染已读区
-    expect(screen.queryByTestId('blog-read-section')).not.toBeInTheDocument()
-  })
-
-  it('已读文件夹默认折叠，展开后可打开/移出', async () => {
+  it('已读文件夹默认折叠，展开后可打开/移出；已读为空时不渲染已读区', async () => {
     render(<BlogCollectionSection theme="academic" />)
     const toggle = screen.getByTestId('blog-read-toggle')
     expect(toggle).toHaveTextContent('已读（1）')
@@ -85,18 +51,28 @@ describe('BlogCollectionSection', () => {
     expect(screen.getByTestId('blog-read-open-https://anthropic.com/r')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('blog-read-remove-https://anthropic.com/r'))
     await waitFor(() => expect(mockIpc.anthropicCollectionRemoveRead).toHaveBeenCalledWith({ sourceUrl: 'https://anthropic.com/r' }))
+
+    // 已读为空时不渲染已读区
+    cleanup()
+    useStore.setState({ blogCollection: { ...newBatchCollection, read: [] } } as any)
+    render(<BlogCollectionSection theme="academic" />)
+    expect(screen.queryByTestId('blog-read-section')).not.toBeInTheDocument()
   })
 
-  it('字号跟随 briefingFontSize（base → 3xl 后标题字号变大）', () => {
+  it('字号跟随 briefingFontSize（base → 3xl 后 meta 字号变大）', () => {
     const { unmount } = render(<BlogCollectionSection theme="academic" />)
-    fireEvent.click(screen.getByTestId('blog-recommend-history'))
-    const baseSize = screen.getByTestId('blog-history-pick-https://anthropic.com/a').style.fontSize
+    const baseSize = screen.getByTestId('blog-read-toggle').style.fontSize
     unmount()
     cleanup()
     useStore.setState({ briefingFontSize: '3xl' } as any)
     render(<BlogCollectionSection theme="academic" />)
-    fireEvent.click(screen.getByTestId('blog-recommend-history'))
-    const bigSize = screen.getByTestId('blog-history-pick-https://anthropic.com/a').style.fontSize
+    const bigSize = screen.getByTestId('blog-read-toggle').style.fontSize
     expect(parseInt(bigSize)).toBeGreaterThan(parseInt(baseSize))
+  })
+
+  it('推荐按钮文案为「重新推荐」，且不再有往期历史入口', () => {
+    render(<BlogCollectionSection theme="academic" />)
+    expect(screen.getByTestId('blog-recommend-button')).toHaveTextContent('重新推荐')
+    expect(screen.queryByTestId('blog-recommend-history')).not.toBeInTheDocument()
   })
 })

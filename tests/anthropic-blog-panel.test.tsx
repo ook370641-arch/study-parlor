@@ -396,4 +396,36 @@ describe('AnthropicBlogPanel', () => {
     await waitFor(() => expect(ipc.anthropicCollectionPromote).toHaveBeenCalledWith({ sourceUrl: 'old-1' }))
     expect(ipc.anthropicCollectionRemove).not.toHaveBeenCalled()
   })
+
+  it('来自推荐批次的文章行显示批号徽标，点击打开推荐页对应批次', async () => {
+    const openRecommendView = vi.fn()
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [{ ...article('old-1', 'Old Article'), isSaved: true, filePath: 'lib/old-1.md' }],
+        loading: false, error: null,
+      },
+      openRecommendView,
+      blogCollection: {
+        version: 1, entries: [], dismissed: [], read: [],
+        history: [{
+          batch: 3, generatedAt: 'g', profile: 'p', gaps: [], queries: [], searchUsed: false,
+          picks: [{ sourceUrl: 'old-1', title: 'Old Article', filePath: 'lib/old-1.md', reason: 'r', gap: 'g' }],
+        }],
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    const badge = screen.getByTestId('blog-rec-badge')
+    expect(badge).toHaveTextContent('◆3')
+    fireEvent.click(badge)
+    expect(openRecommendView).toHaveBeenCalledWith(3)
+  })
+
+  it('不在任何批次 picks 里的文章行不显示批号徽标', () => {
+    useStore.setState({
+      blogCollection: { version: 1, entries: [], dismissed: [], read: [], history: [] },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    expect(screen.queryByTestId('blog-rec-badge')).not.toBeInTheDocument()
+  })
 })

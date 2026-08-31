@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
+import { findBatchForUrl } from '@/lib/blog-rec-lookup'
 import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -49,6 +50,8 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
   const openReader = useStore((s) => s.openAnthropicReader)
   const openConstitutionReport = useStore((s) => s.openConstitutionReport)
+  const openRecommendView = useStore((s) => s.openRecommendView)
+  const recBatch = useStore((s) => findBatchForUrl(s.blogCollection.history, article.url))
   const [importing, setImporting] = useState(false)
 
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
@@ -74,8 +77,6 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
         return
       }
       await useStore.getState().selectArticleCompanion('anthropic', main ?? 'anthropic-main', article.filePath)
-      // 对照槽打开同样计入自动已读（幂等）
-      void useStore.getState().markBlogRead({ sourceUrl: article.url, filePath: article.filePath, title: article.title })
       return
     }
 
@@ -247,6 +248,18 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
               style={{ borderColor: `${section.color}66`, color: section.color }}
             >
               {section.label}
+            </span>
+          )}
+          {recBatch != null && (
+            <span
+              data-testid="blog-rec-badge"
+              role="button"
+              title={`来自第 ${recBatch} 批推荐，点击查看推荐页`}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); openRecommendView(recBatch) }}
+              className="inline-block mt-1.5 ml-1.5 px-2 py-0.5 rounded-full border border-ember/40 text-ember cursor-pointer"
+              style={{ fontSize: 'var(--briefing-list-meta-size)' }}
+            >
+              ◆{recBatch}
             </span>
           )}
           {article.local === 'constitution' && (

@@ -26,17 +26,14 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
   const showToast = useStore((s) => s.showToast)
 
   const [collapsed, setCollapsed] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
   const [showRead, setShowRead] = useState(false)
   const [expandedReason, setExpandedReason] = useState<string | null>(null)
 
   const entries = collection.entries
-  const history = collection.history
   const readList = collection.read
   const listStyles = BRIEFING_LIST_STYLES[fontSize]
   const border = isAcademic ? 'border-slate/30' : 'border-[#c9c3b8]'
   const muted = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
-  const text = isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'
 
   const openFile = async (filePath: string, onGone: () => Promise<void>, goneMsg: string) => {
     try {
@@ -95,64 +92,15 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
               : (isAcademic ? 'border-ember/40 text-ember hover:bg-ember/10' : 'border-[#6b5d52]/40 text-[#6b5d52] hover:bg-[#6b5d52]/10')
           }`}
         >
-          {recommendRunning ? `${STAGE_TEXT[recommendStage ?? 'context']} ✕` : '为我推荐'}
+          {recommendRunning ? `${STAGE_TEXT[recommendStage ?? 'context']} ✕` : '重新推荐'}
         </button>
       </div>
-
-      {history.length > 0 && (
-        <button
-          type="button"
-          data-testid="blog-recommend-history"
-          onClick={() => setShowHistory(s => !s)}
-          className={`mt-1.5 block ${muted} hover:text-ember`}
-          style={{ fontSize: listStyles.meta }}
-        >
-          往期推荐历史（{history.length} 批） {showHistory ? '▴' : '▾'}
-        </button>
-      )}
-      {showHistory && history.length > 0 && (
-        <div className="mt-1.5 space-y-1.5 leading-relaxed">
-          {history.map((b) => (
-            <div key={b.batch} className={`rounded p-2 ${isAcademic ? 'bg-ink/60 border border-parchment/10' : 'bg-[#f5f2ed] border border-[#1a1a1a]/10'}`}>
-              <p className={muted} style={{ fontSize: listStyles.meta }}>第 {b.batch} 批 · {new Date(b.generatedAt).toLocaleString('zh-CN')}{b.searchUsed ? '' : ' · 未使用网络搜索'}</p>
-              {b.focus ? (
-                <>
-                  <p className={`mt-1 font-serif ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`} style={{ fontSize: listStyles.title }}>◆ {b.focus}</p>
-                  {(b.picks ?? []).map((p) => (
-                    <div key={p.sourceUrl} className="mt-1.5">
-                      <button
-                        type="button"
-                        data-testid={`blog-history-pick-${p.sourceUrl}`}
-                        onClick={() => void openFile(p.filePath, async () => {}, '该文件已被删除，无法打开')}
-                        className={`block text-left truncate max-w-full ${isAcademic ? 'text-parchment/90 hover:text-ember' : 'text-[#1a1a1a] hover:text-ember'}`}
-                        style={{ fontSize: listStyles.title }}
-                      >
-                        {p.title}
-                      </button>
-                      <p className={muted} style={{ fontSize: listStyles.meta }}>
-                        {p.reason}{p.gap ? `（挂上：${p.gap}）` : ''}
-                      </p>
-                    </div>
-                  ))}
-                  <p className={`mt-1.5 ${muted}`} style={{ fontSize: listStyles.meta }}>认知缺口：{b.gaps.join('、')} · 检索方向：{b.queries.join('、')}</p>
-                </>
-              ) : (
-                <>
-                  <p className={text} style={{ fontSize: listStyles.meta }}>{b.profile}</p>
-                  <p className={`mt-1 ${muted}`} style={{ fontSize: listStyles.meta }}>认知缺口：{b.gaps.join('、')}</p>
-                  <p className={`mt-1 ${muted}`} style={{ fontSize: listStyles.meta }}>检索方向：{b.queries.join('、')}</p>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       {!collapsed && (
         <div className="mt-2 space-y-1.5 max-h-64 overflow-y-auto">
           {entries.length === 0 && !recommendRunning && (
             <p data-testid="blog-collection-empty" className={muted} style={{ fontSize: listStyles.meta }}>
-              尚无收藏——点「为我推荐」生成第一批，或点文章行的 ☆ 手动收藏
+              尚无收藏——点「重新推荐」生成第一批，或点文章行的 ☆ 手动收藏
             </p>
           )}
           {entries.map((e) => (
@@ -226,6 +174,7 @@ function CollectionRow({ entry, isAcademic, titleSize, metaSize, expanded, onTog
       </div>
       {expanded && entry.origin === 'recommend' && (
         <div className={`mt-1.5 leading-relaxed ${isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}`} style={{ fontSize: metaSize }}>
+          {entry.guide && <p><span className="text-ember">导读：</span>{entry.guide}</p>}
           <p><span className="text-ember">为什么推荐：</span>{entry.reason}</p>
           {entry.gap && <p className="mt-0.5"><span className="text-ember">补上缺口：</span>{entry.gap}</p>}
         </div>
