@@ -7,6 +7,7 @@ import { AnthropicArticleReader } from './AnthropicArticleReader'
 import { BlogCollectionSection } from './BlogCollectionSection'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { ConstitutionReportView } from './ConstitutionReportView'
+import { BlogRecommendView } from './BlogRecommendView'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
@@ -69,6 +70,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const openReader = useStore((s) => s.openAnthropicReader)
   const constitutionReportOpen = useStore((s) => s.constitutionReportOpen)
+  const recommendViewBatch = useStore((s) => s.recommendViewBatch)
   const openConstitutionReport = useStore((s) => s.openConstitutionReport)
   const deleteAnthropicArticle = useStore((s) => s.deleteAnthropicArticle)
   const fontSize = useStore((s) => s.briefingFontSize)
@@ -400,6 +402,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
       <div className="flex-1 min-w-0 flex flex-col">
         {constitutionReportOpen ? (
           <ConstitutionReportView theme={theme} />
+        ) : recommendViewBatch != null ? (
+          <BlogRecommendView theme={theme} />
         ) : readerFilePath ? (
           <AnthropicArticleReader
             filePath={readerFilePath}
