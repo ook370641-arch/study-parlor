@@ -1464,6 +1464,7 @@ export const useStore = create<AppStore>((set, get) => ({
       anthropicReaderFilePath: null,
       anthropicReaderBody: null,
       anthropicReaderTitle: null,
+      recommendViewBatch: null,
     }),
   closeConstitutionReport: () => set({ constitutionReportOpen: false }),
   setAnthropicReaderContent: ({ body, title }) =>
