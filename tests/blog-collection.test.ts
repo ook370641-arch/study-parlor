@@ -5,6 +5,7 @@ import path from 'path'
 import {
   collectionPath, loadCollection, saveCollection,
   addManualEntry, removeEntry, applyRecommend, markRead, removeRead,
+  promoteEntry, removeBatch,
 } from '../electron/lib/blog-collection'
 import type { BlogCollectionFile, BlogRecommendBatch } from '../src/types'
 
@@ -132,5 +133,55 @@ describe('removeRead', () => {
       read: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', readAt: 'x' }],
     }
     expect(removeEntry(c, 'u1').read).toHaveLength(1)
+  })
+})
+
+describe('promoteEntry', () => {
+  it('recommend 条目转正为 manual，保留推荐字段', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', addedAt: 'x', origin: 'recommend', reason: 'r', gap: 'g', batch: 3 }],
+    }
+    const c2 = promoteEntry(c, 'u1')
+    expect(c2.entries[0]).toMatchObject({ origin: 'manual', reason: 'r', gap: 'g', batch: 3 })
+  })
+  it('manual 条目或不存在的 URL 返回原对象', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', addedAt: 'x', origin: 'manual' }],
+    }
+    expect(promoteEntry(c, 'u1')).toBe(c)
+    expect(promoteEntry(c, 'nope')).toBe(c)
+  })
+  it('转正后的 manual 条目在下一批推荐后仍保留', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      entries: [
+        { sourceUrl: 'u1', filePath: 'a.md', title: 'A', addedAt: 'x', origin: 'recommend', batch: 1 },
+        { sourceUrl: 'u2', filePath: 'b.md', title: 'B', addedAt: 'x', origin: 'recommend', batch: 1 },
+      ],
+    }
+    const promoted = promoteEntry(c, 'u1')
+    const batch: BlogRecommendBatch = { batch: 2, generatedAt: 'g', profile: 'p', gaps: [], queries: [], searchUsed: false }
+    const c2 = applyRecommend(promoted, batch, [{ sourceUrl: 'u3', filePath: 'c.md', title: 'C', addedAt: 'y', origin: 'recommend', batch: 2 }])
+    expect(c2.entries.map(e => e.sourceUrl).sort()).toEqual(['u1', 'u3'])
+  })
+})
+
+describe('removeBatch', () => {
+  it('只删指定批次的 history，不动 entries/read', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', addedAt: 'x', origin: 'manual' }],
+      read: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', readAt: 'x' }],
+      history: [
+        { batch: 2, generatedAt: 'g', profile: 'p2', gaps: [], queries: [], searchUsed: false },
+        { batch: 1, generatedAt: 'g', profile: 'p1', gaps: [], queries: [], searchUsed: false },
+      ],
+    }
+    const c2 = removeBatch(c, 1)
+    expect(c2.history.map(b => b.batch)).toEqual([2])
+    expect(c2.entries).toHaveLength(1)
+    expect(c2.read).toHaveLength(1)
   })
 })

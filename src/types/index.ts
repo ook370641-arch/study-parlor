@@ -99,6 +99,7 @@ export type BlogRecommendPick = {
   filePath: string   // 与收藏夹条目同格式（推荐流程存 absPath）
   reason: string
   gap: string
+  guide?: string      // 导读摘要（pick v2 prompt 起）；旧批次无此字段
 }
 
 /** 已读文章条目（所有已读文章，不限收藏夹内） */
@@ -118,6 +119,7 @@ export type BlogCollectionEntry = {
   reason?: string     // 推荐理由（仅 recommend）
   gap?: string        // 补上的认知缺口（仅 recommend）
   batch?: number      // 批次号（仅 recommend）
+  guide?: string      // 导读摘要（仅 recommend）
 }
 
 export type BlogRecommendBatch = {

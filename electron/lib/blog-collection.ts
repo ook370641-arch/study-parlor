@@ -76,3 +76,15 @@ export function markRead(
 export function removeRead(c: BlogCollectionFile, sourceUrl: string): BlogCollectionFile {
   return { ...c, read: c.read.filter(r => r.sourceUrl !== sourceUrl) }
 }
+
+/** 推荐条目转正为手动收藏：下批推荐后仍保留。非 recommend 或不存在返回原对象 */
+export function promoteEntry(c: BlogCollectionFile, sourceUrl: string): BlogCollectionFile {
+  const target = c.entries.find(e => e.sourceUrl === sourceUrl)
+  if (!target || target.origin !== 'recommend') return c
+  return { ...c, entries: c.entries.map(e => e.sourceUrl === sourceUrl ? { ...e, origin: 'manual' as const } : e) }
+}
+
+/** 删除指定推荐批次的历史记录，不动 entries/dismissed/read */
+export function removeBatch(c: BlogCollectionFile, batch: number): BlogCollectionFile {
+  return { ...c, history: c.history.filter(b => b.batch !== batch) }
+}
