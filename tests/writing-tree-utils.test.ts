@@ -68,6 +68,13 @@ describe('displayWritingName', () => {
     expect(displayWritingName(f('八月随笔.md'))).toBe('八月随笔')
     expect(displayWritingName(d('随笔'))).toBe('随笔')
   })
+
+  it('html 文件去 .html 后缀（大小写不敏感）；其他非 md 后缀保留', () => {
+    expect(displayWritingName(f('月度报告.html'))).toBe('月度报告')
+    expect(displayWritingName(f('归档.HTML'))).toBe('归档')
+    expect(displayWritingName(f('报表.xlsx'))).toBe('报表.xlsx')
+    expect(displayWritingName(f('论文.pdf'))).toBe('论文.pdf')
+  })
 })
 
 describe('normalizeWritingFileName', () => {

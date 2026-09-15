@@ -72,9 +72,13 @@ export function writingTreeContainsPath(
   return walk(tree.writing) || walk(tree.repository)
 }
 
-/** 文件显示名：去掉 .md 后缀；目录名原样返回。 */
+/** 文件显示名：去掉 .md/.html 后缀（大小写不敏感）；目录名与其他后缀原样返回。 */
 export function displayWritingName(node: { name: string; kind: 'file' | 'dir' }): string {
-  return node.kind === 'file' && node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name
+  if (node.kind !== 'file') return node.name
+  const lower = node.name.toLowerCase()
+  if (lower.endsWith('.md')) return node.name.slice(0, -3)
+  if (lower.endsWith('.html')) return node.name.slice(0, -5)
+  return node.name
 }
 
 /** 文件重命名/新建名归一化：文件补 .md（防 renameNode 丢扩展名），目录原样。 */
