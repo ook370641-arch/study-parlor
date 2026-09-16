@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Components } from 'react-markdown'
+import type { Element } from 'hast'
 import { ipc } from '@/lib/ipc'
 
 // ===== Section label mapping =====
@@ -127,6 +128,41 @@ function MdImage({ src, alt }: { src?: string; alt?: string }) {
   )
 }
 
+// ===== Code block with copy bar (briefing readers only) =====
+function MdCodeBlock({ className, children }: { className?: string; children: React.ReactNode }) {
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef<number | null>(null)
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
+  const lang = /language-(\w+)/.exec(className ?? '')?.[1] ?? null
+  const handleCopy = async () => {
+    try {
+      // remark fenced code 的文本节点自带尾部换行，复制时剥掉
+      await navigator.clipboard.writeText(extractText(children).replace(/\n$/, ''))
+      setCopied(true)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(() => setCopied(false), 1500)
+    } catch (err) {
+      console.error('[md-codeblock] copy failed:', err)
+    }
+  }
+  return (
+    <div className="md-codeblock">
+      <div className="md-codeblock-bar">
+        {lang && <span className="md-codeblock-lang">{lang}</span>}
+        <button
+          type="button"
+          data-testid="md-codeblock-copy"
+          className="md-codeblock-copy"
+          onClick={() => void handleCopy()}
+        >
+          {copied ? '已复制 ✓' : '复制'}
+        </button>
+      </div>
+      <pre>{children}</pre>
+    </div>
+  )
+}
+
 // ===== Dialogue paragraph parser =====
 function DialogueParagraph({ children }: { children: React.ReactNode }) {
   const text = extractText(children)
@@ -188,5 +224,17 @@ export function briefingComponents(_style: 'academic' | 'newspaper'): Components
   return {
     ...baseComponents,
     p: ({ children }) => <BriefingParagraph>{children}</BriefingParagraph>,
+    // inline code 与块级 code 都先渲染成裸 <code>；块级的外壳由下方的 pre 接管
+    code: ({ children, className }) => <code className={className}>{children}</code>,
+    // fenced code 的默认结构是 pre > code（无语言时 code 无 className，无法在 code
+    // 层区分 inline/block），所以在 pre 层接管整块并渲染 MdCodeBlock
+    pre: ({ children, node }) => {
+      const codeEl = node?.children.find(
+        (c): c is Element => c.type === 'element' && (c as Element).tagName === 'code'
+      )
+      const cls = codeEl?.properties?.className
+      const className = Array.isArray(cls) && cls.length > 0 ? String(cls[0]) : undefined
+      return <MdCodeBlock className={className}>{children}</MdCodeBlock>
+    },
   }
 }

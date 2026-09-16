@@ -179,6 +179,76 @@
   line-height: 1.5;
 }
 
+/* ===== Code block card（briefing 阅读器） ===== */
+.briefing-body-academic .md-body .md-codeblock,
+.briefing-body-newspaper .md-body .md-codeblock {
+  margin: 14px 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.briefing-body-academic .md-body .md-codeblock {
+  background: #15100d;
+  border: 1px solid rgba(148, 137, 121, 0.15);
+}
+
+.briefing-body-newspaper .md-body .md-codeblock {
+  background: #f5f5f5;
+  border: 1px solid rgba(26, 26, 26, 0.12);
+}
+
+.md-codeblock-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: "Courier New", "JetBrains Mono", monospace;
+}
+
+.briefing-body-academic .md-codeblock-bar {
+  background: rgba(232, 213, 183, 0.06);
+  color: rgba(232, 213, 183, 0.5);
+}
+
+.briefing-body-newspaper .md-codeblock-bar {
+  background: rgba(26, 26, 26, 0.05);
+  color: #777;
+}
+
+.md-codeblock-lang {
+  margin-right: auto;
+  text-transform: lowercase;
+  letter-spacing: 0.08em;
+}
+
+.md-codeblock-copy {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.briefing-body-academic .md-codeblock-copy:hover {
+  color: #d97757;
+}
+
+.briefing-body-newspaper .md-codeblock-copy:hover {
+  color: #1a1a1a;
+}
+
+.briefing-body-academic .md-body .md-codeblock pre,
+.briefing-body-newspaper .md-body .md-codeblock pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 14px;
+}
+
 /* ===== Table ===== */
 .md-body table {
   width: 100%;
