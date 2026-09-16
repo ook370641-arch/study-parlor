@@ -1,5 +1,6 @@
+import { useRef, useState } from 'react'
 import { useStore } from '@/store'
-import type { BriefingTheme } from '@shared/index'
+import type { BriefingSourceId, BriefingTheme } from '@shared/index'
 import { BriefingThemeToggle } from './briefing/BriefingThemeToggle'
 
 interface Props {
@@ -87,6 +88,11 @@ function ScoutIcon() {
 export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const source = useStore((s) => s.briefingSource)
   const setSource = useStore((s) => s.setBriefingSource)
+  const order = useStore((s) => s.briefingSourceOrder)
+  const setOrder = useStore((s) => s.setBriefingSourceOrder)
+  const [dropTarget, setDropTarget] = useState<{ id: BriefingSourceId; pos: 'before' | 'after' } | null>(null)
+  const dragIdRef = useRef<BriefingSourceId | null>(null)
+  const didDropRef = useRef(false)
   const goto = useStore((s) => s.goto)
   const candle = useStore((s) => s.candlelightEnabled)
   const plate = useStore((s) => s.paintingPlateEnabled)
@@ -169,25 +175,72 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         </button>
       </div>
       <nav className="flex-1 p-2 space-y-2">
-        {navItems.map((item) => {
+        {(order
+          .map((id) => navItems.find((i) => i.id === id))
+          .filter((i): i is (typeof navItems)[number] => Boolean(i))
+        ).map((item) => {
           const Icon = item.icon
           const isActive = source === item.id
+          const isDropBefore = dropTarget?.id === item.id && dropTarget.pos === 'before'
+          const isDropAfter = dropTarget?.id === item.id && dropTarget.pos === 'after'
           return (
             <button
               key={item.id}
               data-testid={item.testId}
+              draggable={!collapsed}
+              onDragStart={(e) => {
+                dragIdRef.current = item.id
+                e.dataTransfer.setData('text/briefing-source', item.id)
+                e.dataTransfer.effectAllowed = 'move'
+              }}
+              onDragOver={(e) => {
+                if (collapsed) return
+                e.preventDefault()
+                const rect = e.currentTarget.getBoundingClientRect()
+                if (!rect.height) return
+                const r = (e.clientY - rect.top) / rect.height
+                setDropTarget({ id: item.id, pos: r < 0.5 ? 'before' : 'after' })
+              }}
+              onDragLeave={() => setDropTarget((cur) => (cur?.id === item.id ? null : cur))}
+              onDrop={(e) => {
+                e.preventDefault()
+                const src = dragIdRef.current
+                const t = dropTarget
+                setDropTarget(null)
+                if (!src || !t || src === t.id) return
+                const base = order.filter((id) => id !== src)
+                let idx = base.indexOf(t.id)
+                if (t.pos === 'after') idx += 1
+                didDropRef.current = true
+                void setOrder([...base.slice(0, idx), src, ...base.slice(idx)])
+              }}
+              onDragEnd={() => {
+                dragIdRef.current = null
+                setDropTarget(null)
+              }}
               onClick={() => {
+                // 拖拽落手后的合成 click 不触发导航
+                if (didDropRef.current) { didDropRef.current = false; return }
                 setSource(item.id)
               }}
-              className={`${base} ${isActive ? `${themeClasses.active} ${
+              className={`group ${base} ${isActive ? `${themeClasses.active} ${
                 isAcademic
                   ? source === 'job-briefing'
                     ? 'border-[#7fa8d9] rounded-none border-l-[3px]'
                     : 'border-[#d97757] rounded-none border-l-[3px]'
                   : 'border-[#1a1a1a] rounded-none border-l-[3px]'
-              }` : themeClasses.inactive}`}
+              }` : themeClasses.inactive} ${isDropBefore ? 'border-t-2 border-t-ember' : ''} ${isDropAfter ? 'border-b-2 border-b-ember' : ''}`}
               title={item.label}
             >
+              {!collapsed && (
+                <span
+                  aria-hidden="true"
+                  title="拖拽排序"
+                  className="opacity-0 group-hover:opacity-50 transition-opacity text-[10px] leading-none cursor-grab -ml-1"
+                >
+                  ⠿
+                </span>
+              )}
               <Icon />
               {!collapsed && <span>{item.label}</span>}
             </button>
