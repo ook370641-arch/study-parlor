@@ -648,3 +648,45 @@
 .briefing-body-academic .md-body p {
   line-height: 1.9;
 }
+
+/* ===== 博客阅读排版对标（官网实测：H2 25px / H3 19px+32px 上距 / li 12px / 链接 700） ===== */
+
+/* 标题层级拉开（字体沿用等宽设计语言，只调阶梯） */
+.briefing-body-academic .md-body h2,
+.briefing-body-newspaper .md-body h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 36px 0 12px 0;
+}
+
+.briefing-body-academic .md-body h3,
+.briefing-body-newspaper .md-body h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 32px 0 8px 0;
+}
+
+.briefing-body-academic .md-body h4,
+.briefing-body-newspaper .md-body h4 {
+  font-size: 15px;
+  margin: 20px 0 6px 0;
+}
+
+/* 列表透气（官网 li margin-bottom 12px） */
+.briefing-body-academic .md-body li,
+.briefing-body-newspaper .md-body li {
+  margin: 10px 0;
+}
+
+/* 链接加粗 + 下划线偏移（官网链接 weight 700，颜色仍走琥珀点睛） */
+.briefing-body-academic .md-body a,
+.briefing-body-newspaper .md-body a {
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+/* 术语点睛：列表项开头的加粗词条（task/trial/grader… 术语表）染琥珀 */
+.briefing-body-academic .md-body li > strong:first-child,
+.briefing-body-newspaper .md-body li > strong:first-child {
+  color: #d97757;
+}
