@@ -2,7 +2,10 @@ import React, { useMemo } from 'react'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
+import type { Plugin } from 'unified'
+import type { Root } from 'hast'
 import { rehypeTermHighlight, type TermDef } from './rehypeTermHighlight'
+import { rehypeFigureCaption } from './rehypeFigureCaption'
 
 class MdErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -38,6 +41,7 @@ interface Props {
   components?: Components
   className?: string
   terms?: TermDef[]
+  figureCaptions?: boolean
 }
 
 function allowFileUrlTransform(url: string): string {
@@ -46,11 +50,14 @@ function allowFileUrlTransform(url: string): string {
   return defaultUrlTransform(url)
 }
 
-export function MarkdownContent({ children, components, className, terms }: Props) {
-  const rehypePlugins = useMemo(
-    () => (terms && terms.length > 0 ? [rehypeTermHighlight(terms)] : undefined),
-    [terms],
-  )
+export function MarkdownContent({ children, components, className, terms, figureCaptions }: Props) {
+  const rehypePlugins = useMemo(() => {
+    const plugins: Plugin<[], Root>[] = []
+    // figure 化必须在术语高亮之前：caption 判定要求段落内无元素包裹
+    if (figureCaptions) plugins.push(rehypeFigureCaption)
+    if (terms && terms.length > 0) plugins.push(rehypeTermHighlight(terms))
+    return plugins.length > 0 ? plugins : undefined
+  }, [terms, figureCaptions])
   const remarkPlugins = useMemo(() => [remarkGfm], [])
   return (
     <div className={className}>

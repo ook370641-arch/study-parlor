@@ -122,7 +122,7 @@ export function MarkdownRenderer({ content, fileName, briefingStyle, hideHeader,
         {!shouldHideReportHeader && <ReportHeader frontmatter={frontmatter} />}
       </MdErrorBoundary>
       <div className={`md-body ${getDocTypeClass(docType)}`}>
-        <MarkdownContent components={components} terms={terms}>{body}</MarkdownContent>
+        <MarkdownContent components={components} terms={terms} figureCaptions={!!briefingStyle}>{body}</MarkdownContent>
       </div>
     </div>
   )
