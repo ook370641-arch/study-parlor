@@ -613,6 +613,8 @@ export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalo
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
+export type BriefingSourceId = 'writing' | 'digest' | 'anthropic' | 'job-briefing' | 'scout'
+
 export type StateJson = {
   version: 1
   profile: Profile
@@ -628,7 +630,8 @@ export type StateJson = {
   briefingTheme?: BriefingTheme
   briefingFontSize?: BriefingFontSize
   studyFontSize?: BriefingFontSize
-  briefingSource?: 'digest' | 'anthropic' | 'job-briefing' | 'writing' | 'scout'
+  briefingSource?: BriefingSourceId
+  briefingSourceOrder?: BriefingSourceId[]
   jobBriefingConfig?: JobBriefingConfig
   jobProfile?: JobProfile
   anthropicBlogCache?: AnthropicBlogCache

@@ -9,11 +9,12 @@ import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
 import { childrenPathsOf, writingPreviewKindOf } from '@/lib/writing-tree-utils'
 import { attributeMessages } from '@/lib/collection-attribution'
 import { splitArticleIntoChunks } from '@/lib/article-chunks'
+import { DEFAULT_BRIEFING_SOURCE_ORDER, normalizeBriefingSourceOrder } from '@/lib/briefing-source-order'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, BriefingResult, SearchResult, SearchSource, SearchErrorCode,
-  Terminology, BriefingTheme, BriefingStage, BriefingFontSize, AnthropicBlogCache,
+  Terminology, BriefingTheme, BriefingStage, BriefingFontSize, BriefingSourceId, AnthropicBlogCache,
   ArticleAnnotation, ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   JobBriefingResult, JobBriefingConfig, JobCompany, JobErrorCode, JobProfile,
@@ -149,7 +150,8 @@ type AppStore = {
   togglePaintingPlate: () => Promise<void>
   setBriefingStage: (stage: BriefingStage | null) => void
   // Anthropic 博客
-  briefingSource: 'digest' | 'anthropic' | 'job-briefing' | 'writing' | 'scout'
+  briefingSource: BriefingSourceId
+  briefingSourceOrder: BriefingSourceId[]
   anthropicBlogCache: AnthropicBlogCache
   anthropicReaderFilePath: string | null
   anthropicReaderBody: string | null
@@ -157,7 +159,8 @@ type AppStore = {
   anthropicBlogLastSeenAt: string | null
   /** 宪法可视化报告视图是否打开（仅运行时，与 anthropicReader 互斥） */
   constitutionReportOpen: boolean
-  setBriefingSource: (source: 'digest' | 'anthropic' | 'job-briefing' | 'writing' | 'scout') => Promise<void>
+  setBriefingSource: (source: BriefingSourceId) => Promise<void>
+  setBriefingSourceOrder: (order: BriefingSourceId[]) => Promise<void>
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
   ) => Promise<
@@ -593,6 +596,7 @@ export const useStore = create<AppStore>((set, get) => ({
   candlelightEnabled: true,
   paintingPlateEnabled: false,
   briefingSource: 'digest',
+  briefingSourceOrder: DEFAULT_BRIEFING_SOURCE_ORDER,
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicReaderFilePath: null,
   anthropicReaderBody: null,
@@ -673,6 +677,7 @@ export const useStore = create<AppStore>((set, get) => ({
       },
       studyFontSize: normalizeStudyFontSize(state.studyFontSize),
       briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'job-briefing' || state.briefingSource === 'writing' || state.briefingSource === 'scout' ? state.briefingSource : 'digest',
+      briefingSourceOrder: normalizeBriefingSourceOrder(state.briefingSourceOrder),
       scoutTab: state.scoutTab === 'articles' ? 'articles' : 'chat',
       scoutActiveConversationId: state.scoutActiveConversationId ?? null,
       anthropicBlogCache: state.anthropicBlogCache
@@ -1363,6 +1368,11 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ briefingSource: source })
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
     if (source === 'writing') void ipc.writingRefreshCatalog() // 摘要唯一生成时机(spec C)
+  },
+
+  setBriefingSourceOrder: async (order) => {
+    set({ briefingSourceOrder: order })
+    await ipc.patchState({ briefingSourceOrder: order } as Partial<StateJson>)
   },
 
   markBriefingRead: async (source, date) => {
