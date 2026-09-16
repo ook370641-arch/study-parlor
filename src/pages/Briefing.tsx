@@ -12,6 +12,7 @@ import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { ScoutPanel } from '@/components/scout/ScoutPanel'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
+import { CompanionWritingPicker } from '@/components/article-assistant/CompanionWritingPicker'
 import { JobBriefingRenderer, JobProfilePanel, JobAssistantPanel } from '@/components/job-briefing'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
@@ -88,6 +89,8 @@ export function Briefing() {
   const cancelJobBriefing = useStore((s) => s.cancelJobBriefing)
   const collectionViewOpen = useStore((s) => s.collectionViewOpen)
   const openCollectionView = useStore((s) => s.openCollectionView)
+  // 写作树对照挑选器：对照 tab 下点来源栏「写作」后替换本栏日期列表
+  const jobPickerOpen = useStore((s) => s.writingCompanionPicker === 'job')
 
   const today = formatBriefingDate(new Date())
 
@@ -274,8 +277,14 @@ export function Briefing() {
               onToggle={() => setDateColumnCollapsed((c) => !c)}
               theme={theme}
               width={44}
-              title="日期"
+              title={jobPickerOpen ? '选对照文' : '日期'}
             >
+              {jobPickerOpen ? (
+                <CompanionWritingPicker
+                  theme={theme}
+                  onPickFile={(p) => void useStore.getState().selectArticleCompanion('job', jobViewDate, p, { readonly: true })}
+                />
+              ) : (
               <BriefingDateColumn
                 collapsed={dateColumnCollapsed}
                 history={jobHistoryList}
@@ -302,6 +311,7 @@ export function Briefing() {
                 ]}
                 readDates={jobRead}
               />
+              )}
             </BriefingListColumn>
           )}
 

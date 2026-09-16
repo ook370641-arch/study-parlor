@@ -11,6 +11,7 @@ import { BlogRecommendView } from './BlogRecommendView'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
+import { CompanionWritingPicker } from '@/components/article-assistant/CompanionWritingPicker'
 import { findNewArticleUrls, sortArticlesByDateDesc } from '@/lib/anthropic-articles'
 import { withConstitutionEntry } from '@/lib/constitution-report'
 import { ANTHROPIC_SOURCES, filterGroupOf } from '@/lib/anthropic-sections'
@@ -80,6 +81,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const loadBlogCollection = useStore((s) => s.loadBlogCollection)
   const toggleBlogCollection = useStore((s) => s.toggleBlogCollection)
   const toggleBlogRead = useStore((s) => s.toggleBlogRead)
+  // 写作树对照挑选器：对照 tab 下点来源栏「写作」后替换本栏文章列表
+  const pickerOpen = useStore((s) => s.writingCompanionPicker === 'anthropic')
 
   const [query, setQuery] = useState('')
   const [listCollapsed, setListCollapsed] = useState(false)
@@ -193,9 +196,14 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         onToggle={() => setListCollapsed((c) => !c)}
         theme={theme}
         width={80}
-        title="Anthropic 博客"
+        title={pickerOpen ? '选对照文' : 'Anthropic 博客'}
       >
-        {listCollapsed ? (
+        {pickerOpen ? (
+          <CompanionWritingPicker
+            theme={theme}
+            onPickFile={(p) => void useStore.getState().selectArticleCompanion('anthropic', useStore.getState().anthropicReaderFilePath ?? 'anthropic-main', p)}
+          />
+        ) : listCollapsed ? (
           <div className="flex flex-col items-center py-3 gap-3 overflow-y-auto h-full">
             {newArticleCount > 0 && (
               <span

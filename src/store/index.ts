@@ -6,7 +6,7 @@ import { mergeArticlesByUrl } from '@/lib/anthropic-articles'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
-import { childrenPathsOf, writingPreviewKindOf } from '@/lib/writing-tree-utils'
+import { childrenPathsOf, writingPreviewKindOf, isWritingTreePath } from '@/lib/writing-tree-utils'
 import { attributeMessages } from '@/lib/collection-attribution'
 import { splitArticleIntoChunks } from '@/lib/article-chunks'
 import { DEFAULT_BRIEFING_SOURCE_ORDER, normalizeBriefingSourceOrder } from '@/lib/briefing-source-order'
@@ -487,8 +487,13 @@ type AppStore = {
   // 右栏统一：文章旁注面板模式（导读/对照）+ 对照槽
   articlePanelMode: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
   articleCompanionMap: Record<string, string>
+  // 写作树对照挑选器：非 null 时左栏临时换成写作树（瞬态，不持久化），
+  // 点文件 = 放入该栏目对照槽。source 切换/切回导读/折叠右栏时清空。
+  writingCompanionPicker: 'anthropic' | 'scout' | 'job' | null
   articleCompanion: { key: string; filePath: string; kind: 'md' | 'html' | 'other'; body: string; readonly: boolean; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
   setArticlePanelMode: (source: 'anthropic' | 'scout' | 'job', mode: 'guide' | 'companion') => void
+  openWritingCompanionPicker: (source: 'anthropic' | 'scout' | 'job') => void
+  closeWritingCompanionPicker: () => void
   selectArticleCompanion: (source: 'anthropic' | 'scout' | 'job', mainKey: string, filePath: string, opts?: { readonly?: boolean }) => Promise<void>
   updateArticleCompanionBody: (body: string) => void
   saveArticleCompanion: () => Promise<void>
@@ -654,6 +659,7 @@ export const useStore = create<AppStore>((set, get) => ({
   articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
   articleCompanionMap: {},
   articleCompanion: null,
+  writingCompanionPicker: null,
   writingAssistant: null,
   writingAssistantSnapshotLit: false,
 
@@ -1365,7 +1371,8 @@ export const useStore = create<AppStore>((set, get) => ({
     // HTML 删除模式有未写回删除时先 flush（离开写作区=自动写回）；失败中止切换
     const htmlFlush = get().htmlDeleteFlush
     if (htmlFlush && !(await htmlFlush())) return
-    set({ briefingSource: source })
+    // 真实 source 切换 = 离开当前栏目，对照挑选器一并关闭
+    set({ briefingSource: source, writingCompanionPicker: null })
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
     if (source === 'writing') void ipc.writingRefreshCatalog() // 摘要唯一生成时机(spec C)
   },
@@ -2304,7 +2311,8 @@ export const useStore = create<AppStore>((set, get) => ({
     debounceSaveGuideWidth({ articleAssistantGuideWidth: clamped })
   },
   setArticleAssistantGuideCollapsed: (collapsed) => {
-    set({ articleAssistantGuideCollapsed: collapsed })
+    // 右栏折叠后对照槽不可见，挑选器一并关闭
+    set({ articleAssistantGuideCollapsed: collapsed, ...(collapsed ? { writingCompanionPicker: null } : {}) })
     debounceSaveGuideWidth({ articleAssistantGuideCollapsed: collapsed })
   },
   setAssistantActiveChunk: (index) => {
@@ -2814,9 +2822,13 @@ export const useStore = create<AppStore>((set, get) => ({
 
   setArticlePanelMode: (source, mode) => {
     const next = { ...get().articlePanelMode, [source]: mode }
-    set({ articlePanelMode: next })
+    // 切回导读 tab 后挑选器失去语境，一并关闭
+    set({ articlePanelMode: next, ...(mode === 'guide' ? { writingCompanionPicker: null } : {}) })
     ipc.patchState({ articlePanelMode: next } as Partial<StateJson>)
   },
+
+  openWritingCompanionPicker: (source) => set({ writingCompanionPicker: source }),
+  closeWritingCompanionPicker: () => set({ writingCompanionPicker: null }),
 
   selectArticleCompanion: async (_source, mainKey, filePath, opts) => {
     const seq = ++articleCompanionSelectSeq
@@ -2828,9 +2840,25 @@ export const useStore = create<AppStore>((set, get) => ({
     const kind: 'md' | 'html' | 'other' = filePath.toLowerCase().endsWith('.md') ? 'md' : filePath.toLowerCase().endsWith('.html') ? 'html' : 'other'
     const readonly = opts?.readonly === true || kind === 'html'
     try {
-      const r = await ipc.readMd(filePath) // { frontmatter, body }
+      // 写作树相对路径走写作专属 IPC：readMd/writeArticleBody 按进程 cwd 解析相对路径
+      // 且写白名单只含博客目录，相对路径会直接被拒（「对照文读取失败」根因）
+      let body: string
+      if (isWritingTreePath(filePath)) {
+        if (kind === 'md') {
+          const r = await ipc.writingRead({ path: filePath })
+          if (!r.ok) throw new Error(r.code)
+          body = r.value.body ?? ''
+        } else {
+          const r = await ipc.writingReadPreview({ path: filePath })
+          if (!r.ok) throw new Error(r.code)
+          body = r.value.content ?? ''
+        }
+      } else {
+        const r = await ipc.readMd(filePath) // { frontmatter, body }
+        body = r.body ?? ''
+      }
       if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
-      set({ articleCompanion: { key: mainKey, filePath, kind, body: r.body ?? '', readonly, dirty: false, saving: 'idle' } })
+      set({ articleCompanion: { key: mainKey, filePath, kind, body, readonly, dirty: false, saving: 'idle' } })
     } catch {
       if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
       // 读取失败（如文件被外部删除）：清映射 + toast + 对照槽回空态
@@ -2848,7 +2876,10 @@ export const useStore = create<AppStore>((set, get) => ({
     const f = get().articleCompanion
     if (!f || !f.dirty || f.readonly) return
     set({ articleCompanion: { ...f, saving: 'saving' as const } })
-    const r = await ipc.anthropicWriteArticleBody({ filePath: f.filePath, body: f.body })
+    // 写作树相对路径走 writingWrite（写白名单不含博客通道的 ALLOWED_DIRS 之外目录）
+    const r = isWritingTreePath(f.filePath)
+      ? await ipc.writingWrite({ path: f.filePath, body: f.body })
+      : await ipc.anthropicWriteArticleBody({ filePath: f.filePath, body: f.body })
     const cur = get().articleCompanion
     if (!cur || cur.filePath !== f.filePath) return // 保存期间文件已切换/关闭，丢弃过期结果
     set({ articleCompanion: { ...cur, dirty: !r.ok, saving: r.ok ? 'saved' as const : 'error' as const } })

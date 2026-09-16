@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { AnthropicArticleReader } from '@/components/anthropic/AnthropicArticleReader'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
+import { CompanionWritingPicker } from '@/components/article-assistant/CompanionWritingPicker'
 import { ScoutListColumn } from './ScoutListColumn'
 import { ScoutChatView } from './ScoutChatView'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
@@ -20,6 +21,8 @@ export function ScoutPanel({ theme = 'academic' }: { theme?: BriefingTheme }) {
 
   const [listCollapsed, setListCollapsed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  // 写作树对照挑选器：对照 tab 下点来源栏「写作」后替换本栏文章列表
+  const pickerOpen = useStore((s) => s.writingCompanionPicker === 'scout')
 
   useEffect(() => {
     setIsLoading(true)
@@ -51,8 +54,15 @@ export function ScoutPanel({ theme = 'academic' }: { theme?: BriefingTheme }) {
 
   return (
     <div data-testid="scout-panel" className="relative flex-1 flex min-w-0 overflow-hidden z-[5]">
-      <BriefingListColumn collapsed={listCollapsed} onToggle={() => setListCollapsed(c => !c)} theme={theme} width={80} title="拾贝">
-        <ScoutListColumn theme={theme} />
+      <BriefingListColumn collapsed={listCollapsed} onToggle={() => setListCollapsed(c => !c)} theme={theme} width={80} title={pickerOpen ? '选对照文' : '拾贝'}>
+        {pickerOpen ? (
+          <CompanionWritingPicker
+            theme={theme}
+            onPickFile={(p) => void useStore.getState().selectArticleCompanion('scout', useStore.getState().scoutReaderFilePath ?? 'scout-main', p)}
+          />
+        ) : (
+          <ScoutListColumn theme={theme} />
+        )}
       </BriefingListColumn>
 
       <div className="flex-1 min-w-0 flex flex-col">

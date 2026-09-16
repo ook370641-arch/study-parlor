@@ -66,12 +66,16 @@
       "sources": [
         "src/components/article-assistant/ArticleGuideTabs.tsx",
         "src/components/article-assistant/ArticleCompanionBoard.tsx",
+        "src/components/article-assistant/CompanionWritingPicker.tsx",
+        "src/lib/companion-picker.ts",
+        "src/components/BriefingSourceSidebar.tsx",
         "src/components/writing/WritingEditor.tsx",
         "src/components/writing/HtmlPreview.tsx",
         "electron/lib/article-io.ts"
       ],
       "specs": [
-        "article-side-panel.spec.ts"
+        "article-side-panel.spec.ts",
+        "article-companion-writing-picker.spec.ts"
       ]
     },
     "writing": {

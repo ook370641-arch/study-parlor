@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useStore } from '@/store'
 import type { BriefingSourceId, BriefingTheme } from '@shared/index'
 import { BriefingThemeToggle } from './briefing/BriefingThemeToggle'
+import { companionPickerTarget } from '@/lib/companion-picker'
 
 interface Props {
   collapsed: boolean
@@ -93,7 +94,31 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const [dropTarget, setDropTarget] = useState<{ id: BriefingSourceId; pos: 'before' | 'after' } | null>(null)
   const dragIdRef = useRef<BriefingSourceId | null>(null)
   const didDropRef = useRef(false)
+  const picker = useStore((s) => s.writingCompanionPicker)
   const goto = useStore((s) => s.goto)
+
+  // 对照挑选器语境下的来源点击拦截（spec 2026-09-16）：
+  // 对照 tab 下点「写作」= 左栏换写作树挑选器（不跳转）；再点「写作」或当前栏目 = 回文章列表。
+  const handleNavClick = (id: string) => {
+    const s = useStore.getState()
+    if (id === 'writing') {
+      if (s.writingCompanionPicker) { s.closeWritingCompanionPicker(); return }
+      const target = companionPickerTarget({
+        briefingSource: s.briefingSource,
+        articlePanelMode: s.articlePanelMode,
+        articleAssistantGuideCollapsed: s.articleAssistantGuideCollapsed,
+        anthropicReaderFilePath: s.anthropicReaderFilePath,
+        scoutTab: s.scoutTab,
+        scoutReaderFilePath: s.scoutReaderFilePath,
+        jobResultFilePath: s.jobBriefing.result?.filePath ?? null,
+      })
+      if (target) { s.openWritingCompanionPicker(target); return }
+    } else if (s.writingCompanionPicker && id === s.briefingSource) {
+      s.closeWritingCompanionPicker()
+      return
+    }
+    setSource(id as typeof source)
+  }
   const candle = useStore((s) => s.candlelightEnabled)
   const plate = useStore((s) => s.paintingPlateEnabled)
   const painting = useStore((s) => s.currentPaintings.briefing)
@@ -180,7 +205,8 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
           .filter((i): i is (typeof navItems)[number] => Boolean(i))
         ).map((item) => {
           const Icon = item.icon
-          const isActive = source === item.id
+          // picker 打开时来源未切换（仍是博客栏目），active 样式移到「写作」上提示挑选模式
+          const isActive = picker ? item.id === 'writing' : source === item.id
           const isDropBefore = dropTarget?.id === item.id && dropTarget.pos === 'before'
           const isDropAfter = dropTarget?.id === item.id && dropTarget.pos === 'after'
           return (
@@ -221,7 +247,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
               onClick={() => {
                 // 拖拽落手后的合成 click 不触发导航
                 if (didDropRef.current) { didDropRef.current = false; return }
-                setSource(item.id)
+                handleNavClick(item.id)
               }}
               className={`group ${base} ${isActive ? `${themeClasses.active} ${
                 isAcademic

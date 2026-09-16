@@ -13,7 +13,7 @@ interface PromptState {
   onSubmit: (value: string) => void
 }
 
-function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academic', inlineNew, onStartInlineNew, onInlineNewChange, onInlineNewSubmit, onInlineNewCancel }: {
+function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academic', inlineNew, onStartInlineNew, onInlineNewChange, onInlineNewSubmit, onInlineNewCancel, onPickFile }: {
   node: WritingTreeNode; depth: number; root: WritingRoot; parentDir: string; siblingPaths: string[];
   theme?: 'academic' | 'newspaper'
   inlineNew: { root: WritingRoot; dir: string; value: string; error?: string } | null
@@ -21,6 +21,8 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   onInlineNewChange: (v: string) => void
   onInlineNewSubmit: (v: string) => void
   onInlineNewCancel: () => void
+  // 挑选模式（博客对照挑选器）：提供后文件点击走 onPickFile，且隐藏行内操作按钮
+  onPickFile?: (path: string) => void
 }) {
   const isAcademic = theme !== 'newspaper'
   const selectedPath = useStore(s => s.writingFile?.path)
@@ -54,6 +56,8 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   const handleClick = () => {
     if (editing) return
     if (isDir) { setWritingGroupExpanded(node.path, !open); return }
+    // 挑选模式：点击 = 交给调用方（放入对照槽），不碰写作页自己的选中逻辑
+    if (onPickFile) { onPickFile(node.path); return }
     // 左键情境化：右栏展开且处于对照 tab → 切换对照文；否则切主文（现状）
     if (assistantOpen && panelMode === 'companion') selectCompanionFile(node.path)
     else selectWritingFile(node.path)
@@ -175,6 +179,8 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
             <span className="truncate block">{displayWritingName(node)}</span>
           )}
         </div>
+        {/* 挑选模式下隐藏行内操作（重命名/新建/删除）：挑选器只做挑选，避免对照流程里误操作 */}
+        {!onPickFile && (
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             data-testid="writing-node-rename"
@@ -217,6 +223,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
             🗑
           </button>
         </div>
+        )}
       </div>
 
       {isDir && open && (() => {
@@ -225,7 +232,7 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
         const here = inlineNew != null && inlineNew.root === root && inlineNew.dir === node.path.slice(root.length + 1)
         const renderChild = (child: WritingTreeNode) => (
           <TreeNode key={child.path} node={child} depth={depth + 1} root={root} parentDir={node.path} siblingPaths={sorted.map(n => n.path)} theme={theme}
-            inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} />
+            inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} onPickFile={onPickFile} />
         )
         if (!here) return sorted.map(renderChild)
         const idx = sortedInsertIndexForFile(children, writingOrder[node.path], inlineNew.value)
@@ -284,13 +291,15 @@ function TreeNode({ node, depth, root, parentDir, siblingPaths, theme = 'academi
   )
 }
 
-export function WritingTree({ root, theme = 'academic', inlineNew, onStartInlineNew, onInlineNewChange, onInlineNewSubmit, onInlineNewCancel }: {
+export function WritingTree({ root, theme = 'academic', inlineNew, onStartInlineNew, onInlineNewChange, onInlineNewSubmit, onInlineNewCancel, onPickFile }: {
   root: WritingRoot; theme?: 'academic' | 'newspaper'
   inlineNew: { root: WritingRoot; dir: string; value: string; error?: string } | null
   onStartInlineNew: (t: { root: WritingRoot; dir: string; value: string }) => void
   onInlineNewChange: (v: string) => void
   onInlineNewSubmit: (v: string) => void
   onInlineNewCancel: () => void
+  // 挑选模式（博客对照挑选器）：提供后文件点击走 onPickFile，且隐藏行内操作按钮
+  onPickFile?: (path: string) => void
 }) {
   const isAcademic = theme !== 'newspaper'
   const tree = useStore(s => s.writingTree)
@@ -304,7 +313,7 @@ export function WritingTree({ root, theme = 'academic', inlineNew, onStartInline
 
   const renderChild = (n: WritingTreeNode) => (
     <TreeNode key={n.path} node={n} depth={0} root={root} parentDir={root} siblingPaths={sorted.map(x => x.path)} theme={theme}
-      inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} />
+      inlineNew={inlineNew} onStartInlineNew={onStartInlineNew} onInlineNewChange={onInlineNewChange} onInlineNewSubmit={onInlineNewSubmit} onInlineNewCancel={onInlineNewCancel} onPickFile={onPickFile} />
   )
 
   if (here) {

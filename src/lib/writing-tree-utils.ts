@@ -7,6 +7,13 @@ export function countFiles(nodes: WritingTreeNode[] | undefined): number {
   return nodes.reduce((sum, n) => sum + (n.kind === 'file' ? 1 : countFiles(n.children)), 0)
 }
 
+/** 判断 path 是否为写作树相对路径（writing/... 或 repository/...）。
+ *  写作树节点 path 是库根相对路径，博客文章是绝对路径——文章对照槽按此分流 IO 通道：
+ *  相对路径走 writingRead/writingWrite（写作专属守卫），绝对路径走 readMd/writeArticleBody。 */
+export function isWritingTreePath(p: string): boolean {
+  return p.startsWith('writing/') || p.startsWith('repository/')
+}
+
 /** Sort nodes by a recorded order array, but always render directories before
  *  files (invariant): [ordered dirs] → [unordered dirs] → [ordered files] →
  *  [unordered files]. Nodes in the order list appear first in recorded sequence;
