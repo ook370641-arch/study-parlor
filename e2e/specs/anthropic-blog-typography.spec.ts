@@ -80,9 +80,19 @@ test.describe('博客排版对标官网', () => {
     await copyBtn.click()
     await expect(copyBtn).toHaveText('已复制 ✓')
 
-    // B1 标题阶梯：h3 17px / 上间距 32px
-    await expect(article.locator('h3').first()).toHaveCSS('font-size', '17px')
+    // B1 标题阶梯：h3 跟随正文字号（em 阶梯）且必须大于正文 / 上间距 32px
+    const bodyPx = await article.locator('p').first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
+    const h3Px = await article.locator('h3').first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
+    expect(h3Px).toBeGreaterThan(bodyPx)
     await expect(article.locator('h3').first()).toHaveCSS('margin-top', '32px')
+
+    // 整篇英文文档：正文不走「英文引注」斜体（md-doc-noncjk 关闭 p:lang(en) 斜体降档）
+    await expect(article.locator('p').first()).toHaveCSS('font-style', 'normal')
+
+    // 代码块滚动区：限高 + 滚轮可滚动
+    const codePre = article.locator('.md-codeblock pre')
+    await expect(codePre).toHaveCSS('max-height', '480px')
+    await expect(codePre).toHaveCSS('overflow-y', 'auto')
 
     // B5 链接加粗
     await expect(article.locator('p a').first()).toHaveCSS('font-weight', '600')

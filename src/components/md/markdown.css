@@ -247,6 +247,15 @@
   border-radius: 0;
   background: transparent;
   padding: 12px 14px;
+  /* 长代码块限高内滚（对齐官网代码卡片的滚动区），滚轮直接可用 */
+  max-height: 480px;
+  overflow: auto;
+}
+
+/* 代码字号跟随正文档位（0.85em ≈ base 档 16px，对齐官网代码 16px 观感） */
+.briefing-body-academic .md-body .md-codeblock pre code,
+.briefing-body-newspaper .md-body .md-codeblock pre code {
+  font-size: 0.85em;
 }
 
 /* ===== Table ===== */
@@ -283,18 +292,19 @@
 }
 
 /* ===== Briefing english-language paragraphs ===== */
-.briefing-body-academic p:lang(en),
-.briefing-body-newspaper p:lang(en) {
+/* 仅中英混排文档（简报英文原文段）按引注处理；整篇英文（md-doc-noncjk）走正常正文 */
+.briefing-body-academic .md-body:not(.md-doc-noncjk) p:lang(en),
+.briefing-body-newspaper .md-body:not(.md-doc-noncjk) p:lang(en) {
   font-size: calc(var(--briefing-body-size) - 1px);
   font-style: italic;
   line-height: 1.85;
 }
 
-.briefing-body-academic p:lang(en) {
+.briefing-body-academic .md-body:not(.md-doc-noncjk) p:lang(en) {
   color: #a89a86;
 }
 
-.briefing-body-newspaper p:lang(en) {
+.briefing-body-newspaper .md-body:not(.md-doc-noncjk) p:lang(en) {
   color: #555;
 }
 
@@ -544,7 +554,7 @@
   background: rgba(26, 26, 26, 0.03);
 }
 
-.briefing-body-newspaper p:lang(en) {
+.briefing-body-newspaper .md-body:not(.md-doc-noncjk) p:lang(en) {
   color: #555;
 }
 
@@ -586,7 +596,7 @@
   color: rgba(245, 230, 204, 0.75);
 }
 
-.briefing-body-academic p:lang(en) {
+.briefing-body-academic .md-body:not(.md-doc-noncjk) p:lang(en) {
   color: #e8d5b7;
 }
 
@@ -651,24 +661,27 @@
 
 /* ===== 博客阅读排版对标（官网实测：H2 25px / H3 19px+32px 上距 / li 12px / 链接 700） ===== */
 
-/* 标题层级拉开（字体沿用等宽设计语言，只调阶梯） */
+/* 标题层级拉开（字体沿用等宽设计语言，只调阶梯）
+   用 em 跟随 --briefing-body-size：字号档位上调时标题始终大于正文
+   （base 19px 下 h2≈25.7 / h3≈21.3 / h4=19，对齐官网 25/19 阶梯比例） */
 .briefing-body-academic .md-body h2,
 .briefing-body-newspaper .md-body h2 {
-  font-size: 22px;
+  font-size: 1.35em;
   font-weight: 600;
   margin: 36px 0 12px 0;
 }
 
 .briefing-body-academic .md-body h3,
 .briefing-body-newspaper .md-body h3 {
-  font-size: 17px;
+  font-size: 1.12em;
   font-weight: 600;
   margin: 32px 0 8px 0;
 }
 
 .briefing-body-academic .md-body h4,
 .briefing-body-newspaper .md-body h4 {
-  font-size: 15px;
+  font-size: 1em;
+  font-weight: 600;
   margin: 20px 0 6px 0;
 }
 

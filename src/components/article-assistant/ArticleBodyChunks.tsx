@@ -42,9 +42,9 @@ export const ArticleBodyChunks = memo(function ArticleBodyChunks({ content, chun
         const guideIndex = hasHeading ? headingIndex : -1
         if (hasHeading) headingIndex++
         const isActive = activeChunkIndex === guideIndex
-        const borderColor = isAcademic
-          ? isActive ? 'border-ember' : 'border-parchment/20'
-          : isActive ? 'border-ember' : 'border-[#1a1a1a]/10'
+        // 静止态不画竖线（用户反馈：灰色竖线像批注区隔，破坏阅读）；hover/激活时才亮琥珀线，
+        // border 宽度不变仅换色，无布局抖动
+        const borderColor = isActive ? 'border-ember' : 'border-transparent'
         return (
           <section
             key={i}

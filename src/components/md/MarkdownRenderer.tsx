@@ -106,6 +106,11 @@ export function MarkdownRenderer({ content, fileName, briefingStyle, hideHeader,
 
   const docType = detectDocType(content, fileName)
 
+  // 全文无 CJK（如 Anthropic 英文博客整篇）时打 md-doc-noncjk：
+  // 关闭「英文段落 = 引注」的斜体/降档处理——那是给中英混排简报里的英文原文段设计的，
+  // 整篇英文文章每段都命中，正文会全部变成斜体注释样式。
+  const docNonCJK = !/[一-龥぀-ゟ゠-ヿ]/.test(body)
+
   const components = briefingStyle
     ? briefingComponents(briefingStyle)
     : docType === 'report'
@@ -121,7 +126,7 @@ export function MarkdownRenderer({ content, fileName, briefingStyle, hideHeader,
       <MdErrorBoundary>
         {!shouldHideReportHeader && <ReportHeader frontmatter={frontmatter} />}
       </MdErrorBoundary>
-      <div className={`md-body ${getDocTypeClass(docType)}`}>
+      <div className={`md-body ${getDocTypeClass(docType)}${docNonCJK ? ' md-doc-noncjk' : ''}`}>
         <MarkdownContent components={components} terms={terms} figureCaptions={!!briefingStyle}>{body}</MarkdownContent>
       </div>
     </div>

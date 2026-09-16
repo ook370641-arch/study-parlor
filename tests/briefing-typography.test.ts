@@ -18,6 +18,26 @@ describe('briefing academic typography', () => {
   it('sets academic body line-height to 1.9', () => {
     expect(markdownCss).toMatch(/\.briefing-body-academic \.md-body p\s*\{[^}]*line-height:\s*1\.9/)
   })
+
+  it('英文引注样式只作用于中英混排文档（md-doc-noncjk 整篇英文关闭斜体降档）', () => {
+    expect(markdownCss).toContain('.briefing-body-academic .md-body:not(.md-doc-noncjk) p:lang(en),')
+    expect(markdownCss).toContain('.briefing-body-newspaper .md-body:not(.md-doc-noncjk) p:lang(en)')
+    // 旧的无文档判定的裸选择器不应残留
+    expect(markdownCss).not.toMatch(/\.briefing-body-academic p:lang\(en\)/)
+    expect(markdownCss).not.toMatch(/\.briefing-body-newspaper p:lang\(en\)/)
+  })
+
+  it('标题字号用 em 阶梯跟随正文字号档位（档上调时标题始终大于正文）', () => {
+    expect(markdownCss).toMatch(/\.md-body h2,[\s\S]*?font-size:\s*1\.35em/)
+    expect(markdownCss).toMatch(/\.md-body h3,[\s\S]*?font-size:\s*1\.12em/)
+    expect(markdownCss).toMatch(/\.md-body h4,[\s\S]*?font-size:\s*1em/)
+  })
+
+  it('代码块限高可滚动、代码字号跟随正文', () => {
+    expect(markdownCss).toMatch(/\.md-codeblock pre,[\s\S]*?max-height:\s*480px/)
+    expect(markdownCss).toMatch(/\.md-codeblock pre,[\s\S]*?overflow:\s*auto/)
+    expect(markdownCss).toMatch(/\.md-codeblock pre code,[\s\S]*?font-size:\s*0\.85em/)
+  })
 })
 
 describe('constellation motion fallbacks', () => {
