@@ -36,7 +36,13 @@ export function addManualEntry(
     addedAt: new Date().toISOString(),
     origin: 'manual',
   }
-  return { ...c, entries: [...c.entries, entry], dismissed: c.dismissed.filter(d => d !== args.sourceUrl) }
+  // 互斥：收藏即出已读
+  return {
+    ...c,
+    entries: [...c.entries, entry],
+    dismissed: c.dismissed.filter(d => d !== args.sourceUrl),
+    read: c.read.filter(r => r.sourceUrl !== args.sourceUrl),
+  }
 }
 
 export function removeEntry(c: BlogCollectionFile, sourceUrl: string): BlogCollectionFile {
@@ -58,7 +64,7 @@ export function applyRecommend(
   return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history, read: c.read }
 }
 
-/** 标记已读：幂等（已存在直接返回原对象），新条目插到最前 */
+/** 标记已读：幂等（已存在直接返回原对象），新条目插到最前；互斥：已读即出收藏夹 */
 export function markRead(
   c: BlogCollectionFile,
   args: { sourceUrl: string; filePath: string; title: string }
@@ -70,7 +76,17 @@ export function markRead(
     title: args.title,
     readAt: new Date().toISOString(),
   }
-  return { ...c, read: [entry, ...c.read] }
+  // 互斥：出收藏夹；recommend 来源记 dismissed（同 removeEntry）
+  const target = c.entries.find(e => e.sourceUrl === args.sourceUrl)
+  const dismissed = target?.origin === 'recommend'
+    ? Array.from(new Set([...c.dismissed, args.sourceUrl]))
+    : c.dismissed
+  return {
+    ...c,
+    entries: c.entries.filter(e => e.sourceUrl !== args.sourceUrl),
+    dismissed,
+    read: [entry, ...c.read],
+  }
 }
 
 export function removeRead(c: BlogCollectionFile, sourceUrl: string): BlogCollectionFile {

@@ -185,3 +185,41 @@ describe('removeBatch', () => {
     expect(c2.read).toHaveLength(1)
   })
 })
+
+describe('已读/收藏互斥', () => {
+  it('markRead 将手动收藏条目搬出收藏夹', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', addedAt: 'x', origin: 'manual' }],
+    }
+    const c2 = markRead(c, { sourceUrl: 'u1', filePath: 'a.md', title: 'A' })
+    expect(c2.entries).toHaveLength(0)
+    expect(c2.read.map(r => r.sourceUrl)).toEqual(['u1'])
+  })
+
+  it('markRead 将 recommend 条目搬出并记 dismissed', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      entries: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', addedAt: 'x', origin: 'recommend', reason: 'r', batch: 1 }],
+    }
+    const c2 = markRead(c, { sourceUrl: 'u1', filePath: 'a.md', title: 'A' })
+    expect(c2.entries).toHaveLength(0)
+    expect(c2.dismissed).toEqual(['u1'])
+    expect(c2.read).toHaveLength(1)
+  })
+
+  it('markRead 未收藏时不影响 dismissed', () => {
+    const c2 = markRead(empty(), { sourceUrl: 'u1', filePath: 'a.md', title: 'A' })
+    expect(c2.dismissed).toEqual([])
+  })
+
+  it('addManualEntry 将已读条目搬出已读', () => {
+    const c: BlogCollectionFile = {
+      ...empty(),
+      read: [{ sourceUrl: 'u1', filePath: 'a.md', title: 'A', readAt: 'x' }],
+    }
+    const c2 = addManualEntry(c, { sourceUrl: 'u1', filePath: 'a.md', title: 'A' })
+    expect(c2.read).toEqual([])
+    expect(c2.entries).toHaveLength(1)
+  })
+})
