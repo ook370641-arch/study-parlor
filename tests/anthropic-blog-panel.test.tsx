@@ -23,7 +23,6 @@ vi.mock('@/lib/ipc', () => ({
     anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
     anthropicCollectionAdd: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
     anthropicCollectionRemove: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
-    anthropicCollectionPromote: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
     anthropicCollectionMarkRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [{ sourceUrl: 'old-1', title: 'Old Article', filePath: 'lib/old-1.md', readAt: 'x' }] } }),
     anthropicCollectionRemoveRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
   },
@@ -378,7 +377,7 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.queryByTestId('blog-read-mark')).not.toBeInTheDocument()
   })
 
-  it('recommend 条目点 ★ 走转正而非移除', async () => {
+  it('recommend 条目点 ★ 走移除（全局真 toggle，promote 已废弃）', async () => {
     const { ipc } = await import('@/lib/ipc')
     useStore.setState({
       anthropicBlogCache: {
@@ -393,8 +392,8 @@ describe('AnthropicBlogPanel', () => {
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
     fireEvent.click(screen.getByTestId('blog-fav-toggle'))
-    await waitFor(() => expect(ipc.anthropicCollectionPromote).toHaveBeenCalledWith({ sourceUrl: 'old-1' }))
-    expect(ipc.anthropicCollectionRemove).not.toHaveBeenCalled()
+    await waitFor(() => expect(ipc.anthropicCollectionRemove).toHaveBeenCalledWith({ sourceUrl: 'old-1' }))
+    expect(ipc.anthropicCollectionAdd).not.toHaveBeenCalled()
   })
 
   it('来自推荐批次的文章行显示批号徽标，点击打开推荐页对应批次', async () => {

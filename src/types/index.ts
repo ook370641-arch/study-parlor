@@ -609,7 +609,9 @@ export type WritingToolActivity = {
 }
 export type WritingCatalogEntry = { title: string; summary: string; updatedAt?: string; mtimeMs?: number }
 export type WritingGroupSummaryEntry = { summary: string; signature: string }
-export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalogEntry>; groups: Record<string, WritingGroupSummaryEntry> }
+// stamped: 已确认含 created frontmatter 的文件 → 当时 mtimeMs（repository 扫描补 created 的台账，
+// 命中即跳过 readFileSync；文件变动后 mtime 变化自然失效）。仅 repository root 使用。
+export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalogEntry>; groups: Record<string, WritingGroupSummaryEntry>; stamped: Record<string, number> }
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
@@ -807,7 +809,6 @@ export type IpcApi = {
     anthropicCollectionRemove: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionMarkRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemoveRead: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
-    anthropicCollectionPromote: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemoveBatch: (args: { batch: number }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicRecommendStart: () => Promise<{ ok: true } | { ok: false; code: 'ALREADY_RUNNING' }>
     anthropicRecommendCancel: () => Promise<void>

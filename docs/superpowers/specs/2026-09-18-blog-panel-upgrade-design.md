@@ -111,6 +111,10 @@
 - 定向 E2E：`e2e/specs/blog-collection.spec.ts` 扩展（阅读器顶部按钮、记录入口、搬家 UI 反映）；同步 `e2e/source-map.json`。
 - 不跑全量；按 `node scripts/e2e-changed.js --run` 定向。
 
+## 变更记录
+
+- 2026-09-18 最终审查后用户裁决：`toggleBlogCollection` 改为全局真 toggle（任何入口点已激活 ★ = 出收藏夹），promote 转正机制废弃（IpcApi/preload/facade/store/handler/`promoteEntry` 全层移除）。推荐条目的长期保留由「记录」页历史批次兜底。覆盖上文行为表的所有入口。
+
 ## 明确不做（本轮出界）
 
 - 推荐页 pick 的原文外链（anthropic.com 回链）。

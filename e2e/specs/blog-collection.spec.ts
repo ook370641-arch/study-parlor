@@ -91,6 +91,15 @@ test.describe('博客收藏夹与推荐', () => {
     // 从推荐页打开文章 → 阅读器出现 ★/✓；推荐已自动入夹 → ★ 激活
     await window.locator('[data-testid^="blog-rec-pick-"]').first().click()
     await expect(window.locator('[data-testid="anthropic-article-reader"]')).toBeVisible()
+
+    // I-1 补盲：recommend-origin 在夹状态下点 ★ = 真取消（出收藏夹），而非静默转正
+    await window.locator('[data-testid="blog-reader-fav"]').click()
+    await expect(window.locator('[data-testid="blog-reader-fav"]')).toHaveAttribute('aria-pressed', 'false')
+    await expect(window.locator('[data-testid="blog-collection-empty"]')).toBeVisible()
+    // 再点 ★ 重新收藏（manual 入夹）
+    await window.locator('[data-testid="blog-reader-fav"]').click()
+    await expect(window.locator('[data-testid="blog-reader-fav"]')).toHaveAttribute('aria-pressed', 'true')
+
     await expect(window.locator('[data-testid="blog-reader-fav"]')).toHaveAttribute('aria-pressed', 'true')
     await expect(window.locator('[data-testid="blog-reader-read"]')).toHaveAttribute('aria-pressed', 'false')
 

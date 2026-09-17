@@ -4,7 +4,6 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 const mockIpc = vi.hoisted(() => ({
   readMd: vi.fn().mockResolvedValue({ frontmatter: { title: 'x' }, body: '正文' }),
   anthropicCollectionRemoveBatch: vi.fn(),
-  anthropicCollectionPromote: vi.fn().mockResolvedValue({ ok: true }),
   anthropicCollectionMarkRead: vi.fn().mockResolvedValue({ ok: true }),
 }))
 vi.mock('@/lib/ipc', () => ({ ipc: mockIpc }))

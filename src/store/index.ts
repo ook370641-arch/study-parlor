@@ -1515,9 +1515,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const existing = get().blogCollection.entries.find(e => e.sourceUrl === article.sourceUrl)
     const r = !existing
       ? await ipc.anthropicCollectionAdd(article)
-      : existing.origin === 'recommend'
-        ? await ipc.anthropicCollectionPromote({ sourceUrl: article.sourceUrl })
-        : await ipc.anthropicCollectionRemove({ sourceUrl: article.sourceUrl })
+      : await ipc.anthropicCollectionRemove({ sourceUrl: article.sourceUrl })
     if (r.ok) set({ blogCollection: r.collection })
   },
   removeBlogCollection: async (sourceUrl) => {
