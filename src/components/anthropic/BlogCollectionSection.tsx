@@ -23,6 +23,7 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
   const removeBlogCollection = useStore((s) => s.removeBlogCollection)
   const removeBlogRead = useStore((s) => s.removeBlogRead)
   const openAnthropicReader = useStore((s) => s.openAnthropicReader)
+  const openRecommendView = useStore((s) => s.openRecommendView)
   const showToast = useStore((s) => s.showToast)
 
   const [collapsed, setCollapsed] = useState(false)
@@ -53,10 +54,15 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
             type="button"
             data-testid="blog-read-toggle"
             onClick={() => setShowRead(s => !s)}
-            className={`block ${muted} hover:text-ember`}
-            style={{ fontSize: listStyles.meta }}
+            className={`flex items-center gap-2 w-full text-left ${muted} hover:text-ember`}
           >
-            ✓ 已读（{readList.length}） {showRead ? '▴' : '▾'}
+            <span style={{ fontSize: listStyles.meta }}>{showRead ? '▾' : '▸'}</span>
+            <span
+              className={`font-serif ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`}
+              style={{ fontSize: listStyles.title }}
+            >
+              ✓ 已读（{readList.length}）
+            </span>
           </button>
           {showRead && (
             <div className="mt-1.5 space-y-1.5 max-h-40 overflow-y-auto">
@@ -81,6 +87,21 @@ export function BlogCollectionSection({ theme = 'academic' }: { theme?: Briefing
         </button>
         <span className={`font-serif ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`} style={{ fontSize: listStyles.title }}>★ 收藏夹 ({entries.length})</span>
         <div className="flex-1" />
+        {collection.history.length > 0 && (
+          <button
+            type="button"
+            data-testid="blog-rec-history"
+            onClick={() => openRecommendView(collection.history[0].batch)}
+            style={{ fontSize: listStyles.meta }}
+            className={`px-2 py-1 rounded border transition-colors ${
+              isAcademic
+                ? 'border-ember/40 text-ember hover:bg-ember/10'
+                : 'border-[#6b5d52]/40 text-[#6b5d52] hover:bg-[#6b5d52]/10'
+            }`}
+          >
+            记录
+          </button>
+        )}
         <button
           type="button"
           data-testid="blog-recommend-button"
@@ -158,8 +179,10 @@ function CollectionRow({ entry, isAcademic, titleSize, metaSize, expanded, onTog
   return (
     <div className={`rounded border p-2 ${isAcademic ? 'bg-ink/60 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
       <div className="flex items-center gap-2">
-        {entry.origin === 'recommend' && (
-          <button type="button" data-testid={`blog-collection-reason-${entry.sourceUrl}`} onClick={onToggleReason} className="shrink-0" style={{ fontSize: titleSize }} title="查看推荐理由">💡</button>
+        {entry.origin === 'recommend' ? (
+          <button type="button" data-testid={`blog-collection-reason-${entry.sourceUrl}`} onClick={onToggleReason} className="shrink-0" style={{ fontSize: titleSize }} title="推荐理由">💡</button>
+        ) : (
+          <span aria-hidden="true" className={`shrink-0 ${isAcademic ? 'text-parchment/20' : 'text-[#6b5d52]/30'}`} style={{ fontSize: titleSize }}>★</span>
         )}
         <button type="button" data-testid={`blog-collection-open-${entry.sourceUrl}`} onClick={onOpen}
           className={`flex-1 min-w-0 text-left truncate ${isAcademic ? 'text-parchment/90 hover:text-ember' : 'text-[#1a1a1a] hover:text-ember'}`}
