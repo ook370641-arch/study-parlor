@@ -37,13 +37,12 @@ function AnthropicIcon() {
       height="20"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
     >
-      <path d="M12 4l7 16H5l7-16z" />
-      <path d="M9 13h6" />
+      <path
+        fill="#d97757"
+        fillRule="evenodd"
+        d="M12 3 21 21h-4.2l-1.6-3.8H8.8L7.2 21H3L12 3Zm0 5.6 1.7 5h-3.4l1.7-5Z"
+      />
     </svg>
   )
 }
