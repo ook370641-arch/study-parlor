@@ -62,7 +62,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         skeleton: 'bg-[#e8e4de]',
       }, [isAcademic])
 
-  const { articles, loading, error, lastFetchedAt, sectionStatus } = useStore((s) => s.anthropicBlogCache)
+  const { articles, loading, error, sectionStatus } = useStore((s) => s.anthropicBlogCache)
   const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
   const readerBody = useStore((s) => s.anthropicReaderBody)
   const readerTitle = useStore((s) => s.anthropicReaderTitle)
@@ -285,17 +285,12 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               </div>
             ))}
 
-            {lastFetchedAt && (
-              <p className={`px-4 pt-3 text-[10px] ${themeClasses.muted}`}>
-                更新于 {new Date(lastFetchedAt).toLocaleString('zh-CN')}
-              </p>
-            )}
-
             {newArticleCount > 0 && (
               <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
                 <button
                   type="button"
                   data-testid="anthropic-new-articles-prompt"
+                  title={pendingLastFetchedAt ? `更新于 ${new Date(pendingLastFetchedAt).toLocaleString('zh-CN')}` : undefined}
                   onClick={handleRefresh}
                   disabled={loading}
                   className={`w-full text-left text-xs px-3 py-2 rounded flex items-center justify-between disabled:opacity-60 ${themeClasses.button}`}
