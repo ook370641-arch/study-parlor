@@ -85,6 +85,9 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   const fontSize = useStore((s) => s.briefingFontSize)
   const increaseFontSize = useStore((s) => s.increaseBriefingFontSize)
   const decreaseFontSize = useStore((s) => s.decreaseBriefingFontSize)
+  const blogCollection = useStore((s) => s.blogCollection)
+  const toggleBlogCollection = useStore((s) => s.toggleBlogCollection)
+  const toggleBlogRead = useStore((s) => s.toggleBlogRead)
 
   useEffect(() => {
     let cancelled = false
@@ -184,6 +187,9 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
   `
 
   const section = frontmatter ? resolveSection(frontmatter) : null
+  const articleSourceUrl = frontmatter?.type === 'anthropic-article' ? frontmatter.source_url : undefined
+  const inCollection = articleSourceUrl != null && blogCollection.entries.some(e => e.sourceUrl === articleSourceUrl)
+  const isRead = articleSourceUrl != null && blogCollection.read.some(r => r.sourceUrl === articleSourceUrl)
 
   return (
     <div
@@ -295,6 +301,30 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
                       theme={theme}
                     />
                     <AnnotationListButton articlePath={filePath} theme={theme} briefingFontSize={fontSize} />
+                    {articleSourceUrl && (
+                      <>
+                        <button
+                          type="button"
+                          data-testid="blog-reader-fav"
+                          aria-pressed={inCollection}
+                          title={inCollection ? '取消收藏' : '收藏'}
+                          onClick={() => void toggleBlogCollection({ sourceUrl: articleSourceUrl, filePath, title: frontmatter.title ?? '' })}
+                          className={`text-sm leading-none transition-colors ${inCollection ? 'text-ember' : `${themeClasses.meta} hover:text-ember`}`}
+                        >
+                          {inCollection ? '★' : '☆'}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="blog-reader-read"
+                          aria-pressed={isRead}
+                          title={isRead ? '已读（点击取消）' : '标为已读'}
+                          onClick={() => void toggleBlogRead({ sourceUrl: articleSourceUrl, filePath, title: frontmatter.title ?? '' })}
+                          className={`text-sm leading-none transition-colors ${isRead ? 'text-ember' : `${themeClasses.meta} hover:text-ember`}`}
+                        >
+                          {isRead ? '✓' : '○'}
+                        </button>
+                      </>
+                    )}
                   </div>
                   {frontmatter.summary && (
                     <div data-testid="anthropic-reader-summary" className={`mt-6 p-5 rounded-lg italic leading-relaxed ${themeClasses.summaryBox} ${themeClasses.summaryText}`}>
