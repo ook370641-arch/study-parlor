@@ -52,4 +52,56 @@ test.describe('博客收藏夹与推荐', () => {
     await expect(window.locator('[data-testid="blog-rec-empty"]')).toBeVisible()
     await expect(window.locator('[data-testid="blog-read-toggle"]')).toContainText('已读（1）')
   })
+
+  test('推荐记录固定入口 + 已读/收藏互斥搬家', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+
+    // 博客图标实体色（源标识）
+    await expect(
+      window.locator('[data-testid="briefing-source-icon-anthropic"] path').first()
+    ).toHaveAttribute('fill', '#d97757')
+
+    // 推荐 mock → 右栏自动出推荐页；关闭后可通过固定入口回来
+    await window.locator('[data-testid="blog-recommend-button"]').click()
+    await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible({ timeout: 15000 })
+    await window.locator('[data-testid="blog-rec-close"]').click()
+    await expect(window.locator('[data-testid="blog-rec-view"]')).toBeHidden()
+    await window.locator('[data-testid="blog-rec-history"]').click()
+    await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible()
+
+    // 互斥：pick 初始在收藏夹（推荐自动入夹）；标已读 → 出收藏夹、入已读
+    await window.locator('[data-testid^="blog-rec-read-"]').first().click()
+    await window.locator('[data-testid="blog-rec-close"]').click()
+    await expect(window.locator('[data-testid="blog-read-toggle"]')).toContainText('已读（1）')
+    await expect(window.locator('[data-testid="blog-collection-empty"]')).toBeVisible()
+  })
+
+  test('阅读器顶部 ★/✓ 标记当前文章并互斥', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+
+    await window.locator('[data-testid="blog-recommend-button"]').click()
+    await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible({ timeout: 15000 })
+
+    // 从推荐页打开文章 → 阅读器出现 ★/✓；推荐已自动入夹 → ★ 激活
+    await window.locator('[data-testid^="blog-rec-pick-"]').first().click()
+    await expect(window.locator('[data-testid="anthropic-article-reader"]')).toBeVisible()
+    await expect(window.locator('[data-testid="blog-reader-fav"]')).toHaveAttribute('aria-pressed', 'true')
+    await expect(window.locator('[data-testid="blog-reader-read"]')).toHaveAttribute('aria-pressed', 'false')
+
+    // 点 ✓ → 搬家：✓ 激活、★ 退激活
+    await window.locator('[data-testid="blog-reader-read"]').click()
+    await expect(window.locator('[data-testid="blog-reader-read"]')).toHaveAttribute('aria-pressed', 'true')
+    await expect(window.locator('[data-testid="blog-reader-fav"]')).toHaveAttribute('aria-pressed', 'false')
+
+    // 再点 ✓ 取消已读（不自动回收藏夹）
+    await window.locator('[data-testid="blog-reader-read"]').click()
+    await expect(window.locator('[data-testid="blog-reader-read"]')).toHaveAttribute('aria-pressed', 'false')
+    await expect(window.locator('[data-testid="blog-reader-fav"]')).toHaveAttribute('aria-pressed', 'false')
+  })
 })
