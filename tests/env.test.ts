@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { loadEnv, saveEnv, setConfigDir, setStateDir, getEnvPath, getStateDir } from '@electron/env'
+import { loadEnv, saveEnv, updateEnvKeys, setConfigDir, setStateDir, getEnvPath, getStateDir } from '@electron/env'
 
 describe('loadEnv', () => {
   it('throws when KIMI_API_KEY is missing', () => {
@@ -201,5 +201,29 @@ describe('config dir resolution', () => {
     setStateDir(homeDir)
     expect(getStateDir()).toBe(homeDir)
     expect(getEnvPath()).toBe(path.join(cwdDir, '.env'))
+  })
+})
+
+describe('updateEnvKeys', () => {
+  it('只更新指定 key，其余行原样保留', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'env-'))
+    setConfigDir(tmp)
+    fs.writeFileSync(path.join(tmp, '.env'), 'KIMI_API_KEY=sk-old\nSTUDY_LIBRARY_PATH=C:/old\nTAVILY_API_KEY=tvly-keep\n')
+    updateEnvKeys({ STUDY_LIBRARY_PATH: 'C:/new' })
+    const content = fs.readFileSync(path.join(tmp, '.env'), 'utf-8')
+    expect(content).toContain('STUDY_LIBRARY_PATH=C:/new')
+    expect(content).toContain('KIMI_API_KEY=sk-old')
+    expect(content).toContain('TAVILY_API_KEY=tvly-keep')
+    expect(content).not.toContain('C:/old')
+    setConfigDir(null)
+  })
+
+  it('key 不存在时追加到末尾', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'env-'))
+    setConfigDir(tmp)
+    fs.writeFileSync(path.join(tmp, '.env'), 'KIMI_API_KEY=sk-old\n')
+    updateEnvKeys({ STUDY_LIBRARY_PATH: 'C:/added' })
+    expect(fs.readFileSync(path.join(tmp, '.env'), 'utf-8')).toContain('STUDY_LIBRARY_PATH=C:/added')
+    setConfigDir(null)
   })
 })

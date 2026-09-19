@@ -18,7 +18,7 @@ function normalizeBaseUrl(url: string): string {
   return normalized
 }
 
-function sanitizeModel(model: string): string {
+export function sanitizeModel(model: string): string {
   // Strip actual ANSI escape sequences (e.g. \x1b[1m) if somehow present
   const noAnsi = model.replace(/\x1b\[[0-9;]*m/g, '')
   const cleaned = noAnsi.trim()
@@ -88,40 +88,34 @@ export function getEnvPath(): string {
   return path.join(getConfigDir(), '.env')
 }
 
-export function saveEnv(config: AppConfig): void {
-  const model = sanitizeModel(config.model.trim() || DEFAULT_MODEL)
-  const baseUrl = normalizeBaseUrl(config.baseUrl.trim() || DEFAULT_BASE_URL)
-
+export function updateEnvKeys(updates: Record<string, string>): void {
   const envPath = getEnvPath()
   fs.mkdirSync(path.dirname(envPath), { recursive: true })
   let content = ''
   if (fs.existsSync(envPath)) {
     content = fs.readFileSync(envPath, 'utf-8')
   }
-
   const lines = content.split(/\r?\n/)
-  const keys = [
-    { key: 'KIMI_API_KEY', value: config.apiKey.trim() },
-    { key: 'KIMI_BASE_URL', value: baseUrl },
-    { key: 'KIMI_MODEL', value: model },
-    { key: 'STUDY_LIBRARY_PATH', value: config.libraryPath.trim() },
-  ]
-
   const updated = new Set<string>()
   const newLines = lines.map((line) => {
     const match = line.match(/^([A-Za-z0-9_]+)=/)
-    if (!match) return line
-    const entry = keys.find((k) => k.key === match[1])
-    if (!entry) return line
-    updated.add(entry.key)
-    return `${entry.key}=${entry.value}`
+    if (!match || !(match[1] in updates)) return line
+    updated.add(match[1])
+    return `${match[1]}=${updates[match[1]]}`
   })
-
-  for (const entry of keys) {
-    if (!updated.has(entry.key)) {
-      newLines.push(`${entry.key}=${entry.value}`)
-    }
+  for (const [k, v] of Object.entries(updates)) {
+    if (!updated.has(k)) newLines.push(`${k}=${v}`)
   }
-
   fs.writeFileSync(envPath, newLines.join('\n') + '\n')
+}
+
+export function saveEnv(config: AppConfig): void {
+  const model = sanitizeModel(config.model.trim() || DEFAULT_MODEL)
+  const baseUrl = normalizeBaseUrl(config.baseUrl.trim() || DEFAULT_BASE_URL)
+  updateEnvKeys({
+    KIMI_API_KEY: config.apiKey.trim(),
+    KIMI_BASE_URL: baseUrl,
+    KIMI_MODEL: model,
+    STUDY_LIBRARY_PATH: config.libraryPath.trim(),
+  })
 }
