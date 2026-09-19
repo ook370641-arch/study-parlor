@@ -8,11 +8,12 @@ import { HTML_DELETE_SCRIPT } from '../src/lib/html-delete-script'
 import { loadEnv, saveEnv, setConfigDir, setStateDir, getEnvPath } from './env'
 import { registerAllIpc } from './ipc'
 import { probeModel, probeModelWithCredentials } from './lib/kimi'
-import { patchState } from './ipc/state'
+import { patchState, getCurrentState } from './ipc/state'
 import { resolveAppPaths } from './lib/app-paths'
 import { createStartupWatchdog } from './lib/startup-watchdog'
 import { registerReportSchemePrivileges, registerReportProtocol } from './lib/report-protocol'
 import { syncConstitutionReportToLibrary, resolveBundledReportDir } from './lib/report-sync'
+import { planLlmConfigs } from './lib/llm-configs'
 
 // sp-report:// 特权注册必须在 app ready 之前
 registerReportSchemePrivileges()
@@ -327,6 +328,15 @@ async function bootstrap() {
 }
 
 async function runBootSequence(cfg: ReturnType<typeof loadEnv>, win: BrowserWindow) {
+  // LLM 多配置：state.json 无配置时从 .env 播种首条；把激活配置套用到共享 cfg 持有者。
+  // 必须先于 registerAllIpc/probeModel，保证探活与所有 IPC 用的是激活配置。
+  const planned = planLlmConfigs(getCurrentState(), { apiKey: cfg.apiKey, baseUrl: cfg.baseUrl, model: cfg.model })
+  if (planned.changed) {
+    patchState({ llmConfigs: planned.configs, activeLlmConfigId: planned.activeId })
+  }
+  const activeLlm = planned.configs.find(c => c.id === planned.activeId)!
+  Object.assign(cfg, { apiKey: activeLlm.apiKey, baseUrl: activeLlm.baseUrl, model: activeLlm.model })
+
   // 等待 renderer 页面加载完成，确保 IPC 监听器已注册
   if (win.webContents.isLoading()) {
     await new Promise<void>(resolve => {

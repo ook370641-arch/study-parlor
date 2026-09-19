@@ -82,6 +82,11 @@ const api: IpcApi = {
   // Config
   getConfig: () => ipcRenderer.invoke('config:get'),
   writeConfig: (config) => ipcRenderer.invoke('config:write', config),
+  llmConfigList: () => ipcRenderer.invoke('llmConfig:list'),
+  llmConfigSetActive: (id: string) => ipcRenderer.invoke('llmConfig:setActive', id),
+  llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string }) =>
+    ipcRenderer.invoke('llmConfig:save', id, fields),
+  configSetLibraryPath: (p: string) => ipcRenderer.invoke('config:setLibraryPath', p),
 
   // Setup wizard
   bootNeedsSetup: () =>

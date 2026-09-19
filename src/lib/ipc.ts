@@ -60,6 +60,10 @@ export const ipc = {
   // Config
   get getConfig() { return ensure().getConfig },
   get writeConfig() { return ensure().writeConfig },
+  get llmConfigList() { return ensure().llmConfigList },
+  get llmConfigSetActive() { return ensure().llmConfigSetActive },
+  get llmConfigSave() { return ensure().llmConfigSave },
+  get configSetLibraryPath() { return ensure().configSetLibraryPath },
 
   // Setup wizard
   get bootNeedsSetup() { return ensure().bootNeedsSetup },

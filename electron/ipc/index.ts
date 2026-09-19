@@ -20,7 +20,7 @@ import { registerScoutIpc } from './scout'
 import { registerCollectionIpc } from './collection'
 
 export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
-  registerConfigIpc()
+  registerConfigIpc(cfg)
   registerFilesIpc(cfg)
   registerStateIpc(cfg)
   registerLlmIpc(cfg, getMainWindow)
