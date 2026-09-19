@@ -17,6 +17,7 @@ import { hrBackspacePlugins } from '@/lib/milkdown-hr-backspace'
 import { hrArrowDownPlugins } from '@/lib/milkdown-hr-arrow-down'
 import { blockquoteUnwrapPlugins } from '@/lib/milkdown-blockquote-unwrap'
 import { listBackspacePlugins } from '@/lib/milkdown-list-backspace'
+import { listEnterPlugins } from '@/lib/milkdown-list-enter'
 import { milkdownClipboardPlugins } from '@/lib/milkdown-clipboard'
 import { selectionBubblePlugins } from '@/lib/milkdown-selection-bubble'
 import { orbitHrPlugins } from '@/lib/milkdown-orbit-hr'
@@ -61,6 +62,7 @@ function EditorInner({ initial, onChange, registerAction = true, theme, filePath
       .use(hrArrowDownPlugins)
       .use(blockquoteUnwrapPlugins)
       .use(listBackspacePlugins)
+      .use(listEnterPlugins)
       .use(selectionBubblePlugins)
       .use(orbitHrPlugins)
       .use(codeblockSchemaPlugins)

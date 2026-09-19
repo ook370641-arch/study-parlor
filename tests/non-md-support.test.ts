@@ -103,6 +103,13 @@ describe('writing-tree-utils 非 md 重命名/类型', () => {
     expect(normalizeWritingFileRename('doc', '.docx')).toBe('doc.docx') // 带点扩展名
   })
 
+  it('normalizeWritingFileRename 日期小数点不算扩展名（日记 M.D 命名）', () => {
+    // 9.7.html → 「9.7 数据策略」：dot 在日期里，误显式扩展名会丢 .html 导致树里消失
+    expect(normalizeWritingFileRename('9.7 数据策略', 'html')).toBe('9.7 数据策略.html')
+    expect(normalizeWritingFileRename('9.8', 'html')).toBe('9.8.html')
+    expect(normalizeWritingFileRename('8.29', 'pdf')).toBe('8.29.pdf')
+  })
+
   it('writingPreviewKindOf 按扩展名判断', () => {
     expect(writingPreviewKindOf('writing/报表.xlsx')).toBe('xlsx')
     expect(writingPreviewKindOf('writing/a.PDF')).toBe('pdf')

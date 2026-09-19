@@ -3,6 +3,7 @@ import path from 'node:path'
 import matter from 'gray-matter'
 import { isNonMdExt } from '../../src/types'
 import type { WritingRoot, WritingTreeNode } from '@shared/index'
+import { loadCatalog, saveCatalog } from './writing-catalog'
 
 // ── constants ────────────────────────────────────────────────
 export const WRITING_ROOTS: WritingRoot[] = ['writing', 'repository']
@@ -127,7 +128,7 @@ function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
 
 export function scanRoot(lib: string, root: WritingRoot): WritingTreeNode[] {
   const rootDir = path.join(lib, root)
-  if (root === 'repository') stampMissingCreated(rootDir)
+  if (root === 'repository') stampMissingCreated(lib, rootDir)
   return scanDir(rootDir, lib)
 }
 
@@ -136,28 +137,60 @@ export function scanRoot(lib: string, root: WritingRoot): WritingTreeNode[] {
  * 覆盖所有引入途径(UI 导入、外部拷入)的单点:它们最终都经过扫描。
  * 取值 = 文件 birthtime(拷入库的时刻);只补缺失项,既有 frontmatter 全部保留;
  * 单文件失败只记日志,不阻断扫描。updated 不碰——应用内首次保存时才刷新。
+ *
+ * 台账（catalog.stamped, 2026-09-16）：已确认含 created 的文件记 path→mtimeMs，
+ * mtime 未变即跳过 readFileSync——稳态扫描只做 readdir+stat，不再全量读文件。
+ * 文件变动/重命名后 mtime 或路径变化自然失效，重读一次后重新入账。
  */
-function stampMissingCreated(absDir: string): void {
+function stampMissingCreated(lib: string, absDir: string): void {
   if (!fs.existsSync(absDir)) return
-  for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
-    if (isHidden(entry.name)) continue
-    const abs = path.join(absDir, entry.name)
-    if (entry.isDirectory()) {
-      stampMissingCreated(abs)
-      continue
-    }
-    if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.md')) continue
-    try {
-      const raw = fs.readFileSync(abs, 'utf-8')
-      const parsed = matter(raw)
-      if (parsed.data.created) continue
-      const created = fs.statSync(abs).birthtime.toISOString()
-      const content = matter.stringify(parsed.content.replace(/^\n/, ''), { ...parsed.data, created })
-      fs.writeFileSync(abs, content, 'utf-8')
-    } catch (e) {
-      console.warn('[writing-stamp] created 补写失败:', abs, e)
+  const catalog = loadCatalog(lib, 'repository')
+  const stamped = { ...catalog.stamped }
+  const seen = new Set<string>()
+  let changed = false
+
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (isHidden(entry.name)) continue
+      const abs = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        walk(abs)
+        continue
+      }
+      if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.md')) continue
+      const rel = toRel(lib, abs)
+      seen.add(rel)
+      try {
+        const mtimeMs = fs.statSync(abs).mtimeMs
+        if (stamped[rel] === mtimeMs) continue
+        const raw = fs.readFileSync(abs, 'utf-8')
+        const parsed = matter(raw)
+        if (parsed.data.created) {
+          stamped[rel] = mtimeMs
+          changed = true
+          continue
+        }
+        const created = fs.statSync(abs).birthtime.toISOString()
+        const content = matter.stringify(parsed.content.replace(/^\n/, ''), { ...parsed.data, created })
+        fs.writeFileSync(abs, content, 'utf-8')
+        // 补写改变了 mtime，必须记写入后的新值，否则下次扫描全部 miss
+        stamped[rel] = fs.statSync(abs).mtimeMs
+        changed = true
+      } catch (e) {
+        console.warn('[writing-stamp] created 补写失败:', abs, e)
+      }
     }
   }
+  walk(absDir)
+
+  // 清理已不存在文件的台账条目（删除/重命名的残留）
+  for (const k of Object.keys(stamped)) {
+    if (!seen.has(k)) {
+      delete stamped[k]
+      changed = true
+    }
+  }
+  if (changed) saveCatalog(lib, 'repository', { ...catalog, stamped })
 }
 
 // ── create ───────────────────────────────────────────────────

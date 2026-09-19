@@ -84,8 +84,10 @@ test.describe('@p2 writing-non-md', () => {
   test('HTML 文件原生渲染：iframe 沙箱显示，与浏览器一致', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
 
-    const node = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '报告.html' })
+    const node = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '报告' })
     await expect(node).toBeVisible({ timeout: 5000 })
+    // 专属地球图标（区别于 md 的文档图标）
+    await expect(node.getByTestId('writing-tree-icon-html')).toBeVisible()
     await node.click()
 
     await expect(window.getByTestId('writing-html-preview')).toBeVisible({ timeout: 5000 })
@@ -113,7 +115,7 @@ test.describe('@p2 writing-non-md', () => {
 
   test('HTML 删除模式：点块删除 + Ctrl+Z 撤销 + 完成写回（磁盘无注入物残留）', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
-    const node = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '报告.html' })
+    const node = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '报告' })
     await expect(node).toBeVisible({ timeout: 5000 })
     await node.click()
     await expect(window.getByTestId('writing-html-preview-iframe')).toBeVisible({ timeout: 5000 })
@@ -176,7 +178,7 @@ test.describe('@p2 writing-non-md', () => {
 
   test('HTML 删除模式：脏状态切换文件自动写回', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
-    const node = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '报告.html' })
+    const node = window.locator('[data-testid="writing-tree-node"]').filter({ hasText: '报告' })
     await expect(node).toBeVisible({ timeout: 5000 })
     await node.click()
     await expect(window.getByTestId('writing-html-preview-iframe')).toBeVisible({ timeout: 5000 })

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { transformSpanHtmlToTextColor, textColorToMarkdownExtension } from '../src/lib/milkdown-text-color'
+import { transformSpanHtmlToTextColor, textColorToMarkdownExtension, normalizeColor } from '../src/lib/milkdown-text-color'
 
 describe('transformSpanHtmlToTextColor', () => {
   it('html span 开闭序列改写为 textColor 节点', () => {
@@ -22,6 +22,32 @@ describe('transformSpanHtmlToTextColor', () => {
     expect(para.children[1].type).toBe('textColor')
     expect(para.children[1].data.color).toBe('#d97757')
     expect(para.children[1].children[0].type).toBe('strong')
+  })
+
+  it('rgb() 颜色 span 同样转换并归一化为 hex(粘贴路径浏览器会把 hex 归一为 rgb)', () => {
+    const tree = {
+      type: 'root',
+      children: [{
+        type: 'paragraph',
+        children: [
+          { type: 'html', value: '<span style="color:rgb(232, 200, 74)">' },
+          { type: 'text', value: '产品拆解' },
+          { type: 'html', value: '</span>' },
+        ],
+      }],
+    }
+    transformSpanHtmlToTextColor(tree as any)
+    const para = (tree as any).children[0]
+    expect(para.children).toHaveLength(1)
+    expect(para.children[0].type).toBe('textColor')
+    expect(para.children[0].data.color).toBe('#e8c84a')
+  })
+
+  it('normalizeColor 把 rgb/rgba 归一为 hex,hex 原样返回', () => {
+    expect(normalizeColor('rgb(232, 200, 74)')).toBe('#e8c84a')
+    expect(normalizeColor('rgb(217,119,87)')).toBe('#d97757')
+    expect(normalizeColor('rgba(229, 83, 59, 0.5)')).toBe('#e5533b')
+    expect(normalizeColor('#D97757')).toBe('#d97757')
   })
 
   it('不匹配颜色的 span / 未闭合 span 原样保留', () => {

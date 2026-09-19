@@ -49,9 +49,17 @@ export function registerWritingIpc(cfg: AppConfig): void {
   const lib = cfg.libraryPath
   ensureRoots(lib)
 
+  // 最近一次 scanTree 的结果：紧随其后的 refreshCatalog 直接复用，不再重复扫盘。
+  // TTL 只覆盖"进写作页"的连贯动作；外部文件改动最迟下次扫描发现，与现状一致。
+  let lastScan: { at: number; trees: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } } | null = null
+
   ipcMain.handle('writing:scanTree', () => {
     ensureRoots(lib)
-    return wrapWriting(() => ({ writing: tree.scanRoot(lib, 'writing'), repository: tree.scanRoot(lib, 'repository') }))
+    return wrapWriting(() => {
+      const trees = { writing: tree.scanRoot(lib, 'writing'), repository: tree.scanRoot(lib, 'repository') }
+      lastScan = { at: Date.now(), trees }
+      return trees
+    })
   })
 
   ipcMain.handle('writing:createFile', (_, a: { root: 'writing' | 'repository'; dir: string; name: string }) =>
@@ -176,7 +184,8 @@ export function registerWritingIpc(cfg: AppConfig): void {
   ipcMain.handle('writing:refreshCatalog', () =>
     wrapWriting(async () => {
       const roots: WritingRoot[] = ['writing', 'repository']
-      const pending = roots.flatMap(root => diffStale(lib, root))
+      const fresh = lastScan && Date.now() - lastScan.at < 10_000 ? lastScan.trees : null
+      const pending = roots.flatMap(root => diffStale(lib, root, fresh?.[root]))
       // fire-and-forget:逐篇后台生成,调用方不阻塞
       setTimeout(async () => {
         for (const rel of pending) {

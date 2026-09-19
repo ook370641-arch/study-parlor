@@ -66,13 +66,10 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   }
   const cancelInlineNew = () => setInlineNew(null)
 
-  useEffect(() => {
-    loadWritingTree()
-    // 摘要第二触发时机：tree 加载时刷新 catalog（稳态 diff 为空，无多余 LLM 调用）
-    void ipc.writingRefreshCatalog()
-  }, [loadWritingTree])
+  // 挂载时触发一次摘要 catalog 刷新（稳态 diff 为空，无多余 LLM 调用）
+  useEffect(() => { void ipc.writingRefreshCatalog() }, [])
 
-  // Re-scan on tab switch to pick up externally-added files
+  // 挂载 + 切 tab 时重扫，拾取外部新增文件（两时机合并为一个 effect，避免进页面扫两遍）
   useEffect(() => { loadWritingTree() }, [tab, loadWritingTree])
 
   // 只在「没有选中文件」或「当前文件已不在树里」（被外部删除）时自动选中第一篇。

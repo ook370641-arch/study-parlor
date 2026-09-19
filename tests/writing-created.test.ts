@@ -1,10 +1,11 @@
 // tests/writing-created.test.ts
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import matter from 'gray-matter'
 import { createFile, writeWritingFile, renameNode, moveNode, scanRoot } from '../electron/lib/writing-tree'
+import { loadCatalog } from '../electron/lib/writing-catalog'
 
 let lib: string
 
@@ -111,5 +112,81 @@ describe('repository 扫描补 created', () => {
     } finally {
       fs.chmodSync(readonlyAbs, 0o666)
     }
+  })
+})
+
+// 台账（catalog.stamped）：已确认含 created 的文件记 path→mtimeMs，二次扫描命中即跳过读取（2026-09-16 性能优化）
+describe('repository 补 created 台账', () => {
+  function writeRel(rel: string, content: string): string {
+    const abs = path.join(lib, rel)
+    fs.mkdirSync(path.dirname(abs), { recursive: true })
+    fs.writeFileSync(abs, content, 'utf-8')
+    return abs
+  }
+  /** readFileSync 调用中读取 .md 的次数（排除 .catalog.json） */
+  function mdReads(spy: ReturnType<typeof vi.spyOn>): number {
+    return spy.mock.calls.filter(c => String(c[0]).endsWith('.md')).length
+  }
+
+  it('首次扫描后写入台账：已有 created 记当前 mtime；补写的记写入后新 mtime', () => {
+    const old = writeRel('repository/老文.md', '---\ncreated: \'2020-01-02T03:04:05.000Z\'\n---\n\n正文\n')
+    const fresh = writeRel('repository/新文.md', '正文\n')
+    scanRoot(lib, 'repository')
+    const stamped = loadCatalog(lib, 'repository').stamped
+    expect(stamped['repository/老文.md']).toBe(fs.statSync(old).mtimeMs)
+    expect(stamped['repository/新文.md']).toBe(fs.statSync(fresh).mtimeMs)
+  })
+
+  it('二次扫描命中台账，不再读取任何 .md 文件', () => {
+    writeRel('repository/a.md', '正文 a\n')
+    writeRel('repository/分组/b.md', '---\ncreated: \'2020-01-02T03:04:05.000Z\'\n---\n\n正文 b\n')
+    scanRoot(lib, 'repository')
+    const spy = vi.spyOn(fs, 'readFileSync')
+    try {
+      scanRoot(lib, 'repository')
+      expect(mdReads(spy)).toBe(0)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('外部修改后 mtime 变化 → 该文件重新检查，其余仍命中台账', () => {
+    const a = writeRel('repository/a.md', '正文 a\n')
+    writeRel('repository/b.md', '正文 b\n')
+    scanRoot(lib, 'repository')
+    // 外部编辑 a.md（内容仍无 created，应被补写）；显式拨动 mtime 避免同毫秒精度问题
+    fs.writeFileSync(a, '正文 a 改\n', 'utf-8')
+    const future = new Date(Date.now() + 60_000)
+    fs.utimesSync(a, future, future)
+    const spy = vi.spyOn(fs, 'readFileSync')
+    try {
+      scanRoot(lib, 'repository')
+      const reads = spy.mock.calls.map(c => String(c[0])).filter(p => p.endsWith('.md'))
+      expect(reads).toEqual([a])
+    } finally {
+      spy.mockRestore()
+    }
+    expect(typeof readFm('repository/a.md').created).toBe('string')
+    // 两个文件最终都在台账中
+    const stamped = loadCatalog(lib, 'repository').stamped
+    expect(stamped['repository/a.md']).toBe(fs.statSync(a).mtimeMs)
+    expect(stamped['repository/b.md']).toBeDefined()
+  })
+
+  it('文件删除后台账条目被清理', () => {
+    const a = writeRel('repository/a.md', '正文\n')
+    scanRoot(lib, 'repository')
+    expect(loadCatalog(lib, 'repository').stamped['repository/a.md']).toBeDefined()
+    fs.rmSync(a)
+    scanRoot(lib, 'repository')
+    expect(loadCatalog(lib, 'repository').stamped['repository/a.md']).toBeUndefined()
+  })
+
+  it('旧格式 .catalog.json（无 stamped 字段）兼容，扫描后补出台账', () => {
+    writeRel('repository/a.md', '---\ncreated: \'2020-01-02T03:04:05.000Z\'\n---\n\n正文\n')
+    fs.writeFileSync(path.join(lib, 'repository', '.catalog.json'),
+      JSON.stringify({ version: 2, entries: {}, groups: {} }), 'utf-8')
+    scanRoot(lib, 'repository')
+    expect(loadCatalog(lib, 'repository').stamped['repository/a.md']).toBeDefined()
   })
 })

@@ -101,7 +101,9 @@ export function normalizeWritingFileName(name: string, isFile: boolean): string 
 export function normalizeWritingFileRename(name: string, currentExt: string): string {
   const trimmed = name.trim()
   const dot = trimmed.lastIndexOf('.')
-  if (dot > 0) return trimmed // 用户已显式带扩展名
+  // 仅当小数点后是纯字母段才算「用户显式带了扩展名」（如 a.PDF）；
+  // 日记 M.D 命名（9.7 / 9.7 数据策略）的点是日期，不能误判，否则会丢扩展名从树里消失
+  if (dot > 0 && /^[a-z]+$/i.test(trimmed.slice(dot + 1))) return trimmed
   const ext = currentExt.startsWith('.') ? currentExt : `.${currentExt}`
   return `${trimmed}${ext}`
 }

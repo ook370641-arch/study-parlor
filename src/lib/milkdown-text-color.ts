@@ -11,8 +11,17 @@ export const TEXT_COLOR_PALETTE = [
   { label: '橙', value: '#d97757' },
 ] as const satisfies readonly { label: string; value: string | null }[]
 
-const SPAN_OPEN_RE = /^<span\s+style="color:\s*(#[0-9a-fA-F]{3,8})"\s*>$/
+const SPAN_OPEN_RE = /^<span\s+style="color:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))"\s*>$/
 const SPAN_CLOSE_RE = /^<\/span\s*>$/
+
+/** 颜色归一化为 hex。粘贴路径 parseDOM 经 dom.style.color 会被浏览器转成 rgb(),需转回 hex 保持 .md canonical。 */
+export function normalizeColor(raw: string): string {
+  if (raw.startsWith('#')) return raw.toLowerCase()
+  const m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(raw)
+  if (!m) return raw
+  const hex = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0')
+  return `#${hex(+m[1])}${hex(+m[2])}${hex(+m[3])}`
+}
 
 /** 把 mdast 中「<span style="color:X"> … </span>」html 序列改写为 textColor 节点(原地修改 tree)。 */
 export function transformSpanHtmlToTextColor(tree: { children?: any[] }): void {
@@ -34,7 +43,7 @@ export function transformSpanHtmlToTextColor(tree: { children?: any[] }): void {
         const inner = kids.slice(i + 1, closeIdx)
         const holder = { children: inner }
         transformSpanHtmlToTextColor(holder)
-        out.push({ type: 'textColor', data: { color: m[1] }, children: holder.children })
+        out.push({ type: 'textColor', data: { color: normalizeColor(m[1]) }, children: holder.children })
         i = closeIdx
         continue
       }
@@ -70,7 +79,7 @@ export const textColorSchema = $markSchema('textColor', () => ({
   inclusive: true,
   parseDOM: [{
     tag: 'span[style*="color"]',
-    getAttrs: (dom) => ({ color: (dom as HTMLElement).style.color || '' }),
+    getAttrs: (dom) => ({ color: normalizeColor((dom as HTMLElement).style.color || '') }),
   }],
   toDOM: (mark) => ['span', { style: `color: ${mark.attrs.color}` }, 0],
   parseMarkdown: {

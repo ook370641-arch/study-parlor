@@ -3,7 +3,7 @@ import path from 'node:path'
 import type { WritingCatalog, WritingCatalogEntry, WritingGroupSummaryEntry, WritingRoot, WritingTreeNode } from '@shared/index'
 import { isNonMdPath, scanRoot } from './writing-tree'
 
-const EMPTY: WritingCatalog = { version: 2, entries: {}, groups: {} }
+const EMPTY: WritingCatalog = { version: 2, entries: {}, groups: {}, stamped: {} }
 
 export function catalogPath(lib: string, root: WritingRoot): string {
   return path.join(lib, root, '.catalog.json')
@@ -11,18 +11,19 @@ export function catalogPath(lib: string, root: WritingRoot): string {
 
 export function loadCatalog(lib: string, root: WritingRoot): WritingCatalog {
   const p = catalogPath(lib, root)
-  if (!fs.existsSync(p)) return { ...EMPTY, entries: {}, groups: {} }
+  if (!fs.existsSync(p)) return { ...EMPTY, entries: {}, groups: {}, stamped: {} }
   try {
     const raw = fs.readFileSync(p, 'utf8')
-    const parsed = JSON.parse(raw) as { version?: number; entries?: Record<string, WritingCatalogEntry>; groups?: Record<string, WritingGroupSummaryEntry> }
+    const parsed = JSON.parse(raw) as { version?: number; entries?: Record<string, WritingCatalogEntry>; groups?: Record<string, WritingGroupSummaryEntry>; stamped?: Record<string, number> }
+    const stamped = parsed && typeof parsed.stamped === 'object' && parsed.stamped ? parsed.stamped : {}
     if (parsed && parsed.version === 2 && typeof parsed.entries === 'object' && typeof parsed.groups === 'object') {
-      return parsed as WritingCatalog
+      return { ...(parsed as WritingCatalog), stamped }
     }
     if (parsed && parsed.version === 1 && typeof parsed.entries === 'object') {
-      return { version: 2, entries: parsed.entries, groups: parsed.groups ?? {} }
+      return { version: 2, entries: parsed.entries, groups: parsed.groups ?? {}, stamped }
     }
   } catch { /* damaged — rebuild */ }
-  return { ...EMPTY, entries: {}, groups: {} }
+  return { ...EMPTY, entries: {}, groups: {}, stamped: {} }
 }
 
 export function saveCatalog(lib: string, root: WritingRoot, catalog: WritingCatalog): void {
@@ -103,8 +104,9 @@ function collectMdPaths(nodes: WritingTreeNode[]): string[] {
   return result
 }
 
-export function diffStale(lib: string, root: WritingRoot): string[] {
-  const files = collectMdPaths(scanRoot(lib, root))
+/** nodes 缺省时现扫；调用方若刚扫过（如 scanTree 后紧跟 refreshCatalog）应传入复用，避免重复扫描。 */
+export function diffStale(lib: string, root: WritingRoot, nodes?: WritingTreeNode[]): string[] {
+  const files = collectMdPaths(nodes ?? scanRoot(lib, root))
   const c = loadCatalog(lib, root)
   return files.filter(f => {
     const entry = c.entries[f]

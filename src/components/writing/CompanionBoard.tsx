@@ -12,7 +12,6 @@ import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-fon
 export function CompanionBoard() {
   const file = useStore(s => s.companionFile)
   const writingUISize = useStore(s => s.writingUIFontSize)
-  const briefingTheme = useStore(s => s.briefingTheme)
   const updateCompanionBody = useStore(s => s.updateCompanionBody)
   const saveCompanionFile = useStore(s => s.saveCompanionFile)
   const closeCompanion = useStore(s => s.closeCompanion)
@@ -26,8 +25,9 @@ export function CompanionBoard() {
 
   // 样式变量块照抄 WritingBoard：对照栏与主区排版一致
   const body = WRITING_BODY_FROM_UI[writingUISize]
-  // 默认色跟主题走:报纸黑、学术暖米(spec A3)
-  const color = briefingTheme === 'newspaper' ? '#1a1a1a' : '#e8d5b7'
+  // 对照槽位于右栏固定深色面板(bg-[#1a1512],不随主题变),正文色不能跟
+  // 报纸主题走 #1a1a1a(深底深字不可读)——恒用学术暖米,编辑器主题同步固定 academic
+  const color = '#e8d5b7'
   const styleVars = {
     ['--writing-body-size' as string]: body.size,
     ['--writing-body-weight' as string]: body.weight,
@@ -85,7 +85,7 @@ export function CompanionBoard() {
             initial={file.body}
             onChange={(md) => updateCompanionBody(md)}
             registerToolbarAction={false}
-            theme={briefingTheme}
+            theme="academic"
             filePath={file.path}
           />
         </div>
