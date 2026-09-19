@@ -15,10 +15,11 @@ export function ChatInput({ onSend, disabled, theme }: {
     setVal('')
   }
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      send()
-    }
+    if (e.key !== 'Enter' || e.shiftKey) return
+    // IME (中文/日文等) 用 Enter 上屏；此时发送会把半成品递出去
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
+    e.preventDefault()
+    send()
   }
 
   const isAcademic = theme !== 'newspaper'
