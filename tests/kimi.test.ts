@@ -293,6 +293,35 @@ describe('chatStream reasoning dispatch', () => {
   })
 })
 
+describe('buildChatBody kimi-k3 effort', () => {
+  const k3Cfg = { apiKey: 'sk-test', baseUrl: 'https://api.kimi.com/coding/v1', model: 'kimi-k3', libraryPath: '/' }
+  const msgs = [{ role: 'user' as const, content: 'hi' }]
+
+  it('off → 无 thinking 字段，reasoning_effort low', () => {
+    const body = buildChatBody(k3Cfg, { messages: msgs, temperature: 0.7, stream: true, thinking: { type: 'disabled' } })
+    expect(body.thinking).toBeUndefined()
+    expect(body.reasoning_effort).toBe('low')
+    expect(body.temperature).toBe(1) // k3 只允许 temperature=1
+  })
+
+  it('high → reasoning_effort high，无 thinking 字段', () => {
+    const body = buildChatBody(k3Cfg, { messages: msgs, temperature: 0.7, stream: true, thinking: { type: 'enabled', reasoning_effort: 'high' } })
+    expect(body.thinking).toBeUndefined()
+    expect(body.reasoning_effort).toBe('high')
+  })
+
+  it('max → reasoning_effort max', () => {
+    const body = buildChatBody(k3Cfg, { messages: msgs, temperature: 0.7, stream: true, thinking: { type: 'enabled', reasoning_effort: 'max' } })
+    expect(body.reasoning_effort).toBe('max')
+  })
+
+  it('omitting thinking defaults to low', () => {
+    const body = buildChatBody(k3Cfg, { messages: msgs, temperature: 0.7, stream: true })
+    expect(body.thinking).toBeUndefined()
+    expect(body.reasoning_effort).toBe('low')
+  })
+})
+
 describe('buildChatBody deepseek effort', () => {
   const dsCfg = { apiKey: 'sk-test', baseUrl: 'https://api.deepseek.com', model: 'deepseek-v4-pro', libraryPath: '/' }
   const msgs = [{ role: 'user' as const, content: 'hi' }]

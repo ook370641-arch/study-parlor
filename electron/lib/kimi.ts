@@ -39,6 +39,10 @@ function isKimiModel(model: string): boolean {
   return model.toLowerCase().startsWith('kimi-')
 }
 
+function isKimiK3Model(model: string): boolean {
+  return model.toLowerCase().startsWith('kimi-k3')
+}
+
 function isDeepSeekModel(model: string): boolean {
   return model.toLowerCase().startsWith('deepseek-')
 }
@@ -60,7 +64,15 @@ export function buildChatBody(
     messages: args.messages,
   }
 
-  if (isKimiModel(cfg.model)) {
+  if (isKimiK3Model(cfg.model)) {
+    // kimi-k3 永远思考（Preserved Thinking），请求体没有 thinking 开关，
+    // 思考量由顶层 reasoning_effort 控制（low/high/max，默认 max）。
+    // 对话流的 "disabled" 映射为 low，保持降低首 token 延迟的意图。
+    const thinking = args.thinking ?? { type: 'disabled' }
+    body.reasoning_effort = thinking.type === 'enabled' ? (thinking.reasoning_effort ?? 'high') : 'low'
+    // kimi-k3 只允许 temperature=1（真实 API 400: "only 1 is allowed for this model"）
+    body.temperature = 1
+  } else if (isKimiModel(cfg.model)) {
     const thinking = args.thinking ?? { type: 'disabled' }
     body.thinking = { type: thinking.type }
     if (thinking.type === 'enabled') {
