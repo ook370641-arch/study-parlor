@@ -617,6 +617,8 @@ export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
 export type BriefingSourceId = 'writing' | 'digest' | 'anthropic' | 'job-briefing' | 'scout'
 
+export type LlmConfig = { id: string; apiKey: string; baseUrl: string; model: string }
+
 export type StateJson = {
   version: 1
   profile: Profile
@@ -661,6 +663,9 @@ export type StateJson = {
   paintingPlateEnabled?: boolean
   /** 已归档（隐藏）的主题目录名，主页/卫星图不显示，可在设置恢复 */
   archivedTopics?: string[]
+  /** LLM 多配置：首条由 .env 迁移播种；切换免重启 */
+  llmConfigs?: LlmConfig[]
+  activeLlmConfigId?: string | null
   writingPanelMode?: 'assistant' | 'companion'
   writingCompanionMap?: Record<string, string>
   articlePanelMode?: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
