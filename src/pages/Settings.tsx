@@ -100,7 +100,7 @@ export function Settings() {
   }
 
   return (
-    <div data-testid="settings-page" className="fixed inset-0">
+    <div data-testid="settings-page" className={`fixed inset-0 ${isAcademic ? '' : 'bg-[#f5f2ed]'}`}>
       <SurfaceBackground surface="home" />
       <StudyControlsGroup surface="home" className="absolute top-4 right-4 z-10" />
 

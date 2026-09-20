@@ -154,4 +154,14 @@ describe('Settings · AI 服务', () => {
     fireEvent.click(screen.getByTestId('settings-library-save-button'))
     await waitFor(() => expect(ipc.configSetLibraryPath).toHaveBeenCalledWith('D:/new-lib'))
   })
+
+  it('报纸主题：页面根铺纸白背景', async () => {
+    const { useStore } = await import('@/store')
+    useStore.setState({ briefingTheme: 'newspaper' })
+    render(<Settings />)
+    await waitFor(() => screen.getByDisplayValue('sk-kimi-test'))
+    expect(screen.getByTestId('settings-page').className).toContain('bg-[#f5f2ed]')
+    expect(screen.queryByTestId('study-controls-swap-painting')).not.toBeInTheDocument()
+    useStore.setState({ briefingTheme: 'academic' })
+  })
 })
