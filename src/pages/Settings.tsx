@@ -3,18 +3,10 @@ import { useStore } from '@/store'
 import { Button } from '@/components/Button'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { StudyControlsGroup } from '@/components/StudyControlsGroup'
+import { LlmConfigCard } from '@/components/settings/LlmConfigCard'
 import { ipc } from '@/lib/ipc'
 import { DEFAULT_JOB_BRIEFING_CONFIG } from '@/lib/job-briefing-defaults'
-import type { AppConfig } from '@electron/env'
 import type { JobBriefingConfig } from '@shared/index'
-
-const DEFAULT_BASE_URL = 'https://api.kimi.com/coding/v1'
-const DEFAULT_MODEL = 'kimi-k2.6'
-
-type VerifyStatus =
-  | { kind: 'loading'; message: '验证中...' }
-  | { kind: 'success'; message: string }
-  | { kind: 'error'; message: string }
 
 export function Settings() {
   const goto = useStore(s => s.goto)
@@ -25,14 +17,8 @@ export function Settings() {
   const archivedTopics = useStore((s) => s.archivedTopics)
   const restoreTopic = useStore((s) => s.restoreTopic)
 
-  const [initialConfig, setInitialConfig] = useState<AppConfig | null>(null)
-  const [apiKey, setApiKey] = useState('')
-  const [baseUrl, setBaseUrl] = useState('')
-  const [model, setModel] = useState('')
   const [libraryPath, setLibraryPath] = useState('')
-  const [showKey, setShowKey] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus | null>(null)
   const [searchApiKey, setSearchApiKey] = useState('')
   const [showSearchKey, setShowSearchKey] = useState(false)
   const [searchConfigured, setSearchConfigured] = useState(false)
@@ -43,10 +29,6 @@ export function Settings() {
     let mounted = true
     ipc.getConfig().then(cfg => {
       if (!mounted) return
-      setInitialConfig(cfg)
-      setApiKey(cfg.apiKey)
-      setBaseUrl(cfg.baseUrl)
-      setModel(cfg.model)
       setLibraryPath(cfg.libraryPath)
     }).catch(err => {
       setError(err.message || '读取配置失败')
@@ -63,17 +45,6 @@ export function Settings() {
     return () => { mounted = false }
   }, [])
 
-  const resetForm = () => {
-    if (!initialConfig) return
-    setApiKey(initialConfig.apiKey)
-    setBaseUrl(initialConfig.baseUrl)
-    setModel(initialConfig.model)
-    setLibraryPath(initialConfig.libraryPath)
-    setSearchApiKey('')
-    setError(null)
-    setVerifyStatus(null)
-  }
-
   const handleSelectDirectory = async () => {
     try {
       const result = await ipc.setupSelectDirectory()
@@ -82,49 +53,6 @@ export function Settings() {
       }
     } catch (err: any) {
       setError(err.message || '选择目录失败')
-    }
-  }
-
-  const handleVerify = async () => {
-    setError(null)
-    setVerifyStatus({ kind: 'loading', message: '验证中...' })
-    try {
-      const result = await ipc.setupProbeKey({
-        apiKey: apiKey.trim(),
-        baseUrl: baseUrl.trim() || DEFAULT_BASE_URL,
-        model: model.trim() || DEFAULT_MODEL
-      })
-      if (result.ok) {
-        setVerifyStatus({ kind: 'success', message: '连接正常' })
-      } else {
-        setVerifyStatus({ kind: 'error', message: result.reason || '验证失败' })
-      }
-    } catch (err: any) {
-      const msg = err?.message || String(err)
-      if (msg.includes('401') || msg.includes('UNAUTHORIZED')) {
-        setVerifyStatus({ kind: 'error', message: 'API Key 无效' })
-      } else if (msg.includes('TIMEOUT') || msg.includes('timeout')) {
-        setVerifyStatus({ kind: 'error', message: '网络超时' })
-      } else {
-        setVerifyStatus({ kind: 'error', message: '验证失败，请检查配置' })
-      }
-    }
-  }
-
-  const handleSave = async () => {
-    setError(null)
-    const config: AppConfig = {
-      apiKey: apiKey.trim(),
-      baseUrl: baseUrl.trim() || DEFAULT_BASE_URL,
-      model: model.trim() || DEFAULT_MODEL,
-      libraryPath: libraryPath.trim()
-    }
-    try {
-      await ipc.writeConfig(config)
-      setInitialConfig(config)
-      showToast('配置已保存，重启后生效')
-    } catch (err: any) {
-      setError(err.message || '保存配置失败')
     }
   }
 
@@ -144,9 +72,6 @@ export function Settings() {
       setError(err.message || '保存 Tavily API Key 失败')
     }
   }
-
-  const canSave = apiKey.trim().length > 0 && libraryPath.trim().length > 0
-  const canVerify = apiKey.trim().length > 0
 
   const handleSaveJobConfig = async () => {
     setJobConfigSaving(true)
@@ -201,75 +126,7 @@ export function Settings() {
               )}
 
               {/* AI 服务 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>AI 服务</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>API Key</div>
-                    <div className="flex gap-2">
-                      <input
-                        data-testid="settings-api-key-input"
-                        type={showKey ? 'text' : 'password'}
-                        value={apiKey}
-                        onChange={e => setApiKey(e.target.value)}
-                        placeholder="sk-kimi-..."
-                        className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
-                      />
-                      <button
-                        data-testid="settings-api-key-toggle"
-                        type="button"
-                        onClick={() => setShowKey(!showKey)}
-                        className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
-                      >
-                        {showKey ? '隐藏' : '显示'}
-                      </button>
-                    </div>
-                    {!canVerify && (
-                      <div className="text-xs text-wine mt-1">请输入 API Key</div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>Base URL</div>
-                    <input
-                      data-testid="settings-base-url-input"
-                      type="text"
-                      value={baseUrl}
-                      onChange={e => setBaseUrl(e.target.value)}
-                      placeholder={DEFAULT_BASE_URL}
-                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
-                    />
-                  </div>
-
-                  <div>
-                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>Model</div>
-                    <input
-                      data-testid="settings-model-input"
-                      type="text"
-                      value={model}
-                      onChange={e => setModel(e.target.value)}
-                      placeholder={DEFAULT_MODEL}
-                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 mt-4">
-                  <Button data-testid="settings-verify-button" onClick={handleVerify} disabled={!canVerify}>
-                    验证连接
-                  </Button>
-                  {verifyStatus && (
-                    <span data-testid="settings-verify-status" className={`text-xs ${
-                      verifyStatus.kind === 'error' ? 'text-wine' :
-                      verifyStatus.kind === 'success' ? (isAcademic ? 'text-ember' : 'text-green-700') :
-                      (isAcademic ? 'text-parchment/40' : 'text-[#888]')
-                    }`}>
-                      {verifyStatus.message}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <LlmConfigCard isAcademic={isAcademic} showToast={showToast} onError={setError} />
 
               {/* 联网搜索 */}
               <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
@@ -329,6 +186,15 @@ export function Settings() {
                     >
                       选择目录
                     </button>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>保存后需重启应用生效。</div>
+                    <Button data-testid="settings-library-save-button" onClick={async () => {
+                      await ipc.configSetLibraryPath(libraryPath.trim())
+                      showToast('学习库路径已保存')
+                    }} disabled={!libraryPath.trim()}>
+                      保存
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -405,21 +271,6 @@ export function Settings() {
                       恢复默认
                     </Button>
                   </div>
-                </div>
-              </div>
-
-              {/* 保存 */}
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-3">
-                  <Button data-testid="settings-save-button" onClick={handleSave} disabled={!canSave}>
-                    保存
-                  </Button>
-                  <Button data-testid="settings-reset-button" variant="ghost" onClick={resetForm}>
-                    作废
-                  </Button>
-                </div>
-                <div className={`text-xs ${isAcademic ? 'text-parchment/40 border-slate/30' : 'text-[#888] border-[#1a1a1a]/10'} border-l-2 pl-3`}>
-                  保存后需重启应用，改动才会生效。
                 </div>
               </div>
             </div>

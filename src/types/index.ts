@@ -776,7 +776,6 @@ export type IpcApi = {
 
   // Config
   getConfig: () => Promise<AppConfig>
-  writeConfig: (config: AppConfig) => Promise<void>
   llmConfigList: () => Promise<{ configs: LlmConfig[]; activeId: string }>
   llmConfigSetActive: (id: string) => Promise<{ ok: true } | { ok: false; code: string }>
   llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string }) => Promise<{ ok: true; id: string } | { ok: false; code: string }>

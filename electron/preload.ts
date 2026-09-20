@@ -81,7 +81,6 @@ const api: IpcApi = {
 
   // Config
   getConfig: () => ipcRenderer.invoke('config:get'),
-  writeConfig: (config) => ipcRenderer.invoke('config:write', config),
   llmConfigList: () => ipcRenderer.invoke('llmConfig:list'),
   llmConfigSetActive: (id: string) => ipcRenderer.invoke('llmConfig:setActive', id),
   llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string }) =>

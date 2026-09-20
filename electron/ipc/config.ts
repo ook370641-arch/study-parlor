@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { loadEnv, saveEnv, updateEnvKeys } from '../env'
+import { loadEnv, updateEnvKeys } from '../env'
 import type { AppConfig } from '../env'
 import { getCurrentState, patchState } from './state'
 import { createLlmConfigActions, type LlmCreds } from '../lib/llm-configs'
@@ -9,10 +9,6 @@ export function registerConfigIpc(cfg: AppConfig) {
 
   ipcMain.handle('config:get', async (): Promise<AppConfig> => {
     return loadEnv(process.env)
-  })
-
-  ipcMain.handle('config:write', async (_, config: AppConfig): Promise<void> => {
-    saveEnv(config)
   })
 
   ipcMain.handle('llmConfig:list', async () => actions.list())
