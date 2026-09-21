@@ -101,11 +101,15 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
 
   const activate = async () => {
     if (!editingId) return
-    const r = await ipc.llmConfigSetActive(editingId)
-    if (!r.ok) { onError('切换失败'); return }
-    setActiveId(editingId)
-    const c = configs.find(x => x.id === editingId)
-    showToast(`已切换到 ${c ? llmConfigLabel(c, configs) : '新配置'}`)
+    try {
+      const r = await ipc.llmConfigSetActive(editingId)
+      if (!r.ok) { onError('切换失败'); return }
+      setActiveId(editingId)
+      const c = configs.find(x => x.id === editingId)
+      showToast(`已切换到 ${c ? llmConfigLabel(c, configs) : '新配置'}`)
+    } catch (err: any) {
+      onError(err?.message || '切换失败')
+    }
   }
 
   const verify = async () => {
@@ -114,7 +118,14 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
       const r = await ipc.setupProbeKey({ apiKey: fields.apiKey.trim(), baseUrl: fields.baseUrl.trim(), model: fields.model.trim() })
       setVerifyStatus(r.ok ? { kind: 'success', message: '连接正常' } : { kind: 'error', message: r.reason || '验证失败' })
     } catch (err: any) {
-      setVerifyStatus({ kind: 'error', message: err?.message || '验证失败，请检查配置' })
+      const msg = err?.message || String(err)
+      if (msg.includes('401') || msg.includes('UNAUTHORIZED')) {
+        setVerifyStatus({ kind: 'error', message: 'API Key 无效' })
+      } else if (msg.includes('TIMEOUT') || msg.includes('timeout')) {
+        setVerifyStatus({ kind: 'error', message: '网络超时' })
+      } else {
+        setVerifyStatus({ kind: 'error', message: '验证失败，请检查配置' })
+      }
     }
   }
 

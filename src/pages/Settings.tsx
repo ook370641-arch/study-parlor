@@ -190,8 +190,12 @@ export function Settings() {
                   <div className="mt-2 flex items-center justify-between">
                     <div className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>保存后需重启应用生效。</div>
                     <Button data-testid="settings-library-save-button" onClick={async () => {
-                      await ipc.configSetLibraryPath(libraryPath.trim())
-                      showToast('学习库路径已保存')
+                      try {
+                        await ipc.configSetLibraryPath(libraryPath.trim())
+                        showToast('学习库路径已保存')
+                      } catch (err: any) {
+                        setError(err?.message || '保存学习库路径失败')
+                      }
                     }} disabled={!libraryPath.trim()}>
                       保存
                     </Button>

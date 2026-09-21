@@ -164,4 +164,23 @@ describe('Settings · AI 服务', () => {
     expect(screen.queryByTestId('study-controls-swap-painting')).not.toBeInTheDocument()
     useStore.setState({ briefingTheme: 'academic' })
   })
+
+  it('启用 IPC 抛错：走 onError 而非 unhandled rejection', async () => {
+    mockConfigs([KIMI, DS], 'cfg-kimi')
+    vi.mocked(ipc.llmConfigSetActive).mockRejectedValue(new Error('IPC boom'))
+    render(<Settings />)
+    await waitFor(() => screen.getByDisplayValue('sk-kimi-test'))
+    fireEvent.click(screen.getAllByTestId('settings-llm-config-chip')[1])
+    await waitFor(() => screen.getByTestId('settings-activate-llm-config'))
+    fireEvent.click(screen.getByTestId('settings-activate-llm-config'))
+    await waitFor(() => expect(screen.getByTestId('settings-error-display')).toHaveTextContent('IPC boom'))
+  })
+
+  it('验证连接 401 映射为「API Key 无效」', async () => {
+    vi.mocked(ipc.setupProbeKey).mockRejectedValue(new Error('HTTP 401 UNAUTHORIZED'))
+    render(<Settings />)
+    await waitFor(() => screen.getByDisplayValue('sk-kimi-test'))
+    fireEvent.click(screen.getByTestId('settings-verify-button'))
+    await waitFor(() => expect(screen.getByTestId('settings-verify-status')).toHaveTextContent('API Key 无效'))
+  })
 })
