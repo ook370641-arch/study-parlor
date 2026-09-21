@@ -1,5 +1,7 @@
 {
-  "always": ["startup-health.spec.ts"],
+  "always": [
+    "startup-health.spec.ts"
+  ],
   "groups": {
     "briefing-core": {
       "sources": [
@@ -46,9 +48,13 @@
         "src/lib/llm-configs.ts",
         "electron/env.ts",
         "electron/ipc/config.ts",
-        "electron/lib/llm-configs.ts"
+        "electron/lib/llm-configs.ts",
+        "e2e/pages/SettingsPage.ts",
+        "e2e/helpers/selectors.ts"
       ],
-      "specs": ["settings.spec.ts"]
+      "specs": [
+        "settings.spec.ts"
+      ]
     },
     "article-assistant": {
       "sources": [
