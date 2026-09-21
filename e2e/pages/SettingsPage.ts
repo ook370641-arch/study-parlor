@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test'
+import { Page, Locator, expect } from '@playwright/test'
 import { SELECTORS } from '../helpers/selectors'
 
 export class SettingsPage {
@@ -20,6 +20,8 @@ export class SettingsPage {
 
   async waitForLoaded() {
     await this.apiKeyInput.waitFor({ state: 'visible' })
+    // 等水合：llmConfigList IPC 异步回填前输入框为空，直接 fill 会被覆盖
+    await expect(this.apiKeyInput).toHaveValue(/.+/)
   }
 
   async fillApiKey(key: string) {

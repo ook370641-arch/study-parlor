@@ -68,6 +68,8 @@
 
 三个字段 + 验证/保存，与今天像素级一致；卡片底部多一个低调入口「+ 新增模型配置」（`data-testid="settings-add-llm-config"`）。
 
+> 补注（终审裁决）：单配置态 placeholder 由 `sk-kimi-...` 改为 `sk-...`，且移除「请输入 API Key」红字提示与 baseUrl/model 默认 placeholder——首次配置走独立 setup 向导不经此页，无实际影响。
+
 **状态 2：新增草稿（关键状态，原则的直接体现）**
 
 ```
