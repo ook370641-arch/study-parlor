@@ -453,6 +453,8 @@ export function seedGroupState(
   )
 }
 
+// llmConfigs 有意缺席：走 .env 播种迁移路径（boot 时从 .env 生成首个 LLM 配置
+// 并写回 state.json），这样每条 E2E 都覆盖迁移分支。
 const BASE_STATE = {
   profile: {
     name: 'E2E 测试员',

@@ -7,8 +7,6 @@ export class SettingsPage {
   readonly modelInput: Locator
   readonly libraryPathInput: Locator
   readonly verifyButton: Locator
-  readonly saveButton: Locator
-  readonly resetButton: Locator
   readonly backButton: Locator
 
   constructor(private page: Page) {
@@ -17,8 +15,6 @@ export class SettingsPage {
     this.modelInput = page.locator(SELECTORS.settings.modelInput)
     this.libraryPathInput = page.locator(SELECTORS.settings.libraryPathInput)
     this.verifyButton = page.locator(SELECTORS.settings.verifyButton)
-    this.saveButton = page.locator(SELECTORS.settings.saveButton)
-    this.resetButton = page.locator(SELECTORS.settings.resetButton)
     this.backButton = page.locator(SELECTORS.settings.backButton)
   }
 
@@ -59,12 +55,32 @@ export class SettingsPage {
     await this.page.locator(SELECTORS.settings.searchSaveButton).click()
   }
 
-  async saveConfig() {
-    await this.saveButton.click()
+  async saveAiConfig() {
+    await this.page.locator(SELECTORS.settings.aiSaveButton).click()
   }
 
-  async resetForm() {
-    await this.resetButton.click()
+  async saveLibraryPath() {
+    await this.page.locator(SELECTORS.settings.librarySaveButton).click()
+  }
+
+  async addLlmConfig() {
+    await this.page.locator(SELECTORS.settings.addLlmConfig).click()
+  }
+
+  draft() {
+    return this.page.locator(SELECTORS.settings.llmDraft)
+  }
+
+  async saveDraft() {
+    await this.page.locator(SELECTORS.settings.llmDraftSave).click()
+  }
+
+  chips() {
+    return this.page.locator(SELECTORS.settings.llmConfigChip)
+  }
+
+  async activateEditing() {
+    await this.page.locator(SELECTORS.settings.activateLlmConfig).click()
   }
 
   async goBack() {

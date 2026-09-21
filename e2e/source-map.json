@@ -41,7 +41,12 @@
     },
     "settings": {
       "sources": [
-        "src/pages/Settings.tsx"
+        "src/pages/Settings.tsx",
+        "src/components/settings/**",
+        "src/lib/llm-configs.ts",
+        "electron/env.ts",
+        "electron/ipc/config.ts",
+        "electron/lib/llm-configs.ts"
       ],
       "specs": ["settings.spec.ts"]
     },
