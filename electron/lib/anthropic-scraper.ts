@@ -31,6 +31,11 @@ export function classifyError(err: unknown): { code: AnthropicErrorCode; message
   if (lower.includes('cancelled')) {
     return { code: 'cancelled', message: '导入已取消' }
   }
+  // 目标页返回 4xx/5xx（did-navigate 拦截，见 anthropic-browser）——不导入错误页内容
+  const httpMatch = msg.match(/HTTP_ERROR_(\d{3})/i)
+  if (httpMatch) {
+    return { code: 'http-error', message: `页面返回错误（HTTP ${httpMatch[1]}），未导入，可稍后重试` }
+  }
   if (lower.includes('offline') || lower.includes('network_error') || lower.includes('networkerror')) {
     return { code: 'network-error', message: '网络连接失败，请检查网络后重试' }
   }

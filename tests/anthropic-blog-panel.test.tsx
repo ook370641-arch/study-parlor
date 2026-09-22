@@ -273,6 +273,53 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getByText("Claude's Constitution · 可视化双语读本")).toBeInTheDocument()
   })
 
+  it('Mine chip：仅显示已导入文章，与源 chip 互斥', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('s1', 'Saved Eng'), section: 'engineering', isSaved: true, filePath: 'lib/Anthropic博客/2026-08/s1.md' },
+          { ...article('u1', 'Unsaved Eng'), section: 'engineering' },
+          { ...article('s2', 'Saved Res'), section: 'research', isSaved: true, filePath: 'lib/Anthropic博客/2026-08/s2.md' },
+        ],
+        loading: false,
+        error: null,
+        sectionStatus: {},
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    // 初始 All：Mine 在 All 之前，均未激活 mine
+    const mine = screen.getByTestId('anthropic-filter-mine')
+    const all = screen.getByTestId('anthropic-filter-all')
+    expect(mine.compareDocumentPosition(all) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(mine).toHaveAttribute('aria-pressed', 'false')
+    expect(webTitles()).toEqual(['Saved Eng', 'Unsaved Eng', 'Saved Res'])
+
+    // 点 Mine → 只剩已导入（宪法条目非导入，不显示）；All 与源 chip 全灭
+    fireEvent.click(mine)
+    expect(mine).toHaveAttribute('aria-pressed', 'true')
+    expect(all).toHaveAttribute('aria-pressed', 'false')
+    expect(webTitles()).toEqual(['Saved Eng', 'Saved Res'])
+    expect(screen.queryByText("Claude's Constitution · 可视化双语读本")).not.toBeInTheDocument()
+
+    // mine 态点源 chip → mine 清零、该源单选
+    fireEvent.click(chip('engineering'))
+    expect(mine).toHaveAttribute('aria-pressed', 'false')
+    expect(chip('engineering')).toHaveAttribute('aria-pressed', 'true')
+    expect(webTitles()).toEqual(['Saved Eng', 'Unsaved Eng'])
+
+    // pick 态点 Mine → 源选择清零，仅已导入
+    fireEvent.click(mine)
+    expect(chip('engineering')).toHaveAttribute('aria-pressed', 'false')
+    expect(webTitles()).toEqual(['Saved Eng', 'Saved Res'])
+
+    // 再点 Mine → 回退 All
+    fireEvent.click(mine)
+    expect(all).toHaveAttribute('aria-pressed', 'true')
+    expect(webTitles()).toEqual(['Saved Eng', 'Unsaved Eng', 'Saved Res'])
+  })
+
   it('institute 遗留文章归 research：只选 research 时仍显示', () => {
     useStore.setState({
       anthropicBlogCache: {

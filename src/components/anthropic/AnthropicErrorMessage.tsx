@@ -11,6 +11,7 @@ interface Props {
 const CODE_TITLE: Record<AnthropicErrorCode, string> = {
   'browser-init-failed': '浏览器初始化失败',
   'network-error': '网络异常',
+  'http-error': '页面返回错误',
   'parse-error': '页面解析失败',
   'import-failed': '导入失败',
   cancelled: '已取消',

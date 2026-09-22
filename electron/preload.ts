@@ -119,7 +119,7 @@ const api: IpcApi = {
 
   anthropicDiscover: () => ipcRenderer.invoke('anthropic:discover'),
   anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
-  anthropicCancelImport: () => ipcRenderer.invoke('anthropic:cancelImport'),
+  anthropicCancelImport: (url?: string) => ipcRenderer.invoke('anthropic:cancelImport', url),
   anthropicDeleteArticle: (a) => ipcRenderer.invoke('anthropic:deleteArticle', a),
   anthropicWriteArticleBody: (a) => ipcRenderer.invoke('anthropic:writeArticleBody', a),
   onAnthropicBackfill: (cb) => {

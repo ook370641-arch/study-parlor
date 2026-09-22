@@ -81,8 +81,8 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
     }
 
     if (importing) {
-      // Clicking during import cancels it
-      cancelImport()
+      // Clicking during import cancels it（按 url 定向取消，不影响其他并行导入）
+      cancelImport(article.url)
       setImporting(false)
       return
     }

@@ -63,6 +63,7 @@ export type AnthropicArticleMeta = {
 export type AnthropicErrorCode =
   | 'browser-init-failed'
   | 'network-error'
+  | 'http-error'
   | 'parse-error'
   | 'import-failed'
   | 'cancelled'
@@ -653,6 +654,12 @@ export type StateJson = {
   writingAssistantWidth?: number
   writingAssistantOpen?: boolean
   lastWritingFile?: string | null
+  /** 博客最后阅读的文章 filePath(进入博客面板即恢复) */
+  lastAnthropicReaderFile?: string | null
+  /** 写作每文件浏览位置(filePath → 首可见顶层块索引,粗粒度) */
+  writingScrollPositions?: Record<string, number>
+  /** 博客每文章浏览位置(filePath → 首可见块索引,粗粒度) */
+  anthropicScrollPositions?: Record<string, number>
   writingOrder?: Record<string, string[]>
   writingExpandedGroups?: Record<string, boolean>
   writingUIFontSize?: BriefingFontSize
@@ -805,7 +812,7 @@ export type IpcApi = {
     | { ok: true; filePath: string; wasAlreadySaved: boolean }
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
-  anthropicCancelImport: () => Promise<void>
+  anthropicCancelImport: (url?: string) => Promise<void>
   anthropicDeleteArticle: (args: { filePath: string }) => Promise<
     { ok: true } | { ok: false; message: string }
   >

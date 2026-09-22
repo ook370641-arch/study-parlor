@@ -172,7 +172,7 @@ type AppStore = {
     lastFetchedAt: string
   ) => void
   importAnthropicArticle: (url: string) => Promise<void>
-  cancelAnthropicImport: () => Promise<void>
+  cancelAnthropicImport: (url?: string) => Promise<void>
   openAnthropicReader: (filePath: string) => Promise<void>
   closeAnthropicReader: () => void
   openConstitutionReport: () => void
@@ -426,6 +426,14 @@ type AppStore = {
   companionFile: { path: string; body: string; kind: WritingPreviewKind; truncated?: boolean; previewError?: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
   writingEditorAction: ((fn: (ctx: any) => void) => void) | null
   lastWritingFile: string | null
+  /** 博客最后阅读的文章 filePath(进入博客面板即恢复) */
+  lastAnthropicReaderFile: string | null
+  /** 写作每文件浏览位置(filePath → 首可见顶层块索引,粗粒度) */
+  writingScrollPositions: Record<string, number>
+  /** 博客每文章浏览位置(filePath → 首可见块索引,粗粒度) */
+  anthropicScrollPositions: Record<string, number>
+  setWritingScrollPosition: (filePath: string, blockIndex: number) => void
+  setAnthropicScrollPosition: (filePath: string, blockIndex: number) => void
   writingOrder: Record<string, string[]>
   writingExpandedGroups: Record<string, boolean>
   writingUIFontSize: BriefingFontSize
@@ -521,6 +529,10 @@ let articleCompanionSelectSeq = 0
  *  the race where a user message lands before loadAssistantSession completes and the
  *  cur.messages.length === 0 guard discards the loaded history. */
 let historyLoadPromise: Promise<void> | null = null
+
+/** 并行导入时「最后点击的文章」才在完成时打开阅读器——主进程导入队列 FIFO 串行，
+ *  若每篇完成都打开会连续抢阅读器（flipbook）。 */
+let lastAnthropicImportUrl: string | null = null
 
 let guideWidthSaveTimer: ReturnType<typeof setTimeout> | null = null
 function debounceSaveGuideWidth(patch: Partial<StateJson>) {
@@ -649,6 +661,9 @@ export const useStore = create<AppStore>((set, get) => ({
   companionFile: null,
   writingEditorAction: null,
   lastWritingFile: null,
+  lastAnthropicReaderFile: null,
+  writingScrollPositions: {},
+  anthropicScrollPositions: {},
   writingOrder: {},
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
@@ -705,6 +720,9 @@ export const useStore = create<AppStore>((set, get) => ({
       writingPanelMode: state.writingPanelMode ?? 'assistant',
       writingCompanionMap: state.writingCompanionMap ?? {},
       lastWritingFile: state.lastWritingFile ?? null,
+      lastAnthropicReaderFile: state.lastAnthropicReaderFile ?? null,
+      writingScrollPositions: state.writingScrollPositions ?? {},
+      anthropicScrollPositions: state.anthropicScrollPositions ?? {},
       writingOrder: state.writingOrder ?? {},
       writingExpandedGroups: state.writingExpandedGroups ?? {},
       writingUIFontSize: state.writingUIFontSize ?? 'base',
@@ -1443,9 +1461,11 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   importAnthropicArticle: async (url) => {
+    lastAnthropicImportUrl = url
     try {
       const result = await ipc.anthropicImportArticle(url)
       if (result.ok) {
+        const openReader = lastAnthropicImportUrl === url
         set(s => ({
           anthropicBlogCache: {
             ...s.anthropicBlogCache,
@@ -1453,8 +1473,10 @@ export const useStore = create<AppStore>((set, get) => ({
               a.url === url ? { ...a, isSaved: true, filePath: result.filePath } : a
             ),
           },
-          anthropicReaderFilePath: result.filePath,
+          ...(openReader ? { anthropicReaderFilePath: result.filePath, lastAnthropicReaderFile: result.filePath } : {}),
         }))
+        // 导入后自动打开也要持久化「最后阅读」(此路径绕过 openAnthropicReader)
+        if (openReader) void ipc.patchState({ lastAnthropicReaderFile: result.filePath } as Partial<StateJson>)
         get().showToast(result.wasAlreadySaved ? '文章已保存' : '导入成功')
       } else {
         get().showToast(result.message || '导入失败')
@@ -1464,15 +1486,25 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  cancelAnthropicImport: async () => {
-    await ipc.anthropicCancelImport()
+  cancelAnthropicImport: async (url) => {
+    await ipc.anthropicCancelImport(url)
     set(s => ({ anthropicBlogCache: { ...s.anthropicBlogCache, loading: false } }))
   },
 
   openAnthropicReader: async (filePath) => {
     const now = new Date().toISOString()
-    set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now, constitutionReportOpen: false, recommendViewBatch: null })
-    await ipc.patchState({ anthropicBlogLastSeenAt: now } as Partial<StateJson>)
+    set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now, constitutionReportOpen: false, recommendViewBatch: null, lastAnthropicReaderFile: filePath })
+    await ipc.patchState({ anthropicBlogLastSeenAt: now, lastAnthropicReaderFile: filePath } as Partial<StateJson>)
+  },
+  setWritingScrollPosition: (filePath, blockIndex) => {
+    const next = { ...get().writingScrollPositions, [filePath]: blockIndex }
+    set({ writingScrollPositions: next })
+    void ipc.patchState({ writingScrollPositions: next } as Partial<StateJson>)
+  },
+  setAnthropicScrollPosition: (filePath, blockIndex) => {
+    const next = { ...get().anthropicScrollPositions, [filePath]: blockIndex }
+    set({ anthropicScrollPositions: next })
+    void ipc.patchState({ anthropicScrollPositions: next } as Partial<StateJson>)
   },
   closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
   openConstitutionReport: () =>
@@ -2670,6 +2702,9 @@ export const useStore = create<AppStore>((set, get) => ({
     const htmlFlush = get().htmlDeleteFlush
     if (htmlFlush && !(await htmlFlush())) return
     if (!filePath) return set({ writingFile: null })
+    // lastWritingFile 跨重启持久化(2026-09-22:此前只在内存 set 不落盘,
+    // setLastWritingFile 无调用方,「恢复上次打开的文章」永远无法生效)
+    void ipc.patchState({ lastWritingFile: filePath } as Partial<StateJson>)
     const cur = get().writingFile
     if (cur?.dirty) await get().saveWritingFile()
     // 对照槽 dirty 先存（不依赖 writingFile，须在主文切换前完成）

@@ -10,11 +10,15 @@ import { TransferToWritingButton } from '@/components/briefing/TransferToWriting
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
+import { EMPTY_GUIDE_CHUNKS } from '@/lib/article-chunks'
+import { firstVisibleBlockIndex, scrollToBlockIndex } from '@/lib/scroll-memory'
 import type { AnthropicSectionKey, Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
   filePath: string
   theme?: BriefingTheme
+  /** 传入即启用浏览位置记忆(按 filePath 记录/恢复首可见块索引);仅博客面板传,Scout 不传 */
+  scrollMemoryKey?: string
 }
 
 async function inlineLocalImages(body: string, filePath: string): Promise<string> {
@@ -66,18 +70,21 @@ function resolveSection(fm: Frontmatter) {
   return ANTHROPIC_SOURCES.find((s) => s.key === key) ?? LEGACY_SECTION_META[key] ?? null
 }
 
-export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) {
+export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMemoryKey }: Props) {
   const isAcademic = theme !== 'newspaper'
   const fontSizeBtnCls = isAcademic
     ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40'
     : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a] hover:border-[#2a1f1a]/40'
-  const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? [])
+  const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? EMPTY_GUIDE_CHUNKS)
   const terms = useMemo(() => guideChunks.flatMap((c) => c.terms), [guideChunks])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
   const [body, setBody] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<{ code: string; message: string } | null>(null)
   const articleBodyRef = useRef<HTMLElement | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+  const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const setAnthropicScrollPosition = useStore((s) => s.setAnthropicScrollPosition)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const setAnthropicReaderContent = useStore((s) => s.setAnthropicReaderContent)
@@ -116,6 +123,40 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
       cancelled = true
     }
   }, [filePath])
+
+  // 浏览位置恢复(2026-09-22 用户反馈:每次打开回到上次位置):body 渲染出块后
+  // 滚到上次首可见块(粗粒度块索引,最多等 ~2s)。与 WritingBoard 同理,不订阅
+  // positions 做依赖,读 getState() 快照,防止滚动保存反向触发恢复。
+  useEffect(() => {
+    if (!scrollMemoryKey || !body) return
+    const saved = useStore.getState().anthropicScrollPositions[scrollMemoryKey]
+    if (saved === undefined || saved <= 0) return
+    let tries = 0
+    const timer = setInterval(() => {
+      const container = scrollContainerRef.current
+      const blocksRoot = articleBodyRef.current
+      if (container && blocksRoot && blocksRoot.children.length > 0) {
+        scrollToBlockIndex(container, blocksRoot, saved)
+        clearInterval(timer)
+      } else if (++tries > 40) clearInterval(timer)
+    }, 50)
+    return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [body, scrollMemoryKey])
+
+  // 滚动停住 400ms 后记录首可见块索引
+  const onReaderScroll = () => {
+    if (!scrollMemoryKey) return
+    if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current)
+    scrollSaveTimer.current = setTimeout(() => {
+      const container = scrollContainerRef.current
+      const blocksRoot = articleBodyRef.current
+      if (container && blocksRoot && blocksRoot.children.length > 0) {
+        setAnthropicScrollPosition(scrollMemoryKey, firstVisibleBlockIndex(container, blocksRoot))
+      }
+    }, 400)
+  }
+  useEffect(() => () => { if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current) }, [])
 
   // Report body/title to store so the parent blog panel can mount ArticleAssistantPanel
   useEffect(() => {
@@ -217,7 +258,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic' }: Props) 
             />
           )}
         </div>
-        <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
+        <div className="flex-1 flex flex-col overflow-y-auto min-w-0" ref={scrollContainerRef} onScroll={onReaderScroll}>
           <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
           <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24 briefing-article-body arrive-item">
             {loading && (

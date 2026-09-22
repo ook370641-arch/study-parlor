@@ -8,6 +8,7 @@ import {
   firstParagraphToSummary,
   toAbsoluteUrl,
   buildArticleScript,
+  classifyError,
   importArticle,
 } from '../electron/lib/anthropic-scraper'
 import { runScriptInScraperWindow } from '../electron/lib/anthropic-browser'
@@ -51,6 +52,19 @@ describe('anthropic helpers', () => {
     const long = 'a'.repeat(300)
     const md = `# Title\n\n${long}\n\nNext.`
     expect(firstParagraphToSummary(md).endsWith('…')).toBe(true)
+  })
+
+  it('classifyError: HTTP_ERROR_500 → http-error，提示含状态码', () => {
+    const r = classifyError(new Error('HTTP_ERROR_500'))
+    expect(r.code).toBe('http-error')
+    expect(r.message).toContain('500')
+    expect(r.message).toContain('未导入')
+  })
+
+  it('classifyError: HTTP_ERROR_404 → http-error；cancelled 优先级更高', () => {
+    expect(classifyError(new Error('HTTP_ERROR_404')).code).toBe('http-error')
+    expect(classifyError(new Error('cancelled')).code).toBe('cancelled')
+    expect(classifyError(new Error('Load failed: ERR_INTERNET_DISCONNECTED')).code).toBe('network-error')
   })
 })
 

@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import type { BrowserWindow as BrowserWindowType } from 'electron'
+import { createRunQueue } from './run-queue'
 
 let scraperWindow: BrowserWindowType | null = null
 let currentReject: ((reason: Error) => void) | null = null
@@ -39,7 +40,14 @@ export async function closeScraperWindow(): Promise<void> {
   }
 }
 
-export function cancelCurrentOperation(): void {
+// 抓取窗口全局只有一个，所有使用方（discover 列表页、import 正文/图片）经队列串行，
+// 否则并发 loadURL 互相顶掉导航、did-finish-load 监听器串台。
+const scriptQueue = createRunQueue()
+
+export function cancelCurrentOperation(url?: string): void {
+  // 先取消还在队列里等待的任务；url 缺省 = 旧行为（清空等待 + 取消当前）
+  scriptQueue.cancelQueued(url)
+  if (url && scriptQueue.activeUrl() !== url) return
   if (scraperWindow && !scraperWindow.isDestroyed()) {
     scraperWindow.webContents.stop()
   }
@@ -62,14 +70,19 @@ export async function runScriptInScraperWindow<T>(
   if (process.env.E2E_ANTHROPIC_OFFLINE === '1') {
     throw new Error('NETWORK_ERROR: Anthropic is not reachable (offline simulation)')
   }
+  return scriptQueue.enqueue(opts.url, () => runScriptNow<T>(script, opts))
+}
 
+async function runScriptNow<T>(
+  script: string,
+  opts: RunScriptOptions
+): Promise<T> {
   const win = await ensureScraperWindow()
   const wc = win.webContents
 
   return new Promise<T>((resolve, reject) => {
     let settled = false
     let timeoutId: NodeJS.Timeout | null = null
-    currentReject = reject
 
     function cleanup() {
       settled = true
@@ -81,6 +94,7 @@ export async function runScriptInScraperWindow<T>(
       try {
         wc.removeAllListeners('did-finish-load')
         wc.removeAllListeners('did-fail-load')
+        wc.removeAllListeners('did-navigate')
       } catch {}
     }
 
@@ -96,6 +110,10 @@ export async function runScriptInScraperWindow<T>(
       resolve(value)
     }
 
+    // 指向 fail（而非裸 reject）：取消时必须清掉本任务的监听器，
+    // 否则取消后队列里下一个任务开始，残留的 once 监听器会被新页面加载触发而串台。
+    currentReject = fail
+
     const timeoutMs = opts.timeoutMs ?? 60000
     timeoutId = setTimeout(() => {
       fail(new Error(`Timeout after ${timeoutMs}ms loading ${opts.url}`))
@@ -103,6 +121,18 @@ export async function runScriptInScraperWindow<T>(
 
     wc.once('did-fail-load', (_event, _errorCode, errorDescription) => {
       fail(new Error(`Load failed: ${errorDescription || 'unknown'}`))
+    })
+
+    // HTTP 4xx/5xx 不触发 did-fail-load（错误页照常加载完成），
+    // 必须在导航提交时按状态码拦截，否则会把错误页当正文抓下来。
+    // did-navigate 给出重定向后的最终响应码。
+    wc.once('did-navigate', (_event, _url, httpResponseCode) => {
+      if (httpResponseCode >= 400) {
+        try {
+          wc.stop()
+        } catch {}
+        fail(new Error(`HTTP_ERROR_${httpResponseCode}`))
+      }
     })
 
     async function runOnLoad() {

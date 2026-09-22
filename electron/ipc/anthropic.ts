@@ -144,8 +144,8 @@ export function registerAnthropicIpc(cfg: AppConfig) {
     }
   })
 
-  ipcMain.handle('anthropic:cancelImport', async () => {
-    cancelCurrentOperation()
+  ipcMain.handle('anthropic:cancelImport', async (_, url?: string) => {
+    cancelCurrentOperation(url)
   })
 
   ipcMain.handle('anthropic:deleteArticle', async (_, args: { filePath: string }) => {

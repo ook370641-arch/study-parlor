@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
@@ -15,7 +15,7 @@ import { CompanionWritingPicker } from '@/components/article-assistant/Companion
 import { findNewArticleUrls, sortArticlesByDateDesc } from '@/lib/anthropic-articles'
 import { withConstitutionEntry } from '@/lib/constitution-report'
 import { ANTHROPIC_SOURCES, filterGroupOf } from '@/lib/anthropic-sections'
-import { ALL_SOURCE_KEYS, clickAllChip, toggleSourceChip, type BlogFilter } from '@/lib/section-filter'
+import { ALL_SOURCE_KEYS, clickAllChip, toggleMineChip, toggleSourceChip, type BlogFilter } from '@/lib/section-filter'
 import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -100,7 +100,10 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const filtered = useMemo(() => {
     const bySource = filter.mode === 'all'
       ? displayArticles
-      : displayArticles.filter((a) => filter.selected.has(filterGroupOf(a)))
+      : filter.mode === 'mine'
+        // 本地内置条目（宪法报告）不算「已导入」
+        ? displayArticles.filter((a) => a.isSaved && !a.local)
+        : displayArticles.filter((a) => filter.selected.has(filterGroupOf(a)))
     const q = query.trim().toLowerCase()
     if (!q) return bySource
     return bySource.filter(
@@ -114,6 +117,20 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   useEffect(() => {
     void loadBlogCollection()
   }, [])
+
+  // 进入页面即恢复上次阅读的文章(2026-09-22 用户反馈):文章仍在列表(isSaved
+  // 且 filePath 匹配)才恢复,被外部删除则静默跳过。restoredRef 保证每次挂载
+  // 只恢复一次——用户在本页主动关闭阅读器后不会被重新拉开。
+  const lastAnthropicReaderFile = useStore((s) => s.lastAnthropicReaderFile)
+  const restoredRef = useRef(false)
+  useEffect(() => {
+    if (restoredRef.current) return
+    if (readerFilePath) { restoredRef.current = true; return }
+    if (!lastAnthropicReaderFile || loading) return
+    const stillThere = articles.some((a) => a.isSaved && a.filePath === lastAnthropicReaderFile)
+    restoredRef.current = true
+    if (stillThere) void openReader(lastAnthropicReaderFile)
+  }, [articles, loading, readerFilePath, lastAnthropicReaderFile, openReader])
 
   // 自动检测新文章
   useEffect(() => {
@@ -317,6 +334,17 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
+                  data-testid="anthropic-filter-mine"
+                  aria-pressed={filter.mode === 'mine'}
+                  title="只看已导入的文章"
+                  onClick={() => setFilter((prev) => toggleMineChip(prev))}
+                  className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${filter.mode === 'mine' ? 'border-ember text-ember' : themeClasses.muted}`}
+                  style={filter.mode === 'mine' ? {} : { borderColor: 'transparent' }}
+                >
+                  Mine
+                </button>
+                <button
+                  type="button"
                   data-testid="anthropic-filter-all"
                   aria-pressed={filter.mode === 'all'}
                   onClick={() => setFilter(clickAllChip())}
@@ -326,7 +354,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                   All
                 </button>
                 {ANTHROPIC_SOURCES.map((s) => {
-                  const active = filter.mode !== 'all' && filter.selected.has(s.key)
+                  const active = filter.mode === 'pick' && filter.selected.has(s.key)
                   return (
                     <button
                       key={s.key}
@@ -411,6 +439,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           <AnthropicArticleReader
             filePath={readerFilePath}
             theme={theme}
+            scrollMemoryKey={readerFilePath}
           />
         ) : (
           <div className={`relative flex-1 flex flex-col items-center justify-center px-6 ${themeClasses.muted}`}>
