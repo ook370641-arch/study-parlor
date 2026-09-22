@@ -24,8 +24,9 @@ test.describe('博客收藏夹与推荐', () => {
     await window.locator('[data-testid^="blog-collection-reason-"]').first().click()
     await expect(window.getByText('为什么推荐：E2E 推荐理由')).toBeVisible()
 
-    // 移除推荐条目 → 空态
+    // 移除推荐条目 → 确认弹窗 → 空态
     await window.locator('[data-testid^="blog-collection-remove-"]').first().click()
+    await window.locator('[data-testid="confirm-dialog-confirm"]').click()
     await expect(window.locator('[data-testid="blog-collection-empty"]')).toBeVisible()
   })
 
@@ -45,12 +46,12 @@ test.describe('博客收藏夹与推荐', () => {
     // 推荐页卡片手动标已读 → 已读夹出现
     await window.locator('[data-testid^="blog-rec-read-"]').first().click()
     await expect(window.locator('[data-testid="blog-read-toggle"]')).toBeVisible({ timeout: 5000 })
-    await expect(window.locator('[data-testid="blog-read-toggle"]')).toContainText('已读（1）')
+    await expect(window.locator('[data-testid="blog-read-count"]')).toHaveText('1')
 
     // 删除本批 → 推荐页回空态，已读夹不受影响
     await window.locator('[data-testid="blog-rec-delete-batch"]').click()
     await expect(window.locator('[data-testid="blog-rec-empty"]')).toBeVisible()
-    await expect(window.locator('[data-testid="blog-read-toggle"]')).toContainText('已读（1）')
+    await expect(window.locator('[data-testid="blog-read-count"]')).toHaveText('1')
   })
 
   test('推荐记录固定入口 + 已读/收藏互斥搬家', async ({ window }) => {
@@ -75,7 +76,7 @@ test.describe('博客收藏夹与推荐', () => {
     // 互斥：pick 初始在收藏夹（推荐自动入夹）；标已读 → 出收藏夹、入已读
     await window.locator('[data-testid^="blog-rec-read-"]').first().click()
     await window.locator('[data-testid="blog-rec-close"]').click()
-    await expect(window.locator('[data-testid="blog-read-toggle"]')).toContainText('已读（1）')
+    await expect(window.locator('[data-testid="blog-read-count"]')).toHaveText('1')
     await expect(window.locator('[data-testid="blog-collection-empty"]')).toBeVisible()
   })
 

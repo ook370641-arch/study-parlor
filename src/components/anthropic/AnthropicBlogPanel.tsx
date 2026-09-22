@@ -328,7 +328,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               </div>
             )}
 
-            <BlogCollectionSection theme={theme} />
+            <BlogCollectionSection theme={theme} onRequestRemove={(t) => setPendingDelete(t)} />
 
             <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
               <input

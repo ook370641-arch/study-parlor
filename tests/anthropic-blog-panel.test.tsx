@@ -499,6 +499,31 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.queryByTestId('blog-rec-badge')).not.toBeInTheDocument()
   })
 
+  it('收藏夹移出 → 确认后：移出收藏 + 删除文章文件', async () => {
+    const removeBlogCollection = vi.fn()
+    const deleteAnthropicArticle = vi.fn()
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [{ ...article('u-m1', 'Manual'), isSaved: true, filePath: 'lib/m1.md' }],
+        loading: false, error: null, sectionStatus: {},
+      },
+      blogCollection: {
+        version: 1, dismissed: [], history: [], read: [],
+        entries: [{ sourceUrl: 'u-m1', filePath: 'lib/m1.md', title: '手动一', addedAt: 'b', origin: 'manual' as const }],
+      },
+      removeBlogCollection, deleteAnthropicArticle,
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('blog-collection-remove-u-m1'))
+    expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'))
+    await waitFor(() => {
+      expect(removeBlogCollection).toHaveBeenCalledWith('u-m1')
+      expect(deleteAnthropicArticle).toHaveBeenCalledWith('lib/m1.md')
+    })
+  })
+
   it('对照模式下点已保存文章：路由到对照槽，并 toast 提示 + 自动展开导读面板', async () => {
     const selectArticleCompanion = vi.fn()
     const showToast = vi.fn()
