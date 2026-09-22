@@ -66,16 +66,16 @@ export const NEWSPAPER_HEADING_STYLES: Record<BriefingFontSize, { size: string; 
 }
 
 export const BRIEFING_LIST_STYLES: Record<BriefingFontSize, { title: string; meta: string }> = {
-  sm: { title: '13px', meta: '10px' },
-  base: { title: '14px', meta: '11px' },
-  lg: { title: '15px', meta: '12px' },
-  xl: { title: '16px', meta: '12px' },
-  '2xl': { title: '17px', meta: '13px' },
-  '3xl': { title: '18px', meta: '14px' },
-  '4xl': { title: '19px', meta: '15px' },
-  '5xl': { title: '20px', meta: '16px' },
-  '6xl': { title: '21px', meta: '17px' },
-  '7xl': { title: '22px', meta: '18px' },
+  sm: { title: '11px', meta: '10px' },
+  base: { title: '12px', meta: '11px' },
+  lg: { title: '13px', meta: '12px' },
+  xl: { title: '14px', meta: '12px' },
+  '2xl': { title: '15px', meta: '13px' },
+  '3xl': { title: '16px', meta: '14px' },
+  '4xl': { title: '17px', meta: '15px' },
+  '5xl': { title: '18px', meta: '16px' },
+  '6xl': { title: '19px', meta: '17px' },
+  '7xl': { title: '20px', meta: '18px' },
 }
 
 export const BRIEFING_QUOTE_SIZES: Record<BriefingFontSize, string> = {

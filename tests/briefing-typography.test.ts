@@ -58,9 +58,9 @@ describe('briefing font size extension', () => {
     }
   })
 
-  it('list title grows from 13px to 22px across the scale', () => {
-    expect(BRIEFING_LIST_STYLES.sm.title).toBe('13px')
-    expect(BRIEFING_LIST_STYLES['7xl'].title).toBe('22px')
+  it('list title grows from 11px to 20px across the scale', () => {
+    expect(BRIEFING_LIST_STYLES.sm.title).toBe('11px')
+    expect(BRIEFING_LIST_STYLES['7xl'].title).toBe('20px')
   })
 
   it('list meta grows from 10px to 18px across the scale', () => {

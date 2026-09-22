@@ -208,21 +208,21 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
           </span>
         )}
 
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3">
         {article.imageUrl ? (
           <img
             src={article.imageUrl}
             alt=""
-            className={`shrink-0 w-20 h-20 object-cover rounded ${placeholderBg}`}
+            className={`shrink-0 w-14 h-14 object-cover rounded ${placeholderBg}`}
             loading="lazy"
             decoding="async"
           />
         ) : article.local === 'constitution' ? (
-          <div className={`shrink-0 w-20 h-20 rounded flex items-center justify-center text-3xl font-serif ${placeholderBg} ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`}>
+          <div className={`shrink-0 w-14 h-14 rounded flex items-center justify-center text-2xl font-serif ${placeholderBg} ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`}>
             §
           </div>
         ) : (
-          <div className={`shrink-0 w-20 h-20 rounded flex items-center justify-center text-xs ${placeholderBg} ${placeholderText}`}>
+          <div className={`shrink-0 w-14 h-14 rounded flex items-center justify-center text-xs ${placeholderBg} ${placeholderText}`}>
             无配图
           </div>
         )}
