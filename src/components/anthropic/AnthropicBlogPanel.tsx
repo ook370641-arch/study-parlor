@@ -18,6 +18,10 @@ import { ANTHROPIC_SOURCES, filterGroupOf } from '@/lib/anthropic-sections'
 import { ALL_SOURCE_KEYS, clickAllChip, toggleMineChip, toggleSourceChip, type BlogFilter } from '@/lib/section-filter'
 import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
+type PendingDelete =
+  | { kind: 'mine'; article: AnthropicArticleMeta }
+  | { kind: 'collection' | 'read'; sourceUrl: string; filePath: string; title: string }
+
 interface Props {
   theme?: BriefingTheme
 }
@@ -81,6 +85,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const loadBlogCollection = useStore((s) => s.loadBlogCollection)
   const toggleBlogCollection = useStore((s) => s.toggleBlogCollection)
   const toggleBlogRead = useStore((s) => s.toggleBlogRead)
+  const removeBlogCollection = useStore((s) => s.removeBlogCollection)
+  const removeBlogRead = useStore((s) => s.removeBlogRead)
   // 写作树对照挑选器：对照 tab 下点来源栏「写作」后替换本栏文章列表
   const pickerOpen = useStore((s) => s.writingCompanionPicker === 'anthropic')
 
@@ -91,7 +97,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [pendingLastFetchedAt, setPendingLastFetchedAt] = useState<string | null>(null)
   const [checkError, setCheckError] = useState<AnthropicError | null>(null)
   const [checkKey, setCheckKey] = useState(0)
-  const [pendingDelete, setPendingDelete] = useState<AnthropicArticleMeta | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [filter, setFilter] = useState<BlogFilter>({ mode: 'all' })
 
   // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成；合并时间线按日期倒序
@@ -412,7 +418,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       key={article.url}
                       article={article}
                       theme={theme}
-                      onRequestDelete={setPendingDelete}
+                      showUnimport={filter.mode === 'mine'}
+                      onRequestDelete={(a) => setPendingDelete({ kind: 'mine', article: a })}
                       inCollection={inCol}
                       onToggleCollection={
                         article.isSaved && article.filePath
@@ -500,7 +507,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="删除文章"
+        title={pendingDelete?.kind === 'collection' ? '移出收藏并删除' : pendingDelete?.kind === 'read' ? '移出已读并删除' : '取消导入'}
         icon="trash"
         confirmLabel="删除"
         confirmVariant="danger"
@@ -508,11 +515,18 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         onConfirm={() => {
           const target = pendingDelete
           setPendingDelete(null)
-          if (target?.filePath) void deleteAnthropicArticle(target.filePath)
+          if (!target) return
+          if (target.kind === 'mine') {
+            if (target.article.filePath) void deleteAnthropicArticle(target.article.filePath)
+          } else {
+            if (target.kind === 'collection') void removeBlogCollection(target.sourceUrl)
+            else void removeBlogRead(target.sourceUrl)
+            void deleteAnthropicArticle(target.filePath)
+          }
         }}
       >
-        <p>即将删除「{pendingDelete?.title}」，文章卡片将从列表移除。</p>
-        <p className="mt-2">将同时删除该文章的旁注对话、标注与导读。</p>
+        <p>「{pendingDelete?.kind === 'mine' ? pendingDelete.article.title : pendingDelete?.title}」的文章文件将被删除。</p>
+        <p className="mt-2">卡片回到待导入状态，其他标记保留；将同时删除该文章的旁注对话、标注与导读。</p>
       </ConfirmDialog>
     </div>
   )

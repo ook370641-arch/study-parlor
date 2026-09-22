@@ -12,6 +12,7 @@ import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import { EMPTY_GUIDE_CHUNKS } from '@/lib/article-chunks'
 import { firstVisibleBlockIndex, scrollToBlockIndex } from '@/lib/scroll-memory'
+import { BookIcon, BookmarkIcon } from './blog-icons'
 import type { AnthropicSectionKey, Frontmatter, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -352,7 +353,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
                           onClick={() => void toggleBlogCollection({ sourceUrl: articleSourceUrl, filePath, title: frontmatter.title ?? '' })}
                           className={`text-sm leading-none transition-colors ${inCollection ? 'text-ember' : `${themeClasses.meta} hover:text-ember`}`}
                         >
-                          {inCollection ? '★' : '☆'}
+                          <BookmarkIcon active={inCollection} />
                         </button>
                         <button
                           type="button"
@@ -362,7 +363,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
                           onClick={() => void toggleBlogRead({ sourceUrl: articleSourceUrl, filePath, title: frontmatter.title ?? '' })}
                           className={`text-sm leading-none transition-colors ${isRead ? 'text-ember' : `${themeClasses.meta} hover:text-ember`}`}
                         >
-                          {isRead ? '✓' : '○'}
+                          <BookIcon active={isRead} />
                         </button>
                       </>
                     )}

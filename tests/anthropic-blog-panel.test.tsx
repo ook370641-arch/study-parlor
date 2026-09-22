@@ -413,10 +413,34 @@ describe('AnthropicBlogPanel', () => {
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
     const btn = screen.getByTestId('blog-read-mark')
-    expect(btn).toHaveTextContent('○')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
     fireEvent.click(btn)
     const { ipc } = await import('@/lib/ipc')
     await waitFor(() => expect(ipc.anthropicCollectionMarkRead).toHaveBeenCalledWith({ sourceUrl: 'old-1', filePath: 'lib/old-1.md', title: 'Old Article' }))
+  })
+
+  it('Mine 模式下已导入行显示移出库按钮；点击弹确认框，确认后删除', async () => {
+    const deleteAnthropicArticle = vi.fn()
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [{ ...article('old-1', 'Old Article'), isSaved: true, filePath: 'lib/old-1.md' }],
+        loading: false, error: null, sectionStatus: {},
+      },
+      blogCollection: { version: 1, entries: [], dismissed: [], history: [], read: [] },
+      deleteAnthropicArticle,
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    // 默认 all 模式：不显示
+    expect(screen.queryByTestId('anthropic-row-unimport')).not.toBeInTheDocument()
+    // 切到 Mine
+    fireEvent.click(screen.getByTestId('anthropic-filter-mine'))
+    const btn = screen.getByTestId('anthropic-row-unimport')
+    fireEvent.click(btn)
+    // 确认弹窗
+    expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'))
+    await waitFor(() => expect(deleteAnthropicArticle).toHaveBeenCalledWith('lib/old-1.md'))
   })
 
   it('未保存文章行不显示已读按钮', () => {

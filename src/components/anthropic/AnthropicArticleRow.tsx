@@ -4,12 +4,14 @@ import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import { findBatchForUrl } from '@/lib/blog-rec-lookup'
+import { BookIcon, BookmarkIcon, UnimportIcon } from './blog-icons'
 import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
 
 interface Props {
   article: AnthropicArticleMeta
   theme?: BriefingTheme
   onRequestDelete?: (article: AnthropicArticleMeta) => void
+  showUnimport?: boolean
   inCollection?: boolean
   onToggleCollection?: () => void
   isRead?: boolean
@@ -44,7 +46,7 @@ function ImportSpinner() {
   )
 }
 
-export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete, inCollection, onToggleCollection, isRead, onToggleRead }: Props) {
+export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete, showUnimport, inCollection, onToggleCollection, isRead, onToggleRead }: Props) {
   const isAcademic = theme !== 'newspaper'
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
@@ -180,14 +182,15 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             data-testid="blog-fav-toggle"
             role="button"
             aria-pressed={inCollection}
+            title={inCollection ? '取消收藏' : '收藏'}
             onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleCollection() }}
-            className={`absolute top-2 right-2 z-10 text-sm leading-none transition-colors ${
+            className={`absolute top-2 right-7 z-10 leading-none transition-colors ${
               inCollection
                 ? 'text-ember'
                 : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
             }`}
           >
-            {inCollection ? '★' : '☆'}
+            <BookmarkIcon active={inCollection} />
           </span>
         )}
 
@@ -198,13 +201,27 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             aria-pressed={isRead}
             title={isRead ? '已读（点击取消）' : '标为已读'}
             onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleRead() }}
-            className={`absolute top-2 right-7 z-10 text-sm leading-none transition-colors ${
+            className={`absolute top-2 right-2 z-10 leading-none transition-colors ${
               isRead
                 ? 'text-ember'
                 : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
             }`}
           >
-            {isRead ? '✓' : '○'}
+            <BookIcon active={isRead} />
+          </span>
+        )}
+
+        {showUnimport && onRequestDelete && article.isSaved && article.filePath && !article.local && (
+          <span
+            data-testid="anthropic-row-unimport"
+            role="button"
+            title="取消导入（删除文章）"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRequestDelete(article) }}
+            className={`absolute top-2 right-12 z-10 leading-none transition-colors ${
+              isAcademic ? 'text-parchment/30 hover:text-red-400' : 'text-[#6b5d52]/40 hover:text-red-600'
+            }`}
+          >
+            <UnimportIcon />
           </span>
         )}
 
