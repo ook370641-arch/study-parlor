@@ -474,4 +474,29 @@ describe('AnthropicBlogPanel', () => {
     render(<AnthropicBlogPanel theme="academic" />)
     expect(screen.queryByTestId('blog-rec-badge')).not.toBeInTheDocument()
   })
+
+  it('对照模式下点已保存文章：路由到对照槽，并 toast 提示 + 自动展开导读面板', async () => {
+    const selectArticleCompanion = vi.fn()
+    const showToast = vi.fn()
+    const setArticleAssistantGuideCollapsed = vi.fn()
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [{ ...article('old-1', 'Old Article'), isSaved: true, filePath: 'lib/old-1.md' }],
+        loading: false, error: null, sectionStatus: {},
+      },
+      anthropicReaderFilePath: 'lib/current.md',
+      articlePanelMode: { anthropic: 'companion', scout: 'guide', job: 'guide' },
+      selectArticleCompanion, showToast, setArticleAssistantGuideCollapsed,
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    // 排除本地置顶的宪法报告条目，点网络文章行
+    const row = screen.getAllByTestId('anthropic-article-row')
+      .find((r) => !r.querySelector('[data-testid="anthropic-constitution-pill"]'))!
+    fireEvent.click(row)
+    await waitFor(() =>
+      expect(selectArticleCompanion).toHaveBeenCalledWith('anthropic', 'lib/current.md', 'lib/old-1.md'))
+    expect(setArticleAssistantGuideCollapsed).toHaveBeenCalledWith(false)
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining('对照'))
+  })
 })

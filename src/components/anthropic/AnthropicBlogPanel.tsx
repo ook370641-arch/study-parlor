@@ -174,14 +174,18 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   }
 
   const openOrImportArticle = useCallback(async (article: AnthropicArticleMeta) => {
-    // 对照模式：已保存文章改为在右侧对照槽打开（主区正文不变）
+    // 对照模式：已保存文章改为在右侧对照槽打开（主区正文不变）。
+    // 路由必须可见：强制展开导读面板 + toast，否则面板折叠时点了像没反应（2026-09-23 根因）
     if (useStore.getState().articlePanelMode.anthropic === 'companion' && article.isSaved && article.filePath) {
-      const main = useStore.getState().anthropicReaderFilePath
+      const st = useStore.getState()
+      const main = st.anthropicReaderFilePath
       if (main === article.filePath) {
-        useStore.getState().showToast('该文章已在主区打开')
+        st.showToast('该文章已在主区打开')
         return
       }
-      await useStore.getState().selectArticleCompanion('anthropic', main ?? 'anthropic-main', article.filePath)
+      st.setArticleAssistantGuideCollapsed(false)
+      st.showToast('已在右侧对照区打开')
+      await st.selectArticleCompanion('anthropic', main ?? 'anthropic-main', article.filePath)
       return
     }
     // 本地内置条目（宪法报告）直接打开报告视图
