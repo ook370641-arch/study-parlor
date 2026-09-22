@@ -1,5 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+
+afterEach(cleanup)
 
 const mockIpc = vi.hoisted(() => ({
   readMd: vi.fn().mockResolvedValue({ frontmatter: { title: 'x' }, body: '正文' }),
@@ -42,37 +44,81 @@ describe('BlogCollectionSection', () => {
     } as any)
   })
 
-  it('已读文件夹默认折叠，展开后可打开/移出；已读为空时不渲染已读区', async () => {
-    render(<BlogCollectionSection theme="academic" />)
-    const toggle = screen.getByTestId('blog-read-toggle')
-    expect(toggle).toHaveTextContent('已读（1）')
+  it('已读区默认折叠，展开后点移出按钮上抛 read 复合删除请求；已读为空时不渲染已读区', () => {
+    const onRequestRemove = vi.fn()
+    render(<BlogCollectionSection theme="academic" onRequestRemove={onRequestRemove} />)
     expect(screen.queryByTestId('blog-read-open-https://anthropic.com/r')).not.toBeInTheDocument()
-    fireEvent.click(toggle)
+    fireEvent.click(screen.getByTestId('blog-read-toggle'))
     expect(screen.getByTestId('blog-read-open-https://anthropic.com/r')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('blog-read-remove-https://anthropic.com/r'))
-    await waitFor(() => expect(mockIpc.anthropicCollectionRemoveRead).toHaveBeenCalledWith({ sourceUrl: 'https://anthropic.com/r' }))
+    expect(onRequestRemove).toHaveBeenCalledWith({
+      kind: 'read', sourceUrl: 'https://anthropic.com/r', filePath: 'lib/r.md', title: '已读文',
+    })
+    // 不再直接调 IPC
+    expect(mockIpc.anthropicCollectionRemoveRead).not.toHaveBeenCalled()
 
     // 已读为空时不渲染已读区
     cleanup()
     useStore.setState({ blogCollection: { ...newBatchCollection, read: [] } } as any)
-    render(<BlogCollectionSection theme="academic" />)
+    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
     expect(screen.queryByTestId('blog-read-section')).not.toBeInTheDocument()
   })
 
-  it('字号跟随 briefingFontSize（base → 3xl 后 meta 字号变大）', () => {
-    const { unmount } = render(<BlogCollectionSection theme="academic" />)
-    const baseSize = screen.getByTestId('blog-read-toggle').style.fontSize
+  it('区头为图标+计数（无「已读」文字标签）', () => {
+    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
+    expect(screen.getByTestId('blog-read-count')).toHaveTextContent('1')
+    expect(screen.getByTestId('blog-read-toggle')).toHaveAttribute('title', '已读')
+  })
+
+  it('收藏夹排序：手动在前，推荐（💡）后置，组内保序', () => {
+    useStore.setState({
+      blogCollection: {
+        version: 1, dismissed: [], history: [], read: [],
+        entries: [
+          { sourceUrl: 'u-r1', filePath: 'lib/r1.md', title: '推荐一', addedAt: 'a', origin: 'recommend' as const, batch: 1, reason: 'r', gap: 'g' },
+          { sourceUrl: 'u-m1', filePath: 'lib/m1.md', title: '手动一', addedAt: 'b', origin: 'manual' as const },
+          { sourceUrl: 'u-r2', filePath: 'lib/r2.md', title: '推荐二', addedAt: 'c', origin: 'recommend' as const, batch: 1, reason: 'r', gap: 'g' },
+          { sourceUrl: 'u-m2', filePath: 'lib/m2.md', title: '手动二', addedAt: 'd', origin: 'manual' as const },
+        ],
+      },
+    } as any)
+    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
+    const titles = screen.getAllByTestId(/^blog-collection-open-/).map((n) => n.textContent)
+    expect(titles).toEqual(['手动一', '手动二', '推荐一', '推荐二'])
+  })
+
+  it('收藏夹卡片只有移出+已读两按钮；移出上抛 collection 复合删除请求', () => {
+    const onRequestRemove = vi.fn()
+    useStore.setState({
+      blogCollection: {
+        version: 1, dismissed: [], history: [], read: [],
+        entries: [{ sourceUrl: 'u-m1', filePath: 'lib/m1.md', title: '手动一', addedAt: 'b', origin: 'manual' as const }],
+      },
+    } as any)
+    render(<BlogCollectionSection theme="academic" onRequestRemove={onRequestRemove} />)
+    fireEvent.click(screen.getByTestId('blog-collection-remove-u-m1'))
+    expect(onRequestRemove).toHaveBeenCalledWith({
+      kind: 'collection', sourceUrl: 'u-m1', filePath: 'lib/m1.md', title: '手动一',
+    })
+    // 卡片内有已读 toggle（书图标），无收藏 toggle
+    expect(screen.getByTestId('blog-collection-read-u-m1')).toBeInTheDocument()
+    expect(screen.queryByTestId('blog-fav-toggle')).not.toBeInTheDocument()
+  })
+
+  it('字号跟随 briefingFontSize（base → 3xl 后区头计数字号变大）', () => {
+    const { unmount } = render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
+    const baseSize = screen.getByTestId('blog-read-count').style.fontSize
     unmount()
     cleanup()
     useStore.setState({ briefingFontSize: '3xl' } as any)
-    render(<BlogCollectionSection theme="academic" />)
-    const bigSize = screen.getByTestId('blog-read-toggle').style.fontSize
+    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
+    const bigSize = screen.getByTestId('blog-read-count').style.fontSize
     expect(parseInt(bigSize)).toBeGreaterThan(parseInt(baseSize))
   })
 
-  it('推荐按钮文案为「重新推荐」，且不再有往期历史入口', () => {
-    render(<BlogCollectionSection theme="academic" />)
-    expect(screen.getByTestId('blog-recommend-button')).toHaveTextContent('重新推荐')
+  it('推荐按钮 title 为「重新推荐」，且不再有往期历史入口', () => {
+    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
+    expect(screen.getByTestId('blog-recommend-button')).toHaveAttribute('title', '重新推荐')
     expect(screen.queryByTestId('blog-recommend-history')).not.toBeInTheDocument()
   })
 })
