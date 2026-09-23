@@ -4,6 +4,7 @@ interface BlogIconProps {
   active?: boolean
   size?: number
   className?: string
+  title?: string
 }
 
 export function BookIcon({ active = false, size = 14, className }: BlogIconProps) {
@@ -18,11 +19,11 @@ export function BookIcon({ active = false, size = 14, className }: BlogIconProps
   )
 }
 
-export function BookmarkIcon({ active = false, size = 14, className }: BlogIconProps) {
+export function BookmarkIcon({ active = false, size = 14, className, title }: BlogIconProps) {
   return (
     <svg data-testid="blog-icon-bookmark" width={size} height={size} viewBox="0 0 24 24"
       fill={active ? 'currentColor' : 'none'} stroke="currentColor"
-      strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className} title={title}>
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )

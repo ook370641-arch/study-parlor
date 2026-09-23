@@ -135,11 +135,15 @@
         "electron/ipc/anthropic.ts",
         "electron/lib/library-data.ts",
         "electron/lib/anthropic-scraper.ts",
+        "electron/lib/anthropic-browser.ts",
+        "electron/lib/run-queue.ts",
         "electron/lib/anthropic-sections.ts",
         "electron/lib/blog-collection.ts",
         "electron/lib/blog-recommend.ts",
         "src/lib/anthropic-articles.ts",
-        "src/lib/anthropic-sections.ts"
+        "src/lib/anthropic-sections.ts",
+        "src/lib/section-filter.ts",
+        "src/lib/scroll-memory.ts"
       ],
       "specs": [
         "anthropic-blog*.spec.ts",

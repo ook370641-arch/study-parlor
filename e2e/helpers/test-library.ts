@@ -494,6 +494,9 @@ const BASE_STATE = {
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
   lastWritingFile: null,
+  lastAnthropicReaderFile: null,
+  writingScrollPositions: {},
+  anthropicScrollPositions: {},
   jobBriefingConfig: {
     companies: [
       { name: '字节跳动', priority: 1, enabled: true },

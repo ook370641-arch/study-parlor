@@ -11,6 +11,7 @@ const SEL = {
   sectionTag: '[data-testid="anthropic-section-tag"]',
   sectionError: '[data-testid="anthropic-section-error"]',
   filterAll: '[data-testid="anthropic-filter-all"]',
+  filterMine: '[data-testid="anthropic-filter-mine"]',
   guideChunk: '[data-testid="guide-chunk"]',
 }
 
@@ -73,16 +74,16 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
   test.describe('五源时间线 + 过滤器状态机', () => {
     test.use({ extraEnv: { E2E_ANTHROPIC_OFFLINE: '1' } })
 
-    test('五源时间线合并按日期倒序 + 六枚 chip + All→多选→回 All 全状态机', async ({
+    test('五源时间线合并按日期倒序 + Mine/All/五源 chip 全状态机', async ({
       window,
       testLibraryPath,
       testConfigDir,
     }) => {
-      // 五源各 2 篇 + 1 篇 institute 遗留文章（归 research 过滤组）
+      // 五源各 2 篇 + 1 篇 institute 遗留文章（归 research 过滤组）；其中 2 篇已导入（测 Mine）
       const articles = [
-        seedSectionArticle(testLibraryPath, 'engineering', 'e2e-eng-a', 'E2E Eng A', '2026-07-01T00:00:00.000Z'),
+        seedSectionArticle(testLibraryPath, 'engineering', 'e2e-eng-a', 'E2E Eng A', '2026-07-01T00:00:00.000Z', { isSaved: true }),
         seedSectionArticle(testLibraryPath, 'engineering', 'e2e-eng-b', 'E2E Eng B', '2026-06-10T00:00:00.000Z'),
-        seedSectionArticle(testLibraryPath, 'research', 'e2e-res-a', 'E2E Res A', '2026-08-01T00:00:00.000Z'),
+        seedSectionArticle(testLibraryPath, 'research', 'e2e-res-a', 'E2E Res A', '2026-08-01T00:00:00.000Z', { isSaved: true }),
         seedSectionArticle(testLibraryPath, 'research', 'e2e-res-b', 'E2E Res B', '2026-05-01T00:00:00.000Z'),
         seedSectionArticle(testLibraryPath, 'alignment', 'e2e-algn-a', 'E2E Algn A', '2026-07-20T00:00:00.000Z'),
         seedSectionArticle(testLibraryPath, 'alignment', 'e2e-algn-b', 'E2E Algn B', '2026-04-20T00:00:00.000Z'),
@@ -98,7 +99,8 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       await cover.goToBriefing()
       await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
 
-      // 六枚 chip：All + 五源
+      // chip 行：Mine + All + 五源
+      await expect(window.locator(SEL.filterMine)).toHaveCount(1)
       await expect(window.locator(SEL.filterAll)).toHaveCount(1)
       await expect(window.locator(SEL.sectionChip)).toHaveCount(5)
 
@@ -148,6 +150,26 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       await expect(
         window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Inst A")`)
       ).toHaveCount(0)
+
+      // Mine：只剩已导入 2 篇（日期倒序），constitution（内置非导入）隐藏；源 chip 清零
+      await window.locator(SEL.filterMine).click()
+      await expect(window.locator(SEL.filterMine)).toHaveAttribute('aria-pressed', 'true')
+      await expect(window.locator(SEL.filterAll)).toHaveAttribute('aria-pressed', 'false')
+      await expect(window.locator(SELECTORS.briefing.anthropicConstitutionPill)).toHaveCount(0)
+      await expect(await visibleTitles(window)).toEqual(['E2E Res A', 'E2E Eng A'])
+      await expect(window.locator(`${SEL.sectionChip}[aria-pressed="true"]`)).toHaveCount(0)
+
+      // mine 态点源 chip → mine 清零、该源单选
+      await window.locator(`${SEL.sectionChip}[data-section="product"]`).click()
+      await expect(window.locator(SEL.filterMine)).toHaveAttribute('aria-pressed', 'false')
+      await expect(await visibleTitles(window)).toEqual(['E2E Prod A', 'E2E Prod B'])
+
+      // pick 态点 Mine → 前序清零，仅已导入；再点 Mine → 回退 All
+      await window.locator(SEL.filterMine).click()
+      await expect(await visibleTitles(window)).toEqual(['E2E Res A', 'E2E Eng A'])
+      await window.locator(SEL.filterMine).click()
+      await expect(window.locator(SEL.filterAll)).toHaveAttribute('aria-pressed', 'true')
+      await expect(rows).toHaveCount(12)
     })
 
     test('单源失败提示条：Product 栏目失败可重试，其余源文章仍渲染', async ({

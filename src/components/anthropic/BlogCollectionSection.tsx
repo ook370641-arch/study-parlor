@@ -125,7 +125,7 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
         <button type="button" data-testid="blog-collection-collapse" onClick={() => setCollapsed(c => !c)} className={`${muted} hover:text-ember`} style={{ fontSize: listStyles.meta }}>
           {collapsed ? '▸' : '▾'}
         </button>
-        <BookmarkIcon active size={13} className={isAcademic ? 'text-ember' : 'text-[#6b5d52]'} />
+        <BookmarkIcon active size={13} className={isAcademic ? 'text-ember' : 'text-[#6b5d52]'} title="收藏夹" />
         <span data-testid="blog-collection-count" className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'} style={{ fontSize: listStyles.title }}>{entries.length}</span>
         <div className="flex-1" />
         {recommendRunning && (
