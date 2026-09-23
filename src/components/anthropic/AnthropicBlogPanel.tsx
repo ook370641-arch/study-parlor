@@ -271,7 +271,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col min-h-full">
             {checkError && (
               <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
                 <button
@@ -384,7 +384,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             </div>
 
             <div
-              className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-3"
+              data-testid="anthropic-article-list"
+              className="mx-4 my-3 max-h-[55vh] overflow-y-auto overscroll-contain"
               style={{ willChange: 'transform', transform: 'translateZ(0)' }}
             >
               {loading && articles.length === 0 && (

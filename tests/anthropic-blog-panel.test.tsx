@@ -95,6 +95,22 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getAllByTestId('anthropic-list-rail-thumb').length).toBeGreaterThan(0)
   })
 
+  it('文章列表容器限高自滚动（max-h + overflow），列内容不再锁 h-full', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [{ ...article('old-1', 'Old Article') }],
+        loading: false, error: null, sectionStatus: {},
+      },
+      blogCollection: { version: 1, entries: [], dismissed: [], history: [], read: [] },
+    } as any)
+    const { container } = render(<AnthropicBlogPanel theme="academic" />)
+    const list = container.querySelector('[data-testid="anthropic-article-list"]')
+    expect(list).not.toBeNull()
+    expect(list!.className).toContain('max-h-')
+    expect(list!.className).toContain('overflow-y-auto')
+  })
+
   it('shows new articles prompt after auto-detect finds new articles', async () => {
     const discover = vi.fn().mockResolvedValue({
       ok: true,
