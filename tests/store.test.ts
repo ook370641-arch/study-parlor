@@ -24,6 +24,7 @@ vi.mock('@/lib/ipc', () => ({
 vi.mock('@/lib/paintings', () => ({
   manifest: [{ id: 'test', painter: 'Test', title: 'Test', url: '/test.jpg' }],
   pickRandom: vi.fn((manifest: unknown[]) => manifest[0] ?? null),
+  paintingPool: vi.fn((_hidden: string[], pool?: unknown[]) => pool ?? [{ id: 'test', painter: 'Test', title: 'Test', url: '/test.jpg' }]),
   preloadPaintings: vi.fn()
 }))
 

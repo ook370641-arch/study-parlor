@@ -16,6 +16,8 @@ export function Settings() {
   const isAcademic = theme !== 'newspaper'
   const archivedTopics = useStore((s) => s.archivedTopics)
   const restoreTopic = useStore((s) => s.restoreTopic)
+  const paintingDeleteEnabled = useStore((s) => s.paintingDeleteEnabled)
+  const setPaintingDeleteEnabled = useStore((s) => s.setPaintingDeleteEnabled)
 
   const [libraryPath, setLibraryPath] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -163,6 +165,26 @@ export function Settings() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* 画作 */}
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>画作</h3>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    data-testid="settings-painting-delete-toggle"
+                    type="checkbox"
+                    checked={paintingDeleteEnabled}
+                    onChange={e => { void setPaintingDeleteEnabled(e.target.checked) }}
+                    className="mt-0.5 accent-[#d97757]"
+                  />
+                  <span>
+                    <span className={`block text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>封面显示画作删除按钮</span>
+                    <span className={`block text-xs mt-0.5 ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
+                      点击封面右上角垃圾桶，将当前画作从库中隐藏并自动换下一幅；隐藏记录在 state.json，可手动恢复。
+                    </span>
+                  </span>
+                </label>
               </div>
 
               {/* 学习库 */}

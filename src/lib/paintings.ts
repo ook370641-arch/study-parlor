@@ -9,6 +9,14 @@ export function pickRandom(pool: Painting[], excludeId: string | null): Painting
   return filtered[Math.floor(Math.random() * filtered.length)]
 }
 
+// 抽取池 = manifest 去掉隐藏名单（封面删除按钮写入的 id）。
+// pool 参数默认取全量 manifest，测试可注入小池。
+export function paintingPool(hidden: string[], pool: Painting[] = manifest): Painting[] {
+  if (!hidden.length) return pool
+  const hiddenSet = new Set(hidden)
+  return pool.filter(p => !hiddenSet.has(p.id))
+}
+
 export function formatAttribution(p: Painting): string {
   const parts: string[] = [p.painter, p.title]
   if (typeof p.year === 'number') parts.push(String(p.year))

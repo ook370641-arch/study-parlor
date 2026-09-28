@@ -469,6 +469,8 @@ const BASE_STATE = {
   groups: [],
   activeGroupId: null,
   archivedTopics: [],
+  hiddenPaintings: [],
+  paintingDeleteEnabled: true,
   groupInspirations: {},
   topicContinueSuggestions: {},
   unsavedSessions: [],

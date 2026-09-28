@@ -4,6 +4,8 @@ export const SELECTORS = {
     enterButton: '[data-testid="cover-enter-button"]',
     lightButton: '[data-testid="cover-light-button"]',
     briefingButton: '[data-testid="cover-briefing-button"]',
+    deletePaintingButton: '[data-testid="painting-delete-button"]',
+    paintingLabel: '[data-testid="painting-label"]',
   },
   home: {
     greeting: '[data-testid="home-greeting"]',
@@ -227,6 +229,7 @@ export const SELECTORS = {
     errorDisplay: '[data-testid="settings-error-display"]',
     archivedTopics: '[data-testid="settings-archived-topics"]',
     restoreTopicButton: '[data-testid="settings-restore-topic-button"]',
+    paintingDeleteToggle: '[data-testid="settings-painting-delete-toggle"]',
   },
   library: {
     groupTab: (id: string) => `[data-testid="group-tab-${id}"]`,

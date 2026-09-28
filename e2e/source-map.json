@@ -185,11 +185,15 @@
       "sources": [
         "src/components/paintings/**",
         "src/components/lighting/**",
+        "src/components/DeletePaintingButton.tsx",
+        "src/components/SwapPaintingButton.tsx",
+        "src/lib/paintings.ts",
         "src/lib/motion-*.ts",
         "electron/lib/painting-*.ts"
       ],
       "specs": [
         "painting-swap.spec.ts",
+        "painting-delete.spec.ts",
         "reading-ritual.spec.ts",
         "lighting.spec.ts",
         "generation-ceremony.spec.ts"

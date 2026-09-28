@@ -670,6 +670,10 @@ export type StateJson = {
   paintingPlateEnabled?: boolean
   /** 已归档（隐藏）的主题目录名，主页/卫星图不显示，可在设置恢复 */
   archivedTopics?: string[]
+  /** 从抽取池隐藏的画作 id（封面删除按钮写入；物理文件不动，打包后 asar 只读） */
+  hiddenPaintings?: string[]
+  /** 封面是否显示画作删除按钮（设置页开关） */
+  paintingDeleteEnabled?: boolean
   /** LLM 多配置：首条由 .env 迁移播种；切换免重启 */
   llmConfigs?: LlmConfig[]
   activeLlmConfigId?: string | null
@@ -955,7 +959,8 @@ export type IpcApi = {
 
 export type Painting = {
   id: string
-  painter: 'Mark Rothko' | 'Guy Billout'
+  /** 画家或导演（影视画作填导演名，展签统一显示 painter · title · year） */
+  painter: string
   title: string
   year?: number
   url: string

@@ -4,12 +4,14 @@ import { Input } from '@/components/Input'
 import { Button } from '@/components/Button'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { DeletePaintingButton } from '@/components/DeletePaintingButton'
 import { Quote } from '@/components/Quote'
 
 export function Cover() {
   const profile = useStore(s => s.profile)
   const patchProfile = useStore(s => s.patchProfile)
   const goto = useStore(s => s.goto)
+  const paintingDeleteEnabled = useStore(s => s.paintingDeleteEnabled)
   const [name, setName] = useState('')
 
   const briefingButtonClass = `bg-parchment text-ink shadow-[3px_3px_0_0_#d97757]
@@ -33,7 +35,10 @@ export function Cover() {
       <div className="absolute inset-0 pointer-events-none
                       shadow-[inset_0_0_120px_rgba(0,0,0,0.55)]" />
 
-      <SwapPaintingButton surface="cover" className="absolute top-4 right-4" />
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <SwapPaintingButton surface="cover" />
+        {paintingDeleteEnabled && <DeletePaintingButton surface="cover" />}
+      </div>
 
       <div className="absolute bottom-12 left-12 right-12 z-[5] flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
         <div className="flex flex-col items-start gap-4 max-w-[380px]"

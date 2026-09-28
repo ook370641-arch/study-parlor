@@ -57,6 +57,8 @@ const DEFAULT: StateJson = {
   scoutTab: 'chat',
   scoutActiveConversationId: null,
   archivedTopics: [],
+  hiddenPaintings: [],
+  paintingDeleteEnabled: true,
   llmConfigs: [],
   activeLlmConfigId: null,
 }

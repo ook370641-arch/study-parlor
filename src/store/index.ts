@@ -25,7 +25,7 @@ import type {
   BlogCollectionFile, RecommendStage,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
-import { manifest, pickRandom, preloadPaintings } from '@/lib/paintings'
+import { pickRandom, paintingPool, preloadPaintings } from '@/lib/paintings'
 import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE, isJobProfileEmpty, normalizeJobProfile, normalizeJobBriefingConfig } from '@/lib/job-briefing-defaults'
 import type { Painting } from '@shared/index'
 
@@ -276,6 +276,10 @@ type AppStore = {
     study: Painting | null
     briefing: Painting | null
   }
+  /** 从抽取池隐藏的画作 id（封面删除按钮写入，持久化到 state.json） */
+  hiddenPaintings: string[]
+  /** 封面是否显示画作删除按钮 */
+  paintingDeleteEnabled: boolean
 
   // 外部资料摘要面板
   isExternalSummaryOpen: boolean
@@ -292,6 +296,8 @@ type AppStore = {
   init: () => Promise<void>
   initPaintings: () => void
   swapPainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => void
+  hidePainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => Promise<void>
+  setPaintingDeleteEnabled: (enabled: boolean) => Promise<void>
   goto: (p: Page) => Promise<void>
   settingsReturnTo: Page | null
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
@@ -595,6 +601,8 @@ export const useStore = create<AppStore>((set, get) => ({
   preStudyArgs: null,
   toast: null,
   currentPaintings: { cover: null, home: null, study: null, briefing: null },
+  hiddenPaintings: [],
+  paintingDeleteEnabled: true,
   briefingRead: { digest: [], 'job-briefing': [] },
   briefing: { result: null, loading: false, error: null },
   briefingViewingDate: null,
@@ -735,6 +743,8 @@ export const useStore = create<AppStore>((set, get) => ({
       paintingPlateEnabled: state.paintingPlateEnabled ?? false,
       session_count: state.ui?.session_count ?? 0,
       archivedTopics: Array.isArray(state.archivedTopics) ? state.archivedTopics : [],
+      hiddenPaintings: Array.isArray(state.hiddenPaintings) ? state.hiddenPaintings : [],
+      paintingDeleteEnabled: state.paintingDeleteEnabled ?? true,
       library: library.filter(t => !(state.archivedTopics ?? []).includes(t.dirName)),
       unsavedSessions: unsaved,
       groups: groupsData.groups,
@@ -754,11 +764,12 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   initPaintings: () => {
+    const pool = paintingPool(get().hiddenPaintings)
     const next = {
-      cover: pickRandom(manifest, null),
-      home: pickRandom(manifest, null),
-      study: pickRandom(manifest, null),
-      briefing: pickRandom(manifest, null),
+      cover: pickRandom(pool, null),
+      home: pickRandom(pool, null),
+      study: pickRandom(pool, null),
+      briefing: pickRandom(pool, null),
     }
     set({ currentPaintings: next })
     // Decode all chosen paintings up front so navigating into a surface shows
@@ -768,11 +779,28 @@ export const useStore = create<AppStore>((set, get) => ({
 
   swapPainting: (surface) => {
     const current = get().currentPaintings[surface]
-    const next = pickRandom(manifest, current?.id ?? null)
+    const next = pickRandom(paintingPool(get().hiddenPaintings), current?.id ?? null)
     if (!next) return
     set(state => ({
       currentPaintings: { ...state.currentPaintings, [surface]: next }
     }))
+  },
+
+  // 封面删除按钮：当前画作 id 写入隐藏名单（去重 + 持久化），随后自动换画。
+  // 隐藏名单即真相源——物理文件不动（打包后 asar 只读），恢复靠手改 state.json。
+  hidePainting: async (surface) => {
+    const current = get().currentPaintings[surface]
+    if (!current) return
+    const hidden = get().hiddenPaintings
+    const next = hidden.includes(current.id) ? hidden : [...hidden, current.id]
+    set({ hiddenPaintings: next })
+    await ipc.patchState({ hiddenPaintings: next } as Partial<StateJson>)
+    get().swapPainting(surface)
+  },
+
+  setPaintingDeleteEnabled: async (enabled) => {
+    set({ paintingDeleteEnabled: enabled })
+    await ipc.patchState({ paintingDeleteEnabled: enabled } as Partial<StateJson>)
   },
 
   // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。
