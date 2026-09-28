@@ -39,3 +39,6 @@ test-results/
 playwright-report/
 *.trace.zip
 e2e_output*.txt
+
+# 画作搜集 staging（B2 画作替换，本地策展工具，不进库）
+Pictures-staging/
