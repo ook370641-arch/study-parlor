@@ -138,4 +138,22 @@ describe('curation-gallery', () => {
     expect(missing).toEqual(['cand-vangogh-a'])
     expect(fs.existsSync(out)).toBe(true)
   })
+
+  it('renderSwipeHtml embeds candidates and verdict controls', () => {
+    const s = setup(); dir = s.dir
+    const candidates = gallery.withFileStatus(gallery.loadCandidates(s.staging), s.staging)
+    const html = gallery.renderSwipeHtml(candidates)
+    expect(html).toContain('cand-newman-a') // 内嵌候选数据
+    expect(html).toContain('Barnett Newman · The Wild · 1950')
+    expect(html).toContain('id="yes"') // ✓选 / ✗弃 双按钮
+    expect(html).toContain('id="no"')
+    expect(html).toContain('painting-curation-swipe-v1') // localStorage 判定记录
+    expect(html).toContain('selection.json') // 导出
+  })
+
+  it('generateGallery also writes gallery-swipe.html', () => {
+    const s = setup(); dir = s.dir
+    const { swipeOut } = gallery.generateGallery(s.staging)
+    expect(fs.existsSync(swipeOut)).toBe(true)
+  })
 })
