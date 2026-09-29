@@ -1319,7 +1319,8 @@
     "title": "Café Terrace at Night",
     "file": "177-cafe-terrace-at-night.jpg",
     "category": "post-impressionism",
-    "year": 1888
+    "year": 1888,
+    "focus": "50% 45%"
   },
   {
     "id": "gogh-3",
@@ -1343,7 +1344,8 @@
     "title": "Road with Cypress and Star",
     "file": "180-road-with-cypress-and-star.jpg",
     "category": "post-impressionism",
-    "year": 1890
+    "year": 1890,
+    "focus": "50% 40%"
   },
   {
     "id": "gogh-6",
@@ -1440,5 +1442,202 @@
     "file": "192-the-slave-ship.jpg",
     "category": "romanticism",
     "year": 1840
+  },
+  {
+    "id": "dali-1",
+    "painter": "Salvador Dalí",
+    "title": "The Persistence of Memory",
+    "file": "193-the-persistence-of-memory.jpg",
+    "category": "surrealism",
+    "year": 1931
+  },
+  {
+    "id": "dali-2",
+    "painter": "Salvador Dalí",
+    "title": "The Disintegration of the Persistence of Memory",
+    "file": "194-the-disintegration-of-the-persistence-of-memory.jpg",
+    "category": "surrealism",
+    "year": 1954
+  },
+  {
+    "id": "dali-3",
+    "painter": "Salvador Dalí",
+    "title": "The Metamorphosis of Narcissus",
+    "file": "195-the-metamorphosis-of-narcissus.jpg",
+    "category": "surrealism",
+    "year": 1937
+  },
+  {
+    "id": "dali-4",
+    "painter": "Salvador Dalí",
+    "title": "Swans Reflecting Elephants",
+    "file": "196-swans-reflecting-elephants.jpg",
+    "category": "surrealism",
+    "year": 1937
+  },
+  {
+    "id": "friedrich-1",
+    "painter": "Caspar David Friedrich",
+    "title": "Wanderer above the Sea of Fog",
+    "file": "197-wanderer-above-the-sea-of-fog.jpg",
+    "category": "romanticism",
+    "year": 1818,
+    "focus": "50% 55%"
+  },
+  {
+    "id": "munch-1",
+    "painter": "Edvard Munch",
+    "title": "Starry Night",
+    "file": "198-starry-night.jpg",
+    "category": "expressionism",
+    "year": 1924
+  },
+  {
+    "id": "munch-2",
+    "painter": "Edvard Munch",
+    "title": "Moonlight",
+    "file": "199-moonlight.jpg",
+    "category": "expressionism",
+    "year": 1893
+  },
+  {
+    "id": "munch-3",
+    "painter": "Edvard Munch",
+    "title": "Melancholy",
+    "file": "200-melancholy.jpg",
+    "category": "expressionism",
+    "year": 1892
+  },
+  {
+    "id": "munch-4",
+    "painter": "Edvard Munch",
+    "title": "The Mystery of a Summer Night",
+    "file": "201-the-mystery-of-a-summer-night.jpg",
+    "category": "expressionism",
+    "year": 1892
+  },
+  {
+    "id": "redon-1",
+    "painter": "Odilon Redon",
+    "title": "Closed Eyes",
+    "file": "202-closed-eyes.jpg",
+    "category": "symbolism",
+    "year": 1890
+  },
+  {
+    "id": "whistler-1",
+    "painter": "James McNeill Whistler",
+    "title": "Nocturne: Blue and Gold – Old Battersea Bridge",
+    "file": "203-nocturne-blue-and-gold-old-battersea-bridge.jpg",
+    "category": "tonalism",
+    "year": 1875,
+    "focus": "50% 30%"
+  },
+  {
+    "id": "whistler-2",
+    "painter": "James McNeill Whistler",
+    "title": "Nocturne: Blue and Silver – Chelsea",
+    "file": "204-nocturne-blue-and-silver-chelsea.jpg",
+    "category": "tonalism"
+  },
+  {
+    "id": "bocklin-1",
+    "painter": "Arnold Böcklin",
+    "title": "The Isle of the Dead",
+    "file": "205-the-isle-of-the-dead.jpg",
+    "category": "symbolism",
+    "year": 1883
+  },
+  {
+    "id": "hopper-1",
+    "painter": "Edward Hopper",
+    "title": "Nighthawks",
+    "file": "206-nighthawks.jpg",
+    "category": "american-realism",
+    "year": 1942
+  },
+  {
+    "id": "hopper-2",
+    "painter": "Edward Hopper",
+    "title": "Gas",
+    "file": "207-gas.jpg",
+    "category": "american-realism",
+    "year": 1940
+  },
+  {
+    "id": "hopper-3",
+    "painter": "Edward Hopper",
+    "title": "Blue Night",
+    "file": "208-blue-night.jpg",
+    "category": "american-realism"
+  },
+  {
+    "id": "hopper-4",
+    "painter": "Edward Hopper",
+    "title": "Early Sunday Morning",
+    "file": "209-early-sunday-morning.jpg",
+    "category": "american-realism",
+    "year": 1930
+  },
+  {
+    "id": "monet-1",
+    "painter": "Claude Monet",
+    "title": "Grainstacks at Sunset, Snow Effect",
+    "file": "210-grainstacks-at-sunset-snow-effect.jpg",
+    "category": "impressionism",
+    "year": 1891
+  },
+  {
+    "id": "monet-2",
+    "painter": "Claude Monet",
+    "title": "Étretat, Sunset",
+    "file": "211-etretat-sunset.jpg",
+    "category": "impressionism"
+  },
+  {
+    "id": "monet-3",
+    "painter": "Claude Monet",
+    "title": "Gondola in Venice",
+    "file": "212-gondola-in-venice.jpg",
+    "category": "impressionism"
+  },
+  {
+    "id": "turner-10",
+    "painter": "J.M.W. Turner",
+    "title": "Approach to Venice",
+    "file": "213-approach-to-venice.jpg",
+    "category": "romanticism",
+    "year": 1844
+  },
+  {
+    "id": "turner-11",
+    "painter": "J.M.W. Turner",
+    "title": "Staffa, Fingal's Cave",
+    "file": "214-staffa-fingal-s-cave.jpg",
+    "category": "romanticism",
+    "year": 1832
+  },
+  {
+    "id": "turner-12",
+    "painter": "J.M.W. Turner",
+    "title": "Fishermen upon a Lee-Shore in Squally Weather",
+    "file": "215-fishermen-upon-a-lee-shore-in-squally-weather.jpg",
+    "category": "romanticism",
+    "year": 1802
+  },
+  {
+    "id": "turner-13",
+    "painter": "J.M.W. Turner",
+    "title": "Pembroke Castle, Thunder Storm Approaching",
+    "file": "216-pembroke-castle-thunder-storm-approaching.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "kubrick-1",
+    "painter": "Stanley Kubrick",
+    "title": "2001: A Space Odyssey",
+    "file": "217-2001-a-space-odyssey.jpg",
+    "category": "film-still",
+    "year": 1968
   }
 ]
