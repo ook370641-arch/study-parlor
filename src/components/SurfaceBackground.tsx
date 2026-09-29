@@ -81,7 +81,10 @@ export function SurfaceBackground({ surface }: Props) {
         src={incomingUrl ?? settledUrl}
         alt=""
         className={`absolute inset-0 w-full h-full object-cover ${incomingUrl ? 'painting-drop-in' : ''}`}
-        style={incomingUrl ? { animationDelay: `${SWAP_DROP_DELAY_MS}ms` } : undefined}
+        style={{
+          objectPosition: painting.focus ?? '50% 50%',
+          ...(incomingUrl ? { animationDelay: `${SWAP_DROP_DELAY_MS}ms` } : {}),
+        }}
       />
       <div className={`absolute inset-0 painting-crt ${swapping ? 'on' : ''}`} />
       <div className="absolute inset-0" style={VIGNETTE_STYLE} />

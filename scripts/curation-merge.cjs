@@ -96,6 +96,7 @@ function mergeSelection({ stagingDir = STAGING_DIR, picturesDir = PICTURES_DIR, 
     const entry = { id, painter: c.painter, title: c.title, file: newFile }
     if (c.category) entry.category = c.category
     if (c.year) entry.year = c.year
+    if (c.focus) entry.focus = c.focus
     index.push(entry)
     added.push({ id, file: newFile })
     processedIds.add(c.id)

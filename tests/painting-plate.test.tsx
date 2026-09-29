@@ -42,4 +42,19 @@ describe('PaintingPlate', () => {
     const { container } = render(<PaintingPlate />)
     expect(container).toBeEmptyDOMElement()
   })
+
+  it('applies painting.focus as objectPosition; defaults to center', () => {
+    useStore.setState({
+      paintingPlateEnabled: true,
+      currentPaintings: { cover: null, home: null, study: null, briefing: { ...PAINT, focus: '50% 30%' } },
+    })
+    render(<PaintingPlate />)
+    const img = screen.getByTestId('painting-plate').querySelector('img')!
+    expect(img.style.objectPosition).toBe('50% 30%')
+
+    cleanup()
+    useStore.setState({ currentPaintings: { cover: null, home: null, study: null, briefing: PAINT } })
+    render(<PaintingPlate />)
+    expect(screen.getByTestId('painting-plate').querySelector('img')!.style.objectPosition).toBe('50% 50%')
+  })
 })

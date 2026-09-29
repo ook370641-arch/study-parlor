@@ -40,6 +40,7 @@ function buildManifest() {
       url,
       ...(item.year ? { year: item.year } : {}),
       ...(item.category ? { category: item.category } : {}),
+      ...(item.focus ? { focus: item.focus } : {}),
     }
     all.push(entry)
   }

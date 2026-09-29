@@ -21,7 +21,7 @@ function setup() {
   fs.mkdirSync(pictures, { recursive: true })
 
   const candidates = [
-    { id: 'cand-newman-a', painter: 'Barnett Newman', title: 'The Wild', year: 1950, category: 'color-field', file: 'cand-newman-a.jpg', line: 'peers' },
+    { id: 'cand-newman-a', painter: 'Barnett Newman', title: 'The Wild', year: 1950, category: 'color-field', file: 'cand-newman-a.jpg', line: 'peers', focus: '50% 30%' },
     { id: 'cand-newman-b', painter: 'Barnett Newman', title: 'Onement I', year: 1948, category: 'color-field', file: 'cand-newman-b.jpg', line: 'peers' },
     { id: 'cand-vangogh-a', painter: 'Vincent van Gogh', title: 'The Starry Night', year: 1889, category: 'post-impressionism', file: 'cand-vangogh-a.jpg', line: 'classics' },
   ]
@@ -78,7 +78,7 @@ describe('curation-merge mergeSelection', () => {
     // index.json 追加
     const index = JSON.parse(fs.readFileSync(path.join(s.pictures, 'index.json'), 'utf8'))
     expect(index).toHaveLength(2)
-    expect(index[1]).toMatchObject({ id: 'newman-1', painter: 'Barnett Newman', title: 'The Wild', file: '172-the-wild.jpg', category: 'color-field', year: 1950 })
+    expect(index[1]).toMatchObject({ id: 'newman-1', painter: 'Barnett Newman', title: 'The Wild', file: '172-the-wild.jpg', category: 'color-field', year: 1950, focus: '50% 30%' })
 
     // candidates.json 只剩缺文件的 vangogh
     const remaining = JSON.parse(fs.readFileSync(path.join(s.staging, 'candidates.json'), 'utf8'))

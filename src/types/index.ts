@@ -965,6 +965,8 @@ export type Painting = {
   year?: number
   url: string
   category?: string
+  /** CSS object-position（如 "50% 30%"），竖构图画作指定展示的关键部位；缺省居中 */
+  focus?: string
 }
 
 // --- 拾贝（Scout）来源 ---
