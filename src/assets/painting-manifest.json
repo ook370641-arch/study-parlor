@@ -1188,5 +1188,173 @@
     "title": "Fa 92 Boundaries",
     "url": "paintings/fa-92-boundaries.jpg",
     "category": "illustration"
+  },
+  {
+    "id": "still-1",
+    "painter": "Clyfford Still",
+    "title": "1949 No. 1",
+    "url": "paintings/172-1949-no-1.jpg",
+    "year": 1949,
+    "category": "color-field"
+  },
+  {
+    "id": "sugimoto-1",
+    "painter": "Hiroshi Sugimoto",
+    "title": "Cabot Street Cinema, Massachusetts",
+    "url": "paintings/173-cabot-street-cinema-massachusetts.jpg",
+    "year": 1978,
+    "category": "photography"
+  },
+  {
+    "id": "magritte-1",
+    "painter": "René Magritte",
+    "title": "The Meaning of Night",
+    "url": "paintings/174-the-meaning-of-night.jpg",
+    "year": 1927,
+    "category": "surrealism"
+  },
+  {
+    "id": "magritte-2",
+    "painter": "René Magritte",
+    "title": "The Human Condition",
+    "url": "paintings/175-the-human-condition.jpg",
+    "year": 1935,
+    "category": "surrealism"
+  },
+  {
+    "id": "gogh-1",
+    "painter": "Vincent van Gogh",
+    "title": "The Starry Night",
+    "url": "paintings/176-the-starry-night.jpg",
+    "year": 1889,
+    "category": "post-impressionism"
+  },
+  {
+    "id": "gogh-2",
+    "painter": "Vincent van Gogh",
+    "title": "Café Terrace at Night",
+    "url": "paintings/177-cafe-terrace-at-night.jpg",
+    "year": 1888,
+    "category": "post-impressionism"
+  },
+  {
+    "id": "gogh-3",
+    "painter": "Vincent van Gogh",
+    "title": "The Night Café",
+    "url": "paintings/178-the-night-cafe.jpg",
+    "year": 1888,
+    "category": "post-impressionism"
+  },
+  {
+    "id": "gogh-4",
+    "painter": "Vincent van Gogh",
+    "title": "Wheatfield with Crows",
+    "url": "paintings/179-wheatfield-with-crows.jpg",
+    "year": 1890,
+    "category": "post-impressionism"
+  },
+  {
+    "id": "gogh-5",
+    "painter": "Vincent van Gogh",
+    "title": "Road with Cypress and Star",
+    "url": "paintings/180-road-with-cypress-and-star.jpg",
+    "year": 1890,
+    "category": "post-impressionism"
+  },
+  {
+    "id": "gogh-6",
+    "painter": "Vincent van Gogh",
+    "title": "Evening Landscape with Rising Moon",
+    "url": "paintings/181-evening-landscape-with-rising-moon.jpg",
+    "year": 1889,
+    "category": "post-impressionism"
+  },
+  {
+    "id": "gogh-7",
+    "painter": "Vincent van Gogh",
+    "title": "The Sower (Sower with Setting Sun)",
+    "url": "paintings/182-the-sower-sower-with-setting-sun.jpg",
+    "year": 1888,
+    "category": "post-impressionism"
+  },
+  {
+    "id": "gogh-8",
+    "painter": "Vincent van Gogh",
+    "title": "Landscape at Dusk",
+    "url": "paintings/183-landscape-at-dusk.jpg",
+    "year": 1885,
+    "category": "post-impressionism"
+  },
+  {
+    "id": "turner-1",
+    "painter": "J.M.W. Turner",
+    "title": "The Fighting Temeraire",
+    "url": "paintings/184-the-fighting-temeraire.jpg",
+    "year": 1839,
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-2",
+    "painter": "J.M.W. Turner",
+    "title": "Rain, Steam and Speed – The Great Western Railway",
+    "url": "paintings/185-rain-steam-and-speed-the-great-western-railway.jpg",
+    "year": 1844,
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-3",
+    "painter": "J.M.W. Turner",
+    "title": "Snow Storm: Hannibal and his Army Crossing the Alps",
+    "url": "paintings/186-snow-storm-hannibal-and-his-army-crossing-the-al.jpg",
+    "year": 1812,
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-4",
+    "painter": "J.M.W. Turner",
+    "title": "Snow Storm: Steam-Boat off a Harbour's Mouth",
+    "url": "paintings/187-snow-storm-steam-boat-off-a-harbour-s-mouth.jpg",
+    "year": 1842,
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-5",
+    "painter": "J.M.W. Turner",
+    "title": "Norham Castle, Sunrise",
+    "url": "paintings/188-norham-castle-sunrise.jpg",
+    "year": 1845,
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-6",
+    "painter": "J.M.W. Turner",
+    "title": "The Burning of the Houses of Parliament",
+    "url": "paintings/189-the-burning-of-the-houses-of-parliament.jpg",
+    "year": 1834,
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-7",
+    "painter": "J.M.W. Turner",
+    "title": "Keelmen Heaving in Coals by Moonlight",
+    "url": "paintings/190-keelmen-heaving-in-coals-by-moonlight.jpg",
+    "year": 1835,
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-8",
+    "painter": "J.M.W. Turner",
+    "title": "Moonlight, a Study at Millbank",
+    "url": "paintings/191-moonlight-a-study-at-millbank.jpg",
+    "year": 1797,
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-9",
+    "painter": "J.M.W. Turner",
+    "title": "The Slave Ship",
+    "url": "paintings/192-the-slave-ship.jpg",
+    "year": 1840,
+    "category": "romanticism"
   }
 ]
