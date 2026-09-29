@@ -147,7 +147,7 @@ describe('curation-gallery', () => {
     expect(html).toContain('Barnett Newman · The Wild · 1950')
     expect(html).toContain('id="yes"') // ✓选 / ✗弃 双按钮
     expect(html).toContain('id="no"')
-    expect(html).toContain('painting-curation-swipe-v1') // localStorage 判定记录
+    expect(html).toContain('painting-curation-swipe-') // localStorage 判定记录（key 随批次变化）
     expect(html).toContain('selection.json') // 导出
   })
 

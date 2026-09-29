@@ -254,7 +254,8 @@ function renderSwipeHtml(candidates) {
 </p>
 <script>
   const CANDS = ${JSON.stringify(data)};
-  const LS = 'painting-curation-swipe-v1'
+  // 进度 key 随候选集内容变化：新批次自动生成新 key，旧批次进度不串。
+  const LS = 'painting-curation-swipe-' + CANDS.map(c => c.id).join(',').length + '-' + (CANDS[0] ? CANDS[0].id : 'empty')
   let state = JSON.parse(localStorage.getItem(LS) || '{"verdicts":{},"idx":0}')
   const save = () => localStorage.setItem(LS, JSON.stringify(state))
   const photo = document.getElementById('photo')
