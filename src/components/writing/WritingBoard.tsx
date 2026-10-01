@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { WritingToolbar } from './WritingToolbar'
 import { ReadonlyPreview } from './ReadonlyPreview'
 import { HtmlPreview } from './HtmlPreview'
 import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
+import { useScrollMemory } from '@/lib/use-scroll-memory'
 import { Quote } from '@/components/Quote'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 
@@ -15,6 +16,7 @@ export function WritingBoard() {
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
   const saveAllDirtyWriting = useStore(s => s.saveAllDirtyWriting)
+  const editorScrollRef = useRef<HTMLDivElement | null>(null)
 
   // Autosave: debounce 1.5s after body change
   useEffect(() => {
@@ -22,6 +24,17 @@ export function WritingBoard() {
     const t = setTimeout(() => saveWritingFile(), 1500)
     return () => clearTimeout(t)
   }, [file?.body, file?.dirty])
+
+  // 浏览位置记忆(2026-09-29 改退出时落盘):滚动只写 ref;切文件/离开页面/关窗口
+  // 三个退出点才 flush。恢复读 getState() 快照,不订阅 positions(防滚动回跳)。
+  const { onScroll: onEditorScroll } = useScrollMemory({
+    memKey: file?.kind === 'md' ? file.path : null,
+    containerRef: editorScrollRef,
+    getBlocks: () => (editorScrollRef.current?.querySelector('.ProseMirror') as HTMLElement | null)?.children ?? null,
+    readSaved: (k) => useStore.getState().writingScrollPositions[k],
+    flush: (k, i) => useStore.getState().flushWritingScrollPosition(k, i),
+    isCurrent: (k) => useStore.getState().writingFile?.path === k,
+  })
 
   // Ctrl+S immediate save（主文 + 对照文中 dirty 者一并保存）
   useEffect(() => {
@@ -90,6 +103,8 @@ export function WritingBoard() {
       </div>
       {/* Editor area */}
       <div data-testid="writing-editor" className="flex-1 min-h-0 overflow-y-auto px-8 py-6"
+        ref={editorScrollRef}
+        onScroll={onEditorScroll}
         style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}>
         {briefingTheme !== 'newspaper' && <PaintingPlate />}
         <div className="flex justify-center mb-4">
