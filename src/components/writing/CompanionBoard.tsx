@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { ReadonlyPreview } from './ReadonlyPreview'
@@ -18,8 +18,12 @@ export function CompanionBoard() {
   const saveCompanionFile = useStore(s => s.saveCompanionFile)
   const closeCompanion = useStore(s => s.closeCompanion)
   // 本实例编辑器 action(registerLocalAction 通道):供头部「分割线」按钮调命令,
-  // 与全局 toolbar 单槽正交(对照实例 registerToolbarAction={false} 不抢主编辑器)
+  // 与全局 toolbar 单槽正交(对照实例 registerToolbarAction={false} 不抢主编辑器)。
+  // 必须包 () => a:裸传 setHrAction 会让 React 把 action 当 updater 调用(2026-10-02 崩溃)
   const [hrAction, setHrAction] = useState<((fn: (ctx: any) => void) => void) | null>(null)
+  const registerHrAction = useCallback((a: ((fn: (ctx: any) => void) => void) | null) => {
+    setHrAction(() => a)
+  }, [])
 
   // Autosave: debounce 1.5s after body change（复刻 WritingBoard 主文模式）
   useEffect(() => {
@@ -102,7 +106,7 @@ export function CompanionBoard() {
             initial={file.body}
             onChange={(md) => updateCompanionBody(md)}
             registerToolbarAction={false}
-            registerLocalAction={setHrAction}
+            registerLocalAction={registerHrAction}
             theme="academic"
             filePath={file.path}
           />

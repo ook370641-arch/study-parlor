@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from '@/components/writing/WritingEditor'
 import { HtmlPreview } from '@/components/writing/HtmlPreview'
@@ -14,8 +14,13 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
   const updateBody = useStore((s) => s.updateArticleCompanionBody)
   const save = useStore((s) => s.saveArticleCompanion)
   const close = useStore((s) => s.closeArticleCompanion)
-  // 本实例编辑器 action(registerLocalAction 通道):供头部「分割线」按钮调命令
+  // 本实例编辑器 action(registerLocalAction 通道):供头部「分割线」按钮调命令。
+  // 必须包 () => a:裸传 setHrAction 会让 React 把 action 当 updater 用 prevState
+  // 调用 → milkdown .action(null) 抛「action is not a function」(2026-10-02 崩溃)
   const [hrAction, setHrAction] = useState<((fn: (ctx: any) => void) => void) | null>(null)
+  const registerHrAction = useCallback((a: ((fn: (ctx: any) => void) => void) | null) => {
+    setHrAction(() => a)
+  }, [])
   // 对照编辑器字号跟随主区正文（briefingFontSize），避免左右两栏字号不一
   const briefingFontSize = useStore((s) => s.briefingFontSize)
   const isAcademic = theme !== 'newspaper'
@@ -87,7 +92,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
           // 不设 fontFamily——继承全局默认（Source Han Sans SC），与写作页原生编辑器同一条
           // 继承路径；字号字重仍跟随主区正文（2026-09-16 用户定锚：字体跟写作页，字号跟正文）
           style={{ fontSize: bodyStyle.size, fontWeight: bodyStyle.weight }}>
-          <WritingEditor key={file.filePath} initial={file.body} onChange={(md) => updateBody(md)} registerToolbarAction={false} registerLocalAction={setHrAction} theme={theme} filePath={file.filePath} />
+          <WritingEditor key={file.filePath} initial={file.body} onChange={(md) => updateBody(md)} registerToolbarAction={false} registerLocalAction={registerHrAction} theme={theme} filePath={file.filePath} />
         </div>
       ) : file.kind === 'html' ? (
         <div className="flex-1 min-h-0"><HtmlPreview file={{ path: file.filePath, body: file.body }} /></div>
