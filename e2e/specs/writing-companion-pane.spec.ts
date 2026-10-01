@@ -301,4 +301,22 @@ test.describe('@p2 writing-companion-pane', () => {
     expect(companionBody).toContain('关于分布式系统的思考')
     expect(companionBody).not.toContain('加粗隔离验证')
   })
+
+  // ── 8. 对照分隔线按钮：只插进对照文档,主文不受影响 ─────────────────
+  // 对应 2026-09-29 spec 功能 3;按钮走 registerLocalAction 本地通道,不碰全局单槽
+  test('对照头部分隔线按钮 → 对照文档插入 hr,主文未波及', async ({ window, testLibraryPath }) => {
+    await gotoWriting(window, testLibraryPath)
+    await selectMainFile(window, MAIN_NAME, MAIN_PATH)
+    await openCompanionTab(window)
+    await selectCompanion(window, COMPANION_NAME, COMPANION_PATH)
+    await window.locator('[data-testid="companion-editor"]').locator('.ProseMirror').waitFor({ state: 'visible', timeout: 5000 })
+    await window.waitForTimeout(500) // 等 Milkdown loadedRef gate 打开
+
+    await expect(window.locator('[data-testid="companion-insert-hr"]')).toBeVisible()
+    await window.locator('[data-testid="companion-insert-hr"]').click()
+    await window.waitForFunction(() => /(\*\*\*|---)/.test((window as any).useStore.getState().companionFile?.body ?? ''))
+
+    const mainBody = await window.evaluate(() => (window as any).useStore.getState().writingFile?.body ?? '')
+    expect(mainBody).not.toMatch(/(\*\*\*|---)/)
+  })
 })
