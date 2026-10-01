@@ -12,7 +12,8 @@
     "painter": "Mark Rothko",
     "title": "Interior",
     "url": "paintings/004-interior.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 100%"
   },
   {
     "id": "rothko-5",
@@ -26,7 +27,8 @@
     "painter": "Mark Rothko",
     "title": "Self-Portrait",
     "url": "paintings/006-self-portrait.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 27%"
   },
   {
     "id": "rothko-7",
@@ -41,14 +43,16 @@
     "painter": "Mark Rothko",
     "title": "Street Scene",
     "url": "paintings/008-street-scene.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 23%"
   },
   {
     "id": "rothko-9",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/009-untitled-14.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 27%"
   },
   {
     "id": "rothko-10",
@@ -63,21 +67,24 @@
     "title": "Untitled (Standing Man and Woman)",
     "url": "paintings/011-untitled-standing-man-and-woman-1938.jpg",
     "year": 1938,
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 15%"
   },
   {
     "id": "rothko-12",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/012-untitled-15.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 8%"
   },
   {
     "id": "rothko-13",
     "painter": "Mark Rothko",
     "title": "Portrait (Untitled)",
     "url": "paintings/013-not_detected_242139.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 32%"
   },
   {
     "id": "rothko-14",
@@ -91,7 +98,8 @@
     "painter": "Mark Rothko",
     "title": "Underground Fantasy",
     "url": "paintings/015-underground-fantasy.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 2%"
   },
   {
     "id": "rothko-16",
@@ -105,35 +113,40 @@
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/017-untitled-13.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 6%"
   },
   {
     "id": "rothko-18",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/018-untitled-16.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 24%"
   },
   {
     "id": "rothko-19",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/019-untitled-17.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 23%"
   },
   {
     "id": "rothko-20",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/020-untitled-18.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 0%"
   },
   {
     "id": "rothko-21",
     "painter": "Mark Rothko",
     "title": "Aubade",
     "url": "paintings/021-aubade.jpg",
-    "category": "early-figurative"
+    "category": "early-figurative",
+    "focus": "50% 29%"
   },
   {
     "id": "rothko-22",
@@ -148,28 +161,32 @@
     "title": "Gethsemane",
     "url": "paintings/023-gethsemane-1944.jpg",
     "year": 1944,
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 30%"
   },
   {
     "id": "rothko-24",
     "painter": "Mark Rothko",
     "title": "Slow Swirl at the Edge of the Sea",
     "url": "paintings/024-slow-swirl-at-the-edge-of-the-sea.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 40%"
   },
   {
     "id": "rothko-25",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/025-untitled-3.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 7%"
   },
   {
     "id": "rothko-26",
     "painter": "Mark Rothko",
     "title": "Hierarchical Birds",
     "url": "paintings/026-hierarchical-birds.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 6%"
   },
   {
     "id": "rothko-27",
@@ -190,42 +207,48 @@
     "painter": "Mark Rothko",
     "title": "Fantasy",
     "url": "paintings/029-not_detected_242126.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 2%"
   },
   {
     "id": "rothko-30",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/030-untitled-2.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 18%"
   },
   {
     "id": "rothko-31",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/031-not_detected_242119.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 17%"
   },
   {
     "id": "rothko-32",
     "painter": "Mark Rothko",
     "title": "Primeval Landscape",
     "url": "paintings/032-primeval-landscape.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 23%"
   },
   {
     "id": "rothko-33",
     "painter": "Mark Rothko",
     "title": "Rites of Lilith",
     "url": "paintings/033-rites-of-lilith.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 14%"
   },
   {
     "id": "rothko-34",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/034-not_detected_242122.jpg",
-    "category": "surrealist"
+    "category": "surrealist",
+    "focus": "50% 55%"
   },
   {
     "id": "rothko-35",
@@ -239,21 +262,24 @@
     "painter": "Mark Rothko",
     "title": "No. 9",
     "url": "paintings/043-no-9.jpg",
-    "category": "transitional"
+    "category": "transitional",
+    "focus": "50% 38%"
   },
   {
     "id": "rothko-44",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/044-not_detected_242115.jpg",
-    "category": "transitional"
+    "category": "transitional",
+    "focus": "50% 49%"
   },
   {
     "id": "rothko-45",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/045-not_detected_242116.jpg",
-    "category": "transitional"
+    "category": "transitional",
+    "focus": "50% 68%"
   },
   {
     "id": "rothko-46",
@@ -261,14 +287,16 @@
     "title": "Untitled",
     "url": "paintings/046-untitled-1948.jpg",
     "year": 1948,
-    "category": "transitional"
+    "category": "transitional",
+    "focus": "50% 41%"
   },
   {
     "id": "rothko-49",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/049-untitled.jpg",
-    "category": "transitional"
+    "category": "transitional",
+    "focus": "50% 64%"
   },
   {
     "id": "rothko-52",
@@ -289,7 +317,8 @@
     "painter": "Mark Rothko",
     "title": "No.3/No.13 (Magenta, Black, Green on Orange)",
     "url": "paintings/054-no-3-no-13.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 80%"
   },
   {
     "id": "rothko-55",
@@ -297,7 +326,8 @@
     "title": "Untitled",
     "url": "paintings/055-untitled-1949-2.jpg",
     "year": 1949,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 34%"
   },
   {
     "id": "rothko-56",
@@ -319,7 +349,8 @@
     "painter": "Mark Rothko",
     "title": "No.1",
     "url": "paintings/059-no-1.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 82%"
   },
   {
     "id": "rothko-60",
@@ -333,14 +364,16 @@
     "painter": "Mark Rothko",
     "title": "No.5/No.22",
     "url": "paintings/061-no-5-no-22.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 100%"
   },
   {
     "id": "rothko-62",
     "painter": "Mark Rothko",
     "title": "White Center (Yellow, Pink and Lavender on Rose)",
     "url": "paintings/062-white-center.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 39%"
   },
   {
     "id": "rothko-63",
@@ -414,7 +447,8 @@
     "painter": "Mark Rothko",
     "title": "Yellow, Charcoal, Brown",
     "url": "paintings/078-cat-newyork.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 54%"
   },
   {
     "id": "rothko-80",
@@ -429,7 +463,8 @@
     "title": "United (Blue, Yellow, Green on Red)",
     "url": "paintings/082-united-blue-yellow-green-on-red-1954.jpg",
     "year": 1954,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 100%"
   },
   {
     "id": "rothko-85",
@@ -437,7 +472,8 @@
     "title": "No. 1 (Royal Red and Blue)",
     "url": "paintings/085-no-1-royal-red-and-blue-1954.jpg",
     "year": 1954,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "0% 68%"
   },
   {
     "id": "rothko-86",
@@ -459,7 +495,8 @@
     "title": "Untitled (Red, Blue, Orange)",
     "url": "paintings/088-untitled-red-blue-orange-1955.jpg",
     "year": 1955,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 57%"
   },
   {
     "id": "rothko-90",
@@ -503,7 +540,8 @@
     "painter": "Mark Rothko",
     "title": "No. 16 (Red, White, and Brown)",
     "url": "paintings/098-not_detected_242135.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 100%"
   },
   {
     "id": "rothko-99",
@@ -517,14 +555,16 @@
     "painter": "Mark Rothko",
     "title": "Purple Brown",
     "url": "paintings/100-purple-brown.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 75%"
   },
   {
     "id": "rothko-102",
     "painter": "Mark Rothko",
     "title": "Red, White, and Brown",
     "url": "paintings/102-red-white-and-brown.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 0%"
   },
   {
     "id": "rothko-104",
@@ -532,7 +572,8 @@
     "title": "Black in Deep Red",
     "url": "paintings/104-black-in-deep-red-1957.jpg",
     "year": 1957,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 94%"
   },
   {
     "id": "rothko-105",
@@ -540,7 +581,8 @@
     "title": "No. 16",
     "url": "paintings/105-no-16-1957.jpg",
     "year": 1957,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 0%"
   },
   {
     "id": "rothko-107",
@@ -548,7 +590,8 @@
     "title": "No. 13 (White, Red on Yellow)",
     "url": "paintings/107-no-13-white-and-red-on-yellow-1958.jpg",
     "year": 1958,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 58%"
   },
   {
     "id": "rothko-108",
@@ -577,7 +620,8 @@
     "title": "No. 37/No. 19 (Slate Blue and Brown on Plum)",
     "url": "paintings/111-no-37-no-19-slate-blue-and-brown-on-plum-1958.jpg",
     "year": 1958,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 100%"
   },
   {
     "id": "rothko-115",
@@ -605,21 +649,24 @@
     "painter": "Mark Rothko",
     "title": "Red on Maroon",
     "url": "paintings/118-red-on-maroon.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 100%"
   },
   {
     "id": "rothko-119",
     "painter": "Mark Rothko",
     "title": "Untitled Mural for End Wall",
     "url": "paintings/119-untitled-mural-for-end-wall.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 53%"
   },
   {
     "id": "rothko-121",
     "painter": "Mark Rothko",
     "title": "Black on Dark Sienna on Purple",
     "url": "paintings/121-black-on-dark-sienna-on-purple.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 54%"
   },
   {
     "id": "rothko-122",
@@ -627,7 +674,8 @@
     "title": "No. 14",
     "url": "paintings/122-no-14-1960.jpg",
     "year": 1960,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 59%"
   },
   {
     "id": "rothko-123",
@@ -641,7 +689,8 @@
     "painter": "Mark Rothko",
     "title": "Blue, Orange, Red",
     "url": "paintings/124-blue-orange-red.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 43%"
   },
   {
     "id": "rothko-125",
@@ -761,14 +810,16 @@
     "painter": "Mark Rothko",
     "title": "Untitled (Gray, Gray on Red)",
     "url": "paintings/148-not_detected_242137.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 53%"
   },
   {
     "id": "rothko-149",
     "painter": "Mark Rothko",
     "title": "Untitled",
     "url": "paintings/149-untitled-7.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 70%"
   },
   {
     "id": "rothko-150",
@@ -799,7 +850,8 @@
     "title": "Untitled",
     "url": "paintings/157-untitled-1968-2.jpg",
     "year": 1968,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 49%"
   },
   {
     "id": "rothko-158",
@@ -858,7 +910,8 @@
     "painter": "Mark Rothko",
     "title": "Untitled (Green, Orange, Red Om Violet)",
     "url": "paintings/169-untitled-green-orange-red-om-violet.jpg",
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 63%"
   },
   {
     "id": "rothko-171",
@@ -872,161 +925,184 @@
     "painter": "Guy Billout",
     "title": "World",
     "url": "paintings/001-world.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 17%"
   },
   {
     "id": "billout-4",
     "painter": "Guy Billout",
     "title": "Renewal",
     "url": "paintings/004-renewal.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 29%"
   },
   {
     "id": "billout-6",
     "painter": "Guy Billout",
     "title": "Failure",
     "url": "paintings/006-failure.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 5%"
   },
   {
     "id": "billout-11",
     "painter": "Guy Billout",
     "title": "Ballistic",
     "url": "paintings/011-ballistics.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 25%"
   },
   {
     "id": "billout-13",
     "painter": "Guy Billout",
     "title": "Demigod",
     "url": "paintings/013-demigod.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 53%"
   },
   {
     "id": "billout-14",
     "painter": "Guy Billout",
     "title": "Probabilities",
     "url": "paintings/014-probabilities.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 44%"
   },
   {
     "id": "billout-15",
     "painter": "Guy Billout",
     "title": "Control",
     "url": "paintings/015-control.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 36%"
   },
   {
     "id": "billout-16",
     "painter": "Guy Billout",
     "title": "Magnification",
     "url": "paintings/016-magnification.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 26%"
   },
   {
     "id": "billout-19",
     "painter": "Guy Billout",
     "title": "Bounty",
     "url": "paintings/019-bounty.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 23%"
   },
   {
     "id": "billout-22",
     "painter": "Guy Billout",
     "title": "Boat Ride",
     "url": "paintings/022-boat-ride.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 42%"
   },
   {
     "id": "billout-24",
     "painter": "Guy Billout",
     "title": "Antipodes",
     "url": "paintings/024-antipodes.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 14%"
   },
   {
     "id": "billout-25",
     "painter": "Guy Billout",
     "title": "Wings",
     "url": "paintings/025-wings.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 22%"
   },
   {
     "id": "billout-26",
     "painter": "Guy Billout",
     "title": "Layover",
     "url": "paintings/026-layover.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 56%"
   },
   {
     "id": "billout-27",
     "painter": "Guy Billout",
     "title": "Quicksand",
     "url": "paintings/027-quicksand.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 58%"
   },
   {
     "id": "billout-29",
     "painter": "Guy Billout",
     "title": "Gibraltar",
     "url": "paintings/029-gibraltar.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 20%"
   },
   {
     "id": "billout-30",
     "painter": "Guy Billout",
     "title": "Exits",
     "url": "paintings/030-exits.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 24%"
   },
   {
     "id": "billout-31",
     "painter": "Guy Billout",
     "title": "Wealth",
     "url": "paintings/031-wealth.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 73%"
   },
   {
     "id": "billout-33",
     "painter": "Guy Billout",
     "title": "Beam",
     "url": "paintings/033-beam.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 71%"
   },
   {
     "id": "billout-34",
     "painter": "Guy Billout",
     "title": "Paris Blues",
     "url": "paintings/034-paris-blues.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 60%"
   },
   {
     "id": "billout-35",
     "painter": "Guy Billout",
     "title": "Red White Blue",
     "url": "paintings/035-red-white-blue.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 58%"
   },
   {
     "id": "billout-36",
     "painter": "Guy Billout",
     "title": "Island",
     "url": "paintings/036-island.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 51%"
   },
   {
     "id": "billout-37",
     "painter": "Guy Billout",
     "title": "Flights",
     "url": "paintings/037-flights.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 55%"
   },
   {
     "id": "billout-38",
     "painter": "Guy Billout",
     "title": "Stop",
     "url": "paintings/038-stop.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 58%"
   },
   {
     "id": "billout-39",
@@ -1040,77 +1116,88 @@
     "painter": "Guy Billout",
     "title": "Shortcut",
     "url": "paintings/040-shortcut.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 38%"
   },
   {
     "id": "billout-41",
     "painter": "Guy Billout",
     "title": "Night Patrol",
     "url": "paintings/041-night-patrol.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 60%"
   },
   {
     "id": "billout-43",
     "painter": "Guy Billout",
     "title": "Oil Spill",
     "url": "paintings/043-oil-spill.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 81%"
   },
   {
     "id": "billout-46",
     "painter": "Guy Billout",
     "title": "Team Work",
     "url": "paintings/046-team-work.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 23%"
   },
   {
     "id": "billout-47",
     "painter": "Guy Billout",
     "title": "Up Down",
     "url": "paintings/047-up-down.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 45%"
   },
   {
     "id": "billout-48",
     "painter": "Guy Billout",
     "title": "Vision",
     "url": "paintings/048-vision.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 52%"
   },
   {
     "id": "billout-49",
     "painter": "Guy Billout",
     "title": "Contibuity",
     "url": "paintings/049-contibuity.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 45%"
   },
   {
     "id": "billout-50",
     "painter": "Guy Billout",
     "title": "Solution",
     "url": "paintings/050-solution.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 58%"
   },
   {
     "id": "billout-52",
     "painter": "Guy Billout",
     "title": "Vacuum",
     "url": "paintings/052-vacuum.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 69%"
   },
   {
     "id": "billout-53",
     "painter": "Guy Billout",
     "title": "Crossing",
     "url": "paintings/053-crossing.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 33%"
   },
   {
     "id": "billout-54",
     "painter": "Guy Billout",
     "title": "Escalator",
     "url": "paintings/054-escalator.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 62%"
   },
   {
     "id": "billout-54",
@@ -1138,28 +1225,32 @@
     "painter": "Guy Billout",
     "title": "Critical Thinking",
     "url": "paintings/058-critical-thinking.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 100%"
   },
   {
     "id": "billout-59",
     "painter": "Guy Billout",
     "title": "Flexible Ship and Rocks",
     "url": "paintings/059-flexible-ship-and-rocks.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 46%"
   },
   {
     "id": "billout-60",
     "painter": "Guy Billout",
     "title": "Observatory",
     "url": "paintings/060-observatory.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 70%"
   },
   {
     "id": "billout-62",
     "painter": "Guy Billout",
     "title": "Train and Impossible Load",
     "url": "paintings/062-train-and-impossible-load.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 31%"
   },
   {
     "id": "billout-63",
@@ -1173,14 +1264,16 @@
     "painter": "Guy Billout",
     "title": "Wind",
     "url": "paintings/064-wind.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 84%"
   },
   {
     "id": "billout-fa-",
     "painter": "Guy Billout",
     "title": "Fa 78 Second Summit",
     "url": "paintings/fa-78-second-summit.jpg",
-    "category": "illustration"
+    "category": "illustration",
+    "focus": "50% 39%"
   },
   {
     "id": "billout-fa-",
@@ -1195,7 +1288,8 @@
     "title": "1949 No. 1",
     "url": "paintings/172-1949-no-1.jpg",
     "year": 1949,
-    "category": "color-field"
+    "category": "color-field",
+    "focus": "50% 28%"
   },
   {
     "id": "sugimoto-1",
@@ -1203,7 +1297,8 @@
     "title": "Cabot Street Cinema, Massachusetts",
     "url": "paintings/173-cabot-street-cinema-massachusetts.jpg",
     "year": 1978,
-    "category": "photography"
+    "category": "photography",
+    "focus": "50% 77%"
   },
   {
     "id": "magritte-1",
@@ -1211,7 +1306,8 @@
     "title": "The Meaning of Night",
     "url": "paintings/174-the-meaning-of-night.jpg",
     "year": 1927,
-    "category": "surrealism"
+    "category": "surrealism",
+    "focus": "50% 21%"
   },
   {
     "id": "magritte-2",
@@ -1219,7 +1315,8 @@
     "title": "The Human Condition",
     "url": "paintings/175-the-human-condition.jpg",
     "year": 1935,
-    "category": "surrealism"
+    "category": "surrealism",
+    "focus": "50% 74%"
   },
   {
     "id": "gogh-1",
@@ -1227,7 +1324,8 @@
     "title": "The Starry Night",
     "url": "paintings/176-the-starry-night.jpg",
     "year": 1889,
-    "category": "post-impressionism"
+    "category": "post-impressionism",
+    "focus": "50% 75%"
   },
   {
     "id": "gogh-2",
@@ -1236,7 +1334,7 @@
     "url": "paintings/177-cafe-terrace-at-night.jpg",
     "year": 1888,
     "category": "post-impressionism",
-    "focus": "50% 45%"
+    "focus": "50% 57%"
   },
   {
     "id": "gogh-3",
@@ -1252,7 +1350,8 @@
     "title": "Wheatfield with Crows",
     "url": "paintings/179-wheatfield-with-crows.jpg",
     "year": 1890,
-    "category": "post-impressionism"
+    "category": "post-impressionism",
+    "focus": "48% 50%"
   },
   {
     "id": "gogh-5",
@@ -1261,7 +1360,7 @@
     "url": "paintings/180-road-with-cypress-and-star.jpg",
     "year": 1890,
     "category": "post-impressionism",
-    "focus": "50% 40%"
+    "focus": "50% 45%"
   },
   {
     "id": "gogh-6",
@@ -1277,7 +1376,8 @@
     "title": "The Sower (Sower with Setting Sun)",
     "url": "paintings/182-the-sower-sower-with-setting-sun.jpg",
     "year": 1888,
-    "category": "post-impressionism"
+    "category": "post-impressionism",
+    "focus": "50% 0%"
   },
   {
     "id": "gogh-8",
@@ -1285,7 +1385,8 @@
     "title": "Landscape at Dusk",
     "url": "paintings/183-landscape-at-dusk.jpg",
     "year": 1885,
-    "category": "post-impressionism"
+    "category": "post-impressionism",
+    "focus": "50% 67%"
   },
   {
     "id": "turner-1",
@@ -1398,7 +1499,7 @@
     "url": "paintings/197-wanderer-above-the-sea-of-fog.jpg",
     "year": 1818,
     "category": "romanticism",
-    "focus": "50% 55%"
+    "focus": "50% 44%"
   },
   {
     "id": "munch-1",
@@ -1406,7 +1507,8 @@
     "title": "Starry Night",
     "url": "paintings/198-starry-night.jpg",
     "year": 1924,
-    "category": "expressionism"
+    "category": "expressionism",
+    "focus": "50% 31%"
   },
   {
     "id": "munch-2",
@@ -1414,7 +1516,8 @@
     "title": "Moonlight",
     "url": "paintings/199-moonlight.jpg",
     "year": 1893,
-    "category": "expressionism"
+    "category": "expressionism",
+    "focus": "50% 30%"
   },
   {
     "id": "munch-3",
@@ -1422,7 +1525,8 @@
     "title": "Melancholy",
     "url": "paintings/200-melancholy.jpg",
     "year": 1892,
-    "category": "expressionism"
+    "category": "expressionism",
+    "focus": "50% 100%"
   },
   {
     "id": "munch-4",
@@ -1430,7 +1534,8 @@
     "title": "The Mystery of a Summer Night",
     "url": "paintings/201-the-mystery-of-a-summer-night.jpg",
     "year": 1892,
-    "category": "expressionism"
+    "category": "expressionism",
+    "focus": "50% 20%"
   },
   {
     "id": "redon-1",
@@ -1438,7 +1543,8 @@
     "title": "Closed Eyes",
     "url": "paintings/202-closed-eyes.jpg",
     "year": 1890,
-    "category": "symbolism"
+    "category": "symbolism",
+    "focus": "50% 41%"
   },
   {
     "id": "whistler-1",
@@ -1447,7 +1553,7 @@
     "url": "paintings/203-nocturne-blue-and-gold-old-battersea-bridge.jpg",
     "year": 1875,
     "category": "tonalism",
-    "focus": "50% 30%"
+    "focus": "50% 76%"
   },
   {
     "id": "whistler-2",
@@ -1515,7 +1621,8 @@
     "painter": "Claude Monet",
     "title": "Gondola in Venice",
     "url": "paintings/212-gondola-in-venice.jpg",
-    "category": "impressionism"
+    "category": "impressionism",
+    "focus": "50% 59%"
   },
   {
     "id": "turner-10",

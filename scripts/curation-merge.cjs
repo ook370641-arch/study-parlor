@@ -54,7 +54,9 @@ function mergeSelection({ stagingDir = STAGING_DIR, picturesDir = PICTURES_DIR, 
   if (!fs.existsSync(selectionFile)) throw new Error(`selection.json not found: ${selectionFile}`)
   if (!fs.existsSync(candidatesFile)) throw new Error(`candidates.json not found: ${candidatesFile}`)
 
-  const selectedIds = new Set(JSON.parse(fs.readFileSync(selectionFile, 'utf-8')).selected || [])
+  const selection = JSON.parse(fs.readFileSync(selectionFile, 'utf-8'))
+  const selectedIds = new Set(selection.selected || [])
+  const selFocus = selection.focus || {} // 勾选页导出的焦点（gallery-pick.html），优先于候选自带 focus
   const candidates = JSON.parse(fs.readFileSync(candidatesFile, 'utf-8'))
   const index = JSON.parse(fs.readFileSync(path.join(picturesDir, 'index.json'), 'utf-8'))
 
@@ -96,7 +98,8 @@ function mergeSelection({ stagingDir = STAGING_DIR, picturesDir = PICTURES_DIR, 
     const entry = { id, painter: c.painter, title: c.title, file: newFile }
     if (c.category) entry.category = c.category
     if (c.year) entry.year = c.year
-    if (c.focus) entry.focus = c.focus
+    const focus = selFocus[c.id] || c.focus
+    if (focus) entry.focus = focus
     index.push(entry)
     added.push({ id, file: newFile })
     processedIds.add(c.id)

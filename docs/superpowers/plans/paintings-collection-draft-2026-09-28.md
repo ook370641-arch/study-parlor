@@ -159,6 +159,11 @@
 - **原图完整展示 + 橙色裁剪框**（2026-10-02 v2，应用户要求从"全屏看裁切效果"改为"原图上看框"）：框内 = 应用实际可见范围（object-cover 几何，框外压暗），拖框调焦点、↑↓ 微调、T 切换封面全屏/简报画框 21:9 两种宽高比的框
 - 每幅可「移出库 / 恢复入库」切换（相对原始态的差值才记录）
 - 导出 `focus-selection.json`（含 focus 改动 + unhide/hide 差值）→ `node scripts/curation-crop.cjs --apply [--dry-run]` 写回 index.json + state.json + 重生成 manifest
+- **首次应用（2026-10-02）**：用户调整 111 幅焦点（大量罗斯科/比尔outs 竖构图从居中改为偏上）、恢复 10 幅隐藏、新隐藏 6 幅 → hiddenPaintings 19→15
+
+### 勾选+定焦点一体页（gallery-pick.html，批三起用）
+
+`generateGallery` 现在同时生成三版：gallery.html（网格）、gallery-swipe.html（全屏判定）、**gallery-pick.html（原图+裁剪框，勾选的同时定焦点）**。pick 页导出的 selection.json 形如 `{ selected: [...], focus: { id: "50% 30%" } }`（只含选中且调过焦点的），curation-merge 优先采用这里的 focus 覆盖候选自带值。
 
 ## 批三进度（2026-10-02，影视线重启）
 

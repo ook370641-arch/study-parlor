@@ -152,6 +152,37 @@ describe('curation-gallery', () => {
     expect(html).toContain('selection.json') // 导出
   })
 
+  it('renderPickHtml embeds crop box and exports selection with focus', () => {
+    const s = setup(); dir = s.dir
+    const candidates = gallery.withFileStatus(gallery.loadCandidates(s.staging), s.staging)
+    const html = gallery.renderPickHtml(candidates)
+    expect(html).toContain('cand-newman-a')
+    expect(html).toContain('id="yes"')
+    expect(html).toContain('id="no"')
+    expect(html).toContain('id="box"') // 可拖拽裁剪框
+    expect(html).toContain('pointerdown')
+    expect(html).toContain('selection.json')
+    expect(html).toContain('focus') // 导出带焦点
+  })
+
+  it('generateGallery writes gallery.html, gallery-swipe.html and gallery-pick.html', () => {
+    const s = setup(); dir = s.dir
+    const { swipeOut, pickOut } = gallery.generateGallery(s.staging)
+    expect(fs.existsSync(swipeOut)).toBe(true)
+    expect(fs.existsSync(pickOut)).toBe(true)
+  })
+
+  it('mergeSelection applies focus from selection.json over candidate focus', () => {
+    const s = setup(); dir = s.dir
+    // cand-newman-a 自带 focus 50% 30%，selection 里覆盖为 50% 70%
+    fs.writeFileSync(path.join(s.staging, 'selection.json'), JSON.stringify({
+      selected: ['cand-newman-a'], focus: { 'cand-newman-a': '50% 70%' },
+    }))
+    merge.mergeSelection({ stagingDir: s.staging, picturesDir: s.pictures, regenerateManifest: false })
+    const index = JSON.parse(fs.readFileSync(path.join(s.pictures, 'index.json'), 'utf8'))
+    expect(index[1].focus).toBe('50% 70%')
+  })
+
   it('generateGallery also writes gallery-swipe.html', () => {
     const s = setup(); dir = s.dir
     const { swipeOut } = gallery.generateGallery(s.staging)
