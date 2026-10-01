@@ -1,6 +1,6 @@
 // 画作策展：裁剪调整工具。读取 Pictures/index.json + state.json 的 hiddenPaintings，
-// 生成单文件 crop-tool.html——全屏逐张展示当前裁剪效果（与应用 object-cover 一致），
-// 拖拽调整焦点，导出 focus-selection.json；--apply 把焦点写回 index.json、恢复/隐藏写回 state.json。
+// 生成单文件 crop-tool.html——原图完整展示，橙色框标出应用当前实际可见范围（object-cover 几何），
+// 拖框调整焦点，导出 focus-selection.json；--apply 把焦点写回 index.json、恢复/隐藏写回 state.json。
 // 用法：node scripts/curation-crop.cjs            生成 crop-tool.html
 //       node scripts/curation-crop.cjs --apply [file] [--dry-run]
 // 主文档：docs/superpowers/plans/paintings-collection-draft-2026-09-28.md
@@ -60,26 +60,22 @@ function renderCropHtml(entries) {
   #export { background: #d97757; color: #1a120e; border: none; }
   #export:hover { filter: brightness(1.1); }
   #stage { flex: 1; position: relative; min-height: 0; overflow: hidden; }
-  #photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-           cursor: grab; user-select: none; -webkit-user-drag: none; }
-  #photo.dragging { cursor: grabbing; }
-  #stage.plate #photo { position: static; width: 100%; height: 100%;
-           filter: brightness(1.1) saturate(1.06); }
-  #stage.plate { display: flex; align-items: center; justify-content: center; background: #241a14; }
-  #plate-frame { display: none; width: min(620px, 90%); aspect-ratio: 21 / 9; overflow: hidden;
-           padding: 10px; background: #1c130d; border: 1px solid rgba(232,213,183,0.15);
-           box-shadow: 0 18px 50px rgba(0,0,0,0.5); }
-  #stage.plate #plate-frame { display: block; }
-  #stage.plate > #photo { display: none; }
-  #plate-frame img { width: 100%; height: 100%; object-fit: cover;
-           filter: brightness(1.1) saturate(1.06); cursor: grab; user-select: none; -webkit-user-drag: none; }
-  #crosshair { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; pointer-events: none;
-           border: 1.5px solid rgba(217,119,87,0.9); border-radius: 50%; display: none; }
-  #stage.plate #crosshair { display: none !important; }
+  #canvas { position: absolute; }
+  #photo { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
+  /* 裁剪框：框外压暗，框内即应用实际可见范围 */
+  #box { position: absolute; border: 2px solid #d97757; cursor: grab;
+         box-shadow: 0 0 0 9999px rgba(10,6,4,0.62); touch-action: none; }
+  #box.dragging { cursor: grabbing; border-color: #f09a80; }
+  #box::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+         background:
+           linear-gradient(90deg, transparent calc(33.3% - 0.5px), rgba(217,119,87,0.3) 33.3%, transparent calc(33.3% + 0.5px)),
+           linear-gradient(90deg, transparent calc(66.6% - 0.5px), rgba(217,119,87,0.3) 66.6%, transparent calc(66.6% + 0.5px)),
+           linear-gradient(0deg, transparent calc(33.3% - 0.5px), rgba(217,119,87,0.3) 33.3%, transparent calc(33.3% + 0.5px)),
+           linear-gradient(0deg, transparent calc(66.6% - 0.5px), rgba(217,119,87,0.3) 66.6%, transparent calc(66.6% + 0.5px)); }
   #badge { position: absolute; top: 14px; left: 20px; font-size: 11.5px; letter-spacing: 0.2em;
-           color: #a8917a; text-shadow: 0 1px 6px rgba(0,0,0,0.8); }
+           color: #a8917a; text-shadow: 0 1px 6px rgba(0,0,0,0.8); z-index: 2; }
   #badge .hidden-tag { color: #d98a76; }
-  #caption { position: absolute; left: 20px; bottom: 14px; text-shadow: 0 1px 8px rgba(0,0,0,0.85); }
+  #caption { position: absolute; left: 20px; bottom: 14px; text-shadow: 0 1px 8px rgba(0,0,0,0.85); z-index: 2; }
   #meta { font-style: italic; letter-spacing: 0.06em; font-size: 14px; }
   #focus-readout { font-size: 12px; color: #c9b291; margin-top: 4px; }
   #focus-readout.changed { color: #d97757; }
@@ -96,14 +92,12 @@ function renderCropHtml(entries) {
   <span id="progress"></span>
   <div id="track"><div id="fill"></div></div>
   <span id="tally"></span>
-  <button class="ghost" id="plate-toggle" title="切换简报画框 21:9 预览">画框预览</button>
+  <button class="ghost" id="plate-toggle" title="切换封面全屏 / 简报画框 21:9 的裁剪框">画框 21:9</button>
   <button class="ghost" id="export">导出调整</button>
 </div>
 <div id="stage">
   <span id="badge"></span>
-  <img id="photo" alt="" draggable="false">
-  <div id="plate-frame"><img id="plate-photo" alt="" draggable="false"></div>
-  <div id="crosshair"></div>
+  <div id="canvas"><img id="photo" alt="" draggable="false"><div id="box"></div></div>
   <div id="caption"><div id="meta"></div><div id="focus-readout"></div></div>
 </div>
 <div id="controls">
@@ -113,45 +107,75 @@ function renderCropHtml(entries) {
   <button class="verdict" id="next">下一幅 →</button>
 </div>
 <p style="flex:none;text-align:center;font-size:11px;color:#6b5340;padding-bottom:10px">
-  拖拽画面调整焦点 &nbsp; <kbd>↑</kbd><kbd>↓</kbd> 微调 &nbsp; <kbd>←</kbd><kbd>→</kbd> 换画 &nbsp; <kbd>T</kbd> 画框预览
+  拖拽橙框调整裁剪范围 &nbsp; <kbd>↑</kbd><kbd>↓</kbd> 微调 &nbsp; <kbd>←</kbd><kbd>→</kbd> 换画 &nbsp; <kbd>T</kbd> 画框 21:9
 </p>
 <script>
   const ENTRIES = ${JSON.stringify(entries)}
   const DEFAULT_FOCUS = '${DEFAULT_FOCUS}'
-  const LS = 'painting-crop-' + ENTRIES.length + '-' + (ENTRIES[0] ? ENTRIES[0].id : 'empty')
+  const LS = 'painting-crop-v2-' + ENTRIES.length + '-' + (ENTRIES[0] ? ENTRIES[0].id : 'empty')
   let state = JSON.parse(localStorage.getItem(LS) || '{"idx":0,"focus":{},"unhide":[],"hide":[]}')
   const save = () => localStorage.setItem(LS, JSON.stringify(state))
   const photo = document.getElementById('photo')
-  const platePhoto = document.getElementById('plate-photo')
+  const box = document.getElementById('box')
+  const canvas = document.getElementById('canvas')
   const stage = document.getElementById('stage')
-  const crosshair = document.getElementById('crosshair')
   const cur = () => ENTRIES[state.idx]
   const focusOf = (e) => state.focus[e.id] || e.focus
   const parseFocus = (f) => f.split(' ').map(s => parseFloat(s))
   const fmt = (x, y) => Math.round(Math.max(0, Math.min(100, x))) + '% ' + Math.round(Math.max(0, Math.min(100, y))) + '%'
+  let mode = 'cover' // cover=封面全屏（视口宽高比） | plate=简报画框 21:9
+
+  // 几何：原图 contain 显示在 stage 中央；裁剪框 = object-cover 在该宽高比下实际可见的窗口
+  function geo() {
+    const iw = photo.naturalWidth, ih = photo.naturalHeight
+    if (!iw) return null
+    const sw = stage.clientWidth, sh = stage.clientHeight
+    const s = Math.min(sw / iw, sh / ih)
+    let cw, ch // 裁剪窗口（原图像素）
+    if (mode === 'cover') {
+      const k = Math.max(sw / iw, sh / ih)
+      cw = sw / k; ch = sh / k
+    } else {
+      const W = 620, H = 620 * 9 / 21 // 应用里画框 max-w 620、aspect 21/9
+      const k = Math.max(W / iw, H / ih)
+      cw = W / k; ch = H / k
+    }
+    return { iw, ih, s, cw, ch, rx: Math.max(0, iw - cw), ry: Math.max(0, ih - ch),
+             left: (sw - iw * s) / 2, top: (sh - ih * s) / 2 }
+  }
+
+  function layout() {
+    const g = geo()
+    if (!g) return
+    canvas.style.left = g.left + 'px'
+    canvas.style.top = g.top + 'px'
+    canvas.style.width = (g.iw * g.s) + 'px'
+    canvas.style.height = (g.ih * g.s) + 'px'
+    const [fx, fy] = parseFocus(focusOf(cur()))
+    box.style.width = (g.cw * g.s) + 'px'
+    box.style.height = (g.ch * g.s) + 'px'
+    box.style.left = (g.rx * fx / 100 * g.s) + 'px'
+    box.style.top = (g.ry * fy / 100 * g.s) + 'px'
+  }
 
   function render() {
     const e = cur()
     const focus = focusOf(e)
     document.getElementById('progress').textContent = (state.idx + 1) + ' / ' + ENTRIES.length
     document.getElementById('fill').style.width = ((state.idx + 1) / ENTRIES.length * 100) + '%'
-    const changed = Object.keys(state.focus).length
     document.getElementById('tally').textContent =
-      '已调 ' + changed + ' · 恢复 ' + state.unhide.length + ' · 隐藏 ' + state.hide.length
+      '已调 ' + Object.keys(state.focus).length + ' · 恢复 ' + state.unhide.length + ' · 隐藏 ' + state.hide.length
     document.getElementById('meta').textContent = e.meta
     const readout = document.getElementById('focus-readout')
-    readout.textContent = '焦点 ' + focus + (state.focus[e.id] ? '（已调整）' : '')
+    readout.textContent = '焦点 ' + focus + (state.focus[e.id] ? '（已调整）' : '') + (mode === 'plate' ? ' · 画框 21:9' : '')
     readout.className = state.focus[e.id] ? 'changed' : ''
     const hiddenNow = effectiveHidden(e)
     document.getElementById('badge').innerHTML = (hiddenNow ? '<span class="hidden-tag">已隐藏</span> · ' : '') + '裁剪调整'
     const ht = document.getElementById('hide-toggle')
     ht.textContent = hiddenNow ? '恢复入库' : '移出库'
     ht.className = 'ghost' + (hiddenNow ? ' on' : '')
-    photo.style.objectPosition = focus
     photo.src = e.file
-    platePhoto.style.objectPosition = focus
-    platePhoto.src = e.file
-    positionCrosshair()
+    layout()
     const next = ENTRIES[state.idx + 1]
     if (next) { const i = new Image(); i.src = next.file }
   }
@@ -162,22 +186,6 @@ function renderCropHtml(entries) {
     return e.hidden
   }
 
-  // 十字准星放在焦点实际对应的屏幕位置（cover 裁切几何）
-  function positionCrosshair() {
-    if (!photo.naturalWidth || stage.classList.contains('plate')) { crosshair.style.display = 'none'; return }
-    const vw = stage.clientWidth, vh = stage.clientHeight
-    const iw = photo.naturalWidth, ih = photo.naturalHeight
-    const scale = Math.max(vw / iw, vh / ih)
-    const dispW = iw * scale, dispH = ih * scale
-    const [fx, fy] = parseFocus(focusOf(cur()))
-    // object-position p%：图上 p% 的点对齐到视口 p% 的点
-    const x = (dispW - vw) * (fx / 100) * -1 + dispW * (fx / 100)
-    const y = (dispH - vh) * (fy / 100) * -1 + dispH * (fy / 100)
-    crosshair.style.display = 'block'
-    crosshair.style.left = x + 'px'
-    crosshair.style.top = y + 'px'
-  }
-
   function setFocus(focusStr) {
     const e = cur()
     if (focusStr === e.focus) delete state.focus[e.id]
@@ -185,43 +193,34 @@ function renderCropHtml(entries) {
     save(); render()
   }
 
-  // 拖拽 = 平移可视窗口：像素位移按 cover 缩放换算成 object-position 百分比
-  function bindDrag(img, box) {
-    img.addEventListener('pointerdown', (ev) => {
-      ev.preventDefault()
-      img.classList.add('dragging')
-      img.setPointerCapture(ev.pointerId)
-      const startX = ev.clientX, startY = ev.clientY
-      const [sx, sy] = parseFocus(focusOf(cur()))
-      const iw = img.naturalWidth, ih = img.naturalHeight
-      if (!iw) return
-      const vw = box.clientWidth, vh = box.clientHeight
-      const scale = Math.max(vw / iw, vh / ih)
-      const rangeX = Math.max(0, iw * scale - vw)
-      const rangeY = Math.max(0, ih * scale - vh)
-      const move = (e2) => {
-        const nx = rangeX ? sx - (e2.clientX - startX) / rangeX * 100 : sx
-        const ny = rangeY ? sy - (e2.clientY - startY) / rangeY * 100 : sy
-        const f = fmt(nx, ny)
-        state.focus[cur().id] = f === cur().focus ? undefined : f
-        if (state.focus[cur().id] === undefined) delete state.focus[cur().id]
-        photo.style.objectPosition = f
-        platePhoto.style.objectPosition = f
-        document.getElementById('focus-readout').textContent = '焦点 ' + f
-        positionCrosshair()
-      }
-      const up = () => {
-        img.classList.remove('dragging')
-        img.removeEventListener('pointermove', move)
-        img.removeEventListener('pointerup', up)
-        save(); render()
-      }
-      img.addEventListener('pointermove', move)
-      img.addEventListener('pointerup', up)
-    })
-  }
-  bindDrag(photo, stage)
-  bindDrag(platePhoto, document.getElementById('plate-frame'))
+  // 拖拽裁剪框 → 换算回 object-position 百分比
+  box.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault()
+    const g = geo()
+    if (!g) return
+    box.classList.add('dragging')
+    box.setPointerCapture(ev.pointerId)
+    const startX = ev.clientX, startY = ev.clientY
+    const bl = box.offsetLeft, bt = box.offsetTop
+    const move = (e2) => {
+      const nl = Math.max(0, Math.min(g.rx * g.s, bl + e2.clientX - startX))
+      const nt = Math.max(0, Math.min(g.ry * g.s, bt + e2.clientY - startY))
+      box.style.left = nl + 'px'
+      box.style.top = nt + 'px'
+      const fx = g.rx ? nl / g.s / g.rx * 100 : 50
+      const fy = g.ry ? nt / g.s / g.ry * 100 : 50
+      document.getElementById('focus-readout').textContent = '焦点 ' + fmt(fx, fy)
+      state._pending = fmt(fx, fy)
+    }
+    const up = () => {
+      box.classList.remove('dragging')
+      box.removeEventListener('pointermove', move)
+      box.removeEventListener('pointerup', up)
+      if (state._pending) { setFocus(state._pending); delete state._pending }
+    }
+    box.addEventListener('pointermove', move)
+    box.addEventListener('pointerup', up)
+  })
 
   function nav(d) { state.idx = Math.max(0, Math.min(ENTRIES.length - 1, state.idx + d)); save(); render() }
 
@@ -231,7 +230,6 @@ function renderCropHtml(entries) {
   document.getElementById('hide-toggle').addEventListener('click', () => {
     const e = cur()
     const hiddenNow = effectiveHidden(e)
-    // 目标态与原始态一致 → 从两个列表里都移除；否则写入对应列表
     state.unhide = state.unhide.filter(id => id !== e.id)
     state.hide = state.hide.filter(id => id !== e.id)
     // 切换后与原始态一致 → 只需从列表移除（上面已做）；与原始态不同 → 记录目标态
@@ -242,8 +240,8 @@ function renderCropHtml(entries) {
     save(); render()
   })
   document.getElementById('plate-toggle').addEventListener('click', () => {
-    stage.classList.toggle('plate')
-    positionCrosshair()
+    mode = mode === 'cover' ? 'plate' : 'cover'
+    layout(); render()
   })
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') nav(1)
@@ -253,11 +251,12 @@ function renderCropHtml(entries) {
       const [x, y] = parseFocus(focusOf(cur()))
       setFocus(fmt(x, y + (e.key === 'ArrowUp' ? -3 : 3)))
     } else if (e.key === 't' || e.key === 'T') {
-      stage.classList.toggle('plate'); positionCrosshair()
+      mode = mode === 'cover' ? 'plate' : 'cover'
+      layout(); render()
     }
   })
-  photo.addEventListener('load', positionCrosshair)
-  window.addEventListener('resize', positionCrosshair)
+  photo.addEventListener('load', layout)
+  window.addEventListener('resize', layout)
   document.getElementById('export').addEventListener('click', () => {
     const out = { focus: state.focus, unhide: state.unhide, hide: state.hide }
     const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })
