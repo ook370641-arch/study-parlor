@@ -1746,5 +1746,303 @@
     "file": "217-2001-a-space-odyssey.jpg",
     "category": "film-still",
     "year": 1968
+  },
+  {
+    "id": "scott-1",
+    "painter": "Ridley Scott",
+    "title": "银翼杀手 · 飞过巨幕广告",
+    "file": "218-银翼杀手-飞过巨幕广告.jpg",
+    "category": "film-still",
+    "year": 1982
+  },
+  {
+    "id": "scott-2",
+    "painter": "Ridley Scott",
+    "title": "银翼杀手 · 眼中的城市",
+    "file": "219-银翼杀手-眼中的城市.jpg",
+    "category": "film-still",
+    "year": 1982
+  },
+  {
+    "id": "coppola-1",
+    "painter": "Francis Ford Coppola",
+    "title": "教父 · 黑暗中的教父",
+    "file": "220-教父-黑暗中的教父.jpg",
+    "category": "film-still",
+    "year": 1972,
+    "focus": "50% 0%"
+  },
+  {
+    "id": "coppola-2",
+    "painter": "Francis Ford Coppola",
+    "title": "教父 · 百叶窗前的耳语",
+    "file": "221-教父-百叶窗前的耳语.jpg",
+    "category": "film-still",
+    "year": 1972,
+    "focus": "50% 6%"
+  },
+  {
+    "id": "fellini-1",
+    "painter": "Federico Fellini",
+    "title": "八部半 · 飞越堵车",
+    "file": "222-八部半-飞越堵车.jpg",
+    "category": "film-still",
+    "year": 1963,
+    "focus": "50% 48%"
+  },
+  {
+    "id": "王家卫-1",
+    "painter": "王家卫",
+    "title": "花样年华 · 海报墙下的巷弄",
+    "file": "223-花样年华-海报墙下的巷弄.jpg",
+    "category": "film-still",
+    "year": 2000,
+    "focus": "50% 94%"
+  },
+  {
+    "id": "tarkovsky-1",
+    "painter": "Andrei Tarkovsky",
+    "title": "乡愁 · 护烛",
+    "file": "224-乡愁-护烛.jpg",
+    "category": "film-still",
+    "year": 1983,
+    "focus": "50% 0%"
+  },
+  {
+    "id": "tarkovsky-2",
+    "painter": "Andrei Tarkovsky",
+    "title": "乡愁 · 自焚",
+    "file": "225-乡愁-自焚.jpg",
+    "category": "film-still",
+    "year": 1983,
+    "focus": "50% 92%"
+  },
+  {
+    "id": "tarkovsky-3",
+    "painter": "Andrei Tarkovsky",
+    "title": "镜子 · 栅栏上的母亲",
+    "file": "226-镜子-栅栏上的母亲.jpg",
+    "category": "film-still",
+    "year": 1975,
+    "focus": "50% 31%"
+  },
+  {
+    "id": "tarkovsky-4",
+    "painter": "Andrei Tarkovsky",
+    "title": "镜子 · 黄昏田野",
+    "file": "227-镜子-黄昏田野.jpg",
+    "category": "film-still",
+    "year": 1975
+  },
+  {
+    "id": "tarkovsky-5",
+    "painter": "Andrei Tarkovsky",
+    "title": "镜子 · 燃烧的木屋",
+    "file": "228-镜子-燃烧的木屋.jpg",
+    "category": "film-still",
+    "year": 1975
+  },
+  {
+    "id": "tarkovsky-6",
+    "painter": "Andrei Tarkovsky",
+    "title": "潜行者 · 水中人与狗",
+    "file": "229-潜行者-水中人与狗.jpg",
+    "category": "film-still",
+    "year": 1979
+  },
+  {
+    "id": "王家卫-2",
+    "painter": "王家卫",
+    "title": "重庆森林 · 扶梯倒影",
+    "file": "230-重庆森林-扶梯倒影.jpg",
+    "category": "film-still",
+    "year": 1994
+  },
+  {
+    "id": "tarkovsky-7",
+    "painter": "Andrei Tarkovsky",
+    "title": "牺牲 · 客厅群像",
+    "file": "231-牺牲-客厅群像.jpg",
+    "category": "film-still",
+    "year": 1986
+  },
+  {
+    "id": "villeneuve-1",
+    "painter": "Denis Villeneuve",
+    "title": "银翼杀手2049 · 巨大乔伊",
+    "file": "232-银翼杀手2049-巨大乔伊.jpg",
+    "category": "film-still",
+    "year": 2017
+  },
+  {
+    "id": "毕赣-1",
+    "painter": "毕赣",
+    "title": "路边野餐 · 芭蕉与山",
+    "file": "233-路边野餐-芭蕉与山.jpg",
+    "category": "film-still",
+    "year": 2015
+  },
+  {
+    "id": "munch-5",
+    "painter": "Edvard Munch",
+    "title": "生命之舞（Dance Of Life）",
+    "file": "234-生命之舞-dance-of-life.jpg",
+    "category": "expressionism",
+    "focus": "50% 18%"
+  },
+  {
+    "id": "munch-6",
+    "painter": "Edvard Munch",
+    "title": "灰烬（Ashes）",
+    "file": "235-灰烬-ashes.jpg",
+    "category": "expressionism",
+    "focus": "50% 39%"
+  },
+  {
+    "id": "munch-7",
+    "painter": "Edvard Munch",
+    "title": "桥上的少女（The Girls on the Bridge）",
+    "file": "236-桥上的少女-the-girls-on-the-bridge.jpg",
+    "category": "expressionism",
+    "focus": "50% 49%"
+  },
+  {
+    "id": "munch-8",
+    "painter": "Edvard Munch",
+    "title": "卡尔约翰街的黄昏（Evening on Karl Johan Street）",
+    "file": "237-卡尔约翰街的黄昏-evening-on-karl-johan-street.jpg",
+    "category": "expressionism"
+  },
+  {
+    "id": "kokoschka-1",
+    "painter": "Oskar Kokoschka",
+    "title": "暴风雨（风的新娘）（Bride of the Wind）",
+    "file": "238-暴风雨-风的新娘-bride-of-the-wind.jpg",
+    "category": "expressionism"
+  },
+  {
+    "id": "klimt-1",
+    "painter": "Gustav Klimt",
+    "title": "吻（The Kiss）",
+    "file": "239-吻-the-kiss.jpg",
+    "category": "symbolism",
+    "focus": "50% 0%"
+  },
+  {
+    "id": "klimt-2",
+    "painter": "Gustav Klimt",
+    "title": "死与生（Death and Life）",
+    "file": "240-死与生-death-and-life.jpg",
+    "category": "symbolism",
+    "focus": "50% 0%"
+  },
+  {
+    "id": "klimt-3",
+    "painter": "Gustav Klimt",
+    "title": "白桦林（Birch Forest）",
+    "file": "241-白桦林-birch-forest.jpg",
+    "category": "symbolism",
+    "focus": "50% 31%"
+  },
+  {
+    "id": "redon-2",
+    "painter": "Odilon Redon",
+    "title": "独眼巨人（The Cyclops）",
+    "file": "242-独眼巨人-the-cyclops.jpg",
+    "category": "symbolism",
+    "focus": "50% 25%"
+  },
+  {
+    "id": "redon-3",
+    "painter": "Odilon Redon",
+    "title": "奥菲莉亚（Ophelia）",
+    "file": "243-奥菲莉亚-ophelia.jpg",
+    "category": "symbolism",
+    "focus": "50% 61%"
+  },
+  {
+    "id": "dali-5",
+    "painter": "Salvador Dali",
+    "title": "大象（The Elephants (Large)）",
+    "file": "244-大象-the-elephants-large.jpg",
+    "category": "surrealism",
+    "focus": "50% 0%"
+  },
+  {
+    "id": "dali-6",
+    "painter": "Salvador Dali",
+    "title": "十字若望的基督（Christ of St. John of the Cross）",
+    "file": "245-十字若望的基督-christ-of-st-john-of-the-cross.jpg",
+    "category": "surrealism",
+    "focus": "50% 5%"
+  },
+  {
+    "id": "dali-7",
+    "painter": "Salvador Dali",
+    "title": "蜜蜂飞行引起的梦（Dream Caused by the Flight of a Bee around a Pomegranate a Second before Awakening）",
+    "file": "246-蜜蜂飞行引起的梦-dream-caused-by-the-flight-of-a-bee-aro.jpg",
+    "category": "surrealism",
+    "focus": "50% 60%"
+  },
+  {
+    "id": "dali-8",
+    "painter": "Salvador Dali",
+    "title": "幻觉斗牛士（The Hallucinogenic Toreador）",
+    "file": "247-幻觉斗牛士-the-hallucinogenic-toreador.jpg",
+    "category": "surrealism",
+    "focus": "50% 41%"
+  },
+  {
+    "id": "turner-14",
+    "painter": "J.M.W. Turner",
+    "title": "巴亚湾（The Bay of Baiae, with Apollo and the Sibyl）",
+    "file": "248-巴亚湾-the-bay-of-baiae-with-apollo-and-the-sibyl.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "turner-15",
+    "painter": "J.M.W. Turner",
+    "title": "晚星（The Evening Star）",
+    "file": "249-晚星-the-evening-star.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "friedrich-2",
+    "painter": "Caspar David Friedrich",
+    "title": "冰海（The Sea of Ice）",
+    "file": "250-冰海-the-sea-of-ice.jpg",
+    "category": "romanticism",
+    "focus": "50% 74%"
+  },
+  {
+    "id": "friedrich-3",
+    "painter": "Caspar David Friedrich",
+    "title": "人生诸阶段（The Stages of Life）",
+    "file": "251-人生诸阶段-the-stages-of-life.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "monet-4",
+    "painter": "Claude Monet",
+    "title": "黄昏的圣乔治马焦雷（San Giorgio Maggiore at Dusk）",
+    "file": "252-黄昏的圣乔治马焦雷-san-giorgio-maggiore-at-dusk.jpg",
+    "category": "impressionism",
+    "focus": "50% 23%"
+  },
+  {
+    "id": "monet-5",
+    "painter": "Claude Monet",
+    "title": "日落国会大厦（Houses of Parliament, Sunset）",
+    "file": "253-日落国会大厦-houses-of-parliament-sunset.jpg",
+    "category": "impressionism",
+    "focus": "50% 8%"
+  },
+  {
+    "id": "monet-6",
+    "painter": "Claude Monet",
+    "title": "日本桥（The Japanese Bridge (The Water-Lily Pond)）",
+    "file": "254-日本桥-the-japanese-bridge-the-water-lily-pond.jpg",
+    "category": "impressionism",
+    "focus": "50% 54%"
   }
 ]
