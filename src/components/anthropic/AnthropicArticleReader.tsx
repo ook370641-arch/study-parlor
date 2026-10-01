@@ -11,7 +11,7 @@ import { AnnotationListButton } from '@/components/article-assistant/AnnotationL
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import { EMPTY_GUIDE_CHUNKS } from '@/lib/article-chunks'
-import { firstVisibleBlockIndex, scrollToBlockIndex } from '@/lib/scroll-memory'
+import { useScrollMemory } from '@/lib/use-scroll-memory'
 import { BookIcon, BookmarkIcon } from './blog-icons'
 import type { AnthropicSectionKey, Frontmatter, BriefingTheme } from '@shared/index'
 
@@ -84,8 +84,6 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
   const [error, setError] = useState<{ code: string; message: string } | null>(null)
   const articleBodyRef = useRef<HTMLElement | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
-  const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const setAnthropicScrollPosition = useStore((s) => s.setAnthropicScrollPosition)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
   const setAssistantActiveChunk = useStore((s) => s.setAssistantActiveChunk)
   const setAnthropicReaderContent = useStore((s) => s.setAnthropicReaderContent)
@@ -125,39 +123,18 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
     }
   }, [filePath])
 
-  // 浏览位置恢复(2026-09-22 用户反馈:每次打开回到上次位置):body 渲染出块后
-  // 滚到上次首可见块(粗粒度块索引,最多等 ~2s)。与 WritingBoard 同理,不订阅
-  // positions 做依赖,读 getState() 快照,防止滚动保存反向触发恢复。
-  useEffect(() => {
-    if (!scrollMemoryKey || !body) return
-    const saved = useStore.getState().anthropicScrollPositions[scrollMemoryKey]
-    if (saved === undefined || saved <= 0) return
-    let tries = 0
-    const timer = setInterval(() => {
-      const container = scrollContainerRef.current
-      const blocksRoot = articleBodyRef.current
-      if (container && blocksRoot && blocksRoot.children.length > 0) {
-        scrollToBlockIndex(container, blocksRoot, saved)
-        clearInterval(timer)
-      } else if (++tries > 40) clearInterval(timer)
-    }, 50)
-    return () => clearInterval(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [body, scrollMemoryKey])
-
-  // 滚动停住 400ms 后记录首可见块索引
-  const onReaderScroll = () => {
-    if (!scrollMemoryKey) return
-    if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current)
-    scrollSaveTimer.current = setTimeout(() => {
-      const container = scrollContainerRef.current
-      const blocksRoot = articleBodyRef.current
-      if (container && blocksRoot && blocksRoot.children.length > 0) {
-        setAnthropicScrollPosition(scrollMemoryKey, firstVisibleBlockIndex(container, blocksRoot))
-      }
-    }, 400)
-  }
-  useEffect(() => () => { if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current) }, [])
+  // 浏览位置记忆(2026-09-29 修 bug + 改退出时落盘):块集合取 .md-body 直接子元素
+  // (跨章节全局索引)。原实现用 <article> 直接子元素——只有 1 个 ArticleBodyChunks
+  // 包裹 div,首可见块恒为 0 → 存 0 → 恢复时 saved<=0 跳过 → 回顶部。
+  // 滚动只写 ref;切文章/离开页面/关窗口三个退出点才 flush(读 getState 快照防回跳)。
+  const { onScroll: onReaderScroll } = useScrollMemory({
+    memKey: scrollMemoryKey ?? null,
+    containerRef: scrollContainerRef,
+    getBlocks: () => articleBodyRef.current?.querySelectorAll('.md-body > *') ?? null,
+    readSaved: (k) => useStore.getState().anthropicScrollPositions[k],
+    flush: (k, i) => useStore.getState().flushAnthropicScrollPosition(k, i),
+    isCurrent: (k) => useStore.getState().anthropicReaderFilePath === k,
+  })
 
   // Report body/title to store so the parent blog panel can mount ArticleAssistantPanel
   useEffect(() => {
@@ -259,7 +236,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
             />
           )}
         </div>
-        <div className="flex-1 flex flex-col overflow-y-auto min-w-0" ref={scrollContainerRef} onScroll={onReaderScroll}>
+        <div className="flex-1 flex flex-col overflow-y-auto min-w-0" ref={scrollContainerRef} onScroll={onReaderScroll} data-testid="anthropic-reader-scroll">
           <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
           <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24 briefing-article-body arrive-item">
             {loading && (

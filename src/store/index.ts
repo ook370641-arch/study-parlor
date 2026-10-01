@@ -438,8 +438,6 @@ type AppStore = {
   writingScrollPositions: Record<string, number>
   /** 博客每文章浏览位置(filePath → 首可见块索引,粗粒度) */
   anthropicScrollPositions: Record<string, number>
-  setWritingScrollPosition: (filePath: string, blockIndex: number) => void
-  setAnthropicScrollPosition: (filePath: string, blockIndex: number) => void
   /** 博客对照编辑器每文件浏览位置(filePath → 首可见块索引,粗粒度) */
   articleCompanionScrollPositions: Record<string, number>
   /** 博客对照槽最后打开的对照文(✕关闭时清 null) */
@@ -1535,16 +1533,6 @@ export const useStore = create<AppStore>((set, get) => ({
     const now = new Date().toISOString()
     set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now, constitutionReportOpen: false, recommendViewBatch: null, lastAnthropicReaderFile: filePath })
     await ipc.patchState({ anthropicBlogLastSeenAt: now, lastAnthropicReaderFile: filePath } as Partial<StateJson>)
-  },
-  setWritingScrollPosition: (filePath, blockIndex) => {
-    const next = { ...get().writingScrollPositions, [filePath]: blockIndex }
-    set({ writingScrollPositions: next })
-    void ipc.patchState({ writingScrollPositions: next } as Partial<StateJson>)
-  },
-  setAnthropicScrollPosition: (filePath, blockIndex) => {
-    const next = { ...get().anthropicScrollPositions, [filePath]: blockIndex }
-    set({ anthropicScrollPositions: next })
-    void ipc.patchState({ anthropicScrollPositions: next } as Partial<StateJson>)
   },
   flushWritingScrollPosition: (filePath, blockIndex) => {
     const next = { ...get().writingScrollPositions, [filePath]: blockIndex }
