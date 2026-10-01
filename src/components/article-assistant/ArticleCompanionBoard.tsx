@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from '@/components/writing/WritingEditor'
 import { HtmlPreview } from '@/components/writing/HtmlPreview'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
 import { ACADEMIC_BODY_STYLES, NEWSPAPER_BODY_STYLES } from '@/lib/briefing-font-size'
+import { useScrollMemory } from '@/lib/use-scroll-memory'
 import type { BriefingTheme } from '@shared/index'
 
 export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: BriefingTheme }) {
@@ -25,6 +26,18 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
     const t = setTimeout(() => void save(), 1500)
     return () => clearTimeout(t)
   }, [file?.body, file?.dirty])
+
+  // 对照滚动位置记忆(2026-09-29 spec,退出时落盘):仅 md 可编辑态;html/只读预览不记。
+  // 块容器 = 编辑器 .ProseMirror 直接子元素(与 WritingBoard 同层,无博客正文的嵌套坑)。
+  const companionScrollRef = useRef<HTMLDivElement | null>(null)
+  const { onScroll: onCompanionScroll } = useScrollMemory({
+    memKey: file && file.kind === 'md' && !file.readonly ? file.filePath : null,
+    containerRef: companionScrollRef,
+    getBlocks: () => (companionScrollRef.current?.querySelector('.ProseMirror') as HTMLElement | null)?.children ?? null,
+    readSaved: (k) => useStore.getState().articleCompanionScrollPositions[k],
+    flush: (k, i) => useStore.getState().flushArticleCompanionScrollPosition(k, i),
+    isCurrent: (k) => useStore.getState().articleCompanion?.filePath === k,
+  })
 
   if (!file) {
     return (
@@ -52,6 +65,9 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
       </div>
       {file.kind === 'md' && !file.readonly ? (
         <div className={`flex-1 min-h-0 overflow-y-auto px-4 py-4 ${cls.body}`}
+          ref={companionScrollRef}
+          onScroll={onCompanionScroll}
+          data-testid="article-companion-editor-scroll"
           // 不设 fontFamily——继承全局默认（Source Han Sans SC），与写作页原生编辑器同一条
           // 继承路径；字号字重仍跟随主区正文（2026-09-16 用户定锚：字体跟写作页，字号跟正文）
           style={{ fontSize: bodyStyle.size, fontWeight: bodyStyle.weight }}>
