@@ -440,6 +440,14 @@ type AppStore = {
   anthropicScrollPositions: Record<string, number>
   setWritingScrollPosition: (filePath: string, blockIndex: number) => void
   setAnthropicScrollPosition: (filePath: string, blockIndex: number) => void
+  /** 博客对照编辑器每文件浏览位置(filePath → 首可见块索引,粗粒度) */
+  articleCompanionScrollPositions: Record<string, number>
+  /** 博客对照槽最后打开的对照文(✕关闭时清 null) */
+  lastArticleCompanion: { mainKey: string; filePath: string } | null
+  /** 退出点落盘:set + 一次 patchState(滚动中不调用,见 use-scroll-memory) */
+  flushWritingScrollPosition: (filePath: string, blockIndex: number) => void
+  flushAnthropicScrollPosition: (filePath: string, blockIndex: number) => void
+  flushArticleCompanionScrollPosition: (filePath: string, blockIndex: number) => void
   writingOrder: Record<string, string[]>
   writingExpandedGroups: Record<string, boolean>
   writingUIFontSize: BriefingFontSize
@@ -672,6 +680,7 @@ export const useStore = create<AppStore>((set, get) => ({
   lastAnthropicReaderFile: null,
   writingScrollPositions: {},
   anthropicScrollPositions: {},
+  articleCompanionScrollPositions: {},
   writingOrder: {},
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
@@ -682,6 +691,7 @@ export const useStore = create<AppStore>((set, get) => ({
   articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
   articleCompanionMap: {},
   articleCompanion: null,
+  lastArticleCompanion: null,
   writingCompanionPicker: null,
   writingAssistant: null,
   writingAssistantSnapshotLit: false,
@@ -731,6 +741,8 @@ export const useStore = create<AppStore>((set, get) => ({
       lastAnthropicReaderFile: state.lastAnthropicReaderFile ?? null,
       writingScrollPositions: state.writingScrollPositions ?? {},
       anthropicScrollPositions: state.anthropicScrollPositions ?? {},
+      articleCompanionScrollPositions: state.articleCompanionScrollPositions ?? {},
+      lastArticleCompanion: state.lastArticleCompanion ?? null,
       writingOrder: state.writingOrder ?? {},
       writingExpandedGroups: state.writingExpandedGroups ?? {},
       writingUIFontSize: state.writingUIFontSize ?? 'base',
@@ -1533,6 +1545,21 @@ export const useStore = create<AppStore>((set, get) => ({
     const next = { ...get().anthropicScrollPositions, [filePath]: blockIndex }
     set({ anthropicScrollPositions: next })
     void ipc.patchState({ anthropicScrollPositions: next } as Partial<StateJson>)
+  },
+  flushWritingScrollPosition: (filePath, blockIndex) => {
+    const next = { ...get().writingScrollPositions, [filePath]: blockIndex }
+    set({ writingScrollPositions: next })
+    void ipc.patchState({ writingScrollPositions: next } as Partial<StateJson>)
+  },
+  flushAnthropicScrollPosition: (filePath, blockIndex) => {
+    const next = { ...get().anthropicScrollPositions, [filePath]: blockIndex }
+    set({ anthropicScrollPositions: next })
+    void ipc.patchState({ anthropicScrollPositions: next } as Partial<StateJson>)
+  },
+  flushArticleCompanionScrollPosition: (filePath, blockIndex) => {
+    const next = { ...get().articleCompanionScrollPositions, [filePath]: blockIndex }
+    set({ articleCompanionScrollPositions: next })
+    void ipc.patchState({ articleCompanionScrollPositions: next } as Partial<StateJson>)
   },
   closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
   openConstitutionReport: () =>
@@ -2919,14 +2946,17 @@ export const useStore = create<AppStore>((set, get) => ({
         body = r.body ?? ''
       }
       if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
-      set({ articleCompanion: { key: mainKey, filePath, kind, body, readonly, dirty: false, saving: 'idle' } })
+      set({ articleCompanion: { key: mainKey, filePath, kind, body, readonly, dirty: false, saving: 'idle' }, lastArticleCompanion: { mainKey, filePath } })
+      void ipc.patchState({ lastArticleCompanion: { mainKey, filePath } } as Partial<StateJson>)
     } catch {
       if (seq !== articleCompanionSelectSeq) return // 更新的选中已发出，丢弃过期结果
-      // 读取失败（如文件被外部删除）：清映射 + toast + 对照槽回空态
+      // 读取失败（如文件被外部删除）：清映射 + toast + 对照槽回空态；
+      // 恢复记录(lastArticleCompanion)若指向同一 mainKey 一并清掉,避免重启反复重试
       const cleanMap = { ...get().articleCompanionMap }
       delete cleanMap[mainKey]
-      set({ articleCompanionMap: cleanMap, articleCompanion: null })
-      ipc.patchState({ articleCompanionMap: cleanMap } as Partial<StateJson>)
+      const clearLac = get().lastArticleCompanion?.mainKey === mainKey
+      set({ articleCompanionMap: cleanMap, articleCompanion: null, ...(clearLac ? { lastArticleCompanion: null } : {}) })
+      ipc.patchState({ articleCompanionMap: cleanMap, ...(clearLac ? { lastArticleCompanion: null } : {}) } as Partial<StateJson>)
       get().showToast('对照文读取失败')
     }
   },
@@ -2948,7 +2978,9 @@ export const useStore = create<AppStore>((set, get) => ({
 
   closeArticleCompanion: async () => {
     if (get().articleCompanion?.dirty) await get().saveArticleCompanion()
-    set({ articleCompanion: null })
+    // ✕ 关闭 = 明确不再对照:清恢复记录,重启不会被重新拉开(2026-09-29 spec)
+    set({ articleCompanion: null, lastArticleCompanion: null })
+    void ipc.patchState({ lastArticleCompanion: null } as Partial<StateJson>)
   },
 
   saveAllDirtyWriting: async () => {

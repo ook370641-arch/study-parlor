@@ -681,6 +681,10 @@ export type StateJson = {
   writingCompanionMap?: Record<string, string>
   articlePanelMode?: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
   articleCompanionMap?: Record<string, string>
+  /** 博客对照槽最后打开的对照文(✕关闭时清 null,重开应用按此恢复) */
+  lastArticleCompanion?: { mainKey: string; filePath: string } | null
+  /** 博客对照编辑器每文件浏览位置(filePath → 首可见块索引,粗粒度) */
+  articleCompanionScrollPositions?: Record<string, number>
 }
 
 export type IpcApi = {

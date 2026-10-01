@@ -54,6 +54,8 @@ const DEFAULT: StateJson = {
   writingCodeblockCollapsed: {},
   articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
   articleCompanionMap: {},
+  lastArticleCompanion: null,
+  articleCompanionScrollPositions: {},
   scoutTab: 'chat',
   scoutActiveConversationId: null,
   archivedTopics: [],

@@ -499,6 +499,8 @@ const BASE_STATE = {
   lastAnthropicReaderFile: null,
   writingScrollPositions: {},
   anthropicScrollPositions: {},
+  lastArticleCompanion: null,
+  articleCompanionScrollPositions: {},
   jobBriefingConfig: {
     companies: [
       { name: '字节跳动', priority: 1, enabled: true },
