@@ -1,10 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { ReadonlyPreview } from './ReadonlyPreview'
 import { HtmlPreview } from './HtmlPreview'
 import { displayWritingName } from '@/lib/writing-tree-utils'
 import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
+import { insertHrBelow } from '@/lib/milkdown-insert-hr'
+import { HrIcon } from '@/lib/writing-toolbar-icons'
 
 // 对照文宿主：右栏槽位的「对照」模式内容区。
 // md → 可编辑 Milkdown（registerToolbarAction={false}，不注册全局 toolbar 单槽）；
@@ -15,6 +17,9 @@ export function CompanionBoard() {
   const updateCompanionBody = useStore(s => s.updateCompanionBody)
   const saveCompanionFile = useStore(s => s.saveCompanionFile)
   const closeCompanion = useStore(s => s.closeCompanion)
+  // 本实例编辑器 action(registerLocalAction 通道):供头部「分割线」按钮调命令,
+  // 与全局 toolbar 单槽正交(对照实例 registerToolbarAction={false} 不抢主编辑器)
+  const [hrAction, setHrAction] = useState<((fn: (ctx: any) => void) => void) | null>(null)
 
   // Autosave: debounce 1.5s after body change（复刻 WritingBoard 主文模式）
   useEffect(() => {
@@ -65,6 +70,18 @@ export function CompanionBoard() {
            : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span>
            : null}
         </span>
+        {file.kind === 'md' && (
+          <button
+            type="button"
+            data-testid="companion-insert-hr"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => hrAction?.((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) useStore.getState().showToast('当前位置不支持该操作') })}
+            className="shrink-0 px-1 text-parchment/60 hover:text-parchment rounded hover:bg-parchment/10"
+            title="分割线"
+          >
+            <HrIcon />
+          </button>
+        )}
         <div className="flex-1" />
         <button
           data-testid="companion-close"
@@ -85,6 +102,7 @@ export function CompanionBoard() {
             initial={file.body}
             onChange={(md) => updateCompanionBody(md)}
             registerToolbarAction={false}
+            registerLocalAction={setHrAction}
             theme="academic"
             filePath={file.path}
           />

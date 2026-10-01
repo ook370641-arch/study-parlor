@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from '@/components/writing/WritingEditor'
 import { HtmlPreview } from '@/components/writing/HtmlPreview'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
 import { ACADEMIC_BODY_STYLES, NEWSPAPER_BODY_STYLES } from '@/lib/briefing-font-size'
 import { useScrollMemory } from '@/lib/use-scroll-memory'
+import { insertHrBelow } from '@/lib/milkdown-insert-hr'
+import { HrIcon } from '@/lib/writing-toolbar-icons'
 import type { BriefingTheme } from '@shared/index'
 
 export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: BriefingTheme }) {
@@ -12,6 +14,8 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
   const updateBody = useStore((s) => s.updateArticleCompanionBody)
   const save = useStore((s) => s.saveArticleCompanion)
   const close = useStore((s) => s.closeArticleCompanion)
+  // 本实例编辑器 action(registerLocalAction 通道):供头部「分割线」按钮调命令
+  const [hrAction, setHrAction] = useState<((fn: (ctx: any) => void) => void) | null>(null)
   // 对照编辑器字号跟随主区正文（briefingFontSize），避免左右两栏字号不一
   const briefingFontSize = useStore((s) => s.briefingFontSize)
   const isAcademic = theme !== 'newspaper'
@@ -60,6 +64,18 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
            : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
            : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span> : null}
         </span>
+        {file.kind === 'md' && !file.readonly && (
+          <button
+            type="button"
+            data-testid="article-companion-insert-hr"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => hrAction?.((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) useStore.getState().showToast('当前位置不支持该操作') })}
+            className={`shrink-0 px-1 rounded ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#6b5d52] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/10'}`}
+            title="分割线"
+          >
+            <HrIcon />
+          </button>
+        )}
         <div className="flex-1" />
         <button data-testid="article-companion-close" className={`${cls.close} text-sm leading-none px-1`} onClick={() => void close()} aria-label="关闭对照">✕</button>
       </div>
@@ -71,7 +87,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
           // 不设 fontFamily——继承全局默认（Source Han Sans SC），与写作页原生编辑器同一条
           // 继承路径；字号字重仍跟随主区正文（2026-09-16 用户定锚：字体跟写作页，字号跟正文）
           style={{ fontSize: bodyStyle.size, fontWeight: bodyStyle.weight }}>
-          <WritingEditor key={file.filePath} initial={file.body} onChange={(md) => updateBody(md)} registerToolbarAction={false} theme={theme} filePath={file.filePath} />
+          <WritingEditor key={file.filePath} initial={file.body} onChange={(md) => updateBody(md)} registerToolbarAction={false} registerLocalAction={setHrAction} theme={theme} filePath={file.filePath} />
         </div>
       ) : file.kind === 'html' ? (
         <div className="flex-1 min-h-0"><HtmlPreview file={{ path: file.filePath, body: file.body }} /></div>

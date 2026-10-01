@@ -27,9 +27,12 @@ import { codeblockViewPlugins } from '@/lib/milkdown-codeblock-view'
 import { codeblockHighlightPlugins } from '@/lib/milkdown-codeblock-highlight'
 import './writing-editor.css'
 
-function EditorInner({ initial, onChange, registerAction = true, theme, filePath }: { initial: string; onChange: (md: string) => void; registerAction?: boolean; theme: 'academic' | 'newspaper'; filePath: string }) {
+function EditorInner({ initial, onChange, registerAction = true, registerLocalAction, theme, filePath }: { initial: string; onChange: (md: string) => void; registerAction?: boolean; registerLocalAction?: (action: ((fn: (ctx: any) => void) => void) | null) => void; theme: 'academic' | 'newspaper'; filePath: string }) {
   const ref = useRef(onChange)
   ref.current = onChange
+  // 本地 action 通道回调经 ref 实时取,避免闭包捕获过期 props
+  const localActionRef = useRef(registerLocalAction)
+  localActionRef.current = registerLocalAction
 
   const setAction = useStore(s => s.setWritingEditorAction)
 
@@ -87,12 +90,17 @@ function EditorInner({ initial, onChange, registerAction = true, theme, filePath
     if (!loading) {
       // onChange gate 对两种实例都必须打开（对照实例只跳过注册，不跳过 gate）
       loadedRef.current = true
-      // 对照编辑器（registerAction=false）：不触碰全局 toolbar 单槽，注册与清理一并跳过
-      if (registerAction === false) return
       // 实时取 getRef.current() 避免闭包捕获已销毁的旧 editor 实例
       // → toolbar 调用时拿到当前活跃 editor
-      setAction((fn: any) => { getRef.current()?.action(fn) })
-      return () => { setAction(null) }
+      const action = (fn: any) => { getRef.current()?.action(fn) }
+      // 本地 action 通道(2026-09-29):对照宿主(CompanionBoard 等)拿自己实例的
+      // action 调命令(如分隔线按钮),与全局 toolbar 单槽正交
+      localActionRef.current?.(action)
+      const cleanupLocal = () => localActionRef.current?.(null)
+      // 对照编辑器（registerAction=false）：不触碰全局 toolbar 单槽，注册与清理一并跳过
+      if (registerAction === false) return cleanupLocal
+      setAction(action)
+      return () => { setAction(null); cleanupLocal() }
     }
   }, [loading, setAction, registerAction])
 
@@ -103,10 +111,10 @@ function EditorInner({ initial, onChange, registerAction = true, theme, filePath
   )
 }
 
-export function WritingEditor(props: { initial: string; onChange: (md: string) => void; registerToolbarAction?: boolean; theme: 'academic' | 'newspaper'; filePath: string }) {
+export function WritingEditor(props: { initial: string; onChange: (md: string) => void; registerToolbarAction?: boolean; registerLocalAction?: (action: ((fn: (ctx: any) => void) => void) | null) => void; theme: 'academic' | 'newspaper'; filePath: string }) {
   return (
     <MilkdownProvider>
-      <EditorInner initial={props.initial} onChange={props.onChange} registerAction={props.registerToolbarAction} theme={props.theme} filePath={props.filePath} />
+      <EditorInner initial={props.initial} onChange={props.onChange} registerAction={props.registerToolbarAction} registerLocalAction={props.registerLocalAction} theme={props.theme} filePath={props.filePath} />
     </MilkdownProvider>
   )
 }
