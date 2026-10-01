@@ -135,7 +135,15 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
     if (!lastAnthropicReaderFile || loading) return
     const stillThere = articles.some((a) => a.isSaved && a.filePath === lastAnthropicReaderFile)
     restoredRef.current = true
-    if (stillThere) void openReader(lastAnthropicReaderFile)
+    if (stillThere) {
+      void openReader(lastAnthropicReaderFile)
+      // 对照槽恢复(2026-09-29 spec):只恢复「退出时还开着」的对照——
+      // lastArticleCompanion 在 ✕ closeArticleCompanion 时已清 null,关过的不会被重新拉开
+      const lac = useStore.getState().lastArticleCompanion
+      if (lac && lac.mainKey === lastAnthropicReaderFile) {
+        void useStore.getState().selectArticleCompanion('anthropic', lac.mainKey, lac.filePath)
+      }
+    }
   }, [articles, loading, readerFilePath, lastAnthropicReaderFile, openReader])
 
   // 自动检测新文章
