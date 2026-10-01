@@ -1,6 +1,6 @@
 # 学者夜话画作集 · 筛选与规整草案
 
-> 创建时间：2026-09-28 ｜ 最近更新：2026-09-29（批一入库，批二启动）
+> 创建时间：2026-09-28 ｜ 最近更新：2026-10-02（裁剪工具落地 + 批三影视线重启：TMDB 高清链路）
 > 流程：与语录集同构——粗找一批 → 可视化勾选 → 从勾选结果反推风格总结 → 按总结找下一批
 > **文档职责**：本文件是画作线的**唯一主负责文档**（进度、勾选结果、风格总结、图源接口、用户要求都记在这里）。
 > `docs/superpowers/specs/2026-09-28-paintings-collection-design.md` 与 `2026-09-28-painting-delete-button-design.md` 是开工前的冻结设计稿，不再更新。
@@ -70,6 +70,9 @@
 | **movie-screencaps.com** | 影片页 `/​<slug>/page/N` 分页，每页 ~178 帧 | 目录页 `/movie-directory/` 列全量 1462 部，先查有没有该片 |
 | **剧照原图（Jetpack 代理）** | `https://i0.wp.com/imgs.screencaps.us/<200>/<年>-<片名key>/full/<片名>-movie-screencaps.com-<N>.jpg?ssl=1`，加 `?w=400` 得缩略图 | **caps2.b-cdn.net 直连 403**（要 Referer），必须走 i0.wp.com 代理 |
 | **豆瓣 subject_suggest** | `GET https://movie.douban.com/j/subject_suggest?q=<片名>` → JSON 含豆瓣 id/年份 | 只能查 id；剧照页有 JS 反爬拿不到图 |
+| **TMDB 搜索页**（批三新增） | `GET https://www.themoviedb.org/search/movie?query=<片名>` → HTML 里 `href="/movie/<id>"` | 网页直连可达（API 子域 api.themoviedb.org 超时被墙，但 www 可达）；中文片名可搜，个别词会跑偏（如"Nostalghia"返回疾速追杀2），**id 必须再开电影页核对片名+年份** |
+| **TMDB 剧照清单**（批三新增） | `GET https://www.themoviedb.org/movie/<id>/images/backdrops` → 静态 HTML 含全部 `image.tmdb.org/t/p/original/<hash>.jpg` | 按社区票选排序，越靠前越是"经典镜头"——正好解决批二"缺经典镜头"的问题 |
+| **TMDB 图 CDN**（批三新增） | `GET https://image.tmdb.org/t/p/<size>/<hash>.jpg`，size ∈ w300/w780/w1280/original | 直连可达；original 多为 1920×1080，部分 4K（>1920 需缩）；w780 做挑选缩略图 |
 
 ### ❌ 不可用（本机直连）
 
@@ -77,14 +80,22 @@
 - film-grab.com：超时；web.archive.org：超时；bluscreens.com：超时
 - IMDb：HTTP 202 反爬；screencapped.net：403；screenmusings.org：域名已停放
 - Bing 图片：结果 JS 渲染，静态 HTML 无 murl；Bing 网页搜索 site: 查询无有效结果
-- 豆瓣剧照页/frodo API：JS 挑战/签名失效；Baidu 图片 acjson：`Forbid spider access`
+- 豆瓣剧照页/frodo API：JS 挑战/签名失效；豆瓣图床 img*.doubanio.com：418 反爬
+- Baidu 图片 acjson：`Forbid spider access`；时光网 search.mtime.com：DNS 解析失败
+- pics.filmaffinity.com：403
 - evanerichards.com：页面可达但画廊是 Elementor AJAX 加载，静态 HTML 无图
+
+### ⚠️ 半可用（CDN 通、发现链路缺）
+
+- assets.fanart.tv：直连可达，但发现图需要 fanart.tv API key（未申请）
+- images.mubicdn.net：直连可达，但 MUBI 页面未发现稳定的静态剧照清单
 
 ### 下载工具链（都在 repo 里）
 
 - `scripts/curation-fetch.cjs`：通用抓取（文件下载 / `--json` 打印响应体），跟随重定向带浏览器 UA。**curl 与 powershell.exe 在本机被用户级权限规则拦截，一律走这个脚本**（已在 settings.local.json 白名单）
 - `Pictures-staging/dl.cjs`：批量下载（多子域回退 + JPEG 头尾校验）；`dl-retry.cjs`：失败项走作品页 og:image 补抓
-- `Pictures-staging/resize.ps1`：>1920px 统一缩 1920 宽（powershell.exe 需用户放行）
+- `Pictures-staging/dl-tmdb.cjs`（批三新增，gitignored）：TMDB 链路 `search/backdrops/thumbs/pick`。**坑：git-bash 会把 `/hash.jpg` 形式的参数改写成 `C:/Program Files/Git/...`（MSYS 路径转换），传 hash 时去掉前导斜杠**
+- `Pictures-staging/resize.ps1`：>1920px 统一缩 1920 宽（powershell.exe 被权限拦截后，批三改用 `npm install --prefix Pictures-staging/.tmp-sharp --no-save sharp` + node 脚本缩放；**写临时文件再 rename，sharp 读着的文件原地写会被 Windows 锁死**）
 
 ## 批一候选存档
 
@@ -133,11 +144,36 @@
 4. **介质光谱收敛**：油画 > 坦培拉/粉彩（Redon 1/2）> 摄影（几乎全灭）。后续批次以油画为主战场：表现主义、象征主义、超现实、浪漫主义海景、印象派光色。
 
 ## focus 焦点机制（2026-09-29 落地）
-
 **问题**：应用全屏 `object-cover` 居中裁切，211 幅中 141 幅 h/w > 1.05，竖构图的关键部位会被裁掉。
 **机制**：`Pictures/index.json` 与 `Painting` 类型新增可选 `focus`（CSS object-position，如 `"50% 30%"`），经 manifest 插件透传，`SurfaceBackground` 与 `PaintingPlate` 应用；缺省 `50% 50%` 居中。curation-merge 同步透传 candidates.json 的 focus 字段。
 **首批焦点值**：friedrich-1 雾海旅人 `50% 55%`、whistler-1 巴特西桥 `50% 30%`、gogh-2 咖啡馆露台 `50% 45%`、gogh-5 柏树之路 `50% 40%`。
 **调优方式**：直接改 index.json 对应条目的 focus 重跑 `node scripts/build-manifest.cjs` 即可（dev 重启生效）。
+
+## 裁剪调整工具（2026-10-01 落地，scripts/curation-crop.cjs）
+
+**起因**（用户原话）：「有几张比例偏高的图片我害怕应用默认截掉了我想截掉的部分……我希望好的图片展示其关键部分」+「把今天用封面删除键删掉的几幅也放进去」。
+
+- `node scripts/curation-crop.cjs` → 生成 `Pictures-staging/crop-tool.html`：读取全库 211 幅 + state.json 的 hiddenPaintings（**已隐藏的排最前**，带「已隐藏」标记）
+- 全屏逐张，**所见即应用渲染**（object-cover + 当前 focus）：拖拽画面平移裁切窗口、↑↓ 微调、T 切换简报画框 21:9 预览、十字准星标焦点
+- 每幅可「移出库 / 恢复入库」切换（相对原始态的差值才记录）
+- 导出 `focus-selection.json`（含 focus 改动 + unhide/hide 差值）→ `node scripts/curation-crop.cjs --apply [--dry-run]` 写回 index.json + state.json + 重生成 manifest
+
+## 批三进度（2026-10-02，影视线重启）
+
+**起因**（用户原话）：「第三批搜索，我希望你可以多找一点电影照片的信息源，当前图片质量实在太低，缺乏经典镜头」。批二宣布的"影视线终止"是图源能力问题（movie-screencaps 画质低、无塔可夫斯基/毕赣/费里尼），不是用户不要电影——**TMDB 链路打通后影视线重启**。
+
+### 批三候选（31 帧影视，全部 TMDB original 1920×1080，已生成 gallery-swipe.html 待勾选）
+
+- **库布里克《巴里·林登》×2**：烛光酒馆（全片用烛光/自然光拍摄，就是 18 世纪油画）、石墙旷野
+- **塔可夫斯基 ×13**：《潜行者》4（水中人与狗 / 废墟三人 / 沙丘房间×2）、《乡愁》3（护烛 / 水洼拱窗倒影 / 自焚）、《镜子》3（栅栏母亲 / 黄昏田野 / 燃烧的木屋）、《牺牲》3（海边枯树 / 客厅群像 / 烧房子）
+- **毕赣 ×5**：《路边野餐》3（隧道摩托 / 芭蕉与山 / 火与蓝光）、《地球最后的夜晚》2（海鸥墙红房间 / 红夜市）
+- **费里尼《八部半》×2**：飞越堵车（白日梦开场）、黑羽毛女人
+- **王家卫 ×3**：《花样年华》海报墙巷弄、《重庆森林》绿色酒吧 / 扶梯倒影
+- **好莱坞 ×6**：《教父》2（伦勃朗式黑暗 / 百叶窗耳语）、《银翼杀手》2（飞过巨幕 / 眼中的城市）、《银翼杀手2049》2（橙色拉斯维加斯 / 巨大乔伊全息）
+
+挑选原则（延续风格总结）：无人脸特写优先、要"事件"或"情绪浓度"、画意构图（背面人物/剪影/火光/雾气）优先；人脸海报式 fan-art 已剔除。
+
+**油画批三**（批二文档方向：表现主义/象征主义/超现实/浪漫海景/莫奈夜景）暂未启动，等这批影视勾选完再开。
 
 ## 数据问题记录
 
