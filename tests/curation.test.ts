@@ -7,6 +7,7 @@ import os from 'node:os'
 const require = createRequire(import.meta.url)
 const merge = require('../scripts/curation-merge.cjs')
 const gallery = require('../scripts/curation-gallery.cjs')
+const crop = require('../scripts/curation-crop.cjs')
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'sp-curation-'))
 
@@ -155,5 +156,92 @@ describe('curation-gallery', () => {
     const s = setup(); dir = s.dir
     const { swipeOut } = gallery.generateGallery(s.staging)
     expect(fs.existsSync(swipeOut)).toBe(true)
+  })
+})
+
+describe('curation-crop', () => {
+  let dir: string
+  afterEach(() => fs.rmSync(dir, { recursive: true, force: true }))
+
+  // pictures: 两幅（rothko-2 无 focus、gogh-1 带 focus）；state: rothko-2 已隐藏
+  function setupCrop() {
+    const dir = tmp()
+    const staging = path.join(dir, 'Pictures-staging')
+    const pictures = path.join(dir, 'Pictures')
+    fs.mkdirSync(staging, { recursive: true })
+    fs.mkdirSync(pictures, { recursive: true })
+    fs.writeFileSync(path.join(pictures, 'index.json'), JSON.stringify([
+      { id: 'rothko-2', painter: 'Mark Rothko', title: 'Old', file: '171-old.jpg' },
+      { id: 'gogh-1', painter: 'Vincent van Gogh', title: 'Night', file: '172-night.jpg', focus: '50% 40%' },
+    ], null, 2))
+    const stateFile = path.join(dir, 'state.json')
+    fs.writeFileSync(stateFile, JSON.stringify({ hiddenPaintings: ['rothko-2'], other: 'keep' }))
+    return { dir, staging, pictures, stateFile }
+  }
+
+  it('loadLibrary defaults focus, flags hidden, sorts hidden first', () => {
+    const s = setupCrop(); dir = s.dir
+    const entries = crop.loadLibrary(s.pictures, s.stateFile)
+    expect(entries.map((e: { id: string }) => e.id)).toEqual(['rothko-2', 'gogh-1'])
+    expect(entries[0].hidden).toBe(true)
+    expect(entries[0].focus).toBe('50% 50%')
+    expect(entries[1].focus).toBe('50% 40%')
+    expect(entries[0].file).toBe('../Pictures/171-old.jpg')
+  })
+
+  it('renderCropHtml embeds entries, drag binding and export', () => {
+    const s = setupCrop(); dir = s.dir
+    const html = crop.renderCropHtml(crop.loadLibrary(s.pictures, s.stateFile))
+    expect(html).toContain('rothko-2')
+    expect(html).toContain('Mark Rothko · Old')
+    expect(html).toContain('pointerdown') // 拖拽调焦
+    expect(html).toContain('focus-selection.json') // 导出
+    expect(html).toContain('恢复入库') // 隐藏/恢复切换
+  })
+
+  it('applyCropSelection writes focus back, unhides/hides, preserves other state', () => {
+    const s = setupCrop(); dir = s.dir
+    fs.writeFileSync(path.join(s.staging, 'focus-selection.json'), JSON.stringify({
+      focus: { 'rothko-2': '50% 30%', 'gogh-1': '50% 50%', 'ghost-1': '10% 10%' },
+      unhide: ['rothko-2'],
+      hide: [],
+    }))
+    const r = crop.applyCropSelection({ stagingDir: s.staging, picturesDir: s.pictures, stateFile: s.stateFile, regenerateManifest: false })
+
+    expect(r.focusChanged.sort()).toEqual(['gogh-1', 'rothko-2'])
+    expect(r.focusInvalid).toEqual(['ghost-1']) // 未知 id 跳过
+    expect(r.unhidden).toEqual(['rothko-2'])
+
+    const index = JSON.parse(fs.readFileSync(path.join(s.pictures, 'index.json'), 'utf8'))
+    expect(index[0].focus).toBe('50% 30%')
+    expect(index[1].focus).toBeUndefined() // 回到默认居中 → 移除字段
+
+    const state = JSON.parse(fs.readFileSync(s.stateFile, 'utf8'))
+    expect(state.hiddenPaintings).toEqual([])
+    expect(state.other).toBe('keep') // 其他字段不动
+  })
+
+  it('applyCropSelection dry-run reports without touching files', () => {
+    const s = setupCrop(); dir = s.dir
+    fs.writeFileSync(path.join(s.staging, 'focus-selection.json'), JSON.stringify({
+      focus: { 'rothko-2': '50% 30%' }, unhide: [], hide: ['gogh-1'],
+    }))
+    const r = crop.applyCropSelection({ stagingDir: s.staging, picturesDir: s.pictures, stateFile: s.stateFile, dryRun: true, regenerateManifest: false })
+    expect(r.focusChanged).toEqual(['rothko-2'])
+    expect(r.hidden).toEqual(['gogh-1'])
+    const index = JSON.parse(fs.readFileSync(path.join(s.pictures, 'index.json'), 'utf8'))
+    expect(index[0].focus).toBeUndefined() // 未写入
+    const state = JSON.parse(fs.readFileSync(s.stateFile, 'utf8'))
+    expect(state.hiddenPaintings).toEqual(['rothko-2']) // 未写入
+  })
+
+  it('applyCropSelection rejects malformed focus values', () => {
+    const s = setupCrop(); dir = s.dir
+    fs.writeFileSync(path.join(s.staging, 'focus-selection.json'), JSON.stringify({
+      focus: { 'rothko-2': 'top left' }, unhide: [], hide: [],
+    }))
+    const r = crop.applyCropSelection({ stagingDir: s.staging, picturesDir: s.pictures, stateFile: s.stateFile, regenerateManifest: false })
+    expect(r.focusChanged).toEqual([])
+    expect(r.focusInvalid).toEqual(['rothko-2'])
   })
 })
