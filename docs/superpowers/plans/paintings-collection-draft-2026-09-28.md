@@ -14,6 +14,8 @@
 3. 用户导出 `selection.json` 放进 `Pictures-staging/` → `node scripts/curation-merge.cjs`（先 `--dry-run` 预览）：选中入库（续编号命名 + index.json 追加 + manifest 重生成），落选移 `rejected/` 留档
 4. 本文件记录每批候选、勾选结果、风格总结
 
+另有裁剪调整工具：`node scripts/curation-crop.cjs` → `crop-tool.html`（全库逐张调焦点/恢复隐藏，导出 focus-selection.json 后 `--apply`），见下方专节。
+
 ## 应用字段约束（搜集时对齐）
 
 | 字段 | 说明 |
