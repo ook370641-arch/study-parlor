@@ -116,6 +116,14 @@ paths:
 - 入口的可见性不得依赖隐式知识（如「知道要右键」「知道边缘有条缝」）；隐藏式交互（右键菜单、拖拽）只能作为辅助路径，不能是唯一路径。
 - Source: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md（写作助手无 UI 出口问题）
 
+## 13. 写作编辑器行为改动先读设计基准
+
+**Why:** 粘贴清洗/悬浮格式栏/智能 Enter 的行为标准已沉淀在设计文档里，凭记忆改会与已批准的行为漂移。
+
+- 改 `WritingEditor`/`MarkdownRenderer`/milkdown-* 插件前，先读 `docs/superpowers/specs/2026-08-11-writing-paste-and-formatting-design.md`（粘贴管线/悬浮格式栏/排版格调）。
+- 编辑器链路：`src/components/writing/` + `src/lib/milkdown-*.ts` + `electron/lib/writing-*.ts`；行为变化后跑对应 `tests/writing-*.test.ts`（定向，不全量）。
+- Source: 2026-10-03 用户要求把写作链路与标准留进 rules。
+
 ## Example: error handling
 
 - ❌ `throw new Error(JSON.stringify(response))`
