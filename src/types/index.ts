@@ -620,6 +620,12 @@ export type BriefingSourceId = 'writing' | 'digest' | 'anthropic' | 'job-briefin
 
 export type LlmConfig = { id: string; apiKey: string; baseUrl: string; model: string }
 
+/** 浏览位置槽位:某文档(filePath)的首可见块索引(粗粒度,见 src/lib/scroll-memory.ts) */
+export interface ScrollMemorySlot {
+  filePath: string
+  blockIndex: number
+}
+
 export type StateJson = {
   version: 1
   profile: Profile
@@ -656,10 +662,11 @@ export type StateJson = {
   lastWritingFile?: string | null
   /** 博客最后阅读的文章 filePath(进入博客面板即恢复) */
   lastAnthropicReaderFile?: string | null
-  /** 写作每文件浏览位置(filePath → 首可见顶层块索引,粗粒度) */
-  writingScrollPositions?: Record<string, number>
-  /** 博客每文章浏览位置(filePath → 首可见块索引,粗粒度) */
-  anthropicScrollPositions?: Record<string, number>
+  /** 四个浏览位置槽位(2026-10-03 用户指令:只记最后的写作/博客/二者对照,
+   *  其他文章不记位置);恢复时校验 filePath 与当前文档一致才生效 */
+  writingScrollMemory?: ScrollMemorySlot | null
+  anthropicScrollMemory?: ScrollMemorySlot | null
+  writingCompanionScrollMemory?: ScrollMemorySlot | null
   writingOrder?: Record<string, string[]>
   writingExpandedGroups?: Record<string, boolean>
   writingUIFontSize?: BriefingFontSize
@@ -683,8 +690,7 @@ export type StateJson = {
   articleCompanionMap?: Record<string, string>
   /** 博客对照槽最后打开的对照文(✕关闭时清 null,重开应用按此恢复) */
   lastArticleCompanion?: { mainKey: string; filePath: string } | null
-  /** 博客对照编辑器每文件浏览位置(filePath → 首可见块索引,粗粒度) */
-  articleCompanionScrollPositions?: Record<string, number>
+  articleCompanionScrollMemory?: ScrollMemorySlot | null
 }
 
 export type IpcApi = {

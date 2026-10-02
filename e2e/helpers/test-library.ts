@@ -497,10 +497,11 @@ const BASE_STATE = {
   writingAssistantOpen: false,
   lastWritingFile: null,
   lastAnthropicReaderFile: null,
-  writingScrollPositions: {},
-  anthropicScrollPositions: {},
+  writingScrollMemory: null,
+  anthropicScrollMemory: null,
+  writingCompanionScrollMemory: null,
   lastArticleCompanion: null,
-  articleCompanionScrollPositions: {},
+  articleCompanionScrollMemory: null,
   jobBriefingConfig: {
     companies: [
       { name: '字节跳动', priority: 1, enabled: true },

@@ -22,7 +22,7 @@ import type {
   ScoutConversationMeta, ScoutMessage, ScoutArticleMeta, GuideProgress,
   BriefingCollectionEntry,
   BriefingCollectionQA,
-  BlogCollectionFile, RecommendStage,
+  BlogCollectionFile, RecommendStage, ScrollMemorySlot,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { pickRandom, paintingPool, preloadPaintings } from '@/lib/paintings'
@@ -434,17 +434,17 @@ type AppStore = {
   lastWritingFile: string | null
   /** 博客最后阅读的文章 filePath(进入博客面板即恢复) */
   lastAnthropicReaderFile: string | null
-  /** 写作每文件浏览位置(filePath → 首可见顶层块索引,粗粒度) */
-  writingScrollPositions: Record<string, number>
-  /** 博客每文章浏览位置(filePath → 首可见块索引,粗粒度) */
-  anthropicScrollPositions: Record<string, number>
-  /** 博客对照编辑器每文件浏览位置(filePath → 首可见块索引,粗粒度) */
-  articleCompanionScrollPositions: Record<string, number>
+  /** 四个浏览位置槽位(2026-10-03:只记最后的写作/博客/二者对照,见 StateJson 注释) */
+  writingScrollMemory: ScrollMemorySlot | null
+  anthropicScrollMemory: ScrollMemorySlot | null
+  writingCompanionScrollMemory: ScrollMemorySlot | null
+  articleCompanionScrollMemory: ScrollMemorySlot | null
   /** 博客对照槽最后打开的对照文(✕关闭时清 null) */
   lastArticleCompanion: { mainKey: string; filePath: string } | null
   /** 退出点落盘:set + 一次 patchState(滚动中不调用,见 use-scroll-memory) */
   flushWritingScrollPosition: (filePath: string, blockIndex: number) => void
   flushAnthropicScrollPosition: (filePath: string, blockIndex: number) => void
+  flushWritingCompanionScrollPosition: (filePath: string, blockIndex: number) => void
   flushArticleCompanionScrollPosition: (filePath: string, blockIndex: number) => void
   writingOrder: Record<string, string[]>
   writingExpandedGroups: Record<string, boolean>
@@ -676,9 +676,10 @@ export const useStore = create<AppStore>((set, get) => ({
   writingEditorAction: null,
   lastWritingFile: null,
   lastAnthropicReaderFile: null,
-  writingScrollPositions: {},
-  anthropicScrollPositions: {},
-  articleCompanionScrollPositions: {},
+  writingScrollMemory: null,
+  anthropicScrollMemory: null,
+  writingCompanionScrollMemory: null,
+  articleCompanionScrollMemory: null,
   writingOrder: {},
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
@@ -737,9 +738,10 @@ export const useStore = create<AppStore>((set, get) => ({
       writingCompanionMap: state.writingCompanionMap ?? {},
       lastWritingFile: state.lastWritingFile ?? null,
       lastAnthropicReaderFile: state.lastAnthropicReaderFile ?? null,
-      writingScrollPositions: state.writingScrollPositions ?? {},
-      anthropicScrollPositions: state.anthropicScrollPositions ?? {},
-      articleCompanionScrollPositions: state.articleCompanionScrollPositions ?? {},
+      writingScrollMemory: state.writingScrollMemory ?? null,
+      anthropicScrollMemory: state.anthropicScrollMemory ?? null,
+      writingCompanionScrollMemory: state.writingCompanionScrollMemory ?? null,
+      articleCompanionScrollMemory: state.articleCompanionScrollMemory ?? null,
       lastArticleCompanion: state.lastArticleCompanion ?? null,
       writingOrder: state.writingOrder ?? {},
       writingExpandedGroups: state.writingExpandedGroups ?? {},
@@ -1535,20 +1537,25 @@ export const useStore = create<AppStore>((set, get) => ({
     await ipc.patchState({ anthropicBlogLastSeenAt: now, lastAnthropicReaderFile: filePath } as Partial<StateJson>)
   },
   flushWritingScrollPosition: (filePath, blockIndex) => {
-    const next = { ...get().writingScrollPositions, [filePath]: blockIndex }
-    set({ writingScrollPositions: next })
+    const mem: ScrollMemorySlot = { filePath, blockIndex }
+    set({ writingScrollMemory: mem })
     // 同步落盘:flush 只在退出路径触发(切文档/卸载/beforeunload),量小且必须必达
-    ipc.patchStateSync({ writingScrollPositions: next } as Partial<StateJson>)
+    ipc.patchStateSync({ writingScrollMemory: mem } as Partial<StateJson>)
   },
   flushAnthropicScrollPosition: (filePath, blockIndex) => {
-    const next = { ...get().anthropicScrollPositions, [filePath]: blockIndex }
-    set({ anthropicScrollPositions: next })
-    ipc.patchStateSync({ anthropicScrollPositions: next } as Partial<StateJson>)
+    const mem: ScrollMemorySlot = { filePath, blockIndex }
+    set({ anthropicScrollMemory: mem })
+    ipc.patchStateSync({ anthropicScrollMemory: mem } as Partial<StateJson>)
+  },
+  flushWritingCompanionScrollPosition: (filePath, blockIndex) => {
+    const mem: ScrollMemorySlot = { filePath, blockIndex }
+    set({ writingCompanionScrollMemory: mem })
+    ipc.patchStateSync({ writingCompanionScrollMemory: mem } as Partial<StateJson>)
   },
   flushArticleCompanionScrollPosition: (filePath, blockIndex) => {
-    const next = { ...get().articleCompanionScrollPositions, [filePath]: blockIndex }
-    set({ articleCompanionScrollPositions: next })
-    ipc.patchStateSync({ articleCompanionScrollPositions: next } as Partial<StateJson>)
+    const mem: ScrollMemorySlot = { filePath, blockIndex }
+    set({ articleCompanionScrollMemory: mem })
+    ipc.patchStateSync({ articleCompanionScrollMemory: mem } as Partial<StateJson>)
   },
   closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
   openConstitutionReport: () =>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from './WritingEditor'
 import { ReadonlyPreview } from './ReadonlyPreview'
@@ -7,6 +7,7 @@ import { displayWritingName } from '@/lib/writing-tree-utils'
 import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
 import { insertHrBelow } from '@/lib/milkdown-insert-hr'
 import { HrIcon } from '@/lib/writing-toolbar-icons'
+import { useScrollMemory } from '@/lib/use-scroll-memory'
 
 // 对照文宿主：右栏槽位的「对照」模式内容区。
 // md → 可编辑 Milkdown（registerToolbarAction={false}，不注册全局 toolbar 单槽）；
@@ -31,6 +32,18 @@ export function CompanionBoard() {
     const t = setTimeout(() => saveCompanionFile(), 1500)
     return () => clearTimeout(t)
   }, [file?.body, file?.dirty])
+
+  // 对照滚动位置记忆(2026-10-03:写作对照此前从未接线,位置必丢):仅 md 可编辑态。
+  // 语义同 WritingBoard——滚动只写 ref,切文档/卸载/beforeunload 三个退出点 flush。
+  const editorScrollRef = useRef<HTMLDivElement | null>(null)
+  const { onScroll: onEditorScroll } = useScrollMemory({
+    memKey: file?.kind === 'md' ? file.path : null,
+    containerRef: editorScrollRef,
+    getBlocks: () => (editorScrollRef.current?.querySelector('.ProseMirror') as HTMLElement | null)?.children ?? null,
+    readSaved: (k) => { const m = useStore.getState().writingCompanionScrollMemory; return m?.filePath === k ? m.blockIndex : undefined },
+    flush: (k, i) => useStore.getState().flushWritingCompanionScrollPosition(k, i),
+    isCurrent: (k) => useStore.getState().companionFile?.path === k,
+  })
 
   // 样式变量块照抄 WritingBoard：对照栏与主区排版一致
   const body = WRITING_BODY_FROM_UI[writingUISize]
@@ -99,6 +112,8 @@ export function CompanionBoard() {
       {file.kind === 'md' ? (
         <div
           data-testid="companion-editor"
+          ref={editorScrollRef}
+          onScroll={onEditorScroll}
           className="flex-1 min-h-0 overflow-y-auto px-4 py-4"
           style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}>
           <WritingEditor

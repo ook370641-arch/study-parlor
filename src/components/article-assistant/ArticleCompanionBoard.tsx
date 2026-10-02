@@ -43,7 +43,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
     memKey: file && file.kind === 'md' && !file.readonly ? file.filePath : null,
     containerRef: companionScrollRef,
     getBlocks: () => (companionScrollRef.current?.querySelector('.ProseMirror') as HTMLElement | null)?.children ?? null,
-    readSaved: (k) => useStore.getState().articleCompanionScrollPositions[k],
+    readSaved: (k) => { const m = useStore.getState().articleCompanionScrollMemory; return m?.filePath === k ? m.blockIndex : undefined },
     flush: (k, i) => useStore.getState().flushArticleCompanionScrollPosition(k, i),
     isCurrent: (k) => useStore.getState().articleCompanion?.filePath === k,
   })

@@ -33,20 +33,34 @@ export function useScrollMemory(opts: ScrollMemoryOptions): { onScroll: () => vo
     if (p) optsRef.current.flush(p.key, p.index)
   }
 
-  // 恢复:等块渲染出来后滚到上次首可见块(最多等 ~2s)
+  // 恢复:轮询直到块数稳定(2026-10-03 修复:旧实现 blocks>0 即滚一次就停,
+  // 博客分块渐进渲染下目标索引未渲染时钳制到浅位置 → 恢复不精准)。
+  // 只在「首次覆盖目标索引」或「块数又增长」时重滚——块数不变时不碰容器,
+  // 否则恢复窗口内会与用户滚动打架(e2e 实证:恢复把用户滚动的位置拉回 saved)。
+  // 块数连续 3 次不变后停(未滚过则做一次钳制滚动兜底)。上限 ~6s。
   useEffect(() => {
     if (!memKey) return
     const saved = optsRef.current.readSaved(memKey)
     if (saved === undefined || saved <= 0) return
-    let tries = 0
+    let tries = 0, lastLen = -1, stable = 0, applied = false
     const timer = setInterval(() => {
       const container = containerRef.current
       const blocks = optsRef.current.getBlocks()
-      if (container && blocks && blocks.length > 0) {
+      if (!container || !blocks || blocks.length === 0) {
+        if (++tries > 60) clearInterval(timer)
+        return
+      }
+      const grew = blocks.length !== lastLen
+      if (grew) { stable = 0; lastLen = blocks.length } else stable++
+      if (blocks.length > saved && (!applied || grew)) {
         scrollToBlockIndex(container, blocks, saved)
+        applied = true
+      }
+      if (stable >= 3) {
+        if (!applied) scrollToBlockIndex(container, blocks, saved) // 文档变短:钳制到最后块
         clearInterval(timer)
-      } else if (++tries > 40) clearInterval(timer)
-    }, 50)
+      } else if (++tries > 60) clearInterval(timer)
+    }, 100)
     return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memKey])

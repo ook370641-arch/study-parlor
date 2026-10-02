@@ -31,7 +31,7 @@ export function WritingBoard() {
     memKey: file?.kind === 'md' ? file.path : null,
     containerRef: editorScrollRef,
     getBlocks: () => (editorScrollRef.current?.querySelector('.ProseMirror') as HTMLElement | null)?.children ?? null,
-    readSaved: (k) => useStore.getState().writingScrollPositions[k],
+    readSaved: (k) => { const m = useStore.getState().writingScrollMemory; return m?.filePath === k ? m.blockIndex : undefined },
     flush: (k, i) => useStore.getState().flushWritingScrollPosition(k, i),
     isCurrent: (k) => useStore.getState().writingFile?.path === k,
   })

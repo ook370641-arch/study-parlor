@@ -139,6 +139,54 @@ describe('use-scroll-memory', () => {
     expect(scroller.scrollTop).toBe(100)
   })
 
+  // 2026-10-03 修复:旧实现 blocks>0 即滚一次就停——博客分块渐进渲染时目标索引
+  // 未渲染会钳制到浅位置 → 恢复不精准。新实现轮询重滚直到块数稳定。
+  it('恢复:渐进渲染(块后挂载)下持续校正到目标索引', () => {
+    const flush = vi.fn()
+    const blocksRef: HTMLElement[] = []
+    let containerEl: HTMLDivElement | null = null
+    const addBlocks = (n: number) => {
+      for (let i = 0; i < n; i++) {
+        const b = document.createElement('p')
+        containerEl!.appendChild(b)
+        blocksRef.push(b)
+      }
+      makeLayout(containerEl!, blocksRef)
+    }
+    function Progressive() {
+      const containerRef = useRef<HTMLDivElement | null>(null)
+      useScrollMemory({
+        memKey: 'a.md',
+        containerRef,
+        getBlocks: () => blocksRef,
+        readSaved: () => 5,
+        flush,
+        isCurrent: () => true,
+      })
+      return (
+        <div
+          data-testid="scroller"
+          ref={(el) => {
+            containerRef.current = el
+            if (el && blocksRef.length === 0) {
+              containerEl = el
+              addBlocks(3) // 首批只渲染 3 块(目标块 5 未渲染)
+            }
+          }}
+        />
+      )
+    }
+    const { getByTestId } = render(<Progressive />)
+    const scroller = getByTestId('scroller')
+    act(() => { vi.advanceTimersByTime(250) })
+    expect(scroller.scrollTop).toBe(0) // 目标块未渲染时不乱滚(旧实现钳制到块 2 并停)
+    act(() => {
+      addBlocks(4) // 后续块挂载(共 7 块)
+      vi.advanceTimersByTime(200)
+    })
+    expect(scroller.scrollTop).toBe(250) // 校正到块 5
+  })
+
   it('memKey 为 null:不恢复、滚动不记录', () => {
     const flush = vi.fn()
     const { getByTestId, unmount } = render(

@@ -46,8 +46,9 @@ const DEFAULT: StateJson = {
   writingAssistantOpen: false,
   lastWritingFile: null,
   lastAnthropicReaderFile: null,
-  writingScrollPositions: {},
-  anthropicScrollPositions: {},
+  writingScrollMemory: null,
+  anthropicScrollMemory: null,
+  writingCompanionScrollMemory: null,
   writingOrder: {},
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
@@ -55,7 +56,7 @@ const DEFAULT: StateJson = {
   articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
   articleCompanionMap: {},
   lastArticleCompanion: null,
-  articleCompanionScrollPositions: {},
+  articleCompanionScrollMemory: null,
   scoutTab: 'chat',
   scoutActiveConversationId: null,
   archivedTopics: [],
@@ -201,6 +202,11 @@ export function patchState(patch: Partial<StateJson>): void {
         }
       }
     }
+
+    // 2026-10-03 起滚动位置改四槽位(*ScrollMemory),旧三 map 字段落盘前剔除
+    delete merged.writingScrollPositions
+    delete merged.anthropicScrollPositions
+    delete merged.articleCompanionScrollPositions
 
     // 关键：基座含 DEFAULT 的五字段默认值，落盘前必须剔除，
     // 否则任何无关 patch 都会把已剥离的 key 重新写回 state.json。

@@ -133,7 +133,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
     memKey: scrollMemoryKey ?? null,
     containerRef: scrollContainerRef,
     getBlocks: () => articleBodyRef.current?.querySelectorAll('.md-body > div > *') ?? null,
-    readSaved: (k) => useStore.getState().anthropicScrollPositions[k],
+    readSaved: (k) => { const m = useStore.getState().anthropicScrollMemory; return m?.filePath === k ? m.blockIndex : undefined },
     flush: (k, i) => useStore.getState().flushAnthropicScrollPosition(k, i),
     isCurrent: (k) => useStore.getState().anthropicReaderFilePath === k,
   })

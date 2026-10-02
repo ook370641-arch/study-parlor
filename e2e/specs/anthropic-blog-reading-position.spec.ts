@@ -43,7 +43,7 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
       briefingSource: 'anthropic',
       anthropicBlogCache: { lastFetchedAt: new Date().toISOString(), articles: [a, b], loading: false, error: null, sectionStatus: {} },
       lastAnthropicReaderFile: a.filePath,
-      anthropicScrollPositions: { [a.filePath]: 6 },
+      anthropicScrollMemory: { filePath: a.filePath, blockIndex: 6 },
     })
     await gotoBlog(window)
 
@@ -56,12 +56,15 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
     await scroller.evaluate((el: HTMLElement) => { el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event('scroll')) })
     // 400ms 防抖 + 忙帧余量(导读生成/重渲染会推迟定时器,2026-10-02 flaky 根因)
     await window.waitForTimeout(1500)
-    expect(readState(testConfigDir).anthropicScrollPositions?.[a.filePath]).toBe(6)
+    expect(readState(testConfigDir).anthropicScrollMemory).toEqual({ filePath: a.filePath, blockIndex: 6 })
 
     // 切到 B(退出点:切文档落盘)→ state.json 里 A 的索引更新(>6)
     await window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Pos B' }).click()
     await expect(window.locator(SELECTORS.briefing.anthropicReaderTitle)).toHaveText('E2E Pos B', { timeout: 8000 })
-    await expect.poll(() => readState(testConfigDir).anthropicScrollPositions?.[a.filePath]).toBeGreaterThan(6)
+    await expect.poll(() => {
+      const m = readState(testConfigDir).anthropicScrollMemory
+      return m?.filePath === a.filePath ? m.blockIndex : 0
+    }).toBeGreaterThan(6)
 
     // 切回 A → 位置恢复到刚才滚到的底部附近(scrollTop 明显 > 0)
     await window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Pos A' }).click()
@@ -88,7 +91,7 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
     await window.waitForLoadState('domcontentloaded')
 
     // beforeunload 已把 ref 落盘
-    await expect.poll(() => readState(testConfigDir).anthropicScrollPositions?.[a.filePath] ?? 0).toBeGreaterThan(0)
+    await expect.poll(() => readState(testConfigDir).anthropicScrollMemory?.blockIndex ?? 0).toBeGreaterThan(0)
 
     // 重开后文章自动打开且位置恢复
     await gotoBlog(window)
@@ -106,7 +109,7 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
       lastAnthropicReaderFile: main.filePath,
       articlePanelMode: { anthropic: 'companion', scout: 'guide', job: 'guide' },
       lastArticleCompanion: { mainKey: main.filePath, filePath: comp.filePath },
-      articleCompanionScrollPositions: { [comp.filePath]: 5 },
+      articleCompanionScrollMemory: { filePath: comp.filePath, blockIndex: 5 },
     })
     await gotoBlog(window)
 
