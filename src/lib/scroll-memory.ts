@@ -27,3 +27,41 @@ export function scrollToBlockIndex(container: HTMLElement, blocks: ArrayLike<Ele
   const delta = blocks[i].getBoundingClientRect().top - container.getBoundingClientRect().top
   container.scrollTop += delta
 }
+
+/**
+ * scrollToBlockIndex 的顺滑版(2026-10-03 用户反馈:恢复定位瞬跳体感生硬,
+ * 想要「应用主动帮我拖动过去」的动画)。easeInOutCubic 缓动,ms 时长;
+ * 返回取消函数(用户滚轮/触摸介入时调用方应取消,不与用户抢滚动)。
+ * prefers-reduced-motion / ms<=0 / 无 rAF 环境(jsdom)一律退化为瞬滚。
+ */
+export function scrollToBlockIndexSmooth(
+  container: HTMLElement,
+  blocks: ArrayLike<Element>,
+  index: number,
+  ms = 480,
+): () => void {
+  if (blocks.length === 0) return () => {}
+  const reduced = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (ms <= 0 || reduced || typeof requestAnimationFrame !== 'function') {
+    scrollToBlockIndex(container, blocks, index)
+    return () => {}
+  }
+  const i = Math.max(0, Math.min(Math.round(index), blocks.length - 1))
+  const delta = blocks[i].getBoundingClientRect().top - container.getBoundingClientRect().top
+  if (Math.abs(delta) < 2) return () => {}
+  const start = container.scrollTop
+  const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+  // t0 取首帧 rAF 时间戳而非 performance.now():jsdom 下两者时钟原点不同会算出负进度
+  let t0: number | null = null
+  let raf = 0
+  const step = (now: number) => {
+    if (t0 === null) t0 = now
+    const p = Math.min(1, Math.max(0, (now - t0) / ms))
+    container.scrollTop = start + delta * ease(p)
+    if (p < 1) raf = requestAnimationFrame(step)
+  }
+  raf = requestAnimationFrame(step)
+  return () => cancelAnimationFrame(raf)
+}

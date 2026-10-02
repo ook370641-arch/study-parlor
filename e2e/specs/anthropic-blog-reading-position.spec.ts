@@ -51,6 +51,9 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
     await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 10000 })
     const scroller = window.locator(SCROLLER)
     await expect.poll(() => scroller.evaluate((el: HTMLElement) => el.scrollTop), { timeout: 8000 }).toBeGreaterThan(0)
+    // 等恢复动画(480ms)播完再滚动——动画进行中的程序赋值会被动画帧回拉,
+    // 真实用户的滚轮/键盘会取消恢复(2026-10-03 顺滑恢复改动)
+    await window.waitForTimeout(800)
 
     // 滚动到新位置 → 400ms 防抖过后 state.json 仍是旧值(不连续写盘,2026-09-29 用户要求)
     await scroller.evaluate((el: HTMLElement) => { el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event('scroll')) })

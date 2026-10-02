@@ -3,7 +3,7 @@
 // 滚动停 400ms 只把首可见块索引算进 ref;set store + patchState 只发生在
 // 切文档(effect cleanup)/组件卸载/窗口关闭(beforeunload)三个退出点。
 import { useEffect, useRef, type RefObject } from 'react'
-import { firstVisibleBlockIndex, scrollToBlockIndex } from './scroll-memory'
+import { firstVisibleBlockIndex, scrollToBlockIndexSmooth } from './scroll-memory'
 
 export interface ScrollMemoryOptions {
   /** 当前文档稳定 key(filePath);null = 未就绪,不恢复也不记录 */
@@ -17,6 +17,8 @@ export interface ScrollMemoryOptions {
   flush: (key: string, blockIndex: number) => void
   /** 防抖窗内校验文档未切走(400ms 内切文档则丢弃本次记录) */
   isCurrent: (key: string) => boolean
+  /** 恢复动画时长(ms);0 = 瞬滚(测试用)。默认 480 */
+  animateMs?: number
 }
 
 export function useScrollMemory(opts: ScrollMemoryOptions): { onScroll: () => void } {
@@ -37,12 +39,20 @@ export function useScrollMemory(opts: ScrollMemoryOptions): { onScroll: () => vo
   // 博客分块渐进渲染下目标索引未渲染时钳制到浅位置 → 恢复不精准)。
   // 只在「首次覆盖目标索引」或「块数又增长」时重滚——块数不变时不碰容器,
   // 否则恢复窗口内会与用户滚动打架(e2e 实证:恢复把用户滚动的位置拉回 saved)。
+  // 滚动走顺滑动画(用户滚轮/触摸一触即取消并停轮询,不与用户抢控制权);
   // 块数连续 3 次不变后停(未滚过则做一次钳制滚动兜底)。上限 ~6s。
   useEffect(() => {
     if (!memKey) return
     const saved = optsRef.current.readSaved(memKey)
     if (saved === undefined || saved <= 0) return
+    const animateMs = optsRef.current.animateMs ?? 480
     let tries = 0, lastLen = -1, stable = 0, applied = false
+    let cancelAnim: (() => void) | null = null
+    const apply = (container: HTMLElement, blocks: ArrayLike<Element>) => {
+      cancelAnim?.()
+      cancelAnim = scrollToBlockIndexSmooth(container, blocks, saved, animateMs)
+      applied = true
+    }
     const timer = setInterval(() => {
       const container = containerRef.current
       const blocks = optsRef.current.getBlocks()
@@ -52,16 +62,25 @@ export function useScrollMemory(opts: ScrollMemoryOptions): { onScroll: () => vo
       }
       const grew = blocks.length !== lastLen
       if (grew) { stable = 0; lastLen = blocks.length } else stable++
-      if (blocks.length > saved && (!applied || grew)) {
-        scrollToBlockIndex(container, blocks, saved)
-        applied = true
-      }
+      if (blocks.length > saved && (!applied || grew)) apply(container, blocks)
       if (stable >= 3) {
-        if (!applied) scrollToBlockIndex(container, blocks, saved) // 文档变短:钳制到最后块
+        if (!applied) apply(container, blocks) // 文档变短:钳制到最后块
         clearInterval(timer)
       } else if (++tries > 60) clearInterval(timer)
     }, 100)
-    return () => clearInterval(timer)
+    // 用户主动滚动(滚轮/触摸/键盘)= 接管,取消动画与恢复轮询
+    const container = containerRef.current
+    const onUserScroll = () => { cancelAnim?.(); clearInterval(timer) }
+    container?.addEventListener('wheel', onUserScroll, { passive: true })
+    container?.addEventListener('touchstart', onUserScroll, { passive: true })
+    window.addEventListener('keydown', onUserScroll, true)
+    return () => {
+      cancelAnim?.()
+      clearInterval(timer)
+      container?.removeEventListener('wheel', onUserScroll)
+      container?.removeEventListener('touchstart', onUserScroll)
+      window.removeEventListener('keydown', onUserScroll, true)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memKey])
 

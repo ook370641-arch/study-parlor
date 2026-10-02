@@ -41,6 +41,7 @@ function Harness({ memKey, saved = {}, flush, isCurrent = () => true }: HarnessP
     readSaved: (k) => saved[k],
     flush,
     isCurrent,
+    animateMs: 0, // 单测瞬滚:jsdom fake timers 下 rAF 动画不可控,数学已由 scroll-memory 覆盖
   })
   return (
     <div
@@ -162,6 +163,7 @@ describe('use-scroll-memory', () => {
         readSaved: () => 5,
         flush,
         isCurrent: () => true,
+        animateMs: 0,
       })
       return (
         <div

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // 首可见块索引计算与恢复 —— src/lib/scroll-memory.ts
 import { describe, it, expect } from 'vitest'
-import { firstVisibleBlockIndex, scrollToBlockIndex } from '@/lib/scroll-memory'
+import { firstVisibleBlockIndex, scrollToBlockIndex, scrollToBlockIndexSmooth } from '@/lib/scroll-memory'
 
 /** 构造容器 + n 个块,每个块高 height,依次堆叠;容器顶在 containerTop,高 100 */
 function makeDom(blockCount: number, height = 50, containerTop = 0) {
@@ -89,5 +89,26 @@ describe('scroll-memory', () => {
     const { container } = makeDom(0)
     expect(firstVisibleBlockIndex(container, [])).toBe(0)
     expect(() => scrollToBlockIndex(container, [], 3)).not.toThrow()
+  })
+
+  // 顺滑恢复(2026-10-3):动画结束后落在目标块;ms<=0 退化为瞬滚
+  it('scrollToBlockIndexSmooth:动画结束落在目标块,可中途取消', async () => {
+    const { container, root } = makeDom(10)
+    const cancel = scrollToBlockIndexSmooth(container, root.children, 4, 30)
+    expect(typeof cancel).toBe('function')
+    await new Promise(r => setTimeout(r, 120))
+    expect(container.scrollTop).toBe(200)
+
+    const { container: c2, root: r2 } = makeDom(10)
+    const cancel2 = scrollToBlockIndexSmooth(c2, r2.children, 4, 60000)
+    cancel2() // 立即取消(用户滚轮介入路径)
+    await new Promise(r => setTimeout(r, 50))
+    expect(c2.scrollTop).toBeLessThan(200)
+  })
+
+  it('scrollToBlockIndexSmooth:ms<=0 瞬滚,与 scrollToBlockIndex 一致', () => {
+    const { container, root } = makeDom(10)
+    scrollToBlockIndexSmooth(container, root.children, 3, 0)
+    expect(container.scrollTop).toBe(150)
   })
 })
