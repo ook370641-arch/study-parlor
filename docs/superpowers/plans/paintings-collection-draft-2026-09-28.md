@@ -274,7 +274,7 @@
 
 ### 库内重复记录（2026-10-03 感知哈希扫描发现）
 
-- **dali-1 ↔ dali-11**（记忆的永恒）、**dali-4 ↔ dali-12**（天鹅映象成大象）：dali-1~4 是早期批次用带重音的 "Salvador Dalí" 抓的，批三后改用 "Salvador Dali"（无重音）导致 painterKey 去重失效。两对分辨率相同（1920 宽），新版文件略大。拟删旧留新（dali-11/12 双语展签更完整），**待用户确认**。state.json hiddenPaintings 不涉及这两个旧 id。
+- **dali-1 ↔ dali-11**（记忆的永恒）、**dali-4 ↔ dali-12**（天鹅映象成大象）：dali-1~4 是早期批次用带重音的 "Salvador Dalí" 抓的，批三后改用 "Salvador Dali"（无重音）导致 painterKey 去重失效。两对分辨率相同（1920 宽），新版文件略大。**已按用户指示「留下像素高的」删旧留新**（删 dali-1/dali-4 + 193/196 文件，库 308→306），并把全部达利条目拼写统一为 "Salvador Dalí" 防再漏。
 - 其余 36 处同名全是罗斯科 Untitled/Black on Maroon 系列——同名不同画，非重复。
 
 ### 批六方向（用户 2026-10-03 原话）
