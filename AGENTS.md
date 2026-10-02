@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## 项目概述
 
@@ -111,6 +111,14 @@ npm run test:e2e                               # 全量（合并前）
 
 > 为什么 `state.json` 和 `.env` 分开：`.env` 在开发时放在项目根目录方便编辑；`state.json` 统一放在 `~/.studyparlor`，这样 `npm run dev` 和打包版共享同一份用户状态，E2E 测试通过 `E2E_CONFIG_DIR` 完全隔离。
 
+### 迭代记事板
+
+封面右上角铅笔按钮打开的文本框，用户随手记录对应用的迭代想法。内容持久化在 `~/.studyparlor/state.json` 的 `coverNotepad` 字段（纯字符串，防抖 300ms 写入）。
+
+**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `coverNotepad` 字段并回应。该文件在工作区外，沙箱读取可能需要提权。
+
+相关代码：`src/pages/Cover.tsx`（按钮 + 面板）、`src/store/index.ts`（`coverNotepad` / `setCoverNotepad`）、`electron/ipc/state.ts`（DEFAULT 字段）。
+
 ### 文件系统 (`electron/ipc/files.ts`)
 
 - `files:scan` — 扫描 `STUDY_LIBRARY_PATH/*.md`，解析 frontmatter，返回 `FileMeta[]`
@@ -134,6 +142,11 @@ npm run test:e2e                               # 全量（合并前）
 - **IPC**: `electron/ipc/writing.ts` (文件树)、`electron/ipc/writing-assistant.ts` (AI 对话)
 - **渲染组件**: `src/components/writing/` (编辑器/树/工具栏)、`src/components/writing-assistant/` (助手面板)
 - **持久化**: `state.json` 字段 `writingFontSize`/`writingTone`/`assistantSearchEnabled`/`assistantThinkingEffort` 等
+- **设计基准**: 编辑器行为改动前先读 `docs/superpowers/specs/2026-08-11-writing-paste-and-formatting-design.md`
+
+## 画作策展（Pictures 画库）
+
+事实源 `docs/superpowers/plans/paintings-collection-draft-2026-09-28.md`（图源坑/批次史/风格总结），规则 `.claude/rules/paintings-curation.md`；脚本序列：`curation-fetch.cjs`（唯一下载通道）→ `wikiart-batchN.cjs`/`dl-tmdb.cjs` → `assemble-bN.cjs` → `curation-gallery.cjs` → 用户导出 selection.json → `curation-merge.cjs`。
 
 ## 关键配置
 
