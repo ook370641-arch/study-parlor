@@ -1461,14 +1461,6 @@
     "category": "romanticism"
   },
   {
-    "id": "dali-1",
-    "painter": "Salvador Dalí",
-    "title": "The Persistence of Memory",
-    "url": "paintings/193-the-persistence-of-memory.jpg",
-    "year": 1931,
-    "category": "surrealism"
-  },
-  {
     "id": "dali-2",
     "painter": "Salvador Dalí",
     "title": "The Disintegration of the Persistence of Memory",
@@ -1481,14 +1473,6 @@
     "painter": "Salvador Dalí",
     "title": "The Metamorphosis of Narcissus",
     "url": "paintings/195-the-metamorphosis-of-narcissus.jpg",
-    "year": 1937,
-    "category": "surrealism"
-  },
-  {
-    "id": "dali-4",
-    "painter": "Salvador Dalí",
-    "title": "Swans Reflecting Elephants",
-    "url": "paintings/196-swans-reflecting-elephants.jpg",
     "year": 1937,
     "category": "surrealism"
   },
@@ -1878,7 +1862,7 @@
   },
   {
     "id": "dali-5",
-    "painter": "Salvador Dali",
+    "painter": "Salvador Dalí",
     "title": "大象（The Elephants (Large)）",
     "url": "paintings/244-%E5%A4%A7%E8%B1%A1-the-elephants-large.jpg",
     "category": "surrealism",
@@ -1886,7 +1870,7 @@
   },
   {
     "id": "dali-6",
-    "painter": "Salvador Dali",
+    "painter": "Salvador Dalí",
     "title": "十字若望的基督（Christ of St. John of the Cross）",
     "url": "paintings/245-%E5%8D%81%E5%AD%97%E8%8B%A5%E6%9C%9B%E7%9A%84%E5%9F%BA%E7%9D%A3-christ-of-st-john-of-the-cross.jpg",
     "category": "surrealism",
@@ -1894,7 +1878,7 @@
   },
   {
     "id": "dali-7",
-    "painter": "Salvador Dali",
+    "painter": "Salvador Dalí",
     "title": "蜜蜂飞行引起的梦（Dream Caused by the Flight of a Bee around a Pomegranate a Second before Awakening）",
     "url": "paintings/246-%E8%9C%9C%E8%9C%82%E9%A3%9E%E8%A1%8C%E5%BC%95%E8%B5%B7%E7%9A%84%E6%A2%A6-dream-caused-by-the-flight-of-a-bee-aro.jpg",
     "category": "surrealism",
@@ -1902,7 +1886,7 @@
   },
   {
     "id": "dali-8",
-    "painter": "Salvador Dali",
+    "painter": "Salvador Dalí",
     "title": "幻觉斗牛士（The Hallucinogenic Toreador）",
     "url": "paintings/247-%E5%B9%BB%E8%A7%89%E6%96%97%E7%89%9B%E5%A3%AB-the-hallucinogenic-toreador.jpg",
     "category": "surrealism",
@@ -2152,7 +2136,7 @@
   },
   {
     "id": "dali-9",
-    "painter": "Salvador Dali",
+    "painter": "Salvador Dalí",
     "title": "圣安东尼的诱惑（The Temptation of St. Anthony）",
     "url": "paintings/279-%E5%9C%A3%E5%AE%89%E4%B8%9C%E5%B0%BC%E7%9A%84%E8%AF%B1%E6%83%91-the-temptation-of-st-anthony.jpg",
     "category": "surrealism",
@@ -2160,7 +2144,7 @@
   },
   {
     "id": "dali-10",
-    "painter": "Salvador Dali",
+    "painter": "Salvador Dalí",
     "title": "超立方体受难（Crucifixion）",
     "url": "paintings/280-%E8%B6%85%E7%AB%8B%E6%96%B9%E4%BD%93%E5%8F%97%E9%9A%BE-crucifixion.jpg",
     "category": "surrealism",
@@ -2302,14 +2286,14 @@
   },
   {
     "id": "dali-11",
-    "painter": "Salvador Dali",
+    "painter": "Salvador Dalí",
     "title": "记忆的永恒（The Persistence of Memory）",
     "url": "paintings/298-%E8%AE%B0%E5%BF%86%E7%9A%84%E6%B0%B8%E6%81%92-the-persistence-of-memory.jpg",
     "category": "surrealism"
   },
   {
     "id": "dali-12",
-    "painter": "Salvador Dali",
+    "painter": "Salvador Dalí",
     "title": "天鹅映象成大象（Swans Reflecting Elephants）",
     "url": "paintings/299-%E5%A4%A9%E9%B9%85%E6%98%A0%E8%B1%A1%E6%88%90%E5%A4%A7%E8%B1%A1-swans-reflecting-elephants.jpg",
     "category": "surrealism"
