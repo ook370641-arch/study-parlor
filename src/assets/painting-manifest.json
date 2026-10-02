@@ -1469,14 +1469,6 @@
     "category": "surrealism"
   },
   {
-    "id": "dali-3",
-    "painter": "Salvador Dalí",
-    "title": "The Metamorphosis of Narcissus",
-    "url": "paintings/195-the-metamorphosis-of-narcissus.jpg",
-    "year": 1937,
-    "category": "surrealism"
-  },
-  {
     "id": "friedrich-1",
     "painter": "Caspar David Friedrich",
     "title": "Wanderer above the Sea of Fog",
@@ -2410,5 +2402,213 @@
     "title": "夏洛特夫人（The Lady of Shalott）",
     "url": "paintings/314-%E5%A4%8F%E6%B4%9B%E7%89%B9%E5%A4%AB%E4%BA%BA-the-lady-of-shalott.jpg",
     "category": "romanticism"
+  },
+  {
+    "id": "nolan-4",
+    "painter": "Christopher Nolan",
+    "title": "敦刻尔克 · 火海前的背影",
+    "url": "paintings/315-%E6%95%A6%E5%88%BB%E5%B0%94%E5%85%8B-%E7%81%AB%E6%B5%B7%E5%89%8D%E7%9A%84%E8%83%8C%E5%BD%B1.jpg",
+    "year": 2017,
+    "category": "film-still"
+  },
+  {
+    "id": "nolan-5",
+    "painter": "Christopher Nolan",
+    "title": "致命魔术 · 特斯拉线圈之夜",
+    "url": "paintings/316-%E8%87%B4%E5%91%BD%E9%AD%94%E6%9C%AF-%E7%89%B9%E6%96%AF%E6%8B%89%E7%BA%BF%E5%9C%88%E4%B9%8B%E5%A4%9C.jpg",
+    "year": 2006,
+    "category": "film-still"
+  },
+  {
+    "id": "kubrick-4",
+    "painter": "Stanley Kubrick",
+    "title": "奇爱博士 · 两颗核弹",
+    "url": "paintings/317-%E5%A5%87%E7%88%B1%E5%8D%9A%E5%A3%AB-%E4%B8%A4%E9%A2%97%E6%A0%B8%E5%BC%B9.jpg",
+    "year": 1964,
+    "category": "film-still"
+  },
+  {
+    "id": "parajanov-1",
+    "painter": "Sergei Parajanov",
+    "title": "石榴的颜色 · 满墙摊开的书",
+    "url": "paintings/318-%E7%9F%B3%E6%A6%B4%E7%9A%84%E9%A2%9C%E8%89%B2-%E6%BB%A1%E5%A2%99%E6%91%8A%E5%BC%80%E7%9A%84%E4%B9%A6.jpg",
+    "year": 1969,
+    "category": "film-still"
+  },
+  {
+    "id": "parajanov-2",
+    "painter": "Sergei Parajanov",
+    "title": "石榴的颜色 · 挂毯迷宫",
+    "url": "paintings/319-%E7%9F%B3%E6%A6%B4%E7%9A%84%E9%A2%9C%E8%89%B2-%E6%8C%82%E6%AF%AF%E8%BF%B7%E5%AE%AB.jpg",
+    "year": 1969,
+    "category": "film-still"
+  },
+  {
+    "id": "tarr-1",
+    "painter": "Béla Tarr",
+    "title": "都灵之马 · 窗边的背影",
+    "url": "paintings/320-%E9%83%BD%E7%81%B5%E4%B9%8B%E9%A9%AC-%E7%AA%97%E8%BE%B9%E7%9A%84%E8%83%8C%E5%BD%B1.jpg",
+    "year": 2011,
+    "category": "film-still"
+  },
+  {
+    "id": "magritte-6",
+    "painter": "René Magritte",
+    "title": "空白签名（The blank signature）",
+    "url": "paintings/321-%E7%A9%BA%E7%99%BD%E7%AD%BE%E5%90%8D-the-blank-signature.jpg",
+    "category": "surrealism",
+    "focus": "50% 38%"
+  },
+  {
+    "id": "church-5",
+    "painter": "Frederic Edwin Church",
+    "title": "极光（Aurora Borealis, Mt Desert Island, from Bar Harbor, Maine）",
+    "url": "paintings/322-%E6%9E%81%E5%85%89-aurora-borealis-mt-desert-island-from-bar-har.jpg",
+    "category": "romanticism",
+    "focus": "50% 32%"
+  },
+  {
+    "id": "dali-13",
+    "painter": "Salvador Dali",
+    "title": "纳西索斯的变形（The Metamorphosis of Narcissus）",
+    "url": "paintings/323-%E7%BA%B3%E8%A5%BF%E7%B4%A2%E6%96%AF%E7%9A%84%E5%8F%98%E5%BD%A2-the-metamorphosis-of-narcissus.jpg",
+    "category": "surrealism",
+    "focus": "50% 13%"
+  },
+  {
+    "id": "hopper-7",
+    "painter": "Edward Hopper",
+    "title": "293号车厢（Compartment Car）",
+    "url": "paintings/324-293%E5%8F%B7%E8%BD%A6%E5%8E%A2-compartment-car.jpg",
+    "category": "realism",
+    "focus": "50% 72%"
+  },
+  {
+    "id": "munch-11",
+    "painter": "Edvard Munch",
+    "title": "白夜（White Night）",
+    "url": "paintings/325-%E7%99%BD%E5%A4%9C-white-night.jpg",
+    "category": "expressionism",
+    "focus": "50% 66%"
+  },
+  {
+    "id": "aivazovsky-2",
+    "painter": "Ivan Aivazovsky",
+    "title": "浪涛之间（Among the Waves）",
+    "url": "paintings/326-%E6%B5%AA%E6%B6%9B%E4%B9%8B%E9%97%B4-among-the-waves.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "grimshaw-2",
+    "painter": "John Atkinson Grimshaw",
+    "title": "利物浦码头月光（Liverpool from Wapping）",
+    "url": "paintings/327-%E5%88%A9%E7%89%A9%E6%B5%A6%E7%A0%81%E5%A4%B4%E6%9C%88%E5%85%89-liverpool-from-wapping.jpg",
+    "category": "realism"
+  },
+  {
+    "id": "hokusai-2",
+    "painter": "Katsushika Hokusai",
+    "title": "凯风快晴（Fuji, Mountains in clear Weather  (Red Fuji)）",
+    "url": "paintings/328-%E5%87%AF%E9%A3%8E%E5%BF%AB%E6%99%B4-fuji-mountains-in-clear-weather-red-fuji.jpg",
+    "category": "ukiyo-e"
+  },
+  {
+    "id": "waterhouse-2",
+    "painter": "John William Waterhouse",
+    "title": "奥菲莉亚（Ophelia）",
+    "url": "paintings/329-%E5%A5%A5%E8%8F%B2%E8%8E%89%E4%BA%9A-ophelia.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "goya-1",
+    "painter": "Francisco Goya",
+    "title": "巨人（The Colossus）",
+    "url": "paintings/330-%E5%B7%A8%E4%BA%BA-the-colossus.jpg",
+    "category": "romanticism",
+    "focus": "50% 35%"
+  },
+  {
+    "id": "roerich-1",
+    "painter": "Nicholas Roerich",
+    "title": "干城章嘉（Himalayas. Chain of Kanchenjunga.）",
+    "url": "paintings/331-%E5%B9%B2%E5%9F%8E%E7%AB%A0%E5%98%89-himalayas-chain-of-kanchenjunga.jpg",
+    "category": "symbolism"
+  },
+  {
+    "id": "kandinsky-1",
+    "painter": "Wassily Kandinsky",
+    "title": "构成第八号（Composition VIII）",
+    "url": "paintings/332-%E6%9E%84%E6%88%90%E7%AC%AC%E5%85%AB%E5%8F%B7-composition-viii.jpg",
+    "category": "abstract"
+  },
+  {
+    "id": "kandinsky-2",
+    "painter": "Wassily Kandinsky",
+    "title": "几个圆（Several Circles）",
+    "url": "paintings/333-%E5%87%A0%E4%B8%AA%E5%9C%86-several-circles.jpg",
+    "category": "abstract",
+    "focus": "50% 38%"
+  },
+  {
+    "id": "klee-1",
+    "painter": "Paul Klee",
+    "title": "通往帕纳塞斯（Ad Parnassum）",
+    "url": "paintings/334-%E9%80%9A%E5%BE%80%E5%B8%95%E7%BA%B3%E5%A1%9E%E6%96%AF-ad-parnassum.jpg",
+    "category": "expressionism",
+    "focus": "50% 6%"
+  },
+  {
+    "id": "klee-2",
+    "painter": "Paul Klee",
+    "title": "鸣叫的机器（Twittering Machine）",
+    "url": "paintings/335-%E9%B8%A3%E5%8F%AB%E7%9A%84%E6%9C%BA%E5%99%A8-twittering-machine.jpg",
+    "category": "expressionism",
+    "focus": "50% 47%"
+  },
+  {
+    "id": "blake-1",
+    "painter": "William Blake",
+    "title": "亘古常在者（The Ancient of Days）",
+    "url": "paintings/336-%E4%BA%98%E5%8F%A4%E5%B8%B8%E5%9C%A8%E8%80%85-the-ancient-of-days.jpg",
+    "category": "symbolism",
+    "focus": "50% 51%"
+  },
+  {
+    "id": "vermeer-1",
+    "painter": "Johannes Vermeer",
+    "title": "倒牛奶的女人（The Milkmaid）",
+    "url": "paintings/337-%E5%80%92%E7%89%9B%E5%A5%B6%E7%9A%84%E5%A5%B3%E4%BA%BA-the-milkmaid.jpg",
+    "category": "baroque",
+    "focus": "50% 38%"
+  },
+  {
+    "id": "vermeer-2",
+    "painter": "Johannes Vermeer",
+    "title": "窗边读信的女人（Girl Reading a Letter at an Open Window）",
+    "url": "paintings/338-%E7%AA%97%E8%BE%B9%E8%AF%BB%E4%BF%A1%E7%9A%84%E5%A5%B3%E4%BA%BA-girl-reading-a-letter-at-an-open-window.jpg",
+    "category": "baroque",
+    "focus": "50% 89%"
+  },
+  {
+    "id": "morandi-1",
+    "painter": "Giorgio Morandi",
+    "title": "静物（Still Life）",
+    "url": "paintings/339-%E9%9D%99%E7%89%A9-still-life.jpg",
+    "category": "realism",
+    "focus": "50% 40%"
+  },
+  {
+    "id": "cole-1",
+    "painter": "Thomas Cole",
+    "title": "牛轭湖（Sketch for The Oxbow）",
+    "url": "paintings/340-%E7%89%9B%E8%BD%AD%E6%B9%96-sketch-for-the-oxbow.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "lane-1",
+    "painter": "Fitz Henry Lane",
+    "title": "波士顿港（Ships in Boston Harbor）",
+    "url": "paintings/341-%E6%B3%A2%E5%A3%AB%E9%A1%BF%E6%B8%AF-ships-in-boston-harbor.jpg",
+    "category": "luminism"
   }
 ]

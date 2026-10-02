@@ -1553,14 +1553,6 @@
     "year": 1954
   },
   {
-    "id": "dali-3",
-    "painter": "Salvador Dalí",
-    "title": "The Metamorphosis of Narcissus",
-    "file": "195-the-metamorphosis-of-narcissus.jpg",
-    "category": "surrealism",
-    "year": 1937
-  },
-  {
     "id": "friedrich-1",
     "painter": "Caspar David Friedrich",
     "title": "Wanderer above the Sea of Fog",
@@ -2494,5 +2486,213 @@
     "title": "夏洛特夫人（The Lady of Shalott）",
     "file": "314-夏洛特夫人-the-lady-of-shalott.jpg",
     "category": "romanticism"
+  },
+  {
+    "id": "nolan-4",
+    "painter": "Christopher Nolan",
+    "title": "敦刻尔克 · 火海前的背影",
+    "file": "315-敦刻尔克-火海前的背影.jpg",
+    "category": "film-still",
+    "year": 2017
+  },
+  {
+    "id": "nolan-5",
+    "painter": "Christopher Nolan",
+    "title": "致命魔术 · 特斯拉线圈之夜",
+    "file": "316-致命魔术-特斯拉线圈之夜.jpg",
+    "category": "film-still",
+    "year": 2006
+  },
+  {
+    "id": "kubrick-4",
+    "painter": "Stanley Kubrick",
+    "title": "奇爱博士 · 两颗核弹",
+    "file": "317-奇爱博士-两颗核弹.jpg",
+    "category": "film-still",
+    "year": 1964
+  },
+  {
+    "id": "parajanov-1",
+    "painter": "Sergei Parajanov",
+    "title": "石榴的颜色 · 满墙摊开的书",
+    "file": "318-石榴的颜色-满墙摊开的书.jpg",
+    "category": "film-still",
+    "year": 1969
+  },
+  {
+    "id": "parajanov-2",
+    "painter": "Sergei Parajanov",
+    "title": "石榴的颜色 · 挂毯迷宫",
+    "file": "319-石榴的颜色-挂毯迷宫.jpg",
+    "category": "film-still",
+    "year": 1969
+  },
+  {
+    "id": "tarr-1",
+    "painter": "Béla Tarr",
+    "title": "都灵之马 · 窗边的背影",
+    "file": "320-都灵之马-窗边的背影.jpg",
+    "category": "film-still",
+    "year": 2011
+  },
+  {
+    "id": "magritte-6",
+    "painter": "René Magritte",
+    "title": "空白签名（The blank signature）",
+    "file": "321-空白签名-the-blank-signature.jpg",
+    "category": "surrealism",
+    "focus": "50% 38%"
+  },
+  {
+    "id": "church-5",
+    "painter": "Frederic Edwin Church",
+    "title": "极光（Aurora Borealis, Mt Desert Island, from Bar Harbor, Maine）",
+    "file": "322-极光-aurora-borealis-mt-desert-island-from-bar-har.jpg",
+    "category": "romanticism",
+    "focus": "50% 32%"
+  },
+  {
+    "id": "dali-13",
+    "painter": "Salvador Dali",
+    "title": "纳西索斯的变形（The Metamorphosis of Narcissus）",
+    "file": "323-纳西索斯的变形-the-metamorphosis-of-narcissus.jpg",
+    "category": "surrealism",
+    "focus": "50% 13%"
+  },
+  {
+    "id": "hopper-7",
+    "painter": "Edward Hopper",
+    "title": "293号车厢（Compartment Car）",
+    "file": "324-293号车厢-compartment-car.jpg",
+    "category": "realism",
+    "focus": "50% 72%"
+  },
+  {
+    "id": "munch-11",
+    "painter": "Edvard Munch",
+    "title": "白夜（White Night）",
+    "file": "325-白夜-white-night.jpg",
+    "category": "expressionism",
+    "focus": "50% 66%"
+  },
+  {
+    "id": "aivazovsky-2",
+    "painter": "Ivan Aivazovsky",
+    "title": "浪涛之间（Among the Waves）",
+    "file": "326-浪涛之间-among-the-waves.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "grimshaw-2",
+    "painter": "John Atkinson Grimshaw",
+    "title": "利物浦码头月光（Liverpool from Wapping）",
+    "file": "327-利物浦码头月光-liverpool-from-wapping.jpg",
+    "category": "realism"
+  },
+  {
+    "id": "hokusai-2",
+    "painter": "Katsushika Hokusai",
+    "title": "凯风快晴（Fuji, Mountains in clear Weather  (Red Fuji)）",
+    "file": "328-凯风快晴-fuji-mountains-in-clear-weather-red-fuji.jpg",
+    "category": "ukiyo-e"
+  },
+  {
+    "id": "waterhouse-2",
+    "painter": "John William Waterhouse",
+    "title": "奥菲莉亚（Ophelia）",
+    "file": "329-奥菲莉亚-ophelia.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "goya-1",
+    "painter": "Francisco Goya",
+    "title": "巨人（The Colossus）",
+    "file": "330-巨人-the-colossus.jpg",
+    "category": "romanticism",
+    "focus": "50% 35%"
+  },
+  {
+    "id": "roerich-1",
+    "painter": "Nicholas Roerich",
+    "title": "干城章嘉（Himalayas. Chain of Kanchenjunga.）",
+    "file": "331-干城章嘉-himalayas-chain-of-kanchenjunga.jpg",
+    "category": "symbolism"
+  },
+  {
+    "id": "kandinsky-1",
+    "painter": "Wassily Kandinsky",
+    "title": "构成第八号（Composition VIII）",
+    "file": "332-构成第八号-composition-viii.jpg",
+    "category": "abstract"
+  },
+  {
+    "id": "kandinsky-2",
+    "painter": "Wassily Kandinsky",
+    "title": "几个圆（Several Circles）",
+    "file": "333-几个圆-several-circles.jpg",
+    "category": "abstract",
+    "focus": "50% 38%"
+  },
+  {
+    "id": "klee-1",
+    "painter": "Paul Klee",
+    "title": "通往帕纳塞斯（Ad Parnassum）",
+    "file": "334-通往帕纳塞斯-ad-parnassum.jpg",
+    "category": "expressionism",
+    "focus": "50% 6%"
+  },
+  {
+    "id": "klee-2",
+    "painter": "Paul Klee",
+    "title": "鸣叫的机器（Twittering Machine）",
+    "file": "335-鸣叫的机器-twittering-machine.jpg",
+    "category": "expressionism",
+    "focus": "50% 47%"
+  },
+  {
+    "id": "blake-1",
+    "painter": "William Blake",
+    "title": "亘古常在者（The Ancient of Days）",
+    "file": "336-亘古常在者-the-ancient-of-days.jpg",
+    "category": "symbolism",
+    "focus": "50% 51%"
+  },
+  {
+    "id": "vermeer-1",
+    "painter": "Johannes Vermeer",
+    "title": "倒牛奶的女人（The Milkmaid）",
+    "file": "337-倒牛奶的女人-the-milkmaid.jpg",
+    "category": "baroque",
+    "focus": "50% 38%"
+  },
+  {
+    "id": "vermeer-2",
+    "painter": "Johannes Vermeer",
+    "title": "窗边读信的女人（Girl Reading a Letter at an Open Window）",
+    "file": "338-窗边读信的女人-girl-reading-a-letter-at-an-open-window.jpg",
+    "category": "baroque",
+    "focus": "50% 89%"
+  },
+  {
+    "id": "morandi-1",
+    "painter": "Giorgio Morandi",
+    "title": "静物（Still Life）",
+    "file": "339-静物-still-life.jpg",
+    "category": "realism",
+    "focus": "50% 40%"
+  },
+  {
+    "id": "cole-1",
+    "painter": "Thomas Cole",
+    "title": "牛轭湖（Sketch for The Oxbow）",
+    "file": "340-牛轭湖-sketch-for-the-oxbow.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "lane-1",
+    "painter": "Fitz Henry Lane",
+    "title": "波士顿港（Ships in Boston Harbor）",
+    "file": "341-波士顿港-ships-in-boston-harbor.jpg",
+    "category": "luminism"
   }
 ]
