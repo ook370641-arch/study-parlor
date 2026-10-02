@@ -123,14 +123,16 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
     }
   }, [filePath])
 
-  // 浏览位置记忆(2026-09-29 修 bug + 改退出时落盘):块集合取 .md-body 直接子元素
-  // (跨章节全局索引)。原实现用 <article> 直接子元素——只有 1 个 ArticleBodyChunks
-  // 包裹 div,首可见块恒为 0 → 存 0 → 恢复时 saved<=0 跳过 → 回顶部。
+  // 浏览位置记忆(2026-09-29 修 bug + 改退出时落盘):块集合取 .md-body 内
+  // MarkdownContent 包裹 div 的直接子元素(跨章节全局索引)。两层坑都踩过:
+  // ①曾取 <article> 直接子元素——只有 1 个 ArticleBodyChunks 包裹 div;
+  // ②曾取 .md-body > *——只有 1 个 MarkdownContent 包裹 div(probe3 实测)。
+  // 两者都使首可见块恒为 0 → 存 0 → 恢复跳过/无效 → 回顶部。
   // 滚动只写 ref;切文章/离开页面/关窗口三个退出点才 flush(读 getState 快照防回跳)。
   const { onScroll: onReaderScroll } = useScrollMemory({
     memKey: scrollMemoryKey ?? null,
     containerRef: scrollContainerRef,
-    getBlocks: () => articleBodyRef.current?.querySelectorAll('.md-body > *') ?? null,
+    getBlocks: () => articleBodyRef.current?.querySelectorAll('.md-body > div > *') ?? null,
     readSaved: (k) => useStore.getState().anthropicScrollPositions[k],
     flush: (k, i) => useStore.getState().flushAnthropicScrollPosition(k, i),
     isCurrent: (k) => useStore.getState().anthropicReaderFilePath === k,

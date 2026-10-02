@@ -1537,17 +1537,18 @@ export const useStore = create<AppStore>((set, get) => ({
   flushWritingScrollPosition: (filePath, blockIndex) => {
     const next = { ...get().writingScrollPositions, [filePath]: blockIndex }
     set({ writingScrollPositions: next })
-    void ipc.patchState({ writingScrollPositions: next } as Partial<StateJson>)
+    // 同步落盘:flush 只在退出路径触发(切文档/卸载/beforeunload),量小且必须必达
+    ipc.patchStateSync({ writingScrollPositions: next } as Partial<StateJson>)
   },
   flushAnthropicScrollPosition: (filePath, blockIndex) => {
     const next = { ...get().anthropicScrollPositions, [filePath]: blockIndex }
     set({ anthropicScrollPositions: next })
-    void ipc.patchState({ anthropicScrollPositions: next } as Partial<StateJson>)
+    ipc.patchStateSync({ anthropicScrollPositions: next } as Partial<StateJson>)
   },
   flushArticleCompanionScrollPosition: (filePath, blockIndex) => {
     const next = { ...get().articleCompanionScrollPositions, [filePath]: blockIndex }
     set({ articleCompanionScrollPositions: next })
-    void ipc.patchState({ articleCompanionScrollPositions: next } as Partial<StateJson>)
+    ipc.patchStateSync({ articleCompanionScrollPositions: next } as Partial<StateJson>)
   },
   closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
   openConstitutionReport: () =>

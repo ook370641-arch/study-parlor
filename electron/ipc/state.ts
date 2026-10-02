@@ -138,6 +138,12 @@ export function registerStateIpc(cfg?: AppConfig) {
   ipcMain.handle('state:patch', async (_, patch: Partial<StateJson>) => {
     patchState(patch)
   })
+
+  // 同步变体:仅退出路径(beforeunload)的滚动位置落盘使用,见 use-scroll-memory
+  ipcMain.on('state:patchSync', (event, patch: Partial<StateJson>) => {
+    patchState(patch)
+    event.returnValue = true
+  })
 }
 
 export function getCurrentState(): StateJson {

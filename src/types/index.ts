@@ -694,6 +694,8 @@ export type IpcApi = {
   writeProgressMd: (args: { title: string; description?: string; body: string; difficulty: Difficulty; dirName: string; session_number: number; progress_summary?: string }) => Promise<{ file_path: string }>
   getState: () => Promise<StateJson>
   patchState: (patch: Partial<StateJson>) => Promise<void>
+  /** 同步落盘(sendSync):仅退出路径(beforeunload)使用,保证渲染进程卸载前必达主进程 */
+  patchStateSync: (patch: Partial<StateJson>) => void
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
   llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>

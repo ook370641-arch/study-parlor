@@ -48,13 +48,14 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
     await gotoBlog(window)
 
     // 重启恢复:文章自动打开且滚动位置 > 0(原 bug:块容器取错层,恒存 0 回顶部)
-    await expect(window.locator(SELECTORS.briefing.anthropicReader)).toBeVisible({ timeout: 10000 })
+    await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 10000 })
     const scroller = window.locator(SCROLLER)
     await expect.poll(() => scroller.evaluate((el: HTMLElement) => el.scrollTop), { timeout: 8000 }).toBeGreaterThan(0)
 
     // 滚动到新位置 → 400ms 防抖过后 state.json 仍是旧值(不连续写盘,2026-09-29 用户要求)
     await scroller.evaluate((el: HTMLElement) => { el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event('scroll')) })
-    await window.waitForTimeout(700)
+    // 400ms 防抖 + 忙帧余量(导读生成/重渲染会推迟定时器,2026-10-02 flaky 根因)
+    await window.waitForTimeout(1500)
     expect(readState(testConfigDir).anthropicScrollPositions?.[a.filePath]).toBe(6)
 
     // 切到 B(退出点:切文档落盘)→ state.json 里 A 的索引更新(>6)
@@ -77,11 +78,12 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
       lastAnthropicReaderFile: a.filePath,
     })
     await gotoBlog(window)
-    await expect(window.locator(SELECTORS.briefing.anthropicReader)).toBeVisible({ timeout: 10000 })
+    await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 10000 })
     const scroller = window.locator(SCROLLER)
 
     await scroller.evaluate((el: HTMLElement) => { el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event('scroll')) })
-    await window.waitForTimeout(700) // 防抖窗过,值在 ref
+    // 400ms 防抖 + 忙帧余量(导读生成/重渲染会推迟定时器,2026-10-02 flaky 根因)
+    await window.waitForTimeout(1500) // 防抖窗过,值在 ref
     await window.reload()
     await window.waitForLoadState('domcontentloaded')
 
@@ -90,7 +92,7 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
 
     // 重开后文章自动打开且位置恢复
     await gotoBlog(window)
-    await expect(window.locator(SELECTORS.briefing.anthropicReader)).toBeVisible({ timeout: 10000 })
+    await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 10000 })
     await expect.poll(() => window.locator(SCROLLER).evaluate((el: HTMLElement) => el.scrollTop), { timeout: 8000 }).toBeGreaterThan(0)
   })
 
@@ -109,7 +111,7 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
     await gotoBlog(window)
 
     // 主文 + 对照文都自动恢复
-    await expect(window.locator(SELECTORS.briefing.anthropicReader)).toBeVisible({ timeout: 10000 })
+    await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 10000 })
     await expect(window.locator('[data-testid="article-companion-board"]')).toBeVisible({ timeout: 10000 })
     await expect(window.locator('[data-testid="article-companion-board"]')).toContainText('e2e-pos-comp')
 

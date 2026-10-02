@@ -127,12 +127,16 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   // 进入页面即恢复上次阅读的文章(2026-09-22 用户反馈):文章仍在列表(isSaved
   // 且 filePath 匹配)才恢复,被外部删除则静默跳过。restoredRef 保证每次挂载
   // 只恢复一次——用户在本页主动关闭阅读器后不会被重新拉开。
+  // 不等 loading(2026-10-02 根因):loading 会被后台「自动检测新文章」的网络请求
+  // 置 true,网络慢/不可达时恢复被拖延 ~10s;只要列表已有文章(持久化缓存)
+  // 就够做 stillThere 判定,无需等后台刷新。
   const lastAnthropicReaderFile = useStore((s) => s.lastAnthropicReaderFile)
   const restoredRef = useRef(false)
   useEffect(() => {
     if (restoredRef.current) return
     if (readerFilePath) { restoredRef.current = true; return }
-    if (!lastAnthropicReaderFile || loading) return
+    if (!lastAnthropicReaderFile) return
+    if (articles.length === 0) return // 缓存尚未载入,等下一次渲染
     const stillThere = articles.some((a) => a.isSaved && a.filePath === lastAnthropicReaderFile)
     restoredRef.current = true
     if (stillThere) {

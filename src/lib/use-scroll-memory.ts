@@ -60,7 +60,7 @@ export function useScrollMemory(opts: ScrollMemoryOptions): { onScroll: () => vo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memKey])
 
-  // 退出点 3:窗口关闭/刷新 —— fire-and-forget(主进程存活,不等回包)
+  // 退出点 3:窗口关闭/刷新 —— sendSync 阻塞到主进程写完,保证卸载前必达
   useEffect(() => {
     const onUnload = () => flushPending()
     window.addEventListener('beforeunload', onUnload)

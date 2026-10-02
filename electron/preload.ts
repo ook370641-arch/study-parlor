@@ -23,6 +23,9 @@ const api: IpcApi = {
 
   getState: () => ipcRenderer.invoke('state:get'),
   patchState: (p) => ipcRenderer.invoke('state:patch', p),
+  // 退出路径专用:sendSync 阻塞到主进程写完才返回——beforeunload 里 invoke 有投递竞争
+  // (渲染进程可能先被卸载,e2e 实测 reload 落盘 1/3 成功),同步通道保证必达
+  patchStateSync: (p) => ipcRenderer.sendSync('state:patchSync', p),
 
   llmProbe: () => ipcRenderer.invoke('llm:probe'),
   llmStart: (a) => ipcRenderer.invoke('llm:start', a),

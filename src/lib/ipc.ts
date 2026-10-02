@@ -19,6 +19,7 @@ export const ipc = {
   get readExternalMaterials() { return ensure().readExternalMaterials },
   get getState() { return ensure().getState },
   get patchState() { return ensure().patchState },
+  get patchStateSync() { return ensure().patchStateSync },
   get llmProbe() { return ensure().llmProbe },
   get llmStart() { return ensure().llmStart },
   get llmAbort() { return ensure().llmAbort },
