@@ -2610,5 +2610,151 @@
     "title": "波士顿港（Ships in Boston Harbor）",
     "url": "paintings/341-%E6%B3%A2%E5%A3%AB%E9%A1%BF%E6%B8%AF-ships-in-boston-harbor.jpg",
     "category": "luminism"
+  },
+  {
+    "id": "kubrick-5",
+    "painter": "Stanley Kubrick",
+    "title": "光荣之路 · 刑场",
+    "url": "paintings/342-%E5%85%89%E8%8D%A3%E4%B9%8B%E8%B7%AF-%E5%88%91%E5%9C%BA.jpg",
+    "year": 1957,
+    "category": "film-still"
+  },
+  {
+    "id": "angelopoulos-1",
+    "painter": "Theo Angelopoulos",
+    "title": "雾中风景 · 走向孤树的两个孩子",
+    "url": "paintings/343-%E9%9B%BE%E4%B8%AD%E9%A3%8E%E6%99%AF-%E8%B5%B0%E5%90%91%E5%AD%A4%E6%A0%91%E7%9A%84%E4%B8%A4%E4%B8%AA%E5%AD%A9%E5%AD%90.jpg",
+    "year": 1988,
+    "category": "film-still"
+  },
+  {
+    "id": "kalatozov-1",
+    "painter": "Mikhail Kalatozov",
+    "title": "我是古巴 · 防波堤上的孤独身影",
+    "url": "paintings/344-%E6%88%91%E6%98%AF%E5%8F%A4%E5%B7%B4-%E9%98%B2%E6%B3%A2%E5%A0%A4%E4%B8%8A%E7%9A%84%E5%AD%A4%E7%8B%AC%E8%BA%AB%E5%BD%B1.jpg",
+    "year": 1964,
+    "category": "film-still"
+  },
+  {
+    "id": "magritte-7",
+    "painter": "René Magritte",
+    "title": "禁止复制（Not to be Reproduced）",
+    "url": "paintings/345-%E7%A6%81%E6%AD%A2%E5%A4%8D%E5%88%B6-not-to-be-reproduced.jpg",
+    "category": "surrealism",
+    "focus": "50% 49%"
+  },
+  {
+    "id": "church-6",
+    "painter": "Frederic Edwin Church",
+    "title": "热带的雨季（Morning in the Tropics）",
+    "url": "paintings/346-%E7%83%AD%E5%B8%A6%E7%9A%84%E9%9B%A8%E5%AD%A3-morning-in-the-tropics.jpg",
+    "category": "romanticism",
+    "focus": "38% 50%"
+  },
+  {
+    "id": "dali-14",
+    "painter": "Salvador Dalí",
+    "title": "海滩上的脸与果盘（Apparition of Face and Fruit Dish on a Beach）",
+    "url": "paintings/347-%E6%B5%B7%E6%BB%A9%E4%B8%8A%E7%9A%84%E8%84%B8%E4%B8%8E%E6%9E%9C%E7%9B%98-apparition-of-face-and-fruit-dish-on-a-.jpg",
+    "category": "surrealism",
+    "focus": "50% 29%"
+  },
+  {
+    "id": "hopper-8",
+    "painter": "Edward Hopper",
+    "title": "游客之家（Rooms for Tourists）",
+    "url": "paintings/348-%E6%B8%B8%E5%AE%A2%E4%B9%8B%E5%AE%B6-rooms-for-tourists.jpg",
+    "category": "realism",
+    "focus": "50% 24%"
+  },
+  {
+    "id": "aivazovsky-3",
+    "painter": "Ivan Aivazovsky",
+    "title": "彩虹（The Rainbow）",
+    "url": "paintings/349-%E5%BD%A9%E8%99%B9-the-rainbow.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "grimshaw-3",
+    "painter": "John Atkinson Grimshaw",
+    "title": "暮色中（In the Golden Gloaming）",
+    "url": "paintings/350-%E6%9A%AE%E8%89%B2%E4%B8%AD-in-the-golden-gloaming.jpg",
+    "category": "realism",
+    "focus": "50% 0%"
+  },
+  {
+    "id": "goya-2",
+    "painter": "Francisco Goya",
+    "title": "魔宴（Witches Sabbath）",
+    "url": "paintings/351-%E9%AD%94%E5%AE%B4-witches-sabbath.jpg",
+    "category": "romanticism",
+    "focus": "50% 38%"
+  },
+  {
+    "id": "roerich-2",
+    "painter": "Nicholas Roerich",
+    "title": "五宝山的圣母（Mount of five treasures (Two worlds)）",
+    "url": "paintings/352-%E4%BA%94%E5%AE%9D%E5%B1%B1%E7%9A%84%E5%9C%A3%E6%AF%8D-mount-of-five-treasures-two-worlds.jpg",
+    "category": "symbolism"
+  },
+  {
+    "id": "blake-2",
+    "painter": "William Blake",
+    "title": "牛顿（Isaac Newton）",
+    "url": "paintings/353-%E7%89%9B%E9%A1%BF-isaac-newton.jpg",
+    "category": "symbolism",
+    "focus": "50% 74%"
+  },
+  {
+    "id": "vermeer-3",
+    "painter": "Johannes Vermeer",
+    "title": "代尔夫特风景（View of Delft）",
+    "url": "paintings/354-%E4%BB%A3%E5%B0%94%E5%A4%AB%E7%89%B9%E9%A3%8E%E6%99%AF-view-of-delft.jpg",
+    "category": "baroque",
+    "focus": "50% 94%"
+  },
+  {
+    "id": "lane-2",
+    "painter": "Fitz Henry Lane",
+    "title": "格洛斯特港（Gloucester, Stage Fort Beach）",
+    "url": "paintings/355-%E6%A0%BC%E6%B4%9B%E6%96%AF%E7%89%B9%E6%B8%AF-gloucester-stage-fort-beach.jpg",
+    "category": "luminism"
+  },
+  {
+    "id": "dore-1",
+    "painter": "Gustave Doré",
+    "title": "大洪水（The-Deluge）",
+    "url": "paintings/356-%E5%A4%A7%E6%B4%AA%E6%B0%B4-the-deluge.jpg",
+    "category": "romanticism",
+    "focus": "50% 44%"
+  },
+  {
+    "id": "kuniyoshi-1",
+    "painter": "Utagawa Kuniyoshi",
+    "title": "相马的古内里（Mitsukuni Defying the Skeleton Spectre Invoked by Princess Takiyasha）",
+    "url": "paintings/357-%E7%9B%B8%E9%A9%AC%E7%9A%84%E5%8F%A4%E5%86%85%E9%87%8C-mitsukuni-defying-the-skeleton-spectre-in.jpg",
+    "category": "ukiyo-e"
+  },
+  {
+    "id": "boccioni-1",
+    "painter": "Umberto Boccioni",
+    "title": "城市升起（The City Rises）",
+    "url": "paintings/358-%E5%9F%8E%E5%B8%82%E5%8D%87%E8%B5%B7-the-city-rises.jpg",
+    "category": "futurism"
+  },
+  {
+    "id": "corot-1",
+    "painter": "Camille Corot",
+    "title": "摩特枫丹的回忆（Recollections of Mortefontaine）",
+    "url": "paintings/359-%E6%91%A9%E7%89%B9%E6%9E%AB%E4%B8%B9%E7%9A%84%E5%9B%9E%E5%BF%86-recollections-of-mortefontaine.jpg",
+    "category": "realism"
+  },
+  {
+    "id": "lissitzky-1",
+    "painter": "El Lissitzky",
+    "title": "红楔子打进白色（Beat the Whites with the Red Wedge）",
+    "url": "paintings/360-%E7%BA%A2%E6%A5%94%E5%AD%90%E6%89%93%E8%BF%9B%E7%99%BD%E8%89%B2-beat-the-whites-with-the-red-wedge.jpg",
+    "category": "constructivism",
+    "focus": "50% 68%"
   }
 ]

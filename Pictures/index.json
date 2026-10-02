@@ -2694,5 +2694,151 @@
     "title": "波士顿港（Ships in Boston Harbor）",
     "file": "341-波士顿港-ships-in-boston-harbor.jpg",
     "category": "luminism"
+  },
+  {
+    "id": "kubrick-5",
+    "painter": "Stanley Kubrick",
+    "title": "光荣之路 · 刑场",
+    "file": "342-光荣之路-刑场.jpg",
+    "category": "film-still",
+    "year": 1957
+  },
+  {
+    "id": "angelopoulos-1",
+    "painter": "Theo Angelopoulos",
+    "title": "雾中风景 · 走向孤树的两个孩子",
+    "file": "343-雾中风景-走向孤树的两个孩子.jpg",
+    "category": "film-still",
+    "year": 1988
+  },
+  {
+    "id": "kalatozov-1",
+    "painter": "Mikhail Kalatozov",
+    "title": "我是古巴 · 防波堤上的孤独身影",
+    "file": "344-我是古巴-防波堤上的孤独身影.jpg",
+    "category": "film-still",
+    "year": 1964
+  },
+  {
+    "id": "magritte-7",
+    "painter": "René Magritte",
+    "title": "禁止复制（Not to be Reproduced）",
+    "file": "345-禁止复制-not-to-be-reproduced.jpg",
+    "category": "surrealism",
+    "focus": "50% 49%"
+  },
+  {
+    "id": "church-6",
+    "painter": "Frederic Edwin Church",
+    "title": "热带的雨季（Morning in the Tropics）",
+    "file": "346-热带的雨季-morning-in-the-tropics.jpg",
+    "category": "romanticism",
+    "focus": "38% 50%"
+  },
+  {
+    "id": "dali-14",
+    "painter": "Salvador Dalí",
+    "title": "海滩上的脸与果盘（Apparition of Face and Fruit Dish on a Beach）",
+    "file": "347-海滩上的脸与果盘-apparition-of-face-and-fruit-dish-on-a-.jpg",
+    "category": "surrealism",
+    "focus": "50% 29%"
+  },
+  {
+    "id": "hopper-8",
+    "painter": "Edward Hopper",
+    "title": "游客之家（Rooms for Tourists）",
+    "file": "348-游客之家-rooms-for-tourists.jpg",
+    "category": "realism",
+    "focus": "50% 24%"
+  },
+  {
+    "id": "aivazovsky-3",
+    "painter": "Ivan Aivazovsky",
+    "title": "彩虹（The Rainbow）",
+    "file": "349-彩虹-the-rainbow.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "grimshaw-3",
+    "painter": "John Atkinson Grimshaw",
+    "title": "暮色中（In the Golden Gloaming）",
+    "file": "350-暮色中-in-the-golden-gloaming.jpg",
+    "category": "realism",
+    "focus": "50% 0%"
+  },
+  {
+    "id": "goya-2",
+    "painter": "Francisco Goya",
+    "title": "魔宴（Witches Sabbath）",
+    "file": "351-魔宴-witches-sabbath.jpg",
+    "category": "romanticism",
+    "focus": "50% 38%"
+  },
+  {
+    "id": "roerich-2",
+    "painter": "Nicholas Roerich",
+    "title": "五宝山的圣母（Mount of five treasures (Two worlds)）",
+    "file": "352-五宝山的圣母-mount-of-five-treasures-two-worlds.jpg",
+    "category": "symbolism"
+  },
+  {
+    "id": "blake-2",
+    "painter": "William Blake",
+    "title": "牛顿（Isaac Newton）",
+    "file": "353-牛顿-isaac-newton.jpg",
+    "category": "symbolism",
+    "focus": "50% 74%"
+  },
+  {
+    "id": "vermeer-3",
+    "painter": "Johannes Vermeer",
+    "title": "代尔夫特风景（View of Delft）",
+    "file": "354-代尔夫特风景-view-of-delft.jpg",
+    "category": "baroque",
+    "focus": "50% 94%"
+  },
+  {
+    "id": "lane-2",
+    "painter": "Fitz Henry Lane",
+    "title": "格洛斯特港（Gloucester, Stage Fort Beach）",
+    "file": "355-格洛斯特港-gloucester-stage-fort-beach.jpg",
+    "category": "luminism"
+  },
+  {
+    "id": "dore-1",
+    "painter": "Gustave Doré",
+    "title": "大洪水（The-Deluge）",
+    "file": "356-大洪水-the-deluge.jpg",
+    "category": "romanticism",
+    "focus": "50% 44%"
+  },
+  {
+    "id": "kuniyoshi-1",
+    "painter": "Utagawa Kuniyoshi",
+    "title": "相马的古内里（Mitsukuni Defying the Skeleton Spectre Invoked by Princess Takiyasha）",
+    "file": "357-相马的古内里-mitsukuni-defying-the-skeleton-spectre-in.jpg",
+    "category": "ukiyo-e"
+  },
+  {
+    "id": "boccioni-1",
+    "painter": "Umberto Boccioni",
+    "title": "城市升起（The City Rises）",
+    "file": "358-城市升起-the-city-rises.jpg",
+    "category": "futurism"
+  },
+  {
+    "id": "corot-1",
+    "painter": "Camille Corot",
+    "title": "摩特枫丹的回忆（Recollections of Mortefontaine）",
+    "file": "359-摩特枫丹的回忆-recollections-of-mortefontaine.jpg",
+    "category": "realism"
+  },
+  {
+    "id": "lissitzky-1",
+    "painter": "El Lissitzky",
+    "title": "红楔子打进白色（Beat the Whites with the Red Wedge）",
+    "file": "360-红楔子打进白色-beat-the-whites-with-the-red-wedge.jpg",
+    "category": "constructivism",
+    "focus": "50% 68%"
   }
 ]
