@@ -1960,5 +1960,233 @@
     "url": "paintings/254-%E6%97%A5%E6%9C%AC%E6%A1%A5-the-japanese-bridge-the-water-lily-pond.jpg",
     "category": "impressionism",
     "focus": "50% 54%"
+  },
+  {
+    "id": "coppola-3",
+    "painter": "Francis Ford Coppola",
+    "title": "现代启示录 · 浮出水面的头",
+    "url": "paintings/255-%E7%8E%B0%E4%BB%A3%E5%90%AF%E7%A4%BA%E5%BD%95-%E6%B5%AE%E5%87%BA%E6%B0%B4%E9%9D%A2%E7%9A%84%E5%A4%B4.jpg",
+    "year": 1979,
+    "category": "film-still",
+    "focus": "60% 50%"
+  },
+  {
+    "id": "hitchcock-1",
+    "painter": "Alfred Hitchcock",
+    "title": "迷魂记 · 红厅侧影",
+    "url": "paintings/256-%E8%BF%B7%E9%AD%82%E8%AE%B0-%E7%BA%A2%E5%8E%85%E4%BE%A7%E5%BD%B1.jpg",
+    "year": 1958,
+    "category": "film-still"
+  },
+  {
+    "id": "bergman-1",
+    "painter": "Ingmar Bergman",
+    "title": "第七封印 · 礁石上的棋局",
+    "url": "paintings/257-%E7%AC%AC%E4%B8%83%E5%B0%81%E5%8D%B0-%E7%A4%81%E7%9F%B3%E4%B8%8A%E7%9A%84%E6%A3%8B%E5%B1%80.jpg",
+    "year": 1957,
+    "category": "film-still"
+  },
+  {
+    "id": "brothers-1",
+    "painter": "Coen Brothers",
+    "title": "老无所依 · 日落逃亡",
+    "url": "paintings/258-%E8%80%81%E6%97%A0%E6%89%80%E4%BE%9D-%E6%97%A5%E8%90%BD%E9%80%83%E4%BA%A1.jpg",
+    "year": 2007,
+    "category": "film-still",
+    "focus": "32% 50%"
+  },
+  {
+    "id": "soutine-1",
+    "painter": "Chaïm Soutine",
+    "title": "牛肉（Carcass of Beef）",
+    "url": "paintings/259-%E7%89%9B%E8%82%89-carcass-of-beef.jpg",
+    "category": "expressionism",
+    "focus": "50% 30%"
+  },
+  {
+    "id": "soutine-2",
+    "painter": "Chaïm Soutine",
+    "title": "餐桌（The Table）",
+    "url": "paintings/260-%E9%A4%90%E6%A1%8C-the-table.jpg",
+    "category": "expressionism",
+    "focus": "50% 9%"
+  },
+  {
+    "id": "beckmann-1",
+    "painter": "Max Beckmann",
+    "title": "夜（Night）",
+    "url": "paintings/261-%E5%A4%9C-night.jpg",
+    "category": "expressionism",
+    "focus": "50% 25%"
+  },
+  {
+    "id": "moreau-1",
+    "painter": "Gustave Moreau",
+    "title": "显灵（The Apparition）",
+    "url": "paintings/262-%E6%98%BE%E7%81%B5-the-apparition.jpg",
+    "category": "symbolism",
+    "focus": "50% 55%"
+  },
+  {
+    "id": "moreau-2",
+    "painter": "Gustave Moreau",
+    "title": "朱庇特与塞墨勒（Jupiter and Semele）",
+    "url": "paintings/263-%E6%9C%B1%E5%BA%87%E7%89%B9%E4%B8%8E%E5%A1%9E%E5%A2%A8%E5%8B%92-jupiter-and-semele.jpg",
+    "category": "symbolism",
+    "focus": "50% 23%"
+  },
+  {
+    "id": "bocklin-2",
+    "painter": "Arnold Böcklin",
+    "title": "瘟疫（The Plague）",
+    "url": "paintings/264-%E7%98%9F%E7%96%AB-the-plague.jpg",
+    "category": "symbolism",
+    "focus": "50% 17%"
+  },
+  {
+    "id": "chirico-1",
+    "painter": "Giorgio de Chirico",
+    "title": "爱之歌（The Song of Love）",
+    "url": "paintings/265-%E7%88%B1%E4%B9%8B%E6%AD%8C-the-song-of-love.jpg",
+    "category": "surrealism",
+    "focus": "50% 40%"
+  },
+  {
+    "id": "chirico-2",
+    "painter": "Giorgio de Chirico",
+    "title": "一条街的神秘与忧郁（Mystery and Melancholy of a Street）",
+    "url": "paintings/266-%E4%B8%80%E6%9D%A1%E8%A1%97%E7%9A%84%E7%A5%9E%E7%A7%98%E4%B8%8E%E5%BF%A7%E9%83%81-mystery-and-melancholy-of-a-street.jpg",
+    "category": "surrealism",
+    "focus": "50% 48%"
+  },
+  {
+    "id": "chirico-3",
+    "painter": "Giorgio de Chirico",
+    "title": "红塔（The Red Tower）",
+    "url": "paintings/267-%E7%BA%A2%E5%A1%94-the-red-tower.jpg",
+    "category": "surrealism"
+  },
+  {
+    "id": "magritte-3",
+    "painter": "René Magritte",
+    "title": "戈尔孔达（Golconda）",
+    "url": "paintings/268-%E6%88%88%E5%B0%94%E5%AD%94%E8%BE%BE-golconda.jpg",
+    "category": "surrealism",
+    "focus": "50% 75%"
+  },
+  {
+    "id": "magritte-4",
+    "painter": "René Magritte",
+    "title": "听音室（The Listening Room）",
+    "url": "paintings/269-%E5%90%AC%E9%9F%B3%E5%AE%A4-the-listening-room.jpg",
+    "category": "surrealism",
+    "focus": "50% 15%"
+  },
+  {
+    "id": "carrington-1",
+    "painter": "Leonora Carrington",
+    "title": "女巨人（The Giantess）",
+    "url": "paintings/270-%E5%A5%B3%E5%B7%A8%E4%BA%BA-the-giantess.jpg",
+    "category": "surrealism",
+    "focus": "50% 16%"
+  },
+  {
+    "id": "varo-1",
+    "painter": "Remedios Varo",
+    "title": "造鸟（Creation of the Birds）",
+    "url": "paintings/271-%E9%80%A0%E9%B8%9F-creation-of-the-birds.jpg",
+    "category": "surrealism",
+    "focus": "50% 33%"
+  },
+  {
+    "id": "varo-2",
+    "painter": "Remedios Varo",
+    "title": "召唤（The Call）",
+    "url": "paintings/272-%E5%8F%AC%E5%94%A4-the-call.jpg",
+    "category": "surrealism",
+    "focus": "50% 17%"
+  },
+  {
+    "id": "church-1",
+    "painter": "Frederic Edwin Church",
+    "title": "旷野暮色（Twilight in the Wilderness）",
+    "url": "paintings/273-%E6%97%B7%E9%87%8E%E6%9A%AE%E8%89%B2-twilight-in-the-wilderness.jpg",
+    "category": "romanticism",
+    "focus": "50% 48%"
+  },
+  {
+    "id": "church-2",
+    "painter": "Frederic Edwin Church",
+    "title": "安第斯之心（Heart of the Andes）",
+    "url": "paintings/274-%E5%AE%89%E7%AC%AC%E6%96%AF%E4%B9%8B%E5%BF%83-heart-of-the-andes.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "bierstadt-1",
+    "painter": "Albert Bierstadt",
+    "title": "洛基山风暴（Thunderstorm in the Rocky Mountains）",
+    "url": "paintings/275-%E6%B4%9B%E5%9F%BA%E5%B1%B1%E9%A3%8E%E6%9A%B4-thunderstorm-in-the-rocky-mountains.jpg",
+    "category": "romanticism"
+  },
+  {
+    "id": "wyeth-1",
+    "painter": "Andrew Wyeth",
+    "title": "克里斯蒂娜的世界（Christina&#39;s World）",
+    "url": "paintings/276-%E5%85%8B%E9%87%8C%E6%96%AF%E8%92%82%E5%A8%9C%E7%9A%84%E4%B8%96%E7%95%8C-christina-39-s-world.jpg",
+    "category": "realism",
+    "focus": "100% 96%"
+  },
+  {
+    "id": "hopper-5",
+    "painter": "Edward Hopper",
+    "title": "海边的房间（Rooms By The Sea）",
+    "url": "paintings/277-%E6%B5%B7%E8%BE%B9%E7%9A%84%E6%88%BF%E9%97%B4-rooms-by-the-sea.jpg",
+    "category": "realism"
+  },
+  {
+    "id": "munch-9",
+    "painter": "Edvard Munch",
+    "title": "太阳（The Sun）",
+    "url": "paintings/278-%E5%A4%AA%E9%98%B3-the-sun.jpg",
+    "category": "expressionism"
+  },
+  {
+    "id": "dali-9",
+    "painter": "Salvador Dali",
+    "title": "圣安东尼的诱惑（The Temptation of St. Anthony）",
+    "url": "paintings/279-%E5%9C%A3%E5%AE%89%E4%B8%9C%E5%B0%BC%E7%9A%84%E8%AF%B1%E6%83%91-the-temptation-of-st-anthony.jpg",
+    "category": "surrealism",
+    "focus": "50% 27%"
+  },
+  {
+    "id": "dali-10",
+    "painter": "Salvador Dali",
+    "title": "超立方体受难（Crucifixion）",
+    "url": "paintings/280-%E8%B6%85%E7%AB%8B%E6%96%B9%E4%BD%93%E5%8F%97%E9%9A%BE-crucifixion.jpg",
+    "category": "surrealism",
+    "focus": "50% 12%"
+  },
+  {
+    "id": "klimt-4",
+    "painter": "Gustav Klimt",
+    "title": "向日葵农园（Country Garden with Sunflowers）",
+    "url": "paintings/281-%E5%90%91%E6%97%A5%E8%91%B5%E5%86%9C%E5%9B%AD-country-garden-with-sunflowers.jpg",
+    "category": "symbolism",
+    "focus": "50% 13%"
+  },
+  {
+    "id": "monet-7",
+    "painter": "Claude Monet",
+    "title": "圣拉扎尔车站（Saint-Lazare Station, Exterior）",
+    "url": "paintings/282-%E5%9C%A3%E6%8B%89%E6%89%8E%E5%B0%94%E8%BD%A6%E7%AB%99-saint-lazare-station-exterior.jpg",
+    "category": "impressionism",
+    "focus": "50% 44%"
+  },
+  {
+    "id": "monet-8",
+    "painter": "Claude Monet",
+    "title": "印象·日出（Impression, sunrise）",
+    "url": "paintings/283-%E5%8D%B0%E8%B1%A1-%E6%97%A5%E5%87%BA-impression-sunrise.jpg",
+    "category": "impressionism"
   }
 ]
