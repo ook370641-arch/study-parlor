@@ -13,6 +13,7 @@
 | `llm.md` | LLM 调用、prompt、JSON 提取、归档触发 | kimi/llm/prompts/llm-tasks/finalize/session-runtime | 9 |
 | `ui-styling.md` | React/Tailwind、抽屉、动画、markdown 渲染 | `src/components/**`, `src/pages/**`, `tailwind.config.ts` | 11 |
 | `build-dev.md` | 构建、开发环境、打包资源、进程清理 | scripts/electron-builder/main/env/app-paths/vite | 10 |
+| `paintings-curation.md` | 画作策展流水线（搜集/筛选/入库/焦点） | `Pictures/**`, `Pictures-staging/**`, `scripts/curation-*.cjs` | 4 |
 
 ## 格式约定
 
@@ -35,6 +36,7 @@
 
 ## Changelog
 
+- `2026-10-03` 新增 paintings-curation.md：画作策展流水线指针（事实源文档/脚本序列/TMDB+WikiArt 搜索模式/累积制与去重），来自批一至批七 332 幅入库的沉淀；用户要求脱离会话上下文也能找到脚本与搜索模式。
 - `2026-08-10` e2e 新增 §11/§12：E2E 跑 out/ 构建产物、改源码必须先 `npx electron-vite build`（e2e-changed --run 自动构建）；本地定向跑 `--no-retries` + 默认并行 workers（来自三个 e2e 失败全因过期构建 + E2E 加速实施）。
 - `2026-07-26` general 新增 §9：验证只跑受影响测试，禁止全量（来自三次改 1-2 文件后跑 821 tests 的反馈）。
 - `2026-07-25` ui-styling §11 登记：光的语言两层级（烛光/聚焦呼吸）、检定动效协议、内化脊柱 motif（来自审美提升总计划 Part 2-4：生成仪式 B、燃熄阖卷、并置画框）。
