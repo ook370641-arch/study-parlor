@@ -983,6 +983,9 @@ export type Painting = {
   focus?: string
 }
 
+/** 画作焦点写回的错误码（paintings:setFocus IPC） */
+export type PaintingFocusErrorCode = 'INVALID_FOCUS' | 'UNKNOWN_PAINTING' | 'INDEX_UNREADABLE' | 'WRITE_FAILED'
+
 // --- 拾贝（Scout）来源 ---
 export type ScoutErrorCode =
   | 'NETWORK_ERROR'
