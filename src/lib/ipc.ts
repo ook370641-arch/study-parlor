@@ -157,6 +157,8 @@ export const ipc = {
   get scoutListArticles() { return ensure().scoutListArticles },
   get scoutDeleteArticle() { return ensure().scoutDeleteArticle },
   get onScoutTool() { return ensure().onScoutTool },
+  get paintingsCanEdit() { return ensure().paintingsCanEdit },
+  get paintingsSetFocus() { return ensure().paintingsSetFocus },
 
   // Timing instrumentation
   get logTiming() { return ensure().logTiming },

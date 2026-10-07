@@ -969,6 +969,10 @@ export type IpcApi = {
   scoutListArticles: () => Promise<ScoutArticleMeta[]>
   scoutDeleteArticle: (a: { filePath: string }) => Promise<{ ok: true } | { ok: false; message: string }>
   onScoutTool: (cb: (e: ScoutToolEvent) => void) => () => void
+
+  // 画作裁剪（dev-only，打包版/e2e 下 canEdit=false）
+  paintingsCanEdit: () => Promise<boolean>
+  paintingsSetFocus: (args: { id: string; focus: string }) => Promise<{ ok: true } | { ok: false; code: PaintingFocusErrorCode; message: string }>
 }
 
 export type Painting = {

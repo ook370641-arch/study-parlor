@@ -242,6 +242,8 @@ const api: IpcApi = {
     ipcRenderer.on('scout:tool', handler)
     return () => ipcRenderer.removeListener('scout:tool', handler)
   },
+  paintingsCanEdit: () => ipcRenderer.invoke('paintings:canEdit'),
+  paintingsSetFocus: (a) => ipcRenderer.invoke('paintings:setFocus', a),
 }
 
 contextBridge.exposeInMainWorld('api', api)

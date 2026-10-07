@@ -18,6 +18,7 @@ import { registerWritingIpc } from './writing'
 import { registerWritingAssistantIpc } from './writing-assistant'
 import { registerScoutIpc } from './scout'
 import { registerCollectionIpc } from './collection'
+import { registerPaintingsIpc } from './paintings'
 
 export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
   registerConfigIpc(cfg)
@@ -35,5 +36,6 @@ export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   registerWritingAssistantIpc(cfg)
   registerScoutIpc(cfg)
   registerCollectionIpc(cfg)
+  registerPaintingsIpc()
   registerAppIpc()
 }
