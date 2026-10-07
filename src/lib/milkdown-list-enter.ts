@@ -10,9 +10,16 @@
 // 本插件在「项内唯一子块是 textContent 纯空白(含 U+00A0/零宽)的段落」时,
 // 先清掉不可见空白再 liftListItem:伪空项与真空项行为一致(退出列表/升一级)。
 // 真空项(content.size == 0)不拦截,交还默认链(splitListItem→liftEmptyBlock)。
+// 2026-09-22 补充(building effective agents「回车后没有新行/没有加号」):
+// 伪空项 Backspace 曾把段落并进上一项形成「项内尾随伪空段落」损坏态
+// (参见 milkdown-list-backspace.ts)。多子块项内光标处于纯空白段落时,
+// 旧条件 childCount !== 1 直接放行,splitListItem 把不可见尾巴裂成新 bullet
+// (看着像回车无效)。现清空白后交默认链——真空尾随段落的 splitListItem
+// 会把它抬出列表成顶层段落(实测,S7b)。
 // priority 60 > 内置 listItemKeymap(50),与 list-backspace 同一惯例。
 import { $useKeymap } from '@milkdown/utils'
 import { liftListItem } from '@milkdown/prose/schema-list'
+import { liftTarget } from '@milkdown/prose/transform'
 import type { Command } from '@milkdown/prose/state'
 import type { MilkdownPlugin } from '@milkdown/ctx'
 
@@ -27,9 +34,22 @@ const exitPseudoEmptyListItem: Command = (state, dispatch, view) => {
   const item = $from.node(-1)
   if (item.type.name !== 'list_item') return false
   if ($from.parent.type.name !== 'paragraph') return false
-  if (item.childCount !== 1) return false // 唯一子块才是伪空项
-  if ($from.parent.content.size === 0) return false // 真空项走默认链
+  if ($from.parent.content.size === 0) return false // 真空段落走默认链
   if (!WHITESPACE_ONLY.test($from.parent.textContent)) return false
+  if (item.childCount !== 1) {
+    // 多子块项内伪空段落(损坏态尾随段落):清掉不可见空白,再把该段落抬出
+    // 列表成顶层段落(tr.lift 列表自动断开,与真空尾随段落默认 splitListItem
+    // 的结果一致)。不能清完 return false 交默认链——Milkdown KeymapManager 的
+    // chainCommands 会把陈旧 state 传给后续 handler(mismatched transaction)。
+    if (!dispatch || !view) return true
+    const tr = state.tr.delete($from.start(), $from.end())
+    const $cur = tr.selection.$from
+    const range = $cur.blockRange(tr.doc.resolve($cur.before($cur.depth)))
+    const target = range ? liftTarget(range) : null
+    if (range && target !== null) tr.lift(range, target)
+    dispatch(tr.scrollIntoView())
+    return true
+  }
   if (!dispatch || !view) return true
   // 先清掉不可见空白(独立 dispatch,抬出基于清理后的 state),
   // 让抬出的段落是真空段——不清理则空白会留在顶层段落里

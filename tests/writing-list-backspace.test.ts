@@ -14,6 +14,9 @@ import { TextSelection } from 'prosemirror-state'
 import { getMarkdown } from '@milkdown/utils'
 import { listBackspacePlugins } from '@/lib/milkdown-list-backspace'
 
+// 用 fromCharCode 构造不可见字符,避免源码里出现看不见的空白字面量(测试坑见 list-enter 测试)
+const NBSP = String.fromCharCode(0xa0)
+
 type TestEditor = Awaited<ReturnType<typeof makeEditor>>
 
 async function makeEditor(initial = '') {
@@ -42,6 +45,31 @@ function placeCursor(te: TestEditor, target: string) {
   })
   if (pos < 0) throw new Error(`找不到: ${target}`)
   v.dispatch(v.state.tr.setSelection(TextSelection.create(v.state.doc, pos)))
+}
+
+/** 光标放到「文本内容恰好等于 target」的文本节点开头 */
+function placeCursorAtTextStart(te: TestEditor, target: string) {
+  const v = view(te)
+  let pos = -1
+  v.state.doc.descendants((node, p) => {
+    if (node.isText && node.text === target) pos = p
+    return true
+  })
+  if (pos < 0) throw new Error(`找不到: ${JSON.stringify(target)}`)
+  v.dispatch(v.state.tr.setSelection(TextSelection.create(v.state.doc, pos)))
+}
+
+/** 制造损坏结构:第一个 list_item 尾部追加一个段落(text 为 null 时是真空段落) */
+function appendTrailingParagraph(te: TestEditor, text: string | null) {
+  const v = view(te)
+  let itemEnd = -1
+  v.state.doc.descendants((node, p) => {
+    if (node.type.name === 'list_item' && itemEnd < 0) { itemEnd = p + node.nodeSize - 1; return false }
+    return true
+  })
+  const para = v.state.schema.nodes.paragraph.create(null, text === null ? null : v.state.schema.text(text))
+  v.dispatch(v.state.tr.insert(itemEnd, para))
+  v.dispatch(v.state.tr.setSelection(TextSelection.create(v.state.doc, itemEnd + 1)))
 }
 
 function docJSON(te: TestEditor): any {
@@ -131,6 +159,66 @@ describe('空列表项 Backspace 退出列表', () => {
     expect(nested.content.length).toBe(1) // 子一仍在子列表且无尾随空段落
     expect(nested.content[0].content.length).toBe(1)
     expect(outerItems.length).toBe(2) // 抬出的空项成为父列表第二项
+    te.destroy()
+  })
+
+  // 2026-09-22 用户反馈(building effective agents):删掉列表项可见文字后残留
+  // 不可见 nbsp 的「伪空项」上 Backspace,旧插件要求 content.size === 0 不拦截,
+  // 默认 joinBackward 把伪空段落并进上一项成为项内尾随段落——光标困在 list_item
+  // 里:无 bullet 的行、加号锚在项首行(看着没有加号)、Tab sink 失败无法缩进,
+  // 之后输入被序列化成缩进续行永久吸回列表。
+  it('伪空(nbsp 残留)项 Backspace → 清空白后抬出列表,不并入上一项', async () => {
+    const te = await makeEditor(`- 一\n- ${NBSP.repeat(3)}\n- 二\n`)
+    placeCursorAtTextStart(te, NBSP.repeat(3)) // 伪空项行首
+    pressKey(te, 'Backspace')
+    const doc = docJSON(te)
+    // 期望:bullet_list(一) + paragraph(空,光标处) + bullet_list(二)
+    expect(topLevelTypes(te)).toEqual(['bullet_list', 'paragraph', 'bullet_list'])
+    // 上一项不得留下尾随段落
+    expect(doc.content[0].content[0].content.length).toBe(1)
+    te.destroy()
+  })
+
+  it('伪空项光标在空白串中段 Backspace → 不拦截,默认逐字符删除', async () => {
+    const te = await makeEditor(`- 一\n- ${NBSP.repeat(3)}\n`)
+    const v = view(te)
+    let pos = -1
+    v.state.doc.descendants((node, p) => {
+      if (node.isText && node.text === NBSP.repeat(3)) pos = p + 2 // 第 2 个 nbsp 后
+      return true
+    })
+    v.dispatch(v.state.tr.setSelection(TextSelection.create(v.state.doc, pos)))
+    pressKey(te, 'Backspace')
+    // 只删一个字符,不抬出列表
+    expect(topLevelTypes(te)).toEqual(['bullet_list'])
+    te.destroy()
+  })
+
+  it('项内尾随伪空段落 Backspace → 清空白后并入项内上一段末尾,文本不被 nbsp 污染', async () => {
+    const te = await makeEditor('- 一\n- 二\n')
+    appendTrailingParagraph(te, NBSP.repeat(4)) // 项一内: [p(一), p(nbsp×4)],光标在伪空段行首
+    pressKey(te, 'Backspace')
+    const doc = docJSON(te)
+    const items = doc.content[0].content
+    expect(items.length).toBe(2) // 两项还在,没有裂出顶层段落
+    expect(items[0].content.length).toBe(1) // 尾随段落被删除
+    expect(items[0].content[0].content?.[0]?.text).toBe('一') // 「一」不含 nbsp
+    te.action(ctx => {
+      const { $from } = ctx.get(editorViewCtx).state.selection
+      expect($from.parent.textContent).toBe('一') // 光标并入「一」末尾
+    })
+    te.destroy()
+  })
+
+  it('项内尾随真空段落 Backspace → 保持默认自愈(删空段并入上一段),不被本插件破坏', async () => {
+    const te = await makeEditor('- 一\n- 二\n')
+    appendTrailingParagraph(te, null) // 项一内: [p(一), p(空)]
+    pressKey(te, 'Backspace')
+    const doc = docJSON(te)
+    const items = doc.content[0].content
+    expect(items.length).toBe(2)
+    expect(items[0].content.length).toBe(1)
+    expect(items[0].content[0].content?.[0]?.text).toBe('一')
     te.destroy()
   })
 })

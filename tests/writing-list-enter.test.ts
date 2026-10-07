@@ -137,4 +137,30 @@ describe('伪空列表项 Enter 退出列表', () => {
     expect(outerItems.length).toBe(2) // 抬出项成为父列表第二项
     te.destroy()
   })
+
+  // 2026-09-22(building effective agents):伪空项 Backspace 曾把段落并进上一项,
+  // 形成「项内尾随伪空段落」损坏态(参见 milkdown-list-backspace.ts)。在该段落
+  // 按 Enter,旧条件 childCount !== 1 直接放行,splitListItem 把 nbsp 尾巴裂成
+  // 新 bullet(看着像回车无效/没加号)。清空白后交默认链:真空尾随段落会被
+  // 抬出列表成顶层段落。
+  it('项内尾随伪空段落 Enter → 清空白后抬出为顶层段落,不裂 nbsp bullet', async () => {
+    const te = await makeEditor('- 一\n- 二\n')
+    // 制造损坏态:项一内 [p(一), p(nbsp×4)],光标在伪空段行首
+    const v = view(te)
+    let itemEnd = -1
+    v.state.doc.descendants((node, p) => {
+      if (node.type.name === 'list_item' && itemEnd < 0) { itemEnd = p + node.nodeSize - 1; return false }
+      return true
+    })
+    const para = v.state.schema.nodes.paragraph.create(null, v.state.schema.text(NBSP.repeat(4)))
+    v.dispatch(v.state.tr.insert(itemEnd, para))
+    v.dispatch(v.state.tr.setSelection(TextSelection.create(v.state.doc, itemEnd + 1)))
+    pressKey(te, 'Enter')
+    const doc = docJSON(te)
+    // 期望:bullet_list(一) + paragraph(空,光标处) + bullet_list(二)
+    expect(topLevelTypes(te)).toEqual(['bullet_list', 'paragraph', 'bullet_list'])
+    expect(doc.content[0].content[0].content.length).toBe(1) // 项一无尾随段落
+    expect(doc.content[2].content.length).toBe(1) // 项二独立成列表,没被裂进 nbsp 项
+    te.destroy()
+  })
 })
