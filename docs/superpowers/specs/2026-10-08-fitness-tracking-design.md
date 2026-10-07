@@ -50,6 +50,7 @@ type FitnessRecord = {
   routineId: string               // 当时练的序列（历史快照，序列改名不影响）
   entries: {
     exerciseId: string
+    name: string                                  // 快照动作名：动作日后从计划删除，历史仍能显示
     sets: { weight: number; reps: number }[]   // 二维数组：逐组 重量×次数
   }[]
 }
