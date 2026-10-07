@@ -25,7 +25,7 @@ import type {
   BlogCollectionFile, RecommendStage, ScrollMemorySlot,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
-import { pickRandom, paintingPool, preloadPaintings } from '@/lib/paintings'
+import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
 import { DEFAULT_JOB_BRIEFING_CONFIG, DEFAULT_JOB_PROFILE, isJobProfileEmpty, normalizeJobProfile, normalizeJobBriefingConfig } from '@/lib/job-briefing-defaults'
 import type { Painting } from '@shared/index'
 
@@ -280,6 +280,8 @@ type AppStore = {
   hiddenPaintings: string[]
   /** 封面是否显示画作删除按钮 */
   paintingDeleteEnabled: boolean
+  /** dev 模式下允许在封面拖拽调整画作焦点（打包版/e2e 隐藏入口，启动时经 IPC 拉取） */
+  paintingsEditable: boolean
   /** 封面记事板内容（随手记录迭代想法，持久化到 state.json） */
   coverNotepad: string
 
@@ -300,6 +302,7 @@ type AppStore = {
   swapPainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => void
   hidePainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => Promise<void>
   setPaintingDeleteEnabled: (enabled: boolean) => Promise<void>
+  setPaintingFocus: (surface: 'cover' | 'home' | 'study' | 'briefing', focus: string) => void
   setCoverNotepad: (text: string) => void
   goto: (p: Page) => Promise<void>
   settingsReturnTo: Page | null
@@ -620,6 +623,7 @@ export const useStore = create<AppStore>((set, get) => ({
   currentPaintings: { cover: null, home: null, study: null, briefing: null },
   hiddenPaintings: [],
   paintingDeleteEnabled: true,
+  paintingsEditable: false,
   coverNotepad: '',
   briefingRead: { digest: [], 'job-briefing': [] },
   briefing: { result: null, loading: false, error: null },
@@ -777,6 +781,9 @@ export const useStore = create<AppStore>((set, get) => ({
     })
     get().initPaintings()
 
+    // dev-only 裁剪入口开关；失败静默（默认 false 即隐藏入口）
+    ipc.paintingsCanEdit().then(v => set({ paintingsEditable: v === true })).catch(() => {})
+
     // 首次启动且没有缓存推荐时，在后台生成一次意外之径
     // 不 await，避免阻塞首页渲染；加载状态由 WildCardRecCard 展示
     if (!state.wildcardInspiration) {
@@ -808,6 +815,18 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!next) return
     set(state => ({
       currentPaintings: { ...state.currentPaintings, [surface]: next }
+    }))
+  },
+
+  // 拖拽裁剪实时调用：同步改 manifest 条目（本会话内换走再换回仍是新焦点），
+  // currentPaintings 换新对象触发 SurfaceBackground 的 objectPosition 更新。
+  setPaintingFocus: (surface, focus) => {
+    const current = get().currentPaintings[surface]
+    if (!current) return
+    const entry = manifest.find(p => p.id === current.id)
+    if (entry) entry.focus = focus
+    set(state => ({
+      currentPaintings: { ...state.currentPaintings, [surface]: { ...current, focus } }
     }))
   },
 
