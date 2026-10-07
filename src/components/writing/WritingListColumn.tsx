@@ -72,11 +72,14 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   // 挂载 + 切 tab 时重扫，拾取外部新增文件（两时机合并为一个 effect，避免进页面扫两遍）
   useEffect(() => { loadWritingTree() }, [tab, loadWritingTree])
 
-  // 只在「没有选中文件」或「当前文件已不在树里」（被外部删除）时自动选中第一篇。
-  // 否则新建文章后的 tree 刷新会把编辑器从新文件抢走（时序竞争）。
+  // 只在「没有选中文件」或「当前文件已不在树里」（被外部删除）时自动选中。
+  // 优先恢复上次打开的文件(lastWritingFile,跨重启持久化,2026-09-22 用户反馈),
+  // 不在树里(被外部删除)回退第一篇。否则新建文章后的 tree 刷新会把编辑器抢走。
   useEffect(() => {
     const current = useStore.getState().writingFile
     if (current && writingTreeContainsPath(tree, current.path)) return
+    const last = useStore.getState().lastWritingFile
+    if (last && writingTreeContainsPath(tree, last)) { selectWritingFile(last); return }
     const first = tree ? firstWritingFilePath(tree.writing) : null
     if (first) selectWritingFile(first)
   }, [tree, selectWritingFile])
