@@ -5,6 +5,7 @@ import { Button } from '@/components/Button'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { DeletePaintingButton } from '@/components/DeletePaintingButton'
+import { PaintingCropButton } from '@/components/PaintingCropButton'
 import { Quote } from '@/components/Quote'
 
 export function Cover() {
@@ -41,6 +42,7 @@ export function Cover() {
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <SwapPaintingButton surface="cover" />
         {paintingDeleteEnabled && <DeletePaintingButton surface="cover" />}
+        <PaintingCropButton />
         <button
           data-testid="cover-notepad-button"
           type="button"
