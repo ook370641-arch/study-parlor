@@ -12,7 +12,6 @@ import { tabKeymapPlugins } from '@/lib/milkdown-tab-keymap'
 import { codeblockEnterPlugins } from '@/lib/milkdown-codeblock-enter'
 import { tableHandlesPlugins } from '@/lib/milkdown-table-handles'
 import { gutterInsertPlugins } from '@/lib/milkdown-gutter-insert'
-import { smartEnterPlugins } from '@/lib/milkdown-smart-enter'
 import { hrBackspacePlugins } from '@/lib/milkdown-hr-backspace'
 import { hrArrowDownPlugins } from '@/lib/milkdown-hr-arrow-down'
 import { blockquoteUnwrapPlugins } from '@/lib/milkdown-blockquote-unwrap'
@@ -60,7 +59,8 @@ function EditorInner({ initial, onChange, registerAction = true, registerLocalAc
       .use(codeblockEnterPlugins)
       .use(tableHandlesPlugins)
       .use(gutterInsertPlugins)
-      .use(smartEnterPlugins)
+      // smart-enter 已移除(2026-09-22):段中 Enter 恢复 splitBlock 新建段落,
+      // Shift+Enter 硬换行走 commonmark 自带 hardbreakKeymap(tests/writing-smart-enter.test.ts)
       .use(hrBackspacePlugins)
       .use(hrArrowDownPlugins)
       .use(blockquoteUnwrapPlugins)

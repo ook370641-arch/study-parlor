@@ -101,7 +101,13 @@
 - **插入后光标落下一行**：`insertHrCommand` 包装——插入后光标定位到分隔线下方新起一行（无内容则补空段），用户可立即继续输入
 - **可删除**：验证行首退格 / 行尾删除能否删掉分隔线；若不可删，补 keymap / 命令路径使其可删
 
-## F. Enter 行为（智能 Enter）
+## F. Enter 行为（智能 Enter）【已废弃 2026-09-22】
+
+> **废弃原因**：段中 Enter 插 hardbreak 导致多行 hardbreak 段落里永远得不到新块、
+> gutter 加号锚在块首行（用户反馈「回车后没有新行、没有加号菜单」，building
+> effective agents 编辑中持续遭遇）。已恢复 Typora/Notion 标准：Enter 一律
+> splitBlock 新建段落，Shift+Enter 硬换行（commonmark 自带 hardbreakKeymap）。
+> 回归测试：`tests/writing-smart-enter.test.ts`。
 
 **背景**：普通段落里按 Enter，ProseMirror 基础 keymap 执行 `splitBlock`，把「ABCD」在 BC 间拆成两个相邻段落；保存为 `AB\n\nCD`（段落间空一行），重开渲染成两段带间距 → 看起来隔了两行。Shift+Enter 才是单行硬换行（`<br>`）。
 
@@ -141,7 +147,7 @@
 - `milkdown-clipboard`：切片清洗纯函数——code_block→paragraph（含多行软换行）、code mark 去除、textColor 去除；`**bold**` 保 strong
 - `sanitizeExternalHTML` 既有用例保留
 - `textColor` 色板与命令既有用例更新（色值变更）
-- `milkdown-smart-enter`：段中 Enter → hardbreak、段首/段尾 → 默认、非段落交还默认
+- `milkdown-smart-enter`：段中 Enter → hardbreak、段首/段尾 → 默认、非段落交还默认【已废弃 2026-09-22，见 §F；现该测试锁定 Typora 式 Enter 行为】
 
 **E2E 定向（`node scripts/e2e-changed.js --run`），writing 域：**
 - 粘贴 markdown 源码（`**bold**` + 表格 + 反引号 + `<span style="color">`）→ 断言加粗生效、无代码字体、无颜色；保存 → 重开 → 无多余 `**`

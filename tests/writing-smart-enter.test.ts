@@ -1,18 +1,17 @@
 // @vitest-environment jsdom
-// 智能 Enter：段中回车 = 单行硬换行 —— src/lib/milkdown-smart-enter.ts
+// Typora 式 Enter 行为回归 —— 2026-09-22 移除 milkdown-smart-enter.ts(智能回车)。
 //
-// 说明（与 brief 测试代码的唯一偏差）：交还默认（fall-through）的用例不断言
-// event.defaultPrevented === false。ProseMirror 的 view 在任何 keydown handler
-// （含 baseKeymap 的 splitBlock / 列表 Enter / 表格 exitTable）处理按键后都会调用
-// preventDefault，因此 defaultPrevented 在交还默认时恒为 true，无法区分"smart-enter
-// 未拦截"。改为用结果文档结构断言"默认行为确实发生"（段尾→2 段、列表→3 项、
-// 空段→splitBlock、表格→不插 hardbreak 且光标退出表格）。
+// 背景:旧「智能回车」(2026-08-11 §F)让段中 Enter 插入 hardbreak 而非新建段落,
+// 导致多行 hardbreak 段落里 Enter 永远得不到新块、gutter 加号锚在块首行,
+// 光标行「没有加号菜单」(building effective agents 编辑中持续遭遇,用户反馈)。
+// 现恢复 Typora/Notion 标准:Enter 一律新建段落(splitBlock 默认链),
+// Shift+Enter 才是硬换行(commonmark 自带 hardbreakKeymap)。
+// 本文件不加载任何自定义 Enter 插件,锁定默认链行为,防止智能回车回潮。
 import { describe, it, expect } from 'vitest'
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core'
 import { commonmark } from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
 import { TextSelection } from 'prosemirror-state'
-import { smartEnterPlugins } from '@/lib/milkdown-smart-enter'
 
 type TestEditor = Awaited<ReturnType<typeof makeEditor>>
 
@@ -21,7 +20,6 @@ async function makeEditor(initial = '') {
   document.body.appendChild(root)
   return Editor.make()
     .use(commonmark).use(gfm)
-    .use(smartEnterPlugins)
     .config(ctx => { ctx.set(rootCtx, root); ctx.set(defaultValueCtx, initial) })
     .create()
 }
@@ -40,12 +38,10 @@ function placeCursor(editor: TestEditor, targetText: string, offset = 0) {
   })
 }
 
-function pressEnter(editor: TestEditor) {
-  return editor.action(ctx => {
+function pressKey(editor: TestEditor, key: string, shiftKey = false) {
+  editor.action(ctx => {
     const view = ctx.get(editorViewCtx)
-    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
-    view.dom.dispatchEvent(event)
-    return { defaultPrevented: event.defaultPrevented }
+    view.dom.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey, bubbles: true, cancelable: true }))
   })
 }
 
@@ -59,75 +55,64 @@ function collectNodes(node: any, out = new Set<string>()) {
   return out
 }
 
-/** 光标是否仍位于表格（任意 table* 祖先）内部 */
-function cursorInsideTable(editor: TestEditor): boolean {
-  return editor.action(ctx => {
-    const $from = ctx.get(editorViewCtx).state.selection.$from
-    for (let d = $from.depth; d >= 0; d--) {
-      if ($from.node(d).type.name.startsWith('table')) return true
-    }
-    return false
-  })
-}
-
-describe('智能 Enter', () => {
-  it('段中 AB|CD 按 Enter → 插入 hardbreak，仍是单个段落', async () => {
+describe('Typora 式 Enter(无智能回车插件)', () => {
+  it('段中 AB|CD 按 Enter → 拆成两个段落(不是 hardbreak)', async () => {
     const editor = await makeEditor('ABCD')
     placeCursor(editor, 'ABCD', 2)
-    const { defaultPrevented } = pressEnter(editor)
-    expect(defaultPrevented).toBe(true)
-    const nodes = collectNodes(docJSON(editor))
-    expect(nodes.has('hardbreak')).toBe(true)
-    const paras = docJSON(editor).content.filter((c: any) => c.type === 'paragraph')
-    expect(paras.length).toBe(1) // 未拆成两段 → 无空行间距
+    pressKey(editor, 'Enter')
+    const doc = docJSON(editor)
+    const paras = doc.content.filter((c: any) => c.type === 'paragraph')
+    expect(paras.length).toBe(2)
+    expect(paras[0].content?.[0]?.text).toBe('AB')
+    expect(paras[1].content?.[0]?.text).toBe('CD')
+    expect(collectNodes(doc).has('hardbreak')).toBe(false)
     editor.destroy()
   })
 
-  it('段尾按 Enter → 交还默认，拆成两个段落', async () => {
+  it('段中 Shift+Enter → 插入 hardbreak,仍是单个段落', async () => {
+    const editor = await makeEditor('ABCD')
+    placeCursor(editor, 'ABCD', 2)
+    pressKey(editor, 'Enter', true)
+    const doc = docJSON(editor)
+    expect(collectNodes(doc).has('hardbreak')).toBe(true)
+    const paras = doc.content.filter((c: any) => c.type === 'paragraph')
+    expect(paras.length).toBe(1)
+    editor.destroy()
+  })
+
+  it('hardbreak 段落中按 Enter → 拆成两个段落(多块互不影响)', async () => {
+    // 旧智能回车在此场景(如 building effective agents 的 \ 行段落)只加 hardbreak,
+    // 永远得不到新块;现拆段,加号/块操作恢复正常
+    const editor = await makeEditor('甲\\\n乙')
+    placeCursor(editor, '乙', 1) // 光标在 乙 后(段尾,前面有 hardbreak)
+    pressKey(editor, 'Enter')
+    const doc = docJSON(editor)
+    const paras = doc.content.filter((c: any) => c.type === 'paragraph')
+    expect(paras.length).toBe(2)
+    editor.destroy()
+  })
+
+  it('段尾按 Enter → 拆成两个段落', async () => {
     const editor = await makeEditor('ABCD')
     placeCursor(editor, 'ABCD', 4)
-    pressEnter(editor)
+    pressKey(editor, 'Enter')
     const paras = docJSON(editor).content.filter((c: any) => c.type === 'paragraph')
     expect(paras.length).toBe(2)
     editor.destroy()
   })
 
-  it('列表项内 Enter → 交还默认，新增列表项', async () => {
+  it('列表项内 Enter → 新增列表项(默认链不受影响)', async () => {
     const editor = await makeEditor('- 一\n- 二\n')
     placeCursor(editor, '二', 1)
-    pressEnter(editor)
+    pressKey(editor, 'Enter')
     const items = docJSON(editor).content[0].content.filter((c: any) => c.type === 'list_item')
     expect(items.length).toBe(3)
     editor.destroy()
   })
 
-  it('列表项段中 Enter → 交还默认，新增列表项（不是 hardbreak）', async () => {
-    const editor = await makeEditor('- 一二\n- 三\n')
-    placeCursor(editor, '一二', 1) // 光标在 一|二 之间
-    pressEnter(editor)
-    const nodes = collectNodes(docJSON(editor))
-    expect(nodes.has('hardbreak')).toBe(false)
-    const items = docJSON(editor).content[0].content.filter((c: any) => c.type === 'list_item')
-    expect(items.length).toBe(3)
-    editor.destroy()
-  })
-
-  it('表格单元格内 Enter → 交还默认（不插 hardbreak，光标退出表格）', async () => {
-    const editor = await makeEditor('| 甲 | 乙 |\n|---|---|\n| 丙 | 丁 |\n')
-    placeCursor(editor, '甲', 1)
-    pressEnter(editor)
-    const nodes = collectNodes(docJSON(editor))
-    expect(nodes.has('hardbreak')).toBe(false) // smart-enter 未拦截
-    const doc = docJSON(editor)
-    expect(doc.content[0].type).toBe('table') // 表格原样保留
-    expect(doc.content[doc.content.length - 1].type).toBe('paragraph') // 默认 exitTable：表后新建空段落
-    expect(cursorInsideTable(editor)).toBe(false)
-    editor.destroy()
-  })
-
-  it('空段落 Enter → 交还默认（splitBlock 拆成两个空段）', async () => {
+  it('空段落 Enter → splitBlock 拆成两个空段', async () => {
     const editor = await makeEditor('')
-    pressEnter(editor)
+    pressKey(editor, 'Enter')
     const paras = docJSON(editor).content.filter((c: any) => c.type === 'paragraph')
     expect(paras.length).toBe(2)
     editor.destroy()

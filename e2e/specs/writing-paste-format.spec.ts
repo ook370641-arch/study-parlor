@@ -202,11 +202,11 @@ test.describe('@p2 writing-paste-format', () => {
     await expect(window.locator(SELECTORS.writing.formatBubble)).toBeVisible({ timeout: 3000 })
   })
 
-  // ── 4. 智能 Enter ──────────────────────────────────────────────────
+  // ── 4. Typora 式 Enter(2026-09-22 起,智能 Enter 已废弃) ─────────
 
-  test('智能 Enter:段中回车=单行硬换行;段尾回车=新段落', async ({ window, testLibraryPath }) => {
+  test('Typora Enter:段中回车=新段落;Shift+Enter=单行硬换行', async ({ window, testLibraryPath }) => {
     await gotoWriting(window, testLibraryPath)
-    const writing = await newFile(window, '智能回车测试')
+    const writing = await newFile(window, '回车行为测试')
 
     await writing.typeInEditor('ABCD')
     const proseMirror = writing.editor.locator('.ProseMirror')
@@ -218,15 +218,17 @@ test.describe('@p2 writing-paste-format', () => {
     await window.keyboard.press('Enter')
     await window.waitForTimeout(200)
 
-    // 段中回车 = 单行硬换行:仍是单个段落,只含一个 <br>,无空行
-    await expect(proseMirror.locator('p')).toHaveCount(1)
-    await expect(proseMirror.locator('br')).toHaveCount(1)
+    // 段中回车 = 拆成两个段落(无 <br>)
+    await expect(proseMirror.locator('p')).toHaveCount(2)
+    await expect(proseMirror.locator('br')).toHaveCount(0)
 
-    // 段尾回车 = 新段落
-    await window.keyboard.press('End')
-    await window.keyboard.press('Enter')
+    // Shift+Enter = 单行硬换行:光标此时在第二段段首(拆段后默认位置),
+    // 直接在段中 Shift+Enter → 该段落含 <br> 且段落数不变。
+    // (不在段尾验证——段尾硬换行在 DOM 里是 hardbreak<br>+占位<br> 两个节点,计数不稳)
+    await window.keyboard.press('Shift+Enter')
     await window.waitForTimeout(200)
     await expect(proseMirror.locator('p')).toHaveCount(2)
+    await expect(proseMirror.locator('br')).toHaveCount(1)
   })
 
   // ── 5. 分隔线 ──────────────────────────────────────────────────────
