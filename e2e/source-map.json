@@ -63,6 +63,7 @@
         "src/components/article-assistant/**",
         "src/lib/assistant-*.ts",
         "src/lib/guide-progress.ts",
+        "src/lib/selection-busy.ts",
         "electron/prompts/**"
       ],
       "specs": [
@@ -97,7 +98,8 @@
         "src/lib/html-*.ts",
         "electron/lib/writing-*.ts",
         "electron/ipc/writing*.ts",
-        "electron/lib/writing-assistant/**"
+        "electron/lib/writing-assistant/**",
+        "src/lib/scroll-memory.ts"
       ],
       "specs": [
         "writing-*.spec.ts"

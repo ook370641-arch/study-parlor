@@ -4,6 +4,10 @@ export interface ArticleChunk {
   startIndex: number
 }
 
+/** 稳定的空数组：useStore 选择器里 `?? []` 每次新建数组会让引用比较失效，
+ *  无关的 store 更新也会击穿 memo 触发 markdown 重渲染（DOM 重建会销毁选区）。 */
+export const EMPTY_GUIDE_CHUNKS: import('@shared/index').ArticleAssistantChunk[] = []
+
 function normalizeHeading(h: string): string {
   return h.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '').trim()
 }

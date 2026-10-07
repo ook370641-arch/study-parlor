@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { flushSync } from 'react-dom'
 import { ipc } from '@/lib/ipc'
+import { isSelectionActiveIn } from '@/lib/selection-busy'
 import { ANNOTATION_NOTE_SIZES, ANNOTATION_UI_SIZES } from '@/lib/briefing-font-size'
 import type { ArticleAnnotation, BriefingTheme, BriefingFontSize } from '@shared/index'
 
@@ -175,9 +176,14 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
   // 执行 applyMarkers 时先断开 observer：
   // applyMarkers 自身的 DOM 变更若被 observer 记录会再次触发自身（无限循环）
+  const pendingApplyRef = useRef(false)
   const runApplyMarkers = useCallback(() => {
-    // Don't modify DOM during active text selection — it clears the browser selection
-    if (selectingRef.current) return
+    // Don't modify DOM during active text selection — it clears the browser selection.
+    // 「选区未收敛」也算活跃：划选结束到 Ctrl+C 之间若拆分文本节点，复制会丢内容。
+    if (isSelectionActiveIn(articleRef.current, selectingRef.current)) {
+      pendingApplyRef.current = true
+      return
+    }
     const obs = observerRef.current
     const container = articleRef.current
     obs?.disconnect()
@@ -186,6 +192,22 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       obs.observe(container, { childList: true, subtree: true })
     }
   }, [articleRef])
+
+  // 选区收敛后补应用被延迟的 marker 重放
+  useEffect(() => {
+    const retry = () => {
+      if (pendingApplyRef.current && !isSelectionActiveIn(articleRef.current, selectingRef.current)) {
+        pendingApplyRef.current = false
+        runApplyMarkers()
+      }
+    }
+    document.addEventListener('mouseup', retry)
+    document.addEventListener('selectionchange', retry)
+    return () => {
+      document.removeEventListener('mouseup', retry)
+      document.removeEventListener('selectionchange', retry)
+    }
+  }, [articleRef, runApplyMarkers])
 
   // annotations 或文章变化时重放标记（100ms settle 等 ArticleBodyChunks 写完 DOM）
   useEffect(() => {

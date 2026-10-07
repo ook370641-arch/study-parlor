@@ -18,6 +18,7 @@ import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { isJobProfileEmpty } from '@/lib/job-briefing-defaults'
+import { EMPTY_GUIDE_CHUNKS } from '@/lib/article-chunks'
 import { AcademicBriefingLayout, NewspaperBriefingLayout, BriefingEmptyState, BriefingMetaLine } from '@/components/briefing'
 import { CollectionView } from '@/components/briefing/CollectionView'
 import { CandlelightLayer } from '@/components/briefing/CandlelightLayer'
@@ -75,8 +76,10 @@ export function Briefing() {
   const digestGen = useStore((s) => s.briefingGeneration)
   const jobViewingDate = useStore((s) => s.jobBriefingViewingDate)
   const jobGen = useStore((s) => s.jobBriefingGeneration)
-  const terms = useStore((s) => s.assistantSession?.guide?.chunks.flatMap((c) => c.terms) ?? [])
-  const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? [])
+  const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? EMPTY_GUIDE_CHUNKS)
+  // terms 由 guideChunks 派生而非独立选择器：flatMap 在选择器里每次新建数组，
+  // 引用不稳会击穿 memo 触发 markdown 重渲染（DOM 重建销毁选区）。
+  const terms = useMemo(() => guideChunks.flatMap((c) => c.terms), [guideChunks])
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const jobProfile = useStore((s) => s.jobProfile)

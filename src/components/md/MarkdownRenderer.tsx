@@ -4,7 +4,7 @@ import { MarkdownContent } from './MarkdownContent'
 import { reportComponents, fableComponents, dialogueComponents, briefingComponents } from './components'
 import { ReportHeader } from './ReportHeader'
 import { matter, parseFrontmatterSafe } from '@/lib/frontmatter-safe'
-import React from 'react'
+import React, { useMemo } from 'react'
 import type { DocType } from './fileType'
 import type { Frontmatter } from '@shared/index'
 import type { TermDef } from './rehypeTermHighlight'
@@ -111,13 +111,20 @@ export function MarkdownRenderer({ content, fileName, briefingStyle, hideHeader,
   // 整篇英文文章每段都命中，正文会全部变成斜体注释样式。
   const docNonCJK = !/[一-龥぀-ゟ゠-ヿ]/.test(body)
 
-  const components = briefingStyle
-    ? briefingComponents(briefingStyle)
-    : docType === 'report'
-      ? reportComponents
-      : docType === 'fable'
-        ? fableComponents
-        : dialogueComponents
+  // components 必须保持引用稳定：briefingComponents 是工厂，每次渲染新建函数会让
+  // React 把 p/pre/code 视为新组件类型而整树 remount——重建文本节点会销毁正在进行的
+  // 划选（拖动中 store 更新即断选，也是 E2E-A1 位置断言 flaky 的根因）。
+  const components = useMemo(
+    () =>
+      briefingStyle
+        ? briefingComponents(briefingStyle)
+        : docType === 'report'
+          ? reportComponents
+          : docType === 'fable'
+            ? fableComponents
+            : dialogueComponents,
+    [briefingStyle, docType]
+  )
 
   const shouldHideReportHeader = hideHeader || fileName === 'briefing.md'
 
