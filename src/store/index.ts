@@ -280,6 +280,8 @@ type AppStore = {
   hiddenPaintings: string[]
   /** 封面是否显示画作删除按钮 */
   paintingDeleteEnabled: boolean
+  /** 封面记事板内容（随手记录迭代想法，持久化到 state.json） */
+  coverNotepad: string
 
   // 外部资料摘要面板
   isExternalSummaryOpen: boolean
@@ -298,6 +300,7 @@ type AppStore = {
   swapPainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => void
   hidePainting: (surface: 'cover' | 'home' | 'study' | 'briefing') => Promise<void>
   setPaintingDeleteEnabled: (enabled: boolean) => Promise<void>
+  setCoverNotepad: (text: string) => void
   goto: (p: Page) => Promise<void>
   settingsReturnTo: Page | null
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
@@ -574,6 +577,14 @@ function debounceSaveExpanded(patch: Partial<StateJson>) {
   }, 300)
 }
 
+let notepadSaveTimer: ReturnType<typeof setTimeout> | null = null
+function debounceSaveNotepad(patch: Partial<StateJson>) {
+  if (notepadSaveTimer) clearTimeout(notepadSaveTimer)
+  notepadSaveTimer = setTimeout(() => {
+    ipc.patchState(patch)
+  }, 300)
+}
+
 export const useStore = create<AppStore>((set, get) => ({
   profile: { name: '', profile_text: '', preferred_topics: [] },
   lastUsed: { difficulty: 'mid', temperature: 0.7 },
@@ -609,6 +620,7 @@ export const useStore = create<AppStore>((set, get) => ({
   currentPaintings: { cover: null, home: null, study: null, briefing: null },
   hiddenPaintings: [],
   paintingDeleteEnabled: true,
+  coverNotepad: '',
   briefingRead: { digest: [], 'job-briefing': [] },
   briefing: { result: null, loading: false, error: null },
   briefingViewingDate: null,
@@ -757,6 +769,7 @@ export const useStore = create<AppStore>((set, get) => ({
       archivedTopics: Array.isArray(state.archivedTopics) ? state.archivedTopics : [],
       hiddenPaintings: Array.isArray(state.hiddenPaintings) ? state.hiddenPaintings : [],
       paintingDeleteEnabled: state.paintingDeleteEnabled ?? true,
+      coverNotepad: state.coverNotepad ?? '',
       library: library.filter(t => !(state.archivedTopics ?? []).includes(t.dirName)),
       unsavedSessions: unsaved,
       groups: groupsData.groups,
@@ -813,6 +826,10 @@ export const useStore = create<AppStore>((set, get) => ({
   setPaintingDeleteEnabled: async (enabled) => {
     set({ paintingDeleteEnabled: enabled })
     await ipc.patchState({ paintingDeleteEnabled: enabled } as Partial<StateJson>)
+  },
+  setCoverNotepad: (text) => {
+    set({ coverNotepad: text })
+    debounceSaveNotepad({ coverNotepad: text } as Partial<StateJson>)
   },
 
   // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。

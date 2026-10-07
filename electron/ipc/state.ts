@@ -62,6 +62,7 @@ const DEFAULT: StateJson = {
   archivedTopics: [],
   hiddenPaintings: [],
   paintingDeleteEnabled: true,
+  coverNotepad: '',
   llmConfigs: [],
   activeLlmConfigId: null,
 }

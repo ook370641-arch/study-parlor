@@ -681,6 +681,8 @@ export type StateJson = {
   hiddenPaintings?: string[]
   /** 封面是否显示画作删除按钮（设置页开关） */
   paintingDeleteEnabled?: boolean
+  /** 封面记事板内容（随手记录迭代想法） */
+  coverNotepad?: string
   /** LLM 多配置：首条由 .env 迁移播种；切换免重启 */
   llmConfigs?: LlmConfig[]
   activeLlmConfigId?: string | null
