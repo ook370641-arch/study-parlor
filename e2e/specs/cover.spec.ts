@@ -66,4 +66,16 @@ test.describe('@p1 cover', () => {
     await expect(window.locator(SELECTORS.quote.text)).toBeVisible()
     await expect(window.locator(SELECTORS.quote.meta)).toContainText('—')
   })
+
+  test('crop button hidden outside dev (e2e/packaged)', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.nameInput.or(cover.lightButton).waitFor({ state: 'visible' })
+
+    // e2e 环境 E2E_CONFIG_DIR 置位 → canEdit=false → 入口不渲染（打包版同理走 isPackaged）
+    await expect(window.locator(SELECTORS.cover.cropButton)).toHaveCount(0)
+
+    // IPC 暴露探测：打包/未打包构建的 preload 都必须挂上（ipc-state §1）
+    const hasApi = await window.evaluate(() => typeof (window as unknown as { api: Record<string, unknown> }).api.paintingsCanEdit === 'function')
+    expect(hasApi).toBe(true)
+  })
 })

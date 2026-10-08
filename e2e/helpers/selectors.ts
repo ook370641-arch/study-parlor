@@ -4,6 +4,7 @@ export const SELECTORS = {
     enterButton: '[data-testid="cover-enter-button"]',
     lightButton: '[data-testid="cover-light-button"]',
     briefingButton: '[data-testid="cover-briefing-button"]',
+    cropButton: '[data-testid="cover-crop-button"]',
     deletePaintingButton: '[data-testid="painting-delete-button"]',
     paintingLabel: '[data-testid="painting-label"]',
   },

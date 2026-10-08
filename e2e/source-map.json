@@ -158,7 +158,11 @@
         "src/pages/Cover.tsx",
         "src/pages/Home.tsx",
         "src/pages/Profile.tsx",
-        "electron/lib/library-data.ts"
+        "electron/lib/library-data.ts",
+        "src/components/PaintingCropButton.tsx",
+        "src/lib/crop-geometry.ts",
+        "electron/ipc/paintings.ts",
+        "electron/lib/painting-focus.ts"
       ],
       "specs": [
         "cover.spec.ts",
