@@ -350,7 +350,7 @@
     "title": "No.1",
     "url": "paintings/059-no-1.jpg",
     "category": "color-field",
-    "focus": "50% 82%"
+    "focus": "50% 44%"
   },
   {
     "id": "rothko-60",
@@ -1265,7 +1265,7 @@
     "title": "Wind",
     "url": "paintings/064-wind.jpg",
     "category": "illustration",
-    "focus": "50% 84%"
+    "focus": "50% 73%"
   },
   {
     "id": "billout-fa-",
@@ -2288,7 +2288,8 @@
     "painter": "Salvador Dalí",
     "title": "天鹅映象成大象（Swans Reflecting Elephants）",
     "url": "paintings/299-%E5%A4%A9%E9%B9%85%E6%98%A0%E8%B1%A1%E6%88%90%E5%A4%A7%E8%B1%A1-swans-reflecting-elephants.jpg",
-    "category": "surrealism"
+    "category": "surrealism",
+    "focus": "50% 0%"
   },
   {
     "id": "monet-9",
@@ -2555,7 +2556,7 @@
     "title": "通往帕纳塞斯（Ad Parnassum）",
     "url": "paintings/334-%E9%80%9A%E5%BE%80%E5%B8%95%E7%BA%B3%E5%A1%9E%E6%96%AF-ad-parnassum.jpg",
     "category": "expressionism",
-    "focus": "50% 6%"
+    "focus": "50% 4%"
   },
   {
     "id": "klee-2",
@@ -2579,7 +2580,7 @@
     "title": "倒牛奶的女人（The Milkmaid）",
     "url": "paintings/337-%E5%80%92%E7%89%9B%E5%A5%B6%E7%9A%84%E5%A5%B3%E4%BA%BA-the-milkmaid.jpg",
     "category": "baroque",
-    "focus": "50% 38%"
+    "focus": "50% 24%"
   },
   {
     "id": "vermeer-2",
