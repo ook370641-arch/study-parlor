@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
+import { manifest } from '@/lib/paintings'
 import { SWAP_DROP_DELAY_MS, SWAP_TOTAL_MS } from '@/lib/motion-presets'
 
 // vignette 暗角与画作解耦：即使画作未就绪（时序/缓存/HMR），暗角也必须渲染，
@@ -74,6 +75,8 @@ export function SurfaceBackground({ surface }: Props) {
           src={outgoingUrl}
           alt=""
           className="absolute inset-0 w-full h-full object-cover painting-fall-out"
+          // 坠出的旧图必须保持其焦点——否则自定义 focus 的画在换画瞬间跳回居中
+          style={{ objectPosition: manifest.find(p => p.url === outgoingUrl)?.focus ?? '50% 50%' }}
         />
       )}
       <img

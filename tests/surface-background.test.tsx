@@ -2,13 +2,15 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, act } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({ ipc: { patchState: vi.fn(), getState: vi.fn() } }))
-vi.mock('@/lib/paintings', () => ({ manifest: [], pickRandom: vi.fn(() => null) }))
+const mockManifest = vi.hoisted(() => [] as { id: string; painter: string; title: string; url: string; focus?: string }[])
+vi.mock('@/lib/paintings', () => ({ manifest: mockManifest, pickRandom: vi.fn(() => null) }))
 
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 
 const PAINT_A = { id: 'a', painter: 'Mark Rothko', title: 'A', url: 'paintings/a.jpg' }
 const PAINT_B = { id: 'b', painter: 'Guy Billout', title: 'B', url: 'paintings/b.jpg' }
+const PAINT_FOCUSED = { id: 'c', painter: 'Vermeer', title: 'C', url: 'paintings/c.jpg', focus: '50% 24%' }
 
 function seedPaintings(p: typeof PAINT_A | null) {
   useStore.setState({
@@ -63,6 +65,19 @@ describe('SurfaceBackground weight grammar', () => {
     const vignetteEl = bg.children[0] as HTMLElement
     expect(vignetteEl.tagName).toBe('DIV')
     expect(vignetteEl.style.background).toContain('radial-gradient')
+  })
+
+  it('swap: outgoing image keeps its custom focus (no snap to center)', () => {
+    // 回归：裁剪改过焦点的画作被换掉时，坠出的旧图必须保持原 object-position，
+    // 否则焦点偏离居中的画会在换画瞬间跳回 50% 50%，表现为画面大幅跳动。
+    mockManifest.push(PAINT_FOCUSED)
+    seedPaintings(PAINT_FOCUSED)
+    render(<SurfaceBackground surface="briefing" />)
+    act(() => { seedPaintings(PAINT_B) })
+
+    const outgoing = screen.getByTestId('surface-background').querySelector('img.painting-fall-out')! as HTMLImageElement
+    expect(outgoing.getAttribute('src')).toBe('paintings/c.jpg')
+    expect(outgoing.style.objectPosition).toBe('50% 24%')
   })
 
   it('CRT grain overlay activates during swap', () => {

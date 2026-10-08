@@ -162,7 +162,8 @@
         "src/components/PaintingCropButton.tsx",
         "src/lib/crop-geometry.ts",
         "electron/ipc/paintings.ts",
-        "electron/lib/painting-focus.ts"
+        "electron/lib/painting-focus.ts",
+        "src/components/SurfaceBackground.tsx"
       ],
       "specs": [
         "cover.spec.ts",
