@@ -388,7 +388,7 @@
     "file": "059-no-1.jpg",
     "category": "color-field",
     "year": null,
-    "focus": "50% 82%"
+    "focus": "50% 44%"
   },
   {
     "id": "rothko-60",
@@ -2372,7 +2372,8 @@
     "painter": "Salvador Dalí",
     "title": "天鹅映象成大象（Swans Reflecting Elephants）",
     "file": "299-天鹅映象成大象-swans-reflecting-elephants.jpg",
-    "category": "surrealism"
+    "category": "surrealism",
+    "focus": "50% 0%"
   },
   {
     "id": "monet-9",
@@ -2639,7 +2640,7 @@
     "title": "通往帕纳塞斯（Ad Parnassum）",
     "file": "334-通往帕纳塞斯-ad-parnassum.jpg",
     "category": "expressionism",
-    "focus": "50% 6%"
+    "focus": "50% 4%"
   },
   {
     "id": "klee-2",
@@ -2663,7 +2664,7 @@
     "title": "倒牛奶的女人（The Milkmaid）",
     "file": "337-倒牛奶的女人-the-milkmaid.jpg",
     "category": "baroque",
-    "focus": "50% 38%"
+    "focus": "50% 24%"
   },
   {
     "id": "vermeer-2",
