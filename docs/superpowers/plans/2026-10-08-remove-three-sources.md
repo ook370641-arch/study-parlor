@@ -27,7 +27,7 @@
 
 **Files:**
 - Delete: `C:\Users\86468\Desktop\学习库\求职简报\`（6 个 md + .config.json）
-- Delete: `C:\Users\86468\Desktop\学习库\夜航简报\`（15 个 md + 精选集.json + .bak）
+- Delete: `C:\Users\86468\Desktop\学习库\夜航简报\`（13 个 md：正文/.guide.md/.assistant.md + `精选集.json` + `.bak`，共 15 个文件）
 - Delete: `C:\Users\86468\Desktop\学习库\拾贝\`（对话/20260802-2156-d67f.json）
 
 **Interfaces:**
@@ -39,7 +39,7 @@
 ```bash
 cd "C:/Users/86468/Desktop/学习库" && ls && echo "---" && find 求职简报 夜航简报 拾贝 -type f | wc -l
 ```
-Expected: 根目录含 `求职简报 夜航简报 拾贝` 等；文件数约 24
+Expected: 根目录含 `求职简报 夜航简报 拾贝` 等；三目录文件合计 23 个
 
 - [ ] **Step 2: 删除三个目录**
 
@@ -350,7 +350,7 @@ Expected: src/ 无类型错误（tests/ 的三来源报错此时可存在，Task
 - Modify: `electron/preload.ts`（删 L108-121、L230-243、L176-181 与 L2 类型 import；**另删 collection* 段 L155-160（collectionRead…collectionUpdateQA）**——终审 H2）
 - Modify: `src/lib/ipc.ts`（删 L75-86、L149-159；**另删 collection getter 段 L108-113**——终审 H2）
 - Modify: `electron/ipc/index.ts`（删四个注册与 config getter）
-- Modify: `electron/ipc/state.ts`（**完整手术清单——终审 M2**：删 L7-8 两个 import（normalizeJobBriefingConfig/normalizeJobProfile）、DEFAULT 三来源字段、readStateJson 的 normalize 调用 L96-97、LIBRARY_KEYS 两键 L75-76、withLibraryData 叠加 L115/L121-122、patchState 的 saveJobData 块 L236-241、loadJobData/saveJobData 调用；**另加：readStateJson 加载时剥离三来源旧字段**（复用 L208-210 的 delete 模式，剥离清单：`briefingSourceOrder`/`scoutTab`/`scoutActiveConversationId`/`briefingRead`/`jobBriefingConfig`/`jobProfile` 及 `articlePanelMode` 的 scout/job 嵌套键、`briefingRead` 的 digest/job-briefing 嵌套键——满足"仿佛从未存在"））
+- Modify: `electron/ipc/state.ts`（**完整手术清单——终审 M2 + 复审发现 1/2**：删 L7-8 两个 import（normalizeJobBriefingConfig/normalizeJobProfile）、`DEFAULT.briefingSource: 'digest' → 'writing'`（L34，复审发现 2 显式点名）、其余 DEFAULT 三来源字段、readStateJson 的 normalize 调用 L96-97、LIBRARY_KEYS 两键 L75-76、withLibraryData 叠加 L115/L121-122、patchState 的 saveJobData 块 L236-241、loadJobData/saveJobData 调用；**旧字段剥离——复审发现 1 修正：只在 readStateJson 剥离 = 字段永留磁盘**（patchState 每次从磁盘重读 raw 重合并，state.ts:180-181）。必须在 **patchState 落盘前**（L208-210 的 delete 模式旁）加**无条件** delete（不要放进 L215-217 的 `if (lib && migrationOk)` 条件块）：`delete merged.briefingSourceOrder; delete merged.scoutTab; delete merged.scoutActiveConversationId; delete merged.briefingRead; delete merged.jobBriefingConfig; delete merged.jobProfile;`；嵌套键**逐键 delete 不重建对象**（`delete (merged.articlePanelMode as Record<string, unknown>)?.scout; delete (merged.articlePanelMode as Record<string, unknown>)?.job;`——重建对象有误删 anthropic 键风险）。readStateJson 侧的剥离可保留作内存清洁，但删盘必须靠 patchState）
 - Modify: `electron/lib/library-data.ts`（删 jobDataPathFor/loadJobData/saveJobData/isNonDefaultJobData 与 MIGRATED_KEYS 两键，保留 profile/anthropicBlogCache/anthropicBlogLastSeenAt）
 - Modify: `electron/lib/frontmatter.ts`（删三条 EXT_FIELDS、文件名推断、parent_type 联合值、job_sources）
 - Modify: `electron/lib/guide-v2-pipeline.ts`（删 runDigestGuideV2 L155，保留 runBlogGuideV2）
@@ -497,7 +497,7 @@ git commit -m "test: 删除三来源单测并清理共享测试断言"
 **Files:**
 - Delete（e2e/）：briefing 系列 14 个（`briefing.spec.ts`、`briefing-aesthetics`、`briefing-annotations-persistence`、`briefing-assistant-session-persistence`、`briefing-background-generation`、`briefing-collection`、`briefing-delete-cleanup`、`briefing-generation`、`briefing-lifecycle`、`briefing-real-api`、`briefing-real-generation`、`briefing-source-cards`、`briefing-source-switching`、`briefing-ux-optimization`）、job 系列 3 个（`job-briefing-error`、`job-briefing-generation`、`job-briefing-profile-panel`）、scout 系列 6 个（`scout-article-delete`、`scout-candidate-select`、`scout-conversation-crud`、`scout-persistence`、`scout-real-api`、`scout-source`）
 - Rewrite 评估：`briefing-rail-layout.spec.ts`、`briefing-source-order.spec.ts`、`generation-ceremony.spec.ts`（涉及侧栏/生成动画等保留 UI——逐个读，能改写为两来源则改写并保留，彻底绑定三来源才删）
-- Modify: `e2e/helpers/selectors.ts`（**逐项删，严禁按段删——终审 H3**：digest/job/scout 专属选择器（receiveDigestButton/dateColumn/dateItem/job*/scout 各块）才删；保留 `page`/`themeToggle`/`listColumn`/`listColumnToggle`/`sourceAnthropicButton`/`anthropicNewArticlesPrompt`/`anthropicArticleRow`/`anthropicListRailThumb` 及全部 writing*/anthropic* 选择器——它们被 ~15 个保留 spec 使用）、`e2e/helpers/test-library.ts`（删 seed 中三来源夹具）、`e2e/pages/ArticleAssistantPage.ts`、`e2e/README.md`
+- Modify: `e2e/helpers/selectors.ts`（**逐项删，严禁按段删——终审 H3**：digest/job/scout 专属选择器（receiveDigestButton/dateColumn/dateItem/job*/scout 各块）才删；保留 `page`/`themeToggle`/`listColumn`/`listColumnToggle`/`sourceAnthropicButton`/`anthropicNewArticlesPrompt`/`anthropicArticleRow`/`anthropicListRailThumb` 及全部 writing*/anthropic* 选择器——它们被 ~15 个保留 spec 使用。**二级保留清单（复审补充，防临场误删）**：`readingPane`/`sourceExpandToggle`/`fontSizeDecrease`/`fontSizeIncrease`/`darkOverlay`/`surfaceBackground`/`markdownBody`/`sourceSidebar`/`sourceSidebarToggle`/`railControls`/`contentShell`/`transferToWriting`/`confirmDialog`/`swapPaintingButton*`/constitution* 全部保留；随被删组件死亡的（sourceCard*/sourceGroup/constellation/skeleton/progress/errorDisplay/retryButton/cancelButton/generatedAt/cacheWriteFailedBadge/sourceStatus/dateFlame/dateTodayMini/dateDelete/dateMenu/academicLayout/newspaperLayout）一并删）、`e2e/helpers/test-library.ts`（删 seed 中三来源夹具）、`e2e/pages/ArticleAssistantPage.ts`、`e2e/README.md`
 - Modify（**保留 spec 中的三来源用例——终审 B-C**）：`e2e/specs/article-assistant.spec.ts`（删 seed digest 缓存 + receive-digest 打开文章用例，L19-57）、`article-assistant-guide.spec.ts`（删 digest seed 与默认 briefingSource='digest'，L34-50）、`article-annotations.spec.ts`（删 'E2E-A4: digest 简报划线标注' 用例，L243）、`writing-navigation.spec.ts`（删 "Switch to digest and back" 步骤，L37）、`writing-catalog.spec.ts`（改"默认来源是 digest"前置为 writing，L28）、`lighting.spec.ts`（删 'job briefing: flame uses star-blue color' 用例，L83-89）、`writing-list-column.spec.ts`（清注释，L50）、`anthropic-blog-reading-position.spec.ts`（清 seed 中 articlePanelMode 的 scout/job 键，L113）
 - Modify: `e2e/source-map.json`（删 "job-briefing"、"scout" 两个 group；"briefing-core" 收窄为写作/博客相关源文件；"article-side-panel" 保留）
 
@@ -610,4 +610,6 @@ Expected: release/ 产出安装包；主进程无三来源模块缺失报错
 
 **完整性终审结论**：26 处漏删已补入：tests 9 个文件（Task 8）、代码 4 处（Task 4 BriefingMetaLine/parse-source-link/ArticleBodyChunks，Task 6 writing-assistant/tools.ts）、e2e 8 处用例（Task 9）、scripts 3 个实验残留（Task 10）、.dsh/rules 英文标识词盲区（Task 10 混合 grep）。state.json 与学习库确认无遗漏。
 
-**对 spec 的两处细化**（已获用户优先级授权：不影响使用 > 无残留）：briefingSource 字段保留收窄；state.json 加载时剥离旧字段。
+**对 spec 的两处细化**（已获用户优先级授权：不影响使用 > 无残留）：briefingSource 字段保留收窄；state.json 加载时剥离旧字段。**另**：Task 7 Step 2 对 spine-seals 的"零引用确认后删"处置取代 spec §6"明确不动"条目（复审确认计划内部自洽，spec 为文档级滞后，不回改）。
+
+**第三轮复审（聚焦用户数据安全 + 一致性）结论**：用户数据零风险——三目录纯应用生成、无符号链接、无交叉路径引用；库外数据落点（state.json/recovery/debug/search-key.enc/writing/.backups/Desktop\Agent\日报）无一被计划触碰；剥离清单不含任何保留字段。两处必修已并入 Task 6（剥离逻辑改到 patchState 落盘前、DEFAULT.briefingSource 显式点名），两处文档级小修已并入（夜航简报文件数、selectors 二级保留清单）。
