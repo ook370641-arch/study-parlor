@@ -13,7 +13,7 @@ import {
   buildAssistantUserPrompt,
   formatSearchResults,
 } from '../lib/article-assistant-prompt'
-import { generateArticleSearchQuery } from '../lib/job-briefing'
+import { generateArticleSearchQuery } from '../lib/article-search-query'
 import { runBlogGuideV2, runDigestGuideV2 } from '../lib/guide-v2-pipeline'
 import { GUIDE_FORMAT_VERSION } from '../lib/guide-v2'
 import type { AppConfig } from '../env'

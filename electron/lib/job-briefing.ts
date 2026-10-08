@@ -565,22 +565,6 @@ export async function generateJobBriefingKeywords(
   }
 }
 
-export async function generateArticleSearchQuery(
-  cfg: AppConfig,
-  args: { articleContent: string; selection?: string; lastMessage?: string }
-): Promise<string> {
-  const prompt = readPrompt('generate-search-query')
-    .replace('{{articleContent}}', args.articleContent.slice(0, 3000))
-    .replace('{{selection}}', args.selection ?? '')
-    .replace('{{lastMessage}}', args.lastMessage ?? '')
-  const text = await chatNonStream(cfg, {
-    messages: [{ role: 'user', content: prompt } as Message],
-    temperature: 0.3,
-    thinking: { type: 'enabled' },
-  })
-  return text.trim()
-}
-
 async function runQuestionQuery(
   cfg: AppConfig,
   query: string,

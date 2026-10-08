@@ -9,8 +9,8 @@ import {
   jobBriefingFilePath,
   jobBriefingDir,
   generateJobBriefingKeywords,
-  generateArticleSearchQuery,
 } from '../lib/job-briefing'
+import { generateArticleSearchQuery } from '../lib/article-search-query'
 import { toJobErrorCode } from '../lib/job-error-codes'
 import { deleteSiblingFiles } from '../lib/sibling-files'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
