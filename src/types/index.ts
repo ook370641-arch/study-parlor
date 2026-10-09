@@ -547,6 +547,12 @@ export type IpcApi = {
   patchState: (patch: Partial<StateJson>) => Promise<void>
   /** 同步落盘(sendSync):仅退出路径(beforeunload)使用,保证渲染进程卸载前必达主进程 */
   patchStateSync: (patch: Partial<StateJson>) => void
+  fitnessLoad: () => Promise<FitnessData>
+  fitnessSaveRecord: (r: FitnessRecord) => Promise<FitnessData>
+  fitnessDeleteRecord: (id: string) => Promise<FitnessData>
+  fitnessSaveBodyMetric: (m: BodyMetric) => Promise<FitnessData>
+  fitnessDeleteBodyMetric: (date: string) => Promise<FitnessData>
+  fitnessSavePlan: (p: { routines: FitnessRoutine[]; schedule: FitnessScheduleEntry[] }) => Promise<FitnessData>
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
   llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>

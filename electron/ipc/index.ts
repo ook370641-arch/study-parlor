@@ -12,6 +12,7 @@ import { registerAnnotationsIpc } from './annotations'
 import { registerAppIpc } from './app'
 import { registerWritingIpc } from './writing'
 import { registerWritingAssistantIpc } from './writing-assistant'
+import { registerFitnessIpc } from './fitness'
 import { registerPaintingsIpc } from './paintings'
 
 export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
@@ -26,6 +27,7 @@ export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   registerAnnotationsIpc(cfg)
   registerWritingIpc(cfg)
   registerWritingAssistantIpc(cfg)
+  registerFitnessIpc()
   registerPaintingsIpc()
   registerAppIpc()
 }
