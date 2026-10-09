@@ -107,9 +107,6 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         articlePanelMode: s.articlePanelMode,
         articleAssistantGuideCollapsed: s.articleAssistantGuideCollapsed,
         anthropicReaderFilePath: s.anthropicReaderFilePath,
-        scoutTab: s.scoutTab,
-        scoutReaderFilePath: s.scoutReaderFilePath,
-        jobResultFilePath: s.jobBriefing.result?.filePath ?? null,
       })
       if (target) { s.openWritingCompanionPicker(target); return }
     } else if (s.writingCompanionPicker && id === s.briefingSource) {

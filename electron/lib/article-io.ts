@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
 
-const ALLOWED_DIRS = ['Anthropic博客', '拾贝']
+const ALLOWED_DIRS = ['Anthropic博客']
 
 function code(code: string): Error {
   return Object.assign(new Error(code), { code })

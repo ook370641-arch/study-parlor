@@ -23,10 +23,4 @@ describe('writeArticleBody', () => {
     expect(raw).toContain('新正文')
     expect(raw).not.toContain('旧正文')
   })
-  it('拾贝目录同样可写', () => {
-    const p = path.join(dir, '拾贝', '文章', 'x.md')
-    write(p, '---\ntitle: T\n---\n旧')
-    writeArticleBody(dir, p, '新')
-    expect(fs.readFileSync(p, 'utf8')).toContain('新')
-  })
 })
