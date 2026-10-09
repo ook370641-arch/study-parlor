@@ -16,6 +16,7 @@ import type {
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   GuideProgress,
   BlogCollectionFile, RecommendStage, ScrollMemorySlot,
+  FitnessData, FitnessRecord, BodyMetric, FitnessRoutine, FitnessScheduleEntry,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
@@ -124,6 +125,13 @@ type AppStore = {
   /** 宪法可视化报告视图是否打开（仅运行时，与 anthropicReader 互斥） */
   constitutionReportOpen: boolean
   setBriefingSource: (source: BriefingSourceId) => Promise<void>
+  fitnessData: FitnessData | null
+  loadFitness: () => Promise<void>
+  saveFitnessRecord: (rec: FitnessRecord) => Promise<void>
+  deleteFitnessRecord: (id: string) => Promise<void>
+  saveBodyMetric: (m: BodyMetric) => Promise<void>
+  deleteBodyMetric: (date: string) => Promise<void>
+  saveFitnessPlan: (routines: FitnessRoutine[], schedule: FitnessScheduleEntry[]) => Promise<void>
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
   ) => Promise<
@@ -518,6 +526,7 @@ export const useStore = create<AppStore>((set, get) => ({
   candlelightEnabled: true,
   paintingPlateEnabled: false,
   briefingSource: 'writing',
+  fitnessData: null,
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicReaderFilePath: null,
   anthropicReaderBody: null,
@@ -583,7 +592,7 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
       studyFontSize: normalizeStudyFontSize(state.studyFontSize),
-      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'writing' ? state.briefingSource : 'writing',
+      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'writing' || state.briefingSource === 'fitness' ? state.briefingSource : 'writing',
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null, sectionStatus: state.anthropicBlogCache.sectionStatus ?? {}, articleMetaCache: state.anthropicBlogCache.articleMetaCache ?? {} }
         : { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {}, articleMetaCache: {} },
@@ -927,6 +936,20 @@ export const useStore = create<AppStore>((set, get) => ({
     if (source === 'writing') void ipc.writingRefreshCatalog() // 摘要唯一生成时机(spec C)
   },
 
+  loadFitness: async () => { set({ fitnessData: await ipc.fitnessLoad() }) },
+  saveFitnessRecord: async (rec) => { set({ fitnessData: await ipc.fitnessSaveRecord(rec) }) },
+  deleteFitnessRecord: async (id) => { set({ fitnessData: await ipc.fitnessDeleteRecord(id) }) },
+  saveBodyMetric: async (m) => { set({ fitnessData: await ipc.fitnessSaveBodyMetric(m) }) },
+  deleteBodyMetric: async (date) => { set({ fitnessData: await ipc.fitnessDeleteBodyMetric(date) }) },
+  saveFitnessPlan: async (routines, schedule) => { set({ fitnessData: await ipc.fitnessSavePlan({ routines, schedule }) }) },
+
+  markBriefingRead: async (source, date) => {
+    const cur = get().briefingRead
+    if (cur[source].includes(date)) return
+    const next = { ...cur, [source]: [...cur[source], date].slice(-120) }
+    set({ briefingRead: next })
+    await ipc.patchState({ briefingRead: next } as Partial<StateJson>)
+  },
   discoverAnthropicArticles: async (opts) => {
     const commit = opts?.commit !== false
     if (commit) {
