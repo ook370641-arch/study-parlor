@@ -5,8 +5,6 @@ import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { StudyControlsGroup } from '@/components/StudyControlsGroup'
 import { LlmConfigCard } from '@/components/settings/LlmConfigCard'
 import { ipc } from '@/lib/ipc'
-import { DEFAULT_JOB_BRIEFING_CONFIG } from '@/lib/job-briefing-defaults'
-import type { JobBriefingConfig } from '@shared/index'
 
 export function Settings() {
   const goto = useStore(s => s.goto)
@@ -24,8 +22,6 @@ export function Settings() {
   const [searchApiKey, setSearchApiKey] = useState('')
   const [showSearchKey, setShowSearchKey] = useState(false)
   const [searchConfigured, setSearchConfigured] = useState(false)
-  const [jobConfig, setJobConfig] = useState<JobBriefingConfig>(DEFAULT_JOB_BRIEFING_CONFIG)
-  const [jobConfigSaving, setJobConfigSaving] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -38,12 +34,6 @@ export function Settings() {
     ipc.searchCheckConfig()
       .then(({ configured }) => { if (mounted) setSearchConfigured(configured) })
       .catch(err => { if (mounted) setError(err.message || '读取搜索配置失败') })
-    ipc.getState()
-      .then(state => {
-        if (!mounted) return
-        setJobConfig(state.jobBriefingConfig ?? DEFAULT_JOB_BRIEFING_CONFIG)
-      })
-      .catch(err => { if (mounted) setError(err.message || '读取求职简报配置失败') })
     return () => { mounted = false }
   }, [])
 
@@ -73,23 +63,6 @@ export function Settings() {
     } catch (err: any) {
       setError(err.message || '保存 Tavily API Key 失败')
     }
-  }
-
-  const handleSaveJobConfig = async () => {
-    setJobConfigSaving(true)
-    setError(null)
-    try {
-      await useStore.getState().setJobBriefingConfig(jobConfig)
-      showToast('求职简报配置已保存')
-    } catch (err: any) {
-      setError(err.message || '保存求职简报配置失败')
-    } finally {
-      setJobConfigSaving(false)
-    }
-  }
-
-  const handleResetJobConfig = () => {
-    setJobConfig(DEFAULT_JOB_BRIEFING_CONFIG)
   }
 
   const handleRestoreTopic = async (dirName: string) => {
@@ -248,56 +221,6 @@ export function Settings() {
                     ))}
                   </ul>
                 )}
-              </div>
-
-              {/* 求职简报 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>求职简报</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目标岗位关键词（逗号分隔）</div>
-                    <input
-                      data-testid="settings-job-role-keywords"
-                      type="text"
-                      value={jobConfig.roleKeywords.join('，')}
-                      onChange={e => setJobConfig(prev => ({ ...prev, roleKeywords: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
-                    />
-                  </div>
-
-                  <div>
-                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目标城市（逗号分隔）</div>
-                    <input
-                      data-testid="settings-job-cities"
-                      type="text"
-                      value={jobConfig.cities.join('，')}
-                      onChange={e => setJobConfig(prev => ({ ...prev, cities: e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean) }))}
-                      className={`w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
-                    />
-                  </div>
-
-                  <div className="text-xs text-parchment/50 mt-4">
-                    关注公司、个人档案、搜索关键词请在
-                    <button
-                      data-testid="settings-goto-job-profile"
-                      onClick={() => goto('briefing')}
-                      className="underline text-ember hover:text-ember/80 mx-1"
-                    >
-                      求职简报页面
-                    </button>
-                    中编辑
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    <Button data-testid="settings-job-save" onClick={handleSaveJobConfig} disabled={jobConfigSaving}>
-                      保存求职简报配置
-                    </Button>
-                    <Button data-testid="settings-job-reset" variant="ghost" onClick={handleResetJobConfig}>
-                      恢复默认
-                    </Button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

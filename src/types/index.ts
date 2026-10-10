@@ -163,9 +163,9 @@ export type ArticleAssistantTerm = {
 
 export type ArticleAssistantChunk = {
   heading: string
-  /** v1 摘要式导读；v2（digest 背景铺陈）起由 context 取代，旧缓存/非 digest 类型仍是 summary */
+  /** v1 摘要式导读；v2 起由 context 取代（仅旧 digest 缓存产出），非 digest 类型仍是 summary */
   summary?: string
-  /** v2 背景铺陈，仅 digest 新链路产出 */
+  /** v2 背景铺陈，仅旧 digest 链路产出 */
   context?: string
   terms: ArticleAssistantTerm[]
 }
@@ -175,7 +175,7 @@ export type ArticleAssistantGuide = {
   chunks: ArticleAssistantChunk[]
 }
 
-/** digest 导读 v2 生成进度（主进程 articleAssistant:guideProgress 事件负载） */
+/** 导读 v2 生成进度（主进程 articleAssistant:guideProgress 事件负载） */
 export type GuideProgress =
   | { stage: 'planning' }
   | { stage: 'searching'; done: number; total: number }
@@ -207,7 +207,7 @@ export type ArticleAssistantGuideFile = {
   filePath: string
   guide: ArticleAssistantGuide
   generatedAt: string
-  /** digest 导读格式版本；缺失视为 1（摘要式） */
+  /** 导读格式版本；缺失视为 1（摘要式） */
   guideVersion?: number
 }
 
@@ -232,36 +232,7 @@ export type ArticleAnnotation = {
   updatedAt: string
 }
 
-export type BriefingCollectionQA = {
-  role: 'user' | 'assistant'
-  content: string
-  selection?: string
-}
-
-export type BriefingCollectionEntry = {
-  id: string
-  briefingFilePath: string
-  briefingDate: string
-  chunkHeading: string
-  /** guide.chunks 下标（preamble 不计） */
-  chunkIndex: number
-  chunkBody: string
-  guide: { summary?: string; context?: string; terms: ArticleAssistantTerm[] }
-  qa: BriefingCollectionQA[]
-  /** 已处理的源旁注会话消息数（增量追加游标） */
-  qaMessageCount: number
-  /** 用户备注（条目底部，可空；空串持久化时删除字段） */
-  note?: string
-  collectedAt: string
-  updatedAt: string
-}
-
-export type BriefingCollection = {
-  version: 1
-  entries: BriefingCollectionEntry[]
-}
-
-export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'briefing' | 'external-materials' | 'anthropic-article' | 'web-article' | 'article-assistant' | 'job-briefing' | 'writing'
+export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'external-materials' | 'anthropic-article' | 'article-assistant' | 'writing'
 
 export type Profile = {
   name: string
@@ -294,13 +265,12 @@ export type Frontmatter = {
   /** Anthropic 博客栏目；旧文章缺省视为 'engineering' */
   section?: string
   parent_path?: string
-  parent_type?: 'briefing' | 'anthropic-article' | 'job-briefing' | 'writing' | 'web-article'
+  parent_type?: 'anthropic-article' | 'writing'
   generated_at?: string
   guide_version?: number
   role_keywords?: string[]
   cities?: string[]
   companies?: string[]
-  job_sources?: string
 }
 
 export type Group = {
@@ -399,8 +369,6 @@ export type SearchErrorCode =
   | 'LLM_ERROR'
   | 'NO_RESULTS'
 
-export type BriefingSourceType = 'x' | 'podcast' | 'blog'
-
 export type BriefingTheme = 'academic' | 'newspaper'
 
 export type BriefingFontSize =
@@ -414,143 +382,6 @@ export type BriefingFontSize =
   | '5xl'
   | '6xl'
   | '7xl'
-
-export type BriefingSourceStatus = Record<string, 'ok' | 'failed' | 'empty'>
-
-export type BriefingStage =
-  | 'fetching'
-  | 'extracting'
-  | 'assembling'
-  | 'finalizing'
-  | 'done'
-  | JobBriefingStage
-
-/** briefing:progress 事件的来源域，区分 digest（前沿）与 job（求职）简报 */
-export type BriefingProgressSource = 'digest' | 'job'
-
-export type BriefingSourceItem = {
-  text?: string
-  url?: string
-  timestamp?: string
-}
-
-export type BriefingSource = {
-  type: BriefingSourceType
-  author?: string
-  title?: string
-  url?: string
-  items: BriefingSourceItem[]
-}
-
-export type BriefingResult = {
-  title: string
-  date: string
-  content: string
-  sources: BriefingSource[]
-  filePath: string
-  cached: boolean
-  cacheWriteFailed?: boolean
-  generatedAt: string
-  sourceStatus: BriefingSourceStatus
-}
-
-export type JobCompany = {
-  name: string
-  careerPageUrl?: string
-  priority: number
-  enabled: boolean
-}
-
-export type JobBriefingConfig = {
-  companies: JobCompany[]
-  roleKeywords: string[]
-  cities: string[]
-  skillKeywords: string[]
-  eventSearchKeywords: string[]
-  jobSearchKeywords: string[]
-  searchInternship: boolean
-  searchFallRecruit: boolean
-}
-
-export type JobErrorCode =
-  | 'MISSING_SEARCH_KEY'
-  | 'NETWORK_ERROR'
-  | 'TAVILY_ERROR'
-  | 'OFFICIAL_PAGE_FAILED'
-  | 'EXTRACTION_ERROR'
-  | 'EMPTY_RESULTS'
-  | 'CACHE_WRITE_FAILED'
-  | 'TIMEOUT'
-  | 'LLM_ERROR'
-
-export type JobProfile = {
-  targetRoles: string[]
-  direction: string
-  skills: string[]
-  experience: string
-  additionalNotes: string
-  updatedAt: string
-  keywordsGeneratedAt: string
-}
-
-export type JobEventType = '秋招开启' | '新岗位' | '线下活动' | '宣讲会' | '其他'
-
-export type JobEvent = {
-  company: string
-  eventType: JobEventType
-  title: string
-  date: string
-  summary: string
-  url: string
-}
-
-export type MatchedJob = {
-  title: string
-  city: string
-  salary: string
-  requirements: string[]
-  url: string
-  source: 'official' | 'tavily'
-  company: string
-  matchLevel: 1 | 2 | 3 | 4 | 5
-  matchReason: string
-  sourceEventTitle?: string
-}
-
-export type InterviewQuestion = {
-  question: string
-  intent: string
-  prepTip: string
-  frequency: string
-  companies: string[]
-  url: string
-}
-
-export type JobBriefingSourceStatus = {
-  events: 'ok' | 'failed'
-  jobs: 'ok' | 'failed'
-  questions: 'ok' | 'failed'
-  official: Record<string, 'ok' | 'failed'>
-}
-
-export type JobBriefingStage =
-  | 'scanning-events'
-  | 'digging-jobs'
-  | 'aggregating-questions'
-  | 'synthesizing'
-  | 'finalizing'
-  | 'done'
-
-export type JobBriefingResult = {
-  title: string
-  date: string
-  content: string
-  filePath: string
-  cached: boolean
-  cacheWriteFailed?: boolean
-  generatedAt: string
-  sourceStatus: JobBriefingSourceStatus
-}
 
 export type WritingRoot = 'writing' | 'repository'
 export type WritingErrorCode = 'WRITING_IO_ERROR' | 'WRITING_PATH_FORBIDDEN' | 'WRITING_NOT_FOUND' | 'WRITING_NAME_CONFLICT' | 'PREVIEW_PARSE_ERROR' | 'PDF_NO_TEXT'
@@ -582,7 +413,7 @@ export type WritingTreeNode = {
   catalogUpdatedAt?: string
 }
 export type WritingTone = 'parchment' | 'plain' | 'ink'
-export type WritingSourceType = 'study' | 'blog' | 'digest' | 'job' | 'repository' | 'writing' | 'web' | 'group'
+export type WritingSourceType = 'study' | 'blog' | 'repository' | 'writing' | 'web' | 'group'
 export type WritingSource = { type: WritingSourceType; id: string; label: string }
 export type WritingAssistantMessage = {
   role: 'user' | 'assistant'
@@ -616,7 +447,7 @@ export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalo
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
-export type BriefingSourceId = 'writing' | 'digest' | 'anthropic' | 'job-briefing' | 'scout'
+export type BriefingSourceId = 'writing' | 'anthropic'
 
 export type LlmConfig = { id: string; apiKey: string; baseUrl: string; model: string }
 
@@ -642,9 +473,6 @@ export type StateJson = {
   briefingFontSize?: BriefingFontSize
   studyFontSize?: BriefingFontSize
   briefingSource?: BriefingSourceId
-  briefingSourceOrder?: BriefingSourceId[]
-  jobBriefingConfig?: JobBriefingConfig
-  jobProfile?: JobProfile
   anthropicBlogCache?: AnthropicBlogCache
   anthropicBlogLastSeenAt?: string | null
   articleAssistantGuideWidth?: number
@@ -655,8 +483,6 @@ export type StateJson = {
   writingFontSize?: BriefingFontSize
   writingTone?: WritingTone
   writingListTab?: 'articles' | 'repository'
-  scoutTab?: 'chat' | 'articles'
-  scoutActiveConversationId?: string | null
   writingAssistantWidth?: number
   writingAssistantOpen?: boolean
   lastWritingFile?: string | null
@@ -672,7 +498,6 @@ export type StateJson = {
   writingUIFontSize?: BriefingFontSize
   /** 各写作文件的折叠代码块 hash 多重集合(filePath → codeblockHash 列表) */
   writingCodeblockCollapsed?: Record<string, string[]>
-  briefingRead?: { digest?: string[]; 'job-briefing'?: string[] }
   candlelightEnabled?: boolean
   paintingPlateEnabled?: boolean
   /** 已归档（隐藏）的主题目录名，主页/卫星图不显示，可在设置恢复 */
@@ -688,7 +513,7 @@ export type StateJson = {
   activeLlmConfigId?: string | null
   writingPanelMode?: 'assistant' | 'companion'
   writingCompanionMap?: Record<string, string>
-  articlePanelMode?: Record<'anthropic' | 'scout' | 'job', 'guide' | 'companion'>
+  articlePanelMode?: Record<'anthropic', 'guide' | 'companion'>
   articleCompanionMap?: Record<string, string>
   /** 博客对照槽最后打开的对照文(✕关闭时清 null,重开应用按此恢复) */
   lastArticleCompanion?: { mainKey: string; filePath: string } | null
@@ -740,11 +565,6 @@ export type IpcApi = {
   onArticleAssistantSearchDone: (cb: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void) => () => void
   onArticleAssistantGuideProgress: (cb: (payload: GuideProgress) => void) => () => void
   onArticleAssistantReasoningChunk: (cb: (sessionId: string, text: string) => void) => () => void
-  onBriefingProgress: (cb: (source: BriefingProgressSource, stage: BriefingStage, detail?: string) => void) => () => void
-  briefingGenerate: (args: { date: string; profile: Profile; force?: boolean }) => Promise<BriefingResult>
-  briefingList: () => Promise<{ date: string; filePath: string }[]>
-  briefingDelete: (args: { filePath: string }) => Promise<{ ok: true } | { ok: false; message: string }>
-  briefingAbort: () => Promise<void>
   bootFatal: () => Promise<string | null>
   bootStart: () => Promise<{ alreadyCompleted: boolean }>
   onBootProgress: (cb: (stage: string, progress: number) => void) => () => void
@@ -852,26 +672,19 @@ export type IpcApi = {
   annotationsRead: (articlePath: string) => Promise<ArticleAnnotation[]>
   annotationsWrite: (articlePath: string, annotations: ArticleAnnotation[]) => Promise<void>
 
-  collectionRead: () => Promise<BriefingCollection>
-  collectionAddEntry: (entry: BriefingCollectionEntry) => Promise<{ ok: true } | { ok: false; code: 'DUPLICATE' | 'WRITE_ERROR' }>
-  collectionRemoveEntry: (id: string) => Promise<void>
-  collectionAppendQA: (args: { id: string; qa: BriefingCollectionQA[]; qaMessageCount: number }) => Promise<void>
-  collectionUpdateNote: (args: { id: string; note: string }) => Promise<void>
-  collectionUpdateQA: (args: { id: string; qa: BriefingCollectionQA[] }) => Promise<void>
-
   // Article assistant
   articleAssistantGenerateGuide: (args: {
     articleContent: string
-    articleType: 'briefing' | 'anthropic-article' | 'web-article'
+    articleType: 'anthropic-article'
     articleTitle?: string
-    /** digest v2：正文 H2/H3 标题数，用于撰写进度分母 */
+    /** 导读 v2：正文 H2/H3 标题数，用于撰写进度分母 */
     entriesTotal?: number
   }) => Promise<ArticleAssistantGuide>
 
   articleAssistantSendMessage: (args: {
     sessionId: string
     articleContent: string
-    articleType: 'briefing' | 'anthropic-article' | 'web-article'
+    articleType: 'anthropic-article'
     messages: ArticleAssistantMessage[]
     annotations?: ArticleAnnotation[]
     selection?: string
@@ -885,42 +698,25 @@ export type IpcApi = {
 
   articleAssistantReadSession: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
+    parentType: 'anthropic-article' | 'writing'
   }) => Promise<ArticleAssistantSessionFile | null>
 
   articleAssistantWriteSession: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
+    parentType: 'anthropic-article' | 'writing'
     messages: ArticleAssistantMessage[]
   }) => Promise<{ filePath: string }>
 
   articleAssistantReadGuide: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
+    parentType: 'anthropic-article' | 'writing'
   }) => Promise<ArticleAssistantGuideFile | null>
 
   articleAssistantWriteGuide: (args: {
     parentPath: string
-    parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
+    parentType: 'anthropic-article' | 'writing'
     guide: ArticleAssistantGuide
   }) => Promise<{ filePath: string }>
-
-  // Job briefing
-  jobBriefingGenerate: (args: { date: string; force?: boolean }) => Promise<JobBriefingResult>
-  jobBriefingList: () => Promise<{ date: string; filePath: string }[]>
-  jobBriefingDelete: (args: { filePath: string }) => Promise<{ ok: true } | { ok: false; message: string }>
-  jobBriefingAbort: () => Promise<void>
-  jobBriefingDiscoverPages: () => Promise<
-    | { ok: true; companies: JobCompany[] }
-    | { ok: false; code: JobErrorCode; message: string }
-  >
-  jobBriefingGenerateKeywords: (args: {
-    profile: JobProfile
-  }) => Promise<{ ok: true; eventKeywords: string[]; jobKeywords: string[] }
-              | { ok: false; code: 'LLM_ERROR' | 'EMPTY_PROFILE'; message: string }>
-  jobBriefingGenerateArticleSearchQuery: (args: {
-    articleContent: string; selection?: string; lastMessage?: string
-  }) => Promise<{ ok: true; query: string } | { ok: false; code: 'LLM_ERROR'; message: string }>
 
   // App shell
   openExternal: (url: string) => Promise<void>
@@ -958,18 +754,6 @@ export type IpcApi = {
   onWritingAssistantTool: (cb: (e: WritingToolEvent) => void) => () => void
   onWritingAssistantReasoningChunk: (cb: (sessionId: string, text: string) => void) => () => void
 
-  // Scout (拾贝)
-  scoutSendMessage: (a: { conversationId: string; messages: ScoutMessage[] }) => Promise<void>
-  scoutAbort: (a: { conversationId: string }) => Promise<void>
-  scoutListConversations: () => Promise<ScoutConversationMeta[]>
-  scoutCreateConversation: () => Promise<ScoutConversation>
-  scoutGetConversation: (a: { id: string }) => Promise<ScoutConversation | null>
-  scoutRenameConversation: (a: { id: string; title: string }) => Promise<{ ok: true } | { ok: false; message: string }>
-  scoutDeleteConversation: (a: { id: string }) => Promise<{ ok: true } | { ok: false; message: string }>
-  scoutListArticles: () => Promise<ScoutArticleMeta[]>
-  scoutDeleteArticle: (a: { filePath: string }) => Promise<{ ok: true } | { ok: false; message: string }>
-  onScoutTool: (cb: (e: ScoutToolEvent) => void) => () => void
-
   // 画作裁剪（dev-only，打包版/e2e 下 canEdit=false）
   paintingsCanEdit: () => Promise<boolean>
   paintingsSetFocus: (args: { id: string; focus: string }) => Promise<{ ok: true } | { ok: false; code: PaintingFocusErrorCode; message: string }>
@@ -989,57 +773,6 @@ export type Painting = {
 
 /** 画作焦点写回的错误码（paintings:setFocus IPC） */
 export type PaintingFocusErrorCode = 'INVALID_FOCUS' | 'UNKNOWN_PAINTING' | 'INDEX_UNREADABLE' | 'WRITE_FAILED'
-
-// --- 拾贝（Scout）来源 ---
-export type ScoutErrorCode =
-  | 'NETWORK_ERROR'
-  | 'TAVILY_ERROR'
-  | 'FETCH_BLOCKED'
-  | 'NO_CONTENT'
-  | 'LLM_ERROR'
-
-export type ScoutCandidate = {
-  title: string
-  url: string
-  sourceName: string
-  reason: string
-  fetchable?: boolean      // 预检结果；undefined = 未检
-  failReason?: string
-}
-
-export type ScoutMessage = {
-  role: 'user' | 'assistant'
-  content: string
-  candidates?: ScoutCandidate[]   // assistant 消息附带的候选卡片
-  candidatesResolved?: boolean
-}
-
-export type ScoutConversationMeta = {
-  id: string
-  title: string
-  createdAt: string
-  updatedAt: string
-  filePath: string
-}
-
-export type ScoutConversation = ScoutConversationMeta & {
-  messages: ScoutMessage[]
-}
-
-export type ScoutArticleMeta = {
-  url: string
-  title: string
-  summary: string | null
-  publishedAt: string | null
-  sourceName: string | null
-  filePath: string
-}
-
-export type ScoutToolEvent =
-  | { conversationId: string; phase: 'start' | 'done'; tool: 'web_search'; query: string }
-  | { conversationId: string; phase: 'candidates'; candidates: ScoutCandidate[] }
-  | { conversationId: string; phase: 'start' | 'done'; tool: 'fetch_and_save'; urls: string[]; savedTitles?: string[] }
-  | { conversationId: string; phase: 'start' | 'done'; tool: 'read_article'; url: string }
 
 declare global {
   interface Window {

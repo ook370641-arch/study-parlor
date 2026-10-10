@@ -1,6 +1,5 @@
-import { useRef, useState } from 'react'
 import { useStore } from '@/store'
-import type { BriefingSourceId, BriefingTheme } from '@shared/index'
+import type { BriefingTheme } from '@shared/index'
 import { BriefingThemeToggle } from './briefing/BriefingThemeToggle'
 import { companionPickerTarget } from '@/lib/companion-picker'
 
@@ -8,25 +7,6 @@ interface Props {
   collapsed: boolean
   onToggle: () => void
   theme: BriefingTheme
-}
-
-function DigestIcon() {
-  return (
-    <svg
-      data-testid="briefing-source-icon-digest"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="5" width="18" height="14" rx="1" />
-      <path d="M7 9h10M7 13h10M7 17h6" />
-    </svg>
-  )
 }
 
 function AnthropicIcon() {
@@ -47,52 +27,9 @@ function AnthropicIcon() {
   )
 }
 
-function JobBriefingIcon() {
-  return (
-    <svg
-      data-testid="briefing-source-icon-job-briefing"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="7" width="18" height="13" rx="1.5" />
-      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" />
-    </svg>
-  )
-}
-
-function ScoutIcon() {
-  return (
-    <svg
-      data-testid="briefing-source-icon-scout"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 3c-4 3-7 4-7 9a7 7 0 0 0 14 0c0-5-3-6-7-9z" />
-      <path d="M12 3v18" />
-    </svg>
-  )
-}
-
 export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
   const source = useStore((s) => s.briefingSource)
   const setSource = useStore((s) => s.setBriefingSource)
-  const order = useStore((s) => s.briefingSourceOrder)
-  const setOrder = useStore((s) => s.setBriefingSourceOrder)
-  const [dropTarget, setDropTarget] = useState<{ id: BriefingSourceId; pos: 'before' | 'after' } | null>(null)
-  const dragIdRef = useRef<BriefingSourceId | null>(null)
-  const didDropRef = useRef(false)
   const picker = useStore((s) => s.writingCompanionPicker)
   const goto = useStore((s) => s.goto)
 
@@ -154,28 +91,10 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
       testId: 'briefing-source-writing',
     },
     {
-      id: 'digest',
-      label: '前沿',
-      icon: DigestIcon,
-      testId: 'briefing-source-digest',
-    },
-    {
       id: 'anthropic',
       label: '博客',
       icon: AnthropicIcon,
       testId: 'briefing-source-anthropic',
-    },
-    {
-      id: 'job-briefing',
-      label: '求职',
-      icon: JobBriefingIcon,
-      testId: 'briefing-source-job-briefing',
-    },
-    {
-      id: 'scout',
-      label: '拾贝',
-      icon: ScoutIcon,
-      testId: 'briefing-source-scout',
     },
   ] as const
 
@@ -196,73 +115,22 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         </button>
       </div>
       <nav className="flex-1 p-2 space-y-2">
-        {(order
-          .map((id) => navItems.find((i) => i.id === id))
-          .filter((i): i is (typeof navItems)[number] => Boolean(i))
-        ).map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon
           // picker 打开时来源未切换（仍是博客栏目），active 样式移到「写作」上提示挑选模式
           const isActive = picker ? item.id === 'writing' : source === item.id
-          const isDropBefore = dropTarget?.id === item.id && dropTarget.pos === 'before'
-          const isDropAfter = dropTarget?.id === item.id && dropTarget.pos === 'after'
           return (
             <button
               key={item.id}
               data-testid={item.testId}
-              draggable={!collapsed}
-              onDragStart={(e) => {
-                dragIdRef.current = item.id
-                e.dataTransfer.setData('text/briefing-source', item.id)
-                e.dataTransfer.effectAllowed = 'move'
-              }}
-              onDragOver={(e) => {
-                if (collapsed) return
-                e.preventDefault()
-                const rect = e.currentTarget.getBoundingClientRect()
-                if (!rect.height) return
-                const r = (e.clientY - rect.top) / rect.height
-                setDropTarget({ id: item.id, pos: r < 0.5 ? 'before' : 'after' })
-              }}
-              onDragLeave={() => setDropTarget((cur) => (cur?.id === item.id ? null : cur))}
-              onDrop={(e) => {
-                e.preventDefault()
-                const src = dragIdRef.current
-                const t = dropTarget
-                setDropTarget(null)
-                if (!src || !t || src === t.id) return
-                const base = order.filter((id) => id !== src)
-                let idx = base.indexOf(t.id)
-                if (t.pos === 'after') idx += 1
-                didDropRef.current = true
-                void setOrder([...base.slice(0, idx), src, ...base.slice(idx)])
-              }}
-              onDragEnd={() => {
-                dragIdRef.current = null
-                setDropTarget(null)
-              }}
-              onClick={() => {
-                // 拖拽落手后的合成 click 不触发导航
-                if (didDropRef.current) { didDropRef.current = false; return }
-                handleNavClick(item.id)
-              }}
-              className={`group ${base} ${isActive ? `${themeClasses.active} ${
+              onClick={() => handleNavClick(item.id)}
+              className={`${base} ${isActive ? `${themeClasses.active} ${
                 isAcademic
-                  ? source === 'job-briefing'
-                    ? 'border-[#7fa8d9] rounded-none border-l-[3px]'
-                    : 'border-[#d97757] rounded-none border-l-[3px]'
+                  ? 'border-[#d97757] rounded-none border-l-[3px]'
                   : 'border-[#1a1a1a] rounded-none border-l-[3px]'
-              }` : themeClasses.inactive} ${isDropBefore ? 'border-t-2 border-t-ember' : ''} ${isDropAfter ? 'border-b-2 border-b-ember' : ''}`}
+              }` : themeClasses.inactive}`}
               title={item.label}
             >
-              {!collapsed && (
-                <span
-                  aria-hidden="true"
-                  title="拖拽排序"
-                  className="opacity-0 group-hover:opacity-50 transition-opacity text-[10px] leading-none cursor-grab -ml-1"
-                >
-                  ⠿
-                </span>
-              )}
               <Icon />
               {!collapsed && <span>{item.label}</span>}
             </button>

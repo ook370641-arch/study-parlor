@@ -1,11 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { ipcMain } from 'electron'
-import { chatNonStream, chatStream, buildChatBody } from '../lib/kimi'
+import { chatStream, buildChatBody } from '../lib/kimi'
 import type { ThinkingConfig } from '../lib/kimi'
 import { searchWeb } from '../lib/search'
 import { getSearchApiKey } from '../lib/credentials'
-import { extractJsonObject } from '../lib/extract-json'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { dumpRecovery } from '../lib/recovery'
 import {
@@ -14,7 +13,7 @@ import {
   formatSearchResults,
 } from '../lib/article-assistant-prompt'
 import { generateArticleSearchQuery } from '../lib/article-search-query'
-import { runBlogGuideV2, runDigestGuideV2 } from '../lib/guide-v2-pipeline'
+import { runBlogGuideV2 } from '../lib/guide-v2-pipeline'
 import { GUIDE_FORMAT_VERSION } from '../lib/guide-v2'
 import type { AppConfig } from '../env'
 import type {
@@ -62,21 +61,6 @@ function promptsDir(): string {
   throw new Error(`article-assistant prompts dir not found. Tried: ${candidates.join(', ')}`)
 }
 
-function isValidTerm(value: unknown): value is ArticleAssistantTerm {
-  const o = value as Record<string, unknown> | null
-  return !!o && typeof o.term === 'string' && typeof o.translation === 'string' && typeof o.explanation === 'string'
-}
-
-function isValidChunk(value: unknown): value is ArticleAssistantChunk {
-  const o = value as Record<string, unknown> | null
-  return !!o && typeof o.heading === 'string' && typeof o.summary === 'string' && Array.isArray(o.terms) && o.terms.every(isValidTerm)
-}
-
-function isValidGuide(value: unknown): value is ArticleAssistantGuide {
-  const o = value as Record<string, unknown> | null
-  return !!o && typeof o.background === 'string' && Array.isArray(o.chunks) && o.chunks.every(isValidChunk)
-}
-
 function sessionPathFor(parentPath: string, libraryPath?: string): string {
   const parsed = path.parse(parentPath)
   const base = libraryPath && !path.isAbsolute(parentPath) ? libraryPath : ''
@@ -103,16 +87,7 @@ export function serializeGuide(guide: ArticleAssistantGuide): string {
   return `# 背景\n\n${guide.background}\n\n${chunks}`
 }
 
-export function parseAssistantGuideBody(
-  body: string,
-  guideVersion?: number,
-  parentType?: 'briefing' | 'anthropic-article' | 'web-article' | 'writing'
-): ArticleAssistantGuide | null {
-  // v2 回填语义：digest 的正文段是 context（背景铺陈），回读必须回填 context，
-  // 否则 session 里的 guide 丢失 context 后被 persistAssistantState 重写 → 缓存降级。
-  // 博客 v2 的正文段是 summary（章节总结），不回填 context。
-  const isV2 = (guideVersion ?? 1) >= GUIDE_FORMAT_VERSION
-  const backfillContext = isV2 && parentType === 'briefing'
+export function parseAssistantGuideBody(body: string): ArticleAssistantGuide | null {
   const lines = body.split('\n')
   let background = ''
   let i = 0
@@ -147,11 +122,7 @@ export function parseAssistantGuideBody(
       i++
     }
     const text = bodyLines.join(' ')
-    chunks.push(
-      backfillContext
-        ? { heading, summary: text, context: text, terms }
-        : { heading, summary: text, terms }
-    )
+    chunks.push({ heading, summary: text, terms })
   }
 
   if (!background && chunks.length === 0) return null
@@ -259,7 +230,7 @@ export function parseAssistantSessionBody(body: string): ArticleAssistantMessage
 export function registerArticleAssistantIpc(cfg: AppConfig) {
   ipcMain.handle(
     'articleAssistant:generateGuide',
-    async (event, args: { articleContent: string; articleType: 'briefing' | 'anthropic-article' | 'web-article'; articleTitle?: string; entriesTotal?: number }) => {
+    async (event, args: { articleContent: string; articleType: 'anthropic-article'; articleTitle?: string; entriesTotal?: number }) => {
       const send = (channel: string, ...payload: unknown[]) => {
         if (event.sender.isDestroyed()) return
         event.sender.send(channel, ...payload)
@@ -268,71 +239,23 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
 
       // E2E deterministic mock: return a fixed valid guide without calling the LLM.
       if (isE2EMock()) {
-        if (args.articleType === 'briefing') {
-          // v2 mock：合成三阶段进度事件（带延时，给 E2E 留出断言窗口），返回 context 格式导读
-          const entriesTotal = Math.max(args.entriesTotal ?? 1, 1)
-          send('articleAssistant:guideProgress', { stage: 'planning' })
+        // 博客 v2 mock：合成三阶段进度事件（带延时，给 E2E 留出断言窗口），返回 summary 形状导读
+        const entriesTotal = Math.max(args.entriesTotal ?? 1, 1)
+        send('articleAssistant:guideProgress', { stage: 'planning' })
+        await sleep(400)
+        send('articleAssistant:guideProgress', { stage: 'searching', done: 1, total: 1 })
+        await sleep(500)
+        for (let i = 1; i <= 3; i++) {
           await sleep(400)
-          send('articleAssistant:guideProgress', { stage: 'searching', done: 1, total: 2 })
-          await sleep(500)
-          send('articleAssistant:guideProgress', { stage: 'searching', done: 2, total: 2 })
-          for (let i = 1; i <= 5; i++) {
-            await sleep(400)
-            send('articleAssistant:guideProgress', {
-              stage: 'writing',
-              chars: i * 240,
-              entriesDone: Math.min(i >= 5 ? 2 : i >= 3 ? 1 : 0, entriesTotal),
-              entriesTotal,
-            })
-          }
-          const mockGuideV2: ArticleAssistantGuide = {
-            background: '这是一份 E2E 测试简报的整体背景：本期条目共同反映了 AI Agent 工程化落地的争论。',
-            chunks: [
-              {
-                heading: 'AI Safety',
-                context: 'Constitutional AI 出自 Anthropic 2022 年的同名论文，是用成文原则替代人工反馈的对齐路线（E2E mock 背景铺陈）。',
-                terms: [
-                  {
-                    term: 'Constitutional AI',
-                    translation: '宪法式 AI',
-                    explanation: '一种用一组书面原则约束模型行为、减少人工标注的对齐方法。',
-                  },
-                ],
-              },
-              {
-                heading: 'Training Data',
-                context: '训练数据去重与过滤是模型安全的基础环节（E2E mock 背景铺陈）。',
-                terms: [
-                  {
-                    term: 'Deduplication',
-                    translation: '去重',
-                    explanation: '移除训练语料中重复或近重复样本的过程。',
-                  },
-                ],
-              },
-            ],
-          }
-          return mockGuideV2
+          send('articleAssistant:guideProgress', {
+            stage: 'writing',
+            chars: i * 200,
+            entriesDone: Math.min(i - 1, entriesTotal),
+            entriesTotal,
+          })
         }
-        if (args.articleType === 'anthropic-article') {
-          // 博客 v2 mock：合成三阶段进度事件（与 briefing mock 同节奏），返回 summary 形状导读
-          const entriesTotal = Math.max(args.entriesTotal ?? 1, 1)
-          send('articleAssistant:guideProgress', { stage: 'planning' })
-          await sleep(400)
-          send('articleAssistant:guideProgress', { stage: 'searching', done: 1, total: 1 })
-          await sleep(500)
-          for (let i = 1; i <= 3; i++) {
-            await sleep(400)
-            send('articleAssistant:guideProgress', {
-              stage: 'writing',
-              chars: i * 200,
-              entriesDone: Math.min(i - 1, entriesTotal),
-              entriesTotal,
-            })
-          }
-          if (process.env.E2E_GUIDE_BAD_JSON === '1') {
-            throw typedError('GUIDE_JSON_ERROR', 'E2E forced bad guide json')
-          }
+        if (process.env.E2E_GUIDE_BAD_JSON === '1') {
+          throw typedError('GUIDE_JSON_ERROR', 'E2E forced bad guide json')
         }
         const mockGuide: ArticleAssistantGuide = {
           background: '这是一段用于 E2E 测试的文章背景介绍，说明本文讨论 AI 对齐与安全。',
@@ -364,88 +287,23 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         return mockGuide
       }
 
-      // digest 走 v2 背景铺陈管线；其余类型沿用旧的单次摘要式调用
-      if (args.articleType === 'briefing') {
-        const v2PromptPath = path.join(promptsDir(), 'digest-guide-v2.md')
-        const systemV2 = fs.existsSync(v2PromptPath) ? fs.readFileSync(v2PromptPath, 'utf8') : ''
-        try {
-          return await runDigestGuideV2(
-            cfg,
-            {
-              system: systemV2,
-              articleContent: args.articleContent,
-              articleTitle: args.articleTitle,
-              entriesTotal: args.entriesTotal,
-            },
-            (p) => send('articleAssistant:guideProgress', p)
-          )
-        } catch (err) {
-          const code = (err as Error & { code?: string }).code
-          if (code === 'GUIDE_JSON_ERROR' || code === 'GUIDE_ABORT') throw err
-          throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
-        }
-      }
-
-      // 博客走 v2 管线（搜索增强背景 + 保留章节总结）；web-article 沿用旧单次调用
-      if (args.articleType === 'anthropic-article') {
-        const blogPromptPath = path.join(promptsDir(), 'blog-guide-v2.md')
-        const systemBlog = fs.existsSync(blogPromptPath) ? fs.readFileSync(blogPromptPath, 'utf8') : ''
-        try {
-          return await runBlogGuideV2(
-            cfg,
-            {
-              system: systemBlog,
-              articleContent: args.articleContent,
-              articleTitle: args.articleTitle,
-              entriesTotal: args.entriesTotal,
-            },
-            (p) => send('articleAssistant:guideProgress', p)
-          )
-        } catch (err) {
-          const code = (err as Error & { code?: string }).code
-          if (code === 'GUIDE_JSON_ERROR' || code === 'GUIDE_ABORT') throw err
-          throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
-        }
-      }
-
-      // 旧路径（web-article）
-      const promptPath = path.join(promptsDir(), 'digest-guide.md')
-      const system = fs.existsSync(promptPath) ? fs.readFileSync(promptPath, 'utf8') : ''
-      const user = `Article title: ${args.articleTitle ?? 'Untitled'}\n\n${args.articleContent}`
-
+      // 博客走 v2 管线（搜索增强背景 + 保留章节总结）
+      const blogPromptPath = path.join(promptsDir(), 'blog-guide-v2.md')
+      const systemBlog = fs.existsSync(blogPromptPath) ? fs.readFileSync(blogPromptPath, 'utf8') : ''
       try {
-        const raw = await chatNonStream(cfg, {
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
-          temperature: 0.7,
-          thinking: { type: 'enabled', reasoning_effort: 'max' },
-        })
-
-        const extracted = extractJsonObject(raw)
-        if (!extracted) {
-          throw typedError('GUIDE_JSON_ERROR', 'Failed to extract JSON object from LLM response')
-        }
-
-        let guide: unknown
-        try {
-          guide = JSON.parse(extracted)
-        } catch (parseErr) {
-          throw typedError(
-            'GUIDE_JSON_ERROR',
-            parseErr instanceof Error ? parseErr.message : 'Guide JSON parse failed'
-          )
-        }
-
-        if (!isValidGuide(guide)) {
-          throw typedError('GUIDE_JSON_ERROR', 'Guide JSON missing required fields or invalid shape')
-        }
-
-        return guide
+        return await runBlogGuideV2(
+          cfg,
+          {
+            system: systemBlog,
+            articleContent: args.articleContent,
+            articleTitle: args.articleTitle,
+            entriesTotal: args.entriesTotal,
+          },
+          (p) => send('articleAssistant:guideProgress', p)
+        )
       } catch (err) {
-        const code = (err as Error & { code?: ArticleAssistantErrorCode }).code
-        if (code === 'GUIDE_ABORT' || code === 'GUIDE_JSON_ERROR') throw err
+        const code = (err as Error & { code?: string }).code
+        if (code === 'GUIDE_JSON_ERROR' || code === 'GUIDE_ABORT') throw err
         throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
       }
     }
@@ -457,7 +315,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       _,
       args: {
         parentPath: string
-        parentType: 'briefing' | 'anthropic-article' | 'writing' | 'web-article'
+        parentType: 'anthropic-article' | 'writing'
         messages: ArticleAssistantMessage[]
       }
     ): Promise<{ filePath: string }> => {
@@ -507,7 +365,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:readSession',
     async (
       _,
-      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' | 'web-article' }
+      args: { parentPath: string; parentType: 'anthropic-article' | 'writing' }
     ): Promise<ArticleAssistantSessionFile | null> => {
       const sessionPath = sessionPathFor(args.parentPath, cfg.libraryPath)
       if (!fs.existsSync(sessionPath)) return null
@@ -536,7 +394,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       args: {
         sessionId: string
         articleContent: string
-        articleType: 'briefing' | 'anthropic-article' | 'web-article'
+        articleType: 'anthropic-article'
         messages: ArticleAssistantMessage[]
         annotations?: ArticleAnnotation[]
         selection?: string
@@ -707,7 +565,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:writeGuide',
     async (
       _,
-      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' | 'web-article'; guide: ArticleAssistantGuide }
+      args: { parentPath: string; parentType: 'anthropic-article' | 'writing'; guide: ArticleAssistantGuide }
     ): Promise<{ filePath: string }> => {
       const parsed = path.parse(resolveParentPath(args.parentPath, cfg.libraryPath))
       const guidePath = guidePathFor(args.parentPath, cfg.libraryPath)
@@ -715,7 +573,6 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
 
       const now = new Date().toISOString()
       const isV2 =
-        args.parentType === 'briefing' ||
         args.parentType === 'anthropic-article' ||
         args.guide.chunks.some((c) => typeof c.context === 'string' && c.context.length > 0)
       const fm = {
@@ -748,7 +605,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:readGuide',
     async (
       _,
-      args: { parentPath: string; parentType: 'briefing' | 'anthropic-article' | 'web-article' }
+      args: { parentPath: string; parentType: 'anthropic-article' | 'writing' }
     ): Promise<ArticleAssistantGuideFile | null> => {
       const guidePath = guidePathFor(args.parentPath, cfg.libraryPath)
       if (!fs.existsSync(guidePath)) return null
@@ -759,7 +616,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         })
         const fmRecord = frontmatter as unknown as Record<string, unknown>
         const guideVersion = typeof fmRecord.guide_version === 'number' ? fmRecord.guide_version : undefined
-        const guide = parseAssistantGuideBody(body, guideVersion, args.parentType)
+        const guide = parseAssistantGuideBody(body)
         if (!guide) return null
         return {
           filePath: guidePath,

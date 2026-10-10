@@ -10,12 +10,9 @@ const EXT_FIELDS: Record<DocType, string[]> = {
   review: ['review_index', 'last_reviewed', 'source_title'],
   fable: ['source_topic'],
   transcript: ['session_number'],
-  briefing: [],
   'external-materials': ['session_number', 'topic', 'summary', 'sources'],
   'anthropic-article': ['source_url', 'published_at', 'imported_at', 'authors', 'summary', 'section'],
-  'web-article': ['source_url', 'source_name', 'published_at', 'imported_at', 'authors', 'summary'],
   'article-assistant': ['parent_path', 'parent_type', 'created_at', 'updated_at', 'guide_version'],
-  'job-briefing': ['date', 'generated_at', 'role_keywords', 'cities', 'companies', 'job_sources'],
   writing: [],
 }
 
@@ -35,9 +32,7 @@ function inferDocTypeFromFilename(filename: string): DocType {
   if (lower.includes('复习报告')) return 'review'
   if (lower.includes('寓言')) return 'fable'
   if (lower.includes('原始对话')) return 'transcript'
-  if (lower.includes('夜航简报')) return 'briefing'
   if (lower.includes('外部资料')) return 'external-materials'
-  if (lower.includes('求职简报')) return 'job-briefing'
   return 'progress'
 }
 
@@ -77,13 +72,12 @@ export function parseFrontmatter(
     authors: Array.isArray(data.authors) ? data.authors as string[] : undefined,
     section: typeof data.section === 'string' ? data.section : undefined,
     parent_path: typeof data.parent_path === 'string' ? data.parent_path : undefined,
-    parent_type: data.parent_type === 'briefing' || data.parent_type === 'anthropic-article' || data.parent_type === 'job-briefing' || data.parent_type === 'web-article' ? data.parent_type : undefined,
+    parent_type: data.parent_type === 'anthropic-article' || data.parent_type === 'writing' ? data.parent_type : undefined,
     generated_at: typeof data.generated_at === 'string' ? data.generated_at : undefined,
     guide_version: typeof data.guide_version === 'number' ? data.guide_version : undefined,
     role_keywords: Array.isArray(data.role_keywords) ? data.role_keywords as string[] : undefined,
     cities: Array.isArray(data.cities) ? data.cities as string[] : undefined,
     companies: Array.isArray(data.companies) ? data.companies as string[] : undefined,
-    job_sources: typeof data.job_sources === 'string' ? data.job_sources : undefined,
   }
 
   return { frontmatter, body: parsed.content }

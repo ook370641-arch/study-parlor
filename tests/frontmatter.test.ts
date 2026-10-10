@@ -123,23 +123,23 @@ tags: [数学, 几何]
 
   it('round-trips article-assistant parent fields', () => {
     const original = `---
-title: 夜航简报助手
+title: 博客助手
 type: article-assistant
 created: 2026-07-11T00:00:00+08:00
-parent_path: notes/briefing-2026-07-11.md
-parent_type: briefing
+parent_path: notes/anthropic-article-2026-07-11.md
+parent_type: anthropic-article
 ---
 助手正文
 `
     const { frontmatter, body } = parseFrontmatter(original)
     expect(frontmatter.type).toBe('article-assistant')
-    expect(frontmatter.parent_path).toBe('notes/briefing-2026-07-11.md')
-    expect(frontmatter.parent_type).toBe('briefing')
+    expect(frontmatter.parent_path).toBe('notes/anthropic-article-2026-07-11.md')
+    expect(frontmatter.parent_type).toBe('anthropic-article')
 
     const out = serializeFrontmatter('article-assistant', frontmatter, body)
     const reparsed = parseFrontmatter(out)
-    expect(reparsed.frontmatter.parent_path).toBe('notes/briefing-2026-07-11.md')
-    expect(reparsed.frontmatter.parent_type).toBe('briefing')
+    expect(reparsed.frontmatter.parent_path).toBe('notes/anthropic-article-2026-07-11.md')
+    expect(reparsed.frontmatter.parent_type).toBe('anthropic-article')
     expect(reparsed.body.trim()).toBe('助手正文')
   })
 

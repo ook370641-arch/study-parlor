@@ -6,7 +6,6 @@ const LERP = 0.11
 const IDLE_MS = 8000
 
 const AMBER = { a: '255, 214, 150', b: '255, 190, 110', c: '255, 226, 175' }
-const STAR_BLUE = { a: '180, 205, 240', b: '127, 168, 217', c: '200, 220, 245' }
 
 function gradient(p: typeof AMBER): string {
   return [
@@ -18,16 +17,12 @@ function gradient(p: typeof AMBER): string {
 export function CandlelightLayer() {
   const enabled = useStore((s) => s.candlelightEnabled)
   const theme = useStore((s) => s.briefingTheme)
-  const source = useStore((s) => s.briefingSource)
   const breathAt = useStore((s) => s.candleBreathAt)
   const streaming = useStore((s) =>
     Boolean(s.assistantSession?.streaming))
-  const generating = useStore((s) =>
-    s.briefingGeneration?.status === 'running' || s.jobBriefingGeneration?.status === 'running')
   const glowRef = useRef<HTMLDivElement>(null)
 
   const isAcademic = theme !== 'newspaper'
-  const palette = source === 'job-briefing' ? STAR_BLUE : AMBER
   const live = enabled && isAcademic
 
   // Mouse following + inertia + idle fade-out
@@ -115,13 +110,13 @@ export function CandlelightLayer() {
     <div data-testid="briefing-candlelight" className="fixed inset-0 z-[6] pointer-events-none" aria-hidden="true">
       <div
         ref={glowRef}
-        className={`candle-glow ${live && generating ? 'candle-dim' : ''}`}
+        className="candle-glow"
         style={{
           position: 'fixed', left: 0, top: 0,
-          width: generating ? Math.round(SIZE * 0.92) : SIZE,
-          height: generating ? Math.round(SIZE * 0.92) : SIZE,
-          margin: -(generating ? Math.round(SIZE * 0.92) : SIZE) / 2,
-          background: gradient(palette),
+          width: SIZE,
+          height: SIZE,
+          margin: -SIZE / 2,
+          background: gradient(AMBER),
           mixBlendMode: 'screen',
           opacity: 0,
           transition: 'opacity 450ms ease, filter 600ms ease, width 1200ms ease, height 1200ms ease, margin 1200ms ease',

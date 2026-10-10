@@ -4,7 +4,7 @@ import { useStore } from '@/store'
 interface Props {
   name: string
   content: string
-  sourceType: 'digest' | 'anthropic'
+  sourceType: 'anthropic'
   sourcePath: string
   theme?: 'academic' | 'newspaper'
 }
