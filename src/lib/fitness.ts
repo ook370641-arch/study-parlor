@@ -168,6 +168,26 @@ export function bodyTrendPoints(data: FitnessData, key: BodyMetricKey): TrendPoi
     .map((m) => ({ date: m.date, value: m[key] as number, label: `${m[key]}` }))
 }
 
+// ---------- 记录草稿 ----------
+
+export type SetCell = { weight: string; reps: string }
+export type RecordDraft = { routineId: string; cells: Record<string, SetCell[]> }
+
+/** 预填：该序列上一笔记录的同动作同组值，无则空 */
+export function buildDraft(data: FitnessData, routineId: string): RecordDraft {
+  const routine = data.routines.find((r) => r.id === routineId)
+  const prev = latestRecordOfRoutine(data, routineId)
+  const cells: Record<string, SetCell[]> = {}
+  for (const ex of routine?.exercises ?? []) {
+    const prevEntry = prev?.entries.find((e) => e.exerciseId === ex.id)
+    cells[ex.id] = Array.from({ length: ex.sets }, (_, i) => {
+      const s = prevEntry?.sets[i]
+      return { weight: s ? String(s.weight) : '', reps: s ? String(s.reps) : '' }
+    })
+  }
+  return { routineId, cells }
+}
+
 // ---------- 变换（纯函数，返回新对象） ----------
 
 export function upsertRecord(data: FitnessData, rec: FitnessRecord): FitnessData {

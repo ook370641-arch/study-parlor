@@ -6,10 +6,11 @@ import { fitnessColors } from '@/lib/fitness-theme'
 import {
   sortRecords, latestRecordOfRoutine, routineNameOf, recordedExerciseNames,
   exerciseTrendPoints, shortDate, todayStr, makeId, defaultRoutineForToday,
+  buildDraft, type RecordDraft,
 } from '@/lib/fitness'
 import { TrendChart } from './TrendChart'
 import { FitnessFaceHeader, type FitnessFace } from './FitnessFaceHeader'
-import { FitnessRecordEditor, buildDraft, type RecordDraft } from './FitnessRecordEditor'
+import { FitnessRecordEditor } from './FitnessRecordEditor'
 
 function cnDate(date: string): string {
   const [, m, d] = date.split('-')
@@ -117,8 +118,7 @@ export function FitnessWeightView({ theme, onSwitch }: {
 
       {draft ? (
         <div style={{ padding: '12px 18px' }}>
-          <FitnessRecordEditor theme={theme} data={data} draft={draft} onChange={setDraft}
-            onSave={() => void saveRecording()} onCancel={() => setDraft(null)} />
+          <FitnessRecordEditor theme={theme} data={data} draft={draft} onChange={setDraft} />
         </div>
       ) : sorted.length === 0 ? (
         <div data-testid="fitness-empty" style={{ padding: '60px 0', textAlign: 'center', color: c.faint, fontSize: 12 }}>

@@ -1,34 +1,13 @@
 // src/components/fitness/FitnessRecordEditor.tsx —— 记录态：一个序列的逐组二维录入
-import type { BriefingTheme } from '@shared/index'
+import type { BriefingTheme, FitnessData } from '@shared/index'
 import { fitnessColors } from '@/lib/fitness-theme'
-import { latestRecordOfRoutine, shortDate } from '@/lib/fitness'
-import type { FitnessData } from '@shared/index'
-
-export type SetCell = { weight: string; reps: string }
-export type RecordDraft = { routineId: string; cells: Record<string, SetCell[]> }
-
-/** 预填：该序列上一笔记录的同动作同组值，无则空 */
-export function buildDraft(data: FitnessData, routineId: string): RecordDraft {
-  const routine = data.routines.find((r) => r.id === routineId)
-  const prev = latestRecordOfRoutine(data, routineId)
-  const cells: Record<string, SetCell[]> = {}
-  for (const ex of routine?.exercises ?? []) {
-    const prevEntry = prev?.entries.find((e) => e.exerciseId === ex.id)
-    cells[ex.id] = Array.from({ length: ex.sets }, (_, i) => {
-      const s = prevEntry?.sets[i]
-      return { weight: s ? String(s.weight) : '', reps: s ? String(s.reps) : '' }
-    })
-  }
-  return { routineId, cells }
-}
+import { buildDraft, latestRecordOfRoutine, shortDate, type RecordDraft, type SetCell } from '@/lib/fitness'
 
 export function FitnessRecordEditor({ theme, data, draft, onChange }: {
   theme: BriefingTheme
   data: FitnessData
   draft: RecordDraft
   onChange: (d: RecordDraft) => void
-  onSave: () => void
-  onCancel: () => void
 }) {
   const c = fitnessColors(theme)
   const routine = data.routines.find((r) => r.id === draft.routineId)
