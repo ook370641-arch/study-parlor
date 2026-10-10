@@ -63,6 +63,10 @@ export function SurfaceBackground({ surface }: Props) {
   }
 
   const swapping = incomingUrl !== null
+  // 焦点必须跟随"当前显示的 url"查表，而不是读 store 里的新 painting：
+  // 换画 pass-1（src=旧画）若套上新画焦点，旧画被裁切的另一区域会闪上一帧。
+  const displayedUrl = incomingUrl ?? settledUrl
+  const displayedFocus = manifest.find(p => p.url === displayedUrl)?.focus ?? '50% 50%'
 
   return (
     <div
@@ -85,7 +89,7 @@ export function SurfaceBackground({ surface }: Props) {
         alt=""
         className={`absolute inset-0 w-full h-full object-cover ${incomingUrl ? 'painting-drop-in' : ''}`}
         style={{
-          objectPosition: painting.focus ?? '50% 50%',
+          objectPosition: displayedFocus,
           ...(incomingUrl ? { animationDelay: `${SWAP_DROP_DELAY_MS}ms` } : {}),
         }}
       />
