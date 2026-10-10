@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
+import { FitnessPanel } from '@/components/fitness/FitnessPanel'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
@@ -26,8 +27,13 @@ export function Briefing() {
   const decreaseWritingUI = useStore((s) => s.decreaseWritingUIFontSize)
   const htmlDeleteMode = useStore((s) => s.htmlDeleteMode)
   const source = useStore((s) => s.briefingSource)
+  const loadFitness = useStore((s) => s.loadFitness)
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  useEffect(() => {
+    if (source === 'fitness') void loadFitness()
+  }, [source, loadFitness])
 
   const isAcademic = theme !== 'newspaper'
   const fontSizeBtnCls = isAcademic
@@ -114,8 +120,10 @@ export function Briefing() {
                 </div>
                 <WritingBoard />
               </main>
-            ) : (
+            ) : source === 'anthropic' ? (
               <AnthropicBlogPanel theme={theme} />
+            ) : (
+              <FitnessPanel theme={theme} />
             )}
           </div>
         </div>

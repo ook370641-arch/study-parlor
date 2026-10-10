@@ -9,6 +9,12 @@ interface Props {
   theme: BriefingTheme
 }
 
+const FitnessIcon = () => (
+  <svg data-testid="briefing-source-icon-fitness" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+    <path d="M4.5 5.5v5M2.5 6.5v3M11.5 5.5v5M13.5 6.5v3M4.5 8h7" />
+  </svg>
+)
+
 function AnthropicIcon() {
   return (
     <svg
@@ -95,6 +101,12 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
       label: '博客',
       icon: AnthropicIcon,
       testId: 'briefing-source-anthropic',
+    },
+    {
+      id: 'fitness',
+      label: '健身',
+      icon: FitnessIcon,
+      testId: 'briefing-source-fitness',
     },
   ] as const
 
