@@ -943,13 +943,6 @@ export const useStore = create<AppStore>((set, get) => ({
   deleteBodyMetric: async (date) => { set({ fitnessData: await ipc.fitnessDeleteBodyMetric(date) }) },
   saveFitnessPlan: async (routines, schedule) => { set({ fitnessData: await ipc.fitnessSavePlan({ routines, schedule }) }) },
 
-  markBriefingRead: async (source, date) => {
-    const cur = get().briefingRead
-    if (cur[source].includes(date)) return
-    const next = { ...cur, [source]: [...cur[source], date].slice(-120) }
-    set({ briefingRead: next })
-    await ipc.patchState({ briefingRead: next } as Partial<StateJson>)
-  },
   discoverAnthropicArticles: async (opts) => {
     const commit = opts?.commit !== false
     if (commit) {

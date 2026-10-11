@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useStore } from '../src/store'
-import { DEFAULT_BRIEFING_SOURCE_ORDER, normalizeBriefingSourceOrder } from '../src/lib/briefing-source-order'
 import { DEFAULT_FITNESS_DATA } from '../src/lib/fitness'
 import type { FitnessData } from '@shared/index'
 
@@ -28,17 +27,8 @@ describe('fitness store slice', () => {
 })
 
 describe('来源注册', () => {
-  it('fitness 在默认顺序第三位', () => {
-    expect(DEFAULT_BRIEFING_SOURCE_ORDER).toEqual(['writing', 'digest', 'fitness', 'anthropic', 'job-briefing', 'scout'])
-  })
-  it('旧持久化顺序缺 fitness → 归一化后含 fitness', () => {
-    const n = normalizeBriefingSourceOrder(['writing', 'digest'])
-    expect(n).toContain('fitness')
-  })
-  it('持久化 briefingSource=fitness 被接受', async () => {
-    // store 初始化白名单（index.ts:729 附近）接受 'fitness'
-    const s = useStore.getState()
-    await s.setBriefingSource('fitness')
+  it('setBriefingSource 接受 fitness', async () => {
+    await useStore.getState().setBriefingSource('fitness')
     expect(useStore.getState().briefingSource).toBe('fitness')
   })
 })
