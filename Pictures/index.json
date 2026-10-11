@@ -162,7 +162,7 @@
     "file": "021-aubade.jpg",
     "category": "early-figurative",
     "year": null,
-    "focus": "50% 29%"
+    "focus": "50% 100%"
   },
   {
     "id": "rothko-22",
@@ -1138,7 +1138,7 @@
     "title": "Wealth",
     "file": "031-wealth.jpg",
     "category": "illustration",
-    "focus": "50% 73%"
+    "focus": "50% 64%"
   },
   {
     "id": "billout-33",
@@ -1281,7 +1281,7 @@
     "title": "Escalator",
     "file": "054-escalator.jpg",
     "category": "illustration",
-    "focus": "50% 62%"
+    "focus": "50% 25%"
   },
   {
     "id": "billout-54",
@@ -1988,7 +1988,7 @@
     "title": "冰海（The Sea of Ice）",
     "file": "250-冰海-the-sea-of-ice.jpg",
     "category": "romanticism",
-    "focus": "50% 74%"
+    "focus": "50% 54%"
   },
   {
     "id": "friedrich-3",
@@ -2311,7 +2311,7 @@
     "title": "春天的双重梦（The Double Dream of Spring）",
     "file": "291-春天的双重梦-the-double-dream-of-spring.jpg",
     "category": "surrealism",
-    "focus": "50% 16%"
+    "focus": "50% 0%"
   },
   {
     "id": "magritte-5",
@@ -2471,7 +2471,8 @@
     "painter": "James McNeill Whistler",
     "title": "黑与金的夜曲（Nocturne: Black and Gold – The Fire Wheel）",
     "file": "312-黑与金的夜曲-nocturne-black-and-gold-the-fire-wheel.jpg",
-    "category": "tonalism"
+    "category": "tonalism",
+    "focus": "50% 63%"
   },
   {
     "id": "hokusai-1",
