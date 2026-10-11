@@ -141,14 +141,14 @@ describe('writing store', () => {
     it('setBriefingSource 同样走 flush 门：失败中止切换 source', async () => {
       const flushFail = vi.fn().mockResolvedValue(false)
       useStore.setState({ htmlDeleteFlush: flushFail, briefingSource: 'writing' })
-      await useStore.getState().setBriefingSource('digest')
+      await useStore.getState().setBriefingSource('anthropic')
       expect(flushFail).toHaveBeenCalledTimes(1)
       expect(useStore.getState().briefingSource).toBe('writing') // 中止
 
       const flushOk = vi.fn().mockResolvedValue(true)
       useStore.setState({ htmlDeleteFlush: flushOk })
-      await useStore.getState().setBriefingSource('digest')
-      expect(useStore.getState().briefingSource).toBe('digest')
+      await useStore.getState().setBriefingSource('anthropic')
+      expect(useStore.getState().briefingSource).toBe('anthropic')
     })
 
     it('goto 同样走 flush 门：失败中止导航', async () => {

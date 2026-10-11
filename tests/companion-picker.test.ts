@@ -14,8 +14,7 @@ describe('companionPickerTarget', () => {
     expect(companionPickerTarget(base)).toBe('anthropic')
   })
 
-  it('非栏目 source（digest/writing）→ null', () => {
-    expect(companionPickerTarget({ ...base, briefingSource: 'digest' })).toBeNull()
+  it('非栏目 source（writing）→ null', () => {
     expect(companionPickerTarget({ ...base, briefingSource: 'writing' })).toBeNull()
   })
 
