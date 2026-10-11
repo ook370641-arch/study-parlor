@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react'
 import type { BriefingTheme } from '@shared/index'
 import { fitnessColors } from '@/lib/fitness-theme'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 
 export type FitnessFace = 'weight' | 'body' | 'plan'
 
@@ -32,7 +33,12 @@ export function FitnessFaceHeader({ theme, face, onSwitch, right }: {
           ⚙ 计划
         </button>
       </div>
-      {right}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {right}
+        {theme !== 'newspaper' && (
+          <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />
+        )}
+      </div>
     </div>
   )
 }

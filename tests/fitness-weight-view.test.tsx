@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 import { useStore } from '../src/store'
 import { FitnessWeightView } from '../src/components/fitness/FitnessWeightView'
 import { DEFAULT_FITNESS_DATA } from '../src/lib/fitness'
@@ -40,6 +40,16 @@ describe('FitnessWeightView 落地态', () => {
     useStore.setState({ fitnessData: structuredClone(DEFAULT_FITNESS_DATA) })
     render(<FitnessWeightView theme="academic" onSwitch={() => {}} />)
     expect(screen.getByTestId('fitness-empty')).toBeTruthy()
+  })
+  it('删除此记录 → 确认对话框 → 确认后以正确 id 调 deleteFitnessRecord', async () => {
+    const del = vi.fn().mockResolvedValue(undefined)
+    useStore.setState({ deleteFitnessRecord: del })
+    render(<FitnessWeightView theme="academic" onSwitch={() => {}} />)
+    // 默认查看最新一笔 r3
+    fireEvent.click(screen.getByTestId('fitness-record-delete'))
+    expect(screen.getByTestId('confirm-dialog')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'))
+    await waitFor(() => expect(del).toHaveBeenCalledWith('r3'))
   })
 })
 

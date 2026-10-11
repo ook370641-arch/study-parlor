@@ -11,6 +11,7 @@ import {
 import { TrendChart } from './TrendChart'
 import { FitnessFaceHeader, type FitnessFace } from './FitnessFaceHeader'
 import { FitnessRecordEditor } from './FitnessRecordEditor'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 function cnDate(date: string): string {
   const [, m, d] = date.split('-')
@@ -28,9 +29,11 @@ export function FitnessWeightView({ theme, onSwitch }: {
   const c = fitnessColors(theme)
   const data = useStore((s) => s.fitnessData)
   const saveRecord = useStore((s) => s.saveFitnessRecord)
+  const deleteRecord = useStore((s) => s.deleteFitnessRecord)
   const [viewingId, setViewingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<RecordDraft | null>(null)
   const [trendName, setTrendName] = useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const sorted = useMemo(() => (data ? sortRecords(data.records) : []), [data])
   const viewing = useMemo(() => {
@@ -74,6 +77,14 @@ export function FitnessWeightView({ theme, onSwitch }: {
   }
 
   const viewingIdx = viewing ? sorted.findIndex((r) => r.id === viewing.id) : -1
+
+  const confirmDelete = async () => {
+    if (!viewing) return
+    const id = viewing.id
+    setConfirmingDelete(false)
+    await deleteRecord(id)
+    setViewingId(null)
+  }
   const chipStyle = (active: boolean): React.CSSProperties => ({
     fontSize: 11, padding: '3px 11px', borderRadius: 12, cursor: 'pointer', background: 'none',
     border: `1px solid ${active ? c.amber : c.hairline}`,
@@ -128,7 +139,14 @@ export function FitnessWeightView({ theme, onSwitch }: {
         <>
           <div style={{ padding: '6px 18px', borderBottom: `1px solid ${c.hairline}`, display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: c.dim, fontSize: 11 }}><span>{cnDate(viewing.date)}</span>{' · '}{routineNameOf(data, viewing.routineId)}日</span>
-            {viewingIdx > 0 && <span style={{ color: c.faint, fontSize: 10 }}>距上一笔 {daysBetween(sorted[viewingIdx - 1].date, viewing.date)} 天</span>}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {viewingIdx > 0 && <span style={{ color: c.faint, fontSize: 10 }}>距上一笔 {daysBetween(sorted[viewingIdx - 1].date, viewing.date)} 天</span>}
+              <button type="button" data-testid="fitness-record-delete" onClick={() => setConfirmingDelete(true)}
+                style={{ background: 'none', border: 'none', color: c.faint, fontSize: 10, cursor: 'pointer', padding: 0 }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = c.amber }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = c.faint }}
+              >× 删除此记录</button>
+            </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(data.routines.length, 1)}, 1fr)` }}>
             {data.routines.map((routine, ri) => {
@@ -186,6 +204,18 @@ export function FitnessWeightView({ theme, onSwitch }: {
             if (hit) setViewingId(hit.id)
           }} />
       </div>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="删除训练记录"
+        icon="trash"
+        confirmLabel="删除"
+        confirmVariant="danger"
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={() => void confirmDelete()}
+      >
+        <p>即将删除 {viewing ? `${cnDate(viewing.date)} · ${routineNameOf(data, viewing.routineId)}日` : ''} 的训练记录，此操作不可恢复。</p>
+      </ConfirmDialog>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useStore } from '@/store'
 import type { BriefingTheme, FitnessRoutine, FitnessScheduleEntry } from '@shared/index'
 import { fitnessColors } from '@/lib/fitness-theme'
 import { makeId } from '@/lib/fitness'
+import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const WD_LABEL = ['一', '二', '三', '四', '五', '六', '日']
@@ -49,11 +50,14 @@ export function FitnessPlanView({ theme, onBack }: { theme: BriefingTheme; onBac
     <div style={{ color: c.text, fontFamily: 'Georgia, "Songti SC", "SimSun", serif', fontSize: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: `1px solid ${c.hairline}` }}>
         <span style={{ fontSize: 13, letterSpacing: 3 }}>计划管理</span>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button type="button" data-testid="fitness-plan-save" onClick={() => void save()}
             style={{ border: `1px solid ${c.amber}`, color: c.amber, borderRadius: 14, padding: '4px 14px', fontSize: 11, background: 'none', cursor: 'pointer' }}>保存计划</button>
           <button type="button" data-testid="fitness-plan-back" onClick={onBack}
             style={{ background: 'none', border: 'none', color: c.dim, fontSize: 11, cursor: 'pointer' }}>← 返回记录</button>
+          {theme !== 'newspaper' && (
+            <SwapPaintingButton surface="briefing" data-testid="briefing-swap-painting-button" className="text-parchment/70 hover:text-parchment" />
+          )}
         </div>
       </div>
 

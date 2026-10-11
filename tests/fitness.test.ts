@@ -5,7 +5,7 @@ import {
   upsertRecord, removeRecord, upsertBodyMetric, removeBodyMetric, replacePlan,
   defaultRoutineForToday, shortDate, makeId,
 } from '../src/lib/fitness'
-import type { FitnessData, FitnessRecord, BodyMetric } from '@shared/index'
+import type { FitnessData, FitnessRecord } from '@shared/index'
 
 const REC1: FitnessRecord = {
   id: 'r1', date: '2026-09-03', routineId: 'push',

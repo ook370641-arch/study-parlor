@@ -10,8 +10,8 @@ interface Props {
 }
 
 const FitnessIcon = () => (
-  <svg data-testid="briefing-source-icon-fitness" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
-    <path d="M4.5 5.5v5M2.5 6.5v3M11.5 5.5v5M13.5 6.5v3M4.5 8h7" />
+  <svg data-testid="briefing-source-icon-fitness" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+    <path d="M6.75 8.25v7.5M3.75 9.75v4.5M17.25 8.25v7.5M20.25 9.75v4.5M6.75 12h10.5" />
   </svg>
 )
 
