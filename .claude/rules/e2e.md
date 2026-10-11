@@ -20,7 +20,7 @@ paths:
 
 **Why:** 真实 API 契约变更在开发时不发现，合并后修复成本成倍增加。
 
-- 真实 API 集成测试（如 `tests/job-briefing-real.test.ts`）默认运行，不设 `skipIf` 条件跳过。
+- 真实 API 集成测试（如 `tests/blog-guide-v2-real.test.ts`）默认运行，不设 `skipIf` 条件跳过。
 - 耗时极长的测试可通过 `REAL_TEST_REPLAY=1` 用 fixture 零成本回放，避免每次全量调用。
 - Source: e2e.md §1b
 

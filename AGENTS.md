@@ -133,7 +133,7 @@ npm run test:e2e                               # 全量（合并前）
 
 ### 写作功能 (`electron/lib/writing-tree.ts`, `electron/lib/writing-catalog.ts`, `electron/lib/writing-assistant/`)
 
-夜航简报的第四来源。Typora 式 WYSIWYG Markdown 编辑 + 分组目录树管理 + AI 写作助手。
+夜航简报两来源之一（写作）。Typora 式 WYSIWYG Markdown 编辑 + 分组目录树管理 + AI 写作助手。
 
 - **存储**: `<学习库>/writing/` (新写作) + `<学习库>/repository/` (过去积累)，分组 = 嵌套子目录
 - **编辑器**: Milkdown v7 (ProseMirror)，所见即所得，产出纯 `.md`
