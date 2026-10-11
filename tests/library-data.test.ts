@@ -10,13 +10,10 @@ import {
   DEFAULT_PROFILE,
   profilePathFor,
   blogCachePathFor,
-  jobDataPathFor,
   loadProfile,
   saveProfile,
   loadBlogCache,
   saveBlogCache,
-  loadJobData,
-  saveJobData,
   migrateLibraryData,
 } from '../electron/lib/library-data'
 
@@ -45,9 +42,6 @@ describe('load 回退', () => {
     const { cache, lastSeenAt } = loadBlogCache(lib)
     expect(cache).toEqual({ lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {}, articleMetaCache: {} })
     expect(lastSeenAt).toBeNull()
-    const job = loadJobData(lib)
-    expect(job.jobProfile.targetRoles).toEqual([])
-    expect(job.jobBriefingConfig.companies.length).toBeGreaterThan(0)
   })
 
   it('JSON 损坏时返回默认值不抛错', () => {
@@ -92,35 +86,23 @@ describe('save/load 往返', () => {
     expect(cache.articles).toHaveLength(1)
     expect(lastSeenAt).toBe('2026-08-16T01:00:00.000Z')
   })
-
-  it('saveJobData 只合并传入的 key', () => {
-    const first = loadJobData(lib)
-    saveJobData(lib, { jobBriefingConfig: { ...first.jobBriefingConfig, cities: ['北京'] } })
-    const after = loadJobData(lib)
-    expect(after.jobBriefingConfig.cities).toEqual(['北京'])
-    expect(after.jobProfile).toEqual(first.jobProfile)
-  })
 })
 
 describe('migrateLibraryData', () => {
-  it('老 state.json 四字段迁入库内并剥离，其余 key 保留', () => {
+  it('老 state.json 三字段迁入库内并剥离，其余 key 保留', () => {
     writeState({
       version: 1,
       profile: { name: '夜话', profile_text: 'p', preferred_topics: ['t'] },
       anthropicBlogCache: { lastFetchedAt: '2026-08-01T00:00:00.000Z', articles: [{ url: 'u' }], loading: false, error: null, sectionStatus: {} },
       anthropicBlogLastSeenAt: '2026-08-02T00:00:00.000Z',
-      jobProfile: { targetRoles: ['PM'], direction: '', skills: [], experience: '', additionalNotes: '', updatedAt: '', keywordsGeneratedAt: '' },
-      jobBriefingConfig: { companies: [{ name: '字节跳动', priority: 1, enabled: true }], roleKeywords: ['PM'], cities: [], skillKeywords: [], eventSearchKeywords: [], jobSearchKeywords: [], searchInternship: false, searchFallRecruit: true },
       writingFontSize: 'lg',
     })
     migrateLibraryData(lib, stateDir)
     expect(loadProfile(lib).name).toBe('夜话')
     expect(loadBlogCache(lib).cache.articles).toHaveLength(1)
     expect(loadBlogCache(lib).lastSeenAt).toBe('2026-08-02T00:00:00.000Z')
-    expect(loadJobData(lib).jobProfile.targetRoles).toEqual(['PM'])
-    expect(loadJobData(lib).jobBriefingConfig.roleKeywords).toEqual(['PM'])
     const state = readState()
-    for (const k of ['profile', 'anthropicBlogCache', 'anthropicBlogLastSeenAt', 'jobProfile', 'jobBriefingConfig']) {
+    for (const k of ['profile', 'anthropicBlogCache', 'anthropicBlogLastSeenAt']) {
       expect(state[k]).toBeUndefined()
     }
     expect(state.writingFontSize).toBe('lg')
@@ -142,15 +124,14 @@ describe('migrateLibraryData', () => {
     expect(readState().profile).toBeUndefined()
   })
 
-  it('全新用户（无四字段）不生成库内文件、不改写 state.json', () => {
+  it('全新用户（无三字段）不生成库内文件、不改写 state.json', () => {
     writeState({ version: 1, writingFontSize: 'base' })
     migrateLibraryData(lib, stateDir)
     expect(fs.existsSync(profilePathFor(lib))).toBe(false)
     expect(fs.existsSync(blogCachePathFor(lib))).toBe(false)
-    expect(fs.existsSync(jobDataPathFor(lib))).toBe(false)
   })
 
-  it('默认值的四字段不生成库内文件但仍被剥离', () => {
+  it('默认值的三字段不生成库内文件但仍被剥离', () => {
     writeState({
       profile: { name: '', profile_text: '', preferred_topics: [] },
       anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null },

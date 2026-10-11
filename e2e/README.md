@@ -59,16 +59,7 @@ e2e/
 │   ├── PreStudyPage.ts      # PreStudy 弹窗
 │   └── StudyPage.ts         # Study 页
 ├── specs/
-│   ├── briefing-aesthetics.spec.ts    (来源 spec: docs/superpowers/specs/2026-07-23-briefing-ui-design.md, mock 链路, @p1)
-│   ├── briefing-background-generation.spec.ts (来源 spec: docs/superpowers/specs/2026-08-01-briefing-background-generation-design.md, mock 链路, @p1)
 │   ├── briefing-rail-layout.spec.ts   (来源 spec: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md §K, mock 链路, @p2)
-│   ├── briefing-source-cards.spec.ts  (来源 spec: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md §K, mock 链路, @p2)
-│   ├── briefing-generation.spec.ts
-│   ├── briefing-real-api.spec.ts
-│   ├── briefing-real-generation.spec.ts
-│   ├── briefing-ux-optimization.spec.ts
-│   ├── briefing.spec.ts
-│   ├── scout-source.spec.ts          (来源 spec: docs/superpowers/specs/2026-08-02-scout-source-design.md, mock 链路, @p1)
 │   ├── writing-list-column.spec.ts    (来源 spec: docs/superpowers/specs/2026-07-24-ui-polish-batch-design.md §K, mock 链路, @p2)
 │   ├── writing-list.spec.ts           (来源 spec: docs/superpowers/specs/2026-08-09-writing-list-behavior-design.md, mock 链路, @p2)
 │   ├── smoke.spec.ts
@@ -108,20 +99,16 @@ npx playwright show-trace e2e-results/<trace-file>.zip
 
 后续所有新增 API 相关功能也应遵循此策略。
 
-> 注：较新的功能（如 briefing 生成、文章旁注助手 `article-assistant.spec.ts`、
+> 注：较新的功能（如文章旁注助手 `article-assistant.spec.ts`、
 > `article-assistant-controls.spec.ts`）在核心 `@p1` 用例中改用**确定性 mock**，
 > 以保证 `test:e2e:core` 稳定。这些 mock 分支同时受 `NODE_ENV==='test'` 与
-> `E2E_CONFIG_DIR` 两个条件保护（见 `electron/ipc/article-assistant.ts`、
-> `electron/ipc/briefing.ts`），单元测试不会误走 mock。真实链路回归由带 `@real` 的独立用例覆盖。
+> `E2E_CONFIG_DIR` 两个条件保护（见 `electron/ipc/article-assistant.ts`），
+> 单元测试不会误走 mock。真实链路回归由带 `@real` 的独立用例覆盖。
 >
 > 旁注 mock 分支会走真实 prompt 装配链（`buildAssistantSystemPrompt` /
 > `buildAssistantUserPrompt` / `buildChatBody`）并把最终请求体写入
 > `$E2E_CONFIG_DIR/last-assistant-request.json`，供 `article-assistant-controls.spec.ts`
 > 做请求级断言（system prompt 内容、thinking 配置、reasoning_effort 等）。
->
-> 求职简报的失败路径通过 `seedJobBriefing(libPath, date, '## Error\nJOB_XXX')`
-> 注入——主进程命中缓存错误 rethrow 分支（`electron/ipc/job-briefing.ts`），
-> 无需关闭 mock 即可确定性覆盖错误 UI/重试链路（见 `job-briefing-error.spec.ts`）。
 >
 > `anthropic-blog.spec.ts` / `anthropic-blog-ui.spec.ts` 打真实 anthropic.com，已标记 `@real`，不在 core 套件（`@p0|@p1`）内；确定性变体见 `anthropic-blog-image.spec.ts`。
 

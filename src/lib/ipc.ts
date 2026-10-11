@@ -35,7 +35,6 @@ export const ipc = {
   get onLlmDone() { return ensure().onLlmDone },
   get onLlmError() { return ensure().onLlmError },
   get onArticleAssistantSearchDone() { return ensure().onArticleAssistantSearchDone },
-  get onBriefingProgress() { return ensure().onBriefingProgress },
   get saveSession() { return ensure().saveSession },
   get loadSessions() { return ensure().loadSessions },
   get deleteSession() { return ensure().deleteSession },
@@ -72,19 +71,6 @@ export const ipc = {
   get setupWriteConfig() { return ensure().setupWriteConfig },
   get onSetupDone() { return ensure().onSetupDone },
 
-  get briefingGenerate() { return ensure().briefingGenerate },
-  get briefingList() { return ensure().briefingList },
-  get briefingDelete() { return ensure().briefingDelete },
-  get briefingAbort() { return ensure().briefingAbort },
-
-  get jobBriefingGenerate() { return ensure().jobBriefingGenerate },
-  get jobBriefingList() { return ensure().jobBriefingList },
-  get jobBriefingDelete() { return ensure().jobBriefingDelete },
-  get jobBriefingAbort() { return ensure().jobBriefingAbort },
-  get jobBriefingDiscoverPages() { return ensure().jobBriefingDiscoverPages },
-  get jobBriefingGenerateKeywords() { return ensure().jobBriefingGenerateKeywords },
-  get jobBriefingGenerateArticleSearchQuery() { return ensure().jobBriefingGenerateArticleSearchQuery },
-
   get anthropicDiscover() { return ensure().anthropicDiscover },
   get anthropicImportArticle() { return ensure().anthropicImportArticle },
   get anthropicCancelImport() { return ensure().anthropicCancelImport },
@@ -104,13 +90,6 @@ export const ipc = {
 
   get annotationsRead() { return ensure().annotationsRead },
   get annotationsWrite() { return ensure().annotationsWrite },
-
-  get collectionRead() { return ensure().collectionRead },
-  get collectionAddEntry() { return ensure().collectionAddEntry },
-  get collectionRemoveEntry() { return ensure().collectionRemoveEntry },
-  get collectionAppendQA() { return ensure().collectionAppendQA },
-  get collectionUpdateNote() { return ensure().collectionUpdateNote },
-  get collectionUpdateQA() { return ensure().collectionUpdateQA },
 
   get articleAssistantGenerateGuide() { return ensure().articleAssistantGenerateGuide },
   get articleAssistantSendMessage() { return ensure().articleAssistantSendMessage },
@@ -146,17 +125,6 @@ export const ipc = {
   get onWritingAssistantTool() { return ensure().onWritingAssistantTool },
   get onWritingAssistantReasoningChunk() { return ensure().onWritingAssistantReasoningChunk },
 
-  // Scout (拾贝)
-  get scoutSendMessage() { return ensure().scoutSendMessage },
-  get scoutAbort() { return ensure().scoutAbort },
-  get scoutListConversations() { return ensure().scoutListConversations },
-  get scoutCreateConversation() { return ensure().scoutCreateConversation },
-  get scoutGetConversation() { return ensure().scoutGetConversation },
-  get scoutRenameConversation() { return ensure().scoutRenameConversation },
-  get scoutDeleteConversation() { return ensure().scoutDeleteConversation },
-  get scoutListArticles() { return ensure().scoutListArticles },
-  get scoutDeleteArticle() { return ensure().scoutDeleteArticle },
-  get onScoutTool() { return ensure().onScoutTool },
   get paintingsCanEdit() { return ensure().paintingsCanEdit },
   get paintingsSetFocus() { return ensure().paintingsSetFocus },
 

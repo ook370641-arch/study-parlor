@@ -3,9 +3,6 @@ import {
   parseGuidePlan,
   assignMaterials,
   countStreamedChunks,
-  isValidGuideV2,
-  buildGuidePlanPrompt,
-  buildGuideV2UserPrompt,
   isValidGuideBlogV2,
   buildBlogGuidePlanPrompt,
   buildBlogGuideV2UserPrompt,
@@ -81,48 +78,6 @@ describe('countStreamedChunks', () => {
     expect(countStreamedChunks('')).toBe(0)
     // 正文里提到 heading 一词但没有 JSON 键形态时不计
     expect(countStreamedChunks('the heading of this section')).toBe(0)
-  })
-})
-
-describe('isValidGuideV2', () => {
-  const valid = {
-    background: 'bg',
-    chunks: [
-      { heading: 'H', context: '背景铺陈', terms: [{ term: 't', translation: 'x', explanation: 'e' }] },
-      { heading: 'H2', context: '背景2', terms: [] },
-    ],
-  }
-  it('accepts a valid v2 guide', () => {
-    expect(isValidGuideV2(valid)).toBe(true)
-  })
-  it('rejects v1 shape (summary instead of context)', () => {
-    const v1 = { background: 'bg', chunks: [{ heading: 'H', summary: 's', terms: [] }] }
-    expect(isValidGuideV2(v1)).toBe(false)
-  })
-  it('rejects empty context, empty chunks, missing background', () => {
-    expect(isValidGuideV2({ background: 'b', chunks: [{ heading: 'H', context: '  ', terms: [] }] })).toBe(false)
-    expect(isValidGuideV2({ background: 'b', chunks: [] })).toBe(false)
-    expect(isValidGuideV2({ chunks: valid.chunks })).toBe(false)
-  })
-})
-
-describe('prompts', () => {
-  it('buildGuidePlanPrompt states entry count and JSON-only output', () => {
-    const p = buildGuidePlanPrompt('## A\nx\n## B\ny', '夜航简报')
-    expect(p).toContain('§1–§2')
-    expect(p).toContain('"queries"')
-    expect(p).toContain('"entries"')
-    expect(p).toMatch(/不要 markdown|禁.*markdown|只输出 JSON/)
-    expect(p).toContain('## A')
-  })
-
-  it('buildGuideV2UserPrompt marks entries without materials explicitly', () => {
-    const materials = new Map([[2, [{ title: 'T', url: 'https://x', snippet: 's' }]]])
-    const p = buildGuideV2UserPrompt({ articleContent: '## A\nx\n## B\ny', articleTitle: '夜航简报', materials, entryCount: 2 })
-    expect(p).toContain('### §1')
-    expect(p).toContain('无外部资料')
-    expect(p).toContain('### §2')
-    expect(p).toContain('https://x')
   })
 })
 

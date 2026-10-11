@@ -62,13 +62,13 @@ describe('assistant session write/read round-trip', () => {
       created_at: now,
       updated_at: now,
       parent_path: parentPath,
-      parent_type: 'briefing' as const,
+      parent_type: 'anthropic-article' as const,
       tags: [] as string[],
     }
 
     const serialized = serializeFrontmatter('article-assistant', fm, body)
     expect(serialized).toContain('parent_path:')
-    expect(serialized).toContain('parent_type: briefing')
+    expect(serialized).toContain('parent_type: anthropic-article')
 
     fs.writeFileSync(sessionPath, serialized, 'utf8')
 
@@ -77,7 +77,7 @@ describe('assistant session write/read round-trip', () => {
     })
     expect(frontmatter.type).toBe('article-assistant')
     expect(frontmatter.parent_path).toBe(parentPath)
-    expect(frontmatter.parent_type).toBe('briefing')
+    expect(frontmatter.parent_type).toBe('anthropic-article')
     expect(frontmatter.created_at).toBe(now)
     expect(frontmatter.updated_at).toBe(now)
     expect(parseAssistantSessionBody(readBody)).toEqual(messages)

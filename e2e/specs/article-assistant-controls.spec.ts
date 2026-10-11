@@ -4,27 +4,24 @@ import * as path from 'node:path'
 import { CoverPage } from '../pages/CoverPage'
 import { ArticleAssistantPage } from '../pages/ArticleAssistantPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBriefing } from '../helpers/test-library'
+import { seedBlogArticleWithCache } from '../helpers/test-library'
 import type { Page } from '@playwright/test'
 
-function localToday(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+const ARTICLE_SLUG = 'e2e-controls-article'
+const ARTICLE_TITLE = 'E2E Controls Article'
+
+/** 每个测试起始调用一次：文章落盘 + state.json 预置（博客来源）。 */
+function seedArticle(libPath: string, configDir: string): void {
+  seedBlogArticleWithCache(libPath, configDir, { slug: ARTICLE_SLUG, title: ARTICLE_TITLE })
 }
 
-async function openDigestArticle(window: Page, libPath: string): Promise<ArticleAssistantPage> {
-  const today = localToday()
-  seedBriefing(libPath, today)
-
+/** 导航 cover → briefing → 点击行打开阅读器（reload 后复用，不重复 seed state）。 */
+async function openAssistantArticle(window: Page): Promise<ArticleAssistantPage> {
   const cover = new CoverPage(window)
-  await cover.enterName('E2E 测试员')
   await cover.goToBriefing()
-
-  await window.locator(SELECTORS.briefing.receiveDigestButton).click()
-  await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+  await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 10000 })
+  await window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("${ARTICLE_TITLE}")`).click()
+  await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 15000 })
 
   const assistant = new ArticleAssistantPage(window)
   await assistant.waitForMounted()
@@ -43,8 +40,9 @@ async function sendAndWait(assistant: ArticleAssistantPage, q: string) {
 }
 
 test.describe('@p1 article assistant history', () => {
-  test('二次打开文章时显示之前的旁注对话', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('二次打开文章时显示之前的旁注对话', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await assistant.typeQuestion('What is Constitutional AI?')
     await assistant.send()
@@ -53,7 +51,7 @@ test.describe('@p1 article assistant history', () => {
 
     // 重新加载渲染进程（state/session 走磁盘），重新进入文章
     await window.reload()
-    const assistant2 = await openDigestArticle(window, testLibraryPath)
+    const assistant2 = await openAssistantArticle(window)
     await assistant2.openChat()
 
     // 历史消息应从磁盘恢复；使用宽松超时等待异步 loadAssistantSession 完成
@@ -64,7 +62,8 @@ test.describe('@p1 article assistant history', () => {
 
 test.describe('@p1 article assistant request contract', () => {
   test('默认：system 含苏格拉底提示词，thinking disabled 且无 reasoning_effort', async ({ window, testLibraryPath, testConfigDir }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await sendAndWait(assistant, 'Q1')
     const req = readLastRequest(testConfigDir)
@@ -75,7 +74,8 @@ test.describe('@p1 article assistant request contract', () => {
   })
 
   test('苏格拉底关：system 不含质询措辞、含直接回答', async ({ window, testLibraryPath, testConfigDir }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await assistant.clickSocratic()
     await sendAndWait(assistant, 'Q1')
@@ -85,7 +85,8 @@ test.describe('@p1 article assistant request contract', () => {
   })
 
   test('深度思考 high/max 传对应 reasoning_effort', async ({ window, testLibraryPath, testConfigDir }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await assistant.setThinkingEffort('high')
     await sendAndWait(assistant, 'Q1')
@@ -100,7 +101,8 @@ test.describe('@p1 article assistant request contract', () => {
   })
 
   test('第二轮请求的历史对话段包含第一轮内容', async ({ window, testLibraryPath, testConfigDir }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await sendAndWait(assistant, '第一问标记')
     await sendAndWait(assistant, '第二问')
@@ -110,7 +112,8 @@ test.describe('@p1 article assistant request contract', () => {
   })
 
   test('搜索开：user prompt 含网络搜索结果段', async ({ window, testLibraryPath, testConfigDir }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await assistant.clickSearch()
     await sendAndWait(assistant, 'Q1')
@@ -119,8 +122,9 @@ test.describe('@p1 article assistant request contract', () => {
     expect(req.messages[1].content).toContain('Constitutional AI（测试来源）')
   })
 
-  test('preload 暴露 reasoningChunk 监听（IPC 契约探测）', async ({ window, testLibraryPath }) => {
-    await openDigestArticle(window, testLibraryPath)
+  test('preload 暴露 reasoningChunk 监听（IPC 契约探测）', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    await openAssistantArticle(window)
     const t = await window.evaluate(() => typeof (window as any).api?.onArticleAssistantReasoningChunk)
     expect(t).toBe('function')
   })
@@ -128,7 +132,8 @@ test.describe('@p1 article assistant request contract', () => {
 
 test.describe('@p1 article assistant controls UI', () => {
   test('三开关状态持久化：写入 state.json 且 reload 后保持', async ({ window, testLibraryPath, testConfigDir }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await assistant.clickSearch()
     await assistant.clickSocratic() // 关
@@ -140,15 +145,16 @@ test.describe('@p1 article assistant controls UI', () => {
     }).toEqual([true, false, 'max'])
 
     await window.reload()
-    const assistant2 = await openDigestArticle(window, testLibraryPath)
+    const assistant2 = await openAssistantArticle(window)
     await assistant2.openChat()
     await expect(assistant2.searchBtn).toHaveAttribute('aria-pressed', 'true')
     await expect(assistant2.socraticBtn).toHaveAttribute('aria-pressed', 'false')
     await expect(assistant2.thinkingBtn).toHaveCSS('color', 'rgb(56, 189, 248)')
   })
 
-  test('取消选中按钮清除 pending selection', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('取消选中按钮清除 pending selection', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.dragSelectFirstParagraph()
     await assistant.openChat()
     await expect(assistant.pendingSelection).toBeVisible()
@@ -156,8 +162,9 @@ test.describe('@p1 article assistant controls UI', () => {
     await expect(assistant.pendingSelection).toHaveCount(0)
   })
 
-  test('选中块位于消息列表下方、输入框上方', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('选中块位于消息列表下方、输入框上方', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await sendAndWait(assistant, 'Q1')
     await assistant.dragSelectFirstParagraph()
@@ -169,8 +176,9 @@ test.describe('@p1 article assistant controls UI', () => {
     expect(selBox!.y).toBeLessThan(inputBox!.y)
   })
 
-  test('开深度思考后显示可折叠思考区块', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('开深度思考后显示可折叠思考区块', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await assistant.setThinkingEffort('high')
     await sendAndWait(assistant, 'Q1')
@@ -180,8 +188,9 @@ test.describe('@p1 article assistant controls UI', () => {
     await expect(assistant.reasoningBlock).not.toHaveAttribute('open', '')
   })
 
-  test('用户消息靠右、AI 消息靠左', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('用户消息靠右、AI 消息靠左', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await sendAndWait(assistant, 'Q1')
     const user = assistant.chatMessages.filter({ hasText: 'Q1' }).first()
@@ -190,8 +199,9 @@ test.describe('@p1 article assistant controls UI', () => {
     await expect(ai).toHaveClass(/justify-start/)
   })
 
-  test('历史选段与当前选中颜色不同', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('历史选段与当前选中颜色不同', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await assistant.dragSelectFirstParagraph()
     await sendAndWait(assistant, 'Q1')
@@ -213,16 +223,16 @@ test.describe('@p1 article assistant controls UI', () => {
 
 test.describe('@p1 annotation context injection', () => {
 	test('标注注入上下文：创建标注后聊天请求含标注内容', async ({ window, testLibraryPath, testConfigDir }) => {
-		const today = localToday()
-		const assistant = await openDigestArticle(window, testLibraryPath)
+		seedArticle(testLibraryPath, testConfigDir)
+		const assistant = await openAssistantArticle(window)
 
 		// Write annotation file directly to disk
-		const briefingDir = path.join(testLibraryPath, '夜航简报')
-		const annoPath = path.join(briefingDir, `夜航简报-${today}.annotations.md`)
+		const articleDir = path.join(testLibraryPath, 'Anthropic博客')
+		const annoPath = path.join(articleDir, `${ARTICLE_SLUG}.annotations.md`)
 		const annoContent = `---
 title: Article Annotations
 type: article-assistant
-parent_path: 夜航简报/夜航简报-${today}.md
+parent_path: Anthropic博客/${ARTICLE_SLUG}.md
 ---
 
 ## a1
@@ -235,7 +245,7 @@ parent_path: 夜航简报/夜航简报-${today}.md
 
 ---
 `
-		fs.mkdirSync(briefingDir, { recursive: true })
+		fs.mkdirSync(articleDir, { recursive: true })
 		fs.writeFileSync(annoPath, annoContent, 'utf8')
 
 		await assistant.openChat()
@@ -252,7 +262,8 @@ parent_path: 夜航简报/夜航简报-${today}.md
 
 test.describe('@p1 selection lifecycle', () => {
   test('选段 chip 发送后清除，第二条消息不再携带旧选段', async ({ window, testLibraryPath, testConfigDir }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     // E2E only：store 后门注入选段（真实鼠标选段路径由「取消选段」用例覆盖）
     await window.evaluate(() => {
@@ -269,8 +280,9 @@ test.describe('@p1 selection lifecycle', () => {
     expect(req.messages[1].content).not.toContain('E2E选段标记-唯一')
   })
 
-  test('聊天窗内选中文字不产生文章选段 chip', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('聊天窗内选中文字不产生文章选段 chip', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await sendAndWait(assistant, '先产生一条回复')
 
@@ -289,8 +301,9 @@ test.describe('@p1 selection lifecycle', () => {
 })
 
 test.describe('@p1 search error visibility', () => {
-  test('搜索失败提示条可见且可关闭', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('搜索失败提示条可见且可关闭', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedArticle(testLibraryPath, testConfigDir)
+    const assistant = await openAssistantArticle(window)
     await assistant.openChat()
     await sendAndWait(assistant, 'Q1')
     await window.evaluate(() => {

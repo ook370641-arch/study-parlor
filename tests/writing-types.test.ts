@@ -11,8 +11,8 @@ describe('writing types', () => {
     expect(r.ok).toBe(false)
   })
   it('来源类型全集', () => {
-    const t: WritingSourceType[] = ['study', 'blog', 'digest', 'job', 'repository', 'writing', 'web']
-    expect(t).toHaveLength(7)
+    const t: WritingSourceType[] = ['study', 'blog', 'repository', 'writing', 'web', 'group']
+    expect(t).toHaveLength(6)
   })
   it('错误码全集', () => {
     const c: WritingErrorCode[] = ['WRITING_IO_ERROR', 'WRITING_PATH_FORBIDDEN', 'WRITING_NOT_FOUND', 'WRITING_NAME_CONFLICT']

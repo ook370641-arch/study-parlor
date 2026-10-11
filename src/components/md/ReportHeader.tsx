@@ -5,12 +5,9 @@ const TYPE_LABELS: Record<DocType, string> = {
   review: '复检记录',
   fable: '寓言',
   transcript: '原始对话',
-  briefing: '夜航简报',
   'external-materials': '外部资料',
   'anthropic-article': 'Anthropic 博客',
-  'web-article': '拾贝文章',
   'article-assistant': '旁注记录',
-  'job-briefing': '求职简报',
   writing: '写作',
 }
 
@@ -20,12 +17,9 @@ const TYPE_BADGE_STYLES: Record<DocType, string> = {
   review: 'bg-wine text-parchment',
   fable: 'bg-ink border border-ember/60 text-parchment',
   transcript: 'bg-ink/60 text-parchment/60',
-  briefing: 'bg-slate text-parchment',
   'external-materials': 'bg-ink/40 border border-parchment/20 text-parchment/70',
   'anthropic-article': 'bg-ember/80 text-ink',
-  'web-article': 'bg-ember/80 text-ink',
   'article-assistant': 'bg-ink/60 text-parchment/60',
-  'job-briefing': 'bg-slate text-parchment',
   writing: 'bg-ember text-ink',
 }
 

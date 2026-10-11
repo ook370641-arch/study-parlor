@@ -123,23 +123,23 @@ tags: [数学, 几何]
 
   it('round-trips article-assistant parent fields', () => {
     const original = `---
-title: 夜航简报助手
+title: 博客助手
 type: article-assistant
 created: 2026-07-11T00:00:00+08:00
-parent_path: notes/briefing-2026-07-11.md
-parent_type: briefing
+parent_path: notes/anthropic-article-2026-07-11.md
+parent_type: anthropic-article
 ---
 助手正文
 `
     const { frontmatter, body } = parseFrontmatter(original)
     expect(frontmatter.type).toBe('article-assistant')
-    expect(frontmatter.parent_path).toBe('notes/briefing-2026-07-11.md')
-    expect(frontmatter.parent_type).toBe('briefing')
+    expect(frontmatter.parent_path).toBe('notes/anthropic-article-2026-07-11.md')
+    expect(frontmatter.parent_type).toBe('anthropic-article')
 
     const out = serializeFrontmatter('article-assistant', frontmatter, body)
     const reparsed = parseFrontmatter(out)
-    expect(reparsed.frontmatter.parent_path).toBe('notes/briefing-2026-07-11.md')
-    expect(reparsed.frontmatter.parent_type).toBe('briefing')
+    expect(reparsed.frontmatter.parent_path).toBe('notes/anthropic-article-2026-07-11.md')
+    expect(reparsed.frontmatter.parent_type).toBe('anthropic-article')
     expect(reparsed.body.trim()).toBe('助手正文')
   })
 
@@ -228,30 +228,6 @@ tags: []
     const out = serializeFrontmatter('article-assistant', frontmatter, 'body')
     const reparsed = parseFrontmatter(out, { filename: '2026-08-04-导读.guide.md' })
     expect(reparsed.frontmatter.guide_version).toBe(2)
-  })
-})
-
-describe('web-article frontmatter', () => {
-  it('serializes and parses web-article ext fields', () => {
-    const raw = serializeFrontmatter('web-article', {
-      title: 'The Second Half',
-      type: 'web-article',
-      created: '2025-04-10T00:00:00.000Z',
-      tags: ['拾贝'],
-      source_url: 'https://ysymyth.github.io/The-Second-Half/',
-      source_name: 'ysymyth.github.io',
-      published_at: '2025-04-10T00:00:00.000Z',
-      imported_at: '2026-08-02T00:00:00.000Z',
-      authors: ['Shunyu Yao'],
-      summary: 'AI 进入下半场',
-    }, '# The Second Half\n\n正文')
-    const { frontmatter, body } = parseFrontmatter(raw, { filename: 'The Second Half.md' })
-    expect(frontmatter.type).toBe('web-article')
-    expect(frontmatter.source_url).toBe('https://ysymyth.github.io/The-Second-Half/')
-    expect(frontmatter.source_name).toBe('ysymyth.github.io')
-    expect(frontmatter.authors).toEqual(['Shunyu Yao'])
-    expect(frontmatter.summary).toBe('AI 进入下半场')
-    expect(body).toContain('正文')
   })
 })
 

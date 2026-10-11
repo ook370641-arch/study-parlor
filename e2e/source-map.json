@@ -8,37 +8,11 @@
         "src/pages/Briefing.tsx",
         "src/components/briefing/**",
         "src/components/Briefing*.tsx",
-        "src/lib/parse-briefing-markdown.ts",
-        "src/lib/format-briefing-date.ts",
         "src/lib/briefing-font-size.ts",
-        "src/lib/use-generation-transition.ts",
-        "electron/ipc/briefing.ts",
-        "electron/ipc/collection.ts",
-        "electron/lib/collection-store.ts",
-        "src/lib/collection-attribution.ts",
         "electron/preload.ts"
       ],
       "specs": [
-        "briefing.spec.ts",
-        "briefing-*.spec.ts",
-        "briefing-source-switching.spec.ts",
-        "briefing-collection.spec.ts"
-      ]
-    },
-    "job-briefing": {
-      "sources": [
-        "src/components/job-briefing/**",
-        "electron/lib/job-briefing.ts",
-        "electron/lib/library-data.ts",
-        "electron/lib/job-error-codes.ts",
-        "electron/lib/kimi.ts",
-        "electron/lib/search.ts",
-        "electron/ipc/job-briefing.ts",
-        "electron/prompts/job-briefing/**",
-        "src/lib/job-briefing-defaults.ts"
-      ],
-      "specs": [
-        "job-briefing-*.spec.ts"
+        "briefing-*.spec.ts"
       ]
     },
     "settings": {
@@ -190,8 +164,7 @@
     },
     "aesthetics": {
       "sources": [
-        "src/components/paintings/**",
-        "src/components/lighting/**",
+        "src/components/briefing/**",
         "src/components/DeletePaintingButton.tsx",
         "src/components/SwapPaintingButton.tsx",
         "src/lib/paintings.ts",
@@ -201,20 +174,7 @@
       "specs": [
         "painting-swap.spec.ts",
         "painting-delete.spec.ts",
-        "reading-ritual.spec.ts",
-        "lighting.spec.ts",
-        "generation-ceremony.spec.ts"
-      ]
-    },
-    "scout": {
-      "sources": [
-        "src/components/scout/**",
-        "src/components/article/**",
-        "electron/lib/scout/**",
-        "electron/ipc/scout.ts"
-      ],
-      "specs": [
-        "scout-*.spec.ts"
+        "lighting.spec.ts"
       ]
     },
     "types-state": {
@@ -226,9 +186,7 @@
       ],
       "specs": [
         "settings.spec.ts",
-        "startup-health.spec.ts",
-        "generation-ceremony.spec.ts",
-        "briefing-background-generation.spec.ts"
+        "startup-health.spec.ts"
       ]
     }
   }

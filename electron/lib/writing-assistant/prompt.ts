@@ -116,30 +116,6 @@ export async function buildWritingIndex(cfg: AppConfig): Promise<IndexEntry[]> {
     }
   } catch { /* skip */ }
 
-  // ── 5. Digest (夜航简报/) ────────────────────────────────────
-  try {
-    const digestDir = path.join(lib, '夜航简报')
-    if (fs.existsSync(digestDir)) {
-      const digestFiles = fs.readdirSync(digestDir, { withFileTypes: true })
-      for (const f of digestFiles) {
-        if (!f.isFile() || !f.name.endsWith('.md')) continue
-        let title = f.name.replace(/\.md$/, '')
-        let summary = ''
-        try {
-          const raw = fs.readFileSync(path.join(digestDir, f.name), 'utf-8')
-          const m = raw.match(/^---\n([\s\S]*?)\n---/)
-          if (m) {
-            const fmTitle = m[1].match(/^title:\s*(.+)$/m)
-            const fmDesc = m[1].match(/^description:\s*(.+)$/m)
-            if (fmTitle) title = fmTitle[1].trim().replace(/^["']|["']$/g, '')
-            if (fmDesc) summary = fmDesc[1].trim().replace(/^["']|["']$/g, '')
-          }
-        } catch { /* skip */ }
-        entries.push({ id: `digest:${f.name}`, type: 'digest', title, summary })
-      }
-    }
-  } catch { /* skip */ }
-
   return entries
 }
 

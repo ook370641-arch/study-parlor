@@ -41,12 +41,12 @@ describe('patchState 路由', () => {
     expect(readStateRaw().profile).toBeUndefined()
   })
 
-  it('patch UI 字段只写 state.json，且不会把五字段默认值带回 state.json', () => {
+  it('patch UI 字段只写 state.json，且不会把三字段默认值带回 state.json', () => {
     patchState({ profile: { name: '夜话', profile_text: '', preferred_topics: [] } })
     patchState({ writingFontSize: 'lg' })
     const raw = readStateRaw()
     expect(raw.writingFontSize).toBe('lg')
-    for (const k of ['profile', 'anthropicBlogCache', 'anthropicBlogLastSeenAt', 'jobProfile', 'jobBriefingConfig']) {
+    for (const k of ['profile', 'anthropicBlogCache', 'anthropicBlogLastSeenAt']) {
       expect(raw[k]).toBeUndefined()
     }
   })
@@ -69,13 +69,26 @@ describe('patchState 路由', () => {
     expect(raw.articles).toHaveLength(1)
   })
 
-  it('patch jobBriefingConfig 与 jobProfile 合并进同一文件', () => {
-    const before = getCurrentState()
-    patchState({ jobProfile: { ...before.jobProfile!, direction: 'AI 产品' } })
-    patchState({ jobBriefingConfig: { ...before.jobBriefingConfig!, cities: ['上海'] } })
-    const after = getCurrentState()
-    expect(after.jobProfile!.direction).toBe('AI 产品')
-    expect(after.jobBriefingConfig!.cities).toEqual(['上海'])
+  it('三来源旧字段在任意 patch 落盘时被无条件剥离，articlePanelMode 逐键剔除 scout/job', () => {
+    // 模拟三来源时代遗留的 state.json（绕过 patchState 直接写盘）
+    fs.writeFileSync(path.join(stateDir, 'state.json'), JSON.stringify({
+      version: 1,
+      briefingSourceOrder: ['digest', 'anthropic'],
+      scoutTab: 'chat',
+      scoutActiveConversationId: 'c1',
+      briefingRead: { digest: ['2026-09-01'] },
+      jobBriefingConfig: { companies: [] },
+      jobProfile: { targetRoles: ['PM'] },
+      articlePanelMode: { anthropic: 'companion', scout: 'guide', job: 'guide' },
+      writingFontSize: 'base',
+    }), 'utf8')
+    patchState({ writingFontSize: 'lg' })
+    const raw = readStateRaw()
+    for (const k of ['briefingSourceOrder', 'scoutTab', 'scoutActiveConversationId', 'briefingRead', 'jobBriefingConfig', 'jobProfile']) {
+      expect(raw[k]).toBeUndefined()
+    }
+    expect(raw.articlePanelMode).toEqual({ anthropic: 'companion' })
+    expect(raw.writingFontSize).toBe('lg')
   })
 })
 
@@ -124,7 +137,7 @@ describe('读路径兜底迁移', () => {
 
 describe('写路径兜底迁移', () => {
   it('首个动作是 patchState（无任何 read）时先迁移，state.json 种子值不被抹掉', () => {
-    // 库内文件缺失 + 外部在运行中直接写 state.json 五字段
+    // 库内文件缺失 + 外部在运行中直接写 state.json 三字段
     fs.writeFileSync(path.join(stateDir, 'state.json'), JSON.stringify({
       profile: { name: 'seed 画像', profile_text: '', preferred_topics: [] },
     }), 'utf8')
@@ -135,7 +148,7 @@ describe('写路径兜底迁移', () => {
     expect(loadProfile(lib).name).toBe('seed 画像')
     const raw = readStateRaw()
     expect(raw.writingFontSize).toBe('lg')
-    for (const k of ['profile', 'anthropicBlogCache', 'anthropicBlogLastSeenAt', 'jobProfile', 'jobBriefingConfig']) {
+    for (const k of ['profile', 'anthropicBlogCache', 'anthropicBlogLastSeenAt']) {
       expect(raw[k]).toBeUndefined()
     }
   })

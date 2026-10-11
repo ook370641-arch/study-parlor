@@ -4,18 +4,14 @@ import path from 'node:path'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
 import { getStateDir } from '../env'
 import type { AppConfig } from '../env'
-import { DEFAULT_JOB_BRIEFING_CONFIG, normalizeJobBriefingConfig } from '../lib/job-briefing'
-import { DEFAULT_JOB_PROFILE, normalizeJobProfile } from '../../src/lib/job-briefing-defaults'
 import {
   loadProfile,
   saveProfile,
   loadBlogCache,
   saveBlogCache,
-  loadJobData,
-  saveJobData,
   migrateLibraryData,
 } from '../lib/library-data'
-import type { StateJson, Profile, AnthropicBlogCache, JobProfile, JobBriefingConfig } from '@shared/index'
+import type { StateJson, Profile, AnthropicBlogCache } from '@shared/index'
 
 function getStateFile(): string {
   return path.join(getStateDir(), 'state.json')
@@ -31,14 +27,12 @@ const DEFAULT: StateJson = {
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
   lastFableTags: [],
   topicContinueSuggestions: {},
-  briefingSource: 'digest',
+  briefingSource: 'writing',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicBlogLastSeenAt: null,
-  jobBriefingConfig: DEFAULT_JOB_BRIEFING_CONFIG,
   assistantSearchEnabled: false,
   assistantSocraticMode: true,
   assistantThinkingEffort: 'off',
-  jobProfile: DEFAULT_JOB_PROFILE,
   writingFontSize: 'base',
   writingTone: 'parchment',
   writingListTab: 'articles',
@@ -53,12 +47,10 @@ const DEFAULT: StateJson = {
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
   writingCodeblockCollapsed: {},
-  articlePanelMode: { anthropic: 'guide', scout: 'guide', job: 'guide' },
+  articlePanelMode: { anthropic: 'guide' },
   articleCompanionMap: {},
   lastArticleCompanion: null,
   articleCompanionScrollMemory: null,
-  scoutTab: 'chat',
-  scoutActiveConversationId: null,
   archivedTopics: [],
   hiddenPaintings: [],
   paintingDeleteEnabled: true,
@@ -67,13 +59,11 @@ const DEFAULT: StateJson = {
   activeLlmConfigId: null,
 }
 
-/** 迁入学习库的五个 key：库内文件是真相源，state.json 不再持久化它们 */
+/** 迁入学习库的三个 key：库内文件是真相源，state.json 不再持久化它们 */
 const LIBRARY_KEYS = new Set([
   'profile',
   'anthropicBlogCache',
   'anthropicBlogLastSeenAt',
-  'jobBriefingConfig',
-  'jobProfile',
 ])
 
 let libraryPath: string | null = null
@@ -93,12 +83,10 @@ function readStateJson(): StateJson {
   return {
     ...DEFAULT,
     ...raw,
-    jobBriefingConfig: normalizeJobBriefingConfig(raw.jobBriefingConfig),
-    jobProfile: normalizeJobProfile(raw.jobProfile),
   }
 }
 
-/** state.json 基座 + 库内四字段叠加；叠加前做一次兜底迁移（幂等，库内已建则秒退） */
+/** state.json 基座 + 库内三字段叠加；叠加前做一次兜底迁移（幂等，库内已建则秒退） */
 function withLibraryData(base: StateJson): StateJson {
   const lib = getLibraryPath()
   if (!lib) return base
@@ -112,14 +100,11 @@ function withLibraryData(base: StateJson): StateJson {
     return base
   }
   const { cache, lastSeenAt } = loadBlogCache(lib)
-  const job = loadJobData(lib)
   return {
     ...base,
     profile: loadProfile(lib),
     anthropicBlogCache: cache,
     anthropicBlogLastSeenAt: lastSeenAt,
-    jobProfile: job.jobProfile,
-    jobBriefingConfig: job.jobBriefingConfig,
   }
 }
 
@@ -209,7 +194,19 @@ export function patchState(patch: Partial<StateJson>): void {
     delete merged.anthropicScrollPositions
     delete merged.articleCompanionScrollPositions
 
-    // 关键：基座含 DEFAULT 的五字段默认值，落盘前必须剔除，
+    // 2026-10-10 三来源（求职/前沿/拾贝）删除：旧字段无条件剥离（patchState 每次从
+    // 磁盘重读 raw 重合并，只在 readStateJson 剥离会让字段永留磁盘）；嵌套键逐键
+    // delete 不重建对象（重建有误删 anthropic 键风险）。
+    delete merged.briefingSourceOrder
+    delete merged.scoutTab
+    delete merged.scoutActiveConversationId
+    delete merged.briefingRead
+    delete merged.jobBriefingConfig
+    delete merged.jobProfile
+    delete (merged.articlePanelMode as Record<string, unknown> | undefined)?.scout
+    delete (merged.articlePanelMode as Record<string, unknown> | undefined)?.job
+
+    // 关键：基座含 DEFAULT 的三字段默认值，落盘前必须剔除，
     // 否则任何无关 patch 都会把已剥离的 key 重新写回 state.json。
     // 迁移失败（migrationOk=false）时保留 state.json 原值，留待下次重试，绝不抹掉。
     if (lib && migrationOk) {
@@ -232,12 +229,6 @@ export function patchState(patch: Partial<StateJson>): void {
           ? (libraryPatch.anthropicBlogLastSeenAt as string | null)
           : cur.lastSeenAt
       )
-    }
-    if (libraryPatch.jobProfile || libraryPatch.jobBriefingConfig) {
-      saveJobData(lib, {
-        jobProfile: libraryPatch.jobProfile as JobProfile | undefined,
-        jobBriefingConfig: libraryPatch.jobBriefingConfig as JobBriefingConfig | undefined,
-      })
     }
   }
 }

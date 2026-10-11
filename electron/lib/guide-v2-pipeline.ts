@@ -11,12 +11,9 @@ import {
   assignMaterials,
   buildBlogGuidePlanPrompt,
   buildBlogGuideV2UserPrompt,
-  buildGuidePlanPrompt,
-  buildGuideV2UserPrompt,
   countArticleHeadings,
   countStreamedChunks,
   isValidGuideBlogV2,
-  isValidGuideV2,
   parseGuidePlan,
   type GuideMaterial,
   type GuidePlanQuery,
@@ -150,18 +147,6 @@ async function runGuideV2(
     throw typed('GUIDE_JSON_ERROR', 'Guide v2 JSON missing required fields or invalid shape')
   }
   return guide
-}
-
-export function runDigestGuideV2(
-  cfg: AppConfig,
-  args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
-  onProgress: (p: GuideProgress) => void
-): Promise<ArticleAssistantGuide> {
-  return runGuideV2(cfg, args, {
-    buildPlanPrompt: buildGuidePlanPrompt,
-    buildUserPrompt: buildGuideV2UserPrompt,
-    validate: isValidGuideV2,
-  }, onProgress)
 }
 
 export function runBlogGuideV2(

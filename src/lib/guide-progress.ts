@@ -6,7 +6,7 @@ export const GUIDE_FORMAT_VERSION = 2
 
 /** 统计正文 H2/H3 标题数，作为撰写进度分母（entriesTotal）。
  *  「## 原始来源 / Sources」section 及其下的 ### 来源分组不是导读条目，计数前截断
- *  （判定与 parse-briefing-markdown.ts 保持一致）。 */
+ *  （旧 digest 简报格式的遗留防御，博客正文一般不含该段）。 */
 export function countArticleHeadings(content: string): number {
   const cut = content.search(/^##\s+.*(?:原始来源|sources).*$/im)
   const body = cut >= 0 ? content.slice(0, cut) : content
@@ -14,12 +14,8 @@ export function countArticleHeadings(content: string): number {
   return m ? m.length : 0
 }
 
-/** 导读缓存版本判定：web-article / writing 永远有效；briefing 与 anthropic-article 需要 v2 */
-export function isGuideCacheCurrent(
-  contextType: 'briefing' | 'anthropic-article' | 'web-article' | 'writing',
-  guideVersion: number | undefined
-): boolean {
-  if (contextType === 'web-article' || contextType === 'writing') return true
+/** 导读缓存版本判定：博客 v2 链路起要求 guide_version >= 2，旧 v1 缓存自动失效重生成。 */
+export function isGuideCacheCurrent(guideVersion: number | undefined): boolean {
   return (guideVersion ?? 1) >= GUIDE_FORMAT_VERSION
 }
 

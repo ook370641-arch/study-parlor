@@ -20,8 +20,6 @@ export function resolveSourcePath(lib: string, type: string, idPath: string): st
       return path.join(lib, 'repository', idPath.replace(/^repository\//, ''))
     case 'blog':
       return path.join(lib, 'Anthropic博客', idPath)
-    case 'digest':
-      return path.join(lib, '夜航简报', idPath)
     case 'study': {
       // Find the latest session's 学习报告.md
       const topicPath = topicDir(lib, idPath)
@@ -36,10 +34,6 @@ export function resolveSourcePath(lib: string, type: string, idPath: string): st
         }
       } catch { /* fall through */ }
       return null
-    }
-    case 'job': {
-      // Job briefings are in the library root with a job- prefix pattern
-      return path.join(lib, idPath)
     }
     default:
       return null

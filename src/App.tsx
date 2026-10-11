@@ -8,7 +8,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ipc } from '@/lib/ipc'
 import { attachAssistantSessionListeners } from '@/lib/assistant-session-runtime'
 import { attachWritingAssistantListeners } from '@/lib/writing-assistant-runtime'
-import { initScoutRuntime } from '@/lib/scout-runtime'
 import { initAnthropicRuntime } from '@/lib/anthropic-runtime'
 
 // Lazy-load pages to reduce Vite dev-server first-page transform cost.
@@ -57,7 +56,6 @@ export function App() {
   // Attach article assistant streaming listeners once globally
   useEffect(() => { attachAssistantSessionListeners() }, [])
   useEffect(() => { attachWritingAssistantListeners() }, [])
-  useEffect(() => { initScoutRuntime() }, [])
   useEffect(() => { initAnthropicRuntime() }, [])
 
   // boot:complete 一到即并行启动「Cover 预加载 + store 初始化」，与 LoadingScreen

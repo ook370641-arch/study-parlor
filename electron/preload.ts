@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { IpcApi, UnsavedSession, BriefingStage, BriefingProgressSource } from '@shared/index'
+import type { IpcApi, UnsavedSession } from '@shared/index'
 
 const api: IpcApi = {
   scanLibrary: () => ipcRenderer.invoke('files:scan'),
@@ -105,21 +105,6 @@ const api: IpcApi = {
     return () => ipcRenderer.off('setup:done', handler)
   },
 
-  briefingGenerate: (args) => ipcRenderer.invoke('briefing:generate', args),
-  briefingList: () => ipcRenderer.invoke('briefing:list'),
-  briefingDelete: (args) => ipcRenderer.invoke('briefing:delete', args),
-  briefingAbort: () => ipcRenderer.invoke('briefing:abort'),
-
-  jobBriefingGenerate: (args) => ipcRenderer.invoke('job-briefing:generate', args),
-  jobBriefingList: () => ipcRenderer.invoke('job-briefing:list'),
-  jobBriefingDiscoverPages: () => ipcRenderer.invoke('job-briefing:discover-pages'),
-  jobBriefingDelete: (args) => ipcRenderer.invoke('job-briefing:delete', args),
-  jobBriefingAbort: () => ipcRenderer.invoke('job-briefing:abort'),
-  jobBriefingGenerateKeywords: (args: { profile: import('@shared/index').JobProfile }) =>
-    ipcRenderer.invoke('job-briefing:generate-keywords', args),
-  jobBriefingGenerateArticleSearchQuery: (args: { articleContent: string; selection?: string; lastMessage?: string }) =>
-    ipcRenderer.invoke('job-briefing:generate-article-search-query', args),
-
   anthropicDiscover: () => ipcRenderer.invoke('anthropic:discover'),
   anthropicImportArticle: (url) => ipcRenderer.invoke('anthropic:importArticle', url),
   anthropicCancelImport: (url?: string) => ipcRenderer.invoke('anthropic:cancelImport', url),
@@ -152,13 +137,6 @@ const api: IpcApi = {
   annotationsRead: (articlePath) => ipcRenderer.invoke('annotations:read', articlePath),
   annotationsWrite: (articlePath, annotations) => ipcRenderer.invoke('annotations:write', articlePath, annotations),
 
-  collectionRead: () => ipcRenderer.invoke('collection:read'),
-  collectionAddEntry: (entry) => ipcRenderer.invoke('collection:addEntry', entry),
-  collectionRemoveEntry: (id) => ipcRenderer.invoke('collection:removeEntry', id),
-  collectionAppendQA: (args) => ipcRenderer.invoke('collection:appendQA', args),
-  collectionUpdateNote: (args) => ipcRenderer.invoke('collection:updateNote', args),
-  collectionUpdateQA: (args) => ipcRenderer.invoke('collection:updateQA', args),
-
   articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),
   articleAssistantSendMessage: (a) => ipcRenderer.invoke('articleAssistant:sendMessage', a),
   articleAssistantAbort: (a) => ipcRenderer.invoke('articleAssistant:abort', a),
@@ -172,14 +150,6 @@ const api: IpcApi = {
 
   // Timing instrumentation — fire-and-forget so renderer doesn't await
   logTiming: (label, elapsed) => ipcRenderer.send('log:timing', label, elapsed),
-
-  onBriefingProgress: (cb) => {
-    // Per-handler on/off：digest 与 job-briefing 可同时订阅同一频道（后台生成 +
-    // 查看并存），removeAllListeners 会互相残杀（React "Should have a queue" root cause）。
-    const handler = (_: unknown, source: BriefingProgressSource, stage: BriefingStage, detail?: string) => cb(source, stage, detail)
-    ipcRenderer.on('briefing:progress', handler)
-    return () => ipcRenderer.off('briefing:progress', handler)
-  },
 
   bootStart: () => ipcRenderer.invoke('boot:start') as Promise<{ alreadyCompleted: boolean }>,
 
@@ -227,21 +197,6 @@ const api: IpcApi = {
     return () => ipcRenderer.removeListener('writingAssistant:reasoningChunk', handler)
   },
 
-  // Scout (拾贝)
-  scoutSendMessage: (a) => ipcRenderer.invoke('scout:sendMessage', a),
-  scoutAbort: (a) => ipcRenderer.invoke('scout:abort', a),
-  scoutListConversations: () => ipcRenderer.invoke('scout:listConversations'),
-  scoutCreateConversation: () => ipcRenderer.invoke('scout:createConversation'),
-  scoutGetConversation: (a) => ipcRenderer.invoke('scout:getConversation', a),
-  scoutRenameConversation: (a) => ipcRenderer.invoke('scout:renameConversation', a),
-  scoutDeleteConversation: (a) => ipcRenderer.invoke('scout:deleteConversation', a),
-  scoutListArticles: () => ipcRenderer.invoke('scout:listArticles'),
-  scoutDeleteArticle: (a) => ipcRenderer.invoke('scout:deleteArticle', a),
-  onScoutTool: (cb) => {
-    const handler = (_: unknown, payload: any) => cb(payload)
-    ipcRenderer.on('scout:tool', handler)
-    return () => ipcRenderer.removeListener('scout:tool', handler)
-  },
   paintingsCanEdit: () => ipcRenderer.invoke('paintings:canEdit'),
   paintingsSetFocus: (a) => ipcRenderer.invoke('paintings:setFocus', a),
 }

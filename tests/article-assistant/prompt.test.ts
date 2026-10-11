@@ -1,5 +1,3 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   buildAssistantSystemPrompt,
@@ -7,11 +5,6 @@ import {
   formatSearchResults,
 } from '../../electron/lib/article-assistant-prompt'
 import type { ArticleAssistantGuide } from '@shared/index'
-
-const digestGuidePrompt = fs.readFileSync(
-  path.resolve(process.cwd(), 'electron/prompts/digest-guide.md'),
-  'utf8'
-)
 
 describe('formatSearchResults', () => {
   it('produces ordered 来源/链接 blocks for a 2-item array', () => {
@@ -30,40 +23,6 @@ describe('formatSearchResults', () => {
 describe('buildAssistantSystemPrompt', () => {
   it('does not carry the archive-trigger question', () => {
     expect(buildAssistantSystemPrompt()).not.toMatch(/需要存档吗/)
-  })
-})
-
-describe('digest-guide.md prompt', () => {
-  it('demands JSON-only output with no markdown fences or prose', () => {
-    expect(digestGuidePrompt).toContain('Return ONLY a JSON object')
-    expect(digestGuidePrompt).toContain('Do not wrap it in markdown code blocks or add explanatory prose.')
-  })
-
-  it('documents the background/chunks/heading/summary/terms schema', () => {
-    expect(digestGuidePrompt).toContain('"background"')
-    expect(digestGuidePrompt).toContain('"chunks"')
-    expect(digestGuidePrompt).toContain('"heading"')
-    expect(digestGuidePrompt).toContain('"summary"')
-    expect(digestGuidePrompt).toContain('"terms"')
-  })
-
-  it('requires Chinese output with original English in parentheses for terms', () => {
-    expect(digestGuidePrompt).toMatch(/中文/)
-    expect(digestGuidePrompt).toContain('上下文（context）')
-    expect(digestGuidePrompt).toMatch(/All explanations[\s\S]*must be in Chinese/)
-  })
-
-  it('keeps original heading language and does not translate headings', () => {
-    expect(digestGuidePrompt).toMatch(/Do not translate headings/)
-    expect(digestGuidePrompt).toMatch(/keep the exact original heading text/)
-  })
-
-  it('forbids decorative metadata patterns', () => {
-    for (const banned of ['Vol.', 'AI Builders Digest', 'Generated through', '档案编号', '学习卷宗']) {
-      expect(digestGuidePrompt).toContain(banned)
-    }
-    // they appear inside the explicit "Do not output ..." constraint
-    expect(digestGuidePrompt).toMatch(/Do not output[\s\S]*档案编号/)
   })
 })
 
@@ -135,53 +94,5 @@ describe('buildAssistantUserPrompt socratic flag', () => {
     const out = buildAssistantUserPrompt({ ...base, socratic: false })
     expect(out).toContain('直接给出简明回答')
     expect(out).not.toContain('苏格拉底式回复')
-  })
-})
-
-const digestGuideV2Prompt = fs.readFileSync(
-  path.resolve(process.cwd(), 'electron/prompts/digest-guide-v2.md'),
-  'utf8'
-)
-
-describe('digest-guide-v2.md prompt', () => {
-  it('demands JSON-only output with no markdown fences or prose', () => {
-    expect(digestGuideV2Prompt).toMatch(/Return ONLY a JSON object|只输出 JSON/)
-    expect(digestGuideV2Prompt).toMatch(/Do not wrap it in markdown code blocks|不要 markdown 代码块/)
-  })
-
-  it('documents the background/chunks/heading/context/terms schema', () => {
-    for (const key of ['"background"', '"chunks"', '"heading"', '"context"', '"terms"']) {
-      expect(digestGuideV2Prompt).toContain(key)
-    }
-  })
-
-  it('reframes the reader assumption: article content is waste, not material', () => {
-    expect(digestGuideV2Prompt).toMatch(/读者自己会读正文|WILL read the briefing themselves/)
-  })
-
-  it('carries the self-question checklist (故事线/说话者/赞成或挑战/拼图)', () => {
-    expect(digestGuideV2Prompt).toContain('故事线')
-    expect(digestGuideV2Prompt).toMatch(/说话者|说话的人/)
-    expect(digestGuideV2Prompt).toMatch(/支持或挑战|赞成或挑战/)
-    expect(digestGuideV2Prompt).toContain('拼图')
-  })
-
-  it('anchors the three-tier examples: summary / 掉书袋 / 刻意通俗 forbidden, 前见 expected', () => {
-    // 三层反例 + 一层正例
-    expect(digestGuideV2Prompt).toContain('❌')
-    expect(digestGuideV2Prompt).toContain('✅')
-    expect(digestGuideV2Prompt).toContain('掉书袋')
-    expect(digestGuideV2Prompt).toContain('刻意通俗')
-    expect(digestGuideV2Prompt).toContain('Karpathy')
-  })
-
-  it('states the language style: 平实准确, no abstract-noun stacking, no forced colloquialism', () => {
-    expect(digestGuideV2Prompt).toContain('平实准确')
-    expect(digestGuideV2Prompt).toMatch(/命题|范式|赋能/)
-  })
-
-  it('keeps heading language and terms format from v1', () => {
-    expect(digestGuideV2Prompt).toMatch(/Do not translate headings|不要翻译.*标题|标题.*不要翻译/)
-    expect(digestGuideV2Prompt).toContain('上下文（context）')
   })
 })

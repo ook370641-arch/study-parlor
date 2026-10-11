@@ -25,7 +25,7 @@ test.describe('@p2 writing-catalog', () => {
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.sourceSidebar)).toBeVisible({ timeout: 10000 })
-    // 默认来源是 digest；点击「写作」触发 setBriefingSource → writingRefreshCatalog
+    // 默认来源已是 writing；显式点击「写作」触发 setBriefingSource → writingRefreshCatalog
     await window.locator(SELECTORS.writing.sourceButton).click()
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
 

@@ -6,14 +6,14 @@ import { ArticleDivider } from './ArticleDivider'
 import { ArticleGuideTabs } from './ArticleGuideTabs'
 
 interface Props {
-  articleType: 'briefing' | 'anthropic-article' | 'web-article'
+  articleType: 'anthropic-article'
   parentPath: string
   articleTitle?: string
   articleContent: string
   showGuide?: boolean
   autoGenerateGuide?: boolean
   theme?: 'academic' | 'newspaper'
-  source?: 'anthropic' | 'scout'
+  source?: 'anthropic'
 }
 
 export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, showGuide = true, autoGenerateGuide, theme = 'academic', source }: Props) {

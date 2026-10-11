@@ -8,6 +8,7 @@ vi.mock('@/lib/ipc', () => ({
     scanLibrary: vi.fn().mockResolvedValue([]),
     loadSessions: vi.fn().mockResolvedValue([]),
     loadGroups: vi.fn().mockResolvedValue({ groups: [], mapping: {} }),
+    paintingsCanEdit: vi.fn(async () => false),
   },
 }))
 

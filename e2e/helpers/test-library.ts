@@ -477,11 +477,6 @@ const BASE_STATE = {
   pendingArchives: [],
   pendingReports: {},
   terminology: {},
-  briefingSource: 'digest',
-  briefingStageDetail: null,
-  scoutTab: 'chat',
-  scoutActiveConversationId: null,
-  jobBriefingStageDetail: null,
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicBlogLastSeenAt: null,
   articleAssistantGuideWidth: 320,
@@ -502,34 +497,6 @@ const BASE_STATE = {
   writingCompanionScrollMemory: null,
   lastArticleCompanion: null,
   articleCompanionScrollMemory: null,
-  jobBriefingConfig: {
-    companies: [
-      { name: '字节跳动', priority: 1, enabled: true },
-      { name: '阿里巴巴', priority: 2, enabled: true },
-      { name: '腾讯', priority: 3, enabled: true },
-      { name: '百度', priority: 4, enabled: true },
-      { name: '美团', priority: 5, enabled: true },
-      { name: 'MiniMax', priority: 6, enabled: true },
-      { name: '智谱AI', priority: 7, enabled: true },
-      { name: '月之暗面', priority: 8, enabled: true },
-      { name: '零一万物', priority: 9, enabled: true },
-      { name: '百川智能', priority: 10, enabled: true },
-    ],
-    roleKeywords: ['AI产品经理', '大模型产品经理', 'Agent产品经理'],
-    cities: ['北京', '上海', '杭州', '深圳'],
-    skillKeywords: ['RAG', 'Agent', '提示词工程', '多模态'],
-    eventSearchKeywords: [],
-    jobSearchKeywords: [],
-    searchInternship: false,
-    searchFallRecruit: true,
-  },
-  jobProfile: {
-    targetRoles: [],
-    direction: '',
-    skills: [],
-    experience: '',
-    additionalNotes: '',
-  },
 }
 
 export function seedStateJson(
@@ -581,71 +548,6 @@ export function seedWildCardInspiration(
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2))
 }
 
-/**
- * Seed 一份求职简报缓存文件（`<libPath>/求职简报/求职简报-<date>.md`）。
- * body 传 `## Error\nJOB_XXX` 时命中主进程失败注入口
- * （electron/ipc/job-briefing.ts 的缓存错误 rethrow 分支），用于确定性
- * 覆盖失败路径——mock fast path 永远成功，失败分支此前零执行。
- */
-export function seedJobBriefing(libPath: string, date: string, content: string): void {
-  const dir = path.join(libPath, '求职简报')
-  fs.mkdirSync(dir, { recursive: true })
-  const filePath = path.join(dir, `求职简报-${date}.md`)
-  const fm = `---
-title: 求职简报
-type: job-briefing
-created: '${new Date().toISOString()}'
-tags:
-  - job-briefing
-  - ai-product
-date: '${date}'
----
-
-`
-  fs.writeFileSync(filePath, fm + content, 'utf8')
-}
-
-export function seedBriefing(libPath: string, date: string, content?: string, generatedAt?: string): void {
-  const dir = path.join(libPath, '夜航简报')
-  fs.mkdirSync(dir, { recursive: true })
-  const filePath = path.join(dir, `夜航简报-${date}.md`)
-  const defaultContent = content ?? `## X / Twitter
-
-### Box CEO Aaron Levie
-Aaron Levie 讨论了 LLM 在企业工作流中的落地。
-
-## Official Blogs
-
-### Anthropic Engineering
-Claude 的新功能提升了长上下文可靠性。
-
-## Podcasts
-
-### Latent Space
-最新一期采访了 Anthropic 研究员。
-
-## 原始来源
-### Aaron Levie
-- [tweet](https://x.com/levie/status/1)
-### Anthropic Engineering
-- [post](https://anthropic.com/engineering/1)
-### Latent Space
-- [episode](https://youtube.com/watch?v=1)`
-  const fm = `---
-title: 夜航简报
-type: briefing
-created: '${generatedAt ?? new Date().toISOString()}'
-tags:
-  - industry-digest
-  - ai
----
-
-`
-  fs.writeFileSync(filePath, fm + defaultContent, 'utf8')
-}
-
-
-
 export function seedAnthropicArticle(
   libPath: string,
   slug: string,
@@ -694,6 +596,48 @@ export function seedAnthropicArticleWithImage(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVQIHWP4DwABAQEAGbBRyQAAAABJRU5ErkJggg=='
   fs.writeFileSync(assetPath, Buffer.from(pngBase64, 'base64'))
   return { filePath, assetPath }
+}
+
+/**
+ * Seed 一篇已保存的博客文章并把 state.json 预置为「博客来源 + 缓存含该文」。
+ * digest 载体下线后，旁注/导读/标注类 spec 的确定性宿主（与
+ * blog-guide-terminal.spec.ts 的模式一致：点击列表行直接走 openReader）。
+ * 必须在首次访问 window fixture 后尽早调用（seedStateJson 要在 store init
+ * 读 state.json 之前落盘）。
+ */
+export function seedBlogArticleWithCache(
+  libPath: string,
+  configDir: string,
+  opts: { slug: string; title: string; body?: string }
+): { filePath: string; url: string } {
+  const url = `https://www.anthropic.com/engineering/${opts.slug}`
+  const filePath = seedAnthropicArticle(libPath, opts.slug, opts.title, opts.body ?? '正文占位。', {
+    source_url: url,
+    section: 'engineering',
+    published_at: '2026-08-01T00:00:00.000Z',
+  })
+  seedStateJson(configDir, {
+    briefingSource: 'anthropic',
+    anthropicBlogCache: {
+      lastFetchedAt: new Date().toISOString(),
+      articles: [
+        {
+          url,
+          title: opts.title,
+          summary: null,
+          publishedAt: '2026-08-01T00:00:00.000Z',
+          imageUrl: null,
+          isSaved: true,
+          filePath,
+          section: 'engineering',
+        },
+      ],
+      loading: false,
+      error: null,
+      sectionStatus: {},
+    },
+  })
+  return { filePath, url }
 }
 
 export function seedUnsavedSession(

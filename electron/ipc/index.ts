@@ -5,10 +5,6 @@ import { registerFilesIpc } from './files'
 import { registerStateIpc } from './state'
 import { registerLlmIpc } from './llm'
 import { registerSessionsIpc } from './sessions'
-import { registerBriefingIpc } from './briefing'
-import { registerJobBriefingIpc } from './job-briefing'
-import { getCurrentState } from './state'
-import { DEFAULT_JOB_BRIEFING_CONFIG, normalizeJobBriefingConfig } from '../lib/job-briefing'
 import { registerSearchIpc } from './search'
 import { registerAnthropicIpc } from './anthropic'
 import { registerArticleAssistantIpc } from './article-assistant'
@@ -16,8 +12,6 @@ import { registerAnnotationsIpc } from './annotations'
 import { registerAppIpc } from './app'
 import { registerWritingIpc } from './writing'
 import { registerWritingAssistantIpc } from './writing-assistant'
-import { registerScoutIpc } from './scout'
-import { registerCollectionIpc } from './collection'
 import { registerPaintingsIpc } from './paintings'
 
 export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindow | null) {
@@ -26,16 +20,12 @@ export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   registerStateIpc(cfg)
   registerLlmIpc(cfg, getMainWindow)
   registerSessionsIpc()
-  registerBriefingIpc(cfg)
-  registerJobBriefingIpc(cfg, () => normalizeJobBriefingConfig(getCurrentState().jobBriefingConfig))
   registerSearchIpc(cfg)
   registerAnthropicIpc(cfg)
   registerArticleAssistantIpc(cfg)
   registerAnnotationsIpc(cfg)
   registerWritingIpc(cfg)
   registerWritingAssistantIpc(cfg)
-  registerScoutIpc(cfg)
-  registerCollectionIpc(cfg)
   registerPaintingsIpc()
   registerAppIpc()
 }
