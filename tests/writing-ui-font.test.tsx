@@ -10,9 +10,6 @@ vi.mock('@/lib/ipc', () => ({
     loadGroups: vi.fn(),
     loadSessions: vi.fn(),
     llmWildcardInspiration: vi.fn(),
-    briefingGenerate: vi.fn(),
-    onBriefingProgress: vi.fn(() => () => {}),
-    briefingList: vi.fn().mockResolvedValue([]),
     searchPrepare: vi.fn(),
     writingScanTree: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     writingRefreshCatalog: vi.fn(),
@@ -21,7 +18,6 @@ vi.mock('@/lib/ipc', () => ({
     writingImportFiles: vi.fn(),
     articleAssistantReadSession: vi.fn().mockResolvedValue(null),
     annotationsRead: vi.fn().mockResolvedValue([]),
-    collectionRead: vi.fn().mockResolvedValue({ entries: [] }),
     anthropicCollectionRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [] } }),
   },
 }))
