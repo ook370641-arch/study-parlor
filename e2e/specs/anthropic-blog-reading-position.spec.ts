@@ -110,7 +110,7 @@ test.describe('@p1 anthropic-blog-reading-position', () => {
       briefingSource: 'anthropic',
       anthropicBlogCache: { lastFetchedAt: new Date().toISOString(), articles: [main, comp], loading: false, error: null, sectionStatus: {} },
       lastAnthropicReaderFile: main.filePath,
-      articlePanelMode: { anthropic: 'companion', scout: 'guide', job: 'guide' },
+      articlePanelMode: { anthropic: 'companion' },
       lastArticleCompanion: { mainKey: main.filePath, filePath: comp.filePath },
       articleCompanionScrollMemory: { filePath: comp.filePath, blockIndex: 5 },
     })

@@ -2,15 +2,12 @@ import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { ArticleAssistantPage } from '../pages/ArticleAssistantPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBriefing } from '../helpers/test-library'
+import { seedBlogArticleWithCache } from '../helpers/test-library'
 import type { Page } from '@playwright/test'
 
-function localToday(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-const DIGEST_CONTENT = `## AI Safety
+const ARTICLE_SLUG = 'e2e-resize-article'
+const ARTICLE_TITLE = 'E2E Resize Article'
+const ARTICLE_BODY = `## AI Safety
 
 ### Box CEO Aaron Levie
 Aaron Levie 讨论了 AI 安全与对齐在企业工作流中的落地。
@@ -19,21 +16,21 @@ Aaron Levie 讨论了 AI 安全与对齐在企业工作流中的落地。
 ### Aaron Levie
 - [tweet](https://x.com/levie/status/1)`
 
-async function openChatWindow(window: Page, libPath: string): Promise<ArticleAssistantPage> {
-  seedBriefing(libPath, localToday(), DIGEST_CONTENT)
+async function openChatWindow(window: Page, libPath: string, configDir: string): Promise<ArticleAssistantPage> {
+  seedBlogArticleWithCache(libPath, configDir, { slug: ARTICLE_SLUG, title: ARTICLE_TITLE, body: ARTICLE_BODY })
   const cover = new CoverPage(window)
-  await cover.enterName('E2E 测试员')
   await cover.goToBriefing()
-  await window.locator(SELECTORS.briefing.receiveDigestButton).click()
-  await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+  await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 10000 })
+  await window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("${ARTICLE_TITLE}")`).click()
+  await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 15000 })
   const assistant = new ArticleAssistantPage(window)
   await assistant.openChat()
   return assistant
 }
 
 test.describe('@p1 旁注窗口 resize', () => {
-  test('拖 se 角向右下：尺寸增大且左上角钉死', async ({ window, testLibraryPath }) => {
-    const assistant = await openChatWindow(window, testLibraryPath)
+  test('拖 se 角向右下：尺寸增大且左上角钉死', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openChatWindow(window, testLibraryPath, testConfigDir)
     const win = assistant.chatWindow
     // 聊天窗默认右下锚定（right:24 / bottom:24），SE 向右/向下都会被视口钳制到
     // ~364px / ~284px，永远到不了 +40；先用标题栏把它拖向左上方，给 SE 双向腾出空间，
@@ -59,8 +56,8 @@ test.describe('@p1 旁注窗口 resize', () => {
     expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(2)
   })
 
-  test('拖 nw 角向左上：右下边缘钉死', async ({ window, testLibraryPath }) => {
-    const assistant = await openChatWindow(window, testLibraryPath)
+  test('拖 nw 角向左上：右下边缘钉死', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openChatWindow(window, testLibraryPath, testConfigDir)
     const win = assistant.chatWindow
     const before = (await win.boundingBox())!
     const rightBefore = before.x + before.width
@@ -79,8 +76,8 @@ test.describe('@p1 旁注窗口 resize', () => {
     expect(Math.abs(after.y + after.height - bottomBefore)).toBeLessThanOrEqual(2)
   })
 
-  test('缩到小窗(<320px)：三控件隐藏、发送按钮在界内可点', async ({ window, testLibraryPath }) => {
-    const assistant = await openChatWindow(window, testLibraryPath)
+  test('缩到小窗(<320px)：三控件隐藏、发送按钮在界内可点', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openChatWindow(window, testLibraryPath, testConfigDir)
     const win = assistant.chatWindow
     const before = (await win.boundingBox())!
 

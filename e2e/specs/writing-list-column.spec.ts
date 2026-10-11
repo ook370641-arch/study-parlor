@@ -47,7 +47,7 @@ test.describe('@p2 writing list column', () => {
     await setup(window, testLibraryPath)
     await window.locator(SELECTORS.briefing.themeToggle).click()
 
-    // Newspaper theme gives the page a light bg-white root (no digest layout is rendered for writing source).
+    // Newspaper theme gives the page a light bg-white root.
     const page = window.locator(SELECTORS.briefing.page)
     await expect(page).toHaveClass(/bg-white/, { timeout: 10000 })
 

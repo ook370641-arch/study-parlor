@@ -4,35 +4,33 @@ import * as path from 'node:path'
 import { CoverPage } from '../pages/CoverPage'
 import { ArticleAssistantPage } from '../pages/ArticleAssistantPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBriefing } from '../helpers/test-library'
+import { seedBlogArticleWithCache } from '../helpers/test-library'
 import type { Page } from '@playwright/test'
 
-function localToday(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
+const ARTICLE_SLUG = 'e2e-assistant-article'
+const ARTICLE_TITLE = 'E2E Assistant Article'
+// 正文需足够长：「文章上下文注入」用例断言注入正文 > 200 字符
+const ARTICLE_BODY = `## AI Safety
+
+Constitutional AI 是一种用一组书面原则约束模型行为的对齐方法。它试图减少人工标注的依赖，让模型在多轮自我批评与修订中逐步贴合原则。本节展开讨论其核心思想、动机与在企业工作流中的落地方式，并比较它与 RLHF 的差异与互补关系。
+
+## Training Data
+
+训练数据质量直接影响模型行为与安全边界。去重与过滤是数据管线的关键环节。`
 
 /**
- * Seed a cached briefing digest, navigate cover → briefing → load the cached
- * digest, and wait until the article-assistant tab has mounted. Reuses the
- * existing seedBriefing helper (the on-disk digest format) rather than
- * inventing a new one.
+ * Seed 一篇已保存的博客文章，导航 cover → briefing → 点击行打开阅读器，
+ * 等待旁注面板挂载。digest 载体下线后改用博客文章作为宿主
+ * （与 blog-guide-terminal.spec.ts 同一模式，确定性 mock，不走 LLM）。
  */
-async function openDigestArticle(window: Page, libPath: string): Promise<ArticleAssistantPage> {
-  const today = localToday()
-  seedBriefing(libPath, today)
+async function openAssistantArticle(window: Page, libPath: string, configDir: string): Promise<ArticleAssistantPage> {
+  seedBlogArticleWithCache(libPath, configDir, { slug: ARTICLE_SLUG, title: ARTICLE_TITLE, body: ARTICLE_BODY })
 
   const cover = new CoverPage(window)
-  await cover.enterName('E2E 测试员')
   await cover.goToBriefing()
-
-  // The briefing page starts empty; click the receive-digest button to load the
-  // seeded cache (deterministic, no LLM).
-  await window.locator(SELECTORS.briefing.receiveDigestButton).click()
-  await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+  await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 10000 })
+  await window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("${ARTICLE_TITLE}")`).click()
+  await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 15000 })
 
   const assistant = new ArticleAssistantPage(window)
   await assistant.waitForMounted()
@@ -40,8 +38,7 @@ async function openDigestArticle(window: Page, libPath: string): Promise<Article
 }
 
 function assistantSessionPath(libPath: string): string {
-  const today = localToday()
-  return path.join(libPath, '夜航简报', `夜航简报-${today}.assistant.md`)
+  return path.join(libPath, 'Anthropic博客', `${ARTICLE_SLUG}.assistant.md`)
 }
 
 async function waitForFile(filePath: string, timeoutMs = 15000): Promise<string> {
@@ -54,23 +51,23 @@ async function waitForFile(filePath: string, timeoutMs = 15000): Promise<string>
 }
 
 test.describe('@p1 article assistant', () => {
-  test('opens a briefing digest and toggles the chat window', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('opens a blog article and toggles the chat window', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openAssistantArticle(window, testLibraryPath, testConfigDir)
     await expect(assistant.tab).toBeVisible()
     await assistant.openChat()
     await expect(assistant.chatWindow).toBeVisible()
   })
 
-  test('renders the guide sidebar with background and term content', async ({ window, testLibraryPath }) => {
-    await openDigestArticle(window, testLibraryPath)
+  test('renders the guide sidebar with background and term content', async ({ window, testLibraryPath, testConfigDir }) => {
+    await openAssistantArticle(window, testLibraryPath, testConfigDir)
     // GuideSidebar has no stable data-testid; assert on the deterministic mock
     // guide content (term is fixed by the E2E mock, so the text is stable).
     await expect(window.getByText('背景', { exact: false }).first()).toBeVisible({ timeout: 15000 })
     await expect(window.getByText('Constitutional AI').first()).toBeVisible()
   })
 
-  test('sends a question and receives a streamed reply', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('sends a question and receives a streamed reply', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openAssistantArticle(window, testLibraryPath, testConfigDir)
     await assistant.openChat()
     await assistant.typeQuestion('What is Constitutional AI?')
     await assistant.send()
@@ -78,8 +75,8 @@ test.describe('@p1 article assistant', () => {
     await expect(assistant.chatWindow).toContainText('E2E 测试的')
   })
 
-  test('persists the session file with article-assistant frontmatter', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('persists the session file with article-assistant frontmatter', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openAssistantArticle(window, testLibraryPath, testConfigDir)
     await assistant.openChat()
     await assistant.typeQuestion('Explain the article briefly.')
     await assistant.send()
@@ -87,11 +84,11 @@ test.describe('@p1 article assistant', () => {
 
     const raw = await waitForFile(assistantSessionPath(testLibraryPath))
     expect(raw).toContain('type: article-assistant')
-    expect(raw).toContain('parent_type: briefing')
+    expect(raw).toContain('parent_type: anthropic-article')
   })
 
-  test('搜索按钮为持久开关，点击不发送消息', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('搜索按钮为持久开关，点击不发送消息', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openAssistantArticle(window, testLibraryPath, testConfigDir)
     await assistant.openChat()
 
     // 初始：关闭态（灰色，aria-pressed=false）
@@ -113,8 +110,8 @@ test.describe('@p1 article assistant', () => {
     expect(await assistant.messageCount()).toBe(0)
   })
 
-  test('导读折叠箭头可点击（真实点击，pointer-capture 回归）', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('导读折叠箭头可点击（真实点击，pointer-capture 回归）', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openAssistantArticle(window, testLibraryPath, testConfigDir)
     await expect(assistant.divider).toBeVisible()
 
     const toggle = assistant.dividerToggle
@@ -134,8 +131,8 @@ test.describe('@p1 article assistant', () => {
     await expect.poll(() => assistant.guideSidebarWidth()).toBeGreaterThan(100)
   })
 
-  test('聊天 Markdown 渲染：mock 回复正常渲染为 DOM', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+  test('聊天 Markdown 渲染：mock 回复正常渲染为 DOM', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openAssistantArticle(window, testLibraryPath, testConfigDir)
     await assistant.openChat()
     await assistant.typeQuestion('测试 markdown')
     await assistant.send()
@@ -156,7 +153,7 @@ test.describe('@p1 article assistant', () => {
   })
 
   test('文章上下文注入：last-assistant-request.json 含文章正文', async ({ window, testLibraryPath, testConfigDir }) => {
-    const assistant = await openDigestArticle(window, testLibraryPath)
+    const assistant = await openAssistantArticle(window, testLibraryPath, testConfigDir)
     await assistant.openChat()
     await assistant.typeQuestion('这篇文章讲了什么')
     await assistant.send()

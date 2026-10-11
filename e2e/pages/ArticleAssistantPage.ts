@@ -185,8 +185,8 @@ export class ArticleAssistantPage {
    * box of the paragraph for callers that need to assert positions.
    */
   async dragSelectFirstParagraph(chars = 120) {
-    // 阅读器外层容器统一带 .briefing-article-body（digest 是 <main>+<div>，anthropic 是 <article>）；
-    // 不能用 'article p'——digest 版式没有 <article>，会永远找不到。
+    // 阅读器外层容器统一带 .briefing-article-body（anthropic 阅读器是 <article> 内的容器 div）；
+    // 不能用 'article p'——正文容器结构可能变化，统一靠 class 锚定。
     const p = this.page.locator('.briefing-article-body p').first()
     await p.waitFor({ state: 'visible', timeout: 15000 })
     // 导读生成完成后 ArticleBodyChunks 会整体重写文章 DOM，段落可能被瞬时 detach，

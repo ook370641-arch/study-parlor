@@ -2,15 +2,12 @@ import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { ArticleAssistantPage } from '../pages/ArticleAssistantPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBriefing } from '../helpers/test-library'
+import { seedBlogArticleWithCache } from '../helpers/test-library'
 import type { Page } from '@playwright/test'
 
-function localToday(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-const DIGEST_CONTENT = `## AI Safety
+const ARTICLE_SLUG = 'e2e-guide-visibility'
+const ARTICLE_TITLE = 'E2E Guide Visibility'
+const ARTICLE_BODY = `## AI Safety
 
 ### Box CEO Aaron Levie
 Aaron Levie 讨论了 AI 安全与对齐在企业工作流中的落地。
@@ -19,33 +16,34 @@ Aaron Levie 讨论了 AI 安全与对齐在企业工作流中的落地。
 ### Aaron Levie
 - [tweet](https://x.com/levie/status/1)`
 
-async function openDigestWithGuide(window: Page, libPath: string): Promise<ArticleAssistantPage> {
-  seedBriefing(libPath, localToday(), DIGEST_CONTENT)
+async function openArticleWithGuide(window: Page, libPath: string, configDir: string): Promise<ArticleAssistantPage> {
+  seedBlogArticleWithCache(libPath, configDir, { slug: ARTICLE_SLUG, title: ARTICLE_TITLE, body: ARTICLE_BODY })
   const cover = new CoverPage(window)
-  await cover.enterName('E2E 测试员')
   await cover.goToBriefing()
-  await window.locator(SELECTORS.briefing.receiveDigestButton).click()
-  await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+  await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 10000 })
+  await window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("${ARTICLE_TITLE}")`).click()
+  await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 15000 })
   const assistant = new ArticleAssistantPage(window)
   await assistant.waitForMounted()
   return assistant
 }
 
 test.describe('@p2 导读可见性', () => {
-  test('academic 主题导读面板 z-index 站上压暗遮罩', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestWithGuide(window, testLibraryPath)
+  test('academic 主题导读面板 z-index 站上压暗遮罩', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openArticleWithGuide(window, testLibraryPath, testConfigDir)
     await assistant.waitForGuideLoaded()
 
     const panel = window.locator('[data-testid="article-assistant-panel"]')
     await expect(panel).toHaveCSS('z-index', '5')
   })
 
-  test('newspaper 主题导读卡片为亮色', async ({ window, testLibraryPath }) => {
-    const assistant = await openDigestWithGuide(window, testLibraryPath)
+  test('newspaper 主题导读卡片为亮色', async ({ window, testLibraryPath, testConfigDir }) => {
+    const assistant = await openArticleWithGuide(window, testLibraryPath, testConfigDir)
     await assistant.waitForGuideLoaded()
 
     await window.locator(SELECTORS.briefing.themeToggle).click()
-    await expect(window.locator(SELECTORS.briefing.newspaperLayout)).toBeVisible({ timeout: 10000 })
+    // newspaper 主题：页面根变为浅底 bg-white（digest 版式 testid 已随 digest 删除）
+    await expect(window.locator(SELECTORS.briefing.page)).toHaveClass(/bg-white/, { timeout: 10000 })
 
     const chunk = window.locator(SELECTORS.articleAssistant.guideChunk).first()
     await expect(chunk).toHaveCSS('background-color', 'rgb(255, 255, 255)')

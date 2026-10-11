@@ -179,7 +179,7 @@ test.describe('@real Anthropic 博客集成', () => {
     expect(saved).toContain('summary:')
 
     // ③ 切源再切回，重新打开同一篇文章，摘要仍然存在
-    await window.locator(SELECTORS.briefing.sourceDigestButton).click()
+    await window.locator(SELECTORS.writing.sourceButton).click()
     await window.waitForTimeout(1000)
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
     await expect(window.locator(SELECTORS.briefing.listColumn)).toBeVisible()

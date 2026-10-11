@@ -1,14 +1,9 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBriefing } from '../helpers/test-library'
+import { seedBlogArticleWithCache } from '../helpers/test-library'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-
-function localToday(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 /**
  * Simulate a text selection on a <p> element inside the article body.
@@ -177,7 +172,7 @@ test.describe('文章标注 (Article Annotations)', () => {
 
     // --- 第六步：重新打开同一篇文章，验证标注持久化 ---
     // 切换来源以关闭阅读器
-    await window.locator(SELECTORS.briefing.sourceDigestButton).click()
+    await window.locator(SELECTORS.writing.sourceButton).click()
     await window.waitForTimeout(1000)
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
     await expect(listColumn).toBeVisible()
@@ -240,55 +235,6 @@ test.describe('文章标注 (Article Annotations)', () => {
       .not.toContain(noteText)
   })
 
-  test('E2E-A4: digest 简报划线标注', async ({ window, testLibraryPath }) => {
-    const today = localToday()
-    const { seedBriefing } = await import('../helpers/test-library')
-    seedBriefing(testLibraryPath, today)
-
-    const cover = new CoverPage(window)
-    await cover.enterName('E2E 测试员')
-    await cover.goToBriefing()
-    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
-    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
-
-    // Wait for article body
-    await window.locator('[data-testid="briefing-markdown-body"]').waitFor({ state: 'visible', timeout: 15000 })
-
-    // Wait for ArticleAnnotations to mount and register the E2E helper
-    await window.waitForFunction(() => (window as any).__e2e_triggerGhostPen != null, null, { timeout: 10000 })
-
-    // Use E2E helper to trigger ghost pen on first paragraph
-    await window.evaluate(() => {
-      const body = document.querySelector('[data-testid="briefing-markdown-body"]')
-      const p = body?.querySelector('p')
-      if (!p || !p.textContent) throw new Error('no paragraph')
-      const helper = (window as any).__e2e_triggerGhostPen as
-        | ((paraEl: Element, start: number, end: number) => void)
-        | undefined
-      if (!helper) throw new Error('__e2e_triggerGhostPen not found')
-      helper(p, 0, Math.min(15, p.textContent.length))
-    })
-
-    const ghostPen = window.locator(SELECTORS.annotations.ghostPen)
-    await expect(ghostPen).toBeVisible({ timeout: 5000 })
-
-    await ghostPen.click({ force: true })
-    await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible({ timeout: 5000 })
-
-    const noteText = 'Digest标注E2E'
-    await window.locator(SELECTORS.annotations.noteTextarea).fill(noteText)
-    await window.evaluate(() => (window as any).__e2e_saveAnnotation())
-    await expect(window.locator(SELECTORS.annotations.noteCard)).toBeHidden({ timeout: 5000 })
-
-    // Verify marker and file
-    await expect(window.locator(SELECTORS.annotations.markerPen).first()).toBeVisible({ timeout: 5000 })
-    const briefingDir = path.join(testLibraryPath, '夜航简报')
-    await expect.poll(() => {
-      const files = fs.readdirSync(briefingDir).filter((f: string) => f.endsWith('.annotations.md'))
-      if (files.length === 0) return ''
-      return fs.readFileSync(path.join(briefingDir, files[0] as string), 'utf8')
-    }).toContain(noteText)
-  })
 })
 
 test.describe('真实选区交互', () => {
@@ -352,30 +298,20 @@ test.describe('真实选区交互', () => {
   })
 })
 
-test('E2E-A6: 标注跨 renderer reload 恢复', async ({ window, testLibraryPath }) => {
-  const today = localToday()
-  seedBriefing(testLibraryPath, today)
+test('E2E-A6: 标注跨 renderer reload 恢复', async ({ window, testLibraryPath, testConfigDir }) => {
+  seedBlogArticleWithCache(testLibraryPath, testConfigDir, { slug: 'e2e-anno-reload', title: 'E2E Anno Reload', body: '第一段正文，用于标注跨重启恢复测试。' })
 
-  const openDigest = async () => {
+  const openArticle = async () => {
     const cover = new CoverPage(window)
-    // enterName（不点击进入按钮）停留在封面，goToBriefing 的封面简报按钮才可见。
-    // 该路径不写 profile.name，因此 reload 后封面仍是无名变体，同一序列可复用。
-    await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
-    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
-    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
-    await window.locator(SELECTORS.briefing.markdownBody).waitFor({ state: 'visible', timeout: 15000 })
+    await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 10000 })
+    await window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Anno Reload")`).click()
+    await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 15000 })
+    await window.locator('article p').first().waitFor({ state: 'visible', timeout: 15000 })
   }
 
-  await openDigest()
-  await window.evaluate(() => {
-    const body = document.querySelector('[data-testid="briefing-markdown-body"]')
-    const p = body?.querySelector('p')
-    if (!p || !p.textContent) throw new Error('no paragraph')
-    const helper = (window as any).__e2e_triggerGhostPen as | ((paraEl: Element, start: number, end: number) => void) | undefined
-    if (!helper) throw new Error('__e2e_triggerGhostPen not found')
-    helper(p, 0, Math.min(15, p.textContent.length))
-  })
+  await openArticle()
+  await selectTextInArticle(window, 0, 8)
   await expect(window.locator(SELECTORS.annotations.ghostPen)).toBeVisible({ timeout: 5000 })
   await window.locator(SELECTORS.annotations.ghostPen).click({ force: true })
   await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible({ timeout: 5000 })
@@ -384,6 +320,6 @@ test('E2E-A6: 标注跨 renderer reload 恢复', async ({ window, testLibraryPat
   await expect(window.locator(SELECTORS.annotations.markerPen).first()).toBeVisible({ timeout: 5000 })
 
   await window.reload()
-  await openDigest()
+  await openArticle()
   await expect(window.locator(SELECTORS.annotations.markerPen).first()).toBeVisible({ timeout: 15000 })
 })

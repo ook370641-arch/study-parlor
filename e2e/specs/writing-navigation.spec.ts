@@ -34,8 +34,8 @@ test.describe('@p2 writing-navigation', () => {
     await window.locator(SELECTORS.writing.sourceButton).click()
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
 
-    // Switch to digest and back
-    await window.locator(SELECTORS.briefing.sourceDigestButton).click()
+    // Switch to anthropic and back
+    await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
     await expect(window.locator(SELECTORS.writing.listTabArticles)).not.toBeVisible({ timeout: 5000 })
 
     await window.locator(SELECTORS.writing.sourceButton).click()

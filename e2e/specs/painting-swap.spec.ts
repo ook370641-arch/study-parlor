@@ -1,22 +1,16 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBriefing } from '../helpers/test-library'
-
-function localToday(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 test.describe('@p1 painting swap weight grammar', () => {
-  test('swap: weight animation runs, button locks, wall label updates to real attribution', async ({ window, testLibraryPath }) => {
-    const today = localToday()
-    seedBriefing(testLibraryPath, today)
+  test('swap: weight animation runs, button locks, wall label updates to real attribution', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
-    await window.locator(SELECTORS.briefing.receiveDigestButton).click()
-    await expect(window.locator(SELECTORS.briefing.academicLayout)).toBeVisible({ timeout: 15000 })
+    await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
+    // 换画按钮在写作来源主区右上角（academic 主题）
+    const swapBtn = window.locator(SELECTORS.briefing.swapPaintingButton)
+    await expect(swapBtn).toBeVisible()
 
     const bg = window.locator('[data-testid="surface-background"]')
     const label = window.locator('[data-testid="painting-label"]').first()
@@ -25,7 +19,6 @@ test.describe('@p1 painting swap weight grammar', () => {
     const before = (await label.textContent()) ?? ''
     expect(before).toContain('·')
 
-    const swapBtn = window.locator(SELECTORS.briefing.swapPaintingButton)
     await swapBtn.click()
     // 换画动画期间：背景进入 swapping 态，按钮锁定防连点
     await expect(bg).toHaveAttribute('data-swapping', '')
