@@ -263,6 +263,14 @@ export const SELECTORS = {
     listButton: '[data-testid="annotation-list-button"]',
     listItem: '[data-testid="annotation-list-item"]',
   },
+  fitness: {
+    sourceButton: '[data-testid="briefing-source-fitness"]',
+    panel: '[data-testid="fitness-panel"]',
+    recordButton: '[data-testid="fitness-record-button"]',
+    recordSave: '[data-testid="fitness-record-save"]',
+    bodySave: '[data-testid="fitness-body-save"]',
+    faceBody: '[data-testid="fitness-face-body"]',
+  },
   writing: {
     sourceButton: '[data-testid="briefing-source-writing"]',
     listTabArticles: '[data-testid="writing-list-tab-articles"]',

@@ -510,6 +510,12 @@ export function seedStateJson(
   )
 }
 
+export function seedFitnessJson(configDir: string, data: unknown): string {
+  const file = path.join(configDir, 'fitness.json')
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8')
+  return file
+}
+
 export function seedTerminology(
   configDir: string,
   terminology: Record<string, string>

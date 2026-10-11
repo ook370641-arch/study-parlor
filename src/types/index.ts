@@ -447,7 +447,25 @@ export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalo
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
-export type BriefingSourceId = 'writing' | 'anthropic'
+export type BriefingSourceId = 'writing' | 'anthropic' | 'fitness'
+
+export type FitnessSet = { weight: number; reps: number }
+export type FitnessExercise = { id: string; name: string; sets: number }
+export type FitnessRoutine = { id: string; name: string; exercises: FitnessExercise[] }
+export type FitnessScheduleEntry = { weekday: number; routineId: string }
+export type FitnessRecordEntry = { exerciseId: string; name: string; sets: FitnessSet[] }
+export type FitnessRecord = { id: string; date: string; routineId: string; entries: FitnessRecordEntry[] }
+export type BodyMetric = {
+  date: string
+  weight?: number; chest?: number; waist?: number; hip?: number; arm?: number; thigh?: number
+}
+export type FitnessData = {
+  version: 1
+  routines: FitnessRoutine[]
+  schedule: FitnessScheduleEntry[]
+  records: FitnessRecord[]
+  bodyMetrics: BodyMetric[]
+}
 
 export type LlmConfig = { id: string; apiKey: string; baseUrl: string; model: string }
 
@@ -529,6 +547,12 @@ export type IpcApi = {
   patchState: (patch: Partial<StateJson>) => Promise<void>
   /** 同步落盘(sendSync):仅退出路径(beforeunload)使用,保证渲染进程卸载前必达主进程 */
   patchStateSync: (patch: Partial<StateJson>) => void
+  fitnessLoad: () => Promise<FitnessData>
+  fitnessSaveRecord: (r: FitnessRecord) => Promise<FitnessData>
+  fitnessDeleteRecord: (id: string) => Promise<FitnessData>
+  fitnessSaveBodyMetric: (m: BodyMetric) => Promise<FitnessData>
+  fitnessDeleteBodyMetric: (date: string) => Promise<FitnessData>
+  fitnessSavePlan: (p: { routines: FitnessRoutine[]; schedule: FitnessScheduleEntry[] }) => Promise<FitnessData>
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
   llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
