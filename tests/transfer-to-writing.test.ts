@@ -53,7 +53,7 @@ describe('transferArticleToWriting', () => {
     annotationsRead.mockRejectedValue(new Error('no file'))
     articleAssistantReadSession.mockRejectedValue(new Error('no file'))
     await useStore.getState().transferArticleToWriting({
-      name: 'X', content: FULL_TEXT, sourceType: 'digest', sourcePath: '/lib/b.md',
+      name: 'X', content: FULL_TEXT, sourceType: 'anthropic', sourcePath: '/lib/b.md',
     })
     const body = writingWrite.mock.calls[0][0].body as string
     expect(body).toContain('## 标注摘录\n\n（无）')
@@ -66,7 +66,7 @@ describe('transferArticleToWriting', () => {
     ])
     articleAssistantReadSession.mockResolvedValue(null)
     await useStore.getState().transferArticleToWriting({
-      name: 'X', content: FULL_TEXT, sourceType: 'digest', sourcePath: '/lib/b.md',
+      name: 'X', content: FULL_TEXT, sourceType: 'anthropic', sourcePath: '/lib/b.md',
     })
     const body = writingWrite.mock.calls[0][0].body as string
     expect(body).toContain('批注：（无批注）')
