@@ -10,8 +10,7 @@ vi.mock('@/lib/ipc', () => ({
     articleAssistantReadSession: vi.fn(),
     articleAssistantWriteSession: vi.fn(),
     articleAssistantSendMessage: vi.fn(),
-    articleAssistantAbort: vi.fn(),
-    collectionRead: vi.fn().mockResolvedValue({ version: 1, entries: [] })
+    articleAssistantAbort: vi.fn()
   }
 }))
 
@@ -61,7 +60,7 @@ describe('store article assistant', () => {
 
       useStore.getState().openAssistantSession({
         contextId: '/lib/b.md',
-        contextType: 'briefing',
+        contextType: 'anthropic-article',
         articleContent: 'article body',
         articleTitle: 'B',
         autoGenerateGuide: true
@@ -73,13 +72,13 @@ describe('store article assistant', () => {
 
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledWith({
         articleContent: 'article body',
-        articleType: 'briefing',
+        articleType: 'anthropic-article',
         articleTitle: 'B',
         entriesTotal: 0,
       })
       expect(ipc.articleAssistantWriteGuide).toHaveBeenCalledWith({
         parentPath: '/lib/b.md',
-        parentType: 'briefing',
+        parentType: 'anthropic-article',
         guide: guideFixture
       })
       expect(useStore.getState().assistantSession?.guide).toEqual(guideFixture)
@@ -95,7 +94,7 @@ describe('store article assistant', () => {
 
       useStore.getState().openAssistantSession({
         contextId: '/lib/c.md',
-        contextType: 'briefing',
+        contextType: 'anthropic-article',
         articleContent: 'body',
         autoGenerateGuide: true
       })
@@ -108,57 +107,41 @@ describe('store article assistant', () => {
   })
 
   describe('guide v2 cache versioning and progress', () => {
-    const openBriefing = (articleContent = 'article body') =>
+    const openArticle = (articleContent = 'article body') =>
       useStore.getState().openAssistantSession({
         contextId: '/lib/d.md',
-        contextType: 'briefing',
+        contextType: 'anthropic-article',
         articleContent,
         articleTitle: 'D',
         autoGenerateGuide: true,
       })
 
-    it('regenerates when briefing cache has no guideVersion (v1)', async () => {
+    it('regenerates when cache has no guideVersion (v1)', async () => {
       vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue({
         filePath: '/g.md',
         guide: guideFixture as any,
         generatedAt: '2026-08-01',
       })
-      openBriefing()
+      openArticle()
       await flush(); await flush(); await flush()
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalled()
     })
 
-    it('uses briefing cache when guideVersion is 2', async () => {
+    it('uses cache when guideVersion is 2', async () => {
       vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue({
         filePath: '/g.md',
         guide: guideFixture as any,
         generatedAt: '2026-08-04',
         guideVersion: 2,
       })
-      openBriefing()
+      openArticle()
       await flush(); await flush()
       expect(ipc.articleAssistantGenerateGuide).not.toHaveBeenCalled()
       expect(useStore.getState().assistantSession?.guide).toEqual(guideFixture)
     })
 
-    it('uses web-article cache without version check', async () => {
-      vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue({
-        filePath: '/g.md',
-        guide: guideFixture as any,
-        generatedAt: '2026-08-01',
-      })
-      useStore.getState().openAssistantSession({
-        contextId: '/lib/e.md',
-        contextType: 'web-article',
-        articleContent: 'body',
-        autoGenerateGuide: true,
-      })
-      await flush(); await flush()
-      expect(ipc.articleAssistantGenerateGuide).not.toHaveBeenCalled()
-    })
-
     it('counts H2/H3 headings as entriesTotal', async () => {
-      openBriefing('## 一\nx\n### 二\ny\n## 三\nz')
+      openArticle('## 一\nx\n### 二\ny\n## 三\nz')
       await flush(); await flush(); await flush()
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledWith(
         expect.objectContaining({ entriesTotal: 3 })
@@ -171,7 +154,7 @@ describe('store article assistant', () => {
       vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(
         new Promise((r) => { resolveGuide = r }) as Promise<any>
       )
-      openBriefing()
+      openArticle()
       await flush(); await flush()
       expect(useStore.getState().assistantSession?.guideProgress).toEqual({ stage: 'planning' })
 
@@ -186,7 +169,7 @@ describe('store article assistant', () => {
 
     it('clears guideProgress on failure', async () => {
       vi.mocked(ipc.articleAssistantGenerateGuide).mockRejectedValue(Object.assign(new Error('x'), { code: 'GUIDE_LLM_ERROR' }))
-      openBriefing()
+      openArticle()
       await flush(); await flush(); await flush()
       expect(useStore.getState().assistantSession?.guideError).toBe('GUIDE_LLM_ERROR')
       expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
@@ -231,20 +214,7 @@ describe('store article assistant', () => {
       expect(s?.guide).toEqual(guideFixture)
     })
 
-    it('web-article 生成中不置 guideProgress（articleType 门控）', async () => {
-      vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise(() => {}) as Promise<any>)
-      useStore.getState().openAssistantSession({
-        contextId: '/lib/a.md',
-        contextType: 'web-article',
-        articleContent: 'body',
-        autoGenerateGuide: true,
-      })
-      await flush(); await flush()
-      expect(useStore.getState().assistantSession?.guideLoading).toBe(true)
-      expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
-    })
-
-    it('anthropic-article 生成中置 guideProgress（博客 v2 进度）', async () => {
+    it('生成中置 guideProgress（博客 v2 进度）', async () => {
       vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise(() => {}) as Promise<any>)
       useStore.getState().openAssistantSession({
         contextId: '/lib/f.md',
@@ -358,7 +328,7 @@ describe('store article assistant', () => {
     it('keeps assistantSearchEnabled true after a full send cycle', async () => {
       useStore.getState().openAssistantSession({
         contextId: '/lib/e.md',
-        contextType: 'briefing',
+        contextType: 'anthropic-article',
         articleContent: 'body'
       })
       await flush()
@@ -379,7 +349,7 @@ describe('store article assistant', () => {
       useStore.setState({ assistantSocraticMode: false, assistantThinkingEffort: 'max' })
       useStore.getState().openAssistantSession({
         contextId: '/lib/c.md',
-        contextType: 'briefing',
+        contextType: 'anthropic-article',
         articleContent: 'body',
         articleTitle: 'C',
       })
@@ -394,7 +364,7 @@ describe('store article assistant', () => {
     it('records the pending selection on the user message when sending', async () => {
       useStore.getState().openAssistantSession({
         contextId: '/lib/d.md',
-        contextType: 'briefing',
+        contextType: 'anthropic-article',
         articleContent: 'body',
         articleTitle: 'D',
       })
@@ -410,7 +380,7 @@ describe('store article assistant', () => {
     it('persists selection-only user messages (empty content with selection)', async () => {
       useStore.getState().openAssistantSession({
         contextId: '/lib/e.md',
-        contextType: 'briefing',
+        contextType: 'anthropic-article',
         articleContent: 'body',
         articleTitle: 'E',
       })

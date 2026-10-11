@@ -17,7 +17,6 @@ function gradient(p: typeof AMBER): string {
 export function CandlelightLayer() {
   const enabled = useStore((s) => s.candlelightEnabled)
   const theme = useStore((s) => s.briefingTheme)
-  const breathAt = useStore((s) => s.candleBreathAt)
   const streaming = useStore((s) =>
     Boolean(s.assistantSession?.streaming))
   const glowRef = useRef<HTMLDivElement>(null)
@@ -87,15 +86,6 @@ export function CandlelightLayer() {
     document.addEventListener('pointerover', onOver)
     return () => document.removeEventListener('pointerover', onOver)
   }, [live])
-
-  // Breath on reading-finished (candleBreathAt pulse)
-  useEffect(() => {
-    const glow = glowRef.current
-    if (!live || !breathAt || !glow) return
-    glow.classList.add('candle-breath-once')
-    const t = window.setTimeout(() => glow.classList.remove('candle-breath-once'), 1500)
-    return () => clearTimeout(t)
-  }, [live, breathAt])
 
   // Assistant streaming → breathe
   useEffect(() => {

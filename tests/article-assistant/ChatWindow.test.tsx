@@ -22,11 +22,12 @@ const actions = {
 function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSession {
   return {
     contextId: '/lib/夜航简报-2026-07-11.md',
-    contextType: 'briefing',
+    contextType: 'anthropic-article',
     articleTitle: '夜航简报',
     articleContent: '文章正文',
     guide: null,
     guideLoading: false,
+    guideProgress: null,
     guideError: null,
     messages: [],
     streaming: false,
@@ -37,6 +38,7 @@ function baseSession(overrides: Partial<AssistantSession> = {}): AssistantSessio
     retryContext: null,
     pendingSelection: undefined,
     isOpen: true,
+    activeChunkIndex: null,
     ...overrides,
   }
 }

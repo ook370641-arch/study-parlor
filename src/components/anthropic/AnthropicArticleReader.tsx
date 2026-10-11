@@ -18,7 +18,7 @@ import type { AnthropicSectionKey, Frontmatter, BriefingTheme } from '@shared/in
 interface Props {
   filePath: string
   theme?: BriefingTheme
-  /** 传入即启用浏览位置记忆(按 filePath 记录/恢复首可见块索引);仅博客面板传,Scout 不传 */
+  /** 传入即启用浏览位置记忆(按 filePath 记录/恢复首可见块索引);仅博客面板传,其他阅读场景不传 */
   scrollMemoryKey?: string
 }
 

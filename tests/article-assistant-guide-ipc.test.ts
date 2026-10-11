@@ -18,7 +18,6 @@ vi.mock('electron', () => ({
 }))
 
 vi.mock('../electron/lib/guide-v2-pipeline', () => ({
-  runDigestGuideV2: vi.fn(() => new Promise(() => {})),
   runBlogGuideV2: vi.fn(() => new Promise(() => {})),
 }))
 
@@ -60,17 +59,6 @@ describe('serializeGuide v2', () => {
     expect(parsed!.chunks[0].summary).toBe('C 背景铺陈')
   })
 
-  it('v2 解析（带 guideVersion）回填 context，往返不丢失', () => {
-    const guide = {
-      background: 'bg',
-      chunks: [{ heading: 'H', context: 'C 背景铺陈', terms: [] }],
-    }
-    const parsed = parseAssistantGuideBody(serializeGuide(guide as any), 2, 'briefing')
-    expect(parsed).not.toBeNull()
-    expect(parsed!.chunks[0].context).toBe('C 背景铺陈')
-    expect(parsed!.chunks[0].summary).toBe('C 背景铺陈')
-  })
-
   it('prefers context over summary when both present', () => {
     const guide = {
       background: 'bg',
@@ -92,53 +80,46 @@ describe('guide IPC handlers', () => {
   afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
 
   it('writeGuide：guide 含 context 时 frontmatter 写 guide_version: 2', async () => {
-    const parent = path.join(dir, '夜航简报', '夜航简报-2026-08-04.md')
+    const parent = path.join(dir, 'writing', 'a.md')
     const { filePath } = (await handlers['articleAssistant:writeGuide'](fakeEvent, {
       parentPath: parent,
-      parentType: 'briefing',
+      parentType: 'writing',
       guide: { background: 'bg', chunks: [{ heading: 'H', context: '铺陈', terms: [] }] },
     } as never)) as { filePath: string }
     expect(fs.readFileSync(filePath, 'utf8')).toContain('guide_version: 2')
   })
 
-  it('writeGuide：web-article 纯 summary（v1 格式）不写 guide_version', async () => {
+  it('writeGuide：writing 纯 summary（v1 格式）不写 guide_version', async () => {
     const parent = path.join(dir, 'article.md')
     const { filePath } = (await handlers['articleAssistant:writeGuide'](fakeEvent, {
       parentPath: parent,
-      parentType: 'web-article',
+      parentType: 'writing',
       guide: { background: 'bg', chunks: [{ heading: 'H', summary: '摘要', terms: [] }] },
     } as never)) as { filePath: string }
     expect(fs.readFileSync(filePath, 'utf8')).not.toContain('guide_version')
   })
 
   it('v2 导读 write→read→rewrite 往返后 guide_version 不降级（持久化回归）', async () => {
-    // 回归：readGuide 曾丢失 context，persistAssistantState 重写时 isV2 判 false，
+    // 回归：readGuide 后 persistAssistantState 重写时 isV2 判 false，
     // 文件被降级为无 guide_version → 下次打开 isGuideCacheCurrent 失效 → 重复自动生成。
-    const parent = path.join(dir, '夜航简报', '夜航简报-2026-08-04.md')
+    const parent = path.join(dir, 'Anthropic博客', 'a.md')
     await handlers['articleAssistant:writeGuide'](fakeEvent, {
       parentPath: parent,
-      parentType: 'briefing',
-      guide: { background: 'bg', chunks: [{ heading: 'H', context: '铺陈', terms: [] }] },
+      parentType: 'anthropic-article',
+      guide: { background: 'bg', chunks: [{ heading: 'H', summary: '摘要', terms: [] }] },
     } as never)
     const file = (await handlers['articleAssistant:readGuide'](fakeEvent, {
       parentPath: parent,
-      parentType: 'briefing',
-    } as never)) as { guide: { chunks: { context?: string }[] }; guideVersion?: number }
+      parentType: 'anthropic-article',
+    } as never)) as { guide: { chunks: { summary?: string }[] }; guideVersion?: number }
     expect(file.guideVersion).toBe(2)
-    expect(file.guide.chunks[0].context).toBe('铺陈')
+    expect(file.guide.chunks[0].summary).toBe('摘要')
     const { filePath } = (await handlers['articleAssistant:writeGuide'](fakeEvent, {
       parentPath: parent,
-      parentType: 'briefing',
+      parentType: 'anthropic-article',
       guide: file.guide,
     } as never)) as { filePath: string }
     expect(fs.readFileSync(filePath, 'utf8')).toContain('guide_version: 2')
-  })
-
-  it('generateGuide：web-article 走旧路径（不调 v2 管线）', async () => {
-    // web-article 的 generateGuide 走 chatNonStream+旧 prompt（digest-guide.md），不经 runBlogGuideV2/runDigestGuideV2。
-    // 只验证 handler 注册存在：v2 管线 mock 挂起、旧路径调真实 API，两者都不适合在本块实际调用。
-    // 路由断言在下方 generateGuide routing describe 块（anthropic-article → runBlogGuideV2）。
-    expect(handlers['articleAssistant:generateGuide']).toBeDefined()
   })
 })
 
@@ -153,7 +134,7 @@ describe('generateGuide routing', () => {
   afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
 
   it('anthropic-article 走 blog v2 管线', async () => {
-    const { runBlogGuideV2, runDigestGuideV2 } = await import('../electron/lib/guide-v2-pipeline')
+    const { runBlogGuideV2 } = await import('../electron/lib/guide-v2-pipeline')
     const blogGuide = { background: 'bg', chunks: [{ heading: 'H', summary: 'S', terms: [] }] }
     vi.mocked(runBlogGuideV2).mockResolvedValueOnce(blogGuide as never)
     const result = await handlers['articleAssistant:generateGuide'](fakeEvent as never, {
@@ -162,7 +143,6 @@ describe('generateGuide routing', () => {
       articleTitle: 'T',
     } as never)
     expect(runBlogGuideV2).toHaveBeenCalledOnce()
-    expect(runDigestGuideV2).not.toHaveBeenCalled()
     expect(result).toEqual(blogGuide)
   })
 
@@ -190,19 +170,6 @@ describe('generateGuide routing', () => {
       fs.rmSync(tmp, { recursive: true, force: true })
       ;(fakeEvent.sender.send as ReturnType<typeof vi.fn>).mockClear()
     }
-  })
-})
-
-describe('parseAssistantGuideBody parentType', () => {
-  const body = '# 背景\n\nbg.\n\n## §1 H\n\n章节文本。'
-  it('v2 + briefing 回填 context', () => {
-    const g = parseAssistantGuideBody(body, 2, 'briefing')
-    expect(g!.chunks[0].context).toBe('章节文本。')
-  })
-  it('v2 + anthropic-article 不回填 context（博客 v2 保留 summary 语义）', () => {
-    const g = parseAssistantGuideBody(body, 2, 'anthropic-article')
-    expect(g!.chunks[0].summary).toBe('章节文本。')
-    expect(g!.chunks[0].context).toBeUndefined()
   })
 })
 

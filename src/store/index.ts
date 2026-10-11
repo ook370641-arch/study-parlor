@@ -110,8 +110,6 @@ type AppStore = {
   briefingTheme: BriefingTheme
   briefingFontSize: BriefingFontSize
   studyFontSize: BriefingFontSize
-  candleBreathAt: number | null
-  breathCandle: () => void
   candlelightEnabled: boolean
   paintingPlateEnabled: boolean
   toggleCandlelight: () => Promise<void>
@@ -517,7 +515,6 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingTheme: 'academic',
   briefingFontSize: 'base',
   studyFontSize: 'lg',
-  candleBreathAt: null,
   candlelightEnabled: true,
   paintingPlateEnabled: false,
   briefingSource: 'writing',
@@ -908,8 +905,6 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ writingCodeblockCollapsed: map })
     ipc.patchState({ writingCodeblockCollapsed: map } as Partial<StateJson>)
   },
-
-  breathCandle: () => set({ candleBreathAt: Date.now() }),
 
   toggleCandlelight: async () => {
     const next = !get().candlelightEnabled

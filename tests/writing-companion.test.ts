@@ -14,6 +14,7 @@ vi.mock('@/lib/ipc', () => ({
     scanLibrary: vi.fn(),
     loadSessions: vi.fn(),
     loadGroups: vi.fn(),
+    paintingsCanEdit: vi.fn(async () => false),
   }
 }))
 

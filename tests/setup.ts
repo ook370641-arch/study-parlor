@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest'
 
 // jsdom polyfill: window.matchMedia is required by CandlelightLayer
 // and other components that check prefers-reduced-motion.
-// Guarded because some tests (e.g., job-briefing-real) run in Node environment.
+// Guarded because some tests run in Node environment.
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -18,7 +18,7 @@ if (typeof window !== 'undefined') {
     }),
   })
 
-  // IntersectionObserver polyfill — used by useReadingFinished hook
+  // IntersectionObserver polyfill — used by reader components that track visibility
   if (typeof IntersectionObserver === 'undefined') {
     ;(globalThis as any).IntersectionObserver = class {
       observe = () => {}
