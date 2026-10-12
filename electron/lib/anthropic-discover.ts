@@ -14,8 +14,9 @@ export function parseSitemapUrls(xml: string, source: AnthropicSource): { url: s
   const seen = new Set<string>()
   for (const m of xml.matchAll(/<url>\s*<loc>([^<]+)<\/loc>(?:\s*<lastmod>([^<]*)<\/lastmod>)?[\s\S]*?<\/url>/g)) {
     const url = m[1]
-    if (source.sitemapInclude && !source.sitemapInclude.test(url)) continue
-    if (source.linkPrefix && !url.includes(source.linkPrefix)) continue
+    if (source.sitemapInclude) {
+      if (!source.sitemapInclude.test(url)) continue
+    } else if (source.linkPrefix && !url.includes(source.linkPrefix)) continue
     if (source.excludePrefixes?.some((p) => url.includes(p))) continue
     if (seen.has(url)) continue
     seen.add(url)

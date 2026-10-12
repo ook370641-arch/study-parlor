@@ -223,8 +223,8 @@ describe('discoverArticles multi-source', () => {
     expect(buildListingScript(src('research'))).toContain('a[href^="/research/"]')
     expect(buildListingScript(src('research'))).toContain('/research/team/')
     expect(buildListingScript(src('engineering'))).toContain('EXCLUDE_PREFIXES')
-    // M2：product 源带 linkPrefix '/blog/'，避免生成 a[href^="undefined"] 的 20s 空等
-    expect(buildListingScript(src('product'))).toContain('a[href^="/blog/"]')
+    // product 列表页链接前缀，避免生成 a[href^="undefined"] 的 20s 空等
+    expect(buildListingScript(src('product'))).toContain('a[href^="/resources/articles/"]')
     expect(buildListingScript(src('product'))).not.toContain('a[href^="undefined"]')
     // M1：相对 href 用页面上下文解析（window.location.href），不硬编码 www.anthropic.com 拼接
     expect(buildListingScript(src('engineering'))).toContain('new URL(href, window.location.href).toString()')

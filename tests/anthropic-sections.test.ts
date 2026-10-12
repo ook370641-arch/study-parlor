@@ -53,9 +53,11 @@ describe('ANTHROPIC_SOURCES config', () => {
 
   it('product 用 sitemapInclude 排除本地化前缀', () => {
     const product = MAIN_SOURCES.find((s) => s.key === 'product')!
+    expect(product.sitemapInclude?.test('https://claude.com/resources/articles/1m-context')).toBe(true)
     expect(product.sitemapInclude?.test('https://claude.com/blog/1m-context')).toBe(true)
+    expect(product.sitemapInclude?.test('https://claude.com/de/resources/articles/foo')).toBe(false)
     expect(product.sitemapInclude?.test('https://claude.com/ja/blog/foo')).toBe(false)
-    expect(product.sitemapInclude?.test('https://claude.com/')).toBe(false)
+    expect(product.sitemapInclude?.test('https://claude.com/resources/webinars/foo')).toBe(false)
   })
 
   it('LEGACY_SECTION_META 仅 institute 一键', () => {
@@ -75,6 +77,7 @@ describe('sectionForUrl', () => {
     expect(sectionForUrl('https://alignment.anthropic.com/2026/msm/')).toBe('alignment')
     expect(sectionForUrl('https://transformer-circuits.pub/2026/workspace/index.html')).toBe('interpretability')
     expect(sectionForUrl('https://claude.com/blog/1m-context')).toBe('product')
+    expect(sectionForUrl('https://claude.com/resources/articles/1m-context')).toBe('product')
     expect(sectionForUrl('https://www.anthropic.com/institute/recursive-self-improvement')).toBe('institute')
   })
 
@@ -108,6 +111,7 @@ describe('filterGroupOf', () => {
     expect(filterGroupOf({ url: 'https://alignment.anthropic.com/2026/msm/' })).toBe('alignment')
     expect(filterGroupOf({ url: 'https://transformer-circuits.pub/2026/workspace/index.html' })).toBe('interpretability')
     expect(filterGroupOf({ url: 'https://claude.com/blog/1m-context' })).toBe('product')
+    expect(filterGroupOf({ url: 'https://claude.com/resources/articles/1m-context' })).toBe('product')
     expect(filterGroupOf({ url: 'https://www.anthropic.com/engineering/x' })).toBe('engineering')
   })
 })

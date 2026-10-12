@@ -50,10 +50,10 @@ export const ANTHROPIC_SOURCES: AnthropicSource[] = [
   {
     key: 'product', label: 'Product', color: '#c2613e',
     discover: 'sitemap',
-    indexUrl: 'https://claude.com/blog',
+    indexUrl: 'https://claude.com/resources/articles',
     sitemapUrl: 'https://claude.com/sitemap.xml',
-    linkPrefix: '/blog/',
-    sitemapInclude: /^https:\/\/claude\.com\/blog\/[^/]+$/,
+    linkPrefix: '/resources/articles/',
+    sitemapInclude: /^https:\/\/claude\.com\/(?:blog|resources\/articles)\/[^/]+$/,
     contentSelectors: ['main'],
   },
 ]
