@@ -792,3 +792,22 @@ export function seedWritingSourceState(configDir: string): void {
     assistantThinkingEffort: 'off',
   })
 }
+
+// ── Blog collection seeds ─────────────────────────────────────────
+
+/**
+ * Seed the Anthropic blog collection file with pre-read entries, used by the
+ * notes shelf "导入已读" flow. Writes <libPath>/Anthropic博客/.collection.json.
+ */
+export function seedBlogCollection(
+  libPath: string,
+  read: { sourceUrl: string; title: string; filePath: string; readAt: string }[]
+): void {
+  const dir = path.join(libPath, 'Anthropic博客')
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(
+    path.join(dir, '.collection.json'),
+    JSON.stringify({ version: 1, entries: [], dismissed: [], history: [], read }),
+    'utf8'
+  )
+}

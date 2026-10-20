@@ -200,6 +200,17 @@
       "specs": [
         "fitness.spec.ts"
       ]
+    },
+    "notes": {
+      "sources": [
+        "electron/lib/notes.ts",
+        "electron/ipc/notes.ts",
+        "src/components/notes/**",
+        "src/components/writing/WritingListColumn.tsx"
+      ],
+      "specs": [
+        "notes-bookshelf.spec.ts"
+      ]
     }
   }
 }
