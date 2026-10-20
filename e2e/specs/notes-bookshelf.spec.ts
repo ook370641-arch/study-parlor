@@ -21,6 +21,15 @@ test.describe('笔记书架', () => {
     await expect(window.locator('[data-testid="note-card-b"]')).toBeVisible()
     await expect(window.locator('[data-testid="note-badge-anthropic"]').first()).toBeVisible()
 
+    // 分类标签页：Anthropic 下两张 A 社卡片均在；「未知」为空；切回「全部」恢复
+    await window.locator('[data-testid="notes-cat-anthropic"]').click()
+    await expect(window.locator('[data-testid="note-card-a"]')).toBeVisible()
+    await expect(window.locator('[data-testid="note-card-b"]')).toBeVisible()
+    await window.locator('[data-testid="notes-cat-unknown"]').click()
+    await expect(window.locator('[data-testid="note-card-a"]')).toHaveCount(0)
+    await window.locator('[data-testid="notes-cat-all"]').click()
+    await expect(window.locator('[data-testid="note-card-a"]')).toBeVisible()
+
     // 点开笔记 → 元数据编辑（打星 + 摘要 blur 保存）
     await window.locator('[data-testid="note-card-a"]').click()
     await expect(window.locator('[data-testid="note-board"]')).toBeVisible()

@@ -16,7 +16,7 @@ import type {
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   GuideProgress,
   BlogCollectionFile, RecommendStage, ScrollMemorySlot,
-  NoteEntry, NoteMeta,
+  NoteEntry, NoteMeta, NoteSource,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
@@ -326,6 +326,7 @@ type AppStore = {
   writingListTab: 'articles' | 'repository' | 'notes'
   notesList: NoteEntry[] | null
   notesSortBy: 'time' | 'rating'
+  notesCategory: 'all' | NoteSource
   writingAssistantWidth: number
   writingAssistantOpen: boolean
   writingPanelMode: 'assistant' | 'companion'
@@ -399,6 +400,7 @@ type AppStore = {
   deleteNoteAction: (path: string) => Promise<void>
   importReadNotesAction: () => Promise<{ created: number; skipped: number } | null>
   setNotesSortBy: (s: 'time' | 'rating') => void
+  setNotesCategory: (c: 'all' | NoteSource) => void
   setWritingAssistantWidth: (width: number) => void
   setWritingAssistantOpen: (open: boolean) => void
   setWritingEditorAction: (action: ((fn: (ctx: any) => void) => void) | null) => void
@@ -552,6 +554,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingListTab: 'articles',
   notesList: null,
   notesSortBy: 'time',
+  notesCategory: 'all',
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
   writingPanelMode: 'assistant',
@@ -608,6 +611,7 @@ export const useStore = create<AppStore>((set, get) => ({
       writingTone: state.writingTone ?? 'parchment',
       writingListTab: state.writingListTab ?? 'articles',
       notesSortBy: state.notesSortBy ?? 'time',
+      notesCategory: state.notesCategory ?? 'all',
       writingAssistantWidth: Math.max(200, Math.min(state.writingAssistantWidth ?? 320, 560)),
       writingAssistantOpen: state.writingAssistantOpen ?? false,
       writingPanelMode: state.writingPanelMode ?? 'assistant',
@@ -1776,6 +1780,10 @@ export const useStore = create<AppStore>((set, get) => ({
   setNotesSortBy: (s) => {
     set({ notesSortBy: s })
     void ipc.patchState({ notesSortBy: s } as Partial<StateJson>)
+  },
+  setNotesCategory: (c) => {
+    set({ notesCategory: c })
+    void ipc.patchState({ notesCategory: c } as Partial<StateJson>)
   },
   setWritingAssistantWidth: (width) => {
     const clamped = Math.max(200, Math.min(width, 1200))

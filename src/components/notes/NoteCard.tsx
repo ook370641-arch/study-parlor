@@ -3,7 +3,21 @@ import type { CSSProperties } from 'react'
 import { useStore } from '@/store'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { StarRating } from './StarRating'
-import type { NoteEntry } from '@shared/index'
+import type { NoteEntry, NoteSource } from '@shared/index'
+
+/** 来源四色（academic 书脊棱线着色） */
+const SOURCE_COLOR: Record<NoteSource, string> = {
+  anthropic: '#d97757',
+  web: '#7a9cc6',
+  book: '#8fae8b',
+  unknown: '#6b5d52',
+}
+const SOURCE_LABEL: Record<NoteSource, string> = {
+  anthropic: 'Anthropic',
+  web: '网页',
+  book: '书籍',
+  unknown: '未知',
+}
 
 function urlSlug(url: string): string {
   return url.split('/').pop() || 'note'
@@ -27,7 +41,7 @@ export function NoteCard({ entry, theme = 'academic' }: { entry: NoteEntry; them
       ? {
           background: selected ? 'linear-gradient(90deg, #3a291d, #2b1e14 70%)' : 'linear-gradient(90deg, #2e2118, #251a12 70%)',
           border: '1px solid rgba(232,213,183,.14)',
-          borderLeft: `3px solid ${selected ? '#d97757' : '#6b4a34'}`,
+          borderLeft: `3px solid ${selected ? '#d97757' : SOURCE_COLOR[source]}`,
           boxShadow: selected
             ? '0 0 0 1px rgba(217,119,87,.35), 2px 6px 14px rgba(0,0,0,.5)'
             : '2px 4px 10px rgba(0,0,0,.45), inset 0 1px 0 rgba(232,213,183,.06)',
@@ -41,12 +55,19 @@ export function NoteCard({ entry, theme = 'academic' }: { entry: NoteEntry; them
   }
 
   const badgeBase: CSSProperties = { fontSize: 9, padding: '0 5px', lineHeight: '14px', borderRadius: 9999 }
-  const badgeAnthropic: CSSProperties = isAcademic
-    ? { background: 'rgba(217,119,87,.18)', color: '#e09a7e', border: '1px solid rgba(217,119,87,.45)' }
-    : { background: 'rgba(138,58,58,.1)', color: '#8a3a3a', border: '1px solid rgba(138,58,58,.35)' }
-  const badgeHermes: CSSProperties = isAcademic
-    ? { background: 'rgba(150,160,200,.12)', color: '#a8b0cc', border: '1px solid rgba(150,160,200,.3)' }
-    : { background: 'rgba(90,100,136,.1)', color: '#5a6488', border: '1px solid rgba(90,100,136,.3)' }
+  const badgeBySource: Record<NoteSource, CSSProperties> = isAcademic
+    ? {
+        anthropic: { background: 'rgba(217,119,87,.18)', color: '#e09a7e', border: '1px solid rgba(217,119,87,.45)' },
+        web: { background: 'rgba(122,156,198,.16)', color: '#9db8d8', border: '1px solid rgba(122,156,198,.4)' },
+        book: { background: 'rgba(143,174,139,.16)', color: '#a9c4a5', border: '1px solid rgba(143,174,139,.4)' },
+        unknown: { background: 'rgba(107,93,82,.22)', color: '#a3938a', border: '1px solid rgba(107,93,82,.5)' },
+      }
+    : {
+        anthropic: { background: 'rgba(138,58,58,.1)', color: '#8a3a3a', border: '1px solid rgba(138,58,58,.35)' },
+        web: { background: 'rgba(90,100,136,.1)', color: '#5a6488', border: '1px solid rgba(90,100,136,.3)' },
+        book: { background: 'rgba(96,116,86,.1)', color: '#607456', border: '1px solid rgba(96,116,86,.3)' },
+        unknown: { background: 'rgba(107,93,82,.1)', color: '#6b5d52', border: '1px solid rgba(107,93,82,.3)' },
+      }
 
   return (
     <>
@@ -71,12 +92,7 @@ export function NoteCard({ entry, theme = 'academic' }: { entry: NoteEntry; them
         </div>
         <div className="flex items-center" style={{ gap: 6, marginTop: 5 }}>
           <StarRating value={rating} size={10} />
-          {source === 'anthropic' && (
-            <span data-testid="note-badge-anthropic" style={{ ...badgeBase, ...badgeAnthropic }}>Anthropic</span>
-          )}
-          {source === 'hermes' && (
-            <span data-testid="note-badge-hermes" style={{ ...badgeBase, ...badgeHermes }}>Hermes</span>
-          )}
+          <span data-testid={`note-badge-${source}`} style={{ ...badgeBase, ...badgeBySource[source] }}>{SOURCE_LABEL[source]}</span>
         </div>
         {summary && (
           <div

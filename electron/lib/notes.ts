@@ -21,7 +21,7 @@ export function serializeNote(meta: NoteMeta, body: string): string {
 }
 
 function emptyMeta(): NoteMeta {
-  return { title: '', url: '', source: 'manual', rating: 0, summary: '', highlight: '', collected_at: '' }
+  return { title: '', url: '', source: 'unknown', rating: 0, summary: '', highlight: '', collected_at: '' }
 }
 
 function iso(v: unknown): string {
@@ -31,7 +31,7 @@ function iso(v: unknown): string {
 }
 
 function validSource(v: unknown): NoteSource {
-  return v === 'anthropic' || v === 'hermes' || v === 'manual' ? v : 'manual'
+  return v === 'anthropic' || v === 'web' || v === 'book' || v === 'unknown' ? v : 'unknown'
 }
 
 function validRating(v: unknown): number {
@@ -94,7 +94,7 @@ export function createNoteFile(lib: string, a: { title: string; url: string; sou
   const meta: NoteMeta = {
     title: a.title,
     url: a.url,
-    source: a.source ?? 'manual',
+    source: a.source ?? 'unknown',
     rating: 0,
     summary: '',
     highlight: '',

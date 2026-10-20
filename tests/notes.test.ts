@@ -24,10 +24,10 @@ describe('serializeNote / parseNoteFile 往返', () => {
     expect(entry.meta).toEqual(meta)
     expect(entry.parseError).toBeUndefined()
   })
-  it('缺省字段补默认：rating=0，summary/highlight 空串，source=manual', () => {
+  it('缺省字段补默认：rating=0，summary/highlight 空串，source=unknown', () => {
     const entry = parseNoteFile('notes/x.md', '---\ntitle: X\n---\nbody')
     expect(entry.meta.rating).toBe(0)
-    expect(entry.meta.source).toBe('manual')
+    expect(entry.meta.source).toBe('unknown')
   })
   it('frontmatter 损坏 → parseError: true，不抛', () => {
     const entry = parseNoteFile('notes/bad.md', '---\n: [broken\n---\nx')

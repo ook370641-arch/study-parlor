@@ -1,17 +1,29 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useStore } from '@/store'
+import type { NoteSource } from '@shared/index'
 import { PromptDialog } from '../writing/PromptDialog'
 import { NoteCard } from './NoteCard'
 
 /** 每多少张卡片插入一道书架隔板 */
 const GROUP_SIZE = 3
 
+/** 来源分类标签页 */
+const CATEGORIES: { key: 'all' | NoteSource; label: string; testid: string }[] = [
+  { key: 'all', label: '全部', testid: 'notes-cat-all' },
+  { key: 'anthropic', label: 'Anthropic', testid: 'notes-cat-anthropic' },
+  { key: 'web', label: '网页', testid: 'notes-cat-web' },
+  { key: 'book', label: '书籍', testid: 'notes-cat-book' },
+  { key: 'unknown', label: '未知', testid: 'notes-cat-unknown' },
+]
+
 export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newspaper' }) {
   const isAcademic = theme !== 'newspaper'
   const notesList = useStore(s => s.notesList)
   const notesSortBy = useStore(s => s.notesSortBy)
   const setNotesSortBy = useStore(s => s.setNotesSortBy)
+  const notesCategory = useStore(s => s.notesCategory)
+  const setNotesCategory = useStore(s => s.setNotesCategory)
   const loadNotes = useStore(s => s.loadNotes)
   const createNoteManual = useStore(s => s.createNoteManual)
   const importReadNotesAction = useStore(s => s.importReadNotesAction)
@@ -21,14 +33,14 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
   useEffect(() => { void loadNotes() }, [loadNotes])
 
   const sorted = useMemo(() => {
-    const list = [...(notesList ?? [])]
+    const list = [...(notesList ?? [])].filter(e => notesCategory === 'all' || e.meta.source === notesCategory)
     if (notesSortBy === 'rating') {
       list.sort((a, b) => b.meta.rating - a.meta.rating || b.meta.collected_at.localeCompare(a.meta.collected_at))
     } else {
       list.sort((a, b) => b.meta.collected_at.localeCompare(a.meta.collected_at))
     }
     return list
-  }, [notesList, notesSortBy])
+  }, [notesList, notesSortBy, notesCategory])
 
   const pillBase: CSSProperties = {
     fontSize: 10,
@@ -60,15 +72,25 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
   return (
     <div data-testid="notes-shelf" className="flex flex-col">
       <div className="flex items-center" style={{ gap: 6, padding: '6px 12px 4px', flexWrap: 'wrap' }}>
-        <button data-testid="notes-sort-time" onClick={() => setNotesSortBy('time')} style={{ ...pillBase, ...(notesSortBy === 'time' ? pillOn : {}) }}>时间</button>
-        <button data-testid="notes-sort-rating" onClick={() => setNotesSortBy('rating')} style={{ ...pillBase, ...(notesSortBy === 'rating' ? pillOn : {}) }}>星标</button>
+        {CATEGORIES.map(c => (
+          <button key={c.key} data-testid={c.testid} onClick={() => setNotesCategory(c.key)} style={{ ...pillBase, ...(notesCategory === c.key ? pillOn : {}) }}>{c.label}</button>
+        ))}
+        <select
+          data-testid="notes-sort-select"
+          value={notesSortBy}
+          onChange={(e) => setNotesSortBy(e.target.value as 'time' | 'rating')}
+          style={{ ...pillBase, borderRadius: 6 }}
+        >
+          <option value="time">时间</option>
+          <option value="rating">星标</option>
+        </select>
         <button data-testid="notes-import-button" onClick={() => { void importReadNotesAction() }} style={pillBase}>导入已读</button>
         <button data-testid="notes-new-button" onClick={() => setNewNote({ step: 'title' })} style={{ ...pillBase, marginLeft: 'auto', color: isAcademic ? '#e8d5b7' : '#2a1f1a' }}>＋ 新笔记</button>
       </div>
       <div style={{ padding: '0 8px 12px' }}>
         {sorted.length === 0 && notesList !== null && (
           <div data-testid="notes-empty" style={{ padding: '24px 12px', textAlign: 'center', fontSize: 12, color: isAcademic ? 'rgba(232,213,183,.4)' : 'rgba(107,93,82,.7)' }}>
-            书架还空着——点「导入已读」把读过的文章放上架
+            {notesCategory === 'all' ? '书架还空着——点「导入已读」把读过的文章放上架' : '该分类下暂无笔记'}
           </div>
         )}
         {sorted.map((entry, i) => (
