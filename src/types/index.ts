@@ -110,6 +110,23 @@ export type BlogReadEntry = {
   filePath: string
   readAt: string      // ISO，首次标记时间
 }
+/** 笔记来源 */
+export type NoteSource = 'anthropic' | 'hermes' | 'manual'
+
+/** 笔记元数据（notes/*.md 的 frontmatter） */
+export type NoteMeta = {
+  title: string
+  url: string
+  source: NoteSource
+  rating: number        // 0-5，0=未评
+  summary: string
+  highlight: string
+  collected_at: string  // ISO
+  read_at?: string      // ISO，可空
+}
+
+/** 笔记书架条目；path 为库内相对路径（正斜杠），如 notes/foo.md */
+export type NoteEntry = { path: string; meta: NoteMeta; parseError?: boolean }
 
 export type BlogCollectionEntry = {
   sourceUrl: string   // 主键（去重依据）
