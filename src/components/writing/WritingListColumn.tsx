@@ -5,6 +5,7 @@ import { writingTreeContainsPath, countFiles, firstWritingFilePath, displayWriti
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 import { WritingTree } from './WritingTree'
 import { PromptDialog } from './PromptDialog'
+import { NotesShelf } from '../notes/NotesShelf'
 import type { WritingRoot, WritingTreeNode } from '@shared/index'
 
 interface PromptState {
@@ -181,12 +182,12 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   return (
     <div className="flex flex-col h-full" style={{ ['--writing-ui-size' as string]: WRITING_UI_STYLES[writingUISize] }}>
       <div className={`flex m-2 rounded-lg border ${borderCol} text-xs shrink-0 overflow-hidden`} role="tablist">
-        {(['articles', 'repository'] as const).map(t => (
+        {(['articles', 'repository', 'notes'] as const).map(t => (
           <button
             key={t}
             role="tab"
             aria-pressed={tab === t}
-            data-testid={t === 'articles' ? 'writing-list-tab-articles' : 'writing-list-tab-repository'}
+            data-testid={`writing-list-tab-${t}`}
             onClick={() => setTab(t)}
             className={`flex-1 py-1.5 transition-colors ${
               tab === t
@@ -195,12 +196,14 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
             }`}
             style={{ fontSize: 'var(--writing-ui-size)' }}
           >
-            {t === 'articles' ? '文章' : '仓库'}
+            {t === 'articles' ? '文章' : t === 'repository' ? '仓库' : '笔记'}
           </button>
         ))}
       </div>
       <div className="flex-1 overflow-y-auto">
-        {tab === 'articles' ? (
+        {tab === 'notes' ? (
+          <NotesShelf theme={theme} />
+        ) : tab === 'articles' ? (
           <div>
             <div className="p-2 flex gap-2 text-xs">
               <button data-testid="writing-new-file" title="新建文章" aria-label="新建文章" className={`px-1 text-xs ${primaryAction}`} onClick={handleCreateFile} style={{ fontSize: 'var(--writing-ui-size)' }}>＋</button>
