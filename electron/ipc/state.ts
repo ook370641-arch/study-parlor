@@ -36,6 +36,7 @@ const DEFAULT: StateJson = {
   writingFontSize: 'base',
   writingTone: 'parchment',
   writingListTab: 'articles',
+  notesSortBy: 'time',
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
   lastWritingFile: null,

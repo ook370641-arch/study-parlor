@@ -517,7 +517,8 @@ export type StateJson = {
   assistantThinkingEffort?: AssistantThinkingEffort
   writingFontSize?: BriefingFontSize
   writingTone?: WritingTone
-  writingListTab?: 'articles' | 'repository'
+  writingListTab?: 'articles' | 'repository' | 'notes'
+  notesSortBy?: 'time' | 'rating'
   writingAssistantWidth?: number
   writingAssistantOpen?: boolean
   lastWritingFile?: string | null

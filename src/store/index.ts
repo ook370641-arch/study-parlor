@@ -17,6 +17,7 @@ import type {
   GuideProgress,
   BlogCollectionFile, RecommendStage, ScrollMemorySlot,
   FitnessData, FitnessRecord, BodyMetric, FitnessRoutine, FitnessScheduleEntry,
+  NoteEntry, NoteMeta,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
@@ -330,7 +331,9 @@ type AppStore = {
   writingError: string | null
   writingFontSize: BriefingFontSize
   writingTone: WritingTone
-  writingListTab: 'articles' | 'repository'
+  writingListTab: 'articles' | 'repository' | 'notes'
+  notesList: NoteEntry[] | null
+  notesSortBy: 'time' | 'rating'
   writingAssistantWidth: number
   writingAssistantOpen: boolean
   writingPanelMode: 'assistant' | 'companion'
@@ -397,7 +400,13 @@ type AppStore = {
   saveCompanionFile: () => Promise<void>
   closeCompanion: () => Promise<void>
   saveAllDirtyWriting: () => Promise<void>
-  setWritingListTab: (tab: 'articles' | 'repository') => void
+  setWritingListTab: (tab: 'articles' | 'repository' | 'notes') => void
+  loadNotes: () => Promise<void>
+  createNoteManual: (a: { title: string; url: string }) => Promise<void>
+  updateNoteMetaAction: (path: string, patch: Partial<NoteMeta>) => Promise<void>
+  deleteNoteAction: (path: string) => Promise<void>
+  importReadNotesAction: () => Promise<{ created: number; skipped: number } | null>
+  setNotesSortBy: (s: 'time' | 'rating') => void
   setWritingAssistantWidth: (width: number) => void
   setWritingAssistantOpen: (open: boolean) => void
   setWritingEditorAction: (action: ((fn: (ctx: any) => void) => void) | null) => void
@@ -550,6 +559,8 @@ export const useStore = create<AppStore>((set, get) => ({
   writingFontSize: 'base',
   writingTone: 'parchment',
   writingListTab: 'articles',
+  notesList: null,
+  notesSortBy: 'time',
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
   writingPanelMode: 'assistant',
@@ -605,6 +616,7 @@ export const useStore = create<AppStore>((set, get) => ({
       writingFontSize: state.writingFontSize ?? 'base',
       writingTone: state.writingTone ?? 'parchment',
       writingListTab: state.writingListTab ?? 'articles',
+      notesSortBy: state.notesSortBy ?? 'time',
       writingAssistantWidth: Math.max(200, Math.min(state.writingAssistantWidth ?? 320, 560)),
       writingAssistantOpen: state.writingAssistantOpen ?? false,
       writingPanelMode: state.writingPanelMode ?? 'assistant',
@@ -1752,6 +1764,33 @@ export const useStore = create<AppStore>((set, get) => ({
   setWritingListTab: (tab) => {
     set({ writingListTab: tab })
     ipc.patchState({ writingListTab: tab } as Partial<StateJson>)
+  },
+  // 笔记书架
+  loadNotes: async () => { set({ notesList: await ipc.notesList() }) },
+  createNoteManual: async (a) => {
+    const r = await ipc.notesCreate(a)
+    await get().loadNotes()
+    await get().selectWritingFile(r.path)
+  },
+  updateNoteMetaAction: async (p, patch) => {
+    await ipc.notesUpdateMeta({ path: p, patch })
+    set(s => ({ notesList: s.notesList?.map(e => e.path === p ? { ...e, meta: { ...e.meta, ...patch } } : e) ?? null }))
+  },
+  deleteNoteAction: async (p) => {
+    await ipc.notesDelete({ path: p })
+    const cur = get().writingFile
+    if (cur?.path === p) await get().selectWritingFile(null)
+    await get().loadNotes()
+  },
+  importReadNotesAction: async () => {
+    const r = await ipc.notesImportRead()
+    await get().loadNotes()
+    get().showToast(`导入完成：新增 ${r.created} 条，跳过 ${r.skipped} 条`)
+    return r
+  },
+  setNotesSortBy: (s) => {
+    set({ notesSortBy: s })
+    void ipc.patchState({ notesSortBy: s } as Partial<StateJson>)
   },
   setWritingAssistantWidth: (width) => {
     const clamped = Math.max(200, Math.min(width, 1200))

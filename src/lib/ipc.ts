@@ -97,6 +97,12 @@ export const ipc = {
   get annotationsRead() { return ensure().annotationsRead },
   get annotationsWrite() { return ensure().annotationsWrite },
 
+  get notesList() { return ensure().notesList },
+  get notesCreate() { return ensure().notesCreate },
+  get notesUpdateMeta() { return ensure().notesUpdateMeta },
+  get notesDelete() { return ensure().notesDelete },
+  get notesImportRead() { return ensure().notesImportRead },
+
   get articleAssistantGenerateGuide() { return ensure().articleAssistantGenerateGuide },
   get articleAssistantSendMessage() { return ensure().articleAssistantSendMessage },
   get articleAssistantAbort() { return ensure().articleAssistantAbort },
