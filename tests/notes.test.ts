@@ -45,6 +45,15 @@ describe('createNoteFile / scanNotes', () => {
     expect(list).toHaveLength(2)
     expect(list.every(e => e.meta.title === 'Hello')).toBe(true)
   })
+  it('过滤助手伴生文件（.assistant/.annotations/.guide.md）', () => {
+    createNoteFile(lib, { title: 'Real', url: 'https://a/1' })
+    fs.writeFileSync(path.join(lib, 'notes', 'Real.assistant.md'), '# 伴生', 'utf8')
+    fs.writeFileSync(path.join(lib, 'notes', 'Real.annotations.md'), '# 批注', 'utf8')
+    fs.writeFileSync(path.join(lib, 'notes', 'Real.guide.md'), '# 导读', 'utf8')
+    const list = scanNotes(lib)
+    expect(list).toHaveLength(1)
+    expect(list[0].path).toBe('notes/Real.md')
+  })
 })
 
 describe('updateNoteMeta', () => {

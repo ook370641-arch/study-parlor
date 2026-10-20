@@ -205,6 +205,8 @@
       "sources": [
         "electron/lib/notes.ts",
         "electron/ipc/notes.ts",
+        "src/pages/Briefing.tsx",
+        "src/store/index.ts",
         "src/components/notes/**",
         "src/components/writing/WritingListColumn.tsx"
       ],

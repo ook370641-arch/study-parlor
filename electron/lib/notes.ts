@@ -9,6 +9,8 @@ export const NOTES_DIR = 'notes'
 
 const ILLEGAL = /[\\/:*?"<>|]/g
 
+const SIDECAR_PATTERN = /\.(assistant|annotations|guide)\.md$/
+
 export function sanitizeNoteFilename(title: string): string {
   const cleaned = title.replace(ILLEGAL, '').trim().slice(0, 80)
   return cleaned || 'untitled'
@@ -80,7 +82,7 @@ export function scanNotes(lib: string): NoteEntry[] {
   const dir = notesDirAbs(lib)
   const entries = fs
     .readdirSync(dir)
-    .filter(f => f.endsWith('.md') && !f.startsWith('.'))
+    .filter(f => f.endsWith('.md') && !f.startsWith('.') && !SIDECAR_PATTERN.test(f))
     .map(f => parseNoteFile(`${NOTES_DIR}/${f}`, fs.readFileSync(path.join(dir, f), 'utf8')))
   entries.sort((a, b) => b.meta.collected_at.localeCompare(a.meta.collected_at))
   return entries
