@@ -27,12 +27,6 @@ const api: IpcApi = {
   // (渲染进程可能先被卸载,e2e 实测 reload 落盘 1/3 成功),同步通道保证必达
   patchStateSync: (p) => ipcRenderer.sendSync('state:patchSync', p),
 
-  fitnessLoad: () => ipcRenderer.invoke('fitness:load'),
-  fitnessSaveRecord: (r) => ipcRenderer.invoke('fitness:saveRecord', r),
-  fitnessDeleteRecord: (id) => ipcRenderer.invoke('fitness:deleteRecord', id),
-  fitnessSaveBodyMetric: (m) => ipcRenderer.invoke('fitness:saveBodyMetric', m),
-  fitnessDeleteBodyMetric: (date) => ipcRenderer.invoke('fitness:deleteBodyMetric', date),
-  fitnessSavePlan: (p) => ipcRenderer.invoke('fitness:savePlan', p),
 
   llmProbe: () => ipcRenderer.invoke('llm:probe'),
   llmStart: (a) => ipcRenderer.invoke('llm:start', a),
