@@ -11,7 +11,7 @@ export function NoteMetaHeader({ entry }: { entry: NoteEntry }) {
   const inputCls = 'bg-transparent outline-none border-none min-w-0 placeholder:text-parchment/25'
 
   return (
-    <div className="px-12 pt-6 pb-4 border-b border-parchment/10 shrink-0">
+    <div className="px-12 pt-16 pb-4 border-b border-parchment/10 shrink-0">
       <div className="flex items-baseline gap-3 flex-wrap">
         <input
           data-testid="note-meta-title"
