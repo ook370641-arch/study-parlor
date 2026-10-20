@@ -713,6 +713,13 @@ export type IpcApi = {
   annotationsRead: (articlePath: string) => Promise<ArticleAnnotation[]>
   annotationsWrite: (articlePath: string, annotations: ArticleAnnotation[]) => Promise<void>
 
+  // Notes
+  notesList: () => Promise<NoteEntry[]>
+  notesCreate: (a: { title: string; url: string }) => Promise<{ path: string }>
+  notesUpdateMeta: (a: { path: string; patch: Partial<NoteMeta> }) => Promise<void>
+  notesDelete: (a: { path: string }) => Promise<void>
+  notesImportRead: () => Promise<{ created: number; skipped: number }>
+
   // Article assistant
   articleAssistantGenerateGuide: (args: {
     articleContent: string

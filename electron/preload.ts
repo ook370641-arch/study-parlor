@@ -144,6 +144,12 @@ const api: IpcApi = {
   annotationsRead: (articlePath) => ipcRenderer.invoke('annotations:read', articlePath),
   annotationsWrite: (articlePath, annotations) => ipcRenderer.invoke('annotations:write', articlePath, annotations),
 
+  notesList: () => ipcRenderer.invoke('notes:list'),
+  notesCreate: (a) => ipcRenderer.invoke('notes:create', a),
+  notesUpdateMeta: (a) => ipcRenderer.invoke('notes:updateMeta', a),
+  notesDelete: (a) => ipcRenderer.invoke('notes:delete', a),
+  notesImportRead: () => ipcRenderer.invoke('notes:importRead'),
+
   articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),
   articleAssistantSendMessage: (a) => ipcRenderer.invoke('articleAssistant:sendMessage', a),
   articleAssistantAbort: (a) => ipcRenderer.invoke('articleAssistant:abort', a),
