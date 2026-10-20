@@ -8,6 +8,7 @@ import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { FitnessPanel } from '@/components/fitness/FitnessPanel'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
+import { NoteBoard } from '@/components/notes/NoteBoard'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { CandlelightLayer } from '@/components/briefing/CandlelightLayer'
 import {
@@ -27,6 +28,7 @@ export function Briefing() {
   const decreaseWritingUI = useStore((s) => s.decreaseWritingUIFontSize)
   const htmlDeleteMode = useStore((s) => s.htmlDeleteMode)
   const source = useStore((s) => s.briefingSource)
+  const writingTab = useStore((s) => s.writingListTab)
   const loadFitness = useStore((s) => s.loadFitness)
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -118,7 +120,7 @@ export function Briefing() {
                     />
                   )}
                 </div>
-                <WritingBoard />
+                {writingTab === 'notes' ? <NoteBoard /> : <WritingBoard />}
               </main>
             ) : source === 'anthropic' ? (
               <AnthropicBlogPanel theme={theme} />
