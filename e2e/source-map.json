@@ -189,18 +189,6 @@
         "startup-health.spec.ts"
       ]
     },
-    "fitness": {
-      "sources": [
-        "src/components/fitness/**",
-        "src/lib/fitness.ts",
-        "src/lib/fitness-theme.ts",
-        "electron/ipc/fitness.ts",
-        "electron/lib/fitness-store.ts"
-      ],
-      "specs": [
-        "fitness.spec.ts"
-      ]
-    },
     "notes": {
       "sources": [
         "electron/lib/notes.ts",
