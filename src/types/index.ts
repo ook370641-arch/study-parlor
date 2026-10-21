@@ -464,25 +464,7 @@ export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalo
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
-export type BriefingSourceId = 'writing' | 'anthropic' | 'fitness'
-
-export type FitnessSet = { weight: number; reps: number }
-export type FitnessExercise = { id: string; name: string; sets: number }
-export type FitnessRoutine = { id: string; name: string; exercises: FitnessExercise[] }
-export type FitnessScheduleEntry = { weekday: number; routineId: string }
-export type FitnessRecordEntry = { exerciseId: string; name: string; sets: FitnessSet[] }
-export type FitnessRecord = { id: string; date: string; routineId: string; entries: FitnessRecordEntry[] }
-export type BodyMetric = {
-  date: string
-  weight?: number; chest?: number; waist?: number; hip?: number; arm?: number; thigh?: number
-}
-export type FitnessData = {
-  version: 1
-  routines: FitnessRoutine[]
-  schedule: FitnessScheduleEntry[]
-  records: FitnessRecord[]
-  bodyMetrics: BodyMetric[]
-}
+export type BriefingSourceId = 'writing' | 'anthropic'
 
 export type LlmConfig = { id: string; apiKey: string; baseUrl: string; model: string }
 
