@@ -128,6 +128,12 @@ npm run test:e2e                               # 全量（合并前）
 
 相关代码：`src/components/NotepadPanel.tsx`（双 tab 面板：待完成 / 已完成时间线）、`src/lib/notepad.ts`（分类猜测/迁移/统计/短标题纯逻辑）、`src/store/index.ts`（`notepadItems` / `notepadLog` / `addNotepadItem` / `resolveNotepadItem`）、`electron/ipc/state.ts`（DEFAULT 字段）。
 
+**接单时按 category 自动区分打法**（看到条目先识别类型，不要用同一套流程套所有需求）：
+
+- `bug`：先定位根因再修，优先跑/写一个能复现的测试；禁止只糊表面症状。
+- `feature`：动手前先用一两句话跟用户确认交互方案（给默认建议 + 1 个备选），避免大返工。
+- `improvement`：对照现状与用户预期，做能达成预期的最小改动；不顺手重构、不扩大范围。
+
 ### 文件系统 (`electron/ipc/files.ts`)
 
 - `files:scan` — 扫描 `STUDY_LIBRARY_PATH/*.md`，解析 frontmatter，返回 `FileMeta[]`
