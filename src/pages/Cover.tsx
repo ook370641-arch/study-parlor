@@ -13,10 +13,7 @@ export function Cover() {
   const patchProfile = useStore(s => s.patchProfile)
   const goto = useStore(s => s.goto)
   const paintingDeleteEnabled = useStore(s => s.paintingDeleteEnabled)
-  const coverNotepad = useStore(s => s.coverNotepad)
-  const setCoverNotepad = useStore(s => s.setCoverNotepad)
   const [name, setName] = useState('')
-  const [notepadOpen, setNotepadOpen] = useState(false)
 
   const briefingButtonClass = `bg-parchment text-ink shadow-[3px_3px_0_0_#d97757]
     hover:translate-x-[1px] hover:translate-y-[1px]
@@ -43,44 +40,7 @@ export function Cover() {
         <SwapPaintingButton surface="cover" />
         {paintingDeleteEnabled && <DeletePaintingButton surface="cover" />}
         <PaintingCropButton />
-        <button
-          data-testid="cover-notepad-button"
-          type="button"
-          className="swap-btn"
-          aria-label="记事板"
-          onClick={() => setNotepadOpen(v => !v)}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="w-4 h-4"
-          >
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-          </svg>
-        </button>
       </div>
-
-      {notepadOpen && (
-        <div className="absolute top-14 right-4 z-20 w-80 rounded-lg border border-parchment/30
-                        bg-[rgba(15,10,8,0.85)] backdrop-blur-md p-3 shadow-lg">
-          <div className="mb-2 text-xs text-parchment/60">迭代记事板 · 自动保存</div>
-          <textarea
-            data-testid="cover-notepad-textarea"
-            value={coverNotepad}
-            onChange={e => setCoverNotepad(e.target.value)}
-            placeholder="记下可以迭代的点……"
-            rows={10}
-            className="w-full resize-y rounded bg-transparent p-2 text-sm text-parchment
-                       placeholder:text-parchment/40 border border-parchment/20
-                       focus:outline-none focus:border-ember/60"
-          />
-        </div>
-      )}
 
       <div className="absolute bottom-12 left-12 right-12 z-[5] flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
         <div className="flex flex-col items-start gap-4 max-w-[380px]"

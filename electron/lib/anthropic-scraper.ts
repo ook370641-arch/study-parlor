@@ -1,4 +1,5 @@
 import TurndownService from 'turndown'
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { runScriptInScraperWindow } from './anthropic-browser'
@@ -532,18 +533,47 @@ async function extractArticle(
   }
 }
 
-function imageFileName(url: string): string {
+export function imageFileName(url: string): string {
   try {
     const u = new URL(url)
     const base = path.basename(u.pathname)
     const clean = base.replace(/[^a-zA-Z0-9._-]/g, '_')
-    if (clean && clean.includes('.')) return clean
-    if (clean) return `${clean}.jpg`
+    const isNextImageProxy = u.pathname.endsWith('/image')
+    if (clean && clean.includes('.') && !isNextImageProxy) return clean
+    // basename 无辨识度（Next.js 图片代理或无扩展名）：先尝试 query 里 url= 的真实文件名
+    const inner = u.searchParams.get('url')
+    if (inner) {
+      try {
+        const innerBase = path.basename(new URL(inner).pathname).replace(/[^a-zA-Z0-9._-]/g, '_')
+        if (innerBase && innerBase.includes('.')) return innerBase
+      } catch {}
+    }
+    // 回退：对完整 URL 取短 hash 拼进文件名，避免同目录跨文章同名覆盖
+    const hash = crypto.createHash('md5').update(url).digest('hex').slice(0, 8)
+    const stem = clean ? clean.replace(/\.[^.]*$/, '') : 'image'
+    return `${stem || 'image'}-${hash}.jpg`
   } catch {}
   return `image-${Date.now()}.jpg`
 }
 
-async function downloadImages(
+// dest 已存在时比较内容：相同则复用（跳过写入），不同则递增后缀另存，绝不覆盖不同内容
+function resolveImageDestName(assetsDir: string, usedNames: Set<string>, name: string, buffer: Buffer): string {
+  const ext = path.extname(name)
+  const stem = path.basename(name, ext)
+  let candidate = name
+  let counter = 2
+  while (true) {
+    if (!usedNames.has(candidate)) {
+      const dest = path.join(assetsDir, candidate)
+      if (!fs.existsSync(dest)) return candidate
+      if (fs.readFileSync(dest).equals(buffer)) return candidate
+    }
+    candidate = `${stem}-${counter}${ext}`
+    counter++
+  }
+}
+
+export async function downloadImages(
   images: { url: string; alt: string }[],
   assetsDir: string
 ): Promise<Map<string, string>> {
@@ -553,25 +583,14 @@ async function downloadImages(
 
   for (const { url } of images) {
     if (!url || map.has(url)) continue
-    let name = imageFileName(url)
-    if (usedNames.has(name)) {
-      const ext = path.extname(name)
-      const base = path.basename(name, ext)
-      let counter = 2
-      let candidate = `${base}-${counter}${ext}`
-      while (usedNames.has(candidate)) {
-        counter++
-        candidate = `${base}-${counter}${ext}`
-      }
-      name = candidate
-    }
-    usedNames.add(name)
-    const dest = path.join(assetsDir, name)
     try {
       const res = await httpFetch(url)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const buffer = Buffer.from(await res.arrayBuffer())
-      fs.writeFileSync(dest, buffer)
+      const name = resolveImageDestName(assetsDir, usedNames, imageFileName(url), buffer)
+      usedNames.add(name)
+      const dest = path.join(assetsDir, name)
+      if (!fs.existsSync(dest)) fs.writeFileSync(dest, buffer)
       map.set(url, `./.assets/${name}`)
     } catch (err) {
       console.error(`[anthropic-scraper] failed to download image ${url}:`, err)

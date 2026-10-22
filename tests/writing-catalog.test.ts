@@ -140,3 +140,15 @@ it('migratePrefix 同时迁移 groups 前缀', () => {
   expect(c.groups['writing/散文/子']).toEqual({ summary: 'Z', signature: 's2' })
   expect(c.groups['writing/随笔']).toBeUndefined()
 })
+
+it('collectGroupDirs memberPaths 按 M.D 日期排序（与目录树一致）', () => {
+  fs.mkdirSync(path.join(lib, 'writing/日记/Hermes'), { recursive: true })
+  for (const name of ['10.12.md', '8.30 多Agent系统.md', '9.17.md', '9.28.md', '9.7 数据策略.md']) {
+    fs.writeFileSync(path.join(lib, 'writing/日记/Hermes', name), '# x')
+  }
+  const dirs = collectGroupDirs(scanRoot(lib, 'writing'))
+  const hermes = dirs.find(d => d.rel === 'writing/日记/Hermes')!
+  expect(hermes.memberPaths.map(p => path.basename(p))).toEqual([
+    '8.30 多Agent系统.md', '9.7 数据策略.md', '9.17.md', '9.28.md', '10.12.md',
+  ])
+})

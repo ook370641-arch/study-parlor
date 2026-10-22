@@ -8,6 +8,7 @@ import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { NoteBoard } from '@/components/notes/NoteBoard'
+import { NotesWall } from '@/components/notes/NotesWall'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
 import { CandlelightLayer } from '@/components/briefing/CandlelightLayer'
 import {
@@ -18,6 +19,7 @@ import {
   BRIEFING_LIST_STYLES,
   BRIEFING_QUOTE_SIZES,
 } from '@/lib/briefing-font-size'
+import { writingRootOf } from '@/lib/writing-tree-utils'
 
 export function Briefing() {
   const theme = useStore((s) => s.briefingTheme)
@@ -28,6 +30,7 @@ export function Briefing() {
   const htmlDeleteMode = useStore((s) => s.htmlDeleteMode)
   const source = useStore((s) => s.briefingSource)
   const writingTab = useStore((s) => s.writingListTab)
+  const writingFilePath = useStore((s) => s.writingFile?.path)
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -114,7 +117,13 @@ export function Briefing() {
                     />
                   )}
                 </div>
-                {writingTab === 'notes' ? <NoteBoard /> : <WritingBoard />}
+                {(() => {
+                  const openRoot = writingFilePath ? writingRootOf(writingFilePath) : null
+                  if (openRoot === 'notes') return <NoteBoard />
+                  if (openRoot) return <WritingBoard />
+                  // 无打开文件：笔记 tab 落专辑墙
+                  return writingTab === 'notes' ? <NotesWall /> : <WritingBoard />
+                })()}
               </main>
             ) : (
               <AnthropicBlogPanel theme={theme} />

@@ -57,6 +57,10 @@ const DEFAULT: StateJson = {
   hiddenPaintings: [],
   paintingDeleteEnabled: true,
   coverNotepad: '',
+  notepadItems: [],
+  notepadLog: [],
+  notepadFontSize: 'base',
+  notepadPanelSize: null,
   llmConfigs: [],
   activeLlmConfigId: null,
 }

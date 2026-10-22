@@ -39,6 +39,27 @@ function toRel(lib: string, absPath: string): string {
   return path.relative(lib, absPath).replace(/\\/g, '/')
 }
 
+const DATE_PREFIX_RE = /^(\d{1,2})\.(\d{1,2})(?=[.\s])/
+
+/**
+ * 文件名日期感知比较：basename 以 M.D 开头（如 '8.30 多Agent系统.html'、'10.12.html'）
+ * 时按 (month, day) 数值比较，否则回退 zh localeCompare。不处理跨年推断。
+ * 入参可为相对路径（catalog memberPaths），内部统一取 basename。
+ */
+export function compareWritingNames(a: string, b: string): number {
+  const baseA = path.basename(a)
+  const baseB = path.basename(b)
+  const dateA = DATE_PREFIX_RE.exec(baseA)
+  const dateB = DATE_PREFIX_RE.exec(baseB)
+  if (dateA && dateB) {
+    const monthDiff = Number(dateA[1]) - Number(dateB[1])
+    if (monthDiff !== 0) return monthDiff
+    const dayDiff = Number(dateA[2]) - Number(dateB[2])
+    if (dayDiff !== 0) return dayDiff
+  }
+  return baseA.localeCompare(baseB, 'zh')
+}
+
 function uniqueName(absDir: string, name: string): string {
   const ext = path.extname(name)
   const base = path.basename(name, ext)
@@ -117,10 +138,10 @@ function scanDir(absoluteDir: string, lib: string): WritingTreeNode[] {
     // ignore other files
   }
 
-  // sort: dirs first, then by zh localeCompare
+  // sort: dirs first, then date-aware name compare (M.D 前缀按日期数值)
   result.sort((a, b) => {
     if (a.kind !== b.kind) return a.kind === 'dir' ? -1 : 1
-    return a.name.localeCompare(b.name, 'zh')
+    return compareWritingNames(a.name, b.name)
   })
 
   return result

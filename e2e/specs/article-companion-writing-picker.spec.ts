@@ -3,6 +3,8 @@ import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
 import { seedAnthropicArticle, seedStateJson, seedWritingTree } from '../helpers/test-library'
 import type { Page } from '@playwright/test'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 
 // 博客对照写作挑选器 E2E——对应 docs/superpowers/specs/2026-09-16-blog-companion-writing-picker.md。
 // 断言只认 data-testid；唯一文案匹配是文件名「分布式随笔」（seed 固定，红线豁免）。
@@ -106,5 +108,45 @@ test.describe('@p1 博客对照写作挑选器', () => {
     await window.locator(SELECTORS.writing.sourceButton).click()
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toBeVisible({ timeout: 15000 })
     await expect(window.locator(SEL.picker)).toBeHidden()
+  })
+
+  test('挑选器「笔记」区：笔记行可见，点击后文件名进对照槽', async ({
+    window,
+    testLibraryPath,
+    testConfigDir,
+  }) => {
+    // seed 一条笔记（notes 根；picker 行 testid 取 meta.url 末段作 slug）
+    const notesDir = path.join(testLibraryPath, 'notes')
+    fs.mkdirSync(notesDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(notesDir, 'E2E 对照笔记.md'),
+      [
+        '---',
+        'title: E2E 对照笔记',
+        'url: https://example.com/e2e-picker-note',
+        'source: web',
+        'rating: 0',
+        "summary: ''",
+        "highlight: ''",
+        "collected_at: '2026-10-01T00:00:00.000Z'",
+        '---',
+        '',
+        '对照笔记正文。',
+        '',
+      ].join('\n'),
+      'utf8'
+    )
+
+    await openBlogWithCompanion(testLibraryPath, testConfigDir, window)
+    await window.locator(SEL.companionTab).click()
+    await window.locator(SELECTORS.writing.sourceButton).click()
+    await expect(window.locator(SEL.picker)).toBeVisible()
+
+    // 「笔记」区行可见 → 点击进对照槽，对照板显示笔记文件名
+    const noteRow = window.locator('[data-testid="picker-note-e2e-picker-note"]')
+    await expect(noteRow).toBeVisible()
+    await noteRow.click()
+    await expect(window.locator(SEL.companionBoard)).toBeVisible()
+    await expect(window.locator(SEL.companionBoard)).toContainText('E2E 对照笔记.md')
   })
 })

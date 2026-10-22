@@ -1,17 +1,27 @@
 import { isNonMdExt } from '@shared/index'
 import type { WritingTreeNode, WritingRoot, WritingErrorCode, WritingPreviewKind, NonMdKind } from '@shared/index'
 
+const DATE_PREFIX_RE = /^(\d{1,2})\.(\d{1,2})(?=[.\s])/
+
 /** 递归统计 WritingTreeNode 树中 file 节点的数量。 */
 export function countFiles(nodes: WritingTreeNode[] | undefined): number {
   if (!nodes) return 0
   return nodes.reduce((sum, n) => sum + (n.kind === 'file' ? 1 : countFiles(n.children)), 0)
 }
 
-/** 判断 path 是否为写作树相对路径（writing/... 或 repository/...）。
+/** 判断 path 是否为写作树相对路径（库内三根 writing/repository/notes 均视为可读写）。
  *  写作树节点 path 是库根相对路径，博客文章是绝对路径——文章对照槽按此分流 IO 通道：
  *  相对路径走 writingRead/writingWrite（写作专属守卫），绝对路径走 readMd/writeArticleBody。 */
 export function isWritingTreePath(p: string): boolean {
-  return p.startsWith('writing/') || p.startsWith('repository/')
+  return p.startsWith('writing/') || p.startsWith('repository/') || p.startsWith('notes/')
+}
+
+/** 按路径前缀归所属根；库外/未知前缀返回 null */
+export function writingRootOf(p: string): 'writing' | 'repository' | 'notes' | null {
+  if (p.startsWith('writing/')) return 'writing'
+  if (p.startsWith('repository/')) return 'repository'
+  if (p.startsWith('notes/')) return 'notes'
+  return null
 }
 
 /** Sort nodes by a recorded order array, but always render directories before
@@ -19,6 +29,11 @@ export function isWritingTreePath(p: string): boolean {
  *  [unordered files]. Nodes in the order list appear first in recorded sequence;
  *  nodes not in the list keep their original scan order within each kind. */
 export function sortNodesByOrder<T extends { path: string; kind?: 'dir' | 'file' }>(nodes: T[], order: string[] | undefined): T[] {
+  const fileNodes = nodes.filter(n => n.kind !== 'dir')
+  // 全日历目录（如 日记/Hermes）：scanDir 已按 M.D 日期排好，忽略 state.json 里陈旧的 writingOrder
+  if (fileNodes.length > 0 && fileNodes.every(n => DATE_PREFIX_RE.test(n.path.split('/').pop()!))) {
+    return nodes
+  }
   const rank = new Map((order ?? []).map((p, i) => [p, i]))
   const byRank = (a: T, b: T) => {
     const ra = rank.get(a.path)

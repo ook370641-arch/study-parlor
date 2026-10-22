@@ -45,7 +45,11 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         articleAssistantGuideCollapsed: s.articleAssistantGuideCollapsed,
         anthropicReaderFilePath: s.anthropicReaderFilePath,
       })
-      if (target) { s.openWritingCompanionPicker(target); return }
+      if (target) {
+        if (s.articleAssistantGuideCollapsed) s.setArticleAssistantGuideCollapsed(false)
+        s.openWritingCompanionPicker(target)
+        return
+      }
     } else if (s.writingCompanionPicker && id === s.briefingSource) {
       s.closeWritingCompanionPicker()
       return

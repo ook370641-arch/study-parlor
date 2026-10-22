@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
-import { writingTreeContainsPath, countFiles, firstWritingFilePath, displayWritingName, writingErrorText } from '@/lib/writing-tree-utils'
+import { writingTreeContainsPath, countFiles, firstWritingFilePath, displayWritingName, writingErrorText, writingRootOf } from '@/lib/writing-tree-utils'
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 import { WritingTree } from './WritingTree'
 import { PromptDialog } from './PromptDialog'
@@ -81,7 +81,8 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
     const current = useStore.getState().writingFile
     if (current && writingTreeContainsPath(tree, current.path)) return
     const last = useStore.getState().lastWritingFile
-    if (last && writingTreeContainsPath(tree, last)) { selectWritingFile(last); return }
+    // 根守卫：lastWritingFile 可能是笔记路径（notes/），文章/仓库 tab 下不恢复
+    if (last && writingRootOf(last) !== 'notes' && writingTreeContainsPath(tree, last)) { selectWritingFile(last); return }
     const first = tree ? firstWritingFilePath(tree.writing) : null
     if (first) selectWritingFile(first)
   }, [tree, selectWritingFile])

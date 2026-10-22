@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {
   scanRoot,
+  compareWritingNames,
   createFile,
   createFolder,
   renameNode,
@@ -274,5 +275,40 @@ describe('ensureRoots', () => {
     ensureRoots(lib)
     ensureRoots(lib)
     expect(fs.statSync(path.join(lib, 'writing')).isDirectory()).toBe(true)
+  })
+})
+
+describe('compareWritingNames / 日记 M.D 日期排序', () => {
+  const DIARY_NAMES = ['10.12.html', '8.30 多Agent系统.html', '9.17.html', '9.28.html', '9.7 数据策略.html']
+  const EXPECTED = ['8.30 多Agent系统.html', '9.7 数据策略.html', '9.17.html', '9.28.html', '10.12.html']
+
+  it('M.D 前缀按 (month, day) 数值排序', () => {
+    expect([...DIARY_NAMES].sort(compareWritingNames)).toEqual(EXPECTED)
+  })
+
+  it('一方无日期前缀时回退 zh localeCompare', () => {
+    expect(compareWritingNames('9.7 数据策略.html', '随笔.md')).toBe('9.7 数据策略.html'.localeCompare('随笔.md', 'zh'))
+    expect(compareWritingNames('a.md', 'b.md')).toBe('a.md'.localeCompare('b.md', 'zh'))
+  })
+
+  it('同日期时回退 localeCompare 决胜（全序，不依赖 readdir 顺序）', () => {
+    expect(compareWritingNames('9.7 b.html', '9.7 a.html')).toBe('9.7 b.html'.localeCompare('9.7 a.html', 'zh'))
+    expect(['9.7 b.html', '9.7 a.html'].sort(compareWritingNames)).toEqual(['9.7 a.html', '9.7 b.html'])
+  })
+
+  it('入参为相对路径时按 basename 比较', () => {
+    expect(compareWritingNames('writing/日记/9.7.md', 'writing/日记/9.28.md')).toBeLessThan(0)
+    expect(compareWritingNames('writing/日记/10.12.md', 'writing/日记/9.28.md')).toBeGreaterThan(0)
+  })
+
+  it('scanRoot 对日记目录按日期排序（真实文件名用例）', () => {
+    fs.mkdirSync(path.join(lib, 'writing/日记/Hermes'), { recursive: true })
+    for (const name of DIARY_NAMES) {
+      fs.writeFileSync(path.join(lib, 'writing/日记/Hermes', name), '<html></html>')
+    }
+    const tree = scanRoot(lib, 'writing')
+    const hermes = tree[0].children![0]
+    expect(hermes.name).toBe('Hermes')
+    expect(hermes.children!.map(c => c.name)).toEqual(EXPECTED)
   })
 })

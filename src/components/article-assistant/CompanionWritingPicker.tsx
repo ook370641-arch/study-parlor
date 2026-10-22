@@ -1,7 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useStore } from '@/store'
 import { WritingTree } from '@/components/writing/WritingTree'
+import { NoteCover } from '@/components/notes/NoteCover'
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
+import { sortNotes } from '@/lib/notes-list'
 import type { BriefingTheme } from '@shared/index'
 
 // 博客对照挑选器：对照 tab 下点来源栏「写作」后，替换左栏文章列表展示。
@@ -17,6 +19,13 @@ export function CompanionWritingPicker({ theme = 'academic', onPickFile }: {
   const isAcademic = theme !== 'newspaper'
 
   useEffect(() => { void loadWritingTree() }, [loadWritingTree])
+
+  const notesList = useStore(s => s.notesList)
+  const notesCategory = useStore(s => s.notesCategory)
+  const notesSortBy = useStore(s => s.notesSortBy)
+  const loadNotes = useStore(s => s.loadNotes)
+  useEffect(() => { void loadNotes() }, [loadNotes])
+  const sortedNotes = useMemo(() => sortNotes(notesList ?? [], notesSortBy, notesCategory), [notesList, notesSortBy, notesCategory])
 
   const noop = () => {}
   const sectionCls = `px-3 pt-3 pb-1 text-[10px] tracking-[0.2em] font-serif ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]/60'}`
@@ -51,6 +60,18 @@ export function CompanionWritingPicker({ theme = 'academic', onPickFile }: {
           onInlineNewCancel={noop}
           onPickFile={onPickFile}
         />
+        <p className={sectionCls}>笔记</p>
+        {sortedNotes.map(entry => (
+          <button
+            key={entry.path}
+            data-testid={`picker-note-${entry.meta.url.split('/').pop() || 'note'}`}
+            className={`w-full flex items-center gap-2 px-3 py-1 text-left text-[11px] ${isAcademic ? 'text-parchment/80 hover:bg-parchment/5' : 'text-[#2a1f1a] hover:bg-black/5'}`}
+            onClick={() => onPickFile(entry.path)}
+          >
+            <NoteCover entry={entry} className="shrink-0 w-[14px] h-[19px] rounded-[2px]" />
+            <span className="truncate">{entry.meta.title}</span>
+          </button>
+        ))}
       </div>
     </div>
   )

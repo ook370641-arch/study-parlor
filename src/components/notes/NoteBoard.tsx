@@ -8,6 +8,7 @@ export function NoteBoard() {
   const notesList = useStore(s => s.notesList)
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
+  const selectWritingFile = useStore(s => s.selectWritingFile)
 
   const entry = notesList?.find(e => e.path === file?.path)
 
@@ -28,21 +29,33 @@ export function NoteBoard() {
 
   return (
     <div data-testid="note-board" className="flex flex-col h-full">
-      <NoteMetaHeader key={entry.path} entry={entry} />
-      <div className="flex justify-end px-3 py-0.5 shrink-0 text-[10px]">
-        {file.saving === 'saving' ? <span className="text-parchment/50">保存中…</span>
-         : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
-         : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span>
-         : null}
+      <div className="flex items-center gap-2 px-3 h-9 border-b border-parchment/10 shrink-0">
+        <button
+          data-testid="note-back-to-wall"
+          className="text-[11px] text-ember hover:text-ember/80"
+          onClick={() => { void selectWritingFile(null) }}
+        >
+          ← 笔记墙
+        </button>
+        <span className="text-[10px] text-parchment/35 truncate">笔记 / {entry.meta.title}</span>
+        <span className="ml-auto text-[10px]">
+          {file.saving === 'saving' ? <span className="text-parchment/50">保存中…</span>
+           : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
+           : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span>
+           : null}
+        </span>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto px-12 py-6">
-        <WritingEditor
-          key={file.path}
-          initial={file.body}
-          onChange={md => updateWritingBody(md)}
-          theme="academic"
-          filePath={file.path}
-        />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="mx-auto px-6 py-8" style={{ maxWidth: 680 }}>
+          <NoteMetaHeader key={`meta-${entry.path}`} entry={entry} />
+          <WritingEditor
+            key={file.path}
+            initial={file.body}
+            onChange={md => updateWritingBody(md)}
+            theme="academic"
+            filePath={file.path}
+          />
+        </div>
       </div>
     </div>
   )

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   firstWritingFilePath,
   displayWritingName,
+  isWritingTreePath,
+  writingRootOf,
   normalizeWritingFileName,
   diaryPrefillName,
   sortedInsertIndexForFile,
@@ -151,5 +153,49 @@ describe('writingPreviewKindOf', () => {
     expect(writingPreviewKindOf('writing/reports/月度报告.html')).toBe('html')
     expect(writingPreviewKindOf('repository/A.HTML')).toBe('html')
     expect(writingPreviewKindOf('writing/a.md')).toBe('md')
+  })
+})
+
+describe('sortNodesByOrder 全日历目录', () => {
+  const diaryFiles = [
+    f('8.30 多Agent系统.html', 'writing/日记/Hermes/8.30 多Agent系统.html'),
+    f('9.7 数据策略.html', 'writing/日记/Hermes/9.7 数据策略.html'),
+    f('9.17.html', 'writing/日记/Hermes/9.17.html'),
+    f('9.28.html', 'writing/日记/Hermes/9.28.html'),
+    f('10.12.html', 'writing/日记/Hermes/10.12.html'),
+  ]
+  it('全部文件带 M.D 日期前缀时忽略陈旧 writingOrder，保持传入顺序', () => {
+    const staleOrder = [
+      'writing/日记/Hermes/9.28.html',
+      'writing/日记/Hermes/8.30 多Agent系统.html',
+    ]
+    expect(sortNodesByOrder(diaryFiles, staleOrder).map(n => n.name)).toEqual([
+      '8.30 多Agent系统.html', '9.7 数据策略.html', '9.17.html', '9.28.html', '10.12.html',
+    ])
+  })
+  it('混合目录（含无日期前缀文件）维持现有 rank 行为', () => {
+    const mixed = [
+      f('10.12.html', 'writing/日记/10.12.html'),
+      f('随笔.md', 'writing/日记/随笔.md'),
+      f('8.30.html', 'writing/日记/8.30.html'),
+    ]
+    const sorted = sortNodesByOrder(mixed, ['writing/日记/随笔.md'])
+    expect(sorted.map(n => n.name)).toEqual(['随笔.md', '10.12.html', '8.30.html'])
+  })
+})
+
+describe('isWritingTreePath', () => {
+  it('notes 根路径视为库内可读写路径（对照槽可读笔记）', () => {
+    expect(isWritingTreePath('notes/foo.md')).toBe(true)
+    expect(isWritingTreePath('notes/子目录/bar.md')).toBe(true)
+  })
+})
+
+describe('writingRootOf', () => {
+  it('writingRootOf 按前缀归根', () => {
+    expect(writingRootOf('notes/foo.md')).toBe('notes')
+    expect(writingRootOf('writing/a/b.md')).toBe('writing')
+    expect(writingRootOf('repository/x.md')).toBe('repository')
+    expect(writingRootOf('其他/abs.md')).toBe(null)
   })
 })

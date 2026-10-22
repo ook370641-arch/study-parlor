@@ -11,10 +11,9 @@ export interface CompanionPickerState {
   anthropicReaderFilePath: string | null
 }
 
-// 全部满足才可挑选：当前 source 是博客栏目 + 右栏处于对照 tab
-// + 右栏展开 + 主区有在读文章（对照需要主文作锚）。
+// 全部满足才可挑选：当前 source 是博客栏目 + 右栏处于对照 tab + 主区有在读文章。
+// collapsed 不再拒绝——由调用方（sidebar）先展开右栏再开挑选器（2026-10-22 落点统一）。
 export function companionPickerTarget(s: CompanionPickerState): CompanionPickerKey | null {
-  if (s.articleAssistantGuideCollapsed) return null
   if (s.briefingSource === 'anthropic') {
     return s.articlePanelMode.anthropic === 'companion' && s.anthropicReaderFilePath ? 'anthropic' : null
   }

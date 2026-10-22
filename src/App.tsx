@@ -5,6 +5,7 @@ import { PreStudyModal } from '@/components/PreStudyModal'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { SetupWizard } from '@/components/SetupWizard'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { NotepadFab } from '@/components/NotepadFab'
 import { ipc } from '@/lib/ipc'
 import { attachAssistantSessionListeners } from '@/lib/assistant-session-runtime'
 import { attachWritingAssistantListeners } from '@/lib/writing-assistant-runtime'
@@ -248,6 +249,7 @@ export function App() {
         </ErrorBoundary>
       )}
       {modal === 'preStudy' && <PreStudyModal />}
+      {!isBooting && <NotepadFab />}
       <Toast />
     </div>
   )

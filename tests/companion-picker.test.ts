@@ -25,8 +25,13 @@ describe('companionPickerTarget', () => {
     })).toBeNull()
   })
 
-  it('右栏折叠 → null', () => {
-    expect(companionPickerTarget({ ...base, articleAssistantGuideCollapsed: true })).toBeNull()
+  it('博客对照 tab 激活即具备挑选资格（collapsed 不拒绝）', () => {
+    expect(companionPickerTarget({
+      briefingSource: 'anthropic',
+      articlePanelMode: { anthropic: 'companion' },
+      articleAssistantGuideCollapsed: true,
+      anthropicReaderFilePath: 'foo.md',
+    })).toBe('anthropic')
   })
 
   it('主区无在读文章 → null', () => {

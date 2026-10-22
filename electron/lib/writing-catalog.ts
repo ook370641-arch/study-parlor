@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { WritingCatalog, WritingCatalogEntry, WritingGroupSummaryEntry, WritingRoot, WritingTreeNode } from '@shared/index'
-import { isNonMdPath, scanRoot } from './writing-tree'
+import { isNonMdPath, scanRoot, compareWritingNames } from './writing-tree'
 
 const EMPTY: WritingCatalog = { version: 2, entries: {}, groups: {}, stamped: {} }
 
@@ -133,7 +133,7 @@ export function collectGroupDirs(nodes: WritingTreeNode[]): { rel: string; membe
   const walk = (ns: WritingTreeNode[]) => {
     for (const n of ns) {
       if (n.kind !== 'dir') continue
-      const memberPaths = collectDescendantFiles(n).sort()
+      const memberPaths = collectDescendantFiles(n).sort(compareWritingNames)
       if (memberPaths.length > 0) out.push({ rel: n.path, memberPaths })
       walk(n.children ?? [])
     }

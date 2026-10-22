@@ -10,6 +10,8 @@ import {
   buildArticleScript,
   classifyError,
   importArticle,
+  imageFileName,
+  downloadImages,
 } from '../electron/lib/anthropic-scraper'
 import { runScriptInScraperWindow } from '../electron/lib/anthropic-browser'
 import { httpFetch } from '../electron/lib/net-fetch'
@@ -65,6 +67,69 @@ describe('anthropic helpers', () => {
     expect(classifyError(new Error('HTTP_ERROR_404')).code).toBe('http-error')
     expect(classifyError(new Error('cancelled')).code).toBe('cancelled')
     expect(classifyError(new Error('Load failed: ERR_INTERNET_DISCONNECTED')).code).toBe('network-error')
+  })
+})
+
+describe('imageFileName / downloadImages 防跨文章覆盖', () => {
+  let tmp: string
+
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-img-'))
+  })
+
+  afterEach(() => {
+    fs.rmSync(tmp, { recursive: true, force: true })
+    vi.restoreAllMocks()
+  })
+
+  it('有辨识度的 CDN basename 维持现状', () => {
+    expect(imageFileName('https://cdn.example.com/assets/diagram-v2.png')).toBe('diagram-v2.png')
+  })
+
+  it('Next.js 代理 URL 取 query url= 中的真实文件名', () => {
+    const proxy =
+      'https://www.anthropic.com/_next/image?url=' +
+      encodeURIComponent('https://www-cdn.anthropic.com/images/abc123-1920x1920.png') +
+      '&w=3840&q=75'
+    expect(imageFileName(proxy)).toBe('abc123-1920x1920.png')
+  })
+
+  it('无扩展名且无 url= 参数时回退短 hash，且不同 URL 产出不同文件名', () => {
+    const a = imageFileName('https://cdn.example.com/abc123')
+    const b = imageFileName('https://cdn.example.com/def456')
+    expect(a).toMatch(/^abc123-[0-9a-f]{8}\.jpg$/)
+    expect(a).not.toBe(b)
+  })
+
+  it('dest 已存在且内容不同：递增后缀另存，不覆盖旧文件', async () => {
+    const assetsDir = path.join(tmp, '.assets')
+    fs.mkdirSync(assetsDir, { recursive: true })
+    const url = 'https://cdn.example.com/pic.png'
+    fs.writeFileSync(path.join(assetsDir, 'pic.png'), Buffer.from('old-article-image'))
+    vi.mocked(httpFetch).mockResolvedValue({
+      ok: true,
+      url,
+      arrayBuffer: async () => new TextEncoder().encode('new-article-image').buffer,
+    } as unknown as Response)
+    const map = await downloadImages([{ url, alt: '' }], assetsDir)
+    expect(map.get(url)).toBe('./.assets/pic-2.png')
+    expect(fs.readFileSync(path.join(assetsDir, 'pic.png'))).toEqual(Buffer.from('old-article-image'))
+    expect(fs.readFileSync(path.join(assetsDir, 'pic-2.png'))).toEqual(Buffer.from('new-article-image'))
+  })
+
+  it('dest 已存在且内容相同：复用同名，不新增后缀文件', async () => {
+    const assetsDir = path.join(tmp, '.assets')
+    fs.mkdirSync(assetsDir, { recursive: true })
+    const url = 'https://cdn.example.com/pic.png'
+    fs.writeFileSync(path.join(assetsDir, 'pic.png'), Buffer.from('same-bytes'))
+    vi.mocked(httpFetch).mockResolvedValue({
+      ok: true,
+      url,
+      arrayBuffer: async () => new TextEncoder().encode('same-bytes').buffer,
+    } as unknown as Response)
+    const map = await downloadImages([{ url, alt: '' }], assetsDir)
+    expect(map.get(url)).toBe('./.assets/pic.png')
+    expect(fs.readdirSync(assetsDir)).toEqual(['pic.png'])
   })
 })
 

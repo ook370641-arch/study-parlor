@@ -16,11 +16,13 @@ import type {
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   GuideProgress,
   BlogCollectionFile, RecommendStage, ScrollMemorySlot,
+  NotepadCategory, NotepadFontSize, NotepadItem, NotepadLogEntry,
   NoteEntry, NoteMeta, NoteSource,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
+import { deriveTitle, migrateCoverNotepad, newNotepadId } from '@/lib/notepad'
 
 export type AssistantSession = {
   contextId: string
@@ -187,8 +189,15 @@ type AppStore = {
   paintingDeleteEnabled: boolean
   /** dev 模式下允许在封面拖拽调整画作焦点（打包版/e2e 隐藏入口，启动时经 IPC 拉取） */
   paintingsEditable: boolean
-  /** 封面记事板内容（随手记录迭代想法，持久化到 state.json） */
+  /** 封面记事板内容（旧纯文本字段，仅作 notepadItems 一次性迁移源） */
   coverNotepad: string
+  /** 迭代记事板待办条目 */
+  notepadItems: NotepadItem[]
+  /** 迭代档案：已解决条目（面板 ✓ 或 notepad-triage skill 写入） */
+  notepadLog: NotepadLogEntry[]
+  notepadFontSize: NotepadFontSize
+  /** 面板自定义尺寸，null=默认 */
+  notepadPanelSize: { w: number; h: number } | null
 
   // 外部资料摘要面板
   isExternalSummaryOpen: boolean
@@ -209,6 +218,12 @@ type AppStore = {
   setPaintingDeleteEnabled: (enabled: boolean) => Promise<void>
   setPaintingFocus: (surface: 'cover' | 'home' | 'study' | 'briefing', focus: string) => void
   setCoverNotepad: (text: string) => void
+  addNotepadItem: (text: string, category: NotepadCategory) => void
+  resolveNotepadItem: (id: string) => void
+  deleteNotepadItem: (id: string) => void
+  moveNotepadItem: (id: string, toIndex: number) => void
+  setNotepadFontSize: (size: NotepadFontSize) => void
+  setNotepadPanelSize: (size: { w: number; h: number }) => void
   goto: (p: Page) => Promise<void>
   settingsReturnTo: Page | null
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
@@ -523,6 +538,10 @@ export const useStore = create<AppStore>((set, get) => ({
   paintingDeleteEnabled: true,
   paintingsEditable: false,
   coverNotepad: '',
+  notepadItems: [],
+  notepadLog: [],
+  notepadFontSize: 'base',
+  notepadPanelSize: null,
   briefingTheme: 'academic',
   briefingFontSize: 'base',
   studyFontSize: 'lg',
@@ -638,11 +657,21 @@ export const useStore = create<AppStore>((set, get) => ({
       hiddenPaintings: Array.isArray(state.hiddenPaintings) ? state.hiddenPaintings : [],
       paintingDeleteEnabled: state.paintingDeleteEnabled ?? true,
       coverNotepad: state.coverNotepad ?? '',
+      notepadItems: migrateCoverNotepad(state.coverNotepad ?? '', state.notepadItems),
+      notepadLog: Array.isArray(state.notepadLog) ? state.notepadLog : [],
+      notepadFontSize: state.notepadFontSize ?? 'base',
+      notepadPanelSize: state.notepadPanelSize ?? null,
       library: library.filter(t => !(state.archivedTopics ?? []).includes(t.dirName)),
       unsavedSessions: unsaved,
       groups: groupsData.groups,
       groupMapping: groupsData.mapping
     })
+    // 旧 coverNotepad 纯文本已迁移为结构化条目：清空旧字段，迁移结果落盘（一次性）
+    if ((state.coverNotepad ?? '').trim() && (state.notepadItems ?? []).length === 0) {
+      const migrated = get().notepadItems
+      set({ coverNotepad: '' })
+      ipc.patchState({ coverNotepad: '', notepadItems: migrated } as Partial<StateJson>)
+    }
     get().initPaintings()
 
     // dev-only 裁剪入口开关；失败静默（默认 false 即隐藏入口）
@@ -713,6 +742,50 @@ export const useStore = create<AppStore>((set, get) => ({
   setCoverNotepad: (text) => {
     set({ coverNotepad: text })
     debounceSaveNotepad({ coverNotepad: text } as Partial<StateJson>)
+  },
+
+  addNotepadItem: (text, category) => {
+    const t = text.trim()
+    if (!t) return
+    const items = [...get().notepadItems, { id: newNotepadId(), title: deriveTitle(t), text: t, category, createdAt: new Date().toISOString() }]
+    set({ notepadItems: items })
+    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+  },
+
+  resolveNotepadItem: (id) => {
+    const { notepadItems, notepadLog } = get()
+    const item = notepadItems.find(i => i.id === id)
+    if (!item) return
+    const items = notepadItems.filter(i => i.id !== id)
+    const log = [...notepadLog, { ...item, resolvedAt: new Date().toISOString(), source: 'user' as const }]
+    set({ notepadItems: items, notepadLog: log })
+    ipc.patchState({ notepadItems: items, notepadLog: log } as Partial<StateJson>)
+  },
+
+  deleteNotepadItem: (id) => {
+    const items = get().notepadItems.filter(i => i.id !== id)
+    set({ notepadItems: items })
+    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+  },
+
+  moveNotepadItem: (id, toIndex) => {
+    const items = [...get().notepadItems]
+    const from = items.findIndex(i => i.id === id)
+    if (from < 0) return
+    const [item] = items.splice(from, 1)
+    items.splice(Math.max(0, Math.min(items.length, toIndex)), 0, item)
+    set({ notepadItems: items })
+    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+  },
+
+  setNotepadFontSize: (size) => {
+    set({ notepadFontSize: size })
+    ipc.patchState({ notepadFontSize: size } as Partial<StateJson>)
+  },
+
+  setNotepadPanelSize: (size) => {
+    set({ notepadPanelSize: size })
+    ipc.patchState({ notepadPanelSize: size } as Partial<StateJson>)
   },
 
   // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。
@@ -1009,7 +1082,7 @@ export const useStore = create<AppStore>((set, get) => ({
               a.url === url ? { ...a, isSaved: true, filePath: result.filePath } : a
             ),
           },
-          ...(openReader ? { anthropicReaderFilePath: result.filePath, lastAnthropicReaderFile: result.filePath } : {}),
+          ...(openReader ? { anthropicReaderFilePath: result.filePath, anthropicReaderBody: null, anthropicReaderTitle: null, lastAnthropicReaderFile: result.filePath } : {}),
         }))
         // 导入后自动打开也要持久化「最后阅读」(此路径绕过 openAnthropicReader)
         if (openReader) void ipc.patchState({ lastAnthropicReaderFile: result.filePath } as Partial<StateJson>)
@@ -1029,7 +1102,7 @@ export const useStore = create<AppStore>((set, get) => ({
 
   openAnthropicReader: async (filePath) => {
     const now = new Date().toISOString()
-    set({ anthropicReaderFilePath: filePath, anthropicBlogLastSeenAt: now, constitutionReportOpen: false, recommendViewBatch: null, lastAnthropicReaderFile: filePath })
+    set({ anthropicReaderFilePath: filePath, anthropicReaderBody: null, anthropicReaderTitle: null, anthropicBlogLastSeenAt: now, constitutionReportOpen: false, recommendViewBatch: null, lastAnthropicReaderFile: filePath })
     await ipc.patchState({ anthropicBlogLastSeenAt: now, lastAnthropicReaderFile: filePath } as Partial<StateJson>)
   },
   flushWritingScrollPosition: (filePath, blockIndex) => {

@@ -113,11 +113,20 @@ npm run test:e2e                               # 全量（合并前）
 
 ### 迭代记事板
 
-封面右上角铅笔按钮打开的文本框，用户随手记录对应用的迭代想法。内容持久化在 `~/.studyparlor/state.json` 的 `coverNotepad` 字段（纯字符串，防抖 300ms 写入）。
+封面右上角铅笔按钮打开的记事板面板，用户随手记录对应用的迭代需求。**2026-10-19 起条目化**：每条需求三分类（bug / 新功能 / 功能优化），面板 ✓ 完成后自动归档到档案页。
 
-**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `coverNotepad` 字段并回应。该文件在工作区外，沙箱读取可能需要提权。
+**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `notepadItems` 字段并回应。该文件在工作区外，沙箱读取可能需要提权。
 
-相关代码：`src/pages/Cover.tsx`（按钮 + 面板）、`src/store/index.ts`（`coverNotepad` / `setCoverNotepad`）、`electron/ipc/state.ts`（DEFAULT 字段）。
+**关键字段（state.json）**：
+
+- `notepadItems: [{ id, title?, text, category, createdAt }]` — 待办条目；`category` 为 `'bug' | 'feature' | 'improvement'`；`title` 短标题创建时自动生成兜底
+- `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent' }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结
+- `notepadFontSize: 'sm' | 'base' | 'lg'`、`notepadPanelSize: { w, h } | null` — 面板字号与自定义尺寸
+- `coverNotepad`（纯字符串）已废弃，仅作一次性迁移源（非空且 notepadItems 为空时按行迁入后清空）
+
+**归档约定**：agent 完成某条需求后，须把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`）。**app 运行中不要直接改 state.json**（内存旧值会覆盖），应让用户在面板点 ✓ 或先关闭 app。详见 `.agents/skills/notepad-triage/SKILL.md`。
+
+相关代码：`src/components/NotepadPanel.tsx`（双 tab 面板：待完成 / 已完成时间线）、`src/lib/notepad.ts`（分类猜测/迁移/统计/短标题纯逻辑）、`src/store/index.ts`（`notepadItems` / `notepadLog` / `addNotepadItem` / `resolveNotepadItem`）、`electron/ipc/state.ts`（DEFAULT 字段）。
 
 ### 文件系统 (`electron/ipc/files.ts`)
 

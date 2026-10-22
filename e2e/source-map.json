@@ -130,6 +130,9 @@
     "cover-home": {
       "sources": [
         "src/pages/Cover.tsx",
+        "src/components/NotepadPanel.tsx",
+        "src/components/NotepadFab.tsx",
+        "src/lib/notepad.ts",
         "src/pages/Home.tsx",
         "src/pages/Profile.tsx",
         "electron/lib/library-data.ts",
@@ -195,6 +198,8 @@
         "electron/ipc/notes.ts",
         "src/pages/Briefing.tsx",
         "src/store/index.ts",
+        "src/lib/note-cover.ts",
+        "src/lib/notes-list.ts",
         "src/components/notes/**",
         "src/components/writing/WritingListColumn.tsx"
       ],

@@ -110,8 +110,8 @@ export type BlogReadEntry = {
   filePath: string
   readAt: string      // ISO，首次标记时间
 }
-/** 笔记来源 */
-export type NoteSource = 'anthropic' | 'hermes' | 'manual'
+/** 笔记来源（文章来源类型四类） */
+export type NoteSource = 'anthropic' | 'web' | 'book' | 'unknown'
 
 /** 笔记元数据（notes/*.md 的 frontmatter） */
 export type NoteMeta = {
@@ -474,6 +474,22 @@ export interface ScrollMemorySlot {
   blockIndex: number
 }
 
+/** 迭代记事板分类：bug / 新功能 / 功能优化 */
+export type NotepadCategory = 'bug' | 'feature' | 'improvement'
+export type NotepadFontSize = 'sm' | 'base' | 'lg'
+export interface NotepadItem {
+  id: string
+  /** 短标题（≤15字）：创建时由首句兜底生成，agent 归档时可改写为准确标题 */
+  title?: string
+  text: string
+  category: NotepadCategory
+  createdAt: string
+}
+export interface NotepadLogEntry extends NotepadItem {
+  resolvedAt: string
+  source: 'user' | 'agent'
+}
+
 export type StateJson = {
   version: 1
   profile: Profile
@@ -501,6 +517,7 @@ export type StateJson = {
   writingTone?: WritingTone
   writingListTab?: 'articles' | 'repository' | 'notes'
   notesSortBy?: 'time' | 'rating'
+  notesCategory?: 'all' | NoteSource
   writingAssistantWidth?: number
   writingAssistantOpen?: boolean
   lastWritingFile?: string | null
@@ -526,6 +543,14 @@ export type StateJson = {
   paintingDeleteEnabled?: boolean
   /** 封面记事板内容（随手记录迭代想法） */
   coverNotepad?: string
+  /** 迭代记事板待办条目（2026-10-19 起取代 coverNotepad 纯文本） */
+  notepadItems?: NotepadItem[]
+  /** 迭代档案：已解决的需求/bug，由记事板 ✓ 或 notepad-triage skill 归档 */
+  notepadLog?: NotepadLogEntry[]
+  /** 记事板面板字号档位 */
+  notepadFontSize?: NotepadFontSize
+  /** 记事板面板自定义尺寸（左下角拖拽手柄写入，null=默认） */
+  notepadPanelSize?: { w: number; h: number } | null
   /** LLM 多配置：首条由 .env 迁移播种；切换免重启 */
   llmConfigs?: LlmConfig[]
   activeLlmConfigId?: string | null
