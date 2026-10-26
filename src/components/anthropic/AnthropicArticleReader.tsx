@@ -73,15 +73,15 @@ function resolveSection(fm: Frontmatter) {
 
 export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMemoryKey }: Props) {
   const isAcademic = theme !== 'newspaper'
-  const fontSizeBtnCls = isAcademic
-    ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40'
-    : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a] hover:border-[#2a1f1a]/40'
+  // 与换画按钮同款（.swap-btn 实底 + backdrop blur），避免背景透出
+  const fontSizeBtnCls = `pointer-events-auto ${isAcademic ? 'swap-btn' : 'swap-btn-newspaper w-9 h-9 flex items-center justify-center'}`
   const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? EMPTY_GUIDE_CHUNKS)
   const terms = useMemo(() => guideChunks.flatMap((c) => c.terms), [guideChunks])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
   const [body, setBody] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<{ code: string; message: string } | null>(null)
+  const [creatingNote, setCreatingNote] = useState(false)
   const articleBodyRef = useRef<HTMLElement | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const activeChunkIndex = useStore((s) => s.assistantSession?.activeChunkIndex ?? null)
@@ -93,6 +93,13 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
   const blogCollection = useStore((s) => s.blogCollection)
   const toggleBlogCollection = useStore((s) => s.toggleBlogCollection)
   const toggleBlogRead = useStore((s) => s.toggleBlogRead)
+  const closeAnthropicReader = useStore((s) => s.closeAnthropicReader)
+  const closeArticleCompanion = useStore((s) => s.closeArticleCompanion)
+  const findOrCreateArticleNote = useStore((s) => s.findOrCreateArticleNote)
+  const setBriefingSource = useStore((s) => s.setBriefingSource)
+  const setWritingListTab = useStore((s) => s.setWritingListTab)
+  const selectWritingFile = useStore((s) => s.selectWritingFile)
+  const showToast = useStore((s) => s.showToast)
 
   useEffect(() => {
     let cancelled = false
@@ -209,6 +216,21 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
   const articleSourceUrl = frontmatter?.type === 'anthropic-article' ? frontmatter.source_url : undefined
   const inCollection = articleSourceUrl != null && blogCollection.entries.some(e => e.sourceUrl === articleSourceUrl)
   const isRead = articleSourceUrl != null && blogCollection.read.some(r => r.sourceUrl === articleSourceUrl)
+  const createArticleNote = async () => {
+    if (!articleSourceUrl || !frontmatter?.title || creatingNote) return
+    setCreatingNote(true)
+    try {
+      const result = await findOrCreateArticleNote({ title: frontmatter.title, url: articleSourceUrl })
+      await setBriefingSource('writing')
+      setWritingListTab('notes')
+      await selectWritingFile(result.path)
+      showToast(result.created ? '已创建对应笔记' : '已打开对应笔记')
+    } catch {
+      showToast('笔记创建失败')
+    } finally {
+      setCreatingNote(false)
+    }
+  }
 
   return (
     <div
@@ -216,18 +238,16 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
       className={`relative flex h-full ${themeClasses.bg} ${themeClasses.text}`}
     >
       <div className="relative flex-1 min-w-0 flex flex-col">
+        <button
+          type="button"
+          data-testid="blog-back-to-wall"
+          onClick={() => { closeAnthropicReader(); void closeArticleCompanion() }}
+          className={`absolute left-4 top-4 z-20 text-[11px] ${isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'}`}
+        >
+          ← 博客墙
+        </button>
         {/* 固定控件 — 位于文章区右上角、不随文章滚动。报纸版式只显示字号按钮。 */}
-        <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
-          <button type="button" data-testid="briefing-font-size-decrease"
-            disabled={fontSize === 'sm'}
-            onClick={() => void decreaseFontSize()}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-            title="减小字号">−</button>
-          <button type="button" data-testid="briefing-font-size-increase"
-            disabled={fontSize === '7xl'}
-            onClick={() => void increaseFontSize()}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-            title="增大字号">+</button>
+        <div className="pointer-events-none absolute top-4 right-4 z-20 flex items-start gap-1">
           {isAcademic && (
             <SwapPaintingButton
               surface="briefing"
@@ -235,6 +255,16 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
               className="text-parchment/70 hover:text-parchment"
             />
           )}
+          <button type="button" data-testid="briefing-font-size-decrease"
+            disabled={fontSize === 'sm'}
+            onClick={() => void decreaseFontSize()}
+            className={`text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+            title="减小字号">−</button>
+          <button type="button" data-testid="briefing-font-size-increase"
+            disabled={fontSize === '7xl'}
+            onClick={() => void increaseFontSize()}
+            className={`text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+            title="增大字号">+</button>
         </div>
         <div className="flex-1 flex flex-col overflow-y-auto min-w-0" ref={scrollContainerRef} onScroll={onReaderScroll} data-testid="anthropic-reader-scroll">
           <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
@@ -296,6 +326,17 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
                       theme={theme}
                     />
                     <AnnotationListButton articlePath={filePath} theme={theme} briefingFontSize={fontSize} />
+                    {articleSourceUrl && (
+                      <button
+                        type="button"
+                        data-testid="article-note-create"
+                        disabled={creatingNote}
+                        onClick={() => { void createArticleNote() }}
+                        className={`rounded border px-2.5 py-1 text-xs disabled:opacity-40 ${isAcademic ? 'border-parchment/20 text-parchment/70 hover:text-parchment' : 'border-[#c9c3b8] text-[#6b5d52] hover:text-[#1a1a1a]'}`}
+                      >
+                        {creatingNote ? '创建中…' : '生成对应笔记'}
+                      </button>
+                    )}
                     {articleSourceUrl && (
                       <>
                         <button

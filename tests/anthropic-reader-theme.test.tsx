@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({
   ipc: {
@@ -25,6 +25,7 @@ vi.mock('@/lib/ipc', () => ({
 }))
 
 import { AnthropicArticleReader } from '@/components/anthropic/AnthropicArticleReader'
+import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 
 function mockReadMd(frontmatter: Record<string, unknown>, body = 'Hello world.') {
@@ -47,6 +48,35 @@ describe('AnthropicArticleReader theme', () => {
     render(<AnthropicArticleReader filePath="/tmp/test.md" theme="academic" />)
     const reader = screen.getByTestId('anthropic-article-reader')
     expect(reader).toHaveClass('bg-transparent')
+  })
+
+  it('返回博客墙时关闭阅读器和文章对照', () => {
+    const closeAnthropicReader = vi.fn()
+    const closeArticleCompanion = vi.fn()
+    useStore.setState({ closeAnthropicReader, closeArticleCompanion })
+    render(<AnthropicArticleReader filePath="/tmp/test.md" theme="academic" />)
+    fireEvent.click(screen.getByTestId('blog-back-to-wall'))
+    expect(closeAnthropicReader).toHaveBeenCalled()
+    expect(closeArticleCompanion).toHaveBeenCalled()
+    const fontButton = screen.getByTestId('briefing-font-size-decrease')
+    expect(fontButton.parentElement).toHaveClass('pointer-events-none')
+    expect(fontButton).toHaveClass('pointer-events-auto')
+  })
+
+  it('从当前博客生成对应笔记并切换到笔记页打开', async () => {
+    const findOrCreateArticleNote = vi.fn().mockResolvedValue({ path: 'notes/test.md', created: true })
+    const setBriefingSource = vi.fn().mockResolvedValue(undefined)
+    const setWritingListTab = vi.fn()
+    const selectWritingFile = vi.fn().mockResolvedValue(undefined)
+    useStore.setState({ findOrCreateArticleNote, setBriefingSource, setWritingListTab, selectWritingFile })
+    render(<AnthropicArticleReader filePath="/tmp/test.md" theme="academic" />)
+    fireEvent.click(await screen.findByTestId('article-note-create'))
+    await waitFor(() => {
+      expect(findOrCreateArticleNote).toHaveBeenCalledWith({ title: 'Test Article', url: 'https://www.anthropic.com/engineering/test' })
+      expect(setBriefingSource).toHaveBeenCalledWith('writing')
+      expect(setWritingListTab).toHaveBeenCalledWith('notes')
+      expect(selectWritingFile).toHaveBeenCalledWith('notes/test.md')
+    })
   })
 
   it('uses opaque white background in newspaper theme', () => {

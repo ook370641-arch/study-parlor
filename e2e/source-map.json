@@ -123,6 +123,7 @@
       ],
       "specs": [
         "anthropic-blog*.spec.ts",
+        "blog-album-wall.spec.ts",
         "blog-guide-terminal.spec.ts",
         "blog-collection.spec.ts"
       ]

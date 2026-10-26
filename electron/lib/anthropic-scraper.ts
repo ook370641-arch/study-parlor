@@ -128,9 +128,9 @@ export function findSavedArticles(libraryRoot: string): Map<string, string> {
 }
 
 export function buildListingScript(section: AnthropicSource): string {
+  const listingSelector = listingSelectorFor(section)
   return `(() => {
-  const seen = new Set()
-  const results = []
+  const results = new Map()
   const EXCLUDE_PREFIXES = ${JSON.stringify(section.excludePrefixes ?? [])}
   const datePattern = /\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2},?\\s+\\d{4}\\b/
 
@@ -151,7 +151,7 @@ export function buildListingScript(section: AnthropicSource): string {
     const summaryEl = container?.querySelector('[class*="__summary"]')
     const summary = summaryEl?.textContent?.trim() || null
 
-    const dateEl = container?.querySelector('[class*="__date"]')
+    const dateEl = container?.querySelector('time, [class*="__date"]')
     const dateText = dateEl?.textContent?.trim()
       || container?.textContent?.match(datePattern)?.[0]
       || null
@@ -162,18 +162,29 @@ export function buildListingScript(section: AnthropicSource): string {
     return { url, title, summary, dateText, imageUrl }
   }
 
-  document.querySelectorAll('a[href^="${section.linkPrefix}"]').forEach((a) => {
+  document.querySelectorAll('${listingSelector}').forEach((a) => {
     const href = a.getAttribute('href')
     if (!href) return
     if (EXCLUDE_PREFIXES.some((p) => href.startsWith(p))) return
     const url = new URL(href, window.location.href).toString()
-    if (seen.has(url)) return
-    seen.add(url)
-    results.push(extractCard(a))
+    const card = extractCard(a)
+    const previous = results.get(url)
+    results.set(url, previous ? {
+      url,
+      title: previous.title || card.title,
+      summary: previous.summary || card.summary,
+      dateText: previous.dateText || card.dateText,
+      imageUrl: previous.imageUrl || card.imageUrl,
+    } : card)
   })
 
-  return results
+  return [...results.values()]
 })()`
+}
+
+function listingSelectorFor(section: AnthropicSource): string {
+  const prefixes = section.listingLinkPrefixes ?? (section.linkPrefix ? [section.linkPrefix] : [])
+  return prefixes.map(prefix => `a[href^="${prefix}"]`).join(',')
 }
 
 type BackfillMiss = { source: AnthropicSource; url: string; lastmod: string | null }
@@ -198,7 +209,7 @@ async function discoverSitemapSource(
   const all = parseSitemapUrls(xml, section)
   const cards = await runScriptInScraperWindow<ListingCard[]>(
     buildListingScript(section),
-    { url: section.indexUrl, waitForSelector: `a[href^="${section.linkPrefix}"]` }
+    { url: section.indexUrl, waitForSelector: listingSelectorFor(section) }
   ).catch(() => [] as ListingCard[])
   const byUrl = new Map(cards.map((c) => [c.url, c]))
 
@@ -215,6 +226,12 @@ async function discoverSitemapSource(
       continue
     }
     backfillMisses.push({ source: section, url, lastmod })
+  }
+  if (section.key === 'engineering') {
+    const sitemapUrls = new Set(all.map(entry => entry.url))
+    for (const card of cards) {
+      if (card.title && !sitemapUrls.has(card.url)) out.push(card)
+    }
   }
   return out
 }
@@ -337,8 +354,12 @@ export async function discoverArticles(
   })
   // 防御：static-list/rss 真实脏数据缺 h3/title 时会产出 title:null 裸行，过滤掉（无裸行契约）
   const articles: AnthropicArticleMeta[] = []
+  const seenUrls = new Set<string>()
   for (const a of mapped) {
-    if (a.title && a.url) articles.push(a as AnthropicArticleMeta)
+    if (a.title && a.url && !seenUrls.has(a.url)) {
+      seenUrls.add(a.url)
+      articles.push(a as AnthropicArticleMeta)
+    }
   }
 
   // 全部失败才整体报错（走 IPC classifyError → parse-error/network-error 路径）；

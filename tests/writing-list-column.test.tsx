@@ -43,7 +43,7 @@ describe('WritingListColumn', () => {
     expect(screen.getByTestId('writing-new-file').className).not.toContain('text-parchment')
   })
 
-  it('collapsed shows vertical labels with file counts instead of the tree', () => {
+  it('collapsed renders empty content (收起即空)', () => {
     useStore.setState({
       writingListTab: 'articles',
       writingTree: {
@@ -55,11 +55,9 @@ describe('WritingListColumn', () => {
       },
     } as any)
     render(<WritingListColumn theme="academic" collapsed />)
-    expect(screen.getByTestId('writing-collapsed-articles-count')).toHaveTextContent('2')
-    expect(screen.getByTestId('writing-collapsed-repository-count')).toHaveTextContent('1')
+    expect(screen.getByTestId('writing-list-collapsed-empty')).toBeInTheDocument()
     expect(screen.queryByTestId('writing-tree-node')).not.toBeInTheDocument()
-    expect(screen.getByTestId('writing-collapsed-recent-0')).toHaveTextContent('a')
-    expect(screen.getByTestId('writing-collapsed-recent-1')).toHaveTextContent('b')
+    expect(screen.queryByTestId('writing-list-tab-articles')).not.toBeInTheDocument()
   })
 
   it('repo tab refresh button renders and triggers a rescan', async () => {

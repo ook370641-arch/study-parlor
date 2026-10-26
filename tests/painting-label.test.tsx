@@ -27,6 +27,7 @@ describe('PaintingLabel', () => {
     expect(label.textContent).toBe('Mark Rothko · Composition I · 1931')
     expect(label.className).toContain('italic')
     expect(label.className).toContain('opacity-0')
+    expect(label.className).toContain('pointer-events-none')
     expect(label.className).toContain('group-hover:opacity-70')
   })
 

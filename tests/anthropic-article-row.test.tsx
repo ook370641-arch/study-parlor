@@ -38,6 +38,11 @@ describe('AnthropicArticleRow', () => {
     expect(screen.queryByText('阅读')).not.toBeInTheDocument()
   })
 
+  it('uses the same 512px CDN cover as the album wall', () => {
+    const { container } = render(<AnthropicArticleRow article={article({ imageUrl: 'https://www-cdn.anthropic.com/images/a.jpg' })} theme="academic" />)
+    expect(container.querySelector('img')).toHaveAttribute('src', 'https://www-cdn.anthropic.com/images/a.jpg?w=512&q=75&auto=format')
+  })
+
   it('does not render saved/unsaved text badges', () => {
     render(<AnthropicArticleRow article={article({ isSaved: true, filePath: '/tmp/x.md' })} theme="academic" />)
     expect(screen.queryByText('已保存')).not.toBeInTheDocument()

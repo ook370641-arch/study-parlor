@@ -285,6 +285,7 @@ describe('discoverArticles multi-source', () => {
   it('buildListingScript 参数化前缀与排除规则', async () => {
     const { buildListingScript } = await import('../electron/lib/anthropic-scraper')
     expect(buildListingScript(src('engineering'))).toContain('a[href^="/engineering/"]')
+    expect(buildListingScript(src('engineering'))).toContain('a[href^="/research/"]')
     expect(buildListingScript(src('research'))).toContain('a[href^="/research/"]')
     expect(buildListingScript(src('research'))).toContain('/research/team/')
     expect(buildListingScript(src('engineering'))).toContain('EXCLUDE_PREFIXES')
@@ -294,6 +295,41 @@ describe('discoverArticles multi-source', () => {
     // M1：相对 href 用页面上下文解析（window.location.href），不硬编码 www.anthropic.com 拼接
     expect(buildListingScript(src('engineering'))).toContain('new URL(href, window.location.href).toString()')
     expect(buildListingScript(src('engineering'))).not.toContain("'https://www.anthropic.com' +")
+  })
+
+  it('Engineering 文章迁到 /research 后仍归 Engineering，且不与 Research 重复', async () => {
+    const shared = 'https://www.anthropic.com/research/shared-engineering'
+    const pureResearch = 'https://www.anthropic.com/research/pure-research'
+    const sitemap = `<urlset>
+      <url><loc>${shared}</loc></url>
+      <url><loc>${pureResearch}</loc></url>
+    </urlset>`
+    vi.mocked(httpFetch).mockImplementation(async (url: string) => {
+      if (url === 'https://www.anthropic.com/sitemap.xml') return textResponse(sitemap)
+      if (url === 'https://claude.com/sitemap.xml') return textResponse('<urlset></urlset>')
+      if (url === 'https://alignment.anthropic.com/') return textResponse('<html></html>')
+      if (url === 'https://transformer-circuits.pub/feed.xml') return textResponse('<feed></feed>')
+      throw new Error(`Unexpected httpFetch url: ${url}`)
+    })
+    vi.mocked(runScriptInScraperWindow).mockImplementation(async (_script, opts) => {
+      const url = (opts as { url: string }).url
+      if (url.endsWith('/engineering')) {
+        return [{ url: shared, title: 'Shared Engineering', summary: null, dateText: 'Oct 1, 2026', imageUrl: null }]
+      }
+      if (url.endsWith('/research')) {
+        return [
+          { url: shared, title: 'Shared Engineering', summary: null, dateText: 'Oct 1, 2026', imageUrl: null },
+          { url: pureResearch, title: 'Pure Research', summary: null, dateText: 'Oct 2, 2026', imageUrl: null },
+        ]
+      }
+      return []
+    })
+
+    const { discoverArticles } = await import('../electron/lib/anthropic-scraper')
+    const result = await discoverArticles(tmp)
+    expect(result.articles).toHaveLength(2)
+    expect(result.articles.find(article => article.url === shared)?.section).toBe('engineering')
+    expect(result.articles.find(article => article.url === pureResearch)?.section).toBe('research')
   })
 
   it('五源合并返回：每源文章数 = fixture 数（25/144/54/51/204），research 无 team 页，每篇有标题', async () => {

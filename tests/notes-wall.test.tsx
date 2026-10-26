@@ -15,6 +15,16 @@ beforeEach(() => {
 })
 
 describe('NotesWall', () => {
+  it('第一行提供来源筛选和排序，并更新共享状态', () => {
+    const setNotesCategory = vi.fn()
+    const setNotesSortBy = vi.fn()
+    useStore.setState({ setNotesCategory, setNotesSortBy })
+    const { getByTestId } = render(<NotesWall />)
+    fireEvent.change(getByTestId('notes-wall-category-select'), { target: { value: 'web' } })
+    fireEvent.change(getByTestId('notes-wall-sort-select'), { target: { value: 'source' } })
+    expect(setNotesCategory).toHaveBeenCalledWith('web')
+    expect(setNotesSortBy).toHaveBeenCalledWith('source')
+  })
   it('渲染全部专辑卡', () => {
     const { getByTestId } = render(<NotesWall />)
     expect(getByTestId('wall-album-a')).toBeTruthy()
@@ -30,6 +40,8 @@ describe('NotesWall', () => {
   it('空列表显示空态', () => {
     useStore.setState({ notesList: [] })
     const { getByTestId } = render(<NotesWall />)
-    expect(getByTestId('notes-empty')).toBeTruthy()
+    expect(getByTestId('notes-wall-empty')).toBeTruthy()
+    expect(getByTestId('notes-wall-category-select')).toBeTruthy()
+    expect(getByTestId('notes-wall-sort-select')).toBeTruthy()
   })
 })

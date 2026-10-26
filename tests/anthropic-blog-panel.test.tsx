@@ -94,7 +94,7 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getAllByTestId('anthropic-list-rail-thumb').length).toBeGreaterThan(0)
   })
 
-  it('文章列表容器限高自滚动（max-h + overflow），列内容不再锁 h-full', () => {
+  it('文章列表容器 flex-1 自适应填充（不写死 max-h，2026-10-22 截断修复）', () => {
     useStore.setState({
       anthropicBlogCache: {
         lastFetchedAt: null,
@@ -106,7 +106,8 @@ describe('AnthropicBlogPanel', () => {
     const { container } = render(<AnthropicBlogPanel theme="academic" />)
     const list = container.querySelector('[data-testid="anthropic-article-list"]')
     expect(list).not.toBeNull()
-    expect(list!.className).toContain('max-h-')
+    expect(list!.className).toContain('flex-1')
+    expect(list!.className).not.toContain('max-h-')
     expect(list!.className).toContain('overflow-y-auto')
   })
 
@@ -277,7 +278,7 @@ describe('AnthropicBlogPanel', () => {
     render(<AnthropicBlogPanel theme="academic" />)
 
     // 初始 All：宪法条目显示
-    expect(screen.getByText("Claude's Constitution · 可视化双语读本")).toBeInTheDocument()
+    expect(screen.getAllByText("Claude's Constitution · 可视化双语读本")).not.toHaveLength(0)
 
     // 只选 research → 宪法（engineering）隐藏
     fireEvent.click(chip('research'))
@@ -285,7 +286,7 @@ describe('AnthropicBlogPanel', () => {
 
     // 加选 engineering → 宪法显示
     fireEvent.click(chip('engineering'))
-    expect(screen.getByText("Claude's Constitution · 可视化双语读本")).toBeInTheDocument()
+    expect(screen.getAllByText("Claude's Constitution · 可视化双语读本")).not.toHaveLength(0)
   })
 
   it('Mine chip：仅显示已导入文章，与源 chip 互斥', () => {
@@ -350,9 +351,9 @@ describe('AnthropicBlogPanel', () => {
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
 
-    expect(screen.getByText('Inst')).toBeInTheDocument()
+    expect(screen.getAllByText('Inst')).not.toHaveLength(0)
     fireEvent.click(chip('research'))
-    expect(screen.getByText('Inst')).toBeInTheDocument()
+    expect(screen.getAllByText('Inst')).not.toHaveLength(0)
     expect(screen.queryByText('Eng')).not.toBeInTheDocument()
   })
 

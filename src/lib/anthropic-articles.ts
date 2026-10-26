@@ -1,5 +1,25 @@
 import type { AnthropicArticleMeta } from '@shared/index'
 
+export type BlogWallSort = 'newest' | 'oldest'
+
+export function coverImageUrl(sourceUrl: string): string {
+  try {
+    const url = new URL(sourceUrl)
+    if (url.hostname === 'www.anthropic.com' && url.pathname === '/_next/image') {
+      url.searchParams.set('w', '512')
+      url.searchParams.set('q', '75')
+      return url.toString()
+    }
+    if (url.hostname !== 'cdn.sanity.io' && url.hostname !== 'www-cdn.anthropic.com') return sourceUrl
+    url.searchParams.set('w', '512')
+    url.searchParams.set('q', '75')
+    url.searchParams.set('auto', 'format')
+    return url.toString()
+  } catch {
+    return sourceUrl
+  }
+}
+
 export function findNewArticleUrls(
   cached: AnthropicArticleMeta[],
   fetched: AnthropicArticleMeta[]
@@ -45,5 +65,19 @@ export function sortArticlesByDateDesc(articles: AnthropicArticleMeta[]): Anthro
   const local = articles.filter((a) => a.local)
   const rest = articles.filter((a) => !a.local)
   rest.sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
+  return [...local, ...rest]
+}
+
+export function sortBlogArticles(articles: AnthropicArticleMeta[], direction: BlogWallSort): AnthropicArticleMeta[] {
+  const local = articles.filter(a => a.local)
+  const rest = articles.filter(a => !a.local)
+  rest.sort((a, b) => {
+    if (!a.publishedAt && !b.publishedAt) return 0
+    if (!a.publishedAt) return 1
+    if (!b.publishedAt) return -1
+    return direction === 'newest'
+      ? b.publishedAt.localeCompare(a.publishedAt)
+      : a.publishedAt.localeCompare(b.publishedAt)
+  })
   return [...local, ...rest]
 }

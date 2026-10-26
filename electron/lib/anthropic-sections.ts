@@ -12,6 +12,8 @@ export interface AnthropicSource {
   sitemapUrl?: string
   /** sitemap URL 过滤：包含此前缀（主站用） */
   linkPrefix?: string
+  /** 索引页卡片链接前缀；官网主题迁移后可与 sitemap 前缀不同 */
+  listingLinkPrefixes?: string[]
   /** sitemap URL 过滤：整 URL 正则（product 排除本地化前缀用） */
   sitemapInclude?: RegExp
   excludePrefixes?: string[]
@@ -26,6 +28,7 @@ export const ANTHROPIC_SOURCES: AnthropicSource[] = [
     indexUrl: 'https://www.anthropic.com/engineering',
     sitemapUrl: 'https://www.anthropic.com/sitemap.xml',
     linkPrefix: '/engineering/',
+    listingLinkPrefixes: ['/engineering/', '/research/'],
   },
   {
     key: 'research', label: 'Research', color: '#6b8fa3',

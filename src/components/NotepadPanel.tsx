@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { NOTEPAD_CATEGORY_LABELS, computeNotepadStats, deriveTitle } from '@/lib/notepad'
-import type { NotepadCategory, NotepadFontSize } from '@shared/index'
+import type { NotepadCategory, NotepadFontSize, NotepadItem } from '@shared/index'
 
 const CATEGORIES: NotepadCategory[] = ['feature', 'improvement', 'bug']
 
@@ -42,6 +42,7 @@ export function NotepadPanel({ open, onClose }: { open: boolean; onClose: () => 
   const resolveNotepadItem = useStore(s => s.resolveNotepadItem)
   const deleteNotepadItem = useStore(s => s.deleteNotepadItem)
   const moveNotepadItem = useStore(s => s.moveNotepadItem)
+  const updateNotepadItem = useStore(s => s.updateNotepadItem)
   const setNotepadFontSize = useStore(s => s.setNotepadFontSize)
   const setNotepadPanelSize = useStore(s => s.setNotepadPanelSize)
 
@@ -55,6 +56,10 @@ export function NotepadPanel({ open, onClose }: { open: boolean; onClose: () => 
   // 待办手动排序：dragId=已按下拖动手柄的条目，dropIndex=相对原数组的插入位
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
+  // 行内编辑：就地改内容 + 分类（2026-10-22 需求，比"打回输入框"更直接）
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [editCategory, setEditCategory] = useState<NotepadCategory>('feature')
 
   const size = liveSize ?? panelSize ?? DEFAULT_SIZE
 
@@ -107,6 +112,18 @@ export function NotepadPanel({ open, onClose }: { open: boolean; onClose: () => 
       resolveNotepadItem(id)
       setCompletingId(null)
     }, 450)
+  }
+
+  const startEdit = (item: NotepadItem) => {
+    setEditingId(item.id)
+    setEditText(item.text)
+    setEditCategory(item.category)
+  }
+
+  const submitEdit = () => {
+    const t = editText.trim()
+    if (editingId && t) updateNotepadItem(editingId, { text: t, category: editCategory })
+    setEditingId(null)
   }
 
   // 拖放结束提交排序：dropIndex 是相对原数组的插入位，被拖项先移除后插入位需减 1 修正
@@ -218,14 +235,80 @@ export function NotepadPanel({ open, onClose }: { open: boolean; onClose: () => 
                               ${dragId === item.id ? 'opacity-40' : ''}`}
                 >
                   <span className="text-ember font-bold min-w-4 pt-px text-[0.85em]">{i + 1}</span>
-                  <span className={`shrink-0 text-[10px] font-bold rounded px-1.5 py-px border mt-[0.15em] ${CATEGORY_CHIP[item.category]}`}>
-                    {NOTEPAD_CATEGORY_LABELS[item.category]}
-                  </span>
-                  <span className={`flex-1 leading-relaxed text-parchment/90
-                                    ${completingId === item.id ? 'line-through' : ''}`}>
-                    {item.text}
-                  </span>
+                  {editingId === item.id ? (
+                    <span className="flex-1 min-w-0" data-testid="notepad-edit-row">
+                      <input
+                        data-testid="notepad-edit-input"
+                        autoFocus
+                        value={editText}
+                        onChange={e => setEditText(e.target.value)}
+                        onKeyDown={e => {
+                          e.stopPropagation()
+                          if (e.key === 'Enter') submitEdit()
+                          if (e.key === 'Escape') setEditingId(null)
+                        }}
+                        className="w-full bg-parchment/10 rounded px-2 py-1 outline-none text-parchment"
+                      />
+                      <span className="flex gap-1 mt-1" data-testid="notepad-edit-category-picker">
+                        {CATEGORIES.map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            data-testid={`notepad-edit-cat-${c}`}
+                            onClick={() => setEditCategory(c)}
+                            className={`px-1.5 py-px rounded-full text-[10px] border transition-colors
+                                        ${editCategory === c
+                                          ? 'border-ember text-ember bg-ember/10'
+                                          : 'border-parchment/20 text-parchment/45 hover:border-parchment/40'}`}
+                          >{NOTEPAD_CATEGORY_LABELS[c]}</button>
+                        ))}
+                      </span>
+                    </span>
+                  ) : (
+                    <>
+                      <span className={`shrink-0 text-[10px] font-bold rounded px-1.5 py-px border mt-[0.15em] ${CATEGORY_CHIP[item.category]}`}>
+                        {NOTEPAD_CATEGORY_LABELS[item.category]}
+                      </span>
+                      <span className={`flex-1 leading-relaxed text-parchment/90
+                                        ${completingId === item.id ? 'line-through' : ''}`}>
+                        {item.text}
+                      </span>
+                    </>
+                  )}
+                  {editingId === item.id ? (
+                    <span className="flex gap-1">
+                      <button
+                        type="button"
+                        data-testid="notepad-edit-save"
+                        title="保存"
+                        onClick={submitEdit}
+                        className="w-5 h-5 rounded border border-ember/60 text-ember text-xs
+                                   hover:bg-ember/15"
+                      >✓</button>
+                      <button
+                        type="button"
+                        data-testid="notepad-edit-cancel"
+                        title="取消"
+                        onClick={() => setEditingId(null)}
+                        className="w-5 h-5 rounded border border-parchment/30 text-parchment/60 text-xs
+                                   hover:bg-parchment/10"
+                      >✕</button>
+                    </span>
+                  ) : (
                   <span className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      data-testid="notepad-edit"
+                      title="编辑"
+                      onClick={() => startEdit(item)}
+                      className="w-5 h-5 rounded border border-parchment/30 text-parchment/60
+                                 hover:border-ember/60 hover:text-ember flex items-center justify-center"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                           strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                        <path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      </svg>
+                    </button>
                     <button
                       type="button"
                       data-testid="notepad-drag"
@@ -258,6 +341,7 @@ export function NotepadPanel({ open, onClose }: { open: boolean; onClose: () => 
                                  hover:bg-[#c0605e]/15"
                     >✕</button>
                   </span>
+                  )}
                 </div>
                 {dragId != null && dropIndex === items.length && i === items.length - 1 && (
                   <div data-testid="notepad-drop-marker" className="h-0.5 mx-2 rounded bg-ember/80" />

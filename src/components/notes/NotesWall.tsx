@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useStore } from '@/store'
 import { sortNotes } from '@/lib/notes-list'
+import type { NoteSortBy, NoteSource } from '@shared/index'
 import { NoteCover } from './NoteCover'
 
 function urlSlug(url: string): string {
@@ -11,25 +12,50 @@ function urlSlug(url: string): string {
 export function NotesWall() {
   const notesList = useStore(s => s.notesList)
   const notesCategory = useStore(s => s.notesCategory)
+  const setNotesCategory = useStore(s => s.setNotesCategory)
   const notesSortBy = useStore(s => s.notesSortBy)
+  const setNotesSortBy = useStore(s => s.setNotesSortBy)
   const selectWritingFile = useStore(s => s.selectWritingFile)
 
   const sorted = useMemo(() => sortNotes(notesList ?? [], notesSortBy, notesCategory), [notesList, notesSortBy, notesCategory])
 
-  if (sorted.length === 0 && notesList !== null) {
-    return (
-      <div data-testid="notes-empty" className="flex h-full items-center justify-center px-6">
-        <p className="text-center text-parchment/40 text-sm">
-          {notesCategory === 'all' ? '书架还空着——点左侧「导入已读」把读过的文章放上架' : '该分类下暂无笔记'}
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div data-testid="notes-wall" className="h-full overflow-y-auto px-8 py-6">
-      <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
-        {sorted.map(entry => (
+      <div className="flex items-center gap-2 pb-5">
+        <select
+          data-testid="notes-wall-category-select"
+          aria-label="筛选笔记来源"
+          value={notesCategory}
+          onChange={(e) => setNotesCategory(e.target.value as 'all' | NoteSource)}
+          className="bg-transparent text-[11px] text-parchment/80 border border-parchment/20 rounded px-1.5 py-1 outline-none"
+        >
+          <option value="all">全部来源</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="web">网页</option>
+          <option value="book">书籍</option>
+          <option value="unknown">未知</option>
+        </select>
+        <select
+          data-testid="notes-wall-sort-select"
+          aria-label="排序笔记"
+          value={notesSortBy}
+          onChange={(e) => setNotesSortBy(e.target.value as NoteSortBy)}
+          className="bg-transparent text-[11px] text-parchment/60 border border-parchment/20 rounded px-1.5 py-1 outline-none"
+        >
+          <option value="source">按类型</option>
+          <option value="time">最新收录</option>
+          <option value="rating">按评分</option>
+        </select>
+      </div>
+      {sorted.length === 0 && notesList !== null ? (
+        <div data-testid="notes-wall-empty" className="flex h-[calc(100%-3rem)] items-center justify-center px-6">
+          <p className="text-center text-parchment/40 text-sm">
+            {notesCategory === 'all' ? '书架还空着——点左侧「导入已读」把读过的文章放上架' : '该分类下暂无笔记'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+          {sorted.map(entry => (
           <button
             key={entry.path}
             data-testid={`wall-album-${urlSlug(entry.meta.url)}`}
@@ -46,8 +72,9 @@ export function NotesWall() {
               </div>
             </div>
           </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

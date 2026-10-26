@@ -30,7 +30,7 @@ export function CandlelightLayer() {
     const glow = glowRef.current
     if (!glow) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let raf = 0
+    let raf: number | null = null
     let seen = false
     let target = { x: window.innerWidth / 2, y: window.innerHeight * 0.4 }
     let pos = { ...target }
@@ -49,6 +49,7 @@ export function CandlelightLayer() {
       glow.style.opacity = '1'
       document.documentElement.classList.remove('cursor-hidden')
       armIdle()
+      start()
     }
     const onLeave = () => { glow.style.opacity = '0' }
     const onBlur = () => { glow.style.opacity = '0' }
@@ -56,15 +57,22 @@ export function CandlelightLayer() {
       const k = reduced ? 1 : LERP
       pos.x += (target.x - pos.x) * k
       pos.y += (target.y - pos.y) * k
+      if (Math.abs(target.x - pos.x) < 0.1 && Math.abs(target.y - pos.y) < 0.1) {
+        pos = { ...target }
+        raf = null
+      } else {
+        raf = requestAnimationFrame(frame)
+      }
       glow.style.transform = `translate(${pos.x}px, ${pos.y}px)`
-      raf = requestAnimationFrame(frame)
+    }
+    const start = () => {
+      if (raf === null) raf = requestAnimationFrame(frame)
     }
     window.addEventListener('mousemove', onMove)
     document.documentElement.addEventListener('mouseleave', onLeave)
     window.addEventListener('blur', onBlur)
-    raf = requestAnimationFrame(frame)
     return () => {
-      cancelAnimationFrame(raf)
+      if (raf !== null) cancelAnimationFrame(raf)
       if (idleTimer) clearTimeout(idleTimer)
       document.documentElement.classList.remove('cursor-hidden')
       window.removeEventListener('mousemove', onMove)

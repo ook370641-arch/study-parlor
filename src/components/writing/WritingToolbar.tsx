@@ -54,7 +54,8 @@ export function WritingToolbar() {
   }, [headingMenuOpen])
 
   return (
-    <div className="flex items-center gap-1 px-3 py-1 border-b border-parchment/10 shrink-0 select-none">
+    // 不带下边框：下方保存状态行原本也有一条，双横线会横向切断右上角浮动的 ±/换画圆钮（2026-10-22）
+    <div className="flex items-center gap-1 px-3 py-1 shrink-0 select-none">
       {/* Markdown formatting */}
       <button
         data-testid="writing-toolbar-blockquote"

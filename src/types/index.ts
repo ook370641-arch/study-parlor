@@ -112,6 +112,7 @@ export type BlogReadEntry = {
 }
 /** 笔记来源（文章来源类型四类） */
 export type NoteSource = 'anthropic' | 'web' | 'book' | 'unknown'
+export type NoteSortBy = 'source' | 'time' | 'rating'
 
 /** 笔记元数据（notes/*.md 的 frontmatter） */
 export type NoteMeta = {
@@ -516,7 +517,7 @@ export type StateJson = {
   writingFontSize?: BriefingFontSize
   writingTone?: WritingTone
   writingListTab?: 'articles' | 'repository' | 'notes'
-  notesSortBy?: 'time' | 'rating'
+  notesSortBy?: NoteSortBy
   notesCategory?: 'all' | NoteSource
   writingAssistantWidth?: number
   writingAssistantOpen?: boolean
@@ -717,7 +718,7 @@ export type IpcApi = {
 
   // Notes
   notesList: () => Promise<NoteEntry[]>
-  notesCreate: (a: { title: string; url: string }) => Promise<{ path: string }>
+  notesCreate: (a: { title: string; url: string; source?: NoteSource }) => Promise<{ path: string }>
   notesUpdateMeta: (a: { path: string; patch: Partial<NoteMeta> }) => Promise<void>
   notesDelete: (a: { path: string }) => Promise<void>
   notesImportRead: () => Promise<{ created: number; skipped: number }>

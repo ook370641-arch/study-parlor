@@ -1,5 +1,6 @@
 // src/components/anthropic/BlogCollectionSection.tsx
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { BRIEFING_LIST_STYLES } from '@/lib/briefing-font-size'
@@ -63,6 +64,26 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
   const [showRead, setShowRead] = useState(false)
   const [expandedReason, setExpandedReason] = useState<string | null>(null)
 
+  // 已读/收藏列表拖拽延长（2026-10-22 用户反馈：固定 max-h 太短）。
+  // null = 用默认 max-h 类；拖拽后改为显式 px 高度。
+  const [readHeight, setReadHeight] = useState<number | null>(null)
+  const [colHeight, setColHeight] = useState<number | null>(null)
+  const readListRef = useRef<HTMLDivElement | null>(null)
+  const colListRef = useRef<HTMLDivElement | null>(null)
+  const startResize = (ref: RefObject<HTMLDivElement | null>, set: (h: number) => void) =>
+    (e: ReactPointerEvent) => {
+      e.preventDefault()
+      const startY = e.clientY
+      const startH = ref.current?.offsetHeight ?? 0
+      const onMove = (ev: PointerEvent) => set(Math.min(560, Math.max(80, startH + ev.clientY - startY)))
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+      }
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+    }
+
   const entries = collection.entries
   const readList = collection.read
   const listStyles = BRIEFING_LIST_STYLES[fontSize]
@@ -102,21 +123,35 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
             <span data-testid="blog-read-count" className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'} style={{ fontSize: listStyles.title }}>{readList.length}</span>
           </button>
           {showRead && (
-            <div className="mt-1.5 space-y-1.5 max-h-40 overflow-y-auto">
-              {readList.map((r) => (
-                <ReadCard
-                  key={r.sourceUrl}
-                  entry={r}
-                  isAcademic={isAcademic}
-                  titleSize={listStyles.title}
-                  metaSize={listStyles.meta}
-                  imageUrl={articleOf(r.sourceUrl)?.imageUrl}
-                  dateIso={articleOf(r.sourceUrl)?.publishedAt ?? r.readAt}
-                  onOpen={() => void openFile(r.filePath, () => removeBlogRead(r.sourceUrl), '该文件已被删除，已从已读移除')}
-                  onRemove={() => onRequestRemove({ kind: 'read', sourceUrl: r.sourceUrl, filePath: r.filePath, title: r.title })}
-                />
-              ))}
-            </div>
+            <>
+              <div
+                ref={readListRef}
+                className={`mt-1.5 space-y-1.5 overflow-y-auto ${readHeight == null ? 'max-h-40' : ''}`}
+                style={readHeight != null ? { height: readHeight } : undefined}
+              >
+                {readList.map((r) => (
+                  <ReadCard
+                    key={r.sourceUrl}
+                    entry={r}
+                    isAcademic={isAcademic}
+                    titleSize={listStyles.title}
+                    metaSize={listStyles.meta}
+                    imageUrl={articleOf(r.sourceUrl)?.imageUrl}
+                    dateIso={articleOf(r.sourceUrl)?.publishedAt ?? r.readAt}
+                    onOpen={() => void openFile(r.filePath, () => removeBlogRead(r.sourceUrl), '该文件已被删除，已从已读移除')}
+                    onRemove={() => onRequestRemove({ kind: 'read', sourceUrl: r.sourceUrl, filePath: r.filePath, title: r.title })}
+                  />
+                ))}
+              </div>
+              <div
+                data-testid="blog-read-resize"
+                title="拖拽调整列表高度"
+                onPointerDown={startResize(readListRef, setReadHeight)}
+                className="group flex items-center justify-center h-2 cursor-row-resize touch-none"
+              >
+                <span className={`w-10 border-t-2 border-dotted ${isAcademic ? 'border-parchment/25 group-hover:border-ember' : 'border-[#6b5d52]/30 group-hover:border-ember'}`} />
+              </div>
+            </>
           )}
         </div>
       )}
@@ -162,7 +197,12 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
       </div>
 
       {!collapsed && (
-        <div className="mt-2 space-y-1.5 max-h-64 overflow-y-auto">
+        <>
+        <div
+          ref={colListRef}
+          className={`mt-2 space-y-1.5 overflow-y-auto ${colHeight == null ? 'max-h-64' : ''}`}
+          style={colHeight != null ? { height: colHeight } : undefined}
+        >
           {entries.length === 0 && !recommendRunning && (
             <p data-testid="blog-collection-empty" className={muted} style={{ fontSize: listStyles.meta }}>
               尚无收藏——点右侧 ↻ 生成第一批，或点文章行的书签手动收藏
@@ -186,6 +226,17 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
             />
           ))}
         </div>
+        {sortedEntries.length > 0 && (
+          <div
+            data-testid="blog-collection-resize"
+            title="拖拽调整列表高度"
+            onPointerDown={startResize(colListRef, setColHeight)}
+            className="group flex items-center justify-center h-2 cursor-row-resize touch-none"
+          >
+            <span className={`w-10 border-t-2 border-dotted ${isAcademic ? 'border-parchment/25 group-hover:border-ember' : 'border-[#6b5d52]/30 group-hover:border-ember'}`} />
+          </div>
+        )}
+        </>
       )}
     </div>
   )

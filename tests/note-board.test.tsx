@@ -23,10 +23,10 @@ beforeEach(() => {
 describe('NoteBoard 阅读室', () => {
   it('返回按钮清空当前文件回专辑墙', () => {
     const spy = vi.fn()
-    useStore.setState({ selectWritingFile: spy })
+    useStore.setState({ closeNoteToWall: spy })
     const { getByTestId } = render(<NoteBoard />)
     fireEvent.click(getByTestId('note-back-to-wall'))
-    expect(spy).toHaveBeenCalledWith(null)
+    expect(spy).toHaveBeenCalled()
   })
   it('链接/亮点输入收在 ⓘ 弹层，默认不可见，点 toggle 可见', () => {
     const { getByTestId, queryByTestId } = render(<NoteBoard />)

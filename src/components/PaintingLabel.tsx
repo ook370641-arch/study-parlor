@@ -29,7 +29,7 @@ export function PaintingLabel({ surface, className = '' }: Props) {
     <span
       data-testid="painting-label"
       data-flash={flash ? '' : undefined}
-      className={`italic tracking-widest text-[11px] transition-all duration-300 ${
+      className={`pointer-events-none italic tracking-widest text-[11px] transition-all duration-300 ${
         flash ? 'opacity-70 translate-y-0' : 'opacity-0 translate-y-[2px]'
       } group-hover:opacity-70 group-hover:translate-y-0 ${className}`}
     >

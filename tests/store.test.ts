@@ -618,3 +618,35 @@ describe('store core operations', () => {
     })
   })
 })
+
+describe('专辑墙返回状态', () => {
+  it('博客返回清除运行时和持久化阅读选中态', () => {
+    vi.mocked(ipc.patchState).mockClear()
+    useStore.setState({
+      anthropicReaderFilePath: 'blog/a.md',
+      anthropicReaderBody: '正文',
+      anthropicReaderTitle: 'A',
+      lastAnthropicReaderFile: 'blog/a.md',
+    })
+    useStore.getState().closeAnthropicReader()
+    expect(useStore.getState().anthropicReaderFilePath).toBeNull()
+    expect(useStore.getState().anthropicReaderBody).toBeNull()
+    expect(useStore.getState().lastAnthropicReaderFile).toBeNull()
+    expect(ipc.patchState).toHaveBeenCalledWith({ lastAnthropicReaderFile: null })
+  })
+
+  it('笔记返回先保存 dirty，再清除当前文件和持久化选中态', async () => {
+    const saveWritingFile = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(ipc.patchState).mockClear()
+    useStore.setState({
+      writingFile: { path: 'notes/a.md', body: '正文', kind: 'md', dirty: true, saving: 'idle' },
+      lastWritingFile: 'notes/a.md',
+      saveWritingFile,
+    })
+    await useStore.getState().closeNoteToWall()
+    expect(saveWritingFile).toHaveBeenCalled()
+    expect(useStore.getState().writingFile).toBeNull()
+    expect(useStore.getState().lastWritingFile).toBeNull()
+    expect(ipc.patchState).toHaveBeenCalledWith({ lastWritingFile: null })
+  })
+})

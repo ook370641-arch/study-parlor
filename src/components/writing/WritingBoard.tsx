@@ -95,7 +95,7 @@ export function WritingBoard() {
       }}>
       <WritingToolbar />
       {/* Save status indicator */}
-      <div data-testid="writing-save-status" className="flex justify-end px-3 py-0.5 border-b border-parchment/10 shrink-0 text-[10px]">
+      <div data-testid="writing-save-status" className="flex justify-end px-3 py-0.5 shrink-0 text-[10px]">
         {file.saving === 'saving' ? <span className="text-parchment/50">保存中…</span>
          : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
          : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span>

@@ -17,7 +17,7 @@ import type {
   GuideProgress,
   BlogCollectionFile, RecommendStage, ScrollMemorySlot,
   NotepadCategory, NotepadFontSize, NotepadItem, NotepadLogEntry,
-  NoteEntry, NoteMeta, NoteSource,
+  NoteEntry, NoteMeta, NoteSource, NoteSortBy,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
@@ -222,6 +222,7 @@ type AppStore = {
   resolveNotepadItem: (id: string) => void
   deleteNotepadItem: (id: string) => void
   moveNotepadItem: (id: string, toIndex: number) => void
+  updateNotepadItem: (id: string, patch: { text?: string; category?: NotepadCategory }) => void
   setNotepadFontSize: (size: NotepadFontSize) => void
   setNotepadPanelSize: (size: { w: number; h: number }) => void
   goto: (p: Page) => Promise<void>
@@ -340,7 +341,7 @@ type AppStore = {
   writingTone: WritingTone
   writingListTab: 'articles' | 'repository' | 'notes'
   notesList: NoteEntry[] | null
-  notesSortBy: 'time' | 'rating'
+  notesSortBy: NoteSortBy
   notesCategory: 'all' | NoteSource
   writingAssistantWidth: number
   writingAssistantOpen: boolean
@@ -400,6 +401,7 @@ type AppStore = {
   setHtmlDeleteDirty: (dirty: boolean) => void
   registerHtmlDeleteFlush: (fn: (() => Promise<boolean>) | null) => void
   selectWritingFile: (filePath: string | null) => Promise<void>
+  closeNoteToWall: () => Promise<void>
   updateWritingBody: (body: string) => void
   saveWritingFile: () => Promise<void>
   setWritingPanelMode: (mode: 'assistant' | 'companion') => void
@@ -411,10 +413,11 @@ type AppStore = {
   setWritingListTab: (tab: 'articles' | 'repository' | 'notes') => void
   loadNotes: () => Promise<void>
   createNoteManual: (a: { title: string; url: string }) => Promise<void>
+  findOrCreateArticleNote: (a: { title: string; url: string }) => Promise<{ path: string; created: boolean }>
   updateNoteMetaAction: (path: string, patch: Partial<NoteMeta>) => Promise<void>
   deleteNoteAction: (path: string) => Promise<void>
   importReadNotesAction: () => Promise<{ created: number; skipped: number } | null>
-  setNotesSortBy: (s: 'time' | 'rating') => void
+  setNotesSortBy: (s: NoteSortBy) => void
   setNotesCategory: (c: 'all' | NoteSource) => void
   setWritingAssistantWidth: (width: number) => void
   setWritingAssistantOpen: (open: boolean) => void
@@ -572,7 +575,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingTone: 'parchment',
   writingListTab: 'articles',
   notesList: null,
-  notesSortBy: 'time',
+  notesSortBy: 'source',
   notesCategory: 'all',
   writingAssistantWidth: 320,
   writingAssistantOpen: false,
@@ -629,7 +632,7 @@ export const useStore = create<AppStore>((set, get) => ({
       writingFontSize: state.writingFontSize ?? 'base',
       writingTone: state.writingTone ?? 'parchment',
       writingListTab: state.writingListTab ?? 'articles',
-      notesSortBy: state.notesSortBy ?? 'time',
+      notesSortBy: state.notesSortBy ?? 'source',
       notesCategory: state.notesCategory ?? 'all',
       writingAssistantWidth: Math.max(200, Math.min(state.writingAssistantWidth ?? 320, 560)),
       writingAssistantOpen: state.writingAssistantOpen ?? false,
@@ -764,6 +767,14 @@ export const useStore = create<AppStore>((set, get) => ({
 
   deleteNotepadItem: (id) => {
     const items = get().notepadItems.filter(i => i.id !== id)
+    set({ notepadItems: items })
+    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+  },
+  updateNotepadItem: (id, patch) => {
+    // 文本变更时短标题一并重算（面板待办行展示用 title 兜底见 deriveTitle）
+    const items = get().notepadItems.map(i => i.id === id
+      ? { ...i, ...patch, ...(patch.text ? { title: deriveTitle(patch.text) } : {}) }
+      : i)
     set({ notepadItems: items })
     ipc.patchState({ notepadItems: items } as Partial<StateJson>)
   },
@@ -1126,7 +1137,10 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ articleCompanionScrollMemory: mem })
     ipc.patchStateSync({ articleCompanionScrollMemory: mem } as Partial<StateJson>)
   },
-  closeAnthropicReader: () => set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null }),
+  closeAnthropicReader: () => {
+    set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null, lastAnthropicReaderFile: null })
+    void ipc.patchState({ lastAnthropicReaderFile: null } as Partial<StateJson>)
+  },
   openConstitutionReport: () =>
     set({
       constitutionReportOpen: true,
@@ -1746,9 +1760,20 @@ export const useStore = create<AppStore>((set, get) => ({
     debounceSaveGuideWidth({ articleAssistantGuideWidth: clamped })
   },
   setArticleAssistantGuideCollapsed: (collapsed) => {
-    // 右栏折叠后对照槽不可见，挑选器一并关闭
-    set({ articleAssistantGuideCollapsed: collapsed, ...(collapsed ? { writingCompanionPicker: null } : {}) })
-    debounceSaveGuideWidth({ articleAssistantGuideCollapsed: collapsed })
+    // 右栏折叠后对照槽不可见：挑选器一并关闭，对照模式一并退出
+    // （2026-10-22 回归：折叠后 mode 仍是 companion，点文章全被路由进不可见的对照槽，"退不出来"）
+    const modeReset = collapsed && get().articlePanelMode.anthropic !== 'guide'
+      ? { ...get().articlePanelMode, anthropic: 'guide' as const }
+      : null
+    set({
+      articleAssistantGuideCollapsed: collapsed,
+      ...(collapsed ? { writingCompanionPicker: null } : {}),
+      ...(modeReset ? { articlePanelMode: modeReset } : {}),
+    })
+    debounceSaveGuideWidth({
+      articleAssistantGuideCollapsed: collapsed,
+      ...(modeReset ? { articlePanelMode: modeReset } : {}),
+    })
   },
   setAssistantActiveChunk: (index) => {
     const s = get().assistantSession
@@ -1833,6 +1858,14 @@ export const useStore = create<AppStore>((set, get) => ({
     const r = await ipc.notesCreate(a)
     await get().loadNotes()
     await get().selectWritingFile(r.path)
+  },
+  findOrCreateArticleNote: async (a) => {
+    if (get().notesList === null) await get().loadNotes()
+    const existing = get().notesList?.find(entry => entry.meta.url === a.url)
+    if (existing) return { path: existing.path, created: false }
+    const r = await ipc.notesCreate({ ...a, source: 'anthropic' })
+    await get().loadNotes()
+    return { path: r.path, created: true }
   },
   updateNoteMetaAction: async (p, patch) => {
     await ipc.notesUpdateMeta({ path: p, patch })
@@ -2197,6 +2230,17 @@ export const useStore = create<AppStore>((set, get) => ({
       if (!get().writingAssistant) await get().loadWritingAssistantSession(filePath)
     } else {
       set({ writingError: r.message })
+    }
+  },
+
+  closeNoteToWall: async () => {
+    const current = get().writingFile
+    if (!current) return
+    if (current.dirty) await get().saveWritingFile()
+    await get().selectWritingFile(null)
+    if (current.path.startsWith('notes/') && get().lastWritingFile === current.path) {
+      set({ lastWritingFile: null })
+      void ipc.patchState({ lastWritingFile: null } as Partial<StateJson>)
     }
   },
 

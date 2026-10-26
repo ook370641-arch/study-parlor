@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@/store'
-import type { NoteSource } from '@shared/index'
+import type { NoteSortBy, NoteSource } from '@shared/index'
 import { sortNotes } from '@/lib/notes-list'
 import { PromptDialog } from '../writing/PromptDialog'
 import { NoteRow } from './NoteRow'
@@ -59,8 +59,9 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
           ⬆
         </button>
         <select data-testid="notes-sort-select" value={notesSortBy}
-          onChange={(e) => setNotesSortBy(e.target.value as 'time' | 'rating')}
+          onChange={(e) => setNotesSortBy(e.target.value as NoteSortBy)}
           className="bg-transparent text-[11px] text-parchment/60 border border-parchment/20 rounded px-1.5 py-0.5 outline-none">
+          <option value="source">类型</option>
           <option value="time">时间</option>
           <option value="rating">星标</option>
         </select>

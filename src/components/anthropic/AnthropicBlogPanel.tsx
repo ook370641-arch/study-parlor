@@ -8,11 +8,12 @@ import { BlogCollectionSection } from './BlogCollectionSection'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { ConstitutionReportView } from './ConstitutionReportView'
 import { BlogRecommendView } from './BlogRecommendView'
+import { BlogWall } from './BlogWall'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
 import { CompanionWritingPicker } from '@/components/article-assistant/CompanionWritingPicker'
-import { findNewArticleUrls, sortArticlesByDateDesc } from '@/lib/anthropic-articles'
+import { findNewArticleUrls, sortArticlesByDateDesc, sortBlogArticles, type BlogWallSort } from '@/lib/anthropic-articles'
 import { withConstitutionEntry } from '@/lib/constitution-report'
 import { ANTHROPIC_SOURCES, filterGroupOf } from '@/lib/anthropic-sections'
 import { ALL_SOURCE_KEYS, clickAllChip, toggleMineChip, toggleSourceChip, type BlogFilter } from '@/lib/section-filter'
@@ -35,9 +36,8 @@ const KEYFRAME_STYLES = `
 
 export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
-  const fontSizeBtnCls = isAcademic
-    ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40'
-    : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a] hover:border-[#2a1f1a]/40'
+  // 与换画按钮同款（.swap-btn 实底 + backdrop blur），避免背景透出
+  const fontSizeBtnCls = `pointer-events-auto ${isAcademic ? 'swap-btn' : 'swap-btn-newspaper w-9 h-9 flex items-center justify-center'}`
   const themeClasses = useMemo(() => isAcademic
     ? {
         panelBg: 'bg-transparent',
@@ -49,7 +49,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         inputPlaceholder: 'placeholder:text-parchment/40',
         inputBorder: 'border-slate/30 focus:border-ember/50',
         button: 'bg-ember/20 text-parchment hover:bg-ember/30',
-        emptyIcon: 'text-parchment/20',
         skeleton: 'bg-parchment/10',
       }
     : {
@@ -62,7 +61,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         inputPlaceholder: 'placeholder:text-[#6b5d52]/60',
         inputBorder: 'border-[#c9c3b8] focus:border-[#1a1a1a]/50',
         button: 'bg-[#1a1a1a] text-white hover:bg-[#333]',
-        emptyIcon: 'text-[#c9c3b8]',
         skeleton: 'bg-[#e8e4de]',
       }, [isAcademic])
 
@@ -90,6 +88,11 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   // 写作树对照挑选器：对照 tab 下点来源栏「写作」后替换本栏文章列表
   const pickerOpen = useStore((s) => s.writingCompanionPicker === 'anthropic')
 
+  // 当前在读博客 → 对照挑选器自动引导对应笔记（无对应笔记时给新建入口）
+  const pickerCurrentArticle = readerFilePath
+    ? articles.find((a) => a.filePath && a.filePath === readerFilePath) ?? null
+    : null
+
   const [query, setQuery] = useState('')
   const [listCollapsed, setListCollapsed] = useState(false)
   const [newArticleCount, setNewArticleCount] = useState(0)
@@ -99,6 +102,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [checkKey, setCheckKey] = useState(0)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [filter, setFilter] = useState<BlogFilter>({ mode: 'all' })
+  const [wallSort, setWallSort] = useState<BlogWallSort>('newest')
 
   // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成；合并时间线按日期倒序
   const displayArticles = useMemo(() => sortArticlesByDateDesc(withConstitutionEntry(articles)), [articles])
@@ -118,6 +122,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         (a.summary ?? '').toLowerCase().includes(q)
     )
   }, [displayArticles, query, filter])
+  const wallArticles = useMemo(() => sortBlogArticles(filtered, wallSort), [filtered, wallSort])
 
   // 加载收藏夹
   useEffect(() => {
@@ -240,6 +245,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         {pickerOpen ? (
           <CompanionWritingPicker
             theme={theme}
+            currentArticle={pickerCurrentArticle ? { url: pickerCurrentArticle.url, title: pickerCurrentArticle.title } : null}
             onPickFile={(p) => void useStore.getState().selectArticleCompanion('anthropic', useStore.getState().anthropicReaderFilePath ?? 'anthropic-main', p)}
           />
         ) : listCollapsed ? (
@@ -397,7 +403,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
 
             <div
               data-testid="anthropic-article-list"
-              className="mx-4 my-3 max-h-[55vh] overflow-y-auto overscroll-contain"
+              className="mx-4 my-3 flex-1 min-h-[120px] overflow-y-auto overscroll-contain"
               style={{ willChange: 'transform', transform: 'translateZ(0)' }}
             >
               {loading && articles.length === 0 && (
@@ -466,20 +472,8 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             scrollMemoryKey={readerFilePath}
           />
         ) : (
-          <div className={`relative flex-1 flex flex-col items-center justify-center px-6 ${themeClasses.muted}`}>
-            {/* 空态下保留字号+换画按钮 — 全局 Chrome 不依赖内容状态；文章打开时由 Reader 渲染自己的按钮。
-                报纸版式只显示字号按钮。 */}
-            <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
-              <button type="button" data-testid="briefing-font-size-decrease"
-                disabled={fontSize === 'sm'}
-                onClick={() => void decreaseFontSize()}
-                className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-                title="减小字号">−</button>
-              <button type="button" data-testid="briefing-font-size-increase"
-                disabled={fontSize === '7xl'}
-                onClick={() => void increaseFontSize()}
-                className={`w-9 h-9 rounded-full border flex items-center justify-center text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-                title="增大字号">+</button>
+          <div className="relative flex-1 min-h-0">
+            <div className="pointer-events-none absolute top-4 right-4 z-20 flex items-start gap-1">
               {isAcademic && (
                 <SwapPaintingButton
                   surface="briefing"
@@ -487,21 +481,28 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                   className="text-parchment/70 hover:text-parchment"
                 />
               )}
+              <button type="button" data-testid="briefing-font-size-decrease"
+                disabled={fontSize === 'sm'}
+                onClick={() => void decreaseFontSize()}
+                className={`text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                title="减小字号">−</button>
+              <button type="button" data-testid="briefing-font-size-increase"
+                disabled={fontSize === '7xl'}
+                onClick={() => void increaseFontSize()}
+                className={`text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
+                title="增大字号">+</button>
             </div>
-            <svg
-              className={`w-12 h-12 mb-4 ${themeClasses.emptyIcon}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
-            <p className="text-sm">{listCollapsed ? '从右侧缩略图选择一篇文章' : '从左侧列表选择一篇文章开始阅读'}</p>
+            <BlogWall
+              articles={wallArticles}
+              loading={loading}
+              filter={filter}
+              sortBy={wallSort}
+              onFilterChange={setFilter}
+              onSortByChange={setWallSort}
+              onOpenArticle={article => { void openOrImportArticle(article) }}
+              onClearFilters={() => { setFilter({ mode: 'all' }); setQuery('') }}
+              theme={theme}
+            />
           </div>
         )}
       </div>

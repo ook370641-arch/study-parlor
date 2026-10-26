@@ -28,18 +28,12 @@ test.describe('@p2 writing list column', () => {
     await expect(window.locator(SELECTORS.writing.listTabArticles)).toHaveAttribute('aria-pressed', 'false')
   })
 
-  test('collapsed column shows article and repository counts', async ({ window, testLibraryPath }) => {
+  test('collapsed column renders empty content', async ({ window, testLibraryPath }) => {
     await setup(window, testLibraryPath)
 
     await window.locator(SELECTORS.briefing.listColumnToggle).click()
 
-    const articlesCount = window.locator(SELECTORS.writing.collapsedArticlesCount)
-    const repoCount = window.locator(SELECTORS.writing.collapsedRepositoryCount)
-    await expect(articlesCount).toBeVisible()
-    await expect(repoCount).toBeVisible()
-    await expect(articlesCount).toHaveText('3')
-    await expect(repoCount).toHaveText('2')
-
+    await expect(window.locator(SELECTORS.writing.listCollapsedEmpty)).toBeVisible()
     await expect(window.locator(SELECTORS.writing.treeNode)).toHaveCount(0)
   })
 

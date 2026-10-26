@@ -1,6 +1,8 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { seedBlogCollection } from '../helpers/test-library'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 
 test.describe('笔记书架', () => {
   test('导入已读 → 卡片上书 → 编辑元数据 → 切回 tab 摘要仍在', async ({ window, testLibraryPath }) => {
@@ -54,7 +56,7 @@ test.describe('笔记书架', () => {
     await expect(window.locator('[data-testid="note-board"] .ProseMirror')).toContainText('E2E 正文内容')
   })
 
-  test('专辑墙：无打开文件时显示墙 → 点专辑进正文 → 返回键回墙', async ({ window, testLibraryPath }) => {
+  test('专辑墙：无打开文件时显示墙 → 点专辑进正文 → 返回键回墙', async ({ window, testLibraryPath, testConfigDir }) => {
     seedBlogCollection(testLibraryPath, [
       { sourceUrl: 'https://anthropic.com/a', title: 'E2E Article A', filePath: 'Anthropic博客/a.md', readAt: '2026-10-01T00:00:00.000Z' },
     ])
@@ -69,9 +71,13 @@ test.describe('笔记书架', () => {
 
     // 主区专辑墙可见 → 点专辑卡进正文 → 点「← 笔记墙」回墙
     await expect(window.locator('[data-testid="notes-wall"]')).toBeVisible()
+    await expect(window.locator('[data-testid="notes-wall-category-select"]')).toBeVisible()
+    await expect(window.locator('[data-testid="notes-wall-sort-select"]')).toBeVisible()
+    await window.locator('[data-testid="notes-wall-sort-select"]').selectOption('source')
     await window.locator('[data-testid="wall-album-a"]').click()
     await expect(window.locator('[data-testid="note-board"]')).toBeVisible()
     await window.locator('[data-testid="note-back-to-wall"]').click()
     await expect(window.locator('[data-testid="notes-wall"]')).toBeVisible()
+    await expect.poll(() => JSON.parse(fs.readFileSync(path.join(testConfigDir, 'state.json'), 'utf8')).lastWritingFile).toBeNull()
   })
 })

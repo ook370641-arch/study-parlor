@@ -2,13 +2,16 @@ import { useEffect } from 'react'
 import { useStore } from '@/store'
 import { WritingEditor } from '@/components/writing/WritingEditor'
 import { NoteMetaHeader } from './NoteMetaHeader'
+import { PaintingPlate } from '@/components/briefing/PaintingPlate'
+import { Quote } from '@/components/Quote'
 
 export function NoteBoard() {
   const file = useStore(s => s.writingFile)
   const notesList = useStore(s => s.notesList)
+  const briefingTheme = useStore(s => s.briefingTheme)
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
-  const selectWritingFile = useStore(s => s.selectWritingFile)
+  const closeNoteToWall = useStore(s => s.closeNoteToWall)
 
   const entry = notesList?.find(e => e.path === file?.path)
 
@@ -33,7 +36,7 @@ export function NoteBoard() {
         <button
           data-testid="note-back-to-wall"
           className="text-[11px] text-ember hover:text-ember/80"
-          onClick={() => { void selectWritingFile(null) }}
+          onClick={() => { void closeNoteToWall() }}
         >
           ← 笔记墙
         </button>
@@ -47,6 +50,11 @@ export function NoteBoard() {
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="mx-auto px-6 py-8" style={{ maxWidth: 680 }}>
+          {/* 画作 + 语录与文章/仓库阅读区同款（照抄 WritingBoard） */}
+          {briefingTheme !== 'newspaper' && <PaintingPlate />}
+          <div className="flex justify-center mb-4">
+            <Quote surface="briefing" />
+          </div>
           <NoteMetaHeader key={`meta-${entry.path}`} entry={entry} />
           <WritingEditor
             key={file.path}

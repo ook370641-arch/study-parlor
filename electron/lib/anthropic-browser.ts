@@ -119,7 +119,8 @@ async function runScriptNow<T>(
       fail(new Error(`Timeout after ${timeoutMs}ms loading ${opts.url}`))
     }, timeoutMs)
 
-    wc.once('did-fail-load', (_event, _errorCode, errorDescription) => {
+    wc.once('did-fail-load', (_event, _errorCode, errorDescription, _validatedURL, isMainFrame) => {
+      if (!isMainFrame) return
       fail(new Error(`Load failed: ${errorDescription || 'unknown'}`))
     })
 

@@ -23,7 +23,10 @@ describe('SwapPaintingButton', () => {
   it('renders wall label and no title tooltip (single visible protocol)', () => {
     render(<SwapPaintingButton surface="briefing" data-testid="swap-btn" />)
     expect(screen.getByTestId('painting-label')).toBeInTheDocument()
-    expect(screen.getByTestId('swap-btn').getAttribute('title')).toBeNull()
+    const button = screen.getByTestId('swap-btn')
+    expect(button.getAttribute('title')).toBeNull()
+    expect(button.parentElement).toHaveClass('pointer-events-none')
+    expect(button).toHaveClass('pointer-events-auto')
   })
 
   it('locks against double-click during the 850ms swap, unlocks after', () => {

@@ -28,14 +28,14 @@ export function SwapPaintingButton({ surface, theme, className = '', 'data-testi
   const isNewspaper = theme === 'newspaper'
 
   return (
-    <span className={`group inline-flex items-center gap-2 ${className}`}>
+    <span className={`group pointer-events-none inline-flex items-center gap-2 ${className}`}>
       <PaintingLabel surface={surface} />
       <button
         data-testid={dataTestId}
         type="button"
         onClick={onSwap}
         disabled={locked}
-        className={`${isNewspaper ? 'swap-btn-newspaper' : 'swap-btn'} ${locked ? 'opacity-50 cursor-default' : ''}`}
+        className={`pointer-events-auto ${isNewspaper ? 'swap-btn-newspaper' : 'swap-btn'} ${locked ? 'opacity-50 cursor-default' : ''}`}
         aria-label="换一幅画"
       >
         <svg

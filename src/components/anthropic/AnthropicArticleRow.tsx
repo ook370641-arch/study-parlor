@@ -4,6 +4,7 @@ import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import { findBatchForUrl } from '@/lib/blog-rec-lookup'
+import { coverImageUrl } from '@/lib/anthropic-articles'
 import { BookIcon, BookmarkIcon, UnimportIcon } from './blog-icons'
 import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
 
@@ -228,7 +229,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
       <div className="flex items-start gap-3">
         {article.imageUrl ? (
           <img
-            src={article.imageUrl}
+            src={coverImageUrl(article.imageUrl)}
             alt=""
             className={`shrink-0 w-14 h-14 object-cover rounded ${placeholderBg}`}
             loading="lazy"
