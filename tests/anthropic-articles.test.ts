@@ -79,11 +79,8 @@ describe('coverImageUrl', () => {
     expect(coverImageUrl(url)).toBe(url)
   })
 
-  it('Next.js 图片代理改用 512px 输出', () => {
+  it('Next.js 图片代理解包为 CDN 直链，避免代理不支持的 512px 宽度', () => {
     const source = 'https://www.anthropic.com/_next/image?url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2Fa.jpg&w=3840&q=75'
-    const result = new URL(coverImageUrl(source))
-    expect(result.searchParams.get('w')).toBe('512')
-    expect(result.searchParams.get('q')).toBe('75')
-    expect(result.searchParams.get('url')).toBe('https://www-cdn.anthropic.com/images/a.jpg')
+    expect(coverImageUrl(source)).toBe('https://www-cdn.anthropic.com/images/a.jpg?w=512&q=75&auto=format')
   })
 })

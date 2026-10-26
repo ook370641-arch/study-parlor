@@ -6,9 +6,8 @@ export function coverImageUrl(sourceUrl: string): string {
   try {
     const url = new URL(sourceUrl)
     if (url.hostname === 'www.anthropic.com' && url.pathname === '/_next/image') {
-      url.searchParams.set('w', '512')
-      url.searchParams.set('q', '75')
-      return url.toString()
+      const source = url.searchParams.get('url')
+      return source ? coverImageUrl(source) : sourceUrl
     }
     if (url.hostname !== 'cdn.sanity.io' && url.hostname !== 'www-cdn.anthropic.com') return sourceUrl
     url.searchParams.set('w', '512')
