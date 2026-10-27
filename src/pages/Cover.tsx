@@ -16,11 +16,9 @@ export function Cover() {
   const [name, setName] = useState('')
 
   const briefingButtonClass = `bg-parchment text-ink shadow-[3px_3px_0_0_#d97757]
-    hover:translate-x-[1px] hover:translate-y-[1px]
     hover:shadow-[2px_2px_0_0_#d97757]
-    active:translate-x-[3px] active:translate-y-[3px]
     active:shadow-none
-    transition-[transform,box-shadow] duration-100`
+    transition-shadow duration-100`
 
   const onEnter = async () => {
     const n = name.trim()

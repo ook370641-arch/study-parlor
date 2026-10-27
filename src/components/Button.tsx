@@ -26,21 +26,20 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
     const primaryCls = isAcademic
       ? `bg-ember text-ink
          shadow-[3px_3px_0_0_#3a5a6a]
-         hover:translate-x-[1px] hover:translate-y-[1px]
          hover:shadow-[2px_2px_0_0_#3a5a6a]
-         active:translate-x-[3px] active:translate-y-[3px]
          active:shadow-none`
       : `bg-white text-[#1a1a1a] border border-[#1a1a1a]/15
          shadow-[2px_2px_0_0_rgba(0,0,0,0.1)]
-         hover:translate-x-[1px] hover:translate-y-[1px]
          hover:shadow-[1px_1px_0_0_rgba(0,0,0,0.1)]
-         active:translate-x-[2px] active:translate-y-[2px]
          active:shadow-none`
 
+    // Keep the native hit area stationary: translating on :active can put an
+    // edge press outside the button before mouseup, cancelling the click.
+    // The shrinking shadow still provides hover/press feedback.
     return (
       <button ref={ref}
         className={`relative inline-block px-6 py-2 font-sans
-                    transition-[transform,box-shadow] duration-100
+                    transition-shadow duration-100
                     ${primaryCls} ${className}`}
         {...rest}>
         {children}
