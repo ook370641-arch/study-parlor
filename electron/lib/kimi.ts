@@ -77,7 +77,9 @@ export function buildChatBody(
     body.thinking = { type: thinking.type }
     if (thinking.type === 'enabled') {
       body.reasoning_effort = thinking.reasoning_effort ?? 'high'
-      body.temperature = args.temperature
+      // kimi-k2.x / kimi-for-coding 在 thinking enabled 模式下只允许 temperature=1
+      // （真实 API 400: "invalid temperature: only 1 is allowed for this model"）
+      body.temperature = 1
     } else {
       // Kimi k2.x / kimi-for-coding 在 thinking disabled 模式下只允许 temperature=0.6
       body.temperature = 0.6
