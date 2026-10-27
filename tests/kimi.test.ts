@@ -72,7 +72,7 @@ describe('chatNonStream', () => {
     expect(body.thinking).toEqual({ type: 'disabled' })
   })
 
-  it('respects enabled thinking for Kimi models', async () => {
+  it('forces temperature=1 when thinking is enabled for Kimi models', async () => {
     const fetchSpy = vi.fn(async () => ({
       ok: true,
       json: async () => ({ choices: [{ message: { content: 'hi' } }] })
@@ -88,7 +88,8 @@ describe('chatNonStream', () => {
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.thinking).toEqual({ type: 'enabled' })
     expect(body.reasoning_effort).toBe('high')
-    expect(body.temperature).toBe(0.5)
+    // kimi-k2.x / kimi-for-coding 在 thinking enabled 时只接受 temperature=1
+    expect(body.temperature).toBe(1)
   })
 
   it('aborts when external signal is triggered', async () => {
