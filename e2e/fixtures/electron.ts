@@ -127,8 +127,9 @@ export const test = base.extend<E2EFixtures>({
     })()
 
     const proc = spawn(
-      path.join(process.cwd(), 'node_modules', 'electron', 'dist', 'electron.exe'),
-      ['--remote-debugging-port=0', '--no-sandbox', '--disable-gpu', '.'],
+      require('electron') as string,
+      // An isolated build can coexist with an active dev app without replacing out/.
+      ['--remote-debugging-port=0', '--no-sandbox', '--disable-gpu', extraEnv.E2E_APP_ENTRY || process.env.E2E_APP_ENTRY || '.'],
       {
         cwd: process.cwd(),
         env: {
@@ -155,7 +156,8 @@ export const test = base.extend<E2EFixtures>({
 
     await use({ process: proc, cdpUrl })
 
-    await killProcessTree(proc.pid)
+    if (process.platform === 'win32') await killProcessTree(proc.pid)
+    else proc.kill('SIGTERM')
     // 增加等待时间，确保 Windows 子进程（特别是 GPU 进程）释放文件句柄
     await waitForProcessExit(proc, 15000)
 
