@@ -64,6 +64,7 @@ export default defineConfig(({ command }) => ({
     root: '.',
     customLogger: createWatchdogLogger(),
     server: {
+      port: Number(process.env.STUDY_DEV_PORT) || 5173,
       watch: {
         ignored: [
           '**/e2e/.test-library/**',

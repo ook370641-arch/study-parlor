@@ -32,7 +32,7 @@ async function preflightCleanup() {
     console.warn('[dev] if startup remains slow, run: npm run dev:clean')
   }
 
-  for (const port of [DEV_SERVER_PORT, DEVTOOLS_PORT]) {
+  for (const port of (process.env.STUDY_SKIP_PORT_CLEANUP === '1' ? [] : [DEV_SERVER_PORT, DEVTOOLS_PORT])) {
     const listeners = await findPortListeners(port)
     for (const pid of listeners) {
       if (pid === process.pid) continue
