@@ -69,6 +69,9 @@
   "allowScripts": {
     "electron@30.5.1": true,
     "electron-winstaller@5.4.0": true,
-    "@swc/core@1.15.43": true
+    "@swc/core@1.15.43": true,
+    "esbuild": true,
+    "fsevents@2.3.3": true,
+    "fsevents@2.3.2": true
   }
 }
