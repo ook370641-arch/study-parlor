@@ -103,6 +103,46 @@ test.describe('@p1 external materials summary panel', () => {
     await expect(study.externalSummaryPanel).toBeHidden()
   })
 
+  test('说明入口在面板标题栏：展开工作流，点弹层不会关掉摘要面板', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterIfNeeded('摘要面板测试')
+
+    const home = new HomePage(window)
+    await home.waitForLoaded()
+    await home.startNewTopic()
+
+    const preStudy = new PreStudyPage(window)
+    await preStudy.waitForVisible()
+    await preStudy.fillTopic('量子纠缠')
+    await preStudy.clickStart()
+
+    const study = new StudyPage(window)
+    await study.waitForLoaded()
+    await study.setMockExternalMaterials(
+      '核心概念：纠缠是两个粒子的关联状态[1]。',
+      [{ title: 'Source 1', url: 'https://example.com/1' }]
+    )
+
+    await study.openExternalSummary()
+    const info = window.getByTestId('demo-info-external-materials')
+    await expect(info).toBeVisible()
+    await info.click()
+
+    const note = window.getByTestId('demo-note-popover-external-materials')
+    await expect(note).toBeVisible()
+    await expect(note).toContainText('它怎么跑')
+    await expect(note).toContainText('生成宽域查询')
+    await expect(note).toContainText('两轮')
+
+    // 点弹层内部不应触发摘要面板的「点外部关闭」
+    await note.click({ position: { x: 20, y: 20 } })
+    await expect(study.externalSummaryPanel).toBeVisible()
+    await expect(note).toBeVisible()
+
+    await window.keyboard.press('Escape')
+    await expect(note).toHaveCount(0)
+  })
+
   test('source citations are clickable and scroll to source list', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded('摘要面板测试')

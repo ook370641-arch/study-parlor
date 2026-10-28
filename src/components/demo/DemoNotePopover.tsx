@@ -13,7 +13,16 @@ interface Props {
   theme?: BriefingTheme
 }
 
-const PANEL_WIDTH = 380
+/**
+ * 说明弹层宽高。
+ *
+ * 这一组文案是给「第一次看这个功能的人」读的结构化材料（主张 → 定位 → 工作流 →
+ * 场景 → 取舍 → 指标 → 追问），380px 宽会把每一行都折成两三行，演示时无法一眼扫读。
+ * 因此放宽到 460px，并允许在 84vh 内滚动；小窗口下由下面的 viewport 收敛逻辑兜住。
+ */
+const PANEL_WIDTH = 460
+const PANEL_MAX_HEIGHT_VH = 84
+const PANEL_MAX_HEIGHT_PX = 760
 
 /**
  * 取锚点的可视矩形。
@@ -146,7 +155,7 @@ function EditableText({
  */
 export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic' }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null)
   const [editing, setEditing] = useState(false)
   const isAcademic = theme !== 'newspaper'
 
@@ -173,11 +182,13 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
       top = Math.max(margin, rect.top - gap - panelHeight)
     }
 
-    // 默认右对齐锚点（入口多在界面右侧），再夹进视口
-    let left = rect.right - PANEL_WIDTH
-    left = Math.min(Math.max(left, margin), window.innerWidth - PANEL_WIDTH - margin)
+    // 默认右对齐锚点（入口多在界面右侧），再夹进视口。
+    // 视口比面板还窄时（小窗口），宽度收敛到视口内，避免左右都被裁掉。
+    const width = Math.min(PANEL_WIDTH, window.innerWidth - margin * 2)
+    let left = rect.right - width
+    left = Math.min(Math.max(left, margin), window.innerWidth - width - margin)
 
-    setPos({ left, top })
+    setPos({ left, top, width })
   }, [anchorRef])
 
   // 换条目时退出编辑模式（是否保存由失焦提交决定）
@@ -275,8 +286,8 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
       onDoubleClick={handleDoubleClick}
       className={`fixed z-[9999] rounded-xl border shadow-2xl p-4 flex flex-col ${shell}`}
       style={{
-        width: PANEL_WIDTH,
-        maxHeight: 'min(72vh, 640px)',
+        width: pos?.width ?? PANEL_WIDTH,
+        maxHeight: `min(${PANEL_MAX_HEIGHT_VH}vh, ${PANEL_MAX_HEIGHT_PX}px)`,
         left: pos?.left ?? 0,
         top: pos?.top ?? 0,
         visibility: pos ? 'visible' : 'hidden',
@@ -320,6 +331,61 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1 space-y-3.5">
+        {note.context && (
+          <section>
+            <h4 className={`mb-1 text-[11px] font-semibold tracking-[0.12em] ${heading}`}>你现在看到的是什么</h4>
+            <p className={`text-[12px] leading-relaxed ${muted}`}>
+              <EditableText
+                path="context"
+                text={note.context}
+                editing={editing}
+                onCommit={commitEdit}
+                className={`block whitespace-pre-wrap ${editMark}`}
+              />
+            </p>
+          </section>
+        )}
+
+        {note.steps && note.steps.length > 0 && (
+          <section>
+            <h4 className={`mb-1 text-[11px] font-semibold tracking-[0.12em] ${heading}`}>它怎么跑</h4>
+            <ol className="space-y-1.5">
+              {note.steps.map((step, i) => (
+                <li key={i} className="flex gap-2">
+                  <span
+                    aria-hidden="true"
+                    className={`mt-[1px] shrink-0 w-[15px] h-[15px] rounded-full border text-[9px] leading-[13px] text-center font-sans ${
+                      isAcademic ? 'border-ember/40 text-ember/80' : 'border-[#8a3a3a]/40 text-[#8a3a3a]'
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="flex-1">
+                    <div className={`text-[12px] font-medium ${body}`}>
+                      <EditableText
+                        path={`st${i}.title`}
+                        text={step.title}
+                        editing={editing}
+                        onCommit={commitEdit}
+                        className={editMark}
+                      />
+                    </div>
+                    <div className={`mt-0.5 text-[11.5px] leading-relaxed ${muted}`}>
+                      <EditableText
+                        path={`st${i}.detail`}
+                        text={step.detail}
+                        editing={editing}
+                        onCommit={commitEdit}
+                        className={`block whitespace-pre-wrap ${editMark}`}
+                      />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
         {note.sections.map((s, i) => (
           <section key={i}>
             {s.heading && (
@@ -393,6 +459,41 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
             )}
           </section>
         ))}
+
+        {note.metrics && note.metrics.length > 0 && (
+          <section>
+            <h4 className={`mb-1 text-[11px] font-semibold tracking-[0.12em] ${heading}`}>怎么判断有没有价值</h4>
+            <dl className="grid grid-cols-2 gap-1.5">
+              {note.metrics.map((metric, i) => (
+                <div
+                  key={i}
+                  className={`rounded border px-2 py-1.5 ${
+                    isAcademic ? 'border-ember/20 bg-ember/[0.04]' : 'border-[#8a3a3a]/15 bg-[#8a3a3a]/[0.03]'
+                  }`}
+                >
+                  <dt className={`text-[11.5px] font-medium leading-snug ${isAcademic ? 'text-ember' : 'text-[#8a3a3a]'}`}>
+                    <EditableText
+                      path={`m${i}.label`}
+                      text={metric.label}
+                      editing={editing}
+                      onCommit={commitEdit}
+                      className={editMark}
+                    />
+                  </dt>
+                  <dd className={`mt-0.5 text-[10.5px] leading-relaxed ${muted}`}>
+                    <EditableText
+                      path={`m${i}.detail`}
+                      text={metric.detail}
+                      editing={editing}
+                      onCommit={commitEdit}
+                      className={`block whitespace-pre-wrap ${editMark}`}
+                    />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
 
         {note.qa && note.qa.length > 0 && (
           <section>

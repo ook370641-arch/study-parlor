@@ -79,7 +79,7 @@ export function BookPanel({ theme }: { theme: BriefingTheme }) {
             <span ref={bookInfoRef} className="contents">
               <DemoInfoButton
                 testId="demo-info-book-source"
-                label="这本书从 PDF 到这里经历了什么"
+                label="为什么要把读书接进来，PDF 怎么变成章节"
                 theme={theme}
                 active={openNote === 'book-source'}
                 onClick={() => setOpenNote((v) => (v === 'book-source' ? null : 'book-source'))}

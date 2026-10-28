@@ -3,6 +3,19 @@
     "startup-health.spec.ts"
   ],
   "groups": {
+    "demo-notes": {
+      "sources": [
+        "src/lib/demo-notes.ts",
+        "src/components/demo/**",
+        "src/components/ExternalSummaryPanel.tsx",
+        "src/components/ExternalMaterialsCard.tsx",
+        "src/pages/Home.tsx",
+        "src/pages/Study.tsx"
+      ],
+      "specs": [
+        "demo-notes.spec.ts"
+      ]
+    },
     "briefing-core": {
       "sources": [
         "src/pages/Briefing.tsx",

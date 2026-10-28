@@ -41,7 +41,7 @@ export function Home() {
           <DemoInfoButton
             testId="demo-info-review"
             size="icon"
-            label="复习报告与学习图表是怎么来的"
+            label="为什么要有复习，学习图表是怎么来的"
             theme={theme}
             active={openNote === 'review'}
             onClick={() => setOpenNote((v) => (v === 'review' ? null : 'review'))}

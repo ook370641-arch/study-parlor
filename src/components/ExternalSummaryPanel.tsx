@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ExternalSummaryContent } from './ExternalSummaryContent'
 import { STUDY_FONT_STYLES, normalizeStudyFontSize } from '@/lib/study-font-size'
+import { DemoInfoButton, DemoNotePopover } from '@/components/demo/DemoNotePopover'
+import type { DemoNote } from '@/lib/demo-notes'
 
 const PANEL_WIDTH = 760
 const SLIDE_DURATION_MS = 300
@@ -15,6 +17,8 @@ export function ExternalSummaryPanel() {
   const fontSize = useStore(s => s.studyFontSize)
   const panelRef = useRef<HTMLDivElement>(null)
   const [rendered, setRendered] = useState(isOpen)
+  const infoRef = useRef<HTMLSpanElement>(null)
+  const [openNote, setOpenNote] = useState<DemoNote['id'] | null>(null)
 
   // Keep the panel mounted briefly after closing so the exit slide animation can play.
   useEffect(() => {
@@ -33,7 +37,11 @@ export function ExternalSummaryPanel() {
     if (!isOpen) return
     const onPointerDown = (e: PointerEvent) => {
       if (!panelRef.current) return
-      if (!panelRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement | null
+      // 说明弹层 portal 到 body，视觉上属于面板但不是 panel 的后代；
+      // 点它时不能把摘要面板一起关掉。
+      if (target?.closest?.('[data-testid^="demo-note-popover-"]')) return
+      if (!panelRef.current.contains(target as Node)) {
         closeExternalSummary()
       }
     }
@@ -65,6 +73,16 @@ export function ExternalSummaryPanel() {
           <span>外部资料摘要</span>
         </div>
         <div className="flex items-center gap-1">
+          <span ref={infoRef} className="contents">
+            <DemoInfoButton
+              testId="demo-info-external-materials"
+              size="icon"
+              label="这些外部资料是怎么找来的"
+              theme={theme}
+              active={openNote === 'external-materials'}
+              onClick={() => setOpenNote((v) => (v === 'external-materials' ? null : 'external-materials'))}
+            />
+          </span>
           <button
             data-testid="external-summary-close"
             onClick={closeExternalSummary}
@@ -86,6 +104,12 @@ export function ExternalSummaryPanel() {
           <ExternalSummaryContent summary={materials.summary!} sources={sources} theme={theme} />
         )}
       </div>
+      <DemoNotePopover
+        noteId={openNote}
+        anchorRef={infoRef}
+        onClose={() => setOpenNote(null)}
+        theme={theme}
+      />
     </div>
   )
 }

@@ -94,6 +94,8 @@ export function Study() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      // 信息说明弹层优先：它自己处理 Esc，避免一次按键连摘要面板一起关掉
+      if (document.querySelector('[data-testid^="demo-note-popover-"]')) return
       if (useStore.getState().isExternalSummaryOpen) {
         closeExternalSummary()
         return

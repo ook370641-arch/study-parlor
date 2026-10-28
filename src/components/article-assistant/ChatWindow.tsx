@@ -123,7 +123,7 @@ export function ChatWindow() {
             <DemoInfoButton
               testId="demo-info-annotation"
               size="icon"
-              label="旁注是怎么绑定到原文的"
+              label="旁注和聊天框有什么不同，它怎么工作"
               active={openNote === 'annotation'}
               onClick={() => setOpenNote((v) => (v === 'annotation' ? null : 'annotation'))}
             />

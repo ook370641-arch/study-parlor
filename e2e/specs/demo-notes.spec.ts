@@ -3,6 +3,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { CoverPage } from '../pages/CoverPage'
 import { seedBook } from '../helpers/test-library'
+import { DEMO_NOTES } from '../../src/lib/demo-notes'
 
 /**
  * Demo 说明入口（`i` 按钮）：四个位置都存在、都能展开、都能关闭。
@@ -26,8 +27,9 @@ test.describe('@p1 demo notes', () => {
     await bookInfo.click()
     const bookNote = window.getByTestId('demo-note-popover-book-source')
     await expect(bookNote).toBeVisible()
-    await expect(bookNote).toContainText('技术选型：为什么是 PDF.js')
-    await expect(bookNote).toContainText('需求与缺陷（必须主动说）')
+    await expect(bookNote).toContainText('技术取舍')
+    await expect(bookNote).toContainText('解析层迭代了三次')
+    await expect(bookNote).toContainText('你现在看到的是什么')
     await window.getByTestId('demo-note-close').click()
     await expect(bookNote).toHaveCount(0)
 
@@ -41,7 +43,8 @@ test.describe('@p1 demo notes', () => {
     await expect(guideInfo).toBeVisible()
     await guideInfo.click()
     const guideNote = window.getByTestId('demo-note-popover-guide')
-    await expect(guideNote).toContainText('当前链路（三阶段，可观测）')
+    await expect(guideNote).toContainText('它怎么跑')
+    await expect(guideNote).toContainText('导读不是摘要')
     await expect(guideNote).toBeVisible()
 
     // 层级回归：列滚动容器带 transform + overflow，弹层必须 portal 到 body
@@ -81,7 +84,8 @@ test.describe('@p1 demo notes', () => {
     await annoInfo.click()
     const annoNote = window.getByTestId('demo-note-popover-annotation')
     await expect(annoNote).toBeVisible()
-    await expect(annoNote).toContainText('失败与边界（会被追问的点）')
+    await expect(annoNote).toContainText('发送时，上下文由什么组成')
+    await expect(annoNote).toContainText('输入行有三个开关')
     // Esc 关闭
     await window.keyboard.press('Escape')
     await expect(annoNote).toHaveCount(0)
@@ -110,7 +114,11 @@ test.describe('@p1 demo notes', () => {
     // 而不是被甩到左上角。右对齐锚点右缘，且位于其下方。
     const noteBox = (await reviewNote.boundingBox())!
     const anchorBox = (await reviewInfo.boundingBox())!
-    expect(Math.abs(noteBox.x + noteBox.width - (anchorBox.x + anchorBox.width))).toBeLessThanOrEqual(2)
+    // 右对齐锚点右缘；若被视口夹紧（面板比可用空间宽），改为要求整体落在视口内
+    const viewportWidth = await window.evaluate(() => window.innerWidth)
+    const rightAligned = Math.abs(noteBox.x + noteBox.width - (anchorBox.x + anchorBox.width)) <= 2
+    const clampedInView = noteBox.x >= 0 && noteBox.x + noteBox.width <= viewportWidth
+    expect(rightAligned || clampedInView).toBe(true)
     expect(noteBox.y).toBeGreaterThanOrEqual(anchorBox.y + anchorBox.height)
 
     await window.getByTestId('demo-note-close').click()
@@ -128,7 +136,8 @@ test.describe('@p1 demo notes', () => {
     await window.getByTestId('demo-info-review').click()
     const reviewNote = window.getByTestId('demo-note-popover-review')
     await expect(reviewNote).toBeVisible()
-    const defaultThesis = '复习不是让模型再讲一遍，而是比较「上次学到了什么」和「这次答得怎么样」，把差距落成可检查的条目。'
+    // 默认文案的唯一事实源是 src/lib/demo-notes.ts；这里读它，避免改文案就断测试。
+    const defaultThesis = DEMO_NOTES.review.thesis
 
     // 双击弹层 → 出现编辑条，文本块变可编辑
     await reviewNote.dblclick({ position: { x: 12, y: 12 } })

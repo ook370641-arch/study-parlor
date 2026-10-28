@@ -28,7 +28,7 @@ describe('DemoNotePopover', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('打开书籍来源说明：渲染标题、结论句与「失败/边界」小节', () => {
+  it('打开书籍来源说明：渲染标题、结论句、定位段与「技术取舍」小节', () => {
     const ref = createRef<HTMLSpanElement>()
     render(
       <>
@@ -39,15 +39,59 @@ describe('DemoNotePopover', () => {
     const panel = screen.getByTestId('demo-note-popover-book-source')
     expect(panel).toHaveTextContent(DEMO_NOTES['book-source'].title)
     expect(panel).toHaveTextContent(DEMO_NOTES['book-source'].thesis)
-    expect(panel).toHaveTextContent('需求与缺陷（必须主动说）')
-    expect(panel).toHaveTextContent('技术选型：为什么是 PDF.js')
+    // 给第一次看这个应用的人定位：「你现在看到的是什么」
+    expect(panel).toHaveTextContent('你现在看到的是什么')
+    expect(panel).toHaveTextContent(DEMO_NOTES['book-source'].context!)
+    expect(panel).toHaveTextContent('场景与问题')
+    expect(panel).toHaveTextContent('技术取舍')
   })
 
-  it('每个入口都自带「不做 / 失败」与「怎么验证」的段落，避免只讲优点', () => {
+  it('五个入口都写给第一次看的人：有定位段、场景段与指标', () => {
+    for (const note of Object.values(DEMO_NOTES)) {
+      expect(note.context?.trim().length ?? 0).toBeGreaterThan(0)
+      const headings = note.sections.map((s) => s.heading)
+      expect(headings).toContain('场景与问题')
+      expect(note.metrics?.length ?? 0).toBeGreaterThan(0)
+    }
+  })
+
+  it('有工作流链路的入口渲染编号步骤，且步骤数不超过 6', () => {
+    const ref = createRef<HTMLSpanElement>()
+    render(
+      <>
+        <span ref={ref} />
+        <DemoNotePopover noteId="external-materials" anchorRef={ref} onClose={() => {}} />
+      </>
+    )
+    const panel = screen.getByTestId('demo-note-popover-external-materials')
+    expect(panel).toHaveTextContent('它怎么跑')
+    const steps = DEMO_NOTES['external-materials'].steps!
+    expect(steps.length).toBeGreaterThan(0)
+    expect(steps.length).toBeLessThanOrEqual(6)
+    for (const step of steps) expect(panel).toHaveTextContent(step.title)
+  })
+
+  it('指标区按「名称 + 口径」成对渲染', () => {
+    const ref = createRef<HTMLSpanElement>()
+    render(
+      <>
+        <span ref={ref} />
+        <DemoNotePopover noteId="review" anchorRef={ref} onClose={() => {}} />
+      </>
+    )
+    const panel = screen.getByTestId('demo-note-popover-review')
+    expect(panel).toHaveTextContent('怎么判断有没有价值')
+    for (const metric of DEMO_NOTES.review.metrics!) {
+      expect(panel).toHaveTextContent(metric.label)
+      expect(panel).toHaveTextContent(metric.detail)
+    }
+  })
+
+  it('每个入口都自带边界与追问，避免只讲优点', () => {
     for (const id of Object.keys(DEMO_NOTES) as Array<keyof typeof DEMO_NOTES>) {
       const headings = DEMO_NOTES[id].sections.map((s) => s.heading).join('|')
       const haystack = headings + (DEMO_NOTES[id].qa ?? []).map((q) => q.q).join('|')
-      expect(haystack).toMatch(/失败|边界|缺陷|追问|验证|局限/)
+      expect(haystack).toMatch(/边界|取舍|代价/)
     }
   })
 

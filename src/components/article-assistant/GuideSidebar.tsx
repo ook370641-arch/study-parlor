@@ -50,7 +50,7 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
           <DemoInfoButton
             testId="demo-info-guide"
             size="icon"
-            label="这份导读是怎么生成的"
+            label="导读解决什么问题，它是怎么生成的"
             theme={theme}
             active={openNote === 'guide'}
             onClick={() => setOpenNote((v) => (v === 'guide' ? null : 'guide'))}
