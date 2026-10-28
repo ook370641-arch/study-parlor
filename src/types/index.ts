@@ -495,10 +495,6 @@ export interface BookEntry {
   bookGuide?: string
   /** 解析器版本；缺省视为 1（旧解析产物，正文档落会挤在一起，可重新解析） */
   parserVersion?: number
-  /** 解析来源：缺省视为本地 pdfjs 文本抽取；docflow-bundle 表示外部结构化产物（对照实验） */
-  parserKind?: 'pdfjs' | 'docflow-bundle'
-  /** 解析器说明（结构化来源追溯信息） */
-  parserNote?: string
 }
 
 /** 章节 frontmatter 中的稳定元数据 */
@@ -784,8 +780,6 @@ export type IpcApi = {
   booksDelete: (a: { bookDir: string }) => Promise<void>
   /** 用当前解析器原地重解析（保留 book.json 元数据，刷新 chapters/ 并清导读缓存） */
   booksReparse: (a: { bookDir: string }) => Promise<{ ok: true; book: BookEntry } | { ok: false; error: string }>
-  /** 导入内置的结构化产物样本（DocFlow 对照实验；离线，不联网） */
-  booksImportStructuredDemo: () => Promise<{ book: BookEntry } | { error: string }>
 
   // Article assistant
   articleAssistantGenerateGuide: (args: {

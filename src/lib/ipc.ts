@@ -100,7 +100,6 @@ export const ipc = {
   get booksBookGuide() { return ensure().booksBookGuide },
   get booksDelete() { return ensure().booksDelete },
   get booksReparse() { return ensure().booksReparse },
-  get booksImportStructuredDemo() { return ensure().booksImportStructuredDemo },
   get notesUpdateMeta() { return ensure().notesUpdateMeta },
   get notesDelete() { return ensure().notesDelete },
   get notesImportRead() { return ensure().notesImportRead },

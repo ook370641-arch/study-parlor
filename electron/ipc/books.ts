@@ -5,7 +5,6 @@ import matter from 'gray-matter'
 import type { AppConfig } from '../env'
 import type { BookEntry, BookTocItem, ChapterMeta } from '@shared/index'
 import { scanBooks, readBookJson, assertInsideBooks, booksDirAbs, importPdfBook, reparseBook, BookImportError } from '../lib/books'
-import { importStructuredBundle, buildDemoStructuredBundle } from '../lib/docflow-import'
 import { generateBookOverview } from '../lib/llm-tasks'
 
 export function registerBooksIpc(cfg: AppConfig) {
@@ -18,8 +17,6 @@ export function registerBooksIpc(cfg: AppConfig) {
       chapterCount: b.chapterCount,
       ...(b.bookGuide ? { bookGuide: b.bookGuide.content } : {}),
       ...(typeof b.parserVersion === 'number' ? { parserVersion: b.parserVersion } : {}),
-      ...(b.parserKind ? { parserKind: b.parserKind } : {}),
-      ...(b.parserNote ? { parserNote: b.parserNote } : {}),
     }))
   )
 
@@ -105,26 +102,5 @@ export function registerBooksIpc(cfg: AppConfig) {
   ipcMain.handle('books:bookGuide', async (_e, a: { bookDir: string }) => {
     assertInsideBooks(cfg.libraryPath, a.bookDir)
     return { content: await generateBookOverview(cfg, a.bookDir) }
-  })
-
-  // 结构化产物导入（对照实验）：离线样本，不发起任何网络请求。
-  // 写入契约与 PDF 导入完全一致，因此书架/章节/导读/旁注/笔记零改动可用。
-  ipcMain.handle('books:importStructuredDemo', async () => {
-    try {
-      const book = importStructuredBundle(cfg.libraryPath, buildDemoStructuredBundle())
-      const entry: BookEntry = {
-        dir: book.dir,
-        title: book.title,
-        importedAt: book.importedAt,
-        hasToc: book.hasToc,
-        chapterCount: book.toc.length,
-        parserVersion: book.parserVersion,
-        ...(book.parserKind ? { parserKind: book.parserKind } : {}),
-        ...(book.parserNote ? { parserNote: book.parserNote } : {}),
-      }
-      return { book: entry }
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : String(err) }
-    }
   })
 }

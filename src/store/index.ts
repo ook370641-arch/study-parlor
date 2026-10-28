@@ -148,8 +148,6 @@ type AppStore = {
   removeBook: (dir: string) => Promise<void>
   /** 用当前解析器原地重解析旧书（正文档落格式升级）；成功后刷新书架与当前章节 */
   reparseBook: (dir: string) => Promise<void>
-  /** 导入内置结构化产物样本（DocFlow 对照实验，离线） */
-  importStructuredDemo: () => Promise<void>
   booksReparsing: boolean
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
@@ -1292,25 +1290,6 @@ export const useStore = create<AppStore>((set, get) => ({
       void ipc.patchState({ booksLastBook: null } as Partial<StateJson>)
     }
     await get().loadBooks()
-  },
-
-  importStructuredDemo: async () => {
-    if (get().booksImporting) return
-    set({ booksImporting: true })
-    try {
-      const r = await ipc.booksImportStructuredDemo()
-      if ('error' in r) {
-        get().showToast(r.error)
-        return
-      }
-      await get().loadBooks()
-      await get().selectBook(r.book.dir)
-      get().showToast(`已导入结构化样本《${r.book.title}》`)
-    } catch (err) {
-      get().showToast(err instanceof Error ? err.message : '结构化样本导入失败')
-    } finally {
-      set({ booksImporting: false })
-    }
   },
 
   reparseBook: async (dir) => {

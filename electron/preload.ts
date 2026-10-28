@@ -151,7 +151,6 @@ const api: IpcApi = {
   booksBookGuide: (a) => ipcRenderer.invoke('books:bookGuide', a),
   booksDelete: (a) => ipcRenderer.invoke('books:delete', a),
   booksReparse: (a) => ipcRenderer.invoke('books:reparse', a),
-  booksImportStructuredDemo: () => ipcRenderer.invoke('books:importStructuredDemo'),
 
   articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),
   articleAssistantSendMessage: (a) => ipcRenderer.invoke('articleAssistant:sendMessage', a),

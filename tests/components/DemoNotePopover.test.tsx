@@ -56,10 +56,10 @@ describe('DemoNotePopover', () => {
     render(
       <div data-testid="clip-container" style={{ transform: 'translateZ(0)', overflow: 'hidden' }}>
         <span ref={ref} />
-        <DemoNotePopover noteId="docflow" anchorRef={ref} onClose={() => {}} />
+        <DemoNotePopover noteId="book-source" anchorRef={ref} onClose={() => {}} />
       </div>
     )
-    const panel = screen.getByTestId('demo-note-popover-docflow')
+    const panel = screen.getByTestId('demo-note-popover-book-source')
     // portal 后弹层不在这层带 transform 的容器里，而是 body 的直接子元素
     expect(panel.parentElement).toBe(document.body)
     expect(screen.getByTestId('clip-container')).not.toContainElement(panel)

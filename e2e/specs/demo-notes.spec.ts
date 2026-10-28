@@ -5,11 +5,11 @@ import { CoverPage } from '../pages/CoverPage'
 import { seedBook } from '../helpers/test-library'
 
 /**
- * Demo 说明入口（`i` 按钮）：五个位置都存在、都能展开、都能关闭。
+ * Demo 说明入口（`i` 按钮）：四个位置都存在、都能展开、都能关闭。
  * 覆盖用户的演示动线：书籍来源 → 章节（导读）→ 旁注 → 点亮灯火（复习/图表）。
  */
 test.describe('@p1 demo notes', () => {
-  test('书籍来源与章节：解析说明、结构化样本、导读说明、旁注说明', async ({ window, testLibraryPath }) => {
+  test('书籍来源与章节：解析说明、导读说明、旁注说明', async ({ window, testLibraryPath }) => {
     seedBook(testLibraryPath, {
       title: 'E2E 说明之书',
       chapters: [{ title: '第一章 起', body: '## 第一节\n\n正文内容甲。' }],
@@ -31,48 +31,7 @@ test.describe('@p1 demo notes', () => {
     await window.getByTestId('demo-note-close').click()
     await expect(bookNote).toHaveCount(0)
 
-    // DocFlow 结构化样本：导入后书卡出现「结构化来源」标记，说明入口可展开
-    const docflowInfo = window.getByTestId('demo-info-docflow')
-    await expect(docflowInfo).toBeVisible()
-    await window.getByTestId('book-import-structured-demo').click()
-    await expect(window.getByTestId('book-parser-badge-0')).toContainText('结构化来源', { timeout: 15_000 })
-    await docflowInfo.click()
-    const docflowNote = window.getByTestId('demo-note-popover-docflow')
-    await expect(docflowNote).toContainText('不是 DocFlow 实时调用')
-    await expect(docflowNote).toBeVisible()
-
-    // 层级回归：书籍列滚动容器带 transform + overflow，弹层必须 portal 到 body
-    // 且是视口内该位置上最顶层的元素，不能被列或其他面板遮住。
-    const docflowBox = (await docflowNote.boundingBox())!
-    expect(await window.evaluate(() => {
-      const el = document.querySelector('[data-testid="demo-note-popover-docflow"]')
-      return el?.parentElement === document.body
-    })).toBe(true)
-    const topmost = await window.evaluate(({ points }) =>
-      points.map(([x, y]) => {
-        const el = document.elementFromPoint(x, y) as HTMLElement | null
-        return !!el?.closest('[data-testid="demo-note-popover-docflow"]')
-      }),
-      {
-        points: [
-          [docflowBox.x + 12, docflowBox.y + 12],
-          [docflowBox.x + docflowBox.width / 2, docflowBox.y + docflowBox.height / 2],
-          [docflowBox.x + docflowBox.width - 12, docflowBox.y + docflowBox.height - 12],
-        ],
-      }
-    )
-    expect(topmost).toEqual([true, true, true])
-    // 完整落在视口内（底部入口会向上翻）
-    const viewport = await window.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }))
-    expect(docflowBox.x).toBeGreaterThanOrEqual(0)
-    expect(docflowBox.y).toBeGreaterThanOrEqual(0)
-    expect(docflowBox.x + docflowBox.width).toBeLessThanOrEqual(viewport.width)
-    expect(docflowBox.y + docflowBox.height).toBeLessThanOrEqual(viewport.height)
-
-    await window.getByTestId('demo-note-close').click()
-
-    // 1. 导读：进入章节后，「导读」标题右侧（结构化样本导入后会排到书卡第一位，
-    //    因此按书名定位，不依赖索引）
+    // 1. 导读：进入章节后，「导读」标题右侧（按书名定位，不依赖索引）
     const e2eBook = window.locator('[data-testid^="book-card-"]:has-text("E2E 说明之书")')
     await e2eBook.click()
     await window.getByTestId('chapter-row-0').click()
@@ -82,8 +41,37 @@ test.describe('@p1 demo notes', () => {
     await expect(guideInfo).toBeVisible()
     await guideInfo.click()
     const guideNote = window.getByTestId('demo-note-popover-guide')
-    await expect(guideNote).toBeVisible()
     await expect(guideNote).toContainText('当前链路（三阶段，可观测）')
+    await expect(guideNote).toBeVisible()
+
+    // 层级回归：列滚动容器带 transform + overflow，弹层必须 portal 到 body
+    // 且是视口内该位置上最顶层的元素，不能被列或其他面板遮住。
+    const guideBox = (await guideNote.boundingBox())!
+    expect(await window.evaluate(() => {
+      const el = document.querySelector('[data-testid="demo-note-popover-guide"]')
+      return el?.parentElement === document.body
+    })).toBe(true)
+    const topmost = await window.evaluate(({ points }) =>
+      points.map(([x, y]) => {
+        const el = document.elementFromPoint(x, y) as HTMLElement | null
+        return !!el?.closest('[data-testid="demo-note-popover-guide"]')
+      }),
+      {
+        points: [
+          [guideBox.x + 12, guideBox.y + 12],
+          [guideBox.x + guideBox.width / 2, guideBox.y + guideBox.height / 2],
+          [guideBox.x + guideBox.width - 12, guideBox.y + guideBox.height - 12],
+        ],
+      }
+    )
+    expect(topmost).toEqual([true, true, true])
+    // 完整落在视口内
+    const viewport = await window.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }))
+    expect(guideBox.x).toBeGreaterThanOrEqual(0)
+    expect(guideBox.y).toBeGreaterThanOrEqual(0)
+    expect(guideBox.x + guideBox.width).toBeLessThanOrEqual(viewport.width)
+    expect(guideBox.y + guideBox.height).toBeLessThanOrEqual(viewport.height)
+
     await guideNote.getByTestId('demo-note-close').click()
 
     // 2. 旁注：打开聊天窗后，关闭按钮左侧

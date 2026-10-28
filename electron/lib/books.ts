@@ -51,10 +51,6 @@ export interface BookJson {
   bookGuide?: { content: string; generatedAt: string }
   /** 解析器版本；缺失视为 1（旧解析产物） */
   parserVersion?: number
-  /** 解析来源：缺省视为 pdfjs（本地文本抽取）；docflow-bundle 表示外部结构化产物 */
-  parserKind?: 'pdfjs' | 'docflow-bundle'
-  /** 解析器说明（结构化来源的追溯信息，展示在书架卡片） */
-  parserNote?: string
 }
 
 export type ScannedBook = BookJson & { dir: string; chapterCount: number }
@@ -110,10 +106,6 @@ export function readBookJson(dirAbs: string): BookJson | null {
       ...(typeof data.parserVersion === 'number' && Number.isFinite(data.parserVersion)
         ? { parserVersion: data.parserVersion }
         : {}),
-      ...(data.parserKind === 'docflow-bundle' || data.parserKind === 'pdfjs'
-        ? { parserKind: data.parserKind }
-        : {}),
-      ...(typeof data.parserNote === 'string' && data.parserNote ? { parserNote: data.parserNote } : {}),
     }
   } catch {
     return null
