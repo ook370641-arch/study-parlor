@@ -24,11 +24,17 @@ export function guideProgressText(p: GuideProgress | null): string {
   return parts.detail ? `${parts.label} ${parts.detail}` : parts.label
 }
 
-/** 拆分进度文案为 label（阶段关键词）和 detail（数字/计数），UI 层分别用 ember 和 muted 渲染 */
+/** 拆分进度文案为 label（阶段关键词）和 detail（数字/计数），UI 层分别用 ember 和 muted 渲染。
+ *
+ *  文案基调：与夜航/夜话的「灯下读书」气质一致，用「展卷 · 循迹 · 落笔」三段动作代替
+ *  「规划 / 检索 / 撰写」的工程词。detail 保持数字可核对，但不堆术语——
+ *  `§n/§m` 对用户没有意义，改成「第 n 节，共 m 节」。 */
 export function guideProgressParts(p: GuideProgress | null): { label: string; detail: string } {
-  if (!p || p.stage === 'planning') return { label: '规划检索中…', detail: '' }
-  if (p.stage === 'searching') return { label: '检索背景资料中…', detail: `${p.done}/${p.total}` }
-  return { label: '撰写导读中…', detail: `§${p.entriesDone}/§${p.entriesTotal} · 已写 ${p.chars} 字` }
+  if (!p || p.stage === 'planning') return { label: '展卷定章…', detail: '' }
+  if (p.stage === 'searching') return { label: '循迹访书…', detail: `${p.done} / ${p.total} 处` }
+  const progress = p.entriesTotal > 0 ? `第 ${Math.min(p.entriesDone + 1, p.entriesTotal)} 节，共 ${p.entriesTotal} 节` : ''
+  const chars = p.chars > 0 ? `已落 ${p.chars} 字` : ''
+  return { label: '落笔成文…', detail: [progress, chars].filter(Boolean).join(' · ') }
 }
 
 /** 进度痕宽度（0-1）：规划 5%，搜索 5%-30%，撰写 30%-100%，超发 clamp 到 1 */

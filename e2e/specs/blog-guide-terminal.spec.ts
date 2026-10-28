@@ -62,7 +62,7 @@ test.describe('@p1 博客导读终态（Task 8 验收）', () => {
   test.describe('导读失败终态（E2E_GUIDE_BAD_JSON）', () => {
     test.use({ extraEnv: { E2E_ANTHROPIC_OFFLINE: '1', E2E_GUIDE_BAD_JSON: '1' } })
 
-    test('失败终态必达：guide-retry 可见、撰写导读中消失、重试可再触发生成', async ({
+    test('失败终态必达：guide-retry 可见、落笔成文消失、重试可再触发生成', async ({
       window,
       testLibraryPath,
       testConfigDir,
@@ -88,10 +88,10 @@ test.describe('@p1 博客导读终态（Task 8 验收）', () => {
       })
       await openBlogArticle(window, 'E2E Guide Bad')
 
-      // mock 合成三阶段进度 → 先出现进度（含撰写导读中）
+      // mock 合成三阶段进度 → 先出现进度（含落笔成文）
       await expect(window.locator(SEL.guideProgress)).toBeVisible({ timeout: 15000 })
 
-      // E2E_GUIDE_BAD_JSON 门控 → 最终终态：错误 + 重试，进度消失（撰写导读中 toBeHidden）
+      // E2E_GUIDE_BAD_JSON 门控 → 最终终态：错误 + 重试，进度消失（落笔成文 toBeHidden）
       await expect(window.locator(SEL.guideRetry)).toBeVisible({ timeout: 15000 })
       await expect(window.locator(SEL.guideProgress)).toBeHidden()
       await expect(window.locator(SEL.guideChunk)).toHaveCount(0)

@@ -3,7 +3,7 @@ import { GuideSidebar } from './GuideSidebar'
 import { ArticleCompanionBoard } from './ArticleCompanionBoard'
 import type { BriefingTheme } from '@shared/index'
 
-export type ArticleSideSource = 'anthropic'
+export type ArticleSideSource = 'anthropic' | 'book'
 export type ArticlePanelMode = 'guide' | 'companion'
 
 export function ArticleGuideTabs({ source, theme = 'academic' }: { source: ArticleSideSource; theme?: BriefingTheme }) {

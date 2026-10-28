@@ -43,11 +43,18 @@ describe('isGuideCacheCurrent', () => {
 
 describe('guideProgressText', () => {
   it('formats the three stages', () => {
-    expect(guideProgressText(null)).toBe('规划检索中…')
-    expect(guideProgressText({ stage: 'planning' })).toBe('规划检索中…')
-    expect(guideProgressText({ stage: 'searching', done: 3, total: 7 })).toBe('检索背景资料中… 3/7')
+    expect(guideProgressText(null)).toBe('展卷定章…')
+    expect(guideProgressText({ stage: 'planning' })).toBe('展卷定章…')
+    expect(guideProgressText({ stage: 'searching', done: 3, total: 7 })).toBe('循迹访书… 3 / 7 处')
     expect(guideProgressText({ stage: 'writing', chars: 860, entriesDone: 2, entriesTotal: 14 }))
-      .toBe('撰写导读中… §2/§14 · 已写 860 字')
+      .toBe('落笔成文… 第 3 节，共 14 节 · 已落 860 字')
+  })
+
+  it('撰写阶段零进度时不显示「第 1 节」占位溢出，字数未起时不显示', () => {
+    expect(guideProgressParts({ stage: 'writing', chars: 0, entriesDone: 0, entriesTotal: 0 }))
+      .toEqual({ label: '落笔成文…', detail: '' })
+    expect(guideProgressParts({ stage: 'writing', chars: 0, entriesDone: 0, entriesTotal: 3 }))
+      .toEqual({ label: '落笔成文…', detail: '第 1 节，共 3 节' })
   })
 })
 
@@ -65,10 +72,10 @@ describe('guideProgressFraction', () => {
 
 describe('guideProgressParts', () => {
   it('拆分 label 与 detail', () => {
-    expect(guideProgressParts(null)).toEqual({ label: '规划检索中…', detail: '' })
+    expect(guideProgressParts(null)).toEqual({ label: '展卷定章…', detail: '' })
     expect(guideProgressParts({ stage: 'searching', done: 3, total: 7 }))
-      .toEqual({ label: '检索背景资料中…', detail: '3/7' })
+      .toEqual({ label: '循迹访书…', detail: '3 / 7 处' })
     expect(guideProgressParts({ stage: 'writing', chars: 860, entriesDone: 2, entriesTotal: 14 }))
-      .toEqual({ label: '撰写导读中…', detail: '§2/§14 · 已写 860 字' })
+      .toEqual({ label: '落笔成文…', detail: '第 3 节，共 14 节 · 已落 860 字' })
   })
 })

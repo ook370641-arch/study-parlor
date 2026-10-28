@@ -1,3 +1,8 @@
+---
+status: removed
+removal: docs/superpowers/plans/2026-10-08-remove-three-sources.md
+---
+
 # 求职简报系统优化 — 设计文档
 
 **日期**: 2026-07-25 | **状态**: 待审核

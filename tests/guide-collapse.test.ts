@@ -33,4 +33,34 @@ describe('setArticleAssistantGuideCollapsed', () => {
 
     expect(useStore.getState().articlePanelMode.anthropic).toBe('companion')
   })
+
+  it('书籍对照模式折叠右栏 → book 回到 guide 且 picker 清空', () => {
+    useStore.setState({
+      articlePanelMode: { anthropic: 'guide', book: 'companion' },
+      writingCompanionPicker: 'book',
+      articleAssistantGuideCollapsed: false,
+    } as any)
+
+    useStore.getState().setArticleAssistantGuideCollapsed(true)
+
+    const s = useStore.getState()
+    expect(s.articlePanelMode.book).toBe('guide')
+    expect(s.articlePanelMode.anthropic).toBe('guide')
+    expect(s.writingCompanionPicker).toBeNull()
+    expect(s.articleAssistantGuideCollapsed).toBe(true)
+  })
+
+  it('两栏都是 guide 时折叠不产生 modeReset（避免无意义的 patch）', () => {
+    useStore.setState({
+      articlePanelMode: { anthropic: 'guide', book: 'guide' },
+      writingCompanionPicker: 'book',
+      articleAssistantGuideCollapsed: false,
+    } as any)
+
+    useStore.getState().setArticleAssistantGuideCollapsed(true)
+
+    const s = useStore.getState()
+    expect(s.articlePanelMode).toEqual({ anthropic: 'guide', book: 'guide' })
+    expect(s.writingCompanionPicker).toBeNull()
+  })
 })

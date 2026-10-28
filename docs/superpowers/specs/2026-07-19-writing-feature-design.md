@@ -1,6 +1,7 @@
 ---
 date: 2026-07-19
-status: approved-pending-review
+status: historical
+note: 原标记 approved-pending-review（设计已批准待评审）；写作功能已上线并被后续多轮迭代覆盖，当时为简报「第四来源」，现为两来源之一
 ---
 
 # 写作功能设计：夜航简报第四来源「写作」

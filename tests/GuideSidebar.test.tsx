@@ -15,6 +15,7 @@ function mockStore(session: AssistantSession | null) {
     guideScrollToChunkIndex: null,
     setGuideScrollToChunk: vi.fn(),
     generateAssistantGuide: vi.fn(),
+    briefingTheme: 'academic',
   }
   ;(storeModule.useStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     (selector: (s: typeof fullState) => unknown) => selector(fullState)
@@ -103,7 +104,7 @@ describe('GuideSidebar', () => {
     mockStore(s)
     render(<GuideSidebar />)
     const el = screen.getByTestId('guide-progress')
-    expect(el).toHaveTextContent('检索背景资料中… 1/2')
+    expect(el).toHaveTextContent('循迹访书… 1 / 2 处')
   })
 
   it('shows writing progress with entry counter and char count', () => {
@@ -113,7 +114,7 @@ describe('GuideSidebar', () => {
     s.guideProgress = { stage: 'writing', chars: 860, entriesDone: 2, entriesTotal: 14 }
     mockStore(s)
     render(<GuideSidebar />)
-    expect(screen.getByTestId('guide-progress')).toHaveTextContent('撰写导读中… §2/§14 · 已写 860 字')
+    expect(screen.getByTestId('guide-progress')).toHaveTextContent('落笔成文… 第 3 节，共 14 节 · 已落 860 字')
   })
 
   it('renders progress under newspaper theme too', () => {
@@ -123,7 +124,7 @@ describe('GuideSidebar', () => {
     s.guideProgress = { stage: 'planning' }
     mockStore(s)
     render(<GuideSidebar theme="newspaper" />)
-    expect(screen.getByTestId('guide-progress')).toHaveTextContent('规划检索中…')
+    expect(screen.getByTestId('guide-progress')).toHaveTextContent('展卷定章…')
   })
 
   it('uses ember accent on the stage keyword in progress text', () => {
@@ -136,7 +137,7 @@ describe('GuideSidebar', () => {
     const progress = screen.getByTestId('guide-progress')
     const emberSpan = progress.querySelector('span.text-ember')
     expect(emberSpan).not.toBeNull()
-    expect(emberSpan!.textContent).toBe('撰写导读中…')
+    expect(emberSpan!.textContent).toBe('落笔成文…')
   })
 
   it('renders guide error with a retry button that regenerates the guide', () => {

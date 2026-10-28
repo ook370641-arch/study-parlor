@@ -4,6 +4,8 @@ const anthropicDeleteArticle = vi.fn()
 vi.mock('@/lib/ipc', () => ({
   ipc: {
     anthropicDeleteArticle: (...args: unknown[]) => anthropicDeleteArticle(...args),
+    // closeAnthropicReader 会清空 lastAnthropicReaderFile
+    patchState: vi.fn(async () => undefined),
   },
 }))
 

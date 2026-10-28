@@ -80,7 +80,7 @@ test.describe('@p2 article assistant guide', () => {
   test('guide: progress stages visible, then summary guide renders', async ({ window, testLibraryPath, testConfigDir }) => {
     const assistant = await openArticleWithGuide(window, testLibraryPath, testConfigDir)
     // mock 合成三阶段进度（约 3.4s）：先断言进度文案出现，再等导读落地
-    await expect(window.locator('[data-testid="guide-progress"]')).toContainText('检索背景资料中', { timeout: 15000 })
+    await expect(window.locator('[data-testid="guide-progress"]')).toContainText('循迹访书', { timeout: 15000 })
     await assistant.waitForGuideLoaded()
     await expect(window.locator('[data-testid="guide-chunk"]').first()).toContainText('AI Safety')
   })
@@ -96,11 +96,11 @@ test.describe('@p2 article assistant guide', () => {
     const assistant = await openArticleWithGuide(window, testLibraryPath, testConfigDir)
     const progress = window.locator('[data-testid="guide-progress"]')
     // 阶段 1：规划（mock 约 0.4s 内出现）
-    await expect(progress).toContainText('规划检索中', { timeout: 5000 })
+    await expect(progress).toContainText('展卷定章', { timeout: 5000 })
     // 阶段 2：搜索（mock 在 0.4s + 0.5s 后发第一个搜索进度）
-    await expect(progress).toContainText('检索背景资料中', { timeout: 5000 })
+    await expect(progress).toContainText('循迹访书', { timeout: 5000 })
     // 阶段 3：撰写（mock 在 ~1.4s 后开始发 writing 进度）
-    await expect(progress).toContainText('撰写导读中', { timeout: 15000 })
+    await expect(progress).toContainText('落笔成文', { timeout: 15000 })
     // 最终导读落地为 summary 形状
     await assistant.waitForGuideLoaded()
     await expect(window.locator('[data-testid="guide-chunk"]').first()).toContainText('AI Safety')

@@ -1,6 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
-import { guideProgressFraction, guideProgressParts } from '@/lib/guide-progress'
+import { guideProgressParts } from '@/lib/guide-progress'
+import { GuideCompass } from './GuideCompass'
+import { DemoInfoButton, DemoNotePopover } from '@/components/demo/DemoNotePopover'
+import type { DemoNote } from '@/lib/demo-notes'
 
 // 导读字号锚定正文字号变量 --briefing-body-size（档位步进 2px）：
 // 导读正文级恒比正文小 1 档，术语级小 2 档，随正文字号控制同步缩放
@@ -23,6 +26,8 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
   const generateAssistantGuide = useStore((s) => s.generateAssistantGuide)
   const isAcademic = theme !== 'newspaper'
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [openNote, setOpenNote] = useState<DemoNote['id'] | null>(null)
+  const guideInfoRef = useRef<HTMLSpanElement>(null)
 
   // Scroll guide sidebar to chunk when triggered by article body click
   useEffect(() => {
@@ -39,23 +44,43 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
 
   return (
     <div className={`h-full flex flex-col shrink-0 border-l ${isAcademic ? 'border-parchment/10 bg-ink/40' : 'border-[#1a1a1a]/10 bg-[#f5f2ed]'} `}>
-      <div className={`px-4 py-3 text-xs uppercase tracking-widest select-none ${isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}`}>导读</div>
+      <div className={`px-4 py-3 flex items-center justify-between gap-2 ${isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}`}>
+        <span className="text-xs uppercase tracking-widest select-none">导读</span>
+        <span ref={guideInfoRef} className="contents">
+          <DemoInfoButton
+            testId="demo-info-guide"
+            size="icon"
+            label="这份导读是怎么生成的"
+            theme={theme}
+            active={openNote === 'guide'}
+            onClick={() => setOpenNote((v) => (v === 'guide' ? null : 'guide'))}
+          />
+        </span>
+      </div>
+      <DemoNotePopover noteId={openNote} anchorRef={guideInfoRef} onClose={() => setOpenNote(null)} theme={theme} />
       {guideLoading && (() => {
           const parts = guideProgressParts(guideProgress)
           return (
-        <div data-testid="guide-progress" className="px-4">
-          <div
-            style={{ fontSize: GUIDE_TERM_SIZE, fontVariantNumeric: 'tabular-nums' }}
-            className={isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}
-          >
-            <span className="text-ember">{parts.label}</span>
-            {parts.detail && <span> {parts.detail}</span>}
+        // 加载态独占整栏：罗盘（占据剩余空间）+ 居中状态行。
+        // 画作与语录属于正文页（BookReader / AnthropicArticleReader / NoteBoard），
+        // 不在这里——侧栏是工具区，不是阅读区。
+        <div data-testid="guide-progress" className="flex-1 min-h-0 flex flex-col px-4 pb-5 overflow-y-auto">
+          <div className="flex-1 min-h-0 mt-4 flex items-center justify-center">
+            <GuideCompass progress={guideProgress} theme={isAcademic ? 'academic' : 'newspaper'} height="auto" />
           </div>
-          <div className={`mt-2 h-px ${isAcademic ? 'bg-parchment/10' : 'bg-[#1a1a1a]/10'}`}>
-            <div
-              className="h-px bg-ember/60 transition-[width] duration-400 motion-reduce:transition-none"
-              style={{ width: `${Math.round(guideProgressFraction(guideProgress) * 100)}%` }}
-            />
+          <div
+            role="status"
+            aria-live="polite"
+            style={{ fontSize: GUIDE_TERM_SIZE, fontVariantNumeric: 'tabular-nums' }}
+            className={`mt-4 text-center ${isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}`}
+          >
+            <div className="font-serif tracking-[0.08em]">
+              <span className="text-ember">{parts.label}</span>
+              {parts.detail && <span className={`ml-1 ${isAcademic ? 'text-parchment/45' : 'text-[#6b5d52]/70'}`}> {parts.detail}</span>}
+            </div>
+            <div className={`mt-1 text-[10px] tracking-[0.2em] ${isAcademic ? 'text-parchment/25' : 'text-[#6b5d52]/50'}`}>
+              READING · REMEMBERING
+            </div>
           </div>
         </div>
         )})()}

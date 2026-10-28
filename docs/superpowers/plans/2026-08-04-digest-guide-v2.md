@@ -1,3 +1,8 @@
+---
+status: removed
+removal: docs/superpowers/plans/2026-10-08-remove-three-sources.md
+---
+
 # 夜航简报-前沿导读升级 v2（背景铺陈式）实施计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

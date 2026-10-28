@@ -13,7 +13,8 @@ import {
   formatSearchResults,
 } from '../lib/article-assistant-prompt'
 import { generateArticleSearchQuery } from '../lib/article-search-query'
-import { runBlogGuideV2 } from '../lib/guide-v2-pipeline'
+import { runBlogGuideV2, runGuideV2ForBook } from '../lib/guide-v2-pipeline'
+import { buildBookContextBlock } from '../lib/book-guide'
 import { GUIDE_FORMAT_VERSION } from '../lib/guide-v2'
 import type { AppConfig } from '../env'
 import type {
@@ -26,6 +27,7 @@ import type {
   ArticleAssistantSessionFile,
   ArticleAssistantTerm,
   AssistantThinkingEffort,
+  BookGuideContext,
   Message,
 } from '@shared/index'
 
@@ -230,7 +232,13 @@ export function parseAssistantSessionBody(body: string): ArticleAssistantMessage
 export function registerArticleAssistantIpc(cfg: AppConfig) {
   ipcMain.handle(
     'articleAssistant:generateGuide',
-    async (event, args: { articleContent: string; articleType: 'anthropic-article'; articleTitle?: string; entriesTotal?: number }) => {
+    async (event, args: {
+      articleContent: string
+      articleType: 'anthropic-article' | 'book-chapter'
+      articleTitle?: string
+      entriesTotal?: number
+      bookContext?: BookGuideContext
+    }) => {
       const send = (channel: string, ...payload: unknown[]) => {
         if (event.sender.isDestroyed()) return
         event.sender.send(channel, ...payload)
@@ -243,7 +251,13 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         const entriesTotal = Math.max(args.entriesTotal ?? 1, 1)
         send('articleAssistant:guideProgress', { stage: 'planning' })
         await sleep(400)
-        send('articleAssistant:guideProgress', { stage: 'searching', done: 1, total: 1 })
+        send('articleAssistant:guideProgress', {
+          stage: 'searching',
+          done: 1,
+          total: 2,
+          queries: ['mock query 1', 'mock query 2'],
+          hits: [2, 1],
+        })
         await sleep(500)
         for (let i = 1; i <= 3; i++) {
           await sleep(400)
@@ -287,6 +301,34 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         return mockGuide
       }
 
+      // 书籍章节走同一条 v2 管线，prompt 换成书籍变体，并在正文头部注入书籍上下文
+      if (args.articleType === 'book-chapter') {
+        const bookPromptPath = path.join(promptsDir(), 'book-guide-v2.md')
+        if (!fs.existsSync(bookPromptPath)) {
+          throw typedError('GUIDE_LLM_ERROR', 'book-guide-v2.md not found')
+        }
+        const systemBook = fs.readFileSync(bookPromptPath, 'utf8')
+        const ctxBlock = args.bookContext
+          ? buildBookContextBlock(args.bookContext, args.articleTitle ?? '') + '\n\n'
+          : ''
+        try {
+          return await runGuideV2ForBook(
+            cfg,
+            {
+              system: systemBook,
+              articleContent: ctxBlock + args.articleContent,
+              articleTitle: args.articleTitle,
+              entriesTotal: args.entriesTotal,
+            },
+            (p) => send('articleAssistant:guideProgress', p)
+          )
+        } catch (err) {
+          const code = (err as Error & { code?: string }).code
+          if (code === 'GUIDE_JSON_ERROR' || code === 'GUIDE_ABORT') throw err
+          throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
+        }
+      }
+
       // 博客走 v2 管线（搜索增强背景 + 保留章节总结）
       const blogPromptPath = path.join(promptsDir(), 'blog-guide-v2.md')
       const systemBlog = fs.existsSync(blogPromptPath) ? fs.readFileSync(blogPromptPath, 'utf8') : ''
@@ -315,7 +357,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       _,
       args: {
         parentPath: string
-        parentType: 'anthropic-article' | 'writing'
+        parentType: 'anthropic-article' | 'writing' | 'book-chapter'
         messages: ArticleAssistantMessage[]
       }
     ): Promise<{ filePath: string }> => {
@@ -365,7 +407,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:readSession',
     async (
       _,
-      args: { parentPath: string; parentType: 'anthropic-article' | 'writing' }
+      args: { parentPath: string; parentType: 'anthropic-article' | 'writing' | 'book-chapter' }
     ): Promise<ArticleAssistantSessionFile | null> => {
       const sessionPath = sessionPathFor(args.parentPath, cfg.libraryPath)
       if (!fs.existsSync(sessionPath)) return null
@@ -394,7 +436,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
       args: {
         sessionId: string
         articleContent: string
-        articleType: 'anthropic-article'
+        articleType: 'anthropic-article' | 'book-chapter'
         messages: ArticleAssistantMessage[]
         annotations?: ArticleAnnotation[]
         selection?: string
@@ -565,15 +607,20 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:writeGuide',
     async (
       _,
-      args: { parentPath: string; parentType: 'anthropic-article' | 'writing'; guide: ArticleAssistantGuide }
+      args: { parentPath: string; parentType: 'anthropic-article' | 'writing' | 'book-chapter'; guide: ArticleAssistantGuide }
     ): Promise<{ filePath: string }> => {
       const parsed = path.parse(resolveParentPath(args.parentPath, cfg.libraryPath))
       const guidePath = guidePathFor(args.parentPath, cfg.libraryPath)
       assertInsideLibrary(guidePath, cfg.libraryPath)
+      // 书籍被删除后不要靠 mkdir 把章节目录重新建出来
+      if (args.parentType === 'book-chapter' && !fs.existsSync(resolveParentPath(args.parentPath, cfg.libraryPath))) {
+        throw typedError('SAVE_ERROR', 'chapter deleted')
+      }
 
       const now = new Date().toISOString()
       const isV2 =
         args.parentType === 'anthropic-article' ||
+        args.parentType === 'book-chapter' ||
         args.guide.chunks.some((c) => typeof c.context === 'string' && c.context.length > 0)
       const fm = {
         title: '导读',
@@ -605,7 +652,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
     'articleAssistant:readGuide',
     async (
       _,
-      args: { parentPath: string; parentType: 'anthropic-article' | 'writing' }
+      args: { parentPath: string; parentType: 'anthropic-article' | 'writing' | 'book-chapter' }
     ): Promise<ArticleAssistantGuideFile | null> => {
       const guidePath = guidePathFor(args.parentPath, cfg.libraryPath)
       if (!fs.existsSync(guidePath)) return null

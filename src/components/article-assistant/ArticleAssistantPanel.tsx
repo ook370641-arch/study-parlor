@@ -4,19 +4,21 @@ import { GuideSidebar } from './GuideSidebar'
 import { ChatWindow } from './ChatWindow'
 import { ArticleDivider } from './ArticleDivider'
 import { ArticleGuideTabs } from './ArticleGuideTabs'
+import type { BookGuideContext, BriefingTheme } from '@shared/index'
 
 interface Props {
-  articleType: 'anthropic-article'
+  articleType: 'anthropic-article' | 'book-chapter'
   parentPath: string
   articleTitle?: string
   articleContent: string
   showGuide?: boolean
   autoGenerateGuide?: boolean
-  theme?: 'academic' | 'newspaper'
-  source?: 'anthropic'
+  theme?: BriefingTheme
+  source?: 'anthropic' | 'book'
+  bookContext?: BookGuideContext
 }
 
-export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, showGuide = true, autoGenerateGuide, theme = 'academic', source }: Props) {
+export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, showGuide = true, autoGenerateGuide, theme = 'academic', source, bookContext }: Props) {
   const contextId = useStore((s) => s.assistantSession?.contextId ?? null)
   const isOpen = useStore((s) => s.assistantSession?.isOpen ?? false)
   const hasPendingSelection = useStore((s) => !!s.assistantSession?.pendingSelection)
@@ -41,7 +43,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
       if (prev && useStore.getState().assistantSession) {
         persistAssistantState()
       }
-      openAssistantSession({ contextId: parentPath, contextType: articleType, articleTitle, articleContent, autoGenerateGuide })
+      openAssistantSession({ contextId: parentPath, contextType: articleType, articleTitle, articleContent, bookContext, autoGenerateGuide })
     }
     return () => {
       // Persist but do NOT close/clear the session, so switching back restores it from memory + disk.

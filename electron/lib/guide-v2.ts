@@ -118,6 +118,56 @@ export function buildBlogGuidePlanPrompt(articleContent: string, articleTitle?: 
 ${articleContent}`
 }
 
+/** 书籍章节版检索规划 prompt：以章节内小节为单位，不再假设是 AI 领域长文。 */
+export function buildBookGuidePlanPrompt(articleContent: string, articleTitle?: string): string {
+  const entryCount = Math.max(countArticleHeadings(articleContent), 1)
+  return `你将为一本书的某一章（书籍章节）撰写"章节导读"做检索规划。本章共 ${entryCount} 个小节（§1–§${entryCount}），章节全文附在最后。
+
+逐节判断：为初学者写该节导读时，是否需要外部事实材料（概念出处、人物/机构背景、相关理论或争论的来龙去脉）？
+- 每节都是候选：默认需要；仅当内容自足、常识足以覆盖时才不配查询。
+- 一条查询可服务多个小节，在 entries 里列出所有相关小节序号。
+- 查询词使用与书籍主题匹配的语言（学术/英文资料优先英文，中文书优先中文），简短精准。
+- 查询总数 0-${entryCount} 动态决定：不遗漏需要事实支撑的小节，也不为常识小节浪费查询。
+
+只输出一个 JSON 对象：以 { 开头、以 } 结尾，queries 必须是数组（无需外部材料时输出 {"queries":[]}）；不要 markdown 代码块、不要任何前后解释。
+{"queries":[{"query":"...","entries":[1,3],"reason":"一句话说明查什么"}]}
+
+章节标题：${articleTitle ?? '未命名章节'}
+
+章节全文：
+${articleContent}`
+}
+
+/** 书籍章节版阶段 3 user prompt：正文 + 按小节组织的资料夹。 */
+export function buildBookGuideV2UserPrompt(args: {
+  articleContent: string
+  articleTitle?: string
+  materials: Map<number, GuideMaterial[]>
+  entryCount: number
+}): string {
+  const sections: string[] = []
+  // 无标题章节时 entryCount 可能为 0，仍保证至少生成 §1 资料夹
+  const entryCount = Math.max(args.entryCount, 1)
+  for (let i = 1; i <= entryCount; i++) {
+    const folder = args.materials.get(i)
+    if (!folder || folder.length === 0) {
+      sections.push(`### §${i}\n（无外部资料——可用模型自身知识，但禁止编造具体数字、日期、履历；拿不准就讲议题语境而非人物事实）`)
+    } else {
+      const items = folder.map((m) => `- ${m.title}\n  ${m.url}\n  ${m.snippet}`).join('\n')
+      sections.push(`### §${i}\n${items}`)
+    }
+  }
+  return `Book chapter: ${args.articleTitle ?? '未命名章节'}
+
+${args.articleContent}
+
+---
+
+## 各小节背景资料夹（§ 编号与章节内小节一一对应；写某节时只用该节的资料）
+
+${sections.join('\n\n')}`
+}
+
 /** 博客版阶段 3 user prompt：正文 + 按章节组织的资料夹（无资料章节显式标注） */
 export function buildBlogGuideV2UserPrompt(args: {
   articleContent: string

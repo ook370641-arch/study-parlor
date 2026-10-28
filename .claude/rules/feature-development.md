@@ -124,6 +124,18 @@ paths:
 - 编辑器链路：`src/components/writing/` + `src/lib/milkdown-*.ts` + `electron/lib/writing-*.ts`；行为变化后跑对应 `tests/writing-*.test.ts`（定向，不全量）。
 - Source: 2026-10-03 用户要求把写作链路与标准留进 rules。
 
+## 14. 文档状态与索引随交付同步
+
+**Why:** 文档库默认是时间点快照；功能落地/推翻/移除后不回写状态，未来 agent 会把旧 spec 当现状、甚至复活已删功能（求职/前沿/拾贝与健身两次移除均已发生此风险）。
+
+- 功能落地后：更新 `docs/README.md` 对应功能域的「现状」与历史链；spec/plan 默认 historical（免标）。
+- 设计被后续文档推翻：旧 spec 标 `status: superseded` + `superseded-by` 指向新 spec。
+- 功能移除：保留/补写移除计划作墓碑（参照 `docs/superpowers/plans/2026-10-08-remove-three-sources.md`）；相关旧 spec/plan 标 `status: removed` + `removal` 指向墓碑，禁止裸删。
+- 未动工的新设计：spec + plan 标 `status: planned`，防止被当成已实现。
+- 文档被钦定为设计基准：标 `status: current` + `verified`（随大版本复核日期）。
+- 交付前跑 `npm run docs:check`，错误清零。
+- Source: 2026-10-27 文档库整理方案（用户定调：开发完代码必须维护 docs/README.md）。
+
 ## Example: error handling
 
 - ❌ `throw new Error(JSON.stringify(response))`

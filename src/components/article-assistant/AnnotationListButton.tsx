@@ -7,9 +7,11 @@ interface Props {
   articlePath: string
   theme?: 'academic' | 'newspaper'
   briefingFontSize: BriefingFontSize
+  /** 书籍章节场景：把单条旁注存为笔记 */
+  onCreateNote?: (annotation: ArticleAnnotation) => void
 }
 
-export function AnnotationListButton({ articlePath, theme = 'academic', briefingFontSize }: Props) {
+export function AnnotationListButton({ articlePath, theme = 'academic', briefingFontSize, onCreateNote }: Props) {
   const uiSize = ANNOTATION_UI_SIZES[briefingFontSize]
   const [open, setOpen] = useState(false)
   const [annotations, setAnnotations] = useState<ArticleAnnotation[]>([])
@@ -61,24 +63,39 @@ export function AnnotationListButton({ articlePath, theme = 'academic', briefing
           }`}
         >
           {annotations.map((a) => (
-            <button
-              key={a.id}
-              data-testid="annotation-list-item"
-              data-anno-id={a.id}
-              onClick={() => jumpTo(a.id)}
-              style={{ fontSize: uiSize.small }}
-              className={`w-full text-left rounded px-2 py-1.5 transition-colors ${
-                isAcademic ? 'text-parchment/80 hover:bg-parchment/10' : 'text-[#1a1a1a] hover:bg-[#f5f2ed]'
-              }`}
-            >
-              <div className="truncate">「{a.selectedText}」</div>
-              <div className="flex items-baseline justify-between gap-2 mt-0.5">
-                <span className={`truncate ${isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'}`}>
-                  {a.note || '（无备注）'}
-                </span>
-                <span className="shrink-0 opacity-50">§{a.paragraphIndex}</span>
-              </div>
-            </button>
+            <div key={a.id} className="flex items-start gap-1">
+              <button
+                data-testid="annotation-list-item"
+                data-anno-id={a.id}
+                onClick={() => jumpTo(a.id)}
+                style={{ fontSize: uiSize.small }}
+                className={`flex-1 min-w-0 text-left rounded px-2 py-1.5 transition-colors ${
+                  isAcademic ? 'text-parchment/80 hover:bg-parchment/10' : 'text-[#1a1a1a] hover:bg-[#f5f2ed]'
+                }`}
+              >
+                <div className="truncate">「{a.selectedText}」</div>
+                <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                  <span className={`truncate ${isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'}`}>
+                    {a.note || '（无备注）'}
+                  </span>
+                  <span className="shrink-0 opacity-50">§{a.paragraphIndex}</span>
+                </div>
+              </button>
+              {onCreateNote && (
+                <button
+                  type="button"
+                  data-testid="annotation-note-create"
+                  title="存为笔记"
+                  onClick={() => onCreateNote(a)}
+                  style={{ fontSize: uiSize.small }}
+                  className={`shrink-0 rounded px-1.5 py-1 ${
+                    isAcademic ? 'text-parchment/50 hover:text-ember hover:bg-parchment/10' : 'text-[#6b5d52] hover:text-[#b0503c] hover:bg-[#1a1a1a]/5'
+                  }`}
+                >
+                  存
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}

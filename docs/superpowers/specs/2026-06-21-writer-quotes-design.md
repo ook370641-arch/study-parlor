@@ -1,3 +1,9 @@
+---
+status: superseded
+superseded-by: docs/superpowers/specs/2026-06-25-quote-display-refinement-design.md
+note: 取代范围仅 Quote 组件展示决策，其余内容按历史记录阅读
+---
+
 # 作家语录设计文档
 
 **日期**：2026-06-21  

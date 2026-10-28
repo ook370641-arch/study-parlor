@@ -4,6 +4,9 @@ dist/
 release/
 release-smoke/
 .env
+.env.bak*
+# 个人材料（面试工作底稿），不进库
+宣传文案/
 *.log
 .DS_Store
 Thumbs.db

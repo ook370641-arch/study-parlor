@@ -18,17 +18,21 @@ import type {
   BlogCollectionFile, RecommendStage, ScrollMemorySlot,
   NotepadCategory, NotepadFontSize, NotepadItem, NotepadLogEntry,
   NoteEntry, NoteMeta, NoteSource, NoteSortBy,
+  BookEntry, BookTocItem, ChapterMeta, BookGuideContext,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
+import type { DemoNoteOverrides } from '@/lib/demo-notes'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
 import { deriveTitle, migrateCoverNotepad, newNotepadId } from '@/lib/notepad'
 
 export type AssistantSession = {
   contextId: string
-  contextType: 'anthropic-article'
+  contextType: 'anthropic-article' | 'book-chapter'
   articleTitle?: string
   articleContent: string
+  /** 章节导读上下文（仅 book-chapter） */
+  bookContext?: BookGuideContext
   guide: ArticleAssistantGuide | null
   guideLoading: boolean
   guideProgress: GuideProgress | null
@@ -127,6 +131,26 @@ type AppStore = {
   /** 宪法可视化报告视图是否打开（仅运行时，与 anthropicReader 互斥） */
   constitutionReportOpen: boolean
   setBriefingSource: (source: BriefingSourceId) => Promise<void>
+  // 书籍来源
+  booksList: BookEntry[]
+  booksLoading: boolean
+  booksImporting: boolean
+  activeBookDir: string | null
+  activeBookToc: BookTocItem[]
+  activeChapter: { path: string; content: string; meta: ChapterMeta } | null
+  bookContext: BookGuideContext | null
+  booksLastBook: string | null
+  loadBooks: () => Promise<void>
+  selectBook: (dir: string) => Promise<void>
+  selectChapter: (chapterPath: string) => Promise<void>
+  syncBookCompanion: (chapterPath: string) => Promise<void>
+  importBook: () => Promise<void>
+  removeBook: (dir: string) => Promise<void>
+  /** 用当前解析器原地重解析旧书（正文档落格式升级）；成功后刷新书架与当前章节 */
+  reparseBook: (dir: string) => Promise<void>
+  /** 导入内置结构化产物样本（DocFlow 对照实验，离线） */
+  importStructuredDemo: () => Promise<void>
+  booksReparsing: boolean
   discoverAnthropicArticles: (
     opts?: { commit?: boolean }
   ) => Promise<
@@ -198,6 +222,13 @@ type AppStore = {
   notepadFontSize: NotepadFontSize
   /** 面板自定义尺寸，null=默认 */
   notepadPanelSize: { w: number; h: number } | null
+
+  /** Demo 说明文案的用户改写（noteId → 编辑路径 → 文本），落在 state.json */
+  demoNoteOverrides: DemoNoteOverrides
+  /** 提交一处说明文案修改（空文本视为改回默认） */
+  setDemoNoteOverride: (noteId: string, path: string, text: string) => void
+  /** 恢复某个说明条目的全部默认文案 */
+  resetDemoNoteOverrides: (noteId: string) => void
 
   // 外部资料摘要面板
   isExternalSummaryOpen: boolean
@@ -306,7 +337,7 @@ type AppStore = {
   assistantThinkingEffort: AssistantThinkingEffort
   toggleAssistantSocratic: () => void
   cycleAssistantThinkingEffort: () => void
-  openAssistantSession: (args: { contextId: string; contextType: 'anthropic-article'; articleTitle?: string; articleContent: string; autoGenerateGuide?: boolean }) => void
+  openAssistantSession: (args: { contextId: string; contextType: 'anthropic-article' | 'book-chapter'; articleTitle?: string; articleContent: string; bookContext?: BookGuideContext; autoGenerateGuide?: boolean }) => void
   closeAssistantSession: () => void
   toggleAssistantOpen: () => void
   toggleAssistantSearch: () => void
@@ -413,7 +444,13 @@ type AppStore = {
   setWritingListTab: (tab: 'articles' | 'repository' | 'notes') => void
   loadNotes: () => Promise<void>
   createNoteManual: (a: { title: string; url: string }) => Promise<void>
-  findOrCreateArticleNote: (a: { title: string; url: string }) => Promise<{ path: string; created: boolean }>
+  findOrCreateArticleNote: (a: {
+    title: string
+    url: string
+    source?: 'anthropic' | 'book'
+    book?: string
+    body?: string
+  }) => Promise<{ path: string; created: boolean }>
   updateNoteMetaAction: (path: string, patch: Partial<NoteMeta>) => Promise<void>
   deleteNoteAction: (path: string) => Promise<void>
   importReadNotesAction: () => Promise<{ created: number; skipped: number } | null>
@@ -432,16 +469,16 @@ type AppStore = {
   writingRenamed: (oldPath: string, newPath: string) => void
 
   // 右栏统一：文章旁注面板模式（导读/对照）+ 对照槽
-  articlePanelMode: Record<'anthropic', 'guide' | 'companion'>
+  articlePanelMode: Record<'anthropic' | 'book', 'guide' | 'companion'>
   articleCompanionMap: Record<string, string>
   // 写作树对照挑选器：非 null 时左栏临时换成写作树（瞬态，不持久化），
   // 点文件 = 放入该栏目对照槽。source 切换/切回导读/折叠右栏时清空。
-  writingCompanionPicker: 'anthropic' | null
+  writingCompanionPicker: 'anthropic' | 'book' | null
   articleCompanion: { key: string; filePath: string; kind: 'md' | 'html' | 'other'; body: string; readonly: boolean; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
-  setArticlePanelMode: (source: 'anthropic', mode: 'guide' | 'companion') => void
-  openWritingCompanionPicker: (source: 'anthropic') => void
+  setArticlePanelMode: (source: 'anthropic' | 'book', mode: 'guide' | 'companion') => void
+  openWritingCompanionPicker: (source: 'anthropic' | 'book') => void
   closeWritingCompanionPicker: () => void
-  selectArticleCompanion: (source: 'anthropic', mainKey: string, filePath: string, opts?: { readonly?: boolean }) => Promise<void>
+  selectArticleCompanion: (source: 'anthropic' | 'book', mainKey: string, filePath: string, opts?: { readonly?: boolean }) => Promise<void>
   updateArticleCompanionBody: (body: string) => void
   saveArticleCompanion: () => Promise<void>
   closeArticleCompanion: () => Promise<void>
@@ -458,6 +495,12 @@ let companionSelectSeq = 0
 
 // selectArticleCompanion 的单调序号：同 companionSelectSeq，对照槽的过期读取结果一律丢弃。
 let articleCompanionSelectSeq = 0
+
+// 书籍：切换书/章节的单调序号，丢弃过期读取结果
+let bookSelectSeq = 0
+let chapterSelectSeq = 0
+// 全书导读生成中的书（避免重复选中/刷新时并发打两次 LLM）
+const bookGuideInFlight = new Set<string>()
 
 /** Ensures sendAssistantMessage waits for history to load before sending, preventing
  *  the race where a user message lands before loadAssistantSession completes and the
@@ -545,12 +588,22 @@ export const useStore = create<AppStore>((set, get) => ({
   notepadLog: [],
   notepadFontSize: 'base',
   notepadPanelSize: null,
+  demoNoteOverrides: {},
   briefingTheme: 'academic',
   briefingFontSize: 'base',
   studyFontSize: 'lg',
   candlelightEnabled: true,
   paintingPlateEnabled: false,
   briefingSource: 'writing',
+  booksList: [],
+  booksLoading: false,
+  booksImporting: false,
+  booksReparsing: false,
+  activeBookDir: null,
+  activeBookToc: [],
+  activeChapter: null,
+  bookContext: null,
+  booksLastBook: null,
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicReaderFilePath: null,
   anthropicReaderBody: null,
@@ -596,7 +649,7 @@ export const useStore = create<AppStore>((set, get) => ({
   htmlDeleteMode: false,
   htmlDeleteDirty: false,
   htmlDeleteFlush: null,
-  articlePanelMode: { anthropic: 'guide' },
+  articlePanelMode: { anthropic: 'guide', book: 'guide' },
   articleCompanionMap: {},
   articleCompanion: null,
   lastArticleCompanion: null,
@@ -619,7 +672,7 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
       studyFontSize: normalizeStudyFontSize(state.studyFontSize),
-      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'writing' ? state.briefingSource : 'writing',
+      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'writing' || state.briefingSource === 'book' ? state.briefingSource : 'writing',
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null, sectionStatus: state.anthropicBlogCache.sectionStatus ?? {}, articleMetaCache: state.anthropicBlogCache.articleMetaCache ?? {} }
         : { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {}, articleMetaCache: {} },
@@ -649,7 +702,8 @@ export const useStore = create<AppStore>((set, get) => ({
       writingExpandedGroups: state.writingExpandedGroups ?? {},
       writingUIFontSize: state.writingUIFontSize ?? 'base',
       writingCodeblockCollapsed: state.writingCodeblockCollapsed ?? {},
-      articlePanelMode: { anthropic: state.articlePanelMode?.anthropic ?? 'guide' },
+      articlePanelMode: { anthropic: state.articlePanelMode?.anthropic ?? 'guide', book: state.articlePanelMode?.book ?? 'guide' },
+      booksLastBook: state.booksLastBook ?? null,
       articleCompanionMap: state.articleCompanionMap ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
@@ -664,6 +718,7 @@ export const useStore = create<AppStore>((set, get) => ({
       notepadLog: Array.isArray(state.notepadLog) ? state.notepadLog : [],
       notepadFontSize: state.notepadFontSize ?? 'base',
       notepadPanelSize: state.notepadPanelSize ?? null,
+      demoNoteOverrides: state.demoNoteOverrides ?? {},
       library: library.filter(t => !(state.archivedTopics ?? []).includes(t.dirName)),
       unsavedSessions: unsaved,
       groups: groupsData.groups,
@@ -676,6 +731,7 @@ export const useStore = create<AppStore>((set, get) => ({
       ipc.patchState({ coverNotepad: '', notepadItems: migrated } as Partial<StateJson>)
     }
     get().initPaintings()
+    void get().loadBooks()
 
     // dev-only 裁剪入口开关；失败静默（默认 false 即隐藏入口）
     ipc.paintingsCanEdit().then(v => set({ paintingsEditable: v === true })).catch(() => {})
@@ -797,6 +853,28 @@ export const useStore = create<AppStore>((set, get) => ({
   setNotepadPanelSize: (size) => {
     set({ notepadPanelSize: size })
     ipc.patchState({ notepadPanelSize: size } as Partial<StateJson>)
+  },
+
+  // ── Demo 说明文案改写 ─────────────────────────────────────
+  setDemoNoteOverride: (noteId, path, text) => {
+    const prev = get().demoNoteOverrides
+    const patched = { ...(prev[noteId] ?? {}) }
+    if (text.trim()) patched[path] = text
+    else delete patched[path] // 清空即回退默认文案
+    const next = { ...prev }
+    if (Object.keys(patched).length > 0) next[noteId] = patched
+    else delete next[noteId]
+    set({ demoNoteOverrides: next })
+    ipc.patchState({ demoNoteOverrides: next } as Partial<StateJson>)
+  },
+
+  resetDemoNoteOverrides: (noteId) => {
+    const prev = get().demoNoteOverrides
+    if (!(noteId in prev)) return
+    const next = { ...prev }
+    delete next[noteId]
+    set({ demoNoteOverrides: next })
+    ipc.patchState({ demoNoteOverrides: next } as Partial<StateJson>)
   },
 
   // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。
@@ -1025,8 +1103,239 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ briefingSource: source, writingCompanionPicker: null })
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
     if (source === 'writing') void ipc.writingRefreshCatalog() // 摘要唯一生成时机(spec C)
+    if (source === 'book') void get().loadBooks()
   },
 
+  // ── 书籍来源 ──────────────────────────────────────────────
+  loadBooks: async () => {
+    set({ booksLoading: true })
+    try {
+      const booksList = await ipc.booksList()
+      set({ booksList, booksLoading: false })
+      const active = get().activeBookDir
+      if (active && !booksList.some((b) => b.dir === active)) {
+        // 外部删除了当前书：清空活动状态，避免继续读已不存在的章节
+        ++bookSelectSeq
+        ++chapterSelectSeq
+        set({ activeBookDir: null, activeBookToc: [], activeChapter: null, bookContext: null })
+      }
+      // 只有用户当前就在书籍来源时才自动恢复/选中，避免应用启动即触发全书导读 LLM
+      if (!get().activeBookDir && booksList.length > 0 && get().briefingSource === 'book') {
+        const last = get().booksLastBook
+        const target = booksList.find((b) => b.dir === last) ?? booksList[0]
+        await get().selectBook(target.dir)
+      }
+    } catch {
+      set({ booksLoading: false })
+    }
+  },
+
+  selectBook: async (dir) => {
+    // 任何一次选书（含命中下方早退）都让上一本书仍在途的章节读取失效，
+    // 避免旧书的 booksReadChapter 结果回写到新书语境。
+    ++chapterSelectSeq
+    // 重选当前书（如导读生成后刷新书架）不重置章节与阅读位置
+    if (get().activeBookDir === dir && get().activeBookToc.length > 0) {
+      const entry = get().booksList.find((b) => b.dir === dir)
+      // 上次全书导读失败时，再点书卡允许重试
+      if (entry && !entry.bookGuide && !bookGuideInFlight.has(dir)) {
+        bookGuideInFlight.add(dir)
+        void ipc
+          .booksBookGuide({ bookDir: dir })
+          .then(() => get().loadBooks())
+          .catch((err) => {
+            if (get().activeBookDir === dir) get().showToast(err instanceof Error ? err.message : '全书导读生成失败')
+          })
+          .finally(() => bookGuideInFlight.delete(dir))
+      }
+      return
+    }
+    ++bookSelectSeq
+    set({ activeBookDir: dir, activeChapter: null, bookContext: null, activeBookToc: [] })
+    try {
+      const seq = bookSelectSeq
+      const activeBookToc = await ipc.booksChapters({ bookDir: dir })
+      if (seq !== bookSelectSeq) return
+      set({ activeBookToc })
+    } catch (err) {
+      if (get().activeBookDir === dir) {
+        set({ activeBookToc: [] })
+        get().showToast(err instanceof Error ? err.message : '章节列表读取失败')
+      }
+      return
+    }
+    set({ booksLastBook: dir })
+    void ipc.patchState({ booksLastBook: dir } as Partial<StateJson>)
+    const entry = get().booksList.find((b) => b.dir === dir)
+    if (entry && !entry.bookGuide && !bookGuideInFlight.has(dir)) {
+      // 懒生成全书导读；完成后刷新书架卡片（不覆盖当前选中的书）
+      bookGuideInFlight.add(dir)
+      void ipc
+        .booksBookGuide({ bookDir: dir })
+        .then(() => get().loadBooks())
+        .catch((err) => {
+          if (get().activeBookDir === dir) get().showToast(err instanceof Error ? err.message : '全书导读生成失败')
+        })
+        .finally(() => bookGuideInFlight.delete(dir))
+    }
+  },
+
+  selectChapter: async (chapterPath) => {
+    const seq = ++chapterSelectSeq
+    const selectedBook = get().activeBookDir
+    try {
+      const chapter = await ipc.booksReadChapter({ chapterPath })
+      if (seq !== chapterSelectSeq || get().activeBookDir !== selectedBook) return
+      const bookDir = get().activeBookDir
+      const book = get().booksList.find((b) => b.dir === bookDir)
+      const toc = get().activeBookToc
+      const idx = toc.findIndex((t) => chapterPath.endsWith(t.chapterFile))
+      let prevChapterSummary: string | undefined
+      if (idx > 0 && bookDir) {
+        try {
+          const prevPath = `${bookDir}/${toc[idx - 1].chapterFile}`
+          const prevGuide = await ipc.articleAssistantReadGuide({ parentPath: prevPath, parentType: 'book-chapter' })
+          prevChapterSummary = prevGuide?.guide.background
+        } catch {
+          /* 前章没有导读时不影响本章 */
+        }
+      }
+      if (seq !== chapterSelectSeq || get().activeBookDir !== selectedBook) return
+      set({
+        activeChapter: { path: chapterPath, ...chapter },
+        bookContext: {
+          bookTitle: book?.title ?? '',
+          tocTitles: toc.map((t) => t.title),
+          ...(prevChapterSummary ? { prevChapterSummary } : {}),
+        },
+      })
+      await get().syncBookCompanion(chapterPath)
+    } catch (err) {
+      if (seq === chapterSelectSeq) get().showToast(err instanceof Error ? err.message : '章节读取失败')
+    }
+  },
+
+  /** 章节切换时让对照槽跟随当前章节：有历史映射则恢复，否则清空旧的书籍对照。 */
+  syncBookCompanion: async (chapterPath) => {
+    if (get().articlePanelMode.book !== 'companion') return
+    const current = get().articleCompanion
+    if (current?.key === chapterPath) return
+    if (current?.dirty) await get().saveArticleCompanion()
+    const mapped = get().articleCompanionMap[chapterPath]
+    if (mapped) {
+      await get().selectArticleCompanion('book', chapterPath, mapped)
+    } else if (current && get().articleCompanion?.key === current.key) {
+      set({ articleCompanion: null })
+    }
+  },
+
+  importBook: async () => {
+    if (get().booksImporting) return
+    set({ booksImporting: true })
+    try {
+      const r = await ipc.booksImport()
+      if (!r) return
+      if ('error' in r) {
+        get().showToast(r.error)
+        return
+      }
+      await get().loadBooks()
+      await get().selectBook(r.book.dir)
+      get().showToast(`已导入《${r.book.title}》`)
+    } catch (err) {
+      get().showToast(err instanceof Error ? err.message : '导入失败')
+    } finally {
+      set({ booksImporting: false })
+    }
+  },
+
+  removeBook: async (dir) => {
+    const underDir = (p: string) => p === dir || p.startsWith(dir + '/') || p.startsWith(dir + '\\')
+    // 删除前先关掉落在该书目录下的导读/对话会话（避免删除后仍持有失效 contextId）
+    const sess = get().assistantSession
+    if (sess && underDir(sess.contextId)) {
+      if (sess.streaming && sess.abortId) ipc.articleAssistantAbort({ sessionId: sess.abortId })
+      get().closeAssistantSession()
+    }
+    bookGuideInFlight.delete(dir)
+    try {
+      await ipc.booksDelete({ bookDir: dir })
+    } catch (err) {
+      get().showToast(err instanceof Error ? err.message : '删除失败')
+      return
+    }
+    // 该书目录下的章节对照映射一并失效，避免书架里再次出现同名书/旧章节时错配
+    const prevCompanionMap = get().articleCompanionMap
+    const nextCompanionMap: Record<string, string> = {}
+    let companionMapChanged = false
+    for (const [key, value] of Object.entries(prevCompanionMap)) {
+      if (underDir(key)) {
+        companionMapChanged = true
+        continue
+      }
+      nextCompanionMap[key] = value
+    }
+    if (companionMapChanged) {
+      set({ articleCompanionMap: nextCompanionMap })
+      void ipc.patchState({ articleCompanionMap: nextCompanionMap } as Partial<StateJson>)
+    }
+    if (get().articleCompanion && underDir(get().articleCompanion!.key)) {
+      set({ articleCompanion: null })
+    }
+    if (get().activeBookDir === dir) {
+      ++bookSelectSeq
+      ++chapterSelectSeq
+      set({ activeBookDir: null, activeBookToc: [], activeChapter: null, bookContext: null })
+    }
+    if (get().booksLastBook === dir) {
+      set({ booksLastBook: null })
+      void ipc.patchState({ booksLastBook: null } as Partial<StateJson>)
+    }
+    await get().loadBooks()
+  },
+
+  importStructuredDemo: async () => {
+    if (get().booksImporting) return
+    set({ booksImporting: true })
+    try {
+      const r = await ipc.booksImportStructuredDemo()
+      if ('error' in r) {
+        get().showToast(r.error)
+        return
+      }
+      await get().loadBooks()
+      await get().selectBook(r.book.dir)
+      get().showToast(`已导入结构化样本《${r.book.title}》`)
+    } catch (err) {
+      get().showToast(err instanceof Error ? err.message : '结构化样本导入失败')
+    } finally {
+      set({ booksImporting: false })
+    }
+  },
+
+  reparseBook: async (dir) => {
+    if (get().booksReparsing) return
+    set({ booksReparsing: true })
+    try {
+      const r = await ipc.booksReparse({ bookDir: dir })
+      if (!r.ok) {
+        get().showToast(r.error || '重新解析失败')
+        return
+      }
+      await get().loadBooks()
+      // 当前正打开的章节已被替换：重读本章（路径不变，内容与页码可能变）
+      const cur = get().activeChapter
+      if (cur && get().activeBookDir === dir) {
+        await get().selectChapter(cur.path)
+      }
+      const fresh = get().booksList.find((b) => b.dir === dir)
+      get().showToast(`已重新解析${fresh ? `：${fresh.chapterCount} 章` : ''}`)
+    } catch (err) {
+      get().showToast(err instanceof Error ? err.message : '重新解析失败')
+    } finally {
+      set({ booksReparsing: false })
+    }
+  },
 
   discoverAnthropicArticles: async (opts) => {
     const commit = opts?.commit !== false
@@ -1113,7 +1422,18 @@ export const useStore = create<AppStore>((set, get) => ({
 
   openAnthropicReader: async (filePath) => {
     const now = new Date().toISOString()
-    set({ anthropicReaderFilePath: filePath, anthropicReaderBody: null, anthropicReaderTitle: null, anthropicBlogLastSeenAt: now, constitutionReportOpen: false, recommendViewBatch: null, lastAnthropicReaderFile: filePath })
+    // 同一篇已加载完的正文不清空：文章列表点行与「恢复上次阅读」effect 会在
+    // reload 后同时触发，后到的 open 若把 body 置 null，挂载条件 readerBody
+    // 变 false，旁注面板与右侧 tab 直接消失（正文本身不重读，不会再回填）。
+    const sameLoaded = get().anthropicReaderFilePath === filePath && !!get().anthropicReaderBody
+    set({
+      anthropicReaderFilePath: filePath,
+      ...(sameLoaded ? {} : { anthropicReaderBody: null, anthropicReaderTitle: null }),
+      anthropicBlogLastSeenAt: now,
+      constitutionReportOpen: false,
+      recommendViewBatch: null,
+      lastAnthropicReaderFile: filePath,
+    })
     await ipc.patchState({ anthropicBlogLastSeenAt: now, lastAnthropicReaderFile: filePath } as Partial<StateJson>)
   },
   flushWritingScrollPosition: (filePath, blockIndex) => {
@@ -1519,6 +1839,7 @@ export const useStore = create<AppStore>((set, get) => ({
         contextType: args.contextType,
         articleTitle: args.articleTitle,
         articleContent: args.articleContent,
+        bookContext: args.bookContext,
         guide: null, guideLoading: false, guideProgress: null, guideError: null,
         messages: [], streaming: false, abortId: '',
         searchLoading: false, searchError: null, chatError: null,
@@ -1762,8 +2083,9 @@ export const useStore = create<AppStore>((set, get) => ({
   setArticleAssistantGuideCollapsed: (collapsed) => {
     // 右栏折叠后对照槽不可见：挑选器一并关闭，对照模式一并退出
     // （2026-10-22 回归：折叠后 mode 仍是 companion，点文章全被路由进不可见的对照槽，"退不出来"）
-    const modeReset = collapsed && get().articlePanelMode.anthropic !== 'guide'
-      ? { ...get().articlePanelMode, anthropic: 'guide' as const }
+    const cur = get().articlePanelMode
+    const modeReset = collapsed && (cur.anthropic !== 'guide' || cur.book !== 'guide')
+      ? { anthropic: 'guide' as const, book: 'guide' as const }
       : null
     set({
       articleAssistantGuideCollapsed: collapsed,
@@ -1819,6 +2141,7 @@ export const useStore = create<AppStore>((set, get) => ({
           articleType: s.contextType,
           articleTitle: s.articleTitle,
           entriesTotal,
+          ...(s.bookContext ? { bookContext: s.bookContext } : {}),
         })
         // 无论用户是否已切到别的文章都先落盘——切回时 loadAssistantGuide 直接命中缓存
         try {
@@ -1861,9 +2184,14 @@ export const useStore = create<AppStore>((set, get) => ({
   },
   findOrCreateArticleNote: async (a) => {
     if (get().notesList === null) await get().loadNotes()
-    const existing = get().notesList?.find(entry => entry.meta.url === a.url)
+    const list = get().notesList ?? []
+    // 书籍笔记没有 url（url: ''），按 url 去重会让所有书籍笔记互相命中；
+    // 书籍按「同一本书 + 同一章节标题」定位，博客仍按 url 精确匹配。
+    const existing = a.source === 'book'
+      ? list.find(n => n.meta.source === 'book' && n.meta.book === a.book && n.meta.title === a.title)
+      : list.find(n => n.meta.url === a.url)
     if (existing) return { path: existing.path, created: false }
-    const r = await ipc.notesCreate({ ...a, source: 'anthropic' })
+    const r = await ipc.notesCreate({ ...a, source: a.source ?? 'anthropic' })
     await get().loadNotes()
     return { path: r.path, created: true }
   },
@@ -2338,6 +2666,16 @@ export const useStore = create<AppStore>((set, get) => ({
     // 切回导读 tab 后挑选器失去语境，一并关闭
     set({ articlePanelMode: next, ...(mode === 'guide' ? { writingCompanionPicker: null } : {}) })
     ipc.patchState({ articlePanelMode: next } as Partial<StateJson>)
+    if (source === 'book' && mode === 'companion') {
+      // 章节切换/重进时恢复该书章节最近一次的对照文；无映射则清掉上一章的旧对照
+      const chapterPath = get().activeChapter?.path
+      const mapped = chapterPath ? get().articleCompanionMap[chapterPath] : undefined
+      if (chapterPath && mapped && get().articleCompanion?.key !== chapterPath) {
+        void get().selectArticleCompanion('book', chapterPath, mapped)
+      } else if (chapterPath && !mapped && get().articleCompanion && get().articleCompanion!.key !== chapterPath) {
+        set({ articleCompanion: null })
+      }
+    }
   },
 
   openWritingCompanionPicker: (source) => set({ writingCompanionPicker: source }),

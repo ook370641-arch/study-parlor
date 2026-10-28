@@ -124,6 +124,8 @@ export type NoteMeta = {
   highlight: string
   collected_at: string  // ISO
   read_at?: string      // ISO，可空
+  /** 来源书籍名（source='book' 时写入，便于笔记按书聚合） */
+  book?: string
 }
 
 /** 笔记书架条目；path 为库内相对路径（正斜杠），如 notes/foo.md */
@@ -196,7 +198,15 @@ export type ArticleAssistantGuide = {
 /** 导读 v2 生成进度（主进程 articleAssistant:guideProgress 事件负载） */
 export type GuideProgress =
   | { stage: 'planning' }
-  | { stage: 'searching'; done: number; total: number }
+  | {
+      stage: 'searching'
+      done: number
+      total: number
+      /** 本次检索规划出的查询（可选：旧事件不带；用于进度可视化展示「在查什么」） */
+      queries?: string[]
+      /** 各查询命中的资料条数，与 queries 同序（失败为 0；可选） */
+      hits?: number[]
+    }
   | { stage: 'writing'; chars: number; entriesDone: number; entriesTotal: number }
 
 export type ArticleAssistantMessage = {
@@ -283,7 +293,7 @@ export type Frontmatter = {
   /** Anthropic 博客栏目；旧文章缺省视为 'engineering' */
   section?: string
   parent_path?: string
-  parent_type?: 'anthropic-article' | 'writing'
+  parent_type?: 'anthropic-article' | 'writing' | 'book-chapter'
   generated_at?: string
   guide_version?: number
   role_keywords?: string[]
@@ -465,7 +475,45 @@ export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalo
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
-export type BriefingSourceId = 'writing' | 'anthropic'
+export type BriefingSourceId = 'writing' | 'anthropic' | 'book'
+
+/** 书籍目录项（book.json.toc 的元素；chapterFile 相对书籍目录） */
+export interface BookTocItem {
+  title: string
+  chapterFile: string
+  pageStart: number
+  pageEnd: number
+}
+
+/** 书架卡片数据（books:list 返回） */
+export interface BookEntry {
+  dir: string
+  title: string
+  importedAt: string
+  hasToc: boolean
+  chapterCount: number
+  bookGuide?: string
+  /** 解析器版本；缺省视为 1（旧解析产物，正文档落会挤在一起，可重新解析） */
+  parserVersion?: number
+  /** 解析来源：缺省视为本地 pdfjs 文本抽取；docflow-bundle 表示外部结构化产物（对照实验） */
+  parserKind?: 'pdfjs' | 'docflow-bundle'
+  /** 解析器说明（结构化来源追溯信息） */
+  parserNote?: string
+}
+
+/** 章节 frontmatter 中的稳定元数据 */
+export interface ChapterMeta {
+  title: string
+  chapterIndex: number
+  pageRange: [number, number]
+}
+
+/** 章节导读的书籍上下文：书名 + 全书目录 + 上一章导读摘要（可选） */
+export interface BookGuideContext {
+  bookTitle: string
+  tocTitles: string[]
+  prevChapterSummary?: string
+}
 
 export type LlmConfig = { id: string; apiKey: string; baseUrl: string; model: string }
 
@@ -552,12 +600,16 @@ export type StateJson = {
   notepadFontSize?: NotepadFontSize
   /** 记事板面板自定义尺寸（左下角拖拽手柄写入，null=默认） */
   notepadPanelSize?: { w: number; h: number } | null
+  /** Demo 说明文案的用户改写：noteId → 编辑路径 → 文本（双击弹层进入编辑后写入） */
+  demoNoteOverrides?: Record<string, Record<string, string>>
   /** LLM 多配置：首条由 .env 迁移播种；切换免重启 */
   llmConfigs?: LlmConfig[]
   activeLlmConfigId?: string | null
   writingPanelMode?: 'assistant' | 'companion'
   writingCompanionMap?: Record<string, string>
-  articlePanelMode?: Record<'anthropic', 'guide' | 'companion'>
+  articlePanelMode?: Record<'anthropic' | 'book', 'guide' | 'companion'>
+  /** 书籍来源最后打开的书（books/<书名> 绝对路径；失效时回退第一本） */
+  booksLastBook?: string | null
   articleCompanionMap?: Record<string, string>
   /** 博客对照槽最后打开的对照文(✕关闭时清 null,重开应用按此恢复) */
   lastArticleCompanion?: { mainKey: string; filePath: string } | null
@@ -718,24 +770,38 @@ export type IpcApi = {
 
   // Notes
   notesList: () => Promise<NoteEntry[]>
-  notesCreate: (a: { title: string; url: string; source?: NoteSource }) => Promise<{ path: string }>
+  notesCreate: (a: { title: string; url: string; source?: NoteSource; book?: string; body?: string }) => Promise<{ path: string }>
   notesUpdateMeta: (a: { path: string; patch: Partial<NoteMeta> }) => Promise<void>
   notesDelete: (a: { path: string }) => Promise<void>
   notesImportRead: () => Promise<{ created: number; skipped: number }>
 
+  // Books
+  booksList: () => Promise<BookEntry[]>
+  booksImport: () => Promise<{ book: BookEntry } | { error: string } | null>
+  booksChapters: (a: { bookDir: string }) => Promise<BookTocItem[]>
+  booksReadChapter: (a: { chapterPath: string }) => Promise<{ content: string; meta: ChapterMeta }>
+  booksBookGuide: (a: { bookDir: string }) => Promise<{ content: string }>
+  booksDelete: (a: { bookDir: string }) => Promise<void>
+  /** 用当前解析器原地重解析（保留 book.json 元数据，刷新 chapters/ 并清导读缓存） */
+  booksReparse: (a: { bookDir: string }) => Promise<{ ok: true; book: BookEntry } | { ok: false; error: string }>
+  /** 导入内置的结构化产物样本（DocFlow 对照实验；离线，不联网） */
+  booksImportStructuredDemo: () => Promise<{ book: BookEntry } | { error: string }>
+
   // Article assistant
   articleAssistantGenerateGuide: (args: {
     articleContent: string
-    articleType: 'anthropic-article'
+    articleType: 'anthropic-article' | 'book-chapter'
     articleTitle?: string
     /** 导读 v2：正文 H2/H3 标题数，用于撰写进度分母 */
     entriesTotal?: number
+    /** 章节导读上下文（仅 book-chapter） */
+    bookContext?: BookGuideContext
   }) => Promise<ArticleAssistantGuide>
 
   articleAssistantSendMessage: (args: {
     sessionId: string
     articleContent: string
-    articleType: 'anthropic-article'
+    articleType: 'anthropic-article' | 'book-chapter'
     messages: ArticleAssistantMessage[]
     annotations?: ArticleAnnotation[]
     selection?: string
@@ -749,23 +815,23 @@ export type IpcApi = {
 
   articleAssistantReadSession: (args: {
     parentPath: string
-    parentType: 'anthropic-article' | 'writing'
+    parentType: 'anthropic-article' | 'writing' | 'book-chapter'
   }) => Promise<ArticleAssistantSessionFile | null>
 
   articleAssistantWriteSession: (args: {
     parentPath: string
-    parentType: 'anthropic-article' | 'writing'
+    parentType: 'anthropic-article' | 'writing' | 'book-chapter'
     messages: ArticleAssistantMessage[]
   }) => Promise<{ filePath: string }>
 
   articleAssistantReadGuide: (args: {
     parentPath: string
-    parentType: 'anthropic-article' | 'writing'
+    parentType: 'anthropic-article' | 'writing' | 'book-chapter'
   }) => Promise<ArticleAssistantGuideFile | null>
 
   articleAssistantWriteGuide: (args: {
     parentPath: string
-    parentType: 'anthropic-article' | 'writing'
+    parentType: 'anthropic-article' | 'writing' | 'book-chapter'
     guide: ArticleAssistantGuide
   }) => Promise<{ filePath: string }>
 

@@ -68,7 +68,8 @@ describe('chatNonStream', () => {
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.stream).toBe(false)
     expect(body.model).toBe('kimi-k2.6')
-    expect(body.temperature).toBe(0.6)
+    // kimi-k2.6 在 thinking disabled 下也只接受 temperature=1（真实 API 400）
+    expect(body.temperature).toBe(1)
     expect(body.thinking).toEqual({ type: 'disabled' })
   })
 
@@ -291,6 +292,23 @@ describe('chatStream reasoning dispatch', () => {
     )
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.tools).toEqual(tools)
+  })
+})
+
+describe('buildChatBody Kimi disabled temperature', () => {
+  const msgs = [{ role: 'user' as const, content: 'hi' }]
+
+  it('kimi-k2.6 在 thinking disabled 下也固定 1', () => {
+    const body = buildChatBody(cfg, { messages: msgs, temperature: 0.3, stream: false, thinking: { type: 'disabled' } })
+    expect(body.temperature).toBe(1)
+  })
+
+  it('其他 Kimi 模型 thinking disabled 仍用 0.6', () => {
+    const body = buildChatBody(
+      { ...cfg, model: 'kimi-for-coding' },
+      { messages: msgs, temperature: 0.3, stream: false, thinking: { type: 'disabled' } }
+    )
+    expect(body.temperature).toBe(0.6)
   })
 })
 

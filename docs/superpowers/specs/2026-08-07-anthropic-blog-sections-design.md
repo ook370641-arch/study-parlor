@@ -1,3 +1,9 @@
+---
+status: superseded
+superseded-by: docs/superpowers/specs/2026-08-08-blog-multi-source-design.md
+note: 取代范围为栏目配置与发现链路，其余内容按历史记录阅读
+---
+
 # Anthropic 博客多栏目扩展 + 博客导读 v2 设计
 
 日期：2026-08-07

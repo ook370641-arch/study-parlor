@@ -49,7 +49,8 @@ const DEFAULT: StateJson = {
   writingExpandedGroups: {},
   writingUIFontSize: 'base',
   writingCodeblockCollapsed: {},
-  articlePanelMode: { anthropic: 'guide' },
+  articlePanelMode: { anthropic: 'guide', book: 'guide' },
+  booksLastBook: null,
   articleCompanionMap: {},
   lastArticleCompanion: null,
   articleCompanionScrollMemory: null,
@@ -61,6 +62,7 @@ const DEFAULT: StateJson = {
   notepadLog: [],
   notepadFontSize: 'base',
   notepadPanelSize: null,
+  demoNoteOverrides: {},
   llmConfigs: [],
   activeLlmConfigId: null,
 }

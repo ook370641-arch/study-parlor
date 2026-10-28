@@ -805,3 +805,37 @@ export function seedBlogCollection(
     'utf8'
   )
 }
+
+/**
+ * Seed a book under <libPath>/books/<title>/ with chapters + book.json,
+ * bypassing PDF parsing for E2E.
+ */
+export function seedBook(
+  libraryPath: string,
+  book: { title: string; chapters: { title: string; body: string }[] }
+): void {
+  const dir = path.join(libraryPath, 'books', book.title)
+  fs.mkdirSync(path.join(dir, 'chapters'), { recursive: true })
+  const toc = book.chapters.map((c, i) => {
+    const chapterFile = `chapters/${String(i + 1).padStart(2, '0')}-ch.md`
+    const md = `---\ntitle: "${c.title}"\nchapter_index: ${i + 1}\npage_range: [1, 2]\n---\n\n${c.body}\n`
+    fs.writeFileSync(path.join(dir, chapterFile), md, 'utf8')
+    return { title: c.title, chapterFile, pageStart: 1, pageEnd: 2 }
+  })
+  fs.writeFileSync(
+    path.join(dir, 'book.json'),
+    JSON.stringify(
+      {
+        title: book.title,
+        importedAt: new Date().toISOString(),
+        sourceFile: 'source.pdf',
+        hasToc: true,
+        toc,
+        parserVersion: 2,
+      },
+      null,
+      2
+    ),
+    'utf8'
+  )
+}

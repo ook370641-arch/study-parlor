@@ -237,6 +237,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
       <style>{KEYFRAME_STYLES}</style>
       <BriefingListColumn
         collapsed={listCollapsed}
+        renderWhenCollapsed
         onToggle={() => setListCollapsed((c) => !c)}
         theme={theme}
         width={80}

@@ -1,3 +1,8 @@
+---
+status: removed
+removal: docs/superpowers/plans/2026-10-08-remove-three-sources.md
+---
+
 # 求职简报整体升级设计（个人档案 + 三级漏斗串行管道）
 
 - 日期：2026-07-19

@@ -1,3 +1,8 @@
+---
+status: removed
+removal: docs/superpowers/plans/2026-10-08-remove-three-sources.md
+---
+
 # 拾贝（Scout）来源设计 — Agent 驱动的文章抓取来源
 
 日期：2026-08-02

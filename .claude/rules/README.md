@@ -7,7 +7,7 @@
 | 文件 | 覆盖领域 | 路径作用域 | 规则数 |
 |---|---|---|---|
 | `general.md` | 跨领域 Agent 行为偏差 | 全局 | 9 |
-| `feature-development.md` | 功能开发、外部 API 集成、交付验证 | `src/**`, `electron/**`, `docs/superpowers/specs/**` | 13 |
+| `feature-development.md` | 功能开发、外部 API 集成、交付验证 | `src/**`, `electron/**`, `docs/superpowers/specs/**` | 14 |
 | `e2e.md` | E2E 测试、fixtures、page objects、selectors | `e2e/**`, `tests/**/*.test.ts` | 12 |
 | `ipc-state.md` | IPC 契约、状态持久化、frontmatter schema | types/store/ipc/preload/frontmatter/app-paths | 12 |
 | `llm.md` | LLM 调用、prompt、JSON 提取、归档触发 | kimi/llm/prompts/llm-tasks/finalize/session-runtime | 9 |
@@ -36,6 +36,7 @@
 
 ## Changelog
 
+- `2026-10-27` feature-development 新增 §14：文档状态与 docs/README.md 索引随交付同步（来自用户定调「开发完代码必须维护 README」+ 求职/前沿/拾贝、健身两次功能移除的文档漂移教训；同日建立 docs/README.md 功能域索引、frontmatter 状态标记与 `scripts/docs-status.cjs` 校验，`npm run docs:check`）。
 - `2026-10-03` 新增 paintings-curation.md：画作策展流水线指针（事实源文档/脚本序列/TMDB+WikiArt 搜索模式/累积制与去重），来自批一至批七 332 幅入库的沉淀；用户要求脱离会话上下文也能找到脚本与搜索模式。同日 feature-development 新增 §13：写作编辑器改动先读 2026-08-11 设计基准文档（用户要求写作链路与指针也入 rules）。
 - `2026-08-10` e2e 新增 §11/§12：E2E 跑 out/ 构建产物、改源码必须先 `npx electron-vite build`（e2e-changed --run 自动构建）；本地定向跑 `--no-retries` + 默认并行 workers（来自三个 e2e 失败全因过期构建 + E2E 加速实施）。
 - `2026-07-26` general 新增 §9：验证只跑受影响测试，禁止全量（来自三次改 1-2 文件后跑 821 tests 的反馈）。

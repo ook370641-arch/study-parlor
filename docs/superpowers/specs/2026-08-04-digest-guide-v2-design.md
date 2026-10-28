@@ -1,3 +1,8 @@
+---
+status: removed
+removal: docs/superpowers/plans/2026-10-08-remove-three-sources.md
+---
+
 # 夜航简报-前沿导读升级：背景铺陈式导读（v2）设计
 
 日期：2026-08-04

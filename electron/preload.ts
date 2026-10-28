@@ -144,6 +144,15 @@ const api: IpcApi = {
   notesDelete: (a) => ipcRenderer.invoke('notes:delete', a),
   notesImportRead: () => ipcRenderer.invoke('notes:importRead'),
 
+  booksList: () => ipcRenderer.invoke('books:list'),
+  booksImport: () => ipcRenderer.invoke('books:import'),
+  booksChapters: (a) => ipcRenderer.invoke('books:chapters', a),
+  booksReadChapter: (a) => ipcRenderer.invoke('books:readChapter', a),
+  booksBookGuide: (a) => ipcRenderer.invoke('books:bookGuide', a),
+  booksDelete: (a) => ipcRenderer.invoke('books:delete', a),
+  booksReparse: (a) => ipcRenderer.invoke('books:reparse', a),
+  booksImportStructuredDemo: () => ipcRenderer.invoke('books:importStructuredDemo'),
+
   articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),
   articleAssistantSendMessage: (a) => ipcRenderer.invoke('articleAssistant:sendMessage', a),
   articleAssistantAbort: (a) => ipcRenderer.invoke('articleAssistant:abort', a),

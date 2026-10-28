@@ -46,13 +46,12 @@ test.describe('笔记书架', () => {
     await noteEditor.fill('E2E 正文内容')
     await window.waitForTimeout(2200)
 
-    // 切走再切回 → 卡片上摘要持久化
+    // 切走再切回 → 重新打开卡片：摘要与正文持久化
+    // （封面行按专辑墙设计只显示「星标 · 来源 · 日期」，不渲染摘要）
     await window.locator('[data-testid="writing-list-tab-articles"]').click()
     await window.locator('[data-testid="writing-list-tab-notes"]').click()
-    await expect(window.locator('[data-testid="note-card-a"]')).toContainText('E2E 一句话摘要')
-
-    // 重新打开卡片 → 正文持久化
     await window.locator('[data-testid="note-card-a"]').click()
+    await expect(window.locator('[data-testid="note-meta-summary"]')).toHaveValue('E2E 一句话摘要')
     await expect(window.locator('[data-testid="note-board"] .ProseMirror')).toContainText('E2E 正文内容')
   })
 

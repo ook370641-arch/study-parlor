@@ -5,6 +5,7 @@ import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
+import { BookPanel } from '@/components/books/BookPanel'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
 import { NoteBoard } from '@/components/notes/NoteBoard'
@@ -124,6 +125,8 @@ export function Briefing() {
                   return writingTab === 'notes' ? <NotesWall /> : <WritingBoard />
                 })()}
               </main>
+            ) : source === 'book' ? (
+              <BookPanel theme={theme} />
             ) : (
               <AnthropicBlogPanel theme={theme} />
             )}

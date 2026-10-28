@@ -81,8 +81,9 @@ export function buildChatBody(
       // （真实 API 400: "invalid temperature: only 1 is allowed for this model"）
       body.temperature = 1
     } else {
-      // Kimi k2.x / kimi-for-coding 在 thinking disabled 模式下只允许 temperature=0.6
-      body.temperature = 0.6
+      // Kimi k2.x / kimi-for-coding 在 thinking disabled 模式下通常只允许 temperature=0.6；
+      // kimi-k2.6 实测只接受 1（真实 API 400: "only 1 is allowed for this model"）。
+      body.temperature = /^kimi-k2\.6/i.test(cfg.model) ? 1 : 0.6
     }
   } else if (isDeepSeekModel(cfg.model)) {
     const thinking = args.thinking ?? { type: 'disabled' }

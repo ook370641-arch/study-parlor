@@ -1,3 +1,8 @@
+---
+status: removed
+removal: docs/superpowers/plans/2026-10-08-remove-three-sources.md
+---
+
 # 求职简报（Job Briefing）设计
 
 - 日期：2026-07-11

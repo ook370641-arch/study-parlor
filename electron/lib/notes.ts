@@ -53,6 +53,7 @@ export function parseNoteFile(relPath: string, raw: string): NoteEntry {
     }
     const readAt = iso(fm.read_at)
     if (readAt) meta.read_at = readAt
+    if (typeof fm.book === 'string' && fm.book) meta.book = fm.book
     return { path: relPath, meta }
   } catch {
     return { path: relPath, meta: emptyMeta(), parseError: true }
@@ -88,7 +89,10 @@ export function scanNotes(lib: string): NoteEntry[] {
   return entries
 }
 
-export function createNoteFile(lib: string, a: { title: string; url: string; source?: NoteSource }): { path: string } {
+export function createNoteFile(
+  lib: string,
+  a: { title: string; url: string; source?: NoteSource; book?: string; body?: string }
+): { path: string } {
   const dir = notesDirAbs(lib)
   const name = uniqueNoteName(dir, sanitizeNoteFilename(a.title))
   const meta: NoteMeta = {
@@ -99,8 +103,9 @@ export function createNoteFile(lib: string, a: { title: string; url: string; sou
     summary: '',
     highlight: '',
     collected_at: new Date().toISOString(),
+    ...(a.book ? { book: a.book } : {}),
   }
-  fs.writeFileSync(path.join(dir, name), serializeNote(meta, ''), 'utf8')
+  fs.writeFileSync(path.join(dir, name), serializeNote(meta, a.body ?? ''), 'utf8')
   return { path: `${NOTES_DIR}/${name}` }
 }
 

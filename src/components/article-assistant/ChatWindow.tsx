@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ANNOTATION_NOTE_SIZES, ANNOTATION_UI_SIZES } from '@/lib/briefing-font-size'
+import { DemoInfoButton, DemoNotePopover } from '@/components/demo/DemoNotePopover'
+import type { DemoNote } from '@/lib/demo-notes'
 import { ResizeHandles } from './ResizeHandles'
 import { ChatMessageList } from './ChatMessageList'
 
@@ -27,6 +29,8 @@ export function ChatWindow() {
   const uiSmall = ANNOTATION_UI_SIZES[briefingFontSize].small
 
   const [input, setInput] = useState('')
+  const [openNote, setOpenNote] = useState<DemoNote['id'] | null>(null)
+  const annoInfoRef = useRef<HTMLSpanElement>(null)
   const searchError = session?.searchError ?? null
   const [searchErrorDismissed, setSearchErrorDismissed] = useState(false)
   useEffect(() => { if (searchError) setSearchErrorDismissed(false) }, [searchError])
@@ -114,14 +118,27 @@ export function ChatWindow() {
         onPointerDown={handleDragStart}
       >
         <span className="tracking-[0.2em] text-parchment/80 font-serif" style={{ fontSize: uiSmall }}>旁注 · MARGIN</span>
-        <button
-          className="text-parchment/60 hover:text-ember text-sm leading-none px-1"
-          onClick={toggleAssistantOpen}
-          aria-label="关闭"
-        >
-          ✕
-        </button>
+        <div className="flex items-center gap-1">
+          <span ref={annoInfoRef} className="contents">
+            <DemoInfoButton
+              testId="demo-info-annotation"
+              size="icon"
+              label="旁注是怎么绑定到原文的"
+              active={openNote === 'annotation'}
+              onClick={() => setOpenNote((v) => (v === 'annotation' ? null : 'annotation'))}
+            />
+          </span>
+          <button
+            className="text-parchment/60 hover:text-ember text-sm leading-none px-1"
+            onClick={toggleAssistantOpen}
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        </div>
       </div>
+
+      <DemoNotePopover noteId={openNote} anchorRef={annoInfoRef} onClose={() => setOpenNote(null)} />
 
       {searchError && !searchErrorDismissed && (
         <div data-testid="assistant-search-error" className="mx-2 mt-2 flex items-center gap-2 rounded border border-ember/40 bg-ember/10 px-2 py-1 text-parchment/80 shrink-0" style={{ fontSize: uiSmall }}>

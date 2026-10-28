@@ -1,3 +1,8 @@
+---
+status: removed
+removal: docs/superpowers/plans/2026-10-08-remove-three-sources.md
+---
+
 # 前沿来源迭代修复：精选集 + 导读 v2 审查问题修复设计
 
 日期：2026-08-06

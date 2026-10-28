@@ -10,6 +10,7 @@ import { registerAnthropicIpc } from './anthropic'
 import { registerArticleAssistantIpc } from './article-assistant'
 import { registerAnnotationsIpc } from './annotations'
 import { registerNotesIpc } from './notes'
+import { registerBooksIpc } from './books'
 import { registerAppIpc } from './app'
 import { registerWritingIpc } from './writing'
 import { registerWritingAssistantIpc } from './writing-assistant'
@@ -26,6 +27,7 @@ export function registerAllIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   registerArticleAssistantIpc(cfg)
   registerAnnotationsIpc(cfg)
   registerNotesIpc(cfg)
+  registerBooksIpc(cfg)
   registerWritingIpc(cfg)
   registerWritingAssistantIpc(cfg)
   registerPaintingsIpc()

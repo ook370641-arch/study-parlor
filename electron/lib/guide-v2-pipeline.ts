@@ -11,6 +11,8 @@ import {
   assignMaterials,
   buildBlogGuidePlanPrompt,
   buildBlogGuideV2UserPrompt,
+  buildBookGuidePlanPrompt,
+  buildBookGuideV2UserPrompt,
   countArticleHeadings,
   countStreamedChunks,
   isValidGuideBlogV2,
@@ -79,18 +81,26 @@ async function runGuideV2(
   // 阶段 2：并行搜索（无 key / 单查询失败仅置空对应资料夹）
   const apiKey = await getSearchApiKey().catch(() => null)
   const total = queries.length
+  const queryTexts = queries.map((q) => q.query)
   let done = 0
+  // 每个查询的命中数，未完成的位置保持 -1（渲染侧按「未知」处理，不算已知命中）
+  const hitsSeen: number[] = new Array(total).fill(-1)
+  if (total > 0) {
+    onProgress({ stage: 'searching', done: 0, total, queries: queryTexts })
+  }
   const results = await Promise.all(
-    queries.map(async (q) => {
+    queries.map(async (q, i) => {
       try {
         if (!apiKey) return null
         const rs = await searchWeb({ query: q.query, apiKey, maxResults: 3 })
+        hitsSeen[i] = rs.length
         return rs.map((r) => ({ title: r.title, url: r.url, snippet: r.content.slice(0, 300) }))
       } catch {
+        // 失败保持 -1（未知），仅置空对应资料夹，其余查询照常归档
         return null
       } finally {
         done += 1
-        onProgress({ stage: 'searching', done, total })
+        onProgress({ stage: 'searching', done, total, queries: queryTexts, hits: hitsSeen.slice() })
       }
     })
   )
@@ -157,6 +167,22 @@ export function runBlogGuideV2(
   return runGuideV2(cfg, args, {
     buildPlanPrompt: buildBlogGuidePlanPrompt,
     buildUserPrompt: buildBlogGuideV2UserPrompt,
+    validate: isValidGuideBlogV2,
+  }, onProgress)
+}
+
+/**
+ * 书籍章节导读：沿用 v2 三阶段管线与校验器，规划/撰写 prompt 换成书籍变体。
+ * 书籍上下文（书名/目录/上一章摘要）由调用方拼进 articleContent 开头。
+ */
+export function runGuideV2ForBook(
+  cfg: AppConfig,
+  args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
+  onProgress: (p: GuideProgress) => void
+): Promise<ArticleAssistantGuide> {
+  return runGuideV2(cfg, args, {
+    buildPlanPrompt: buildBookGuidePlanPrompt,
+    buildUserPrompt: buildBookGuideV2UserPrompt,
     validate: isValidGuideBlogV2,
   }, onProgress)
 }

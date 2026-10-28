@@ -44,6 +44,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
         articlePanelMode: s.articlePanelMode,
         articleAssistantGuideCollapsed: s.articleAssistantGuideCollapsed,
         anthropicReaderFilePath: s.anthropicReaderFilePath,
+        activeBookChapterPath: s.activeChapter?.path ?? null,
       })
       if (target) {
         if (s.articleAssistantGuideCollapsed) s.setArticleAssistantGuideCollapsed(false)
@@ -99,6 +100,12 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme }: Props) {
       label: '博客',
       icon: AnthropicIcon,
       testId: 'briefing-source-anthropic',
+    },
+    {
+      id: 'book',
+      label: '书籍',
+      icon: () => <span>📚</span>,
+      testId: 'briefing-source-book',
     },
   ] as const
 

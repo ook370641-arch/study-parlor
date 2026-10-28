@@ -5,6 +5,7 @@ import { chatNonStream } from './kimi'
 import { topicDir } from './library-layout'
 import { parseFrontmatter } from './frontmatter'
 import { getSortedSessionDirs } from '../ipc/files'
+import { readBookJson, writeBookJson } from './books'
 import { extractXmlTag, extractXmlTags, extractJsonObject, extractJsonArray } from './extract-json'
 import type { AppConfig } from '../env'
 import type { Profile, NewTopic, Message, ContinueTopicSuggestion } from '@shared/index'
@@ -369,4 +370,35 @@ export async function generateGroupSummary(cfg: AppConfig, dirName: string, memb
   } catch {
     return '' // silent fail — caller skips empty
   }
+}
+
+// ── 书籍全书导读 ──────────────────────────────────────────────
+// 只传书名 + 目录标题，不传正文；结果缓存进 book.json.bookGuide。
+
+export function buildBookOverviewPrompt(bookTitle: string, tocTitles: string[]): string {
+  return read('book-overview.md')
+    .replace('{{book_title}}', bookTitle)
+    .replace('{{toc_lines}}', tocTitles.map((t, i) => `${i + 1}. ${t}`).join('\n'))
+}
+
+function isE2EBookMock(): boolean {
+  return process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
+}
+
+export async function generateBookOverview(cfg: AppConfig, bookDir: string): Promise<string> {
+  const json = readBookJson(bookDir)
+  if (!json) throw new Error(`book.json missing: ${bookDir}`)
+  if (json.bookGuide) return json.bookGuide.content
+
+  const content = isE2EBookMock()
+    ? '这是一本 E2E mock 全书导读。'
+    : (await chatNonStream(cfg, {
+        messages: [{ role: 'user', content: buildBookOverviewPrompt(json.title, json.toc.map((t) => t.title)) }],
+        temperature: 0.7,
+      })).trim()
+
+  // 生成期间书籍可能已被删除：不要在已删除目录上重建 book.json
+  if (!fs.existsSync(bookDir)) throw new Error(`book deleted: ${bookDir}`)
+  writeBookJson(bookDir, { ...json, bookGuide: { content, generatedAt: new Date().toISOString() } })
+  return content
 }

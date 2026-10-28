@@ -66,12 +66,17 @@ beforeAll(() => {
 describe('blog guide v2 real API', () => {
   it('planning produces valid queries within entry range', async () => {
     if (REPLAY) return
-    const raw = await chatNonStream(cfg, {
-      messages: [{ role: 'user', content: buildBlogGuidePlanPrompt(BLOG_FIXTURE, 'Agents') }],
-      temperature: 0.3,
-      thinking: { type: 'disabled' },
-    })
-    const plan = parseGuidePlan(raw, 10)
+    // 真实模型偶发返回 {"queries":[]}（把短文误判为自足）；空结果重试一次，仍空才失败。
+    // 保留 83ef3e3 的「非空」契约，同时避免单次采样导致 CI 假红。
+    let plan = [] as ReturnType<typeof parseGuidePlan>
+    for (let attempt = 0; attempt < 2 && plan.length === 0; attempt++) {
+      const raw = await chatNonStream(cfg, {
+        messages: [{ role: 'user', content: buildBlogGuidePlanPrompt(BLOG_FIXTURE, 'Agents') }],
+        temperature: 0.3,
+        thinking: { type: 'disabled' },
+      })
+      plan = parseGuidePlan(raw, 10)
+    }
     expect(plan.length).toBeGreaterThan(0)
     for (const q of plan) {
       expect(q.query.length).toBeGreaterThan(0)

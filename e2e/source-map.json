@@ -207,6 +207,36 @@
       "specs": [
         "notes-bookshelf.spec.ts"
       ]
+    },
+    "books": {
+      "sources": [
+        "electron/lib/book-parse.ts",
+        "electron/lib/books.ts",
+        "electron/lib/book-guide.ts",
+        "electron/lib/guide-v2.ts",
+        "electron/lib/guide-v2-pipeline.ts",
+        "electron/lib/llm-tasks.ts",
+        "electron/ipc/books.ts",
+        "electron/ipc/article-assistant.ts",
+        "electron/ipc/notes.ts",
+        "electron/lib/notes.ts",
+        "src/components/books/**",
+        "src/components/article-assistant/**",
+        "src/pages/Briefing.tsx",
+        "src/components/BriefingSourceSidebar.tsx",
+        "src/components/BriefingListColumn.tsx",
+        "src/store/index.ts",
+        "src/types/index.ts",
+        "src/lib/ipc.ts",
+        "src/lib/companion-picker.ts",
+        "electron/preload.ts",
+        "electron/ipc/state.ts",
+        "electron/prompts/book-guide-v2.md",
+        "electron/prompts/book-overview.md"
+      ],
+      "specs": [
+        "books*.spec.ts"
+      ]
     }
   }
 }

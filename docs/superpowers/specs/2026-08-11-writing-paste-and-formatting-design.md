@@ -1,3 +1,9 @@
+---
+status: current
+verified: "2026-10-27"
+note: 编辑器行为设计基准（AGENTS.md 写作功能 / rules feature-development §13 钦定，改动编辑器前必读）
+---
+
 # 写作编辑器：粘贴清洗 + 悬浮格式栏 + 排版格调化设计
 
 日期：2026-08-11

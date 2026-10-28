@@ -1,5 +1,8 @@
+import { useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { Button } from '@/components/Button'
+import { DemoInfoButton, DemoNotePopover } from '@/components/demo/DemoNotePopover'
+import type { DemoNote } from '@/lib/demo-notes'
 import { GroupRecCard } from '@/components/GroupRecCard'
 import { Quote } from '@/components/Quote'
 import { StudyLibrary } from '@/components/StudyLibrary'
@@ -23,6 +26,8 @@ export function Home() {
   const t = useTerminology()
   const theme = useStore((s) => s.briefingTheme)
   const isAcademic = theme !== 'newspaper'
+  const [openNote, setOpenNote] = useState<DemoNote['id'] | null>(null)
+  const reviewInfoRef = useRef<HTMLSpanElement>(null)
 
   const firstUnsaved = unsavedSessions[0]
 
@@ -30,13 +35,26 @@ export function Home() {
     <div className={`h-full p-8 relative ${isAcademic ? '' : 'bg-white'}`}>
       <BackToCover className="absolute top-4 left-4 z-10" />
       <SurfaceBackground surface="home" />
-      <StudyControlsGroup surface="home" className="absolute top-4 right-52 z-10" />
-      <Button variant="ghost" theme={theme}
-        data-testid="home-settings-button"
-        onClick={() => goto('settings')}
-        className="absolute top-4 right-36 font-sans text-sm z-10">
-        设置
-      </Button>
+      <StudyControlsGroup surface="home" className="absolute top-4 right-64 z-10" />
+      <div className="absolute top-3 right-36 z-10 flex items-center gap-1">
+        <span ref={reviewInfoRef} className="contents">
+          <DemoInfoButton
+            testId="demo-info-review"
+            size="icon"
+            label="复习报告与学习图表是怎么来的"
+            theme={theme}
+            active={openNote === 'review'}
+            onClick={() => setOpenNote((v) => (v === 'review' ? null : 'review'))}
+          />
+        </span>
+        <Button variant="ghost" theme={theme}
+          data-testid="home-settings-button"
+          onClick={() => goto('settings')}
+          className="font-sans text-sm">
+          设置
+        </Button>
+      </div>
+      <DemoNotePopover noteId={openNote} anchorRef={reviewInfoRef} onClose={() => setOpenNote(null)} theme={theme} />
       <Button variant="ghost" theme={theme}
         data-testid="home-profile-button"
         onClick={() => goto('profile')}

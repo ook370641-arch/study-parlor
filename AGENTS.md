@@ -148,7 +148,7 @@ npm run test:e2e                               # 全量（合并前）
 
 ### 写作功能 (`electron/lib/writing-tree.ts`, `electron/lib/writing-catalog.ts`, `electron/lib/writing-assistant/`)
 
-夜航简报两来源之一（写作）。Typora 式 WYSIWYG Markdown 编辑 + 分组目录树管理 + AI 写作助手。
+夜航简报来源之一（写作；当前三来源 = 写作 / Anthropic 博客 / 书籍，书籍见下节）。Typora 式 WYSIWYG Markdown 编辑 + 分组目录树管理 + AI 写作助手。
 
 - **存储**: `<学习库>/writing/` (新写作) + `<学习库>/repository/` (过去积累)，分组 = 嵌套子目录
 - **编辑器**: Milkdown v7 (ProseMirror)，所见即所得，产出纯 `.md`
@@ -159,9 +159,30 @@ npm run test:e2e                               # 全量（合并前）
 - **持久化**: `state.json` 字段 `writingFontSize`/`writingTone`/`assistantSearchEnabled`/`assistantThinkingEffort` 等
 - **设计基准**: 编辑器行为改动前先读 `docs/superpowers/specs/2026-08-11-writing-paste-and-formatting-design.md`
 
+### 书籍来源（简报第三来源，2026-10-27 上线）
+
+导入本地 PDF（仅 PDF；扫描版明确报错不入架）→ 复制到 `<学习库>/books/<书名>/source.pdf` → 按目录页解析切章为 `chapters/*.md`。核心映射：**书 = 来源，章 = "文章"**，章节完整复用导读/对照/旁注/笔记体系。
+
+- **主进程**: `electron/lib/book-parse.ts`（目录页解析/页码偏移/章节切分 + 版面重建纯逻辑）+ `electron/lib/books.ts`（库 IO）+ `electron/lib/book-guide.ts`（章节导读）+ `electron/ipc/books.ts`（`books:list / import / chapters / readChapter / bookGuide / delete` 六通道）
+- **正文重建（parserVersion 3）**: `itemsToRows` 保留每行的 `y/h/x0/x1` → `rowsToBlocks` 按行距（1.4× 常规行距）/字号（1.45×、1.2× 正文）/首行缩进判段与标题层级 → `blocksToMarkdown` 输出 `##`/`###`；页眉页脚按页顶页底 6% 区域过滤。目录页支持「标题 页码」「页码 标题」「标题块 + 页码块」三种布局。表格仍会被拍平，双栏段落顺序可能不等于阅读顺序。
+- **重解析**: `books:reparse` 原子替换 `chapters/`；旧章节导读按「章节文件同名 → 标题同名」保留，目录未变时保留全书导读。`parserVersion < 3` 的旧书在书架显示「重新解析」。
+- **渲染**: `src/components/books/`（BookPanel / BookListColumn / ChapterListColumn / BookReader）；store 字段 `booksList` / `activeBookDir` / `activeBookToc` / `activeChapter`
+- **导读**: 全书导读只传目录不传正文（prompt `electron/prompts/book-overview.md`，装配在 `llm-tasks.ts` 的 `buildBookOverviewPrompt`，缓存进 `book.json`）；章节导读 prompt `electron/prompts/book-guide-v2.md`
+- **类型**: `BriefingSourceId` 含 `'book'`；`NoteSource` 含 `'book'`，`NoteMeta.book` 记书名（笔记按书聚合）
+- **记录**: `docs/superpowers/specs/2026-10-27-books-source-design.md` + 同名 plan（historical，索引见 `docs/README.md` 域 14）
+
 ## 画作策展（Pictures 画库）
 
 事实源 `docs/superpowers/plans/paintings-collection-draft-2026-09-28.md`（图源坑/批次史/风格总结），规则 `.claude/rules/paintings-curation.md`；脚本序列：`curation-fetch.cjs`（唯一下载通道）→ `wikiart-batchN.cjs`/`dl-tmdb.cjs` → `assemble-bN.cjs` → `curation-gallery.cjs` → 用户导出 selection.json → `curation-merge.cjs`。
+
+## 文档库（docs/）阅读与维护协议
+
+文档分三层：**现状层**（本文件 + `.claude/rules/`）→ **索引层**（`docs/README.md`）→ **历史层**（`docs/superpowers/{plans,specs}/`，220+ 份时间点快照）。
+
+- **默认历史原则**：无 `status` frontmatter 的文档一律是历史快照，禁止当作当前状态引用；当前状态唯一权威 = 本文件 + `.claude/rules/` + 代码。
+- **入口是 `docs/README.md`**：按功能域定位（现状一句话 + current/removed/planned/superseded 指针 + 历史链），只精读 `status: current` 或域内最新文档，不通读。
+- **维护义务（功能交付的一部分）**：功能落地/设计推翻/功能移除后，必须同步更新 `docs/README.md` 对应功能域与相关 frontmatter（状态标记规则见该文件「维护协议」一节；强制条目 `.claude/rules/feature-development.md` §14）。移除功能时保留移除计划文档作**墓碑**，禁止裸删 spec。
+- 提交前跑 `npm run docs:check`（frontmatter 合法性 / 指针存在性 / 索引可达性 / 文档引用完整性），错误清零才算交付。
 
 ## 关键配置
 

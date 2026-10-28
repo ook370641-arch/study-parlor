@@ -1,3 +1,8 @@
+---
+status: historical
+note: 实施计划已于 2026-10-27 执行完成；当前事实以代码、AGENTS.md 与 docs/README.md 为准
+---
+
 # 书籍来源 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
