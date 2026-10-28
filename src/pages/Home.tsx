@@ -28,6 +28,7 @@ export function Home() {
   const isAcademic = theme !== 'newspaper'
   const [openNote, setOpenNote] = useState<DemoNote['id'] | null>(null)
   const reviewInfoRef = useRef<HTMLSpanElement>(null)
+  const chartInfoRef = useRef<HTMLSpanElement>(null)
 
   const firstUnsaved = unsavedSessions[0]
 
@@ -41,10 +42,20 @@ export function Home() {
           <DemoInfoButton
             testId="demo-info-review"
             size="icon"
-            label="为什么要有复习，学习图表是怎么来的"
+            label="复习是怎么来的"
             theme={theme}
             active={openNote === 'review'}
             onClick={() => setOpenNote((v) => (v === 'review' ? null : 'review'))}
+          />
+        </span>
+        <span ref={chartInfoRef} className="contents">
+          <DemoInfoButton
+            testId="demo-info-learning-chart"
+            size="icon"
+            label="学习图表是怎么来的"
+            theme={theme}
+            active={openNote === 'learning-chart'}
+            onClick={() => setOpenNote((v) => (v === 'learning-chart' ? null : 'learning-chart'))}
           />
         </span>
         <Button variant="ghost" theme={theme}
@@ -54,7 +65,12 @@ export function Home() {
           设置
         </Button>
       </div>
-      <DemoNotePopover noteId={openNote} anchorRef={reviewInfoRef} onClose={() => setOpenNote(null)} theme={theme} />
+      <DemoNotePopover
+        noteId={openNote}
+        anchorRef={openNote === 'learning-chart' ? chartInfoRef : reviewInfoRef}
+        onClose={() => setOpenNote(null)}
+        theme={theme}
+      />
       <Button variant="ghost" theme={theme}
         data-testid="home-profile-button"
         onClick={() => goto('profile')}

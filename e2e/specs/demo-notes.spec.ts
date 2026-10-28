@@ -91,7 +91,7 @@ test.describe('@p1 demo notes', () => {
     await expect(annoNote).toHaveCount(0)
   })
 
-  test('点亮灯火：设置按钮左侧的复习/图表说明', async ({ window }) => {
+  test('点亮灯火：设置按钮左侧的复习说明', async ({ window }) => {
     const cover = new CoverPage(window)
     // 「点亮灯火」= 点亮后进入的首页
     await cover.enterIfNeeded('E2E 说明员')
@@ -107,8 +107,9 @@ test.describe('@p1 demo notes', () => {
     await reviewInfo.click()
     const reviewNote = window.getByTestId('demo-note-popover-review')
     await expect(reviewNote).toBeVisible()
-    await expect(reviewNote).toContainText('复习与学习图表')
-    await expect(reviewNote).toContainText('SVG')
+    await expect(reviewNote).toContainText('让上一次成为这一次的起点')
+    // 复习与学习图表已拆成两条说明：复习弹层不再包含图表内容
+    await expect(reviewNote).not.toContainText('SVG')
 
     // 定位回归：锚点是 display:contents 的 span（自身无盒子），弹层必须贴住按钮
     // 而不是被甩到左上角。右对齐锚点右缘，且位于其下方。
@@ -123,6 +124,22 @@ test.describe('@p1 demo notes', () => {
 
     await window.getByTestId('demo-note-close').click()
     await expect(reviewNote).toHaveCount(0)
+  })
+
+  test('点亮灯火：学习图表单独说明', async ({ window }) => {
+    const cover = new CoverPage(window)
+    await cover.enterIfNeeded('E2E 说明员')
+    await expect(window.getByTestId('home-settings-button')).toBeVisible({ timeout: 15_000 })
+
+    const chartInfo = window.getByTestId('demo-info-learning-chart')
+    await expect(chartInfo).toBeVisible()
+    await chartInfo.click()
+    const chartNote = window.getByTestId('demo-note-popover-learning-chart')
+    await expect(chartNote).toBeVisible()
+    await expect(chartNote).toContainText(DEMO_NOTES['learning-chart'].thesis)
+    await expect(chartNote).toContainText('SVG')
+    await window.getByTestId('demo-note-close').click()
+    await expect(chartNote).toHaveCount(0)
   })
 
   test('双击进入编辑模式：改写落盘 state.json，reload 后仍在，可恢复默认', async ({
