@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
 import { DEMO_NOTES, applyDemoNoteOverrides } from '@/lib/demo-notes'
 import type { DemoNote } from '@/lib/demo-notes'
-import type { BriefingTheme, NotepadFontSize } from '@shared/index'
+import type { BriefingFontSize, BriefingTheme } from '@shared/index'
 
 interface Props {
   /** 说明条目 id；null 表示关闭 */
@@ -24,12 +24,17 @@ const PANEL_WIDTH = 460
 const PANEL_MAX_HEIGHT_VH = 84
 const PANEL_MAX_HEIGHT_PX = 760
 
-/** 字号三档对应的整体缩放（CSS zoom，参照写作 HTML 预览的 WRITING_HTML_ZOOM 先例） */
-const FONT_ZOOM: Record<NotepadFontSize, number> = { sm: 0.88, base: 1, lg: 1.15 }
-const FONT_ORDER: NotepadFontSize[] = ['sm', 'base', 'lg']
+/** 字号档位对应的整体缩放（CSS zoom，参照写作 HTML 预览的 WRITING_HTML_ZOOM 先例）。
+ *  复用简报十档，base=1，每档约 +0.11 */
+const FONT_ZOOM: Record<BriefingFontSize, number> = {
+  sm: 0.89, base: 1, lg: 1.11, xl: 1.22, '2xl': 1.33,
+  '3xl': 1.44, '4xl': 1.55, '5xl': 1.66, '6xl': 1.77, '7xl': 1.88,
+}
+const FONT_SIZES = Object.keys(FONT_ZOOM) as BriefingFontSize[]
 /** 拖拽边缘的最小/最大尺寸约束 */
 const MIN_PANEL_W = 320
 const MIN_PANEL_H = 220
+type Corner = 'nw' | 'ne' | 'sw' | 'se'
 
 /**
  * 取锚点的可视矩形。
@@ -164,10 +169,10 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
   const panelRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null)
   const [editing, setEditing] = useState(false)
-  /** 用户拖边缘得到的自定义尺寸；null = 未拖过，按默认宽 + 内容自适应高 */
-  const [panelSize, setPanelSize] = useState<{ w: number; h: number } | null>(null)
-  const panelSizeRef = useRef(panelSize)
-  panelSizeRef.current = panelSize
+  /** 用户拖角落后的自由几何（显式 left/top/w/h）；null = 未拖过，锚点定位 + 内容自适应高 */
+  const [geom, setGeom] = useState<{ left: number; top: number; w: number; h: number } | null>(null)
+  const geomRef = useRef(geom)
+  geomRef.current = geom
   const isAcademic = theme !== 'newspaper'
 
   const overrides = useStore((s) => (noteId ? s.demoNoteOverrides[noteId] : undefined))
@@ -199,7 +204,7 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
 
     // 默认右对齐锚点（入口多在界面右侧），再夹进视口。
     // 视口比面板还窄时（小窗口），宽度收敛到视口内，避免左右都被裁掉。
-    const width = Math.min(panelSizeRef.current?.w ?? PANEL_WIDTH, window.innerWidth - margin * 2)
+    const width = Math.min(PANEL_WIDTH, window.innerWidth - margin * 2)
     let left = rect.right - width
     left = Math.min(Math.max(left, margin), window.innerWidth - width - margin)
 
@@ -207,45 +212,49 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
   }, [anchorRef])
 
   const bumpFont = (dir: 1 | -1) => {
-    const cur = FONT_ORDER.indexOf(demoNoteFontSize)
-    const next = FONT_ORDER[Math.max(0, Math.min(FONT_ORDER.length - 1, cur + dir))]
+    const cur = FONT_SIZES.indexOf(demoNoteFontSize)
+    const next = FONT_SIZES[Math.max(0, Math.min(FONT_SIZES.length - 1, cur + dir))]
     if (next !== demoNoteFontSize) setDemoNoteFontSize(next)
   }
 
-  /** 边缘/角落拖拽调尺寸：e=右缘 s=下缘 se=右下角 */
-  const startResize = (mode: 'e' | 's' | 'se') => (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault()
+  /** 四角拖拽：se 只改宽高，sw/ne/nw 同时平移对边（面板转自由浮动，不再跟随锚点）。
+   *  刻意不在 pointerdown 上 preventDefault：否则角柄上的双击会被吞掉，
+   *  与「双击弹层任意处进编辑」的约定冲突（E2E 就在角上双击）。 */
+  const startResize = (corner: Corner) => (e: React.PointerEvent<HTMLDivElement>) => {
     e.stopPropagation()
     const handle = e.currentTarget
     handle.setPointerCapture?.(e.pointerId)
     const startX = e.clientX
     const startY = e.clientY
-    const startW = pos?.width ?? PANEL_WIDTH
-    const startH = panelRef.current?.getBoundingClientRect().height ?? MIN_PANEL_H
+    const start = geomRef.current ?? {
+      left: pos?.left ?? 0,
+      top: pos?.top ?? 0,
+      w: pos?.width ?? PANEL_WIDTH,
+      h: panelRef.current?.getBoundingClientRect().height || MIN_PANEL_H,
+    }
     const margin = 8
 
     const onMove = (ev: PointerEvent) => {
-      const next = { w: startW, h: startH }
-      if (mode !== 's') {
-        next.w = Math.round(
-          Math.min(Math.max(startW + ev.clientX - startX, MIN_PANEL_W), window.innerWidth - margin * 2)
-        )
-      }
-      if (mode !== 'e') {
-        next.h = Math.round(
-          Math.min(Math.max(startH + ev.clientY - startY, MIN_PANEL_H), window.innerHeight - margin * 2)
-        )
-      }
-      setPanelSize(next)
+      const dx = ev.clientX - startX
+      const dy = ev.clientY - startY
+      const maxW = window.innerWidth - margin * 2
+      const maxH = window.innerHeight - margin * 2
+      // 左右向：右角加宽、左角左缘外扩（right 边固定）；上下向同理。
+      // 左/上角的位置 = 起点 - 尺寸增量，保证对边不动
+      const w = Math.round(Math.min(Math.max(start.w + (corner === 'nw' || corner === 'sw' ? -dx : dx), MIN_PANEL_W), maxW))
+      const h = Math.round(Math.min(Math.max(start.h + (corner === 'nw' || corner === 'ne' ? -dy : dy), MIN_PANEL_H), maxH))
+      let left = start.left
+      if (corner === 'nw' || corner === 'sw') left -= w - start.w
+      let top = start.top
+      if (corner === 'nw' || corner === 'ne') top -= h - start.h
+      left = Math.round(Math.min(Math.max(left, margin), window.innerWidth - w - margin))
+      top = Math.round(Math.min(Math.max(top, margin), window.innerHeight - h - margin))
+      setGeom({ left, top, w, h })
     }
     const onUp = (ev: PointerEvent) => {
       handle.removeEventListener('pointermove', onMove)
       handle.removeEventListener('pointerup', onUp)
       if (handle.hasPointerCapture?.(ev.pointerId)) handle.releasePointerCapture(ev.pointerId)
-      // 拖完后按新宽高重新收敛 left/top（右/下缘可能顶出视口）；
-      // 同步一次 + rAF 一次，兼容 setPanelSize 尚未布局完成的瞬间
-      updatePosition()
-      requestAnimationFrame(updatePosition)
     }
     handle.addEventListener('pointermove', onMove)
     handle.addEventListener('pointerup', onUp)
@@ -257,9 +266,9 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
     setPos(null)
   }, [noteId])
 
-  // 字号档位变化会改变内容高度，重新定位
+  // 字号档位变化会改变内容高度，重新定位（用户拖过的自由几何不动，内容区自己滚）
   useEffect(() => {
-    if (!noteId) return
+    if (!noteId || geomRef.current) return
     updatePosition()
     const raf = requestAnimationFrame(updatePosition)
     return () => cancelAnimationFrame(raf)
@@ -316,8 +325,6 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement
-    // 拖拽手柄上的双击是误触，不进入编辑模式
-    if (target.closest('[data-resize-handle]')) return
     if (editing) {
       // 编辑态：只在非文本区域双击才退出，文本区域保留原生选词
       if (!target.closest('[data-edit-path]')) setEditing(false)
@@ -356,11 +363,11 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
       onDoubleClick={handleDoubleClick}
       className={`fixed z-[9999] rounded-xl border shadow-2xl p-4 flex flex-col ${shell}`}
       style={{
-        width: pos?.width ?? PANEL_WIDTH,
-        height: panelSize?.h ?? undefined,
-        maxHeight: panelSize ? undefined : `min(${PANEL_MAX_HEIGHT_VH}vh, ${PANEL_MAX_HEIGHT_PX}px)`,
-        left: pos?.left ?? 0,
-        top: pos?.top ?? 0,
+        width: geom?.w ?? pos?.width ?? PANEL_WIDTH,
+        height: geom?.h ?? undefined,
+        maxHeight: geom ? undefined : `min(${PANEL_MAX_HEIGHT_VH}vh, ${PANEL_MAX_HEIGHT_PX}px)`,
+        left: geom?.left ?? pos?.left ?? 0,
+        top: geom?.top ?? pos?.top ?? 0,
         visibility: pos ? 'visible' : 'hidden',
         scrollbarWidth: 'thin',
         scrollbarColor: '#d97757 transparent',
@@ -396,7 +403,7 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
             type="button"
             data-testid="demo-note-font-inc"
             onClick={() => bumpFont(1)}
-            disabled={demoNoteFontSize === 'lg'}
+            disabled={demoNoteFontSize === '7xl'}
             aria-label="放大说明字号"
             title="放大字号"
             className={`h-5 min-w-5 px-0.5 rounded border text-[11px] leading-none transition-opacity hover:opacity-100 disabled:opacity-25 opacity-70 ${
@@ -663,27 +670,24 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
       </div>
       </div>
 
-      {/* 边缘拖拽手柄：右缘调宽、下缘调高、右下角同时调 */}
-      <div
-        data-resize-handle="e"
-        data-testid="demo-note-resize-e"
-        onPointerDown={startResize('e')}
-        className="absolute top-3 bottom-3 -right-[3px] w-2 cursor-ew-resize touch-none"
-      />
-      <div
-        data-resize-handle="s"
-        data-testid="demo-note-resize-s"
-        onPointerDown={startResize('s')}
-        className="absolute left-3 right-3 -bottom-[3px] h-2 cursor-ns-resize touch-none"
-      />
-      <div
-        data-resize-handle="se"
-        data-testid="demo-note-resize-se"
-        onPointerDown={startResize('se')}
-        className={`absolute -right-[2px] -bottom-[2px] w-4 h-4 cursor-nwse-resize touch-none rounded-sm transition-colors ${
-          isAcademic ? 'hover:bg-ember/25' : 'hover:bg-[#8a3a3a]/20'
-        }`}
-      />
+      {/* 四角拖拽手柄：任一角都可拉大；左上角类会把面板顶开（转自由浮动） */}
+      {(['nw', 'ne', 'sw', 'se'] as Corner[]).map((corner) => (
+        <div
+          key={corner}
+          data-resize-handle={corner}
+          data-testid={`demo-note-resize-${corner}`}
+          onPointerDown={startResize(corner)}
+          className={`absolute w-4 h-4 touch-none transition-colors ${
+            corner === 'nw'
+              ? '-left-[2px] -top-[2px] cursor-nwse-resize rounded-br'
+              : corner === 'ne'
+                ? '-right-[2px] -top-[2px] cursor-nesw-resize rounded-bl'
+                : corner === 'sw'
+                  ? '-left-[2px] -bottom-[2px] cursor-nesw-resize rounded-tr'
+                  : '-right-[2px] -bottom-[2px] cursor-nwse-resize rounded-tl'
+          } ${isAcademic ? 'hover:bg-ember/25' : 'hover:bg-[#8a3a3a]/20'}`}
+        />
+      ))}
     </div>,
     document.body
   )

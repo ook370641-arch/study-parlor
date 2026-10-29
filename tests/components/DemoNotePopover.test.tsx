@@ -210,6 +210,9 @@ describe('DemoNotePopover 字号与尺寸调节', () => {
   beforeEach(() => {
     useStore.setState({ demoNoteFontSize: 'base' })
   })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
   function renderOpen(noteId: keyof typeof DEMO_NOTES = 'book-source') {
     const ref = createRef<HTMLSpanElement>()
@@ -231,33 +234,53 @@ describe('DemoNotePopover 字号与尺寸调节', () => {
     expect(patchState).toHaveBeenCalledWith({ demoNoteFontSize: 'lg' })
   })
 
-  it('最小档禁用 −，最大档禁用 ＋', () => {
+  it('最小档禁用 −，最大档（7xl）禁用 ＋', () => {
     renderOpen()
     fireEvent.click(screen.getByTestId('demo-note-font-dec'))
     expect(useStore.getState().demoNoteFontSize).toBe('sm')
     expect((screen.getByTestId('demo-note-font-dec') as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.click(screen.getByTestId('demo-note-font-inc'))
-    fireEvent.click(screen.getByTestId('demo-note-font-inc'))
-    expect(useStore.getState().demoNoteFontSize).toBe('lg')
+    for (let i = 0; i < 9; i++) fireEvent.click(screen.getByTestId('demo-note-font-inc'))
+    expect(useStore.getState().demoNoteFontSize).toBe('7xl')
     expect((screen.getByTestId('demo-note-font-inc') as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('渲染右缘 / 下缘 / 右下角三个拖拽手柄', () => {
+  it('渲染四个角的拖拽手柄', () => {
     renderOpen()
-    expect(screen.getByTestId('demo-note-resize-e')).toBeTruthy()
-    expect(screen.getByTestId('demo-note-resize-s')).toBeTruthy()
-    expect(screen.getByTestId('demo-note-resize-se')).toBeTruthy()
+    for (const corner of ['nw', 'ne', 'sw', 'se']) {
+      expect(screen.getByTestId(`demo-note-resize-${corner}`)).toBeTruthy()
+    }
   })
 
-  it('拖右下角同时改宽高，松手后写入面板 style', () => {
+  it('拖右下角改宽高，松手后写入面板 style', () => {
     const panel = renderOpen()
     const handle = screen.getByTestId('demo-note-resize-se')
     fireEvent.pointerDown(handle, { pointerId: 1, clientX: 800, clientY: 600 })
     fireEvent.pointerMove(handle, { pointerId: 1, clientX: 980, clientY: 760 })
     fireEvent.pointerUp(handle, { pointerId: 1, clientX: 980, clientY: 760 })
     expect(panel.style.width).toBe('640px') // 460 + Δ180
-    // jsdom 里起始高为 0，被最小高度夹到 220
-    expect(panel.style.height).toBe('220px')
+    expect(panel.style.height).toBe('380px') // 起始高回退最小值 220 + Δ160
+  })
+
+  it('拖左上角：宽高同时变大且面板向左上顶开', () => {
+    // jsdom 元素矩形全为 0，给弹窗外的锚点 span 一个真实矩形，让定位/顶开可断言
+    const orig = HTMLElement.prototype.getBoundingClientRect
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const rect = orig.call(this)
+      if (this.tagName === 'SPAN' && !this.closest('[data-testid^="demo-note-popover"]')) {
+        return { ...rect, left: 800, right: 830, top: 100, bottom: 130, width: 30, height: 30, x: 800, y: 100, toJSON: () => ({}) } as DOMRect
+      }
+      return rect
+    })
+    const panel = renderOpen()
+    const startLeft = parseFloat(panel.style.left || '0')
+    const startTop = parseFloat(panel.style.top || '0')
+    const handle = screen.getByTestId('demo-note-resize-nw')
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 400, clientY: 300 })
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 300, clientY: 200 })
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 300, clientY: 200 })
+    expect(panel.style.width).toBe('560px') // 460 + 100
+    expect(parseFloat(panel.style.left)).toBeLessThan(startLeft)
+    expect(parseFloat(panel.style.top)).toBeLessThan(startTop)
   })
 })
 

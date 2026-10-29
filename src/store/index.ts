@@ -225,12 +225,12 @@ type AppStore = {
 
   /** Demo 说明文案的用户改写（noteId → 编辑路径 → 文本），落在 state.json */
   demoNoteOverrides: DemoNoteOverrides
-  /** Demo 信息说明弹层正文字号档位（'sm' | 'base' | 'lg'） */
-  demoNoteFontSize: NotepadFontSize
+  /** Demo 信息说明弹层正文字号档位（复用简报十档） */
+  demoNoteFontSize: BriefingFontSize
   /** 提交一处说明文案修改（空文本视为改回默认） */
   setDemoNoteOverride: (noteId: string, path: string, text: string) => void
   /** 设置 Demo 信息说明弹层字号档位 */
-  setDemoNoteFontSize: (size: NotepadFontSize) => void
+  setDemoNoteFontSize: (size: BriefingFontSize) => void
   /** 恢复某个说明条目的全部默认文案 */
   resetDemoNoteOverrides: (noteId: string) => void
 

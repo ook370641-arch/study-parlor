@@ -604,8 +604,8 @@ export type StateJson = {
   notepadPanelSize?: { w: number; h: number } | null
   /** Demo 说明文案的用户改写：noteId → 编辑路径 → 文本（双击弹层进入编辑后写入） */
   demoNoteOverrides?: Record<string, Record<string, string>>
-  /** Demo 信息说明弹层正文字号档位（弹层内 A−/A+ 调节） */
-  demoNoteFontSize?: NotepadFontSize
+  /** Demo 信息说明弹层正文字号档位（弹层内 A−/A+ 调节，复用简报十档） */
+  demoNoteFontSize?: BriefingFontSize
   /** LLM 多配置：首条由 .env 迁移播种；切换免重启 */
   llmConfigs?: LlmConfig[]
   activeLlmConfigId?: string | null
