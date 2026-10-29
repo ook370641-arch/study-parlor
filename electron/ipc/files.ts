@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { app, ipcMain } from 'electron'
+import { app, dialog, ipcMain, BrowserWindow } from 'electron'
 import matter from 'gray-matter'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import { generateContinueSuggestions, readTopicReportSummaries } from '../lib/llm-tasks'
@@ -8,7 +8,7 @@ import { topicDir } from '../lib/library-layout'
 import { patchState } from './state'
 import { ensureRoots } from '../lib/writing-tree'
 import type { AppConfig } from '../env'
-import type { TopicMeta, SessionMeta, Group, GroupMapping, TopicContinueCache, SearchSource } from '@shared/index'
+import type { TopicMeta, SessionMeta, Group, GroupMapping, TopicContinueCache, SearchSource, LocalMaterial } from '@shared/index'
 
 export function getSessionMeta(sessionDir: string): SessionMeta {
   const files = fs.readdirSync(sessionDir, { withFileTypes: true })
@@ -604,6 +604,57 @@ function getMimeType(filePath: string): string {
   ipcMain.handle('files:recoveryDump', async (_, args: { filename: string; content: string }) => {
     const { dumpRecovery } = await import('../lib/recovery')
     dumpRecovery(args.filename, args.content)
+  })
+
+  const LOCAL_MATERIAL_EXTS = new Set(['.md', '.markdown', '.txt'])
+  const LOCAL_MATERIAL_MAX_BYTES = 512 * 1024
+
+  ipcMain.handle('files:pickLocalMaterial', async (event): Promise<LocalMaterial | null> => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const result = await dialog.showOpenDialog(win!, {
+      title: '选择本地资料',
+      properties: ['openFile'],
+      filters: [{ name: '文本资料', extensions: ['md', 'markdown', 'txt'] }],
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    const filePath = result.filePaths[0]
+    const ext = path.extname(filePath).toLowerCase()
+    if (!LOCAL_MATERIAL_EXTS.has(ext)) {
+      throw new Error(`不支持的文件类型:${ext}(仅支持 .md / .markdown / .txt)`)
+    }
+    const stat = fs.statSync(filePath)
+    if (stat.size > LOCAL_MATERIAL_MAX_BYTES) {
+      throw new Error(`文件过大(${Math.round(stat.size / 1024)}KB),上限 512KB`)
+    }
+    const content = fs.readFileSync(filePath, 'utf8')
+    return { name: path.basename(filePath), content }
+  })
+
+  ipcMain.handle('files:writeLocalMaterials', async (_, args: {
+    dirName: string
+    sessionNumber: number
+    materials: LocalMaterial[]
+  }) => {
+    validateDirName(args.dirName)
+    const now = new Date()
+    const topicPath = topicDir(cfg.libraryPath, args.dirName)
+    const sessionDir = path.join(topicPath, `s${args.sessionNumber}`)
+    fs.mkdirSync(sessionDir, { recursive: true })
+    const filePath = path.join(sessionDir, '本地资料.md')
+    if (fs.existsSync(filePath)) {
+      throw new Error(`本地资料已存在: ${filePath}`)
+    }
+    const fm = {
+      title: '本地资料',
+      type: 'local-materials' as const,
+      created: now.toISOString(),
+      session_number: args.sessionNumber,
+      files: args.materials.map(m => m.name),
+    }
+    const sections = args.materials.map(m =>
+      `## ${m.name}\n\n\`\`\`\n${m.content.trim()}\n\`\`\``
+    ).join('\n\n')
+    fs.writeFileSync(filePath, serializeFrontmatter('local-materials', fm, sections + '\n'), 'utf8')
   })
 
   // Group management IPC

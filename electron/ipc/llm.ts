@@ -6,7 +6,7 @@ import { generateDiagram } from '../lib/diagram'
 import { topicDir } from '../lib/library-layout'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { Message, Profile, Mode, Difficulty } from '@shared/index'
+import type { Message, Profile, Mode, Difficulty, LocalMaterial } from '@shared/index'
 import { assemblePrompt } from '../lib/prompts'
 
 const sessions = new Map<string, AbortController>()
@@ -33,6 +33,7 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     selectedTopic?: string
     userRequirement?: string
     externalMaterialsSummary?: string
+    localMaterials?: LocalMaterial[]
   }) => {
     const win = getMainWindow()
     if (!win) return
@@ -53,7 +54,8 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
         progressSummary: args.progressSummary,
         selectedTopic: args.selectedTopic,
         userRequirement: args.userRequirement,
-        externalMaterialsSummary: args.externalMaterialsSummary
+        externalMaterialsSummary: args.externalMaterialsSummary,
+        localMaterials: args.localMaterials
       })
       // E2E deterministic mock: skip real LLM streaming and emit fixed chunks.
       // Gated on both NODE_ENV=test and E2E_CONFIG_DIR so unit tests stay on

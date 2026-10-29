@@ -53,6 +53,8 @@ export const ipc = {
 
   // Search & external materials
   get searchPrepare() { return ensure().searchPrepare },
+  get localFilePick() { return ensure().localFilePick },
+  get writeLocalMaterials() { return ensure().writeLocalMaterials },
   get searchCheckConfig() { return ensure().searchCheckConfig },
   get setSearchApiKey() { return ensure().setSearchApiKey },
   get writeExternalMaterials() { return ensure().writeExternalMaterials },

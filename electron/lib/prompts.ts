@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import type { Difficulty, Mode, Profile } from '@shared/index'
+import type { Difficulty, LocalMaterial, Mode, Profile } from '@shared/index'
 
 const PROMPTS_DIR = (() => {
   const candidates = [
@@ -27,6 +27,7 @@ export type AssembleArgs = {
   selectedTopic?: string
   userRequirement?: string
   externalMaterialsSummary?: string
+  localMaterials?: LocalMaterial[]
 }
 
 export function assemblePrompt(args: AssembleArgs): string {
@@ -47,6 +48,13 @@ export function assemblePrompt(args: AssembleArgs): string {
 
   if (args.externalMaterialsSummary) {
     parts.push(`【外部参考资料】\n${args.externalMaterialsSummary}\n\n以上资料仅供你作为背景知识使用。请继续以苏格拉底方式引导用户，不要直接引用资料给出答案。`)
+  }
+
+  if (args.localMaterials && args.localMaterials.length > 0) {
+    const materialSections = args.localMaterials.map(m =>
+      `### ${m.name}\n${m.content.trim()}`
+    ).join('\n\n')
+    parts.push(`【本地资料】\n以下是学习者上传的本地资料,作为你引导对话的背景材料使用,请继续以苏格拉底方式引导用户,不要直接照读资料给出答案。\n\n${materialSections}`)
   }
 
   if (args.mode === 'review') {

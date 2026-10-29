@@ -14,6 +14,7 @@ const ICONS = {
 import { getDifficultyLabel } from '@/lib/difficulty-label'
 import { filterAndSortTopics } from '@/lib/filter-topics'
 import { ipc } from '@/lib/ipc'
+import type { LocalMaterial } from '@shared/index'
 
 type SuggestionCardProps = {
   suggestion: ContinueTopicSuggestion
@@ -121,6 +122,8 @@ export function PreStudyModal() {
   const [customTopic, setCustomTopic] = useState('')
   const [enableExternalMaterials, setEnableExternalMaterials] = useState(false)
   const [searchConfigured, setSearchConfigured] = useState(false)
+  const [localMaterials, setLocalMaterials] = useState<LocalMaterial[]>([])
+  const [pickingFile, setPickingFile] = useState(false)
   const [selectedGroupId, setSelectedGroupId] = useState<string>(activeGroupId ?? 'default')
 
   const topicRef = useRef<HTMLInputElement>(null)
@@ -149,6 +152,8 @@ export function PreStudyModal() {
     setCustomTopic('')
     setEnableExternalMaterials(false)
     setSearchConfigured(false)
+    setLocalMaterials([])
+    setPickingFile(false)
 
     if (args.mode === 'progress') {
       ipc.searchCheckConfig()
@@ -277,8 +282,24 @@ export function PreStudyModal() {
       userRequirement: userRequirement.trim() || undefined,
       selectedTopic,
       enableExternalMaterials: args.mode === 'progress' ? enableExternalMaterials : undefined,
+      localMaterials: args.mode === 'progress' && localMaterials.length > 0 ? localMaterials : undefined,
       groupId: selectedGroupId
     })
+  }
+
+  const addLocalMaterial = async () => {
+    if (pickingFile) return
+    setPickingFile(true)
+    try {
+      const material = await ipc.localFilePick()
+      if (material) {
+        setLocalMaterials(prev => [...prev, material])
+      }
+    } catch (err: any) {
+      showToast('读取本地资料失败:' + (err?.message ?? err))
+    } finally {
+      setPickingFile(false)
+    }
   }
 
   return (
@@ -498,6 +519,43 @@ export function PreStudyModal() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Difficulty selection */}
+        {/* Local materials (progress only) */}
+        {args?.mode === 'progress' && (
+        <div data-testid="local-materials-section">
+          <div className="field-label mb-2">本地资料</div>
+          <div className={`rounded-lg border p-3 ${isAcademic ? 'border-slate/20' : 'border-[#1a1a1a]/10'}`}>
+            <div className={`text-xs leading-relaxed mb-2 ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>
+              上传本地资料（.md / .txt，单个 ≤512KB），内容会注入对话上下文，作为引导学习的背景材料。
+            </div>
+            {localMaterials.length > 0 && (
+              <div className="space-y-1.5 mb-2">
+                {localMaterials.map((m, i) => (
+                  <div key={`${m.name}-${i}`} className={`flex items-center justify-between rounded px-2 py-1 text-xs ${isAcademic ? 'bg-ink/40 text-parchment/80' : 'bg-[#1a1a1a]/5 text-[#555]'}`}>
+                    <span className="truncate pr-2">📄 {m.name}</span>
+                    <button
+                      data-testid={`local-material-remove-${i}`}
+                      onClick={() => setLocalMaterials(prev => prev.filter((_, j) => j !== i))}
+                      className={`shrink-0 ${isAcademic ? 'text-parchment/40 hover:text-parchment' : 'text-[#bbb] hover:text-[#1a1a1a]'}`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              data-testid="local-material-add"
+              onClick={addLocalMaterial}
+              disabled={pickingFile}
+              className={`text-xs px-3 py-1.5 rounded border transition-colors ${isAcademic ? 'border-slate/30 text-parchment/70 hover:border-ember/50 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]'} ${pickingFile ? 'opacity-50 cursor-wait' : ''}`}
+            >
+              {pickingFile ? '读取中…' : '+ 添加文件'}
+            </button>
+          </div>
+        </div>
         )}
 
         {/* Difficulty selection */}

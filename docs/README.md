@@ -77,8 +77,8 @@
 
 ### 11. 网络搜索与外部资料
 
-**现状**：Tavily 网络搜索在用（`electron/lib/search.ts` + `ipc/search.ts` + `credentials.ts`），供简报/写作助手调用；外部资料摘要面板（`ExternalSummaryPanel`）在用。
-**历史链**：06-21 web-search → 07-06 external-materials-summary-panel → 07-28 two-round-search
+**现状**：Tavily 网络搜索在用（`electron/lib/search.ts` + `ipc/search.ts` + `credentials.ts`），供简报/写作助手调用；外部资料摘要面板（`ExternalSummaryPanel`）在用。新的小径（PreStudyModal）可上传本地资料（.md/.txt ≤512KB，`files:pickLocalMaterial`），随 prompt `【本地资料】` 段注入对话（`prompts.ts` localMaterials），归档时写 `本地资料.md`（`files:writeLocalMaterials`）。
+**历史链**：06-21 web-search → 07-06 external-materials-summary-panel → 07-28 two-round-search → 10-29 local-materials-upload
 
 ### 12. 写作功能
 

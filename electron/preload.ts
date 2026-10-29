@@ -77,6 +77,8 @@ const api: IpcApi = {
   // External materials
   readExternalMaterials: (dirName) => ipcRenderer.invoke('files:readExternalMaterials', dirName),
   writeExternalMaterials: (a) => ipcRenderer.invoke('files:writeExternalMaterials', a),
+  localFilePick: () => ipcRenderer.invoke('files:pickLocalMaterial'),
+  writeLocalMaterials: (a) => ipcRenderer.invoke('files:writeLocalMaterials', a),
 
   // Search
   searchPrepare: (a) => ipcRenderer.invoke('search:prepare', a),

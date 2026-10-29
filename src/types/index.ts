@@ -370,6 +370,7 @@ export type UnsavedSession = {
   userRequirement?: string
   selectedTopic?: string
   enableExternalMaterials?: boolean
+  localMaterials?: LocalMaterial[]
   externalMaterials?: SearchResult
 }
 
@@ -389,6 +390,11 @@ export type SearchSource = {
 export type SearchResult = {
   summary: string
   sources: SearchSource[]
+}
+
+export type LocalMaterial = {
+  name: string
+  content: string
 }
 
 export type SearchErrorCode =
@@ -598,6 +604,8 @@ export type StateJson = {
   notepadPanelSize?: { w: number; h: number } | null
   /** Demo 说明文案的用户改写：noteId → 编辑路径 → 文本（双击弹层进入编辑后写入） */
   demoNoteOverrides?: Record<string, Record<string, string>>
+  /** Demo 信息说明弹层正文字号档位（弹层内 A−/A+ 调节） */
+  demoNoteFontSize?: NotepadFontSize
   /** LLM 多配置：首条由 .env 迁移播种；切换免重启 */
   llmConfigs?: LlmConfig[]
   activeLlmConfigId?: string | null
@@ -622,7 +630,7 @@ export type IpcApi = {
   /** 同步落盘(sendSync):仅退出路径(beforeunload)使用,保证渲染进程卸载前必达主进程 */
   patchStateSync: (patch: Partial<StateJson>) => void
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
-  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string }) => Promise<void>
+  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string; localMaterials?: LocalMaterial[] }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; description?: string; body: string; progress_summary?: string }>
   llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[]; mastery_assessment?: string; mastery_checklist?: string[]; future_advice?: string[] }>
@@ -707,6 +715,10 @@ export type IpcApi = {
   searchPrepare: (args: { topic: string }) => Promise<SearchResult>
   searchCheckConfig: () => Promise<{ configured: boolean }>
   setSearchApiKey: (key: string) => Promise<void>
+
+  // Local material (uploaded in pre-study dialog)
+  localFilePick: () => Promise<LocalMaterial | null>
+  writeLocalMaterials: (args: { dirName: string; sessionNumber: number; materials: LocalMaterial[] }) => Promise<void>
 
   // Extension info
   getExtensionInfo: () => Promise<{ libraryPath: string; paintingCount: number }>

@@ -81,4 +81,31 @@ describe('assemblePrompt', () => {
     expect(sys).toMatch(/以上资料仅供你作为背景知识使用/)
     expect(sys).toMatch(/不要直接引用资料给出答案/)
   })
+
+  it('injects local materials when provided', () => {
+    const sys = assemblePrompt({
+      mode: 'progress',
+      difficulty: 'mid',
+      profile,
+      localMaterials: [
+        { name: '笔记.md', content: '# 我的笔记\n关键概念 A 与 B 的关系。' },
+        { name: '摘录.txt', content: '一段摘录文字。' }
+      ]
+    })
+    expect(sys).toContain('【本地资料】')
+    expect(sys).toContain('### 笔记.md')
+    expect(sys).toContain('关键概念 A 与 B 的关系。')
+    expect(sys).toContain('### 摘录.txt')
+    expect(sys).toMatch(/不要直接照读资料给出答案/)
+  })
+
+  it('omits local materials section when empty', () => {
+    const sys = assemblePrompt({
+      mode: 'progress',
+      difficulty: 'mid',
+      profile,
+      localMaterials: []
+    })
+    expect(sys).not.toContain('【本地资料】')
+  })
 })

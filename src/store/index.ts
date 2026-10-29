@@ -16,6 +16,7 @@ import type {
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   GuideProgress,
   BlogCollectionFile, RecommendStage, ScrollMemorySlot,
+  LocalMaterial,
   NotepadCategory, NotepadFontSize, NotepadItem, NotepadLogEntry,
   NoteEntry, NoteMeta, NoteSource, NoteSortBy,
   BookEntry, BookTocItem, ChapterMeta, BookGuideContext,
@@ -66,6 +67,7 @@ type Session = {
   userRequirement?: string
   selectedTopic?: string
   enableExternalMaterials?: boolean
+  localMaterials?: LocalMaterial[]
   groupId?: string
 }
 
@@ -223,8 +225,12 @@ type AppStore = {
 
   /** Demo 说明文案的用户改写（noteId → 编辑路径 → 文本），落在 state.json */
   demoNoteOverrides: DemoNoteOverrides
+  /** Demo 信息说明弹层正文字号档位（'sm' | 'base' | 'lg'） */
+  demoNoteFontSize: NotepadFontSize
   /** 提交一处说明文案修改（空文本视为改回默认） */
   setDemoNoteOverride: (noteId: string, path: string, text: string) => void
+  /** 设置 Demo 信息说明弹层字号档位 */
+  setDemoNoteFontSize: (size: NotepadFontSize) => void
   /** 恢复某个说明条目的全部默认文案 */
   resetDemoNoteOverrides: (noteId: string) => void
 
@@ -264,6 +270,7 @@ type AppStore = {
     userRequirement?: string
     selectedTopic?: string
     enableExternalMaterials?: boolean
+    localMaterials?: LocalMaterial[]
     groupId?: string
   }) => void
   appendChunk: (text: string) => void
@@ -587,6 +594,7 @@ export const useStore = create<AppStore>((set, get) => ({
   notepadFontSize: 'base',
   notepadPanelSize: null,
   demoNoteOverrides: {},
+  demoNoteFontSize: 'base',
   briefingTheme: 'academic',
   briefingFontSize: 'base',
   studyFontSize: 'lg',
@@ -717,6 +725,7 @@ export const useStore = create<AppStore>((set, get) => ({
       notepadFontSize: state.notepadFontSize ?? 'base',
       notepadPanelSize: state.notepadPanelSize ?? null,
       demoNoteOverrides: state.demoNoteOverrides ?? {},
+      demoNoteFontSize: state.demoNoteFontSize ?? 'base',
       library: library.filter(t => !(state.archivedTopics ?? []).includes(t.dirName)),
       unsavedSessions: unsaved,
       groups: groupsData.groups,
@@ -866,6 +875,11 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ demoNoteOverrides: next } as Partial<StateJson>)
   },
 
+  setDemoNoteFontSize: (size) => {
+    set({ demoNoteFontSize: size })
+    ipc.patchState({ demoNoteFontSize: size } as Partial<StateJson>)
+  },
+
   resetDemoNoteOverrides: (noteId) => {
     const prev = get().demoNoteOverrides
     if (!(noteId in prev)) return
@@ -905,6 +919,7 @@ export const useStore = create<AppStore>((set, get) => ({
         userRequirement: a.userRequirement,
         selectedTopic: a.selectedTopic,
         enableExternalMaterials: a.enableExternalMaterials,
+        localMaterials: a.localMaterials,
         groupId: a.groupId
       },
       externalMaterials: null,
@@ -1588,6 +1603,7 @@ export const useStore = create<AppStore>((set, get) => ({
       userRequirement: s.userRequirement,
       selectedTopic: s.selectedTopic,
       enableExternalMaterials: s.enableExternalMaterials,
+      localMaterials: s.localMaterials,
       externalMaterials: state.externalMaterials?.summary
         ? { summary: state.externalMaterials.summary, sources: state.externalMaterials.sources }
         : undefined
@@ -1619,7 +1635,8 @@ export const useStore = create<AppStore>((set, get) => ({
         archivePending: false,
         userRequirement: unsaved.userRequirement,
         selectedTopic: unsaved.selectedTopic,
-        enableExternalMaterials: unsaved.enableExternalMaterials
+        enableExternalMaterials: unsaved.enableExternalMaterials,
+        localMaterials: unsaved.localMaterials
       },
       externalMaterials: unsaved.externalMaterials
         ? { summary: unsaved.externalMaterials.summary, sources: unsaved.externalMaterials.sources, loading: false, error: null }

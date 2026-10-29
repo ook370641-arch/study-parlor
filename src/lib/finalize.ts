@@ -50,6 +50,19 @@ export async function finalizeAndReturnHome() {
         }
       }
 
+      // 写本地资料
+      if (sess.localMaterials && sess.localMaterials.length > 0) {
+        try {
+          await ipc.writeLocalMaterials({
+            dirName,
+            sessionNumber,
+            materials: sess.localMaterials
+          })
+        } catch (e) {
+          console.warn('[finalize] local materials write failed:', e)
+        }
+      }
+
       // 生成并写寓言
       try {
         const fable = await ipc.llmGenerateFable({ history: historySnapshot, topic: title })

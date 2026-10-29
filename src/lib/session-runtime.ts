@@ -99,7 +99,8 @@ export async function kickoffSession() {
       temperature: s.session.temperature,
       selectedTopic: s.session.selectedTopic,
       userRequirement: s.session.userRequirement,
-      externalMaterialsSummary: state.externalMaterials?.summary ?? undefined
+      externalMaterialsSummary: state.externalMaterials?.summary ?? undefined,
+      localMaterials: s.session.localMaterials
     })
   } catch (err: any) {
     useStore.setState(state => state.session
@@ -162,7 +163,8 @@ export async function sendOrInterrupt(text: string) {
         temperature: state.session!.temperature,
         selectedTopic: state.session!.selectedTopic,
         userRequirement: state.session!.userRequirement,
-        externalMaterialsSummary: state.externalMaterials?.summary ?? undefined
+        externalMaterialsSummary: state.externalMaterials?.summary ?? undefined,
+        localMaterials: state.session!.localMaterials
       })
     } catch (err: any) {
       useStore.setState(st => st.session
