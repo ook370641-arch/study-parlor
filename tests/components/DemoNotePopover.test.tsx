@@ -206,6 +206,61 @@ describe('DemoNotePopover 编辑模式', () => {
   })
 })
 
+describe('DemoNotePopover 字号与尺寸调节', () => {
+  beforeEach(() => {
+    useStore.setState({ demoNoteFontSize: 'base' })
+  })
+
+  function renderOpen(noteId: keyof typeof DEMO_NOTES = 'book-source') {
+    const ref = createRef<HTMLSpanElement>()
+    render(
+      <>
+        <span ref={ref} />
+        <DemoNotePopover noteId={noteId} anchorRef={ref} onClose={() => {}} />
+      </>
+    )
+    return screen.getByTestId(`demo-note-popover-${noteId}`)
+  }
+
+  it('头部有字号 −/+ 按钮：点击升档并写入 state.json', () => {
+    const panel = renderOpen()
+    const zoomWrap = panel.firstElementChild as HTMLElement
+    expect(zoomWrap.style.zoom).toBe('1')
+    fireEvent.click(screen.getByTestId('demo-note-font-inc'))
+    expect(useStore.getState().demoNoteFontSize).toBe('lg')
+    expect(patchState).toHaveBeenCalledWith({ demoNoteFontSize: 'lg' })
+  })
+
+  it('最小档禁用 −，最大档禁用 ＋', () => {
+    renderOpen()
+    fireEvent.click(screen.getByTestId('demo-note-font-dec'))
+    expect(useStore.getState().demoNoteFontSize).toBe('sm')
+    expect((screen.getByTestId('demo-note-font-dec') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByTestId('demo-note-font-inc'))
+    fireEvent.click(screen.getByTestId('demo-note-font-inc'))
+    expect(useStore.getState().demoNoteFontSize).toBe('lg')
+    expect((screen.getByTestId('demo-note-font-inc') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('渲染右缘 / 下缘 / 右下角三个拖拽手柄', () => {
+    renderOpen()
+    expect(screen.getByTestId('demo-note-resize-e')).toBeTruthy()
+    expect(screen.getByTestId('demo-note-resize-s')).toBeTruthy()
+    expect(screen.getByTestId('demo-note-resize-se')).toBeTruthy()
+  })
+
+  it('拖右下角同时改宽高，松手后写入面板 style', () => {
+    const panel = renderOpen()
+    const handle = screen.getByTestId('demo-note-resize-se')
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 800, clientY: 600 })
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 980, clientY: 760 })
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 980, clientY: 760 })
+    expect(panel.style.width).toBe('640px') // 460 + Δ180
+    // jsdom 里起始高为 0，被最小高度夹到 220
+    expect(panel.style.height).toBe('220px')
+  })
+})
+
 describe('DemoInfoButton', () => {
   it('aria-pressed 反映当前是否展开', () => {
     const onClick = vi.fn()

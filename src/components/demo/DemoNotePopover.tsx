@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
 import { DEMO_NOTES, applyDemoNoteOverrides } from '@/lib/demo-notes'
 import type { DemoNote } from '@/lib/demo-notes'
-import type { BriefingTheme } from '@shared/index'
+import type { BriefingTheme, NotepadFontSize } from '@shared/index'
 
 interface Props {
   /** 说明条目 id；null 表示关闭 */
@@ -23,6 +23,13 @@ interface Props {
 const PANEL_WIDTH = 460
 const PANEL_MAX_HEIGHT_VH = 84
 const PANEL_MAX_HEIGHT_PX = 760
+
+/** 字号三档对应的整体缩放（CSS zoom，参照写作 HTML 预览的 WRITING_HTML_ZOOM 先例） */
+const FONT_ZOOM: Record<NotepadFontSize, number> = { sm: 0.88, base: 1, lg: 1.15 }
+const FONT_ORDER: NotepadFontSize[] = ['sm', 'base', 'lg']
+/** 拖拽边缘的最小/最大尺寸约束 */
+const MIN_PANEL_W = 320
+const MIN_PANEL_H = 220
 
 /**
  * 取锚点的可视矩形。
@@ -157,11 +164,17 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
   const panelRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null)
   const [editing, setEditing] = useState(false)
+  /** 用户拖边缘得到的自定义尺寸；null = 未拖过，按默认宽 + 内容自适应高 */
+  const [panelSize, setPanelSize] = useState<{ w: number; h: number } | null>(null)
+  const panelSizeRef = useRef(panelSize)
+  panelSizeRef.current = panelSize
   const isAcademic = theme !== 'newspaper'
 
   const overrides = useStore((s) => (noteId ? s.demoNoteOverrides[noteId] : undefined))
   const setDemoNoteOverride = useStore((s) => s.setDemoNoteOverride)
   const resetDemoNoteOverrides = useStore((s) => s.resetDemoNoteOverrides)
+  const demoNoteFontSize = useStore((s) => s.demoNoteFontSize)
+  const setDemoNoteFontSize = useStore((s) => s.setDemoNoteFontSize)
   const note = useMemo(
     () => (noteId ? applyDemoNoteOverrides(DEMO_NOTES[noteId], overrides) : null),
     [noteId, overrides]
@@ -181,21 +194,76 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
     if (top + panelHeight > window.innerHeight - margin) {
       top = Math.max(margin, rect.top - gap - panelHeight)
     }
+    // 用户拖大面板后可能顶出视口下缘，统一往视口内夹（比视口还高时贴顶，内容区自己滚）
+    top = Math.min(Math.max(top, margin), Math.max(margin, window.innerHeight - margin - panelHeight))
 
     // 默认右对齐锚点（入口多在界面右侧），再夹进视口。
     // 视口比面板还窄时（小窗口），宽度收敛到视口内，避免左右都被裁掉。
-    const width = Math.min(PANEL_WIDTH, window.innerWidth - margin * 2)
+    const width = Math.min(panelSizeRef.current?.w ?? PANEL_WIDTH, window.innerWidth - margin * 2)
     let left = rect.right - width
     left = Math.min(Math.max(left, margin), window.innerWidth - width - margin)
 
     setPos({ left, top, width })
   }, [anchorRef])
 
+  const bumpFont = (dir: 1 | -1) => {
+    const cur = FONT_ORDER.indexOf(demoNoteFontSize)
+    const next = FONT_ORDER[Math.max(0, Math.min(FONT_ORDER.length - 1, cur + dir))]
+    if (next !== demoNoteFontSize) setDemoNoteFontSize(next)
+  }
+
+  /** 边缘/角落拖拽调尺寸：e=右缘 s=下缘 se=右下角 */
+  const startResize = (mode: 'e' | 's' | 'se') => (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const handle = e.currentTarget
+    handle.setPointerCapture?.(e.pointerId)
+    const startX = e.clientX
+    const startY = e.clientY
+    const startW = pos?.width ?? PANEL_WIDTH
+    const startH = panelRef.current?.getBoundingClientRect().height ?? MIN_PANEL_H
+    const margin = 8
+
+    const onMove = (ev: PointerEvent) => {
+      const next = { w: startW, h: startH }
+      if (mode !== 's') {
+        next.w = Math.round(
+          Math.min(Math.max(startW + ev.clientX - startX, MIN_PANEL_W), window.innerWidth - margin * 2)
+        )
+      }
+      if (mode !== 'e') {
+        next.h = Math.round(
+          Math.min(Math.max(startH + ev.clientY - startY, MIN_PANEL_H), window.innerHeight - margin * 2)
+        )
+      }
+      setPanelSize(next)
+    }
+    const onUp = (ev: PointerEvent) => {
+      handle.removeEventListener('pointermove', onMove)
+      handle.removeEventListener('pointerup', onUp)
+      if (handle.hasPointerCapture?.(ev.pointerId)) handle.releasePointerCapture(ev.pointerId)
+      // 拖完后按新宽高重新收敛 left/top（右/下缘可能顶出视口）；
+      // 同步一次 + rAF 一次，兼容 setPanelSize 尚未布局完成的瞬间
+      updatePosition()
+      requestAnimationFrame(updatePosition)
+    }
+    handle.addEventListener('pointermove', onMove)
+    handle.addEventListener('pointerup', onUp)
+  }
+
   // 换条目时退出编辑模式（是否保存由失焦提交决定）
   useEffect(() => {
     setEditing(false)
     setPos(null)
   }, [noteId])
+
+  // 字号档位变化会改变内容高度，重新定位
+  useEffect(() => {
+    if (!noteId) return
+    updatePosition()
+    const raf = requestAnimationFrame(updatePosition)
+    return () => cancelAnimationFrame(raf)
+  }, [demoNoteFontSize, noteId, updatePosition])
 
   useEffect(() => {
     if (!noteId) return
@@ -248,6 +316,8 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement
+    // 拖拽手柄上的双击是误触，不进入编辑模式
+    if (target.closest('[data-resize-handle]')) return
     if (editing) {
       // 编辑态：只在非文本区域双击才退出，文本区域保留原生选词
       if (!target.closest('[data-edit-path]')) setEditing(false)
@@ -287,7 +357,8 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
       className={`fixed z-[9999] rounded-xl border shadow-2xl p-4 flex flex-col ${shell}`}
       style={{
         width: pos?.width ?? PANEL_WIDTH,
-        maxHeight: `min(${PANEL_MAX_HEIGHT_VH}vh, ${PANEL_MAX_HEIGHT_PX}px)`,
+        height: panelSize?.h ?? undefined,
+        maxHeight: panelSize ? undefined : `min(${PANEL_MAX_HEIGHT_VH}vh, ${PANEL_MAX_HEIGHT_PX}px)`,
         left: pos?.left ?? 0,
         top: pos?.top ?? 0,
         visibility: pos ? 'visible' : 'hidden',
@@ -295,6 +366,8 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
         scrollbarColor: '#d97757 transparent',
       }}
     >
+      {/* zoom 包裹内容（不含拖拽手柄）：字号三档整体缩放，参照写作 HTML 预览 */}
+      <div className="min-h-0 flex-1 flex flex-col" style={{ zoom: FONT_ZOOM[demoNoteFontSize] }}>
       <div className="flex items-start justify-between gap-3 mb-2 shrink-0">
         <div className={`text-[13px] font-serif font-semibold leading-snug ${body}`}>
           <EditableText
@@ -305,6 +378,34 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
             className={editMark}
           />
         </div>
+        <span className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            data-testid="demo-note-font-dec"
+            onClick={() => bumpFont(-1)}
+            disabled={demoNoteFontSize === 'sm'}
+            aria-label="缩小说明字号"
+            title="缩小字号"
+            className={`h-5 min-w-5 px-0.5 rounded border text-[11px] leading-none transition-opacity hover:opacity-100 disabled:opacity-25 opacity-70 ${
+              isAcademic ? 'border-parchment/25 text-parchment/70' : 'border-[#1a1a1a]/25 text-[#1a1a1a]/70'
+            }`}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            data-testid="demo-note-font-inc"
+            onClick={() => bumpFont(1)}
+            disabled={demoNoteFontSize === 'lg'}
+            aria-label="放大说明字号"
+            title="放大字号"
+            className={`h-5 min-w-5 px-0.5 rounded border text-[11px] leading-none transition-opacity hover:opacity-100 disabled:opacity-25 opacity-70 ${
+              isAcademic ? 'border-parchment/25 text-parchment/70' : 'border-[#1a1a1a]/25 text-[#1a1a1a]/70'
+            }`}
+          >
+            ＋
+          </button>
+        </span>
         <button
           type="button"
           data-testid="demo-note-close"
@@ -560,6 +661,29 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
           <span className="opacity-40 select-none">双击可编辑</span>
         )}
       </div>
+      </div>
+
+      {/* 边缘拖拽手柄：右缘调宽、下缘调高、右下角同时调 */}
+      <div
+        data-resize-handle="e"
+        data-testid="demo-note-resize-e"
+        onPointerDown={startResize('e')}
+        className="absolute top-3 bottom-3 -right-[3px] w-2 cursor-ew-resize touch-none"
+      />
+      <div
+        data-resize-handle="s"
+        data-testid="demo-note-resize-s"
+        onPointerDown={startResize('s')}
+        className="absolute left-3 right-3 -bottom-[3px] h-2 cursor-ns-resize touch-none"
+      />
+      <div
+        data-resize-handle="se"
+        data-testid="demo-note-resize-se"
+        onPointerDown={startResize('se')}
+        className={`absolute -right-[2px] -bottom-[2px] w-4 h-4 cursor-nwse-resize touch-none rounded-sm transition-colors ${
+          isAcademic ? 'hover:bg-ember/25' : 'hover:bg-[#8a3a3a]/20'
+        }`}
+      />
     </div>,
     document.body
   )
