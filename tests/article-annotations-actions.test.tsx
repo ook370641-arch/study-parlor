@@ -104,6 +104,17 @@ describe('ArticleAnnotations actions', () => {
     expect(screen.queryByTestId('anno-note-card')).toBeNull()
   })
 
+  it('shows the permanent highlight without requiring another selection change', async () => {
+    const { container } = await renderAnnotations()
+    await triggerGhost(container)
+    expect(window.getSelection()?.isCollapsed).toBe(false)
+
+    fireEvent.click(screen.getByTestId('anno-highlight-button'))
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 150)) })
+
+    expect(container.querySelector('.anno-wrap')).not.toBeNull()
+  })
+
   it('persists the selected highlight color and keeps the selection toolbar available', async () => {
     const { container } = await renderAnnotations()
     await triggerGhost(container)

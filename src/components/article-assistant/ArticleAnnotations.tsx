@@ -483,6 +483,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       highlightColor: annotationHighlightColor,
     }
 
+    window.getSelection()?.removeAllRanges()
     const updated = [...annotations, newAnno]
     setAnnotations(updated)
     setGhost(null)
