@@ -1185,10 +1185,9 @@ export const useStore = create<AppStore>((set, get) => ({
       }
       return
     }
-    ++bookSelectSeq
+    const seq = ++bookSelectSeq
     set({ activeBookDir: dir, activeChapter: null, bookContext: null, activeBookToc: [] })
     try {
-      const seq = bookSelectSeq
       const activeBookToc = await ipc.booksChapters({ bookDir: dir })
       if (seq !== bookSelectSeq) return
       set({ activeBookToc })
@@ -1205,13 +1204,16 @@ export const useStore = create<AppStore>((set, get) => ({
     const normalizedDir = dir.replace(/\\/g, '/')
     const restoreItem = get().activeBookToc.find((item) => lastChapter === `${normalizedDir}/${item.chapterFile}`)
     if (restoreItem) await get().selectChapter(`${dir}/${restoreItem.chapterFile}`)
+    if (seq !== bookSelectSeq || get().activeBookDir !== dir) return
     const entry = get().booksList.find((b) => b.dir === dir)
     if (entry && !entry.bookGuide && !bookGuideInFlight.has(dir)) {
       // 懒生成全书导读；完成后刷新书架卡片（不覆盖当前选中的书）
       bookGuideInFlight.add(dir)
       void ipc
         .booksBookGuide({ bookDir: dir })
-        .then(() => get().loadBooks())
+        .then(() => {
+          if (seq === bookSelectSeq && get().activeBookDir === dir) return get().loadBooks()
+        })
         .catch((err) => {
           if (get().activeBookDir === dir) get().showToast(err instanceof Error ? err.message : '全书导读生成失败')
         })
@@ -1494,6 +1496,7 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchStateSync({ articleCompanionScrollMemory: mem } as Partial<StateJson>)
   },
   flushBookScrollPosition: (filePath, blockIndex) => {
+    if (get().booksLastChapter !== filePath) return
     const mem: ScrollMemorySlot = { filePath, blockIndex }
     set({ bookScrollMemory: mem })
     ipc.patchStateSync({ bookScrollMemory: mem } as Partial<StateJson>)

@@ -24,6 +24,7 @@ import type { BookEntry } from '@shared/index'
 const booksListMock = vi.mocked(ipc.booksList)
 const booksChaptersMock = vi.mocked(ipc.booksChapters)
 const booksReadChapterMock = vi.mocked(ipc.booksReadChapter)
+const booksBookGuideMock = vi.mocked(ipc.booksBookGuide)
 const booksDeleteMock = vi.mocked(ipc.booksDelete)
 const patchStateMock = vi.mocked(ipc.patchState)
 const patchStateSyncMock = vi.mocked(ipc.patchStateSync)
@@ -109,6 +110,50 @@ describe('书籍阅读记忆', () => {
     expect(useStore.getState().booksLastChapter).toBeNull()
     expect(useStore.getState().bookScrollMemory).toBeNull()
     expect(patchStateMock).toHaveBeenCalledWith(expect.objectContaining({ booksLastChapter: null, bookScrollMemory: null }))
+  })
+
+  it('删除后到达的待处理滚动 flush 不会恢复已删章节', async () => {
+    const dir = 'book-a'
+    const chapterPath = `${dir}/chapters/01.md`
+    useStore.setState({
+      activeBookDir: dir,
+      activeChapter: { path: chapterPath, content: 'x', meta: { title: 'C1', chapterIndex: 1, pageRange: [1, 2] } },
+      booksLastChapter: chapterPath,
+      bookScrollMemory: { filePath: chapterPath, blockIndex: 7 },
+    } as any)
+    const pendingFlush = () => useStore.getState().flushBookScrollPosition(chapterPath, 9)
+
+    await useStore.getState().removeBook(dir)
+    patchStateSyncMock.mockClear()
+    pendingFlush()
+
+    expect(useStore.getState().bookScrollMemory).toBeNull()
+    expect(patchStateSyncMock).not.toHaveBeenCalled()
+  })
+
+  it('恢复章节等待期间换书后不再生成旧书全书导读', async () => {
+    let finishChapterRead: (() => void) | undefined
+    booksReadChapterMock.mockImplementationOnce(() => new Promise<Awaited<ReturnType<typeof ipc.booksReadChapter>>>((resolve) => {
+      finishChapterRead = () => resolve({
+        content: '# C1',
+        meta: { title: 'C1', chapterIndex: 1, pageRange: [1, 2] },
+      })
+    }))
+    booksChaptersMock.mockImplementation(async ({ bookDir }) => bookDir === 'book-a'
+      ? [{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }]
+      : [])
+    useStore.setState({
+      booksList: [book('book-a', 'A')],
+      booksLastChapter: 'book-a/chapters/01.md',
+    } as any)
+
+    const restoring = useStore.getState().selectBook('book-a')
+    await vi.waitFor(() => expect(booksReadChapterMock).toHaveBeenCalledWith({ chapterPath: 'book-a/chapters/01.md' }))
+    await useStore.getState().selectBook('book-b')
+    finishChapterRead!()
+    await restoring
+
+    expect(booksBookGuideMock).not.toHaveBeenCalled()
   })
 
   it('持久化当前高亮色', () => {
