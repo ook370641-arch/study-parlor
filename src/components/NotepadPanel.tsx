@@ -2,7 +2,7 @@
 // 迭代记事板面板：双 tab（待完成/已完成）。待完成=条目化待办（bug/新功能/功能优化三分类），
 // 悬停 ✓ 完成自动归档，悬停出现的拖动手柄可手动排序；
 // 已完成=迭代档案（短标题列表，点击行内展开全文，顶部迷你统计）。
-// 面板固定于界面右下角向上展开（入口见 NotepadFab），左上角拖拽手柄调大小，
+// 面板固定于界面右侧或左侧向上展开（入口见 NotepadFab），左上角拖拽手柄调大小，
 // A−/A+ 字号，点击面板外/Esc 收起。
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
@@ -33,7 +33,11 @@ function fmtDate(iso: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export function NotepadPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function NotepadPanel({ open, onClose, placement = 'right' }: {
+  open: boolean
+  onClose: () => void
+  placement?: 'left' | 'right'
+}) {
   const items = useStore(s => s.notepadItems)
   const log = useStore(s => s.notepadLog)
   const fontSize = useStore(s => s.notepadFontSize)
@@ -70,6 +74,7 @@ export function NotepadPanel({ open, onClose }: { open: boolean; onClose: () => 
       const t = e.target as HTMLElement
       if (panelRef.current?.contains(t)) return
       if (t.closest('[data-testid="notepad-fab-button"]')) return
+      if (t.closest('[data-testid="article-assistant-tab"], [data-testid="article-assistant-chat-window"]')) return
       onClose()
     }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -178,8 +183,8 @@ export function NotepadPanel({ open, onClose }: { open: boolean; onClose: () => 
       ref={panelRef}
       data-testid="notepad-panel"
       style={{ width: size.w, height: size.h }}
-      className="fixed bottom-[4.25rem] right-5 z-30 rounded-lg border border-parchment/30
-                 bg-[rgba(15,10,8,0.85)] backdrop-blur-md shadow-lg flex flex-col"
+      className={`fixed bottom-[4.25rem] ${placement === 'left' ? 'left-5' : 'right-5'} z-30 rounded-lg border border-parchment/30
+                 bg-[rgba(15,10,8,0.85)] backdrop-blur-md shadow-lg flex flex-col`}
     >
       <div className="flex items-center gap-1.5 px-3 pt-3 pb-2 border-b border-parchment/10">
         <span className="text-xs text-parchment/60 mr-1">迭代记事板</span>
