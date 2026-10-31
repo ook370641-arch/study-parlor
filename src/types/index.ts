@@ -252,6 +252,8 @@ export type ArticleAssistantErrorCode =
   | 'CHAT_EMPTY_REPLY'
   | 'SAVE_ERROR'
 
+export type AnnotationHighlightColor = 'ember' | 'gold' | 'green' | 'blue'
+
 export type ArticleAnnotation = {
   id: string
   selectedText: string
@@ -259,6 +261,8 @@ export type ArticleAnnotation = {
   paragraphIndex: number
   createdAt: string
   updatedAt: string
+  kind?: 'note' | 'highlight'
+  highlightColor?: AnnotationHighlightColor
 }
 
 export type DocType = 'progress' | 'review' | 'fable' | 'transcript' | 'external-materials' | 'anthropic-article' | 'article-assistant' | 'writing'
@@ -617,6 +621,9 @@ export type StateJson = {
   articlePanelMode?: Record<'anthropic' | 'book', 'guide' | 'companion'>
   /** 书籍来源最后打开的书（books/<书名> 绝对路径；失效时回退第一本） */
   booksLastBook?: string | null
+  booksLastChapter?: string | null
+  bookScrollMemory?: ScrollMemorySlot | null
+  annotationHighlightColor?: AnnotationHighlightColor
   articleCompanionMap?: Record<string, string>
   /** 博客对照槽最后打开的对照文(✕关闭时清 null,重开应用按此恢复) */
   lastArticleCompanion?: { mainKey: string; filePath: string } | null

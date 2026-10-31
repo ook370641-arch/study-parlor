@@ -102,7 +102,9 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
                     isAcademic ? 'text-parchment/40 hover:text-wine' : 'text-[#6b5d52]/60 hover:text-[#8a3a3a]'
                   }`}
                 >
-                  删除
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+                  </svg>
                 </button>
               )}
             </div>

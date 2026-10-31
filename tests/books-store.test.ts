@@ -4,8 +4,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/lib/ipc', () => ({
   ipc: {
     patchState: vi.fn(async () => {}),
+    patchStateSync: vi.fn(),
     booksList: vi.fn(async () => []),
     booksChapters: vi.fn(async () => []),
+    booksReadChapter: vi.fn(async () => ({
+      content: '# C1',
+      meta: { title: 'C1', chapterIndex: 1, pageRange: [1, 2] },
+    })),
     booksBookGuide: vi.fn(async () => ({ content: '' })),
     booksDelete: vi.fn(async () => {}),
     articleAssistantAbort: vi.fn(async () => {}),
@@ -18,8 +23,10 @@ import type { BookEntry } from '@shared/index'
 
 const booksListMock = vi.mocked(ipc.booksList)
 const booksChaptersMock = vi.mocked(ipc.booksChapters)
+const booksReadChapterMock = vi.mocked(ipc.booksReadChapter)
 const booksDeleteMock = vi.mocked(ipc.booksDelete)
 const patchStateMock = vi.mocked(ipc.patchState)
+const patchStateSyncMock = vi.mocked(ipc.patchStateSync)
 
 const book = (dir: string, title: string): BookEntry => ({
   dir,
@@ -43,11 +50,73 @@ beforeEach(() => {
     activeChapter: null,
     bookContext: null,
     booksLastBook: null,
+    booksLastChapter: null,
+    bookScrollMemory: null,
+    annotationHighlightColor: 'gold',
     articleCompanion: null,
     articleCompanionMap: {},
     articlePanelMode: { anthropic: 'guide', book: 'guide' },
     assistantSession: null,
   } as any)
+})
+
+describe('书籍阅读记忆', () => {
+  it('章节读取成功后持久化最后章节并同步保存滚动位置', async () => {
+    useStore.setState({
+      activeBookDir: 'book-a',
+      activeBookToc: [{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }],
+    } as any)
+
+    await useStore.getState().selectChapter('book-a/chapters/01.md')
+    expect(patchStateMock).toHaveBeenCalledWith(expect.objectContaining({ booksLastChapter: 'book-a/chapters/01.md' }))
+
+    useStore.getState().flushBookScrollPosition('book-a/chapters/01.md', 7)
+    expect(patchStateSyncMock).toHaveBeenCalledWith({ bookScrollMemory: { filePath: 'book-a/chapters/01.md', blockIndex: 7 } })
+  })
+
+  it('选书后恢复属于本书且仍在目录中的最后章节', async () => {
+    useStore.setState({ booksLastChapter: 'book-a/chapters/01.md' } as any)
+    booksChaptersMock.mockResolvedValue([{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }])
+
+    await useStore.getState().selectBook('book-a')
+
+    expect(booksReadChapterMock).toHaveBeenCalledWith({ chapterPath: 'book-a/chapters/01.md' })
+    expect(useStore.getState().activeChapter?.path).toBe('book-a/chapters/01.md')
+  })
+
+  it.each([
+    ['其他书', 'book-b/chapters/01.md', [{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }]],
+    ['已不在目录中的章节', 'book-a/chapters/removed.md', [{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }]],
+  ])('不恢复%s', async (_label, booksLastChapter, toc) => {
+    useStore.setState({ booksLastChapter } as any)
+    booksChaptersMock.mockResolvedValue(toc)
+
+    await useStore.getState().selectBook('book-a')
+
+    expect(booksReadChapterMock).not.toHaveBeenCalled()
+    expect(useStore.getState().activeChapter).toBeNull()
+  })
+
+  it('删除书时清理该书的持久章节和滚动槽', async () => {
+    const dir = 'book-a'
+    useStore.setState({
+      booksLastChapter: `${dir}/chapters/01.md`,
+      bookScrollMemory: { filePath: `${dir}/chapters/01.md`, blockIndex: 7 },
+    } as any)
+
+    await useStore.getState().removeBook(dir)
+
+    expect(useStore.getState().booksLastChapter).toBeNull()
+    expect(useStore.getState().bookScrollMemory).toBeNull()
+    expect(patchStateMock).toHaveBeenCalledWith(expect.objectContaining({ booksLastChapter: null, bookScrollMemory: null }))
+  })
+
+  it('持久化当前高亮色', () => {
+    useStore.getState().setAnnotationHighlightColor('blue')
+
+    expect(useStore.getState().annotationHighlightColor).toBe('blue')
+    expect(patchStateMock).toHaveBeenCalledWith({ annotationHighlightColor: 'blue' })
+  })
 })
 
 describe('loadBooks', () => {

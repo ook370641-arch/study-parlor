@@ -11,7 +11,7 @@ import type {
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
   TopicContinueCache, SearchResult, SearchSource, SearchErrorCode,
   Terminology, BriefingTheme, BriefingFontSize, BriefingSourceId, AnthropicBlogCache,
-  ArticleAnnotation, ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
+  ArticleAnnotation, AnnotationHighlightColor, ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   GuideProgress,
@@ -142,6 +142,10 @@ type AppStore = {
   activeChapter: { path: string; content: string; meta: ChapterMeta } | null
   bookContext: BookGuideContext | null
   booksLastBook: string | null
+  booksLastChapter: string | null
+  bookScrollMemory: ScrollMemorySlot | null
+  annotationHighlightColor: AnnotationHighlightColor
+  setAnnotationHighlightColor: (color: AnnotationHighlightColor) => void
   loadBooks: () => Promise<void>
   selectBook: (dir: string) => Promise<void>
   selectChapter: (chapterPath: string) => Promise<void>
@@ -402,6 +406,7 @@ type AppStore = {
   flushAnthropicScrollPosition: (filePath: string, blockIndex: number) => void
   flushWritingCompanionScrollPosition: (filePath: string, blockIndex: number) => void
   flushArticleCompanionScrollPosition: (filePath: string, blockIndex: number) => void
+  flushBookScrollPosition: (filePath: string, blockIndex: number) => void
   writingOrder: Record<string, string[]>
   writingExpandedGroups: Record<string, boolean>
   writingUIFontSize: BriefingFontSize
@@ -613,6 +618,9 @@ export const useStore = create<AppStore>((set, get) => ({
   activeChapter: null,
   bookContext: null,
   booksLastBook: null,
+  booksLastChapter: null,
+  bookScrollMemory: null,
+  annotationHighlightColor: 'gold',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
   anthropicReaderFilePath: null,
   anthropicReaderBody: null,
@@ -713,6 +721,9 @@ export const useStore = create<AppStore>((set, get) => ({
       writingCodeblockCollapsed: state.writingCodeblockCollapsed ?? {},
       articlePanelMode: { anthropic: state.articlePanelMode?.anthropic ?? 'guide', book: state.articlePanelMode?.book ?? 'guide' },
       booksLastBook: state.booksLastBook ?? null,
+      booksLastChapter: state.booksLastChapter ?? null,
+      bookScrollMemory: state.bookScrollMemory ?? null,
+      annotationHighlightColor: state.annotationHighlightColor ?? 'gold',
       articleCompanionMap: state.articleCompanionMap ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
@@ -1190,6 +1201,10 @@ export const useStore = create<AppStore>((set, get) => ({
     }
     set({ booksLastBook: dir })
     void ipc.patchState({ booksLastBook: dir } as Partial<StateJson>)
+    const lastChapter = get().booksLastChapter?.replace(/\\/g, '/')
+    const normalizedDir = dir.replace(/\\/g, '/')
+    const restoreItem = get().activeBookToc.find((item) => lastChapter === `${normalizedDir}/${item.chapterFile}`)
+    if (restoreItem) await get().selectChapter(`${dir}/${restoreItem.chapterFile}`)
     const entry = get().booksList.find((b) => b.dir === dir)
     if (entry && !entry.bookGuide && !bookGuideInFlight.has(dir)) {
       // 懒生成全书导读；完成后刷新书架卡片（不覆盖当前选中的书）
@@ -1233,6 +1248,8 @@ export const useStore = create<AppStore>((set, get) => ({
           ...(prevChapterSummary ? { prevChapterSummary } : {}),
         },
       })
+      set({ booksLastChapter: chapterPath })
+      void ipc.patchState({ booksLastChapter: chapterPath } as Partial<StateJson>)
       await get().syncBookCompanion(chapterPath)
     } catch (err) {
       if (seq === chapterSelectSeq) get().showToast(err instanceof Error ? err.message : '章节读取失败')
@@ -1314,6 +1331,20 @@ export const useStore = create<AppStore>((set, get) => ({
     if (get().booksLastBook === dir) {
       set({ booksLastBook: null })
       void ipc.patchState({ booksLastBook: null } as Partial<StateJson>)
+    }
+    const readingMemoryPatch: Partial<StateJson> = {}
+    const lastChapter = get().booksLastChapter
+    const scrollMemory = get().bookScrollMemory
+    if (lastChapter && underDir(lastChapter)) {
+      set({ booksLastChapter: null })
+      readingMemoryPatch.booksLastChapter = null
+    }
+    if (scrollMemory && underDir(scrollMemory.filePath)) {
+      set({ bookScrollMemory: null })
+      readingMemoryPatch.bookScrollMemory = null
+    }
+    if (Object.keys(readingMemoryPatch).length > 0) {
+      void ipc.patchState(readingMemoryPatch)
     }
     await get().loadBooks()
   },
@@ -1461,6 +1492,15 @@ export const useStore = create<AppStore>((set, get) => ({
     const mem: ScrollMemorySlot = { filePath, blockIndex }
     set({ articleCompanionScrollMemory: mem })
     ipc.patchStateSync({ articleCompanionScrollMemory: mem } as Partial<StateJson>)
+  },
+  flushBookScrollPosition: (filePath, blockIndex) => {
+    const mem: ScrollMemorySlot = { filePath, blockIndex }
+    set({ bookScrollMemory: mem })
+    ipc.patchStateSync({ bookScrollMemory: mem } as Partial<StateJson>)
+  },
+  setAnnotationHighlightColor: (color) => {
+    set({ annotationHighlightColor: color })
+    void ipc.patchState({ annotationHighlightColor: color } as Partial<StateJson>)
   },
   closeAnthropicReader: () => {
     set({ anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null, lastAnthropicReaderFile: null })

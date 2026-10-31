@@ -311,3 +311,6 @@ html, body, #root { height: 100%; }
 .cursor-hidden summary, .cursor-hidden select, .cursor-hidden [tabindex] {
   cursor: auto;
 }
+.book-chapter-reader .md-body p + p {
+  margin-top: 1em;
+}

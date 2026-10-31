@@ -134,4 +134,116 @@ test.describe('书籍来源', () => {
     await window.getByTestId('writing-list-tab-notes').click()
     await expect(window.locator('body')).toContainText('E2E 新笔记之书 · 第一章 起')
   })
+
+  test('最后章节与滚动位置跨 reload 恢复', async ({ window, testLibraryPath }) => {
+    seedBook(testLibraryPath, {
+      title: 'E2E 阅读记忆之书',
+      chapters: [
+        { title: '第一章 起', body: '第一章正文。' },
+        {
+          title: '第二章 承',
+          body: Array.from({ length: 40 }, (_, index) => `第二章滚动段落 ${index + 1}，用于形成足够的阅读高度。`).join('\n\n'),
+        },
+      ],
+    })
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.getByTestId('briefing-source-book').click()
+    await window.getByTestId('book-card-0').click()
+    await window.getByTestId('chapter-row-1').click()
+    await expect(window.getByTestId('book-chapter-body')).toContainText('第二章滚动段落 40')
+
+    const scroller = window.getByTestId('book-reader-scroll')
+    await scroller.evaluate((el: HTMLElement) => { el.scrollTop = el.scrollHeight })
+    await window.waitForTimeout(1000)
+    await window.reload()
+    await window.waitForLoadState('domcontentloaded')
+
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.getByTestId('briefing-source-book').click()
+    await expect(window.getByTestId('book-chapter-body')).toContainText('第二章滚动段落 1', { timeout: 10_000 })
+    await expect.poll(() => scroller.evaluate((el: HTMLElement) => el.scrollTop), { timeout: 8000 }).toBeGreaterThan(0)
+  })
+
+  test('书籍备注卡与锚点随正文一起滚动', async ({ window, testLibraryPath }) => {
+    seedBook(testLibraryPath, {
+      title: 'E2E 书籍备注之书',
+      chapters: [{
+        title: '第一章 起',
+        body: Array.from({ length: 20 }, (_, index) => `用于书籍备注定位的正文段落 ${index + 1}。`).join('\n\n'),
+      }],
+    })
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.getByTestId('briefing-source-book').click()
+    await window.getByTestId('book-card-0').click()
+    await window.getByTestId('chapter-row-0').click()
+    await expect(window.getByTestId('book-chapter-body')).toContainText('正文段落 20')
+
+    await window.evaluate(() => {
+      const paragraph = document.querySelector('[data-testid="book-chapter-body"] p')
+      const helper = (window as any).__e2e_triggerGhostPen as ((element: Element, start: number, end: number) => void) | undefined
+      if (!paragraph || !helper) throw new Error('书籍正文或标注 helper 未就绪')
+      helper(paragraph, 0, 8)
+    })
+    await window.getByTestId('anno-ghost-pen').click()
+    const marker = window.getByTestId('anno-marked-text').first()
+    const card = window.getByTestId('anno-note-card')
+    await expect(card).toBeVisible()
+    const markerBefore = await marker.boundingBox()
+    const cardBefore = await card.boundingBox()
+
+    await window.getByTestId('book-reader-scroll').evaluate((el: HTMLElement) => { el.scrollTop = 240 })
+    await window.waitForTimeout(200)
+    const markerAfter = await marker.boundingBox()
+    const cardAfter = await card.boundingBox()
+    expect(markerBefore).not.toBeNull()
+    expect(cardBefore).not.toBeNull()
+    expect(markerAfter).not.toBeNull()
+    expect(cardAfter).not.toBeNull()
+    expect(Math.abs((cardAfter!.y - cardBefore!.y) - (markerAfter!.y - markerBefore!.y))).toBeLessThan(2)
+  })
+
+  test('书籍正文相邻段落保留下间距', async ({ window, testLibraryPath }) => {
+    seedBook(testLibraryPath, {
+      title: 'E2E 段落间距之书',
+      chapters: [{ title: '第一章 起', body: '第一段正文。\n\n第二段正文。' }],
+    })
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.getByTestId('briefing-source-book').click()
+    await window.getByTestId('book-card-0').click()
+    await window.getByTestId('chapter-row-0').click()
+
+    const secondParagraph = window.getByTestId('book-chapter-body').locator('.md-body p').nth(1)
+    await expect(secondParagraph).toContainText('第二段正文')
+    const marginTop = await secondParagraph.evaluate((el) => Number.parseFloat(getComputedStyle(el).marginTop))
+    expect(marginTop).toBeGreaterThan(0)
+  })
+
+  test('当前书垃圾桶入口仍打开删除确认弹窗', async ({ window, testLibraryPath }) => {
+    seedBook(testLibraryPath, {
+      title: 'E2E 删除入口之书',
+      chapters: [{ title: '第一章 起', body: '正文。' }],
+    })
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.getByTestId('briefing-source-book').click()
+    await window.getByTestId('book-card-0').click()
+    const deleteButton = window.getByTestId('book-delete-0')
+    await expect(deleteButton.locator('svg')).toBeVisible()
+    await deleteButton.click()
+
+    await expect(window.getByTestId('confirm-dialog')).toBeVisible()
+    await expect(window.getByTestId('confirm-dialog')).toContainText('E2E 删除入口之书')
+  })
 })

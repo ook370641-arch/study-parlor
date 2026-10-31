@@ -8,6 +8,7 @@ import { ArticleAssistantPanel } from '@/components/article-assistant/ArticleAss
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 import { BriefingReaderControls } from '@/components/briefing/BriefingReaderControls'
 import { Quote } from '@/components/Quote'
+import { useScrollMemory } from '@/lib/use-scroll-memory'
 import type { ArticleAnnotation, BriefingTheme } from '@shared/index'
 
 /** 章节阅读器：只读 md 渲染 + 旁注 + 右侧导读/对照。
@@ -26,7 +27,20 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
   const decreaseFontSize = useStore((s) => s.decreaseBriefingFontSize)
   const creatingNoteRef = useRef(false)
   const bodyRef = useRef<HTMLElement | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const isAcademic = theme !== 'newspaper'
+
+  const { onScroll: onReaderScroll } = useScrollMemory({
+    memKey: chapter?.path ?? null,
+    containerRef: scrollContainerRef,
+    getBlocks: () => bodyRef.current?.querySelectorAll('.md-body > div > *') ?? null,
+    readSaved: (key) => {
+      const memory = useStore.getState().bookScrollMemory
+      return memory?.filePath === key ? memory.blockIndex : undefined
+    },
+    flush: (key, blockIndex) => useStore.getState().flushBookScrollPosition(key, blockIndex),
+    isCurrent: (key) => useStore.getState().activeChapter?.path === key,
+  })
 
   const book = books.find((b) => b.dir === activeBookDir)
 
@@ -80,10 +94,15 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
           swapTestId="book-swap-painting-button"
           fontTestIdPrefix="book"
         />
-        <div className="h-full overflow-y-auto overscroll-contain">
+        <div
+          ref={scrollContainerRef}
+          data-testid="book-reader-scroll"
+          onScroll={onReaderScroll}
+          className="h-full overflow-y-auto overscroll-contain"
+        >
           {/* 正文栏统一宽度：画作、标题、语录、工具行、正文、旁注共用一条阅读轴，
               否则画作会占满整个面板、正文却挤在左半边。 */}
-          <div className="px-8 py-6 w-full">
+          <div className="relative px-8 py-6 w-full">
             {/* 画作 + 语录与文章/笔记阅读区同款：画作受左下角「并置画框」开关控制 */}
             {isAcademic && <PaintingPlate />}
             <h1 className={`font-serif text-xl mb-1 ${isAcademic ? 'text-parchment' : 'text-[#2a1f1a]'}`}>{chapter.meta.title}</h1>
@@ -105,7 +124,7 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
             <article
               ref={bodyRef}
               data-testid="book-chapter-body"
-              className={`prose max-w-none briefing-article-body ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}
+              className={`book-chapter-reader prose max-w-none briefing-article-body ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}
             >
               <MarkdownRenderer
                 content={chapter.content}
