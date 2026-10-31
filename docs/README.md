@@ -73,6 +73,7 @@
 ### 10. 文章阅读 / 导读 / 助手 / 旁注
 
 **现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+ 对照右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与写作两来源。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。
+- planned：`specs/2026-10-31-reading-annotation-polish-design.md` + `plans/2026-10-31-reading-annotation-polish.md`（共享划词高亮、备注自动保存/删除与定位修复）
 **历史链**：07-11 article-assistant → 07-11 article-assistant-guide-improvements → 07-11 briefing-assistant → 07-19 annotation-iteration → 07-22 briefing-ai-chat-enhancement → 08-02 agent-article-pipeline → 09-29 reading-position-companion-and-hr
 
 ### 11. 网络搜索与外部资料
@@ -97,6 +98,7 @@
 - **体验打磨（2026-10-27 已落地）**：折叠列即卸载内容（`BriefingListColumn.renderWhenCollapsed` 为博客 rail 保留逃生口）、导读 SVG 三阶段罗盘（`GuideCompass`）、书籍对照「＋ 新建笔记」、截断文本 hover 全展示（`Tooltip`）。
 - **解析器 v3（2026-10-28）**：`itemsToRows → rowsToBlocks → blocksToMarkdown`（行距 / 字号 / 缩进判段 + `##`/`###` 标题层级 + 页眉页脚过滤）；目录页新增「页码 标题」布局；重解析按章节对齐保留旧导读，目录未变时保留全书导读；`BOOK_PARSER_VERSION = 3`。已知边界：表格仍拍平、双栏段落顺序可能不等于阅读顺序。
 - current：`specs/2026-10-27-books-reading-polish-design.md`（设计 + 实现记录；§6 记了三处实现期修正）
+- planned：`specs/2026-10-31-reading-annotation-polish-design.md` + `plans/2026-10-31-reading-annotation-polish.md`（最后章节/滚动位置记忆、段间距、备注锚点与垃圾桶删除入口）
 - historical：`specs/2026-10-27-books-source-design.md` + `plans/2026-10-27-books-source.md`（设计与实施记录；当前事实以代码和 AGENTS.md 为准）
 - 验证：书籍单测 96/96 通过（10 个 `tests/book*.test.ts`，2026-10-28 复核实跑）；E2E 3 用例（books + books-import spec，source-map 已登记 books group，实现者报告通过）；`tsc --noEmit` 双 tsconfig 通过
 - **历史链**：10-27 books-source → 10-27 books-reading-polish
@@ -104,6 +106,7 @@
 ### 15. 迭代记事板
 
 **现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；接单/归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
+- planned：`specs/2026-10-31-reading-annotation-polish-design.md` + `plans/2026-10-31-reading-annotation-polish.md`（旁注打开时入口/面板左移并保持可交互）
 **历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）
 
 ### 16. 设置 / 向导 / LLM 配置
