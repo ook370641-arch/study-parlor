@@ -3,7 +3,7 @@ import path from 'node:path'
 import { ipcMain } from 'electron'
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter'
 import type { AppConfig } from '../env'
-import type { ArticleAnnotation } from '@shared/index'
+import type { AnnotationHighlightColor, ArticleAnnotation } from '@shared/index'
 
 function annotationsPathFor(articlePath: string): string {
   const parsed = path.parse(articlePath)
@@ -28,6 +28,10 @@ function serializeAnnotations(annotations: ArticleAnnotation[]): string {
       `**段落：** §${a.paragraphIndex}`,
       `**创建：** ${a.createdAt}`,
       `**更新：** ${a.updatedAt}`,
+      ...(a.kind === 'highlight' ? [
+        `**类型：** highlight`,
+        `**高亮色：** ${a.highlightColor ?? 'gold'}`,
+      ] : []),
     ].join('\n')
   })
   return sections.join('\n\n---\n\n')
@@ -43,6 +47,8 @@ function parseAnnotationsBody(body: string): ArticleAnnotation[] {
     let paragraphIndex = 1
     let createdAt = ''
     let updatedAt = ''
+    let kind: ArticleAnnotation['kind']
+    let highlightColor: AnnotationHighlightColor | undefined
 
     for (const line of lines) {
       if (line.startsWith('**选中文字：**')) {
@@ -56,6 +62,14 @@ function parseAnnotationsBody(body: string): ArticleAnnotation[] {
         createdAt = line.replace('**创建：**', '').trim()
       } else if (line.startsWith('**更新：**')) {
         updatedAt = line.replace('**更新：**', '').trim()
+      } else if (line.startsWith('**类型：**')) {
+        const raw = line.replace('**类型：**', '').trim()
+        if (raw === 'highlight') kind = raw
+      } else if (line.startsWith('**高亮色：**')) {
+        const raw = line.replace('**高亮色：**', '').trim()
+        if (raw === 'ember' || raw === 'gold' || raw === 'green' || raw === 'blue') {
+          highlightColor = raw
+        }
       }
     }
 
@@ -66,6 +80,7 @@ function parseAnnotationsBody(body: string): ArticleAnnotation[] {
       paragraphIndex,
       createdAt,
       updatedAt: updatedAt || createdAt,
+      ...(kind === 'highlight' ? { kind, highlightColor: highlightColor ?? 'gold' } : {}),
     }
   }).filter((a) => a.id && a.selectedText)
 }

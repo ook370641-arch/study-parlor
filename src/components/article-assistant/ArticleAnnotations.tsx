@@ -3,7 +3,16 @@ import { flushSync } from 'react-dom'
 import { ipc } from '@/lib/ipc'
 import { isSelectionActiveIn } from '@/lib/selection-busy'
 import { ANNOTATION_NOTE_SIZES, ANNOTATION_UI_SIZES } from '@/lib/briefing-font-size'
-import type { ArticleAnnotation, BriefingTheme, BriefingFontSize } from '@shared/index'
+import { useStore } from '@/store'
+import type { AnnotationHighlightColor, ArticleAnnotation, BriefingTheme, BriefingFontSize } from '@shared/index'
+
+const HIGHLIGHT_COLORS: Record<AnnotationHighlightColor, string> = {
+  ember: 'rgba(217,119,87,0.32)',
+  gold: 'rgba(224,184,80,0.34)',
+  green: 'rgba(104,166,120,0.32)',
+  blue: 'rgba(100,149,207,0.32)',
+}
+const HIGHLIGHT_COLOR_ORDER: AnnotationHighlightColor[] = ['ember', 'gold', 'green', 'blue']
 
 interface Props {
   articlePath: string
@@ -23,6 +32,8 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
   const isAcademic = theme !== 'newspaper'
   const noteSize = ANNOTATION_NOTE_SIZES[briefingFontSize]
   const uiSize = ANNOTATION_UI_SIZES[briefingFontSize]
+  const annotationHighlightColor = useStore((s) => s.annotationHighlightColor) ?? 'gold'
+  const setAnnotationHighlightColor = useStore((s) => s.setAnnotationHighlightColor)
   // 备注卡片估算高度（padding + 标题 + textarea×3 + 底部行）：判断上方空间是否足够，
   // 不足则翻转到锚点下方，避免卡片被裁剪出视口
   const CARD_EST_HEIGHT = 140
@@ -31,6 +42,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
   const [annotations, setAnnotations] = useState<ArticleAnnotation[]>([])
   const [openAnnoId, setOpenAnnoId] = useState<string | null>(null)
   const [ghost, setGhost] = useState<GhostData | null>(null)
+  const [colorMenuOpen, setColorMenuOpen] = useState(false)
   const [selectionHighlights, setSelectionHighlights] = useState<Array<{ left: number; top: number; width: number; height: number }>>([])
   const [cardPos, setCardPos] = useState<{ left: number; top: number; below?: boolean } | null>(null)
   const [cardAnchorEl, setCardAnchorEl] = useState<HTMLElement | null>(null)
@@ -114,10 +126,14 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       const textSpan = document.createElement('span')
       textSpan.setAttribute('data-testid', 'anno-marked-text')
       textSpan.className = 'anno-text'
-      textSpan.style.background = isAcademic ? 'rgba(217,119,87,0.13)' : 'rgba(217,119,87,0.08)'
+      textSpan.style.background = anno.kind === 'highlight'
+        ? HIGHLIGHT_COLORS[anno.highlightColor ?? 'gold']
+        : isAcademic ? 'rgba(217,119,87,0.13)' : 'rgba(217,119,87,0.08)'
       textSpan.style.borderRadius = '2px'
       textSpan.style.padding = '1px 3px'
-      textSpan.style.borderBottom = '1px dashed rgba(217,119,87,0.3)'
+      if (anno.kind !== 'highlight') {
+        textSpan.style.borderBottom = '1px dashed rgba(217,119,87,0.3)'
+      }
       textSpan.textContent = match
 
       const pen = document.createElement('span')
@@ -156,7 +172,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       })
 
       wrap.appendChild(textSpan)
-      wrap.appendChild(pen)
+      if (anno.kind !== 'highlight') wrap.appendChild(pen)
 
       const parent = node.parentNode!
       if (before) parent.insertBefore(document.createTextNode(before), node)
@@ -363,6 +379,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
       flushSync(() => {
         setGhost(null)
+        setColorMenuOpen(false)
         setSelectionHighlights([])
       })
 
@@ -392,6 +409,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
       if (!isInsideGhost && !isInsideHighlight && !isInsideMarker && !isInsideNoteCard) {
         setGhost(null)
+        setColorMenuOpen(false)
         setSelectionHighlights([])
       }
       // Close card if clicking outside BOTH the marker pen and the note card.
@@ -433,6 +451,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     const updated = [...annotations, newAnno]
     setAnnotations(updated)
     setGhost(null)
+    setColorMenuOpen(false)
     // Temporary overlay is replaced by the permanent marker (anno-text span)
     setSelectionHighlights([])
 
@@ -445,6 +464,30 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     }, 150)
 
     // Save immediately (empty note, marker exists)
+    ipc.annotationsWrite(articlePath, updated)
+  }
+
+  function handleHighlightClick() {
+    if (!ghost) return
+
+    const id = `a${nextIdRef.current++}`
+    const now = new Date().toISOString().slice(0, 10)
+    const newAnno: ArticleAnnotation = {
+      id,
+      selectedText: ghost.text,
+      note: '',
+      paragraphIndex: ghost.paraIndex,
+      createdAt: now,
+      updatedAt: now,
+      kind: 'highlight',
+      highlightColor: annotationHighlightColor,
+    }
+
+    const updated = [...annotations, newAnno]
+    setAnnotations(updated)
+    setGhost(null)
+    setColorMenuOpen(false)
+    setSelectionHighlights([])
     ipc.annotationsWrite(articlePath, updated)
   }
 
@@ -466,7 +509,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
   function handleSaveNote(annoId: string, noteText: string) {
     const now = new Date().toISOString().slice(0, 10)
-    const updated = annotations.map((a) =>
+    const updated = annotationsRef.current.map((a) =>
       a.id === annoId
         ? { ...a, note: noteText, updatedAt: now, createdAt: a.createdAt || now }
         : a
@@ -494,6 +537,15 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     setOpenAnnoId(null)
     setCardPos(null)
     setCardAnchorEl(null)
+    ipc.annotationsWrite(articlePath, updated)
+  }
+
+  function handleHighlightColorChange(annoId: string, color: AnnotationHighlightColor) {
+    const now = new Date().toISOString().slice(0, 10)
+    const updated = annotations.map((a) =>
+      a.id === annoId ? { ...a, highlightColor: color, updatedAt: now } : a
+    )
+    setAnnotations(updated)
     ipc.annotationsWrite(articlePath, updated)
   }
 
@@ -551,33 +603,87 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
         />
       ))}
 
-      {/* Ghost pen */}
+      {/* Selection annotation tools */}
       {ghost && (
         <div
           ref={ghostRef}
-          data-testid="anno-ghost-pen"
-          onClick={handleGhostClick}
           style={{
             position: 'absolute',
             left: ghost.left,
             top: ghost.top,
-            width: '18px',
-            height: '18px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
             zIndex: 20,
             background: isAcademic ? '#2a1f1a' : '#f5f2ed',
-            borderRadius: '50%',
+            borderRadius: '4px',
             border: '1.5px solid #d97757',
             fontSize: uiSize.pen,
             lineHeight: '1',
             color: '#d97757',
-            animation: 'ghostPulse 0.7s ease-in-out infinite alternate',
           }}
         >
-          ✎
+          <button
+            data-testid="anno-ghost-pen"
+            title="备注"
+            onClick={handleGhostClick}
+            style={{
+              width: '22px', height: '22px', padding: 0, border: 'none',
+              background: 'transparent', color: '#d97757', cursor: 'pointer',
+              fontSize: uiSize.pen, animation: 'ghostPulse 0.7s ease-in-out infinite alternate',
+            }}
+          >
+            ✎
+          </button>
+          <button
+            data-testid="anno-highlight-button"
+            title="高亮"
+            onClick={handleHighlightClick}
+            style={{
+              width: '24px', height: '22px', padding: 0, border: 'none',
+              borderLeft: '1px solid rgba(217,119,87,0.4)',
+              background: HIGHLIGHT_COLORS[annotationHighlightColor],
+              color: isAcademic ? '#e8d5b7' : '#2a1f1a', cursor: 'pointer',
+            }}
+          >
+            ▰
+          </button>
+          <button
+            data-testid="anno-highlight-color-toggle"
+            title="选择高亮色"
+            onClick={() => setColorMenuOpen((open) => !open)}
+            style={{
+              width: '18px', height: '22px', padding: 0, border: 'none',
+              borderLeft: '1px solid rgba(217,119,87,0.4)',
+              background: 'transparent', color: '#d97757', cursor: 'pointer', fontSize: '9px',
+            }}
+          >
+            ▾
+          </button>
+          {colorMenuOpen && (
+            <div
+              data-testid="anno-highlight-color-menu"
+              style={{
+                position: 'absolute', top: '26px', right: 0, display: 'flex', gap: '4px',
+                padding: '5px', background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '4px',
+              }}
+            >
+              {HIGHLIGHT_COLOR_ORDER.map((color) => (
+                <button
+                  key={color}
+                  data-testid={`anno-highlight-color-${color}`}
+                  title={color}
+                  onClick={() => {
+                    setAnnotationHighlightColor(color)
+                    setColorMenuOpen(false)
+                  }}
+                  style={{
+                    width: '18px', height: '18px', padding: 0, cursor: 'pointer',
+                    background: HIGHLIGHT_COLORS[color], border: `1px solid ${color === annotationHighlightColor ? cardBorder : 'transparent'}`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -618,9 +724,10 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
           />
 
           <div style={{ fontSize: uiSize.small, letterSpacing: '0.15em', color: cardBorder, marginBottom: '6px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>🖊️ 备注</span>
+            <span>{openAnno.kind === 'highlight' ? '高亮' : '🖊️ 备注'}</span>
           </div>
 
+          {openAnno.kind !== 'highlight' && (
           <textarea
             autoFocus
             data-testid="anno-note-textarea"
@@ -645,46 +752,40 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
               if (e.key === 'Escape') doSaveAndClose()
             }}
           />
+          )}
 
           <div style={{ marginTop: '8px', fontSize: uiSize.small, color: cardMuted, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>{openAnno.createdAt ? `${openAnno.createdAt} · §${openAnno.paragraphIndex}` : '新备注'}</span>
+            {openAnno.kind === 'highlight' && HIGHLIGHT_COLOR_ORDER.map((color) => (
+              <button
+                key={color}
+                data-testid={`anno-highlight-color-${color}`}
+                title={color}
+                onClick={() => handleHighlightColorChange(openAnno.id, color)}
+                style={{
+                  width: '18px', height: '18px', padding: 0, cursor: 'pointer',
+                  background: HIGHLIGHT_COLORS[color],
+                  border: `1px solid ${color === (openAnno.highlightColor ?? 'gold') ? cardBorder : 'transparent'}`,
+                }}
+              />
+            ))}
             <button
-              data-testid="anno-save-button"
-              onClick={() => {
-                doSaveAndClose()
-              }}
+              data-testid="anno-delete-button"
+              onClick={() => handleDeleteAnnotation(openAnnoId)}
               style={{
-                background: cardBorder,
-                border: 'none',
-                color: '#fff',
+                background: 'none',
+                border: '1px solid rgba(180,80,80,0.3)',
+                color: '#a06060',
                 fontSize: uiSize.small,
-                padding: '3px 12px',
+                padding: '2px 8px',
                 borderRadius: '3px',
                 cursor: 'pointer',
                 fontFamily: 'Georgia, serif',
                 marginLeft: 'auto',
               }}
             >
-              保存
+              删除
             </button>
-            {openAnno.note && (
-              <button
-                data-testid="anno-delete-button"
-                onClick={() => handleDeleteAnnotation(openAnnoId)}
-                style={{
-                  background: 'none',
-                  border: '1px solid rgba(180,80,80,0.3)',
-                  color: '#a06060',
-                  fontSize: uiSize.small,
-                  padding: '2px 8px',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  fontFamily: 'Georgia, serif',
-                }}
-              >
-                删除
-              </button>
-            )}
           </div>
         </div>
       )}

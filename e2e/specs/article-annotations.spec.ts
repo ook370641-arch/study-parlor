@@ -323,3 +323,80 @@ test('E2E-A6: 标注跨 renderer reload 恢复', async ({ window, testLibraryPat
   await openArticle()
   await expect(window.locator(SELECTORS.annotations.markerPen).first()).toBeVisible({ timeout: 15000 })
 })
+
+test('E2E-A7: 高亮创建、reload 恢复、换色与删除', async ({ window, testLibraryPath, testConfigDir }) => {
+  const { filePath } = seedBlogArticleWithCache(testLibraryPath, testConfigDir, {
+    slug: 'e2e-anno-highlight',
+    title: 'E2E Anno Highlight',
+    body: '第一段正文，用于持久化高亮测试。',
+  })
+  const parsed = path.parse(filePath)
+  const annoPath = path.join(parsed.dir, `${parsed.name}.annotations.md`)
+  const readAnnotations = () => fs.existsSync(annoPath) ? fs.readFileSync(annoPath, 'utf8') : ''
+  const openArticle = async () => {
+    const cover = new CoverPage(window)
+    await cover.goToBriefing()
+    await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 10000 })
+    await window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Anno Highlight")`).click()
+    await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 15000 })
+    await window.locator('article p').first().waitFor({ state: 'visible', timeout: 15000 })
+  }
+
+  await openArticle()
+  await selectTextInArticle(window, 0, 8)
+  await window.getByTestId('anno-highlight-button').click()
+  await expect(window.locator('.anno-wrap')).toBeVisible({ timeout: 5000 })
+  await expect(window.locator(SELECTORS.annotations.markerPen)).toHaveCount(0)
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toHaveCount(0)
+  await expect.poll(readAnnotations).toContain('**类型：** highlight')
+  await expect.poll(readAnnotations).toContain('**高亮色：** gold')
+
+  await window.reload()
+  await openArticle()
+  const marker = window.locator('.anno-wrap')
+  await expect(marker).toBeVisible({ timeout: 15000 })
+  await expect(window.locator(SELECTORS.annotations.markerPen)).toHaveCount(0)
+
+  await marker.click({ force: true })
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible()
+  await expect(window.locator(SELECTORS.annotations.noteTextarea)).toHaveCount(0)
+  await window.getByTestId('anno-highlight-color-blue').click()
+  await expect.poll(readAnnotations).toContain('**高亮色：** blue')
+
+  await window.getByTestId('anno-delete-button').click()
+  await expect(marker).toHaveCount(0)
+  await expect.poll(readAnnotations).not.toContain('**类型：** highlight')
+})
+
+test('E2E-A8: 空备注可删除，备注外点自动保存', async ({ window, testLibraryPath, testConfigDir }) => {
+  const { filePath } = seedBlogArticleWithCache(testLibraryPath, testConfigDir, {
+    slug: 'e2e-anno-note-actions',
+    title: 'E2E Anno Note Actions',
+    body: '第一段正文，用于空备注删除与外点自动保存测试。',
+  })
+  const parsed = path.parse(filePath)
+  const annoPath = path.join(parsed.dir, `${parsed.name}.annotations.md`)
+  const readAnnotations = () => fs.existsSync(annoPath) ? fs.readFileSync(annoPath, 'utf8') : ''
+  const cover = new CoverPage(window)
+  await cover.goToBriefing()
+  await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 10000 })
+  await window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Anno Note Actions")`).click()
+  await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible({ timeout: 15000 })
+  await window.locator('article p').first().waitFor({ state: 'visible', timeout: 15000 })
+
+  await selectTextInArticle(window, 0, 8)
+  await window.locator(SELECTORS.annotations.ghostPen).click({ force: true })
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible()
+  await expect(window.locator(SELECTORS.annotations.noteTextarea)).toHaveValue('')
+  await expect(window.getByTestId('anno-save-button')).toHaveCount(0)
+  await window.getByTestId('anno-delete-button').click()
+  await expect(window.locator('.anno-wrap')).toHaveCount(0)
+  await expect.poll(readAnnotations).not.toContain('**选中文字：**')
+
+  await selectTextInArticle(window, 0, 8)
+  await window.locator(SELECTORS.annotations.ghostPen).click({ force: true })
+  await window.locator(SELECTORS.annotations.noteTextarea).fill('外点自动保存-唯一标识')
+  await window.locator('article p').last().click()
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toHaveCount(0)
+  await expect.poll(readAnnotations).toContain('外点自动保存-唯一标识')
+})
