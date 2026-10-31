@@ -1167,9 +1167,6 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   selectBook: async (dir) => {
-    // 任何一次选书（含命中下方早退）都让上一本书仍在途的章节读取失效，
-    // 避免旧书的 booksReadChapter 结果回写到新书语境。
-    ++chapterSelectSeq
     // 重选当前书（如导读生成后刷新书架）不重置章节与阅读位置
     if (get().activeBookDir === dir && get().activeBookToc.length > 0) {
       const entry = get().booksList.find((b) => b.dir === dir)
@@ -1186,6 +1183,8 @@ export const useStore = create<AppStore>((set, get) => ({
       }
       return
     }
+    // 实际换书才让上一本书仍在途的章节读取失效，避免旧书结果回写到新书语境。
+    ++chapterSelectSeq
     const seq = ++bookSelectSeq
     set({ activeBookDir: dir, activeChapter: null, bookContext: null, activeBookToc: [] })
     try {

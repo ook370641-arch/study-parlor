@@ -176,6 +176,29 @@ describe('书籍阅读记忆', () => {
     expect(patchStateSyncMock).toHaveBeenCalledWith({ bookScrollMemory: { filePath: chapterPath, blockIndex: 11 } })
   })
 
+  it('同书重复选择不取消正在恢复的章节', async () => {
+    let finishChapterRead: (() => void) | undefined
+    booksReadChapterMock.mockImplementationOnce(() => new Promise<Awaited<ReturnType<typeof ipc.booksReadChapter>>>((resolve) => {
+      finishChapterRead = () => resolve({
+        content: '# C1',
+        meta: { title: 'C1', chapterIndex: 1, pageRange: [1, 2] },
+      })
+    }))
+    booksChaptersMock.mockResolvedValue([{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }])
+    useStore.setState({
+      booksList: [{ ...book('book-a', 'A'), bookGuide: '已有全书导读' }],
+      booksLastChapter: 'book-a/chapters/01.md',
+    } as any)
+
+    const restoring = useStore.getState().selectBook('book-a')
+    await vi.waitFor(() => expect(booksReadChapterMock).toHaveBeenCalledWith({ chapterPath: 'book-a/chapters/01.md' }))
+    await useStore.getState().selectBook('book-a')
+    finishChapterRead!()
+    await restoring
+
+    expect(useStore.getState().activeChapter?.path).toBe('book-a/chapters/01.md')
+  })
+
   it('恢复章节等待期间换书后不再生成旧书全书导读', async () => {
     let finishChapterRead: (() => void) | undefined
     booksReadChapterMock.mockImplementationOnce(() => new Promise<Awaited<ReturnType<typeof ipc.booksReadChapter>>>((resolve) => {
