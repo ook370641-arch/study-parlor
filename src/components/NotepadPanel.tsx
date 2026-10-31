@@ -140,14 +140,15 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
     if (to !== from) moveNotepadItem(dragId, to)
   }
 
-  // 左上角拖拽手柄：往左上拖放大（面板固定右下角，向上展开）
+  // 左上角拖拽手柄：往面板外侧与上方拖动放大
   const onGripPointerDown = (e: React.PointerEvent) => {
     e.preventDefault()
     const startX = e.clientX
     const startY = e.clientY
     const start = { ...size }
     const onMove = (ev: PointerEvent) => {
-      const w = Math.max(MIN_W, Math.min(window.innerWidth * 0.9, start.w + (startX - ev.clientX)))
+      const horizontalDelta = placement === 'left' ? ev.clientX - startX : startX - ev.clientX
+      const w = Math.max(MIN_W, Math.min(window.innerWidth * 0.9, start.w + horizontalDelta))
       const h = Math.max(MIN_H, Math.min(window.innerHeight * 0.8, start.h + (startY - ev.clientY)))
       setLiveSize({ w: Math.round(w), h: Math.round(h) })
     }

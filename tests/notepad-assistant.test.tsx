@@ -63,4 +63,17 @@ describe('NotepadPanel 与旁注聊天窗共存', () => {
     fireEvent.mouseDown(screen.getByTestId('notepad-test-outside'))
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it.each([
+    { placement: 'left' as const, startX: 20, endX: 60 },
+    { placement: 'right' as const, startX: 100, endX: 60 },
+  ])('$placement 布局沿上左拖柄向外拖动时加宽', ({ placement, startX, endX }) => {
+    renderPanel(placement)
+
+    fireEvent.pointerDown(screen.getByTestId('notepad-resize-grip'), { clientX: startX, clientY: 20 })
+    fireEvent.pointerMove(window, { clientX: endX, clientY: 20 })
+
+    expect(screen.getByTestId('notepad-panel')).toHaveStyle({ width: '424px' })
+    fireEvent.pointerUp(window)
+  })
 })
