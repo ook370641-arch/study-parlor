@@ -5,6 +5,7 @@ import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { StudyControlsGroup } from '@/components/StudyControlsGroup'
 import { LlmConfigCard } from '@/components/settings/LlmConfigCard'
 import { ipc } from '@/lib/ipc'
+import { DEMO_NOTES, DEMO_NOTE_ORDER } from '@/lib/demo-notes'
 
 export function Settings() {
   const goto = useStore(s => s.goto)
@@ -16,6 +17,8 @@ export function Settings() {
   const restoreTopic = useStore((s) => s.restoreTopic)
   const paintingDeleteEnabled = useStore((s) => s.paintingDeleteEnabled)
   const setPaintingDeleteEnabled = useStore((s) => s.setPaintingDeleteEnabled)
+  const demoNotesHidden = useStore((s) => s.demoNotesHidden)
+  const toggleDemoNoteVisibility = useStore((s) => s.toggleDemoNoteVisibility)
 
   const [libraryPath, setLibraryPath] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -158,6 +161,29 @@ export function Settings() {
                     </span>
                   </span>
                 </label>
+              </div>
+
+              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>信息说明</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {DEMO_NOTE_ORDER.map((noteId) => (
+                    <label key={noteId} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        data-testid={`settings-demo-note-toggle-${noteId}`}
+                        type="checkbox"
+                        checked={!demoNotesHidden.includes(noteId)}
+                        onChange={() => toggleDemoNoteVisibility(noteId)}
+                        className="accent-[#d97757]"
+                      />
+                      <span className={`text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>
+                        显示{DEMO_NOTES[noteId].title.split(' · ')[0]}说明
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className={`mt-3 text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
+                  关闭后只隐藏对应的 i 入口，不删除已经编辑的说明文案。
+                </p>
               </div>
 
               {/* 学习库 */}

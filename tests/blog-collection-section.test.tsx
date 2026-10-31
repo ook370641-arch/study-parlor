@@ -121,4 +121,22 @@ describe('BlogCollectionSection', () => {
     expect(screen.getByTestId('blog-recommend-button')).toHaveAttribute('title', '重新推荐')
     expect(screen.queryByTestId('blog-recommend-history')).not.toBeInTheDocument()
   })
+
+  it('重新推荐先展示逻辑说明，确认后携带备注启动', () => {
+    const startBlogRecommend = vi.fn()
+    useStore.setState({ startBlogRecommend } as any)
+    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
+
+    fireEvent.click(screen.getByTestId('blog-recommend-button'))
+
+    expect(screen.getByTestId('blog-recommend-dialog')).toBeInTheDocument()
+    expect(screen.getByText(/写作画像/)).toBeInTheDocument()
+    expect(startBlogRecommend).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByTestId('blog-recommend-note'), { target: { value: '重点关注多智能体协调' } })
+    fireEvent.click(screen.getByTestId('blog-recommend-start'))
+
+    expect(startBlogRecommend).toHaveBeenCalledWith('重点关注多智能体协调')
+    expect(screen.queryByTestId('blog-recommend-dialog')).not.toBeInTheDocument()
+  })
 })

@@ -142,7 +142,7 @@ test.describe('@p1 demo notes', () => {
     await expect(chartNote).toHaveCount(0)
   })
 
-  test('双击进入编辑模式：改写落盘 state.json，reload 后仍在，可恢复默认', async ({
+  test('默认只读，点击编辑后改写落盘，reload 后仍在，可恢复默认', async ({
     window,
     testConfigDir,
   }) => {
@@ -156,8 +156,12 @@ test.describe('@p1 demo notes', () => {
     // 默认文案的唯一事实源是 src/lib/demo-notes.ts；这里读它，避免改文案就断测试。
     const defaultThesis = DEMO_NOTES.review.thesis
 
-    // 双击弹层 → 出现编辑条，文本块变可编辑
+    await expect(window.getByTestId('demo-note-edit-thesis')).toHaveAttribute('contenteditable', 'false')
+    // 双击不再误进编辑；只有显式按钮进入编辑态
     await reviewNote.dblclick({ position: { x: 12, y: 12 } })
+    await expect(window.getByTestId('demo-note-edit-thesis')).toHaveAttribute('contenteditable', 'false')
+    await expect(window.getByTestId('demo-note-edit-hint')).toHaveCount(0)
+    await window.getByTestId('demo-note-edit').click()
     await expect(window.getByTestId('demo-note-edit-hint')).toBeVisible()
     await expect(window.getByTestId('demo-note-edit-thesis')).toHaveAttribute('contenteditable', 'true')
 
@@ -180,9 +184,10 @@ test.describe('@p1 demo notes', () => {
     await window.getByTestId('demo-info-review').click()
     const reopened = window.getByTestId('demo-note-popover-review')
     await expect(reopened).toContainText('这是我在面试前改写的结论文案。')
+    await expect(window.getByTestId('demo-note-edit-thesis')).toHaveAttribute('contenteditable', 'false')
 
     // 恢复默认 → 回到内置文案，state.json 清掉该条目
-    await reopened.dblclick({ position: { x: 12, y: 12 } })
+    await window.getByTestId('demo-note-edit').click()
     await window.getByTestId('demo-note-reset').click()
     await expect(reopened).toContainText(defaultThesis)
     await expect.poll(() => {

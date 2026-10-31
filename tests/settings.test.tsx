@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-li
 import { Settings } from '@/pages/Settings'
 import { ipc } from '@/lib/ipc'
 import type { LlmConfig } from '@shared/index'
+import { useStore } from '@/store'
 
 vi.mock('@/lib/ipc', () => ({
   ipc: {
@@ -16,6 +17,7 @@ vi.mock('@/lib/ipc', () => ({
     llmConfigSetActive: vi.fn(),
     llmConfigSave: vi.fn(),
     configSetLibraryPath: vi.fn(),
+    patchState: vi.fn(),
   }
 }))
 
@@ -40,6 +42,7 @@ describe('Settings · AI 服务', () => {
     vi.mocked(ipc.setSearchApiKey).mockResolvedValue(undefined)
     vi.mocked(ipc.configSetLibraryPath).mockResolvedValue({ ok: true })
     mockConfigs([KIMI], 'cfg-kimi')
+    useStore.setState({ demoNotesHidden: [] } as any)
   })
 
   it('单配置：维持现状——无切换器，字段回填，有新增入口', async () => {
@@ -153,6 +156,17 @@ describe('Settings · AI 服务', () => {
     fireEvent.change(screen.getByTestId('settings-library-path-input'), { target: { value: 'D:/new-lib' } })
     fireEvent.click(screen.getByTestId('settings-library-save-button'))
     await waitFor(() => expect(ipc.configSetLibraryPath).toHaveBeenCalledWith('D:/new-lib'))
+  })
+
+  it('信息说明显示开关覆盖六类入口并持久化隐藏项', async () => {
+    render(<Settings />)
+    await waitFor(() => screen.getByDisplayValue('sk-kimi-test'))
+
+    expect(screen.getAllByTestId(/^settings-demo-note-toggle-/)).toHaveLength(6)
+    fireEvent.click(screen.getByTestId('settings-demo-note-toggle-book-source'))
+
+    await waitFor(() => expect(useStore.getState().demoNotesHidden).toEqual(['book-source']))
+    expect(ipc.patchState).toHaveBeenCalledWith({ demoNotesHidden: ['book-source'] })
   })
 
   it('报纸主题：页面根铺纸白背景', async () => {

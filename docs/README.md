@@ -50,12 +50,12 @@
 
 ### 6. 夜航简报 — 框架与双来源
 
-**现状**：三来源 = 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'writing' | 'anthropic' | 'book'`）。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9）。核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn`，书籍具体实现见域 14。
+**现状**：三来源 = 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'writing' | 'anthropic' | 'book'`）。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9）。核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn`，阅读端正文字号/换画控制由 `BriefingReaderControls` 统一，书籍具体实现见域 14。
 **历史链**：06-21 night-briefing → 06-22 night-briefing → 06-27 briefing-entry-and-loading → 06-27 briefing-ui-upgrade → 07-06 night-briefing-optimization → 07-14 briefing-polish → 07-15 renderer-buffer-and-startup-timing → 07-21 briefing-debug-fixes → 07-23 briefing-ui → 07-23 briefing-loop-closure → 07-25 pre-launch-briefing-fixes → 07-26 briefing-polish-batch → 08-01 briefing-background-generation
 
 ### 7. 简报来源 — Anthropic 博客（含精选集与推荐流）
 
-**现状**：在用。博客面板 `AnthropicBlogPanel` + 发现/抓取链 `electron/lib/anthropic-*`（`ipc/anthropic.ts`）；导读走 guide-v2 管线。**精选集**（`BlogCollectionSection` + `blog-collection.ts`）与**推荐流**（`blog-recommend.ts`）保留——注意「收入精选集」按钮随三来源移除一并删除（10-08），博客侧精选集不受影响。
+**现状**：在用。博客面板 `AnthropicBlogPanel` + 发现/抓取链 `electron/lib/anthropic-*`（`ipc/anthropic.ts`）；导读走 guide-v2 管线。**精选集**（`BlogCollectionSection` + `blog-collection.ts`）与**推荐流**（`blog-recommend.ts`）保留——注意「收入精选集」按钮随三来源移除一并删除（10-08），博客侧精选集不受影响。重新推荐先展示逻辑说明并允许填写方向备注，备注进入画像 prompt 与批次记录；历史可直接切换批次，展示画像、认知缺口、检索词与逐篇推荐详情。
 - superseded：`specs/2026-08-07-anthropic-blog-sections-design.md`（栏目配置与发现链路被 08-08 blog-multi-source 取代）
 **历史链**：07-10 anthropic-blog-briefing → 07-10 briefing-blog-reader-ui-fixes → 07-11 briefing-blog-reader-ui-fixes → 07-11 briefing-blog-reader-ui-redesign → 07-11 anthropic-blog-ui-redesign → 07-15 briefing-blog-polish → 07-15 briefing-blog-polish-v2 → 08-07 anthropic-blog-sections（plan；spec 已标 superseded）→ 08-08 blog-multi-source → 08-23 blog-recommend-collection → 08-30 blog-recommend-iteration → 08-31 blog-recommend-page → 09-16 source-sidebar-order-and-blog-typography → 09-18 blog-panel-upgrade → 09-23 blog-panel-ui-polish
 
@@ -72,7 +72,7 @@
 
 ### 10. 文章阅读 / 导读 / 助手 / 旁注
 
-**现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+ 对照右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与写作两来源。
+**现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+ 对照右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与写作两来源。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。
 **历史链**：07-11 article-assistant → 07-11 article-assistant-guide-improvements → 07-11 briefing-assistant → 07-19 annotation-iteration → 07-22 briefing-ai-chat-enhancement → 08-02 agent-article-pipeline → 09-29 reading-position-companion-and-hr
 
 ### 11. 网络搜索与外部资料
@@ -93,7 +93,7 @@
 
 ### 14. 简报来源 — 书籍
 
-**现状**：**已实现（2026-10-27）**——简报第三来源「书籍」支持仅 PDF 导入、复制到 `<学习库>/books/`、按目录拆分章节、章节阅读、章节导读、全书导读、对照、旁注，以及关联书籍创建笔记。实现入口为 `electron/lib/books.ts` + `electron/ipc/books.ts` + `src/components/books/`。
+**现状**：**已实现（2026-10-27）**——简报第三来源「书籍」支持仅 PDF 导入、复制到 `<学习库>/books/`、按目录拆分章节、章节阅读、章节导读、全书导读、对照、旁注，以及关联书籍创建笔记。实现入口为 `electron/lib/books.ts` + `electron/ipc/books.ts` + `src/components/books/`。章节正文取消独立 `760px` 限宽，并复用三来源统一的字号/换画控制。
 - **体验打磨（2026-10-27 已落地）**：折叠列即卸载内容（`BriefingListColumn.renderWhenCollapsed` 为博客 rail 保留逃生口）、导读 SVG 三阶段罗盘（`GuideCompass`）、书籍对照「＋ 新建笔记」、截断文本 hover 全展示（`Tooltip`）。
 - **解析器 v3（2026-10-28）**：`itemsToRows → rowsToBlocks → blocksToMarkdown`（行距 / 字号 / 缩进判段 + `##`/`###` 标题层级 + 页眉页脚过滤）；目录页新增「页码 标题」布局；重解析按章节对齐保留旧导读，目录未变时保留全书导读；`BOOK_PARSER_VERSION = 3`。已知边界：表格仍拍平、双栏段落顺序可能不等于阅读顺序。
 - current：`specs/2026-10-27-books-reading-polish-design.md`（设计 + 实现记录；§6 记了三处实现期修正）
@@ -108,7 +108,7 @@
 
 ### 16. 设置 / 向导 / LLM 配置
 
-**现状**：首次配置向导（`SetupWizard`）+ Settings 页 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。
+**现状**：首次配置向导（`SetupWizard`）+ Settings 页 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。Demo 信息说明默认只读、点击「编辑」才可修改；设置页提供六个信息入口的显隐开关，持久化到 `demoNotesHidden`。
 **历史链**：06-05 setup-wizard → 06-14 settings → 06-14 settings-page → 09-19 llm-config-switch
 
 ### 17. DIY 术语

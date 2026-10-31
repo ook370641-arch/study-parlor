@@ -78,6 +78,7 @@ export function BookPanel({ theme }: { theme: BriefingTheme }) {
           headerExtra={pickerOpen ? undefined : (
             <span ref={bookInfoRef} className="contents">
               <DemoInfoButton
+                noteId="book-source"
                 testId="demo-info-book-source"
                 label="为什么要把读书接进来，PDF 怎么变成章节"
                 theme={theme}

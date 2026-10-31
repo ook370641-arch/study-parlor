@@ -21,6 +21,7 @@ const collectionWith = (history: BlogCollectionFile['history']): BlogCollectionF
 })
 const newBatch = {
   batch: 2, generatedAt: '2026-08-30T00:15:50.000Z', focus: '评测集构建',
+  note: '避开纯理论文章',
   profile: '画像全文', gaps: ['缺口一'], queries: ['evaluation'], searchUsed: true,
   picks: [pick(1), pick(2)],
 }
@@ -47,11 +48,23 @@ describe('BlogRecommendView', () => {
   it('渲染核心方向/画像/知识缺口/逐篇导读与理由', () => {
     render(<BlogRecommendView theme="academic" />)
     expect(screen.getByTestId('blog-rec-view')).toBeInTheDocument()
-    expect(screen.getByText(/评测集构建/)).toBeInTheDocument()
+    expect(screen.getAllByText(/评测集构建/).length).toBeGreaterThan(0)
     expect(screen.getByText('画像全文')).toBeInTheDocument()
     expect(screen.getAllByText(/缺口一/).length).toBeGreaterThan(0)
     expect(screen.getByText('导读1')).toBeInTheDocument()
     expect(screen.getByText(/理由1/)).toBeInTheDocument()
+    expect(screen.getByTestId('blog-rec-note')).toHaveTextContent('避开纯理论文章')
+  })
+
+  it('批次列表可直接切换，并展示各批核心方向', () => {
+    render(<BlogRecommendView theme="academic" />)
+    expect(screen.getByTestId('blog-rec-batch-2')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('blog-rec-batch-1')).toHaveTextContent('第 1 批')
+
+    fireEvent.click(screen.getByTestId('blog-rec-batch-1'))
+
+    expect(useStore.getState().openRecommendView).toHaveBeenCalledWith(1)
+    expect(screen.getByText('旧画像')).toBeInTheDocument()
   })
 
   it('批次切换：上一批到旧批次并降级渲染，边界置灰', () => {

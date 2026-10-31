@@ -40,6 +40,7 @@ export function Home() {
       <div className="absolute top-3 right-36 z-10 flex items-center gap-1">
         <span ref={reviewInfoRef} className="contents">
           <DemoInfoButton
+            noteId="review"
             testId="demo-info-review"
             size="icon"
             label="复习是怎么来的"
@@ -50,6 +51,7 @@ export function Home() {
         </span>
         <span ref={chartInfoRef} className="contents">
           <DemoInfoButton
+            noteId="learning-chart"
             testId="demo-info-learning-chart"
             size="icon"
             label="学习图表是怎么来的"

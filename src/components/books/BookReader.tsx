@@ -6,8 +6,8 @@ import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnota
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
 import { ArticleAssistantPanel } from '@/components/article-assistant/ArticleAssistantPanel'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
+import { BriefingReaderControls } from '@/components/briefing/BriefingReaderControls'
 import { Quote } from '@/components/Quote'
-import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import type { ArticleAnnotation, BriefingTheme } from '@shared/index'
 
 /** 章节阅读器：只读 md 渲染 + 旁注 + 右侧导读/对照。
@@ -22,6 +22,8 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
   const books = useStore((s) => s.booksList)
   const activeBookDir = useStore((s) => s.activeBookDir)
   const fontSize = useStore((s) => s.briefingFontSize)
+  const increaseFontSize = useStore((s) => s.increaseBriefingFontSize)
+  const decreaseFontSize = useStore((s) => s.decreaseBriefingFontSize)
   const creatingNoteRef = useRef(false)
   const bodyRef = useRef<HTMLElement | null>(null)
   const isAcademic = theme !== 'newspaper'
@@ -31,15 +33,14 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
   if (!chapter) {
     return (
       <div data-testid="book-reader" className="relative h-full flex items-center justify-center">
-        {isAcademic && (
-          <div className="absolute top-4 right-4 z-20">
-            <SwapPaintingButton
-              surface="briefing"
-              data-testid="book-swap-painting-button"
-              className="text-parchment/70 hover:text-parchment"
-            />
-          </div>
-        )}
+        <BriefingReaderControls
+          theme={theme}
+          fontSize={fontSize}
+          onDecrease={() => void decreaseFontSize()}
+          onIncrease={() => void increaseFontSize()}
+          swapTestId="book-swap-painting-button"
+          fontTestIdPrefix="book"
+        />
         <span className={`text-sm ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]'}`}>选择一个章节开始阅读</span>
       </div>
     )
@@ -71,19 +72,18 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
   return (
     <div data-testid="book-reader" className="h-full flex min-h-0">
       <div className="relative flex-1 min-w-0 min-h-0">
-        {isAcademic && (
-          <div className="pointer-events-none absolute top-4 right-4 z-20">
-            <SwapPaintingButton
-              surface="briefing"
-              data-testid="book-swap-painting-button"
-              className="pointer-events-auto text-parchment/70 hover:text-parchment"
-            />
-          </div>
-        )}
+        <BriefingReaderControls
+          theme={theme}
+          fontSize={fontSize}
+          onDecrease={() => void decreaseFontSize()}
+          onIncrease={() => void increaseFontSize()}
+          swapTestId="book-swap-painting-button"
+          fontTestIdPrefix="book"
+        />
         <div className="h-full overflow-y-auto overscroll-contain">
           {/* 正文栏统一宽度：画作、标题、语录、工具行、正文、旁注共用一条阅读轴，
               否则画作会占满整个面板、正文却挤在左半边。 */}
-          <div className="px-8 py-6 mx-auto w-full" style={{ maxWidth: 760 }}>
+          <div className="px-8 py-6 w-full">
             {/* 画作 + 语录与文章/笔记阅读区同款：画作受左下角「并置画框」开关控制 */}
             {isAcademic && <PaintingPlate />}
             <h1 className={`font-serif text-xl mb-1 ${isAcademic ? 'text-parchment' : 'text-[#2a1f1a]'}`}>{chapter.meta.title}</h1>

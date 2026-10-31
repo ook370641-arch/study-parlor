@@ -75,6 +75,7 @@ export function ExternalSummaryPanel() {
         <div className="flex items-center gap-1">
           <span ref={infoRef} className="contents">
             <DemoInfoButton
+              noteId="external-materials"
               testId="demo-info-external-materials"
               size="icon"
               label="这些外部资料是怎么找来的"

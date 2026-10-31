@@ -547,8 +547,9 @@ export const DEMO_NOTES: Record<DemoNote['id'], DemoNote> = {
   },
 }
 
-/** 弹层里统一的阅读顺序（五个入口读起来用同一个模板） */
+/** 弹层里统一的阅读顺序（六个入口读起来用同一个模板） */
 export const DEMO_NOTE_ORDER: Array<DemoNote['id']> = [
+  'learning-chart',
   'external-materials',
   'annotation',
   'guide',

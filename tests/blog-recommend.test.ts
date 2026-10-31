@@ -153,6 +153,19 @@ describe('runBlogRecommend', () => {
     expect(r.batch.picks![0].guide).toBe('gd')
     expect(r.batch.picks![0].filePath).toContain('x.md')
   })
+  it('用户备注进入画像 prompt 并保存在本批历史', async () => {
+    seedWriting(); seedPool()
+    ;(getSearchApiKey as any).mockResolvedValue(null)
+    ;(chatNonStream as any)
+      .mockResolvedValueOnce(JSON.stringify({ focus: '多智能体协调', profile: 'p', gaps: ['g'], queries: ['q'] }))
+      .mockResolvedValueOnce(JSON.stringify([{ source_url: 'https://anthropic.com/a', reason: 'r', gap: 'g', guide: 'gd' }]))
+
+    const r = await runBlogRecommend(cfg, { note: '只关注多智能体协调' })
+
+    const profilePrompt = (chatNonStream as any).mock.calls[0][1].messages[0].content
+    expect(profilePrompt).toContain('只关注多智能体协调')
+    expect(r.batch.note).toBe('只关注多智能体协调')
+  })
   it('stageProfile 缺 focus 字段时抛 LLM_PARSE_ERROR', async () => {
     seedWriting(); seedPool()
     ;(getSearchApiKey as any).mockResolvedValue(null)

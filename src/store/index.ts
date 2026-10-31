@@ -22,7 +22,7 @@ import type {
   BookEntry, BookTocItem, ChapterMeta, BookGuideContext,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
-import type { DemoNoteOverrides } from '@/lib/demo-notes'
+import type { DemoNote, DemoNoteOverrides } from '@/lib/demo-notes'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
 import { deriveTitle, migrateCoverNotepad, newNotepadId } from '@/lib/notepad'
@@ -167,7 +167,7 @@ type AppStore = {
   closeAnthropicReader: () => void
   openConstitutionReport: () => void
   closeConstitutionReport: () => void
-  setAnthropicReaderContent: (content: { body: string | null; title: string | null }) => void
+  setAnthropicReaderContent: (content: { filePath: string; body: string | null; title: string | null }) => void
   deleteAnthropicArticle: (filePath: string) => Promise<void>
 
   // 博客收藏夹 & 推荐
@@ -184,7 +184,7 @@ type AppStore = {
   openRecommendView: (batch: number) => void
   closeRecommendView: () => void
   removeBlogBatch: (batch: number) => Promise<void>
-  startBlogRecommend: () => Promise<void>
+  startBlogRecommend: (note?: string) => Promise<void>
   cancelBlogRecommend: () => Promise<void>
 
   setBriefingTheme: (theme: BriefingTheme) => Promise<void>
@@ -225,6 +225,8 @@ type AppStore = {
 
   /** Demo 说明文案的用户改写（noteId → 编辑路径 → 文本），落在 state.json */
   demoNoteOverrides: DemoNoteOverrides
+  demoNotesHidden: Array<DemoNote['id']>
+  toggleDemoNoteVisibility: (noteId: DemoNote['id']) => void
   /** Demo 信息说明弹层正文字号档位（复用简报十档） */
   demoNoteFontSize: BriefingFontSize
   /** 提交一处说明文案修改（空文本视为改回默认） */
@@ -594,6 +596,7 @@ export const useStore = create<AppStore>((set, get) => ({
   notepadFontSize: 'base',
   notepadPanelSize: null,
   demoNoteOverrides: {},
+  demoNotesHidden: [],
   demoNoteFontSize: 'base',
   briefingTheme: 'academic',
   briefingFontSize: 'base',
@@ -725,6 +728,7 @@ export const useStore = create<AppStore>((set, get) => ({
       notepadFontSize: state.notepadFontSize ?? 'base',
       notepadPanelSize: state.notepadPanelSize ?? null,
       demoNoteOverrides: state.demoNoteOverrides ?? {},
+      demoNotesHidden: (state.demoNotesHidden ?? []) as Array<DemoNote['id']>,
       demoNoteFontSize: state.demoNoteFontSize ?? 'base',
       library: library.filter(t => !(state.archivedTopics ?? []).includes(t.dirName)),
       unsavedSessions: unsaved,
@@ -878,6 +882,13 @@ export const useStore = create<AppStore>((set, get) => ({
   setDemoNoteFontSize: (size) => {
     set({ demoNoteFontSize: size })
     ipc.patchState({ demoNoteFontSize: size } as Partial<StateJson>)
+  },
+
+  toggleDemoNoteVisibility: (noteId) => {
+    const current = get().demoNotesHidden
+    const next = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId]
+    set({ demoNotesHidden: next })
+    ipc.patchState({ demoNotesHidden: next } as Partial<StateJson>)
   },
 
   resetDemoNoteOverrides: (noteId) => {
@@ -1464,8 +1475,10 @@ export const useStore = create<AppStore>((set, get) => ({
       recommendViewBatch: null,
     }),
   closeConstitutionReport: () => set({ constitutionReportOpen: false }),
-  setAnthropicReaderContent: ({ body, title }) =>
-    set({ anthropicReaderBody: body, anthropicReaderTitle: title }),
+  setAnthropicReaderContent: ({ filePath, body, title }) => {
+    if (get().anthropicReaderFilePath !== filePath) return
+    set({ anthropicReaderBody: body, anthropicReaderTitle: title })
+  },
 
   deleteAnthropicArticle: async (filePath) => {
     const r = await ipc.anthropicDeleteArticle({ filePath })
@@ -1525,10 +1538,11 @@ export const useStore = create<AppStore>((set, get) => ({
       await get().markBlogRead(args)
     }
   },
-  startBlogRecommend: async () => {
+  startBlogRecommend: async (note) => {
     if (get().recommendRunning) return
     set({ recommendRunning: true, recommendStage: 'context' })
-    const r = await ipc.anthropicRecommendStart()
+    const trimmed = note?.trim()
+    const r = await ipc.anthropicRecommendStart(trimmed || undefined)
     if (!r.ok) set({ recommendRunning: false, recommendStage: null })
   },
   cancelBlogRecommend: async () => {

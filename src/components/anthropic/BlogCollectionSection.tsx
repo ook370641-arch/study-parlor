@@ -5,6 +5,7 @@ import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { BRIEFING_LIST_STYLES } from '@/lib/briefing-font-size'
 import { BookIcon, BookmarkIcon, HistoryIcon, RefreshIcon, UnimportIcon } from './blog-icons'
+import { BlogRecommendDialog } from './BlogRecommendDialog'
 import type { BlogCollectionEntry, BlogReadEntry, BriefingTheme } from '@shared/index'
 
 const STAGE_TEXT: Record<string, string> = {
@@ -63,6 +64,7 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
   const [collapsed, setCollapsed] = useState(false)
   const [showRead, setShowRead] = useState(false)
   const [expandedReason, setExpandedReason] = useState<string | null>(null)
+  const [recommendDialogOpen, setRecommendDialogOpen] = useState(false)
 
   // 已读/收藏列表拖拽延长（2026-10-22 用户反馈：固定 max-h 太短）。
   // null = 用默认 max-h 类；拖拽后改为显式 px 高度。
@@ -108,6 +110,7 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
   }
 
   return (
+    <>
     <div data-testid="blog-collection-section" className={`px-4 py-2 border-b ${border} shrink-0`}>
       {readList.length > 0 && (
         <div data-testid="blog-read-section" className="mb-1.5">
@@ -185,7 +188,7 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
           type="button"
           data-testid="blog-recommend-button"
           title={recommendRunning ? '取消推荐' : '重新推荐'}
-          onClick={() => (recommendRunning ? cancelBlogRecommend() : startBlogRecommend())}
+          onClick={() => (recommendRunning ? void cancelBlogRecommend() : setRecommendDialogOpen(true))}
           className={`w-[26px] h-[26px] rounded border flex items-center justify-center transition-colors ${
             isAcademic
               ? 'border-ember/40 text-ember hover:bg-ember/10'
@@ -239,6 +242,17 @@ export function BlogCollectionSection({ theme = 'academic', onRequestRemove }: {
         </>
       )}
     </div>
+    {recommendDialogOpen && (
+      <BlogRecommendDialog
+        theme={theme}
+        onCancel={() => setRecommendDialogOpen(false)}
+        onStart={(note) => {
+          setRecommendDialogOpen(false)
+          void startBlogRecommend(note)
+        }}
+      />
+    )}
+    </>
   )
 }
 

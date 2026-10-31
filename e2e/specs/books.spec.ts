@@ -47,6 +47,32 @@ test.describe('书籍来源', () => {
     await window.getByTestId('guide-chunk').first().waitFor({ timeout: 20_000 })
   })
 
+  test('章节正文使用宽阅读栏并支持字号调整', async ({ window, testLibraryPath }) => {
+    seedBook(testLibraryPath, {
+      title: 'E2E 宽栏之书',
+      chapters: [{ title: '第一章 起', body: '## 第一节\n\n宽栏正文。' }],
+    })
+
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+
+    await window.getByTestId('briefing-source-book').click()
+    await window.getByTestId('book-card-0').click()
+    await window.getByTestId('chapter-row-0').click()
+    await expect(window.getByTestId('book-chapter-body')).toContainText('宽栏正文')
+
+    const contentColumn = window.getByTestId('book-chapter-body').locator('..')
+    await expect.poll(() => contentColumn.evaluate((el) => getComputedStyle(el).maxWidth)).toBe('none')
+
+    const body = window.getByTestId('book-chapter-body').locator('.md-body')
+    const initialFontSize = await body.evaluate((el) => getComputedStyle(el).fontSize)
+    await window.getByTestId('book-font-size-increase').click()
+    await expect.poll(() => body.evaluate((el) => getComputedStyle(el).fontSize)).not.toBe(initialFontSize)
+    await window.getByTestId('book-font-size-decrease').click()
+    await expect.poll(() => body.evaluate((el) => getComputedStyle(el).fontSize)).toBe(initialFontSize)
+  })
+
   test('章节对照：对照 tab → 来源栏写作 → 挑一篇文章进对照槽', async ({ window, testLibraryPath }) => {
     seedBook(testLibraryPath, {
       title: 'E2E 对照之书',

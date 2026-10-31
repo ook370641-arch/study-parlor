@@ -79,9 +79,28 @@ export function BlogRecommendView({ theme = 'academic' }: { theme?: BriefingThem
         </button>
       </div>
 
+      <div data-testid="blog-rec-batch-list" className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        {history.map((item) => (
+          <button
+            key={item.batch}
+            type="button"
+            data-testid={`blog-rec-batch-${item.batch}`}
+            aria-pressed={item.batch === b.batch}
+            onClick={() => openRecommendView(item.batch)}
+            title={`${new Date(item.generatedAt).toLocaleString('zh-CN')} · ${item.picks?.length ?? 0} 篇推荐`}
+            className={`shrink-0 rounded border px-3 py-2 text-left ${item.batch === b.batch ? 'border-ember text-ember' : isAcademic ? 'border-parchment/15 text-parchment/60 hover:border-parchment/30' : 'border-[#1a1a1a]/15 text-[#6b5d52] hover:border-[#1a1a1a]/30'}`}
+            style={{ fontSize: listStyles.meta }}
+          >
+            <span className="block">第 {item.batch} 批</span>
+            <span className="mt-0.5 block max-w-52 truncate">{item.focus ?? new Date(item.generatedAt).toLocaleDateString('zh-CN')}</span>
+          </button>
+        ))}
+      </div>
+
       {b.focus ? (
         <>
           <p className={`mt-4 font-serif ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`} style={{ fontSize: listStyles.title }}>◆ {b.focus}</p>
+          {b.note && <p data-testid="blog-rec-note" className={`mt-2 ${muted}`} style={{ fontSize: listStyles.meta }}>本批备注：{b.note}</p>}
           <div className="mt-4">
             <p className={muted} style={{ fontSize: listStyles.meta }}>画像分析</p>
             <p className={`mt-1 leading-relaxed ${text}`} style={{ fontSize: listStyles.meta }}>{b.profile}</p>

@@ -57,4 +57,20 @@ describe('openAnthropicReader 不清空已加载的同一篇正文', () => {
 
     expect(useStore.getState().anthropicReaderBody).toBeNull()
   })
+
+  it('旧文章晚到的正文不得回填到当前文章', async () => {
+    await useStore.getState().openAnthropicReader(FILE)
+    await useStore.getState().openAnthropicReader(OTHER)
+
+    useStore.getState().setAnthropicReaderContent({ filePath: FILE, body: 'A 正文', title: 'A' })
+
+    expect(useStore.getState().anthropicReaderFilePath).toBe(OTHER)
+    expect(useStore.getState().anthropicReaderBody).toBeNull()
+    expect(useStore.getState().anthropicReaderTitle).toBeNull()
+
+    useStore.getState().setAnthropicReaderContent({ filePath: OTHER, body: 'B 正文', title: 'B' })
+
+    expect(useStore.getState().anthropicReaderBody).toBe('B 正文')
+    expect(useStore.getState().anthropicReaderTitle).toBe('B')
+  })
 })

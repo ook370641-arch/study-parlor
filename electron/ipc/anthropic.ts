@@ -196,7 +196,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
     return { ok: true as const, collection: next }
   })
 
-  ipcMain.handle('anthropic:recommendStart', async (event) => {
+  ipcMain.handle('anthropic:recommendStart', async (event, note?: string) => {
     if (recommendAbort) return { ok: false as const, code: 'ALREADY_RUNNING' as const }
     const ac = new AbortController()
     recommendAbort = ac
@@ -214,6 +214,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
           const batch: BlogRecommendBatch = {
             batch: (col.history[0]?.batch ?? 0) + 1,
             generatedAt: new Date().toISOString(),
+            ...(note?.trim() ? { note: note.trim() } : {}),
             focus: 'E2E 核心方向',
             profile: 'E2E 画像：正在研究 AI 对齐',
             gaps: ['E2E 缺口'],
@@ -241,7 +242,7 @@ export function registerAnthropicIpc(cfg: AppConfig) {
           }, 100)
           return
         }
-        const { batch, picks } = await runBlogRecommend(cfg, { signal: ac.signal, onStage: (s) => send('anthropic:recommendStage', { stage: s }) })
+        const { batch, picks } = await runBlogRecommend(cfg, { signal: ac.signal, note, onStage: (s) => send('anthropic:recommendStage', { stage: s }) })
         const pool = collectLocalArticles(cfg.libraryPath)
         const now = new Date().toISOString()
         const pickEntries: BlogCollectionEntry[] = picks.map(p => {

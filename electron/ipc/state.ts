@@ -63,6 +63,7 @@ const DEFAULT: StateJson = {
   notepadFontSize: 'base',
   notepadPanelSize: null,
   demoNoteOverrides: {},
+  demoNotesHidden: [],
   demoNoteFontSize: 'base',
   llmConfigs: [],
   activeLlmConfigId: null,

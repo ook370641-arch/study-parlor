@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
-import { SwapPaintingButton } from '@/components/SwapPaintingButton'
+import { BriefingReaderControls } from '@/components/briefing/BriefingReaderControls'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { BookPanel } from '@/components/books/BookPanel'
@@ -36,8 +36,6 @@ export function Briefing() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const isAcademic = theme !== 'newspaper'
-  // 与换画按钮同款（.swap-btn 实底 + backdrop blur），否则背景画作会透进圆钮（2026-10-22 用户反馈）
-  const fontSizeBtnCls = isAcademic ? 'swap-btn' : 'swap-btn-newspaper w-9 h-9 flex items-center justify-center'
   const bodyStyle = isAcademic
     ? ACADEMIC_BODY_STYLES[fontSize]
     : NEWSPAPER_BODY_STYLES[fontSize]
@@ -98,25 +96,17 @@ export function Briefing() {
           <div className="flex-1 flex flex-col min-w-0">
             {source === 'writing' ? (
               <main className="relative z-[5] flex-1 min-h-0">
-                <div className="absolute top-4 right-4 z-20 flex items-start gap-1">
-                  {isAcademic && (
-                    <SwapPaintingButton
-                      surface="briefing"
-                      data-testid="briefing-swap-painting-button"
-                      className="text-parchment/70 hover:text-parchment"
-                    />
-                  )}
-                  <button type="button" data-testid="writing-ui-font-size-decrease"
-                    disabled={writingUISize === 'sm' || htmlDeleteMode}
-                    onClick={() => void decreaseWritingUI()}
-                    className={`text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-                    title={htmlDeleteMode ? '删除模式下不可调整字号' : '减小界面字号'}>−</button>
-                  <button type="button" data-testid="writing-ui-font-size-increase"
-                    disabled={writingUISize === '7xl' || htmlDeleteMode}
-                    onClick={() => void increaseWritingUI()}
-                    className={`text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-                    title={htmlDeleteMode ? '删除模式下不可调整字号' : '增大界面字号'}>+</button>
-                </div>
+                <BriefingReaderControls
+                  theme={theme}
+                  fontSize={writingUISize}
+                  onDecrease={() => void decreaseWritingUI()}
+                  onIncrease={() => void increaseWritingUI()}
+                  swapTestId="briefing-swap-painting-button"
+                  fontTestIdPrefix="writing-ui"
+                  disabled={htmlDeleteMode}
+                  disabledTitle="删除模式下不可调整字号"
+                  label="界面字号"
+                />
                 {(() => {
                   const openRoot = writingFilePath ? writingRootOf(writingFilePath) : null
                   if (openRoot === 'notes') return <NoteBoard />

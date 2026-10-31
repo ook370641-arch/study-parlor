@@ -18,6 +18,7 @@ test.describe('博客收藏夹与推荐', () => {
 
     // 触发推荐（E2E mock 分支：不触网，确定性产出 1 条）
     await window.locator('[data-testid="blog-recommend-button"]').click()
+    await window.locator('[data-testid="blog-recommend-start"]').click()
     await expect(window.locator('[data-testid^="blog-collection-open-"]').first()).toBeVisible({ timeout: 15000 })
 
     // 查看推荐理由（右栏推荐页也含“E2E 推荐理由（挂上：…）”，需用左栏展开态的完整前缀区分）
@@ -38,8 +39,11 @@ test.describe('博客收藏夹与推荐', () => {
 
     // 触发推荐 mock → 右栏自动切到推荐页
     await window.locator('[data-testid="blog-recommend-button"]').click()
+    await window.locator('[data-testid="blog-recommend-note"]').fill('E2E 推荐备注')
+    await window.locator('[data-testid="blog-recommend-start"]').click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible({ timeout: 15000 })
-    await expect(window.getByText('E2E 核心方向')).toBeVisible()
+    await expect(window.locator('[data-testid="blog-rec-note"]')).toHaveText('本批备注：E2E 推荐备注')
+    await expect(window.getByText('◆ E2E 核心方向')).toBeVisible()
     await expect(window.getByText('E2E 导读摘要')).toBeVisible()
     await expect(window.getByText(/E2E 推荐理由/)).toBeVisible()
 
@@ -67,6 +71,7 @@ test.describe('博客收藏夹与推荐', () => {
 
     // 推荐 mock → 右栏自动出推荐页；关闭后可通过固定入口回来
     await window.locator('[data-testid="blog-recommend-button"]').click()
+    await window.locator('[data-testid="blog-recommend-start"]').click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible({ timeout: 15000 })
     await window.locator('[data-testid="blog-rec-close"]').click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeHidden()
@@ -87,6 +92,7 @@ test.describe('博客收藏夹与推荐', () => {
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
 
     await window.locator('[data-testid="blog-recommend-button"]').click()
+    await window.locator('[data-testid="blog-recommend-start"]').click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible({ timeout: 15000 })
 
     // 从推荐页打开文章 → 阅读器出现 ★/✓；推荐已自动入夹 → ★ 激活

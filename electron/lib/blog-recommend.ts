@@ -145,10 +145,11 @@ async function extractObjectWithRetry<T>(
   throw codeError('LLM_PARSE_ERROR')
 }
 
-async function stageProfile(cfg: AppConfig, ctx: ReturnType<typeof collectWritingContext>, signal?: AbortSignal) {
+async function stageProfile(cfg: AppConfig, ctx: ReturnType<typeof collectWritingContext>, note: string | undefined, signal?: AbortSignal) {
   const prompt = read('blog-profile-queries-v2.md')
     .replace('{{summaries}}', ctx.summaries.map((s, i) => `第${i + 1}篇《${s.title}》：${s.summary}`).join('\n'))
     .replace('{{recentBodies}}', ctx.recentBodies.map((b, i) => `[近期原文${i + 1}]\n${b}`).join('\n\n'))
+    .replace('{{userNote}}', note || '（无）')
   return extractObjectWithRetry<{ focus: string; profile: string; gaps: string[]; queries: string[] }>(
     cfg, prompt, 'blog-profile', signal,
     o => typeof o.focus === 'string' && o.focus.length > 0
@@ -193,17 +194,18 @@ async function stagePick(
 
 export async function runBlogRecommend(
   cfg: AppConfig,
-  opts: { signal?: AbortSignal; onStage?: (s: 'context' | 'profile' | 'search' | 'pick') => void }
+  opts: { signal?: AbortSignal; note?: string; onStage?: (s: 'context' | 'profile' | 'search' | 'pick') => void }
 ): Promise<{ batch: BlogRecommendBatch; picks: PickedArticle[] }> {
   const lib = cfg.libraryPath
   const col = loadCollection(lib)
+  const note = opts.note?.trim() || undefined
 
   opts.onStage?.('context')
   const ctx = collectWritingContext(lib)
   if (ctx.count === 0) throw codeError('NO_WRITING_CONTEXT')
 
   opts.onStage?.('profile')
-  const profile = await stageProfile(cfg, ctx, opts.signal)
+  const profile = await stageProfile(cfg, ctx, note, opts.signal)
 
   opts.onStage?.('search')
   let searchHits = ''
@@ -237,6 +239,7 @@ export async function runBlogRecommend(
   const batch: BlogRecommendBatch = {
     batch: (col.history[0]?.batch ?? 0) + 1,
     generatedAt: new Date().toISOString(),
+    ...(note ? { note } : {}),
     focus: profile.focus,
     profile: profile.profile,
     gaps: profile.gaps ?? [],

@@ -6,9 +6,9 @@ import { ArticleBodyChunks } from '@/components/article-assistant/ArticleBodyChu
 import { ArticleAnnotations } from '@/components/article-assistant/ArticleAnnotations'
 import { Quote } from '@/components/Quote'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
+import { BriefingReaderControls } from '@/components/briefing/BriefingReaderControls'
 import { TransferToWritingButton } from '@/components/briefing/TransferToWritingButton'
 import { AnnotationListButton } from '@/components/article-assistant/AnnotationListButton'
-import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import { EMPTY_GUIDE_CHUNKS } from '@/lib/article-chunks'
 import { useScrollMemory } from '@/lib/use-scroll-memory'
@@ -73,8 +73,6 @@ function resolveSection(fm: Frontmatter) {
 
 export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMemoryKey }: Props) {
   const isAcademic = theme !== 'newspaper'
-  // 与换画按钮同款（.swap-btn 实底 + backdrop blur），避免背景透出
-  const fontSizeBtnCls = `pointer-events-auto ${isAcademic ? 'swap-btn' : 'swap-btn-newspaper w-9 h-9 flex items-center justify-center'}`
   const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? EMPTY_GUIDE_CHUNKS)
   const terms = useMemo(() => guideChunks.flatMap((c) => c.terms), [guideChunks])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
@@ -147,9 +145,9 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
   // Report body/title to store so the parent blog panel can mount ArticleAssistantPanel
   useEffect(() => {
     if (!loading && frontmatter && body) {
-      setAnthropicReaderContent({ body, title: frontmatter.title ?? null })
+      setAnthropicReaderContent({ filePath, body, title: frontmatter.title ?? null })
     }
-  }, [loading, frontmatter, body, setAnthropicReaderContent])
+  }, [filePath, loading, frontmatter, body, setAnthropicReaderContent])
 
   const handleChunkEnter = useCallback((i: number) => setAssistantActiveChunk(i), [setAssistantActiveChunk])
   const handleChunkLeave = useCallback(() => setAssistantActiveChunk(null), [setAssistantActiveChunk])
@@ -247,25 +245,14 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
           ← 博客墙
         </button>
         {/* 固定控件 — 位于文章区右上角、不随文章滚动。报纸版式只显示字号按钮。 */}
-        <div className="pointer-events-none absolute top-4 right-4 z-20 flex items-start gap-1">
-          {isAcademic && (
-            <SwapPaintingButton
-              surface="briefing"
-              data-testid="anthropic-swap-painting-button"
-              className="text-parchment/70 hover:text-parchment"
-            />
-          )}
-          <button type="button" data-testid="briefing-font-size-decrease"
-            disabled={fontSize === 'sm'}
-            onClick={() => void decreaseFontSize()}
-            className={`text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-            title="减小字号">−</button>
-          <button type="button" data-testid="briefing-font-size-increase"
-            disabled={fontSize === '7xl'}
-            onClick={() => void increaseFontSize()}
-            className={`text-sm disabled:opacity-20 disabled:cursor-not-allowed ${fontSizeBtnCls}`}
-            title="增大字号">+</button>
-        </div>
+        <BriefingReaderControls
+          theme={theme}
+          fontSize={fontSize}
+          onDecrease={() => void decreaseFontSize()}
+          onIncrease={() => void increaseFontSize()}
+          swapTestId="anthropic-swap-painting-button"
+          fontTestIdPrefix="briefing"
+        />
         <div className="flex-1 flex flex-col overflow-y-auto min-w-0" ref={scrollContainerRef} onScroll={onReaderScroll} data-testid="anthropic-reader-scroll">
           <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
           <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24 briefing-article-body arrive-item">

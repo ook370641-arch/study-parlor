@@ -121,6 +121,7 @@ export function ChatWindow() {
         <div className="flex items-center gap-1">
           <span ref={annoInfoRef} className="contents">
             <DemoInfoButton
+              noteId="annotation"
               testId="demo-info-annotation"
               size="icon"
               label="旁注和聊天框有什么不同，它怎么工作"

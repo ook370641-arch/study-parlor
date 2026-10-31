@@ -146,6 +146,7 @@ export type BlogCollectionEntry = {
 export type BlogRecommendBatch = {
   batch: number
   generatedAt: string
+  note?: string       // 用户为本批推荐填写的方向备注
   profile: string      // 用户画像（阶段一 LLM 输出）
   gaps: string[]       // 认知缺口
   queries: string[]    // 本次检索词
@@ -602,8 +603,10 @@ export type StateJson = {
   notepadFontSize?: NotepadFontSize
   /** 记事板面板自定义尺寸（左下角拖拽手柄写入，null=默认） */
   notepadPanelSize?: { w: number; h: number } | null
-  /** Demo 说明文案的用户改写：noteId → 编辑路径 → 文本（双击弹层进入编辑后写入） */
+  /** Demo 说明文案的用户改写：noteId → 编辑路径 → 文本（弹层编辑态写入） */
   demoNoteOverrides?: Record<string, Record<string, string>>
+  /** 设置页隐藏的信息说明入口 id；只隐藏入口，不删除文案 */
+  demoNotesHidden?: string[]
   /** Demo 信息说明弹层正文字号档位（弹层内 A−/A+ 调节，复用简报十档） */
   demoNoteFontSize?: BriefingFontSize
   /** LLM 多配置：首条由 .env 迁移播种；切换免重启 */
@@ -767,7 +770,7 @@ export type IpcApi = {
     anthropicCollectionMarkRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemoveRead: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemoveBatch: (args: { batch: number }) => Promise<{ ok: true; collection: BlogCollectionFile }>
-    anthropicRecommendStart: () => Promise<{ ok: true } | { ok: false; code: 'ALREADY_RUNNING' }>
+    anthropicRecommendStart: (note?: string) => Promise<{ ok: true } | { ok: false; code: 'ALREADY_RUNNING' }>
     anthropicRecommendCancel: () => Promise<void>
     onAnthropicRecommendStage: (cb: (p: { stage: RecommendStage }) => void) => () => void
     onAnthropicRecommendDone: (cb: (p: RecommendDonePayload) => void) => () => void

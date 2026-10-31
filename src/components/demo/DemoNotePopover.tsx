@@ -56,7 +56,7 @@ function readEditableText(el: HTMLElement): string {
   return raw.replace(/\u00a0/g, ' ').trim()
 }
 
-/** 把光标放到内容末尾（双击进入编辑后直接接着改） */
+/** 把光标放到内容末尾（进入编辑后直接接着改） */
 function focusAtEnd(el: HTMLElement) {
   el.focus()
   const range = document.createRange()
@@ -162,7 +162,7 @@ function EditableText({
  * Esc / 点击外部 / 窗口 resize 关闭），但内容模板化：
  * 结论句 → 分节（标题 + 段落/列表/键值）→ 可被追问的问答。
  *
- * 双击弹层进入编辑模式：每段文字独立可改，失焦即写入 state.json；
+ * 点击「编辑」进入编辑模式：每段文字独立可改，失焦即写入 state.json；
  * 结构（分节、条目数量）固定，只允许改文本。
  */
 export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic' }: Props) {
@@ -217,9 +217,7 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
     if (next !== demoNoteFontSize) setDemoNoteFontSize(next)
   }
 
-  /** 四角拖拽：se 只改宽高，sw/ne/nw 同时平移对边（面板转自由浮动，不再跟随锚点）。
-   *  刻意不在 pointerdown 上 preventDefault：否则角柄上的双击会被吞掉，
-   *  与「双击弹层任意处进编辑」的约定冲突（E2E 就在角上双击）。 */
+  /** 四角拖拽：se 只改宽高，sw/ne/nw 同时平移对边（面板转自由浮动，不再跟随锚点）。 */
   const startResize = (corner: Corner) => (e: React.PointerEvent<HTMLDivElement>) => {
     e.stopPropagation()
     const handle = e.currentTarget
@@ -323,18 +321,6 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
     [noteId, setDemoNoteOverride]
   )
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement
-    if (editing) {
-      // 编辑态：只在非文本区域双击才退出，文本区域保留原生选词
-      if (!target.closest('[data-edit-path]')) setEditing(false)
-      return
-    }
-    setEditing(true)
-    const block = target.closest('[data-edit-path]') as HTMLElement | null
-    if (block) requestAnimationFrame(() => focusAtEnd(block))
-  }
-
   if (!noteId || !note || typeof document === 'undefined') return null
 
   const shell = isAcademic
@@ -360,7 +346,6 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
       data-testid={`demo-note-popover-${note.id}`}
       role="dialog"
       aria-label={note.title}
-      onDoubleClick={handleDoubleClick}
       className={`fixed z-[9999] rounded-xl border shadow-2xl p-4 flex flex-col ${shell}`}
       style={{
         width: geom?.w ?? pos?.width ?? PANEL_WIDTH,
@@ -665,7 +650,17 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
             </span>
           </>
         ) : (
-          <span className="opacity-40 select-none">双击可编辑</span>
+          <>
+            <span className="opacity-40 select-none">默认只读</span>
+            <button
+              type="button"
+              data-testid="demo-note-edit"
+              onClick={() => setEditing(true)}
+              className="px-1.5 py-0.5 rounded border border-current hover:opacity-100 opacity-70"
+            >
+              编辑
+            </button>
+          </>
         )}
       </div>
       </div>
@@ -695,6 +690,7 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
 
 /** 通用 `i` 触发器：与分组栏（GroupRibbon）同款的 italic 小圆钮，保持全应用一致 */
 export function DemoInfoButton({
+  noteId,
   testId,
   active,
   onClick,
@@ -702,6 +698,7 @@ export function DemoInfoButton({
   theme = 'academic',
   size = 'sm',
 }: {
+  noteId: DemoNote['id']
   testId: string
   active: boolean
   onClick: () => void
@@ -710,6 +707,8 @@ export function DemoInfoButton({
   size?: 'sm' | 'icon'
 }) {
   const isAcademic = theme !== 'newspaper'
+  const hidden = useStore((s) => s.demoNotesHidden.includes(noteId))
+  if (hidden) return null
   const base = active
     ? isAcademic
       ? 'border-ember/60 text-ember bg-ember/10'

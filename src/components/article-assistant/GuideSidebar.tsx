@@ -48,6 +48,7 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
         <span className="text-xs uppercase tracking-widest select-none">导读</span>
         <span ref={guideInfoRef} className="contents">
           <DemoInfoButton
+            noteId="guide"
             testId="demo-info-guide"
             size="icon"
             label="导读解决什么问题，它是怎么生成的"
