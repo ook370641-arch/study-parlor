@@ -1,6 +1,6 @@
 ---
-status: planned
-note: 2026-10-31 三路并行执行；E2E 只编写不启动 Electron
+status: historical
+note: 2026-10-31 三个任务及审查修复均完成；E2E 已编写但未启动 Electron，当前事实以代码、AGENTS.md 与 docs/README.md 为准
 ---
 
 # 阅读、划词备注与记事板体验打磨 Implementation Plan

@@ -164,7 +164,8 @@
         "onboarding-journey.spec.ts",
         "wild-card.spec.ts",
         "continue-suggestions.spec.ts",
-        "extension-page.spec.ts"
+        "extension-page.spec.ts",
+        "notepad-assistant.spec.ts"
       ]
     },
     "library": {
