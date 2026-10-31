@@ -75,6 +75,29 @@ describe('书籍阅读记忆', () => {
     expect(patchStateSyncMock).toHaveBeenCalledWith({ bookScrollMemory: { filePath: 'book-a/chapters/01.md', blockIndex: 7 } })
   })
 
+  it('切换章节后仍保存上一章的待处理滚动位置', async () => {
+    const dir = 'book-switch'
+    const chapterA = `${dir}/chapters/01.md`
+    const chapterB = `${dir}/chapters/02.md`
+    useStore.setState({
+      activeBookDir: dir,
+      activeBookToc: [
+        { title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 },
+        { title: 'C2', chapterFile: 'chapters/02.md', pageStart: 3, pageEnd: 4 },
+      ],
+    } as any)
+    await useStore.getState().selectChapter(chapterA)
+    const pendingFlushA = () => useStore.getState().flushBookScrollPosition(chapterA, 7)
+
+    await useStore.getState().selectChapter(chapterB)
+    patchStateSyncMock.mockClear()
+    pendingFlushA()
+
+    expect(useStore.getState().booksLastChapter).toBe(chapterB)
+    expect(useStore.getState().bookScrollMemory).toEqual({ filePath: chapterA, blockIndex: 7 })
+    expect(patchStateSyncMock).toHaveBeenCalledWith({ bookScrollMemory: { filePath: chapterA, blockIndex: 7 } })
+  })
+
   it('选书后恢复属于本书且仍在目录中的最后章节', async () => {
     useStore.setState({ booksLastChapter: 'book-a/chapters/01.md' } as any)
     booksChaptersMock.mockResolvedValue([{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }])
@@ -129,6 +152,28 @@ describe('书籍阅读记忆', () => {
 
     expect(useStore.getState().bookScrollMemory).toBeNull()
     expect(patchStateSyncMock).not.toHaveBeenCalled()
+  })
+
+  it('删除后重新选择有效章节可再次持久化滚动位置', async () => {
+    const dir = 'book-reimport'
+    const chapterPath = `${dir}/chapters/01.md`
+    useStore.setState({
+      activeBookDir: dir,
+      activeChapter: { path: chapterPath, content: 'x', meta: { title: 'C1', chapterIndex: 1, pageRange: [1, 2] } },
+      booksLastChapter: chapterPath,
+    } as any)
+    await useStore.getState().removeBook(dir)
+    useStore.setState({
+      activeBookDir: dir,
+      activeBookToc: [{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }],
+    } as any)
+
+    await useStore.getState().selectChapter(chapterPath)
+    patchStateSyncMock.mockClear()
+    useStore.getState().flushBookScrollPosition(chapterPath, 11)
+
+    expect(useStore.getState().bookScrollMemory).toEqual({ filePath: chapterPath, blockIndex: 11 })
+    expect(patchStateSyncMock).toHaveBeenCalledWith({ bookScrollMemory: { filePath: chapterPath, blockIndex: 11 } })
   })
 
   it('恢复章节等待期间换书后不再生成旧书全书导读', async () => {

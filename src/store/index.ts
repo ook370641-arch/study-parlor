@@ -513,6 +513,7 @@ let bookSelectSeq = 0
 let chapterSelectSeq = 0
 // 全书导读生成中的书（避免重复选中/刷新时并发打两次 LLM）
 const bookGuideInFlight = new Set<string>()
+const deletedBookScrollDirs = new Set<string>()
 
 /** Ensures sendAssistantMessage waits for history to load before sending, preventing
  *  the race where a user message lands before loadAssistantSession completes and the
@@ -1242,6 +1243,7 @@ export const useStore = create<AppStore>((set, get) => ({
         }
       }
       if (seq !== chapterSelectSeq || get().activeBookDir !== selectedBook) return
+      if (bookDir) deletedBookScrollDirs.delete(bookDir)
       set({
         activeChapter: { path: chapterPath, ...chapter },
         bookContext: {
@@ -1307,6 +1309,7 @@ export const useStore = create<AppStore>((set, get) => ({
       get().showToast(err instanceof Error ? err.message : '删除失败')
       return
     }
+    deletedBookScrollDirs.add(dir)
     // 该书目录下的章节对照映射一并失效，避免书架里再次出现同名书/旧章节时错配
     const prevCompanionMap = get().articleCompanionMap
     const nextCompanionMap: Record<string, string> = {}
@@ -1496,7 +1499,9 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchStateSync({ articleCompanionScrollMemory: mem } as Partial<StateJson>)
   },
   flushBookScrollPosition: (filePath, blockIndex) => {
-    if (get().booksLastChapter !== filePath) return
+    for (const dir of deletedBookScrollDirs) {
+      if (filePath === dir || filePath.startsWith(dir + '/') || filePath.startsWith(dir + '\\')) return
+    }
     const mem: ScrollMemorySlot = { filePath, blockIndex }
     set({ bookScrollMemory: mem })
     ipc.patchStateSync({ bookScrollMemory: mem } as Partial<StateJson>)
