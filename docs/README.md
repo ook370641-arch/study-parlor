@@ -74,6 +74,7 @@
 
 **现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+ 对照右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与写作两来源。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。划词工具在博客/书籍间共用，支持备注与四色持久高亮；备注外点/Esc 自动保存、始终可删除，高亮可换色/删除。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（共享划词高亮、备注自动保存/删除与定位修复；同名 plan 为实施记录）
+- planned：`specs/2026-11-02-notes-annotations-and-covers-design.md`（标注真实点击回归、亮黄色、书籍章节聚合与 SVG 封面）
 **历史链**：07-11 article-assistant → 07-11 article-assistant-guide-improvements → 07-11 briefing-assistant → 07-19 annotation-iteration → 07-22 briefing-ai-chat-enhancement → 08-02 agent-article-pipeline → 09-29 reading-position-companion-and-hr
 
 ### 11. 网络搜索与外部资料
@@ -90,6 +91,7 @@
 ### 13. 笔记系统（书架/专辑墙）
 
 **现状**：在用（2026-10-22 上线）——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。
+- planned：`specs/2026-11-02-notes-annotations-and-covers-design.md`（同书章节聚合与三版 SVG 封面生成）
 **历史链**：10-20 notes-bookshelf → 10-20 notes-bookshelf-requirements → 10-22 notes-album-wall → 10-26 blog-notes-album-wall-and-note-creation（博客↔笔记联动）
 
 ### 14. 简报来源 — 书籍
