@@ -112,7 +112,7 @@ paths:
 - **新建 E2E spec 或新增页面/组件/IPC 模块时，应同步更新 `e2e/source-map.json`**：在对应 `group` 的 `specs` 中添加新 spec 文件名，或新建 group（若为全新功能域）。直接变更的 spec 文件和孤儿 spec 会自动纳入执行列表，source-map 维护确保后续 source 变更也能触发。
 - `startup-health.spec.ts` 始终包含在每次运行中（`always` 列表）。
 - `node scripts/e2e-changed.js` 会自动检测未被任何 group 覆盖的孤儿 spec 并输出 WARNING + **自动纳入执行**——遇到此警告应补齐 source-map，但不补齐也不会漏跑。
-- CI/合并前仍需全量 `npm run test:e2e`，本规则仅适用于本地开发迭代。
+- 全量 `npm run test:e2e` 仅在用户明确要求时运行，不作为合并前门禁。
 - Source: 2026-07-25 E2E targeting infra
 
 ## 11. E2E 跑 out/ 构建产物，改源码后必须先构建

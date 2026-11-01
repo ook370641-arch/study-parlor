@@ -144,7 +144,7 @@
 
 ### 22. E2E 与工程基建
 
-**现状**：定向测试为日常门禁（`e2e-changed.js` + `e2e/source-map.json` 孤儿检测，AGENTS.md「E2E 定向测试」）；启动看门狗在用。
+**现状**：定向测试为日常门禁（`e2e-changed.js` + `e2e/source-map.json` 孤儿检测，AGENTS.md「E2E 定向测试」）；全量 E2E 不作为合并门禁，仅在用户明确要求时运行，启动看门狗在用。
 - 长期跟踪：`plans/2026-07-10-fix-dev-hang-and-orphan-processes.md`（历次启动问题根因档案，AGENTS.md 指定排查入口）
 **历史链**：06-24 e2e-automation → 06-27 e2e-full-coverage → 07-02 e2e-coverage-expansion → 07-10 claude-rules-from-project-history（规则体系起源）→ 07-11 silent-e2e → 07-22 writing-e2e-coverage → 07-25 e2e-targeted-testing
 
