@@ -92,7 +92,7 @@
 
 **现状**：在用（2026-10-22 上线）——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。
 - planned：`specs/2026-11-02-notes-annotations-and-covers-design.md`（同书章节聚合与三版 SVG 封面生成）
-**历史链**：10-20 notes-bookshelf → 10-20 notes-bookshelf-requirements → 10-22 notes-album-wall → 10-26 blog-notes-album-wall-and-note-creation（博客↔笔记联动）
+**历史链**：10-20 notes-bookshelf → 10-20 notes-bookshelf-requirements → 10-22 notes-album-wall → 10-26 blog-notes-album-wall-and-note-creation（博客↔笔记联动）→ 11-02 notes-annotations-and-covers（planned）
 
 ### 14. 简报来源 — 书籍
 
