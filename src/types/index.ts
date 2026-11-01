@@ -252,7 +252,7 @@ export type ArticleAssistantErrorCode =
   | 'CHAT_EMPTY_REPLY'
   | 'SAVE_ERROR'
 
-export type AnnotationHighlightColor = 'ember' | 'gold' | 'green' | 'blue'
+export type AnnotationHighlightColor = 'ember' | 'gold' | 'yellow' | 'green' | 'blue'
 
 export type ArticleAnnotation = {
   id: string

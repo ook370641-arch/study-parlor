@@ -67,7 +67,7 @@ function parseAnnotationsBody(body: string): ArticleAnnotation[] {
         if (raw === 'highlight') kind = raw
       } else if (line.startsWith('**高亮色：**')) {
         const raw = line.replace('**高亮色：**', '').trim()
-        if (raw === 'ember' || raw === 'gold' || raw === 'green' || raw === 'blue') {
+        if (raw === 'ember' || raw === 'gold' || raw === 'yellow' || raw === 'green' || raw === 'blue') {
           highlightColor = raw
         }
       }

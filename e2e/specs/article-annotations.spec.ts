@@ -400,3 +400,58 @@ test('E2E-A8: 空备注可删除，备注外点自动保存', async ({ window, t
   await expect(window.locator(SELECTORS.annotations.noteCard)).toHaveCount(0)
   await expect.poll(readAnnotations).toContain('外点自动保存-唯一标识')
 })
+
+test('E2E-A9: 笔记与高亮标记使用真实点击打开并切换卡片', async ({ window, testLibraryPath, testConfigDir }) => {
+  const { filePath } = seedBlogArticleWithCache(testLibraryPath, testConfigDir, {
+    slug: 'e2e-anno-real-clicks',
+    title: 'E2E Anno Real Clicks',
+    body: '笔记标记与高亮标记都用于真实点击测试。',
+  })
+  const parsed = path.parse(filePath)
+  fs.writeFileSync(path.join(parsed.dir, `${parsed.name}.annotations.md`), `---
+title: Article Annotations
+type: article-assistant
+parent_path: ${filePath}
+---
+
+## a1
+
+**选中文字：** 笔记标记
+**备注：** 已有备注
+**段落：** §1
+**创建：** 2026-11-02
+**更新：** 2026-11-02
+
+---
+
+## a2
+
+**选中文字：** 高亮标记
+**备注：**
+**段落：** §1
+**创建：** 2026-11-02
+**更新：** 2026-11-02
+**类型：** highlight
+**高亮色：** gold
+`, 'utf8')
+
+  const cover = new CoverPage(window)
+  await cover.goToBriefing()
+  await window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Anno Real Clicks")`).click()
+  const noteMarker = window.locator('.anno-wrap[data-anno-id="a1"]')
+  const highlightMarker = window.locator('.anno-wrap[data-anno-id="a2"]')
+  await expect(noteMarker).toBeVisible({ timeout: 15000 })
+  await expect(highlightMarker).toBeVisible({ timeout: 15000 })
+
+  await noteMarker.click()
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible()
+  await expect(window.locator(SELECTORS.annotations.noteTextarea)).toBeVisible()
+
+  await highlightMarker.click()
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible()
+  await expect(window.locator(SELECTORS.annotations.noteTextarea)).toHaveCount(0)
+
+  await noteMarker.click()
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible()
+  await expect(window.locator(SELECTORS.annotations.noteTextarea)).toBeVisible()
+})
