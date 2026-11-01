@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { useStore } from '@/store'
-import { sortNotes } from '@/lib/notes-list'
+import { groupNotesForDisplay } from '@/lib/notes-list'
 import type { NoteSortBy, NoteSource } from '@shared/index'
+import { BookChapterSelect } from './BookChapterSelect'
 import { NoteCover } from './NoteCover'
 
 function urlSlug(url: string): string {
@@ -17,7 +18,7 @@ export function NotesWall() {
   const setNotesSortBy = useStore(s => s.setNotesSortBy)
   const selectWritingFile = useStore(s => s.selectWritingFile)
 
-  const sorted = useMemo(() => sortNotes(notesList ?? [], notesSortBy, notesCategory), [notesList, notesSortBy, notesCategory])
+  const sorted = useMemo(() => groupNotesForDisplay(notesList ?? [], notesSortBy, notesCategory), [notesList, notesSortBy, notesCategory])
 
   return (
     <div data-testid="notes-wall" className="h-full overflow-y-auto px-8 py-6">
@@ -55,24 +56,40 @@ export function NotesWall() {
         </div>
       ) : (
         <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
-          {sorted.map(entry => (
-          <button
-            key={entry.path}
-            data-testid={`wall-album-${urlSlug(entry.meta.url)}`}
-            className="group relative rounded-md overflow-hidden text-left transition-transform hover:-translate-y-0.5"
-            style={{ aspectRatio: '3/4', boxShadow: '0 6px 16px rgba(0,0,0,.5)' }}
-            onClick={() => { void selectWritingFile(entry.path) }}
-          >
-            <NoteCover entry={entry} className="absolute inset-0 w-full h-full" />
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(20,12,8,0) 40%, rgba(20,12,8,.88))' }} />
-            <div className="absolute inset-x-0 bottom-0 p-2.5">
-              <div className="text-[12px] leading-snug text-[#f0e2c8] line-clamp-2">{entry.meta.title}</div>
-              <div className="mt-1 text-[10px] text-parchment/60">
-                {entry.meta.rating > 0 ? '★'.repeat(entry.meta.rating) : '未评'}
+          {sorted.map(item => {
+            const entry = item.kind === 'book' ? item.latest : item.entry
+            const rating = item.kind === 'book' ? item.rating : entry.meta.rating
+            return (
+              <div
+                key={item.key}
+                className="group relative rounded-md transition-transform hover:-translate-y-0.5"
+                style={{ aspectRatio: '3/4', boxShadow: '0 6px 16px rgba(0,0,0,.5)' }}
+              >
+                <button
+                  type="button"
+                  data-testid={`wall-album-${urlSlug(entry.meta.url)}`}
+                  className="relative block h-full w-full overflow-hidden rounded-md text-left"
+                  onClick={() => { void selectWritingFile(entry.path) }}
+                >
+                  <NoteCover entry={entry} className="absolute inset-0 w-full h-full" />
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(20,12,8,0) 40%, rgba(20,12,8,.88))' }} />
+                  <div className="absolute inset-x-0 bottom-0 p-2.5">
+                    <div className="text-[12px] leading-snug text-[#f0e2c8] line-clamp-2">{item.kind === 'book' ? item.book : entry.meta.title}</div>
+                    <div className="mt-1 text-[10px] text-parchment/60">
+                      {rating > 0 ? '★'.repeat(rating) : '未评'}
+                    </div>
+                  </div>
+                </button>
+                {item.kind === 'book' && (
+                  <BookChapterSelect
+                    group={item}
+                    onPick={(path) => { void selectWritingFile(path) }}
+                    className="absolute right-2 top-2 z-10 max-w-[calc(100%-1rem)]"
+                  />
+                )}
               </div>
-            </div>
-          </button>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
