@@ -47,6 +47,7 @@ export function BookPanel({ theme }: { theme: BriefingTheme }) {
         url: '',
         source: 'book',
         book: book?.title,
+        chapter: chapter.meta.title,
       })
       await useStore.getState().selectArticleCompanion('book', chapter.path, r.path)
       return r.path

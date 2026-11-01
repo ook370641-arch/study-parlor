@@ -126,6 +126,7 @@ export type NoteMeta = {
   read_at?: string      // ISO，可空
   /** 来源书籍名（source='book' 时写入，便于笔记按书聚合） */
   book?: string
+  chapter?: string
 }
 
 /** 笔记书架条目；path 为库内相对路径（正斜杠），如 notes/foo.md */
@@ -788,7 +789,7 @@ export type IpcApi = {
 
   // Notes
   notesList: () => Promise<NoteEntry[]>
-  notesCreate: (a: { title: string; url: string; source?: NoteSource; book?: string; body?: string }) => Promise<{ path: string }>
+  notesCreate: (a: { title: string; url: string; source?: NoteSource; book?: string; chapter?: string; body?: string }) => Promise<{ path: string }>
   notesUpdateMeta: (a: { path: string; patch: Partial<NoteMeta> }) => Promise<void>
   notesDelete: (a: { path: string }) => Promise<void>
   notesImportRead: () => Promise<{ created: number; skipped: number }>
