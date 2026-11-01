@@ -72,7 +72,7 @@
 
 ### 10. 文章阅读 / 导读 / 助手 / 旁注
 
-**现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+ 对照右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与写作两来源。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。划词工具在博客/书籍间共用，支持备注与四色持久高亮；备注外点/Esc 自动保存、始终可删除，高亮可换色/删除。
+**现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+ 对照右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与写作两来源。博客/书籍对照页顶部提供「笔记」快捷入口：当前文章/章节已有对应笔记则直接在对照槽打开，没有则自动新建后打开。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。划词工具在博客/书籍间共用，支持备注与四色持久高亮；备注外点/Esc 自动保存、始终可删除，高亮可换色/删除。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（共享划词高亮、备注自动保存/删除与定位修复；同名 plan 为实施记录）
 **历史链**：07-11 article-assistant → 07-11 article-assistant-guide-improvements → 07-11 briefing-assistant → 07-19 annotation-iteration → 07-22 briefing-ai-chat-enhancement → 08-02 agent-article-pipeline → 09-29 reading-position-companion-and-hr
 
@@ -144,7 +144,7 @@
 
 ### 22. E2E 与工程基建
 
-**现状**：定向测试为日常门禁（`e2e-changed.js` + `e2e/source-map.json` 孤儿检测，AGENTS.md「E2E 定向测试」）；启动看门狗在用。
+**现状**：定向测试为日常门禁（`e2e-changed.js` + `e2e/source-map.json` 孤儿检测，AGENTS.md「E2E 定向测试」）；全量 E2E 不作为合并门禁，仅在用户明确要求时运行，启动看门狗在用。
 - 长期跟踪：`plans/2026-07-10-fix-dev-hang-and-orphan-processes.md`（历次启动问题根因档案，AGENTS.md 指定排查入口）
 **历史链**：06-24 e2e-automation → 06-27 e2e-full-coverage → 07-02 e2e-coverage-expansion → 07-10 claude-rules-from-project-history（规则体系起源）→ 07-11 silent-e2e → 07-22 writing-e2e-coverage → 07-25 e2e-targeted-testing
 

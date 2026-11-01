@@ -87,9 +87,10 @@ These rules apply to every task. They describe recurring failure modes and how t
 
 ## 9. 验证只跑受影响测试，禁止全量
 
-**Why:** 全量测试耗时 15+ 分钟，应在合并前执行，日常迭代只跑改动文件对应的测试。
+**Why:** 全量测试耗时 15+ 分钟，日常迭代只跑改动文件对应的测试；全量单元测试可在合并前执行，全量 E2E 不作为合并门禁。
 
 - 改测试文件 → `npx vitest run tests/<file>.test.ts`（只跑该文件）
 - 改源代码 → 跑对应测试 + `node scripts/e2e-changed.js --run`
-- 禁止 `npx vitest run`（全量单元）和 `npm run test:e2e`（全量 E2E），除非用户明确说"跑全量"或准备合并
+- 禁止 `npx vitest run`（全量单元），除非用户明确说"跑全量"或准备合并
+- 禁止 `npm run test:e2e`（全量 E2E），除非用户明确要求；合并本身不构成运行理由
 - Source: 2026-07-26 反馈
