@@ -145,6 +145,8 @@ const api: IpcApi = {
   notesUpdateMeta: (a) => ipcRenderer.invoke('notes:updateMeta', a),
   notesDelete: (a) => ipcRenderer.invoke('notes:delete', a),
   notesImportRead: () => ipcRenderer.invoke('notes:importRead'),
+  notesGenerateCovers: (a) => ipcRenderer.invoke('notes:generateCovers', a),
+  notesSaveCover: (a) => ipcRenderer.invoke('notes:saveCover', a),
 
   booksList: () => ipcRenderer.invoke('books:list'),
   booksImport: () => ipcRenderer.invoke('books:import'),

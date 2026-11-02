@@ -1,12 +1,15 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
+import matter from 'gray-matter'
 import { chatNonStream } from './kimi'
 import { topicDir } from './library-layout'
 import { parseFrontmatter } from './frontmatter'
 import { getSortedSessionDirs } from '../ipc/files'
 import { readBookJson, writeBookJson } from './books'
 import { extractXmlTag, extractXmlTags, extractJsonObject, extractJsonArray } from './extract-json'
+import { parseNoteCoverDesigns, renderNoteCoverSvg } from './note-covers'
+import { assertInsideRoots } from './writing-tree'
 import type { AppConfig } from '../env'
 import type { Profile, NewTopic, Message, ContinueTopicSuggestion } from '@shared/index'
 
@@ -33,6 +36,30 @@ const transcript = (h: Message[]) =>
   h.filter(m => m.role !== 'system')
     .map(m => `${m.role === 'user' ? '学者' : 'AI'}:${m.content}`)
     .join('\n\n')
+
+export async function generateNoteCoverCandidates(cfg: AppConfig, rel: string) {
+  if (!/^notes\/[^/]+\.md$/.test(rel) || rel.includes('\\')) throw new Error('Invalid note path')
+  const document = matter(fs.readFileSync(assertInsideRoots(cfg.libraryPath, rel), 'utf8'))
+  const metadata = [
+    `笔记标题：${typeof document.data.title === 'string' ? document.data.title : '未命名笔记'}`,
+    `来源：${typeof document.data.source === 'string' ? document.data.source : 'unknown'}`,
+    `摘要：${typeof document.data.summary === 'string' ? document.data.summary : ''}`,
+  ]
+  const body = document.content.trim().slice(0, 12000)
+  if (body) metadata.push('', '正文片段：', body)
+  const text = await chatNonStream(cfg, {
+    messages: [
+      { role: 'system', content: read('note-cover.md') },
+      { role: 'user', content: metadata.join('\n') },
+    ],
+    temperature: 0.8,
+    thinking: { type: 'enabled', reasoning_effort: 'high' },
+  })
+  return parseNoteCoverDesigns(text).map(design => ({
+    design,
+    svgDataUrl: `data:image/svg+xml;base64,${Buffer.from(renderNoteCoverSvg(design)).toString('base64')}`,
+  }))
+}
 
 export async function finalizeProgress(
   cfg: AppConfig,
