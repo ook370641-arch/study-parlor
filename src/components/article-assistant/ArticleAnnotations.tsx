@@ -343,8 +343,9 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     const container = articleRef.current
     if (!container) return
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (event: MouseEvent) => {
       selectingRef.current = false
+      if (ghostRef.current?.contains(event.target as Node)) return
       const sel = window.getSelection()
       if (!sel || sel.isCollapsed || !sel.rangeCount) return
       const range = sel.getRangeAt(0)
@@ -455,6 +456,7 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
       updatedAt: now,
     }
 
+    window.getSelection()?.removeAllRanges()
     const updated = [...annotations, newAnno]
     setAnnotations(updated)
     setGhost(null)

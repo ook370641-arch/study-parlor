@@ -59,6 +59,12 @@ async function triggerGhost(container: HTMLElement) {
   })
 }
 
+function mouseClick(element: HTMLElement) {
+  fireEvent.mouseDown(element)
+  fireEvent.mouseUp(element)
+  fireEvent.click(element)
+}
+
 describe('ArticleAnnotations actions', () => {
   beforeEach(() => {
     cleanup()
@@ -85,6 +91,33 @@ describe('ArticleAnnotations actions', () => {
     cleanup()
     document.body.innerHTML = ''
     vi.restoreAllMocks()
+  })
+
+  it('creates a note through the full mousedown-mouseup-click sequence', async () => {
+    const { container } = await renderAnnotations()
+    await triggerGhost(container)
+
+    mouseClick(screen.getByTestId('anno-ghost-pen'))
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 200)) })
+
+    expect(annotationsWrite).toHaveBeenCalledWith('/x.md', [
+      expect.objectContaining({ selectedText: '第一段包', note: '' }),
+    ])
+    expect(screen.getByTestId('anno-note-card')).toBeInTheDocument()
+    expect(container.querySelector('.anno-wrap')).not.toBeNull()
+  })
+
+  it('creates a highlight through the full mousedown-mouseup-click sequence', async () => {
+    const { container } = await renderAnnotations()
+    await triggerGhost(container)
+
+    mouseClick(screen.getByTestId('anno-highlight-button'))
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 200)) })
+
+    expect(annotationsWrite).toHaveBeenCalledWith('/x.md', [
+      expect.objectContaining({ selectedText: '第一段包', kind: 'highlight', highlightColor: 'gold' }),
+    ])
+    expect(container.querySelector('.anno-wrap')).not.toBeNull()
   })
 
   it('creates a persistent highlight immediately without opening a note card', async () => {
