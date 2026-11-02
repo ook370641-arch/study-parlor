@@ -17,6 +17,7 @@ export function NoteRow({ entry, group, onOpen }: { entry: NoteEntry; group?: Bo
   const [selectedPath, setSelectedPath] = useState(entry.path)
   const currentEntry = group?.entries.find(item => item.path === selectedPath) ?? entry
   const selected = useStore(s => s.writingFile?.path === currentEntry.path)
+  const coverEntry = group?.entries.find(item => item.coverUrl) ?? currentEntry
   const [confirming, setConfirming] = useState(false)
   const { title, rating, source, collected_at } = currentEntry.meta
   const slug = urlSlug(currentEntry.meta.url)
@@ -29,7 +30,7 @@ export function NoteRow({ entry, group, onOpen }: { entry: NoteEntry; group?: Bo
         style={selected ? { background: 'rgba(217,119,87,.16)', boxShadow: 'inset 2px 0 0 #d97757' } : undefined}
         onClick={() => onOpen(currentEntry.path)}
       >
-        <NoteCover entry={currentEntry} className="shrink-0 w-[18px] h-[24px] rounded-[2px]" />
+        <NoteCover entry={coverEntry} className="shrink-0 w-[18px] h-[24px] rounded-[2px]" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[11.5px] leading-snug text-parchment/90">{group?.book ?? title}</div>
           <div className="mt-0.5 text-[9px] text-parchment/45">

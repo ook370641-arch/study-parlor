@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
-import { seedBlogCollection } from '../helpers/test-library'
+import { seedBlogCollection, seedBookChapterNote } from '../helpers/test-library'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
@@ -78,5 +78,27 @@ test.describe('笔记书架', () => {
     await window.locator('[data-testid="note-back-to-wall"]').click()
     await expect(window.locator('[data-testid="notes-wall"]')).toBeVisible()
     await expect.poll(() => JSON.parse(fs.readFileSync(path.join(testConfigDir, 'state.json'), 'utf8')).lastWritingFile).toBeNull()
+  })
+
+  test('同书章节聚合切换，并在墙与列表复用生成封面', async ({ window, testLibraryPath }) => {
+    seedBookChapterNote(testLibraryPath, 'deep-one', 'Deep Work', 'One', '2026-10-01T00:00:00.000Z', true)
+    seedBookChapterNote(testLibraryPath, 'deep-two', 'Deep Work', 'Two', '2026-10-02T00:00:00.000Z')
+    const cover = new CoverPage(window)
+    await cover.enterName('E2E 测试员')
+    await cover.goToBriefing()
+    await window.getByTestId('writing-list-tab-notes').click()
+    const wall = window.getByTestId('notes-wall')
+    const shelf = window.getByTestId('notes-shelf')
+    await expect(wall.locator('[data-testid^="wall-album-"]')).toHaveCount(1)
+    await expect(shelf.locator('[data-testid^="note-card-"]')).toHaveCount(1)
+    await expect(wall.locator('img')).toHaveAttribute('src', /^data:image\/svg\+xml;base64,/)
+    await expect(shelf.locator('img')).toHaveAttribute('src', /^data:image\/svg\+xml;base64,/)
+    await expect.poll(() => wall.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600)
+    await expect(wall.getByTestId('note-cover-generate')).toHaveCount(0)
+    await wall.getByTestId('book-chapter-select-Deep Work').selectOption('notes/deep-one.md')
+    await expect(window.getByTestId('note-meta-title')).toHaveValue('Deep Work · One')
+    await window.getByTestId('note-back-to-wall').click()
+    await shelf.getByTestId('book-chapter-select-Deep Work').selectOption('notes/deep-two.md')
+    await expect(window.getByTestId('note-meta-title')).toHaveValue('Deep Work · Two')
   })
 })

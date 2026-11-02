@@ -58,4 +58,10 @@ describe('NotesShelf 点击分派', () => {
     expect(spy).toHaveBeenCalledTimes(1)
     expect(spy).toHaveBeenCalledWith('notes/ch2.md')
   })
+  it('书组复用任意章节已有的生成封面', () => {
+    const covered = { ...bookChapter('ch1', '2026-09-01'), coverUrl: 'data:image/svg+xml;base64,book-cover' }
+    useStore.setState({ notesList: [covered, bookChapter('ch2', '2026-09-02')] })
+    const { getByTestId } = render(<NotesShelf />)
+    expect(getByTestId('note-card-ch2').querySelector('img')).toHaveAttribute('src', covered.coverUrl)
+  })
 })

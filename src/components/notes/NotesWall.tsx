@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { useStore } from '@/store'
 import { groupNotesForDisplay } from '@/lib/notes-list'
 import type { NoteSortBy, NoteSource } from '@shared/index'
+import { noteCoverImage } from '@/lib/note-cover'
 import { BookChapterSelect } from './BookChapterSelect'
 import { NoteCover } from './NoteCover'
+import { NoteCoverGenerator } from './NoteCoverGenerator'
 
 function urlSlug(url: string): string {
   return url.split('/').pop() || 'note'
@@ -17,6 +19,7 @@ export function NotesWall() {
   const notesSortBy = useStore(s => s.notesSortBy)
   const setNotesSortBy = useStore(s => s.setNotesSortBy)
   const selectWritingFile = useStore(s => s.selectWritingFile)
+  const articleMetaCache = useStore(s => s.anthropicBlogCache.articleMetaCache)
 
   const sorted = useMemo(() => groupNotesForDisplay(notesList ?? [], notesSortBy, notesCategory), [notesList, notesSortBy, notesCategory])
 
@@ -58,6 +61,7 @@ export function NotesWall() {
         <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
           {sorted.map(item => {
             const entry = item.kind === 'book' ? item.latest : item.entry
+            const coverEntry = item.kind === 'book' ? item.entries.find(note => note.coverUrl) ?? entry : entry
             const rating = item.kind === 'book' ? item.rating : entry.meta.rating
             return (
               <div
@@ -71,7 +75,7 @@ export function NotesWall() {
                   className="relative block h-full w-full overflow-hidden rounded-md text-left"
                   onClick={() => { void selectWritingFile(entry.path) }}
                 >
-                  <NoteCover entry={entry} className="absolute inset-0 w-full h-full" />
+                  <NoteCover entry={coverEntry} className="absolute inset-0 w-full h-full" />
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(20,12,8,0) 40%, rgba(20,12,8,.88))' }} />
                   <div className="absolute inset-x-0 bottom-0 p-2.5">
                     <div className="text-[12px] leading-snug text-[#f0e2c8] line-clamp-2">{item.kind === 'book' ? item.book : entry.meta.title}</div>
@@ -86,6 +90,9 @@ export function NotesWall() {
                     onPick={(path) => { void selectWritingFile(path) }}
                     className="absolute right-2 top-2 z-10 max-w-[calc(100%-1rem)]"
                   />
+                )}
+                {!noteCoverImage(coverEntry, articleMetaCache) && (
+                  <NoteCoverGenerator entry={entry} className="absolute left-2 top-2 z-10" />
                 )}
               </div>
             )

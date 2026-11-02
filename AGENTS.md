@@ -185,10 +185,17 @@ npm run test:e2e                               # 全量（合并前）
 - **主进程**: `electron/lib/book-parse.ts`（目录页解析/页码偏移/章节切分 + 版面重建纯逻辑）+ `electron/lib/books.ts`（库 IO）+ `electron/lib/book-guide.ts`（章节导读）+ `electron/ipc/books.ts`（`books:list / import / chapters / readChapter / bookGuide / delete` 六通道）
 - **正文重建（parserVersion 3）**: `itemsToRows` 保留每行的 `y/h/x0/x1` → `rowsToBlocks` 按行距（1.4× 常规行距）/字号（1.45×、1.2× 正文）/首行缩进判段与标题层级 → `blocksToMarkdown` 输出 `##`/`###`；页眉页脚按页顶页底 6% 区域过滤。目录页支持「标题 页码」「页码 标题」「标题块 + 页码块」三种布局。表格仍会被拍平，双栏段落顺序可能不等于阅读顺序。
 - **重解析**: `books:reparse` 原子替换 `chapters/`；旧章节导读按「章节文件同名 → 标题同名」保留，目录未变时保留全书导读。`parserVersion < 3` 的旧书在书架显示「重新解析」。
-- **渲染**: `src/components/books/`（BookPanel / BookListColumn / ChapterListColumn / BookReader）；store 字段 `booksList` / `activeBookDir` / `activeBookToc` / `activeChapter`；`booksLastChapter` + `bookScrollMemory` 复用博客滚动记忆，划词备注/四色高亮与博客共用 `ArticleAnnotations`
+- **渲染**: `src/components/books/`（BookPanel / BookListColumn / ChapterListColumn / BookReader）；store 字段 `booksList` / `activeBookDir` / `activeBookToc` / `activeChapter`；`booksLastChapter` + `bookScrollMemory` 复用博客滚动记忆，划词备注/五色高亮与博客共用 `ArticleAnnotations`
 - **导读**: 全书导读只传目录不传正文（prompt `electron/prompts/book-overview.md`，装配在 `llm-tasks.ts` 的 `buildBookOverviewPrompt`，缓存进 `book.json`）；章节导读 prompt `electron/prompts/book-guide-v2.md`
-- **类型**: `BriefingSourceId` 含 `'book'`；`NoteSource` 含 `'book'`，`NoteMeta.book` 记书名（笔记按书聚合）
-- **记录**: `docs/superpowers/specs/2026-10-27-books-source-design.md` + 同名 plan（historical，索引见 `docs/README.md` 域 14）
+- **类型**: `BriefingSourceId` 含 `'book'`；`NoteSource` 含 `'book'`，`NoteMeta.book` / `chapter` 记书名与章节（笔记按书聚合）
+- **记录**: `docs/superpowers/specs/2026-10-27-books-source-design.md` + 同名 plan（historical）；章节聚合与封面现状见 `docs/superpowers/specs/2026-11-02-notes-annotations-and-covers-design.md`（current）
+
+### 笔记封面与阅读标注（2026-11-02）
+
+- **章节聚合**: `src/lib/notes-list.ts` 派生书组，专辑墙、笔记列与对照挑选器共用 `BookChapterSelect`；不合并或改写用户原始笔记，旧标题只在视图层补章节。
+- **封面生成**: `electron/prompts/note-cover.md` 让模型根据正文自由创造三枚内容专属符号；`electron/lib/note-covers.ts` 严格校验七类图元并本地装配 SVG，禁止任意 SVG、脚本、外部资源、transform/style。候选仅在内存预览，选中后写 `notes/covers/` 并原子更新 `NoteMeta.cover`；读取只接受该目录内 SVG。
+- **封面显示**: `NoteEntry.coverUrl` 使用安全 data URL，优先级为生成封面 → Anthropic 原图 → 来源渐变；书组复用任一章节已有生成封面。无图卡片提供生成入口，已有生成封面可在笔记信息区重新生成。
+- **阅读标注**: `ArticleAnnotations` 支持备注与 ember / gold / yellow / green / blue 五色高亮；切换标记时旧卡片延迟关闭只作用于原 anchor。
 
 ## 画作策展（Pictures 画库）
 

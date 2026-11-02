@@ -136,6 +136,7 @@ export function CompanionWritingPicker({ theme = 'academic', onPickFile, current
         {open.notes && displayNotes.map(item => {
           if (item.kind === 'book') {
             const entry = item.latest
+            const coverEntry = item.entries.find(note => note.coverUrl) ?? entry
             const isMatch = !!matchedNote && item.entries.some(note => note.path === matchedNote.path)
             const testIdTail = entry.meta.url.split('/').pop() || entry.path.split('/').pop()?.replace(/\.md$/, '') || 'note'
             return (
@@ -153,7 +154,7 @@ export function CompanionWritingPicker({ theme = 'academic', onPickFile, current
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   onClick={() => onPickFile(entry.path)}
                 >
-                  <NoteCover entry={entry} className="shrink-0 w-[14px] h-[19px] rounded-[2px]" />
+                  <NoteCover entry={coverEntry} className="shrink-0 w-[14px] h-[19px] rounded-[2px]" />
                   <span className="truncate">{item.book}</span>
                   {isMatch && <span className="shrink-0 text-[9px] opacity-70">当前章节</span>}
                 </button>

@@ -105,6 +105,8 @@ export const ipc = {
   get notesUpdateMeta() { return ensure().notesUpdateMeta },
   get notesDelete() { return ensure().notesDelete },
   get notesImportRead() { return ensure().notesImportRead },
+  get notesGenerateCovers() { return ensure().notesGenerateCovers },
+  get notesSaveCover() { return ensure().notesSaveCover },
 
   get articleAssistantGenerateGuide() { return ensure().articleAssistantGenerateGuide },
   get articleAssistantSendMessage() { return ensure().articleAssistantSendMessage },

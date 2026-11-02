@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedAnthropicArticle, seedStateJson, seedWritingTree } from '../helpers/test-library'
+import { seedAnthropicArticle, seedBookChapterNote, seedStateJson, seedWritingTree } from '../helpers/test-library'
 import type { Page } from '@playwright/test'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -148,5 +148,19 @@ test.describe('@p1 博客对照写作挑选器', () => {
     await noteRow.click()
     await expect(window.locator(SEL.companionBoard)).toBeVisible()
     await expect(window.locator(SEL.companionBoard)).toContainText('E2E 对照笔记.md')
+  })
+
+  test('对照书组显示生成封面并按原始路径挑选章节', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedBookChapterNote(testLibraryPath, 'deep-one', 'Deep Work', 'One', '2026-10-01T00:00:00.000Z', true)
+    seedBookChapterNote(testLibraryPath, 'deep-two', 'Deep Work', 'Two', '2026-10-02T00:00:00.000Z')
+    await openBlogWithCompanion(testLibraryPath, testConfigDir, window)
+    await window.locator(SEL.companionTab).click()
+    await window.locator(SELECTORS.writing.sourceButton).click()
+    const picker = window.locator(SEL.picker)
+    const group = picker.getByTestId('picker-note-deep-two')
+    await expect(group).toBeVisible()
+    await expect(group.locator('img')).toHaveAttribute('src', /^data:image\/svg\+xml;base64,/)
+    await picker.getByTestId('book-chapter-select-Deep Work').selectOption('notes/deep-one.md')
+    await expect(window.locator(SEL.companionBoard)).toContainText('deep-one.md')
   })
 })

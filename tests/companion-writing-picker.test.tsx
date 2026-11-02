@@ -83,4 +83,10 @@ describe('CompanionWritingPicker 笔记区', () => {
     expect(onPick).toHaveBeenCalledTimes(1)
     expect(onPick).toHaveBeenCalledWith('notes/ch2.md')
   })
+  it('对照书组复用任意章节已有的生成封面', () => {
+    const covered = { ...bookChapter('ch1', '2026-09-01'), coverUrl: 'data:image/svg+xml;base64,book-cover' }
+    useStore.setState({ notesList: [covered, bookChapter('ch2', '2026-09-02')] })
+    const { getByTestId } = render(<CompanionWritingPicker onPickFile={vi.fn()} />)
+    expect(getByTestId('picker-note-ch2').querySelector('img')).toHaveAttribute('src', covered.coverUrl)
+  })
 })

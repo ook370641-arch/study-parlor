@@ -60,4 +60,15 @@ describe('NotesWall', () => {
     expect(getByTestId('notes-wall-category-select')).toBeTruthy()
     expect(getByTestId('notes-wall-sort-select')).toBeTruthy()
   })
+  it('只为没有原图和生成封面的卡片显示生成入口', () => {
+    const generated = { ...mk('generated', 'web'), coverUrl: 'data:image/svg+xml;base64,generated' }
+    const original = mk('a', 'anthropic')
+    original.meta.url = 'https://www.anthropic.com/engineering/foo'
+    useStore.setState({
+      notesList: [mk('plain', 'web'), generated, original],
+      anthropicBlogCache: { articleMetaCache: { [original.meta.url]: { imageUrl: 'https://cdn.example.com/foo.png' } } },
+    } as any)
+    const { getAllByTestId } = render(<NotesWall />)
+    expect(getAllByTestId('note-cover-generate')).toHaveLength(1)
+  })
 })

@@ -132,7 +132,8 @@ test.describe('书籍来源', () => {
     await window.getByTestId('article-panel-tab-guide-book').click()
     await window.getByTestId('briefing-source-writing').click()
     await window.getByTestId('writing-list-tab-notes').click()
-    await expect(window.locator('body')).toContainText('E2E 新笔记之书 · 第一章 起')
+    await expect(window.getByTestId('note-card-note')).toContainText('E2E 新笔记之书')
+    await expect(window.getByTestId('note-card-note').getByTestId('book-chapter-select-E2E 新笔记之书')).toHaveValue('notes/E2E 新笔记之书 · 第一章 起.md')
   })
 
   test('最后章节与滚动位置跨 reload 恢复', async ({ window, testLibraryPath }) => {
