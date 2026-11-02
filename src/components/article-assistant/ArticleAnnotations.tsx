@@ -539,7 +539,9 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
     const wrap = markerSpansRef.current.get(annoId)
     if (wrap) {
       const text = wrap.getAttribute('data-anno-text') ?? ''
-      wrap.parentNode?.replaceChild(document.createTextNode(text), wrap)
+      const parent = wrap.parentNode
+      parent?.replaceChild(document.createTextNode(text), wrap)
+      parent?.normalize()
       markerSpansRef.current.delete(annoId)
     }
     const updated = annotations.filter((a) => a.id !== annoId)

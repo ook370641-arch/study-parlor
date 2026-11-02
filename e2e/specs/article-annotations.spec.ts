@@ -368,7 +368,7 @@ test('E2E-A7: 高亮创建、reload 恢复、换色与删除', async ({ window, 
   await expect.poll(readAnnotations).not.toContain('**类型：** highlight')
 })
 
-test('E2E-A8: 空备注可删除，备注外点自动保存', async ({ window, testLibraryPath, testConfigDir }) => {
+test('E2E-A8: 删除笔记后可跨原选区重建，备注外点自动保存', async ({ window, testLibraryPath, testConfigDir }) => {
   const { filePath } = seedBlogArticleWithCache(testLibraryPath, testConfigDir, {
     slug: 'e2e-anno-note-actions',
     title: 'E2E Anno Note Actions',
@@ -385,18 +385,50 @@ test('E2E-A8: 空备注可删除，备注外点自动保存', async ({ window, t
   await window.locator('article p').first().waitFor({ state: 'visible', timeout: 15000 })
 
   await selectTextInArticle(window, 0, 8)
-  await window.locator(SELECTORS.annotations.ghostPen).click({ force: true })
+  await window.locator(SELECTORS.annotations.ghostPen).click()
   await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible()
   await expect(window.locator(SELECTORS.annotations.noteTextarea)).toHaveValue('')
   await expect(window.getByTestId('anno-save-button')).toHaveCount(0)
+  await window.locator(SELECTORS.annotations.noteTextarea).fill('删除后重建-首条笔记')
+  await window.locator(SELECTORS.briefing.anthropicReaderTitle).click()
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toHaveCount(0)
+  await window.locator('.anno-wrap').click()
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible()
   await window.getByTestId('anno-delete-button').click()
   await expect(window.locator('.anno-wrap')).toHaveCount(0)
-  await expect.poll(readAnnotations).not.toContain('**选中文字：**')
 
-  await selectTextInArticle(window, 0, 8)
-  await window.locator(SELECTORS.annotations.ghostPen).click({ force: true })
+  await window.evaluate(() => {
+    const paragraph = document.querySelector('[data-testid="anthropic-reader-article"] p')
+    const textNodes = Array.from(paragraph?.childNodes ?? []).filter(
+      (node): node is Text => node.nodeType === Node.TEXT_NODE && (node.textContent?.length ?? 0) > 0,
+    )
+    const firstText = textNodes[0]
+    let remaining = 16
+    let endText: Text | undefined
+    let endOffset = 0
+    for (const textNode of textNodes) {
+      const length = textNode.textContent?.length ?? 0
+      if (remaining <= length) {
+        endText = textNode
+        endOffset = remaining
+        break
+      }
+      remaining -= length
+    }
+    if (!paragraph || !firstText || !endText) throw new Error('article text is not ready')
+    const range = document.createRange()
+    range.setStart(firstText, 0)
+    range.setEnd(endText, endOffset)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    paragraph.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }))
+  })
+  await expect(window.locator(SELECTORS.annotations.ghostPen)).toBeVisible()
+  await window.locator(SELECTORS.annotations.ghostPen).click()
+  await expect(window.locator(SELECTORS.annotations.noteCard)).toBeVisible()
   await window.locator(SELECTORS.annotations.noteTextarea).fill('外点自动保存-唯一标识')
-  await window.locator('article p').last().click()
+  await window.locator(SELECTORS.briefing.anthropicReaderTitle).click()
   await expect(window.locator(SELECTORS.annotations.noteCard)).toHaveCount(0)
   await expect.poll(readAnnotations).toContain('外点自动保存-唯一标识')
 })

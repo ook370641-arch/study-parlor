@@ -208,6 +208,38 @@ test.describe('书籍来源', () => {
     expect(markerAfter).not.toBeNull()
     expect(cardAfter).not.toBeNull()
     expect(Math.abs((cardAfter!.y - cardBefore!.y) - (markerAfter!.y - markerBefore!.y))).toBeLessThan(2)
+
+    await window.getByTestId('anno-delete-button').click()
+    await expect(card).toHaveCount(0)
+    await window.evaluate(() => {
+      const paragraph = document.querySelector('[data-testid="book-chapter-body"] p')
+      const textNodes = Array.from(paragraph?.childNodes ?? []).filter(
+        (node): node is Text => node.nodeType === Node.TEXT_NODE && (node.textContent?.length ?? 0) > 0,
+      )
+      const firstText = textNodes[0]
+      let remaining = 12
+      let endText: Text | undefined
+      let endOffset = 0
+      for (const textNode of textNodes) {
+        const length = textNode.textContent?.length ?? 0
+        if (remaining <= length) {
+          endText = textNode
+          endOffset = remaining
+          break
+        }
+        remaining -= length
+      }
+      if (!paragraph || !firstText || !endText) throw new Error('书籍正文未就绪')
+      const range = document.createRange()
+      range.setStart(firstText, 0)
+      range.setEnd(endText, endOffset)
+      const selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+      paragraph.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }))
+    })
+    await window.getByTestId('anno-ghost-pen').click()
+    await expect(window.getByTestId('anno-note-card')).toBeVisible()
   })
 
   test('书籍正文相邻段落保留下间距', async ({ window, testLibraryPath }) => {
