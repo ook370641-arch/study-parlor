@@ -25,11 +25,12 @@ afterEach(() => {
 
 describe('createNoteFile with book', () => {
   it('frontmatter 写入 source=book 与 book 字段，scan 可读回', () => {
-    createNoteFile(lib, { title: 'JTBD · Foreword', url: '', source: 'book', book: 'Intercom on Jobs-to-be-Done' })
+    createNoteFile(lib, { title: 'JTBD · Foreword', url: '', source: 'book', book: 'Intercom on Jobs-to-be-Done', chapter: 'Foreword' })
     const notes = scanNotes(lib)
     expect(notes).toHaveLength(1)
     expect(notes[0].meta.source).toBe('book')
     expect(notes[0].meta.book).toBe('Intercom on Jobs-to-be-Done')
+    expect(notes[0].meta.chapter).toBe('Foreword')
   })
 
   it('旁注存为笔记时正文一并写入', () => {
@@ -55,7 +56,7 @@ describe('findOrCreateArticleNote 书籍去重键', () => {
     store = []
     vi.clearAllMocks()
     mockIpc.notesList.mockImplementation(async () => [...store])
-    mockIpc.notesCreate.mockImplementation(async (a: { title: string; url: string; source?: string; book?: string }) => {
+    mockIpc.notesCreate.mockImplementation(async (a: { title: string; url: string; source?: string; book?: string; chapter?: string }) => {
       const rel = `notes/${a.title.replace(/[\\/:*?"<>|]/g, '')}.md`
       store.push({
         path: rel,
@@ -68,6 +69,7 @@ describe('findOrCreateArticleNote 书籍去重键', () => {
           highlight: '',
           collected_at: '2026-10-27',
           ...(a.book ? { book: a.book } : {}),
+          ...(a.chapter ? { chapter: a.chapter } : {}),
         },
       })
       return { path: rel }
@@ -90,11 +92,20 @@ describe('findOrCreateArticleNote 书籍去重键', () => {
   })
 
   it('同章二次 → 命中已有，不重复创建', async () => {
-    const args = { title: 'JTBD · Foreword', url: '', source: 'book' as const, book: 'JTBD' }
+    const args = { title: 'JTBD · Foreword', url: '', source: 'book' as const, book: 'JTBD', chapter: 'Foreword' }
     const first = await (useStore.getState().findOrCreateArticleNote as any)(args)
     const second = await (useStore.getState().findOrCreateArticleNote as any)(args)
     expect(second).toEqual({ path: first.path, created: false })
     expect(mockIpc.notesCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it('同章正文笔记不会命中旁注笔记', async () => {
+    const book = 'JTBD'
+    await (useStore.getState().findOrCreateArticleNote as any)({ title: 'JTBD · Foreword · 标注', url: '', source: 'book', book, chapter: 'Foreword' })
+    const result = await (useStore.getState().findOrCreateArticleNote as any)({ title: 'JTBD · Foreword', url: '', source: 'book', book, chapter: 'Foreword' })
+
+    expect(result.created).toBe(true)
+    expect(mockIpc.notesCreate).toHaveBeenCalledTimes(2)
   })
 
   it('不同书同名章节 → 不互相命中', async () => {

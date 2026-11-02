@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '@/store'
 import type { NoteEntry } from '@shared/index'
 import { StarRating } from './StarRating'
+import { NoteCoverGenerator } from './NoteCoverGenerator'
 
 export function NoteMetaHeader({ entry }: { entry: NoteEntry }) {
   const updateNoteMetaAction = useStore(s => s.updateNoteMetaAction)
@@ -69,6 +70,12 @@ export function NoteMetaHeader({ entry }: { entry: NoteEntry }) {
               onBlur={e => { if (e.target.value !== meta.highlight) void updateNoteMetaAction(path, { highlight: e.target.value }) }}
             />
           </label>
+          {entry.coverUrl && (
+            <div className="mt-4 border-t border-parchment/10 pt-3">
+              <div className="mb-2 text-[10px] tracking-[0.2em] text-ember/75">内容符号封面</div>
+              <NoteCoverGenerator entry={entry} />
+            </div>
+          )}
         </div>
       )}
     </div>

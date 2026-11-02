@@ -9,10 +9,11 @@ import type { AnnotationHighlightColor, ArticleAnnotation, BriefingTheme, Briefi
 const HIGHLIGHT_COLORS: Record<AnnotationHighlightColor, string> = {
   ember: 'rgba(217,119,87,0.32)',
   gold: 'rgba(224,184,80,0.34)',
+  yellow: 'rgba(255,225,74,0.48)',
   green: 'rgba(104,166,120,0.32)',
   blue: 'rgba(100,149,207,0.32)',
 }
-const HIGHLIGHT_COLOR_ORDER: AnnotationHighlightColor[] = ['ember', 'gold', 'green', 'blue']
+const HIGHLIGHT_COLOR_ORDER: AnnotationHighlightColor[] = ['ember', 'gold', 'yellow', 'green', 'blue']
 
 interface Props {
   articlePath: string
@@ -252,6 +253,10 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
 
   // --- Handle annotation marker click ---
   function handlePenClick(annoId: string, anchorEl: HTMLElement) {
+    const previousAnchor = cardAnchorElRef.current
+    if (previousAnchor && previousAnchor !== anchorEl) doSaveAndClose()
+    openAnnoIdRef.current = annoId
+    cardAnchorElRef.current = anchorEl
     setOpenAnnoId(annoId)
     setCardAnchorEl(anchorEl)
 
@@ -421,7 +426,9 @@ export function ArticleAnnotations({ articlePath, articleRef, theme = 'academic'
         !anchorEl.contains(target) &&
         !target.closest('[data-testid="anno-note-card"]')
       ) {
-        setTimeout(() => doSaveAndClose(), 0)
+        setTimeout(() => {
+          if (cardAnchorElRef.current === anchorEl) doSaveAndClose()
+        }, 0)
       }
     }
 

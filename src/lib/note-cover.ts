@@ -1,4 +1,4 @@
-import type { NoteSource } from '@shared/index'
+import type { NoteEntry, NoteSource } from '@shared/index'
 
 /** 封面来源色（与旧 NoteCard 的 SOURCE_COLOR 一致，anthropic 另有博客封面优先） */
 export const NOTE_COVER_COLOR: Record<NoteSource, string> = {
@@ -18,4 +18,12 @@ export function noteCoverImageUrl(
   if (direct) return direct
   const alt = url.endsWith('/') ? url.slice(0, -1) : url + '/'
   return cache[alt]?.imageUrl ?? null
+}
+
+export function noteCoverImage(
+  entry: NoteEntry,
+  cache: Record<string, { imageUrl: string | null }> | undefined,
+): string | null {
+  if (entry.coverUrl) return entry.coverUrl
+  return entry.meta.source === 'anthropic' ? noteCoverImageUrl(entry.meta.url, cache) : null
 }

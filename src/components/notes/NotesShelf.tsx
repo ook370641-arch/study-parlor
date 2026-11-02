@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@/store'
 import type { NoteSortBy, NoteSource } from '@shared/index'
-import { sortNotes } from '@/lib/notes-list'
+import { groupNotesForDisplay } from '@/lib/notes-list'
 import { PromptDialog } from '../writing/PromptDialog'
 import { NoteRow } from './NoteRow'
 
@@ -24,7 +24,7 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
 
   useEffect(() => { void loadNotes() }, [loadNotes])
 
-  const sorted = useMemo(() => sortNotes(notesList ?? [], notesSortBy, notesCategory), [notesList, notesSortBy, notesCategory])
+  const sorted = useMemo(() => groupNotesForDisplay(notesList ?? [], notesSortBy, notesCategory), [notesList, notesSortBy, notesCategory])
 
   // 对照 armed 时点击 = 放入对照槽（与 WritingTree 同规则）
   const handleOpen = (path: string) => {
@@ -72,7 +72,9 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
             {notesCategory === 'all' ? '书架还空着——点「导入已读」把读过的文章放上架' : '该分类下暂无笔记'}
           </div>
         )}
-        {sorted.map(entry => <NoteRow key={entry.path} entry={entry} onOpen={handleOpen} />)}
+        {sorted.map(item => item.kind === 'book'
+          ? <NoteRow key={item.key} entry={item.latest} group={item} onOpen={handleOpen} />
+          : <NoteRow key={item.key} entry={item.entry} onOpen={handleOpen} />)}
       </div>
       {newNote?.step === 'title' && (
         <PromptDialog

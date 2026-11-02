@@ -18,7 +18,7 @@ describe('sanitizeNoteFilename', () => {
 
 describe('serializeNote / parseNoteFile 往返', () => {
   it('字段全量往返', () => {
-    const meta = { title: 'T', url: 'https://a.b/c', source: 'anthropic' as const, rating: 4, summary: 's', highlight: 'h', collected_at: '2026-10-20T00:00:00.000Z', read_at: '2026-10-18T00:00:00.000Z' }
+    const meta = { title: 'T', url: 'https://a.b/c', source: 'anthropic' as const, rating: 4, summary: 's', highlight: 'h', collected_at: '2026-10-20T00:00:00.000Z', read_at: '2026-10-18T00:00:00.000Z', cover: 'notes/covers/t.svg' }
     const raw = serializeNote(meta, '正文内容')
     const entry = parseNoteFile('notes/t.md', raw)
     expect(entry.meta).toEqual(meta)

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useStore } from '@/store'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import type { BookNoteDisplayItem } from '@/lib/notes-list'
+import { BookChapterSelect } from './BookChapterSelect'
 import { NoteCover } from './NoteCover'
 import type { NoteEntry, NoteSource } from '@shared/index'
 
@@ -10,12 +12,15 @@ function urlSlug(url: string): string {
   return url.split('/').pop() || 'note'
 }
 
-export function NoteRow({ entry, onOpen }: { entry: NoteEntry; onOpen: (path: string) => void }) {
+export function NoteRow({ entry, group, onOpen }: { entry: NoteEntry; group?: BookNoteDisplayItem; onOpen: (path: string) => void }) {
   const deleteNoteAction = useStore(s => s.deleteNoteAction)
-  const selected = useStore(s => s.writingFile?.path === entry.path)
+  const [selectedPath, setSelectedPath] = useState(entry.path)
+  const currentEntry = group?.entries.find(item => item.path === selectedPath) ?? entry
+  const selected = useStore(s => s.writingFile?.path === currentEntry.path)
+  const coverEntry = group?.entries.find(item => item.coverUrl) ?? currentEntry
   const [confirming, setConfirming] = useState(false)
-  const { title, rating, source, collected_at } = entry.meta
-  const slug = urlSlug(entry.meta.url)
+  const { title, rating, source, collected_at } = currentEntry.meta
+  const slug = urlSlug(currentEntry.meta.url)
 
   return (
     <>
@@ -23,15 +28,23 @@ export function NoteRow({ entry, onOpen }: { entry: NoteEntry; onOpen: (path: st
         data-testid={`note-card-${slug}`}
         className="group relative flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer"
         style={selected ? { background: 'rgba(217,119,87,.16)', boxShadow: 'inset 2px 0 0 #d97757' } : undefined}
-        onClick={() => onOpen(entry.path)}
+        onClick={() => onOpen(currentEntry.path)}
       >
-        <NoteCover entry={entry} className="shrink-0 w-[18px] h-[24px] rounded-[2px]" />
+        <NoteCover entry={coverEntry} className="shrink-0 w-[18px] h-[24px] rounded-[2px]" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[11.5px] leading-snug text-parchment/90">{title}</div>
+          <div className="truncate text-[11.5px] leading-snug text-parchment/90">{group?.book ?? title}</div>
           <div className="mt-0.5 text-[9px] text-parchment/45">
-            {rating > 0 ? '★'.repeat(rating) : '未评'} · {SOURCE_LABEL[source]} · {collected_at.slice(0, 10)}
+            {(group?.rating ?? rating) > 0 ? '★'.repeat(group?.rating ?? rating) : '未评'} · {SOURCE_LABEL[source]} · {collected_at.slice(0, 10)}
           </div>
         </div>
+        {group && (
+          <BookChapterSelect
+            group={group}
+            currentPath={currentEntry.path}
+            onPick={(path) => { setSelectedPath(path); onOpen(path) }}
+            className="mr-3 max-w-[45%] shrink-0"
+          />
+        )}
         <button
           data-testid={`note-delete-${slug}`}
           title="删除笔记" aria-label="删除笔记"
@@ -42,7 +55,7 @@ export function NoteRow({ entry, onOpen }: { entry: NoteEntry; onOpen: (path: st
       <ConfirmDialog
         open={confirming} title="删除笔记" icon="trash" confirmLabel="删除" confirmVariant="danger"
         onCancel={() => setConfirming(false)}
-        onConfirm={() => { setConfirming(false); void deleteNoteAction(entry.path) }}
+        onConfirm={() => { setConfirming(false); void deleteNoteAction(currentEntry.path) }}
       >
         <p>确定删除笔记《{title}》？文件将被永久删除，无法恢复。</p>
       </ConfirmDialog>

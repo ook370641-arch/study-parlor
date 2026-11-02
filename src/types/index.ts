@@ -114,6 +114,32 @@ export type BlogReadEntry = {
 export type NoteSource = 'anthropic' | 'web' | 'book' | 'unknown'
 export type NoteSortBy = 'source' | 'time' | 'rating'
 
+export type NoteCoverPaint = 'background' | 'ink' | 'accent' | 'secondary' | 'none'
+export type NoteCoverElementStyle = {
+  fill?: NoteCoverPaint
+  stroke?: NoteCoverPaint
+  strokeWidth?: number
+  opacity?: number
+  strokeLinecap?: 'butt' | 'round' | 'square'
+  strokeLinejoin?: 'miter' | 'round' | 'bevel'
+}
+export type NoteCoverElement = NoteCoverElementStyle & (
+  | { type: 'path'; d: string }
+  | { type: 'circle'; cx: number; cy: number; r: number }
+  | { type: 'ellipse'; cx: number; cy: number; rx: number; ry: number }
+  | { type: 'rect'; x: number; y: number; width: number; height: number; rx?: number }
+  | { type: 'line'; x1: number; y1: number; x2: number; y2: number }
+  | { type: 'polyline' | 'polygon'; points: string }
+)
+export type NoteCoverDesign = {
+  concept: string
+  palette: { background: string; ink: string; accent: string; secondary: string }
+  background: 'solid' | 'linear' | 'radial'
+  grain: number
+  elements: NoteCoverElement[]
+}
+export type NoteCoverCandidate = { design: NoteCoverDesign; svgDataUrl: string }
+
 /** 笔记元数据（notes/*.md 的 frontmatter） */
 export type NoteMeta = {
   title: string
@@ -126,10 +152,12 @@ export type NoteMeta = {
   read_at?: string      // ISO，可空
   /** 来源书籍名（source='book' 时写入，便于笔记按书聚合） */
   book?: string
+  chapter?: string
+  cover?: string
 }
 
 /** 笔记书架条目；path 为库内相对路径（正斜杠），如 notes/foo.md */
-export type NoteEntry = { path: string; meta: NoteMeta; parseError?: boolean }
+export type NoteEntry = { path: string; meta: NoteMeta; parseError?: boolean; coverUrl?: string }
 
 export type BlogCollectionEntry = {
   sourceUrl: string   // 主键（去重依据）
@@ -252,7 +280,7 @@ export type ArticleAssistantErrorCode =
   | 'CHAT_EMPTY_REPLY'
   | 'SAVE_ERROR'
 
-export type AnnotationHighlightColor = 'ember' | 'gold' | 'green' | 'blue'
+export type AnnotationHighlightColor = 'ember' | 'gold' | 'yellow' | 'green' | 'blue'
 
 export type ArticleAnnotation = {
   id: string
@@ -788,10 +816,12 @@ export type IpcApi = {
 
   // Notes
   notesList: () => Promise<NoteEntry[]>
-  notesCreate: (a: { title: string; url: string; source?: NoteSource; book?: string; body?: string }) => Promise<{ path: string }>
+  notesCreate: (a: { title: string; url: string; source?: NoteSource; book?: string; chapter?: string; body?: string }) => Promise<{ path: string }>
   notesUpdateMeta: (a: { path: string; patch: Partial<NoteMeta> }) => Promise<void>
   notesDelete: (a: { path: string }) => Promise<void>
   notesImportRead: () => Promise<{ created: number; skipped: number }>
+  notesGenerateCovers: (a: { path: string }) => Promise<{ candidates: NoteCoverCandidate[] }>
+  notesSaveCover: (a: { path: string; design: NoteCoverDesign }) => Promise<{ cover: string; coverUrl: string }>
 
   // Books
   booksList: () => Promise<BookEntry[]>

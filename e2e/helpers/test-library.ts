@@ -34,6 +34,38 @@ export function createTestLibrary(): string {
   return dir
 }
 
+export function seedBookChapterNote(
+  libPath: string,
+  fileName: string,
+  book: string,
+  chapter: string,
+  collectedAt: string,
+  withCover = false,
+): void {
+  const notesDir = path.join(libPath, 'notes')
+  fs.mkdirSync(notesDir, { recursive: true })
+  const lines = [
+    '---',
+    `title: ${book} · ${chapter}`,
+    "url: ''",
+    'source: book',
+    `book: ${book}`,
+    `chapter: ${chapter}`,
+    'rating: 0',
+    "summary: ''",
+    "highlight: ''",
+    `collected_at: '${collectedAt}'`,
+  ]
+  if (withCover) {
+    const coversDir = path.join(notesDir, 'covers')
+    fs.mkdirSync(coversDir, { recursive: true })
+    fs.writeFileSync(path.join(coversDir, `${fileName}.svg`), '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect width="600" height="800" fill="#211a18"/><path d="M80 120 C220 20 320 300 520 140" fill="none" stroke="#d97757" stroke-width="18"/><circle cx="220" cy="330" r="70" fill="#e8d5b7"/></svg>', 'utf8')
+    lines.push(`cover: notes/covers/${fileName}.svg`)
+  }
+  lines.push('---', '', `${chapter} 笔记正文。`, '')
+  fs.writeFileSync(path.join(notesDir, `${fileName}.md`), lines.join('\n'), 'utf8')
+}
+
 export async function cleanupTestLibrary(dir: string, keepOnFailure: boolean = false): Promise<void> {
   if (keepOnFailure) return
   await retryRm(dir)

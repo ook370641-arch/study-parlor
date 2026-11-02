@@ -210,7 +210,9 @@
     "notes": {
       "sources": [
         "electron/lib/notes.ts",
+        "electron/lib/note-covers.ts",
         "electron/ipc/notes.ts",
+        "electron/prompts/note-cover.md",
         "src/pages/Briefing.tsx",
         "src/store/index.ts",
         "src/lib/note-cover.ts",

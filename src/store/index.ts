@@ -26,6 +26,7 @@ import type { DemoNote, DemoNoteOverrides } from '@/lib/demo-notes'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
 import { deriveTitle, migrateCoverNotepad, newNotepadId } from '@/lib/notepad'
+import { inferBookChapter, noteChapter } from '@/lib/notes-list'
 
 export type AssistantSession = {
   contextId: string
@@ -461,6 +462,7 @@ type AppStore = {
     url: string
     source?: 'anthropic' | 'book'
     book?: string
+    chapter?: string
     body?: string
   }) => Promise<{ path: string; created: boolean }>
   updateNoteMetaAction: (path: string, patch: Partial<NoteMeta>) => Promise<void>
@@ -2245,7 +2247,9 @@ export const useStore = create<AppStore>((set, get) => ({
     // 书籍笔记没有 url（url: ''），按 url 去重会让所有书籍笔记互相命中；
     // 书籍按「同一本书 + 同一章节标题」定位，博客仍按 url 精确匹配。
     const existing = a.source === 'book'
-      ? list.find(n => n.meta.source === 'book' && n.meta.book === a.book && n.meta.title === a.title)
+      ? list.find(n => n.meta.source === 'book' && n.meta.book === a.book
+        && noteChapter(n) === (a.chapter ?? inferBookChapter(a.title, a.book))
+        && !/ · 标注(?: \d+)?$/.test(n.meta.title))
       : list.find(n => n.meta.url === a.url)
     if (existing) return { path: existing.path, created: false }
     const r = await ipc.notesCreate({ ...a, source: a.source ?? 'anthropic' })

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { WritingTree } from '@/components/writing/WritingTree'
+import { BookChapterSelect } from '@/components/notes/BookChapterSelect'
 import { NoteCover } from '@/components/notes/NoteCover'
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
-import { sortNotes } from '@/lib/notes-list'
+import { groupNotesForDisplay, sortNotes } from '@/lib/notes-list'
 import type { BriefingTheme } from '@shared/index'
 import type { ReactNode } from 'react'
 
@@ -45,6 +46,7 @@ export function CompanionWritingPicker({ theme = 'academic', onPickFile, current
   useEffect(() => { void loadNotes() }, [loadNotes])
   // 挑选场景忽略书架分类过滤：否则当前目标的对应笔记可能被滤掉，误判为「无对应笔记」
   const sortedNotes = useMemo(() => sortNotes(notesList ?? [], notesSortBy, 'all'), [notesList, notesSortBy])
+  const displayNotes = useMemo(() => groupNotesForDisplay(notesList ?? [], notesSortBy, 'all'), [notesList, notesSortBy])
 
   // 新 prop 优先；未传时把旧 currentArticle 转换成 target（博客可只改一处或暂不改）
   const target: CompanionTarget | null = currentTarget !== undefined
@@ -131,7 +133,41 @@ export function CompanionWritingPicker({ theme = 'academic', onPickFile, current
             ＋ 新建
           </button>
         ) : undefined)}
-        {open.notes && sortedNotes.map(entry => {
+        {open.notes && displayNotes.map(item => {
+          if (item.kind === 'book') {
+            const entry = item.latest
+            const coverEntry = item.entries.find(note => note.coverUrl) ?? entry
+            const isMatch = !!matchedNote && item.entries.some(note => note.path === matchedNote.path)
+            const testIdTail = entry.meta.url.split('/').pop() || entry.path.split('/').pop()?.replace(/\.md$/, '') || 'note'
+            return (
+              <div
+                key={item.key}
+                data-testid={`picker-note-${testIdTail}`}
+                data-current={isMatch || undefined}
+                className={`flex w-full items-center gap-1 px-3 py-1 text-[11px] ${isMatch
+                  ? (isAcademic ? 'bg-ember/15 text-ember' : 'bg-[#8a3a3a]/10 text-[#8a3a3a]')
+                  : (isAcademic ? 'text-parchment/80 hover:bg-parchment/5' : 'text-[#2a1f1a] hover:bg-black/5')}`}
+              >
+                <button
+                  type="button"
+                  ref={isMatch ? matchedRef : undefined}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  onClick={() => onPickFile(entry.path)}
+                >
+                  <NoteCover entry={coverEntry} className="shrink-0 w-[14px] h-[19px] rounded-[2px]" />
+                  <span className="truncate">{item.book}</span>
+                  {isMatch && <span className="shrink-0 text-[9px] opacity-70">当前章节</span>}
+                </button>
+                <BookChapterSelect
+                  group={item}
+                  currentPath={isMatch ? matchedNote?.path : undefined}
+                  onPick={onPickFile}
+                  className="max-w-[48%] shrink-0"
+                />
+              </div>
+            )
+          }
+          const entry = item.entry
           const isMatch = matchedNote?.path === entry.path
           // 书籍笔记无 url，回退到文件名避免多条笔记共用 picker-note-note
           const testIdTail = entry.meta.url.split('/').pop() || entry.path.split('/').pop()?.replace(/\.md$/, '') || 'note'

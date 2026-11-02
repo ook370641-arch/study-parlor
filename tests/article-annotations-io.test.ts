@@ -95,4 +95,16 @@ describe('article annotations IO', () => {
     expect(highlight.kind).toBe('highlight')
     expect(highlight.highlightColor).toBe('gold')
   })
+
+  it('round-trips the bright yellow highlight color', async () => {
+    await write([{
+      ...baseAnnotation,
+      kind: 'highlight',
+      highlightColor: 'yellow',
+    }])
+
+    const [highlight] = await read()
+    expect(highlight.highlightColor).toBe('yellow')
+    expect(serialized()).toContain('**高亮色：** yellow')
+  })
 })

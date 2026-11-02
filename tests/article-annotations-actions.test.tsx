@@ -128,6 +128,41 @@ describe('ArticleAnnotations actions', () => {
     expect(annotationsWrite).not.toHaveBeenCalled()
   })
 
+  it('offers a bright yellow highlight color', async () => {
+    const { container } = await renderAnnotations()
+    await triggerGhost(container)
+
+    fireEvent.click(screen.getByTestId('anno-highlight-color-toggle'))
+    fireEvent.click(screen.getByTestId('anno-highlight-color-yellow'))
+
+    expect(setAnnotationHighlightColor).toHaveBeenCalledWith('yellow')
+  })
+
+  it('saves the old note when switching directly to a highlight marker', async () => {
+    const highlight = {
+      ...noteAnnotation,
+      id: 'a2',
+      selectedText: '第二段无关内容',
+      paragraphIndex: 2,
+      kind: 'highlight',
+      highlightColor: 'gold',
+    } as ArticleAnnotation
+    const { container } = await renderAnnotations([noteAnnotation, highlight])
+    const markers = container.querySelectorAll('.anno-wrap')
+
+    fireEvent.click(markers[0])
+    fireEvent.change(screen.getByTestId('anno-note-textarea'), { target: { value: '切换前保存' } })
+    fireEvent.mouseDown(markers[1])
+    fireEvent.click(markers[1])
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)) })
+
+    expect(screen.getByTestId('anno-note-card')).toBeInTheDocument()
+    expect(screen.queryByTestId('anno-note-textarea')).toBeNull()
+    expect(annotationsWrite).toHaveBeenCalledWith('/x.md', expect.arrayContaining([
+      expect.objectContaining({ id: 'a1', note: '切换前保存' }),
+    ]))
+  })
+
   it('autosaves an empty-note annotation on outside click and always offers delete', async () => {
     const { container } = await renderAnnotations([noteAnnotation])
     fireEvent.click(container.querySelector('.anno-wrap')!)

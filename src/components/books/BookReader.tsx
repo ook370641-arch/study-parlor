@@ -71,6 +71,7 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
         url: '',
         source: 'book',
         ...(book?.title ? { book: book.title } : {}),
+        chapter: chapter.meta.title,
         ...(body ? { body } : {}),
       })
       const st = useStore.getState()

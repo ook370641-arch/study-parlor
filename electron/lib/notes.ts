@@ -4,6 +4,7 @@ import matter from 'gray-matter'
 import type { NoteEntry, NoteMeta, NoteSource } from '@shared/index'
 import { loadCollection } from './blog-collection'
 import { assertInsideRoots } from './writing-tree'
+import { noteCoverDataUrl } from './note-covers'
 
 export const NOTES_DIR = 'notes'
 
@@ -54,6 +55,8 @@ export function parseNoteFile(relPath: string, raw: string): NoteEntry {
     const readAt = iso(fm.read_at)
     if (readAt) meta.read_at = readAt
     if (typeof fm.book === 'string' && fm.book) meta.book = fm.book
+    if (typeof fm.chapter === 'string' && fm.chapter) meta.chapter = fm.chapter
+    if (typeof fm.cover === 'string' && fm.cover) meta.cover = fm.cover
     return { path: relPath, meta }
   } catch {
     return { path: relPath, meta: emptyMeta(), parseError: true }
@@ -85,13 +88,17 @@ export function scanNotes(lib: string): NoteEntry[] {
     .readdirSync(dir)
     .filter(f => f.endsWith('.md') && !f.startsWith('.') && !SIDECAR_PATTERN.test(f))
     .map(f => parseNoteFile(`${NOTES_DIR}/${f}`, fs.readFileSync(path.join(dir, f), 'utf8')))
+    .map(entry => {
+      const coverUrl = entry.meta.cover ? noteCoverDataUrl(lib, entry.meta.cover) : null
+      return coverUrl ? { ...entry, coverUrl } : entry
+    })
   entries.sort((a, b) => b.meta.collected_at.localeCompare(a.meta.collected_at))
   return entries
 }
 
 export function createNoteFile(
   lib: string,
-  a: { title: string; url: string; source?: NoteSource; book?: string; body?: string }
+  a: { title: string; url: string; source?: NoteSource; book?: string; chapter?: string; body?: string }
 ): { path: string } {
   const dir = notesDirAbs(lib)
   const name = uniqueNoteName(dir, sanitizeNoteFilename(a.title))
@@ -104,6 +111,7 @@ export function createNoteFile(
     highlight: '',
     collected_at: new Date().toISOString(),
     ...(a.book ? { book: a.book } : {}),
+    ...(a.chapter ? { chapter: a.chapter } : {}),
   }
   fs.writeFileSync(path.join(dir, name), serializeNote(meta, a.body ?? ''), 'utf8')
   return { path: `${NOTES_DIR}/${name}` }
