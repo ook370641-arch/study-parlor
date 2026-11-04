@@ -5,6 +5,36 @@ export type ToolDef = { type: 'function'; function: { name: string; description:
 export type NativeToolCallRaw = { id?: string; name?: string; arguments?: string }
 export type ChatStreamResult = { content: string; toolCalls: NativeToolCallRaw[]; finishReason: string | null }
 
+export async function listModelsWithCredentials(
+  creds: { apiKey: string; baseUrl: string }
+): Promise<{ ok: true; models: string[] } | { ok: false; reason: string }> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10000)
+  try {
+    const res = await fetch(`${creds.baseUrl}/models`, {
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${creds.apiKey}`,
+        'User-Agent': 'claude-code/0.1.0'
+      }
+    } as any)
+    if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` }
+    const payload = await res.json()
+    if (!Array.isArray(payload?.data)) return { ok: false, reason: '模型列表响应格式无效' }
+    const models = [...new Set<string>(
+      payload.data
+        .map((item: any) => item?.id)
+        .filter((id: any) => typeof id === 'string' && id.trim())
+        .map((id: string) => id.trim())
+    )].sort()
+    return { ok: true, models }
+  } catch (err: any) {
+    return { ok: false, reason: err.name === 'AbortError' ? 'probe timeout' : err.message }
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 export async function probeModelWithCredentials(
   creds: { apiKey: string; baseUrl: string; model: string }
 ): Promise<{ ok: boolean; reason?: string }> {

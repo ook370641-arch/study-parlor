@@ -766,6 +766,7 @@ export type IpcApi = {
   llmConfigList: () => Promise<{ configs: LlmConfig[]; activeId: string }>
   llmConfigSetActive: (id: string) => Promise<{ ok: true } | { ok: false; code: string }>
   llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string }) => Promise<{ ok: true; id: string } | { ok: false; code: string }>
+  llmConfigListModels: (creds: { apiKey: string; baseUrl: string }) => Promise<{ ok: true; models: string[] } | { ok: false; reason?: string }>
   configSetLibraryPath: (path: string) => Promise<{ ok: true }>
 
   // Setup wizard

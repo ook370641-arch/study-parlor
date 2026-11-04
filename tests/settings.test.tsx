@@ -14,6 +14,7 @@ vi.mock('@/lib/ipc', () => ({
     setSearchApiKey: vi.fn(),
     getState: vi.fn().mockResolvedValue({}),
     llmConfigList: vi.fn(),
+    llmConfigListModels: vi.fn(),
     llmConfigSetActive: vi.fn(),
     llmConfigSave: vi.fn(),
     configSetLibraryPath: vi.fn(),
@@ -37,6 +38,7 @@ describe('Settings · AI 服务', () => {
       model: 'kimi-k3', libraryPath: 'C:/test-library'
     })
     vi.mocked(ipc.setupProbeKey).mockResolvedValue({ ok: true })
+    vi.mocked(ipc.llmConfigListModels).mockResolvedValue({ ok: true, models: ['kimi-k2.6', 'kimi-k3'] })
     vi.mocked(ipc.setupSelectDirectory).mockResolvedValue({ canceled: true, path: null })
     vi.mocked(ipc.searchCheckConfig).mockResolvedValue({ configured: false })
     vi.mocked(ipc.setSearchApiKey).mockResolvedValue(undefined)
@@ -137,6 +139,32 @@ describe('Settings · AI 服务', () => {
         apiKey: 'sk-kimi-test', baseUrl: 'https://api.kimi.com/coding/v1', model: 'kimi-k3.1'
       })
     })
+  })
+
+  it('探活后更新 Model 输入框的可选模型列表', async () => {
+    render(<Settings />)
+    await waitFor(() => screen.getByDisplayValue('kimi-k3'))
+
+    fireEvent.click(screen.getByTestId('settings-model-refresh'))
+
+    await waitFor(() => expect(ipc.llmConfigListModels).toHaveBeenCalledWith({
+      apiKey: 'sk-kimi-test', baseUrl: 'https://api.kimi.com/coding/v1'
+    }))
+    expect(screen.getByTestId('settings-model-input')).toHaveAttribute('list', 'settings-model-options')
+    const options = within(screen.getByTestId('settings-model-options')).getAllByRole('option', { hidden: true })
+    expect(options.map(option => option.getAttribute('value'))).toEqual(['kimi-k2.6', 'kimi-k3'])
+    expect(screen.getByTestId('settings-model-list-status')).toHaveTextContent('已更新，共 2 个模型')
+  })
+
+  it('模型列表获取失败时保留当前模型并显示原因', async () => {
+    vi.mocked(ipc.llmConfigListModels).mockResolvedValue({ ok: false, reason: 'HTTP 401' })
+    render(<Settings />)
+    await waitFor(() => screen.getByDisplayValue('kimi-k3'))
+
+    fireEvent.click(screen.getByTestId('settings-model-refresh'))
+
+    await waitFor(() => expect(screen.getByTestId('settings-model-list-status')).toHaveTextContent('HTTP 401'))
+    expect(screen.getByTestId('settings-model-input')).toHaveValue('kimi-k3')
   })
 
   it('key 为空时验证连接禁用；key 显隐切换保持', async () => {

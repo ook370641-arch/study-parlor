@@ -91,6 +91,8 @@ const api: IpcApi = {
   llmConfigSetActive: (id: string) => ipcRenderer.invoke('llmConfig:setActive', id),
   llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string }) =>
     ipcRenderer.invoke('llmConfig:save', id, fields),
+  llmConfigListModels: (creds: { apiKey: string; baseUrl: string }) =>
+    ipcRenderer.invoke('llmConfig:listModels', creds),
   configSetLibraryPath: (p: string) => ipcRenderer.invoke('config:setLibraryPath', p),
 
   // Setup wizard

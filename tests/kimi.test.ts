@@ -49,6 +49,41 @@ describe('probeModel', () => {
   })
 })
 
+describe('listModelsWithCredentials', () => {
+  beforeEach(() => { vi.restoreAllMocks() })
+
+  it('returns sorted unique model ids and ignores malformed entries', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ object: 'list', data: [
+        { id: 'kimi-k3', object: 'model' },
+        { id: 'kimi-k2.6', object: 'model' },
+        { id: 'kimi-k3', object: 'model' },
+        { object: 'model' },
+        null,
+      ] })
+    })) as any)
+
+    const { listModelsWithCredentials } = await import('@electron/lib/kimi')
+    const result = await listModelsWithCredentials(cfg)
+
+    expect(result).toEqual({ ok: true, models: ['kimi-k2.6', 'kimi-k3'] })
+  })
+
+  it('returns the HTTP error without exposing response secrets', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: { message: 'secret response' } })
+    })) as any)
+
+    const { listModelsWithCredentials } = await import('@electron/lib/kimi')
+    const result = await listModelsWithCredentials(cfg)
+
+    expect(result).toEqual({ ok: false, reason: 'HTTP 401' })
+  })
+})
+
 describe('chatNonStream', () => {
   it('posts to chat/completions with stream:false', async () => {
     const fetchSpy = vi.fn(async () => ({

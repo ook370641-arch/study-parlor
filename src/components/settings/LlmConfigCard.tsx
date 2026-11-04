@@ -25,6 +25,8 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
   const [summaryOpen, setSummaryOpen] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus | null>(null)
+  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const [modelListStatus, setModelListStatus] = useState<VerifyStatus | null>(null)
 
   const toFields = (c: LlmConfig): Fields => ({ apiKey: c.apiKey, baseUrl: c.baseUrl, model: c.model })
 
@@ -52,17 +54,23 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
     setEditingId(id)
     setForm(toFields(c))
     setVerifyStatus(null)
+    setAvailableModels([])
+    setModelListStatus(null)
   }
 
   const startDraft = () => {
     setDraft({ apiKey: '', baseUrl: '', model: '' })
     setSummaryOpen(false)
     setVerifyStatus(null)
+    setAvailableModels([])
+    setModelListStatus(null)
   }
 
   const cancelDraft = () => {
     setDraft(null)
     setVerifyStatus(null)
+    setAvailableModels([])
+    setModelListStatus(null)
     if (editingConfig) setForm(toFields(editingConfig)) // 还原查看中的配置
   }
 
@@ -129,6 +137,22 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
     }
   }
 
+  const refreshModels = async () => {
+    setAvailableModels([])
+    setModelListStatus({ kind: 'loading', message: '正在获取模型列表...' })
+    try {
+      const result = await ipc.llmConfigListModels({ apiKey: fields.apiKey.trim(), baseUrl: fields.baseUrl.trim() })
+      if (result.ok) {
+        setAvailableModels(result.models)
+        setModelListStatus({ kind: 'success', message: result.models.length > 0 ? `已更新，共 ${result.models.length} 个模型` : '接口未返回可选模型' })
+      } else {
+        setModelListStatus({ kind: 'error', message: result.reason || '获取模型列表失败' })
+      }
+    } catch (err: any) {
+      setModelListStatus({ kind: 'error', message: err?.message || '获取模型列表失败' })
+    }
+  }
+
   // 样式基元（与 Settings 现有卡片一致）
   const labelCls = `text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`
   const inputCls = `w-full ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`
@@ -144,7 +168,7 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
             type={showKey ? 'text' : 'password'}
             value={f.apiKey}
             disabled={disabled}
-            onChange={e => setFields({ ...f, apiKey: e.target.value })}
+            onChange={e => { setFields({ ...f, apiKey: e.target.value }); setAvailableModels([]); setModelListStatus(null) }}
             placeholder="sk-..."
             className={`flex-1 ${inputCls}`}
           />
@@ -156,12 +180,28 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
       <div>
         <div className={labelCls}>Base URL</div>
         <input data-testid="settings-base-url-input" type="text" value={f.baseUrl} disabled={disabled}
-          onChange={e => setFields({ ...f, baseUrl: e.target.value })} className={inputCls} />
+          onChange={e => { setFields({ ...f, baseUrl: e.target.value }); setAvailableModels([]); setModelListStatus(null) }} className={inputCls} />
       </div>
       <div>
         <div className={labelCls}>Model</div>
-        <input data-testid="settings-model-input" type="text" value={f.model} disabled={disabled}
-          onChange={e => setFields({ ...f, model: e.target.value })} className={inputCls} />
+        <div className="flex gap-2">
+          <input data-testid="settings-model-input" type="text" value={f.model} disabled={disabled}
+            list="settings-model-options" onChange={e => setFields({ ...f, model: e.target.value })} className={`flex-1 ${inputCls}`} />
+          <button data-testid="settings-model-refresh" type="button" onClick={refreshModels}
+            disabled={!f.apiKey.trim() || !f.baseUrl.trim() || modelListStatus?.kind === 'loading'} className={ghostBtnCls}>
+            {modelListStatus?.kind === 'loading' ? '探活中...' : '探活并更新'}
+          </button>
+        </div>
+        <datalist id="settings-model-options" data-testid="settings-model-options">
+          {availableModels.map(model => <option key={model} value={model} />)}
+        </datalist>
+        {modelListStatus && (
+          <div data-testid="settings-model-list-status" className={`mt-1 text-xs ${
+            modelListStatus.kind === 'error' ? 'text-wine' :
+            modelListStatus.kind === 'success' ? (isAcademic ? 'text-ember' : 'text-green-700') :
+            (isAcademic ? 'text-parchment/40' : 'text-[#888]')
+          }`}>{modelListStatus.message}</div>
+        )}
       </div>
     </div>
   )
