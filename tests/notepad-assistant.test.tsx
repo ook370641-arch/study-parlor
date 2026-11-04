@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import type { NotepadLogEntry } from '@shared/index'
 
 const store = vi.hoisted(() => ({
   notepadItems: [],
-  notepadLog: [],
+  notepadLog: [] as NotepadLogEntry[],
   notepadFontSize: 'base',
   notepadPanelSize: null,
   addNotepadItem: vi.fn(),
@@ -23,6 +24,7 @@ import { NotepadPanel } from '@/components/NotepadPanel'
 
 afterEach(() => {
   cleanup()
+  store.notepadLog = []
   vi.clearAllMocks()
 })
 
@@ -75,5 +77,38 @@ describe('NotepadPanel 与旁注聊天窗共存', () => {
 
     expect(screen.getByTestId('notepad-panel')).toHaveStyle({ width: '424px' })
     fireEvent.pointerUp(window)
+  })
+})
+
+describe('NotepadPanel 已完成时间线', () => {
+  it('按解决时间倒序展示，最近完成的需求在最上方', () => {
+    store.notepadLog = [
+      {
+        id: 'older',
+        title: '较早完成的需求',
+        text: '较早完成的需求',
+        category: 'feature',
+        createdAt: '2026-09-01T00:00:00.000Z',
+        resolvedAt: '2026-10-01T00:00:00.000Z',
+        source: 'user',
+      },
+      {
+        id: 'newer',
+        title: '最近完成的需求',
+        text: '最近完成的需求',
+        category: 'improvement',
+        createdAt: '2026-10-01T00:00:00.000Z',
+        resolvedAt: '2026-11-05T00:00:00.000Z',
+        source: 'agent',
+      },
+    ]
+
+    renderPanel()
+    fireEvent.click(screen.getByTestId('notepad-tab-done'))
+
+    const entries = screen.getAllByTestId('notepad-log-entry')
+    expect(entries).toHaveLength(2)
+    expect(entries[0]).toHaveTextContent('最近完成的需求')
+    expect(entries[1]).toHaveTextContent('较早完成的需求')
   })
 })

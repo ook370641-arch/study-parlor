@@ -166,7 +166,7 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
 
   const stats = computeNotepadStats(items, log)
   const maxMonthly = Math.max(1, ...stats.monthly.map(m => m.count))
-  const sortedLog = [...log].sort((a, b) => a.resolvedAt.localeCompare(b.resolvedAt))
+  const sortedLog = [...log].sort((a, b) => b.resolvedAt.localeCompare(a.resolvedAt))
 
   const tabBtn = (id: 'pending' | 'done', label: string, count: number) => (
     <button
