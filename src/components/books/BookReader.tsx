@@ -108,7 +108,8 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
             {isAcademic && <PaintingPlate />}
             <h1 className={`font-serif text-xl mb-1 ${isAcademic ? 'text-parchment' : 'text-[#2a1f1a]'}`}>{chapter.meta.title}</h1>
             <div className={`text-[11px] mb-3 ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]'}`}>
-              第 {chapter.meta.chapterIndex} 章 · 页 {chapter.meta.pageRange[0]}–{chapter.meta.pageRange[1]}
+              第 {chapter.meta.chapterIndex} 章
+              {chapter.meta.pageRange[0] > 0 && <> · 页 {chapter.meta.pageRange[0]}–{chapter.meta.pageRange[1]}</>}
             </div>
             <div className="mb-3 flex justify-center">
               <Quote surface="briefing" />

@@ -66,4 +66,15 @@ describe('BookReader 阅读记忆与排版', () => {
     options.flush(chapterPath, 7)
     expect(flushBookScrollPosition).toHaveBeenCalledWith(chapterPath, 7)
   })
+
+  it('Markdown 章节只显示章号，不显示占位页码', () => {
+    const chapter = useStore.getState().activeChapter!
+    useStore.setState({ activeChapter: { ...chapter, meta: { ...chapter.meta, pageRange: [0, 0] } } })
+
+    render(<BookReader theme="academic" />)
+
+    const meta = screen.getByRole('heading', { name: 'C1' }).nextElementSibling
+    expect(meta).toHaveTextContent('第 1 章')
+    expect(meta).not.toHaveTextContent('页')
+  })
 })

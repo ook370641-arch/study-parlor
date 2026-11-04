@@ -4,7 +4,7 @@ import type { PathLike } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import matter from 'gray-matter'
-import { __test__importFromPages } from '../electron/lib/books'
+import { __test__importFromPages, importMarkdownBook } from '../electron/lib/books'
 
 let lib: string
 beforeEach(() => {
@@ -139,5 +139,32 @@ describe('__test__importFromPages', () => {
       spy.mockRestore()
     }
     expect(fs.readdirSync(root)).toEqual([])
+  })
+})
+
+describe('Markdown 文档序列导入', () => {
+  it('按文件名自然排序，每个文件成为保留正文的一章', async () => {
+    const docs = path.join(lib, 'docs')
+    fs.mkdirSync(docs)
+    const intro = path.join(docs, '01-intro.md')
+    const setup = path.join(docs, '2-setup.md')
+    const conclusion = path.join(docs, '10-conclusion.md')
+    fs.writeFileSync(intro, '# 简介\n\n保留 **Markdown** 正文。', 'utf8')
+    fs.writeFileSync(setup, '# 安装\n\n```sh\nnpm install\n```', 'utf8')
+    fs.writeFileSync(conclusion, '无标题正文', 'utf8')
+
+    const book = await importMarkdownBook(lib, [conclusion, intro, setup])
+
+    expect(book.title).toBe('docs')
+    expect(book.hasToc).toBe(true)
+    expect(book.toc.map((item) => item.title)).toEqual(['简介', '安装', '10-conclusion'])
+    const chapters = book.toc.map((item) =>
+      matter(fs.readFileSync(path.join(book.dir, item.chapterFile), 'utf8'))
+    )
+    expect(chapters[0].content).toContain('保留 **Markdown** 正文。')
+    expect(chapters[0].content).not.toContain('# 简介')
+    expect(chapters[1].content).toContain('```sh\nnpm install\n```')
+    expect(chapters.map((chapter) => chapter.data.chapter_index)).toEqual([1, 2, 3])
+    expect(chapters.map((chapter) => chapter.data.page_range)).toEqual([[0, 0], [0, 0], [0, 0]])
   })
 })

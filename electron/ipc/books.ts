@@ -4,7 +4,7 @@ import { dialog, BrowserWindow, ipcMain } from 'electron'
 import matter from 'gray-matter'
 import type { AppConfig } from '../env'
 import type { BookEntry, BookTocItem, ChapterMeta } from '@shared/index'
-import { scanBooks, readBookJson, assertInsideBooks, booksDirAbs, importPdfBook, reparseBook, BookImportError } from '../lib/books'
+import { scanBooks, readBookJson, assertInsideBooks, booksDirAbs, importPdfBook, importMarkdownBook, reparseBook, BookImportError } from '../lib/books'
 import { generateBookOverview } from '../lib/llm-tasks'
 
 export function registerBooksIpc(cfg: AppConfig) {
@@ -49,20 +49,26 @@ export function registerBooksIpc(cfg: AppConfig) {
   ipcMain.handle('books:import', async (event) => {
     // E2E 通道：仅在测试环境生效，生产环境始终走原生文件对话框
     const e2e = process.env.NODE_ENV === 'test' && !!process.env.E2E_CONFIG_DIR
-    let pdfPath = e2e ? process.env.E2E_BOOK_IMPORT_PATH : undefined
-    if (!pdfPath) {
+    let filePaths = e2e && process.env.E2E_BOOK_IMPORT_PATH
+      ? process.env.E2E_BOOK_IMPORT_PATH.split(path.delimiter)
+      : []
+    if (filePaths.length === 0) {
       const win = BrowserWindow.fromWebContents(event.sender)
       const options = {
-        properties: ['openFile' as const],
-        filters: [{ name: 'PDF 书籍', extensions: ['pdf'] }],
+        properties: ['openFile' as const, 'multiSelections' as const],
+        filters: [{ name: 'PDF 书籍或 Markdown 文档', extensions: ['pdf', 'md'] }],
       }
       const r = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
       if (r.canceled || r.filePaths.length === 0) return null
-      pdfPath = r.filePaths[0]
+      filePaths = r.filePaths
     }
-    if (path.extname(pdfPath).toLowerCase() !== '.pdf') return { error: '仅支持 PDF 格式' }
+    const isPdf = filePaths.length === 1 && path.extname(filePaths[0]).toLowerCase() === '.pdf'
+    const isMarkdownSequence = filePaths.every((filePath) => path.extname(filePath).toLowerCase() === '.md')
+    if (!isPdf && !isMarkdownSequence) return { error: '请选择一本 PDF，或同一文档序列的多个 Markdown 文件' }
     try {
-      const book = await importPdfBook(cfg.libraryPath, pdfPath)
+      const book = isPdf
+        ? await importPdfBook(cfg.libraryPath, filePaths[0])
+        : await importMarkdownBook(cfg.libraryPath, filePaths)
       const entry: BookEntry = {
         dir: book.dir,
         title: book.title,

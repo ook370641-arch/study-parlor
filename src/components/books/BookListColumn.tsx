@@ -28,7 +28,7 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
         )}
         {!loading && books.length === 0 && (
           <div className={`text-xs px-2 py-4 leading-relaxed ${isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'}`}>
-            还没有书籍，点击下方导入一本 PDF。
+            还没有书籍，点击下方导入 PDF 或 Markdown 文档序列。
           </div>
         )}
         {books.map((b, i) => {

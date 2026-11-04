@@ -11,44 +11,35 @@ export function NoteCoverGenerator({ entry, className = '' }: { entry: NoteEntry
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [candidates, setCandidates] = useState<NoteCoverCandidate[]>([])
-  const requestId = useRef(0)
   const generating = useRef(false)
 
-  const cancel = () => {
-    requestId.current += 1
-    generating.current = false
-    setOpen(false)
-    setLoading(false)
-    setCandidates([])
-  }
+  const close = () => setOpen(false)
 
   useEffect(() => {
     if (!open) return
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') cancel() }
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') close() }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [open])
 
   const generate = async () => {
-    if (generating.current) return
-    const id = ++requestId.current
+    if (generating.current || candidates.length > 0) {
+      setOpen(true)
+      return
+    }
     generating.current = true
     setOpen(true)
     setLoading(true)
     setCandidates([])
     try {
       const result = await ipc.notesGenerateCovers({ path: entry.path })
-      if (requestId.current === id) setCandidates(result.candidates)
+      setCandidates(result.candidates)
     } catch {
-      if (requestId.current === id) {
-        showToast('封面生成失败')
-        setOpen(false)
-      }
+      showToast('封面生成失败')
+      setOpen(false)
     } finally {
-      if (requestId.current === id) {
-        generating.current = false
-        setLoading(false)
-      }
+      generating.current = false
+      setLoading(false)
     }
   }
 
@@ -58,6 +49,7 @@ export function NoteCoverGenerator({ entry, className = '' }: { entry: NoteEntry
     try {
       await ipc.notesSaveCover({ path: entry.path, design: candidate.design })
       await loadNotes()
+      setCandidates([])
       setOpen(false)
     } catch {
       showToast('封面保存失败')
@@ -71,12 +63,15 @@ export function NoteCoverGenerator({ entry, className = '' }: { entry: NoteEntry
       <button
         type="button"
         data-testid="note-cover-generate"
-        className={`rounded border border-parchment/25 bg-black/45 px-2 py-1 text-[10px] text-parchment/80 hover:border-ember/60 hover:text-parchment ${className}`}
+        className={`flex items-center justify-center gap-1.5 rounded border border-parchment/25 bg-black/45 px-2 py-1 text-[10px] text-parchment/80 hover:border-ember/60 hover:text-parchment ${className}`}
         onMouseDown={(event) => event.stopPropagation()}
         onClick={(event) => { event.stopPropagation(); void generate() }}
-      >{entry.coverUrl ? '重新生成' : '生成封面'}</button>
+      >
+        {loading && <span data-testid="note-cover-generating-spinner" aria-hidden="true" className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />}
+        <span>{loading ? '生成中' : candidates.length > 0 ? '待挑选' : entry.coverUrl ? '重新生成' : '生成封面'}</span>
+      </button>
       {open && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5" onClick={cancel}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5" onClick={close}>
           <div
             data-testid="note-cover-dialog"
             role="dialog"
@@ -89,7 +84,7 @@ export function NoteCoverGenerator({ entry, className = '' }: { entry: NoteEntry
                 <h3 className="font-serif text-lg">为这篇笔记创造三枚符号</h3>
                 <p className="mt-1 text-[11px] text-parchment/50">每一版都根据正文独立创作，选择后会保存为这篇笔记的封面。</p>
               </div>
-              <button type="button" data-testid="note-cover-cancel" onClick={cancel} className="ml-auto text-parchment/50 hover:text-parchment">✕</button>
+              <button type="button" data-testid="note-cover-cancel" onClick={close} className="ml-auto text-parchment/50 hover:text-parchment">✕</button>
             </div>
             {loading ? (
               <div data-testid="note-cover-loading" className="py-20 text-center text-sm text-parchment/55">正在阅读笔记并创造符号…</div>

@@ -180,7 +180,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 ### 书籍来源（简报第三来源，2026-10-27 上线）
 
-导入本地 PDF（仅 PDF；扫描版明确报错不入架）→ 复制到 `<学习库>/books/<书名>/source.pdf` → 按目录页解析切章为 `chapters/*.md`。核心映射：**书 = 来源，章 = "文章"**，章节完整复用导读/对照/旁注/笔记体系。
+导入本地 PDF 或同一目录的 Markdown 文档序列 → 写入 `<学习库>/books/<书名>/`（PDF 复制为 `source.pdf`；Markdown 按文件名自然排序，每个文件一章）→ 切章为 `chapters/*.md`。扫描版 PDF 明确报错不入架；Markdown 章节标题取首个 H1（无则取文件名），无页码时阅读器只显示章号。核心映射：**书 = 来源，章 = "文章"**，章节完整复用导读/对照/旁注/笔记体系。
 
 - **主进程**: `electron/lib/book-parse.ts`（目录页解析/页码偏移/章节切分 + 版面重建纯逻辑）+ `electron/lib/books.ts`（库 IO）+ `electron/lib/book-guide.ts`（章节导读）+ `electron/ipc/books.ts`（`books:list / import / chapters / readChapter / bookGuide / delete` 六通道）
 - **正文重建（parserVersion 3）**: `itemsToRows` 保留每行的 `y/h/x0/x1` → `rowsToBlocks` 按行距（1.4× 常规行距）/字号（1.45×、1.2× 正文）/首行缩进判段与标题层级 → `blocksToMarkdown` 输出 `##`/`###`；页眉页脚按页顶页底 6% 区域过滤。目录页支持「标题 页码」「页码 标题」「标题块 + 页码块」三种布局。表格仍会被拍平，双栏段落顺序可能不等于阅读顺序。
@@ -194,7 +194,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 - **章节聚合**: `src/lib/notes-list.ts` 派生书组，专辑墙、笔记列与对照挑选器共用 `BookChapterSelect`；不合并或改写用户原始笔记，旧标题只在视图层补章节。
 - **封面生成**: `electron/prompts/note-cover.md` 让模型根据正文自由创造三枚内容专属符号；`electron/lib/note-covers.ts` 严格校验七类图元并本地装配 SVG，禁止任意 SVG、脚本、外部资源、transform/style。候选仅在内存预览，选中后写 `notes/covers/` 并原子更新 `NoteMeta.cover`；读取只接受该目录内 SVG。
-- **封面显示**: `NoteEntry.coverUrl` 使用安全 data URL，优先级为生成封面 → Anthropic 原图 → 来源渐变；书组复用任一章节已有生成封面。无图卡片提供生成入口，已有生成封面可在笔记信息区重新生成。
+- **封面显示**: `NoteEntry.coverUrl` 使用安全 data URL，优先级为生成封面 → Anthropic 原图 → 来源渐变；书组复用任一章节已有生成封面。无图卡片提供生成入口，已有生成封面可在笔记信息区重新生成；关闭候选弹窗不中止生成，入口依次显示「生成中」「待挑选」，可重新打开未选候选。
 - **阅读标注**: `ArticleAnnotations` 支持备注与 ember / gold / yellow / green / blue 五色高亮；切换标记时旧卡片延迟关闭只作用于原 anchor。
 
 ## 画作策展（Pictures 画库）

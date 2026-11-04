@@ -64,6 +64,26 @@ describe('NoteCoverGenerator', () => {
     expect(await findAllByTestId('note-cover-candidate')).toHaveLength(3)
   })
 
+  it('关闭弹窗后后台继续生成，入口从生成中变为待挑选并可恢复候选', async () => {
+    let resolve: (value: { candidates: NoteCoverCandidate[] }) => void = () => {}
+    mockIpc.notesGenerateCovers.mockReturnValue(new Promise(resolver => { resolve = resolver }))
+    const { getByTestId, queryByTestId, findAllByTestId } = render(<NoteCoverGenerator entry={entry} />)
+
+    fireEvent.click(getByTestId('note-cover-generate'))
+    fireEvent.click(getByTestId('note-cover-cancel'))
+
+    expect(queryByTestId('note-cover-dialog')).toBeNull()
+    expect(getByTestId('note-cover-generate')).toHaveTextContent('生成中')
+    expect(getByTestId('note-cover-generate').querySelector('[data-testid="note-cover-generating-spinner"]')).not.toBeNull()
+
+    resolve({ candidates })
+    await waitFor(() => expect(getByTestId('note-cover-generate')).toHaveTextContent('待挑选'))
+    fireEvent.click(getByTestId('note-cover-generate'))
+
+    expect(await findAllByTestId('note-cover-candidate')).toHaveLength(3)
+    expect(mockIpc.notesGenerateCovers).toHaveBeenCalledTimes(1)
+  })
+
   it('保存失败保留旧封面并提示', async () => {
     const covered = { ...entry, coverUrl: 'data:image/svg+xml;base64,old-cover' }
     mockIpc.notesSaveCover.mockRejectedValue(new Error('save failed'))

@@ -2,7 +2,7 @@
  * 书籍库（<学习库>/books/）读写与导入编排。
  *
  * 目录结构：
- *   books/<书名>/source.pdf
+ *   books/<书名>/source.pdf（仅 PDF 导入）
  *   books/<书名>/book.json
  *   books/<书名>/chapters/NN-slug.md
  *
@@ -478,6 +478,58 @@ export async function importPdfBook(lib: string, srcPdfPath: string): Promise<Bo
     throw new BookImportError('PDF_READ_ERROR', err instanceof Error ? err.message : String(err))
   }
   return __test__importFromPages(lib, srcPdfPath, title, pages, rawPages)
+}
+
+export async function importMarkdownBook(lib: string, sourcePaths: string[]): Promise<BookJson & { dir: string }> {
+  if (sourcePaths.length === 0) throw new Error('请至少选择一个 Markdown 文件')
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+  const sortedPaths = [...sourcePaths].sort((a, b) => collator.compare(path.basename(a), path.basename(b)))
+  const title = path.basename(path.dirname(sortedPaths[0]))
+  const root = booksDirAbs(lib)
+  fs.mkdirSync(root, { recursive: true })
+  const tmpDir = fs.mkdtempSync(path.join(root, '.tmp-import-'))
+
+  try {
+    fs.mkdirSync(path.join(tmpDir, 'chapters'), { recursive: true })
+    const toc: BookTocItem[] = sortedPaths.map((sourcePath, index) => {
+      const parsed = matter(fs.readFileSync(sourcePath, 'utf8'))
+      const heading = parsed.content.match(/^#\s+(.+?)\s*$/m)
+      const chapterTitle = heading?.[1].trim() || path.basename(sourcePath, path.extname(sourcePath))
+      const body = heading ? parsed.content.replace(heading[0], '') : parsed.content
+      const chapterFile = `chapters/${padIndex(index)}-${chapterSlug(chapterTitle)}.md`
+      const md = matter.stringify(`\n${body.trim()}\n`, {
+        title: chapterTitle,
+        chapter_index: index + 1,
+        page_range: [0, 0],
+      })
+      fs.writeFileSync(path.join(tmpDir, chapterFile), md, 'utf8')
+      return { title: chapterTitle, chapterFile, pageStart: 0, pageEnd: 0 }
+    })
+    const json: BookJson = {
+      title,
+      importedAt: new Date().toISOString(),
+      sourceFile: 'markdown',
+      hasToc: true,
+      toc,
+      parserVersion: BOOK_PARSER_VERSION,
+    }
+    writeBookJson(tmpDir, json)
+
+    for (;;) {
+      const finalDir = uniqueBookDir(lib, title)
+      try {
+        fs.renameSync(tmpDir, finalDir)
+        return { ...json, dir: finalDir }
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code
+        if (code === 'EEXIST' || code === 'ENOTEMPTY') continue
+        throw err
+      }
+    }
+  } catch (err) {
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+    throw err
+  }
 }
 
 /**

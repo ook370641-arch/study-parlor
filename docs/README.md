@@ -90,13 +90,13 @@
 
 ### 13. 笔记系统（书架/专辑墙）
 
-**现状**：在用——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。同书章节在墙、列表与对照挑选器聚合为一个书组，下拉始终指向原始笔记路径；无原图笔记可由 Kimi 根据正文创造三版独立 SVG 符号，选中后才写入 `notes/covers/`，封面优先级为生成封面 → Anthropic 原图 → 来源渐变。
+**现状**：在用——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。同书章节在墙、列表与对照挑选器聚合为一个书组，下拉始终指向原始笔记路径；无原图笔记可由 Kimi 根据正文创造三版独立 SVG 符号，选中后才写入 `notes/covers/`，封面优先级为生成封面 → Anthropic 原图 → 来源渐变。关闭候选弹窗不中止后台生成，入口显示「生成中」并在完成后变为「待挑选」（2026-11-05）。
 - current：`specs/2026-11-02-notes-annotations-and-covers-design.md`（同书章节聚合与正文驱动的三版 SVG 封面生成；含九符号实验与验证记录）
 **历史链**：10-20 notes-bookshelf → 10-20 notes-bookshelf-requirements → 10-22 notes-album-wall → 10-26 blog-notes-album-wall-and-note-creation（博客↔笔记联动）→ 11-02 notes-annotations-and-covers（current）
 
 ### 14. 简报来源 — 书籍
 
-**现状**：**已实现（2026-10-27）**——简报第三来源「书籍」支持仅 PDF 导入、复制到 `<学习库>/books/`、按目录拆分章节、章节阅读、章节导读、全书导读、对照、旁注，以及关联书籍创建笔记。实现入口为 `electron/lib/books.ts` + `electron/ipc/books.ts` + `src/components/books/`。章节正文取消独立 `760px` 限宽，并复用三来源统一的字号/换画控制；记忆最后章节与章内滚动位置，正文有段间距，书卡删除为垃圾桶图标 + 确认弹窗。
+**现状**：简报第三来源「书籍」支持 PDF 与同一目录的 Markdown 文档序列导入，写入 `<学习库>/books/`；PDF 按目录拆分章节，Markdown 按文件名自然排序且每个文件一章，章节标题取首个 H1（无则取文件名），无页码时只显示章号（2026-11-05）。章节阅读、章节导读、全书导读、对照、旁注，以及关联书籍创建笔记均复用同一章节契约。实现入口为 `electron/lib/books.ts` + `electron/ipc/books.ts` + `src/components/books/`。章节正文取消独立 `760px` 限宽，并复用三来源统一的字号/换画控制；记忆最后章节与章内滚动位置，正文有段间距，书卡删除为垃圾桶图标 + 确认弹窗。
 - **体验打磨（2026-10-27 已落地）**：折叠列即卸载内容（`BriefingListColumn.renderWhenCollapsed` 为博客 rail 保留逃生口）、导读 SVG 三阶段罗盘（`GuideCompass`）、书籍对照「＋ 新建笔记」、截断文本 hover 全展示（`Tooltip`）。
 - **解析器 v3（2026-10-28）**：`itemsToRows → rowsToBlocks → blocksToMarkdown`（行距 / 字号 / 缩进判段 + `##`/`###` 标题层级 + 页眉页脚过滤）；目录页新增「页码 标题」布局；重解析按章节对齐保留旧导读，目录未变时保留全书导读；`BOOK_PARSER_VERSION = 3`。已知边界：表格仍拍平、双栏段落顺序可能不等于阅读顺序。
 - **章节笔记聚合（2026-11-02）**：新笔记写入 `NoteMeta.chapter`，旧笔记按标题兼容推导；同书在笔记墙、笔记列与对照挑选器按书聚合，章节下拉可定位每章正文笔记与旁注原始文件。
