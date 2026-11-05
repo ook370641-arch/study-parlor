@@ -7,6 +7,8 @@ import { ACADEMIC_BODY_STYLES, NEWSPAPER_BODY_STYLES } from '@/lib/briefing-font
 import { useScrollMemory } from '@/lib/use-scroll-memory'
 import { insertHrBelow } from '@/lib/milkdown-insert-hr'
 import { HrIcon } from '@/lib/writing-toolbar-icons'
+import { AiNoteGenerator } from '@/components/notes/AiNoteGenerator'
+import { canGenerateCompanionAiNote, type AiNoteSourceTarget } from '@/lib/note-ai'
 import type { BriefingTheme } from '@shared/index'
 
 export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: BriefingTheme }) {
@@ -14,6 +16,11 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
   const updateBody = useStore((s) => s.updateArticleCompanionBody)
   const save = useStore((s) => s.saveArticleCompanion)
   const close = useStore((s) => s.closeArticleCompanion)
+  const notesList = useStore((s) => s.notesList)
+  const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
+  const currentArticle = useStore((s) => s.anthropicBlogCache.articles.find((article) => article.filePath === s.anthropicReaderFilePath))
+  const activeChapter = useStore((s) => s.activeChapter)
+  const currentBook = useStore((s) => s.booksList.find((book) => book.dir === s.activeBookDir))
   // 本实例编辑器 action(registerLocalAction 通道):供头部「分割线」按钮调命令。
   // 必须包 () => a:裸传 setHrAction 会让 React 把 action 当 updater 用 prevState
   // 调用 → milkdown .action(null) 抛「action is not a function」(2026-10-02 崩溃)
@@ -59,6 +66,14 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
   }
 
   const base = file.filePath.split(/[\\/]/).pop() || file.filePath
+  const noteEntry = notesList?.find((entry) => entry.path === file.filePath)
+  let sourceTarget: AiNoteSourceTarget | null = null
+  if (currentArticle && file.key === readerFilePath) {
+    sourceTarget = { type: 'blog', url: currentArticle.url }
+  } else if (activeChapter && currentBook && file.key === activeChapter.path) {
+    sourceTarget = { type: 'book', book: currentBook.title, chapter: activeChapter.meta.title }
+  }
+  const showAiGenerator = !!noteEntry && canGenerateCompanionAiNote(noteEntry, sourceTarget, file)
 
   return (
     <div data-testid="article-companion-board" className="flex flex-col h-full min-h-0">
@@ -69,6 +84,11 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
            : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
            : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span> : null}
         </span>
+        {showAiGenerator && noteEntry && (
+          <span data-testid="article-companion-ai-entry" className="shrink-0">
+            <AiNoteGenerator entry={noteEntry} theme={theme} />
+          </span>
+        )}
         {file.kind === 'md' && !file.readonly && (
           <button
             type="button"
@@ -92,7 +112,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
           // 不设 fontFamily——继承全局默认（Source Han Sans SC），与写作页原生编辑器同一条
           // 继承路径；字号字重仍跟随主区正文（2026-09-16 用户定锚：字体跟写作页，字号跟正文）
           style={{ fontSize: bodyStyle.size, fontWeight: bodyStyle.weight }}>
-          <WritingEditor key={file.filePath} initial={file.body} onChange={(md) => updateBody(md)} registerToolbarAction={false} registerLocalAction={registerHrAction} theme={theme} filePath={file.filePath} />
+          <WritingEditor key={`${file.filePath}:${noteEntry?.meta.ai_generated_at ?? 'original'}`} initial={file.body} onChange={(md) => updateBody(md)} registerToolbarAction={false} registerLocalAction={registerHrAction} theme={theme} filePath={file.filePath} />
         </div>
       ) : file.kind === 'html' ? (
         <div className="flex-1 min-h-0"><HtmlPreview file={{ path: file.filePath, body: file.body }} /></div>

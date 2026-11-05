@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
 import { canGenerateAiNote } from '@/lib/note-ai'
-import type { AiNoteStage, NoteEntry } from '@shared/index'
+import type { AiNoteStage, BriefingTheme, NoteEntry } from '@shared/index'
 
 const STAGE_LABEL: Record<AiNoteStage, string> = {
   reading: '读取材料',
@@ -22,7 +22,7 @@ function SparklesIcon() {
   )
 }
 
-export function AiNoteGenerator({ entry }: { entry: NoteEntry }) {
+export function AiNoteGenerator({ entry, theme = 'academic' }: { entry: NoteEntry; theme?: BriefingTheme }) {
   const generation = useStore(state => state.aiNoteGeneration?.path === entry.path ? state.aiNoteGeneration : null)
   const generate = useStore(state => state.generateAiNote)
   const apply = useStore(state => state.applyAiNote)
@@ -30,6 +30,8 @@ export function AiNoteGenerator({ entry }: { entry: NoteEntry }) {
   if (!canGenerateAiNote(entry)) return null
 
   const candidate = generation?.candidate ?? null
+  const buttonTone = theme === 'newspaper' ? 'text-[#6b5d52] hover:bg-[#1a1a1a]/10 hover:text-[#8a3a3a]' : 'text-parchment/45 hover:bg-parchment/10 hover:text-ember'
+  const stageTone = theme === 'newspaper' ? 'text-[#6b5d52]' : 'text-parchment/40'
   return (
     <>
       <div className="flex items-center gap-1.5">
@@ -40,7 +42,7 @@ export function AiNoteGenerator({ entry }: { entry: NoteEntry }) {
           aria-label="生成笔记"
           disabled={!!generation}
           onClick={() => void generate(entry.path)}
-          className="rounded p-1 text-parchment/45 hover:bg-parchment/10 hover:text-ember disabled:cursor-wait disabled:opacity-70"
+          className={`rounded p-1 ${buttonTone} disabled:cursor-wait disabled:opacity-70`}
         >
           {generation && !candidate ? (
             <svg data-testid="note-ai-spinner" className="animate-spin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -49,7 +51,7 @@ export function AiNoteGenerator({ entry }: { entry: NoteEntry }) {
             </svg>
           ) : <SparklesIcon />}
         </button>
-        {generation && !candidate && <span data-testid="note-ai-stage" className="whitespace-nowrap text-[10px] text-parchment/40">{STAGE_LABEL[generation.stage]}</span>}
+        {generation && !candidate && <span data-testid="note-ai-stage" className={`whitespace-nowrap text-[10px] ${stageTone}`}>{STAGE_LABEL[generation.stage]}</span>}
       </div>
       {candidate && createPortal(
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 p-6" data-testid="note-ai-preview">
