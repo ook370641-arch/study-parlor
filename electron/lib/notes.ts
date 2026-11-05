@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import crypto from 'node:crypto'
 import matter from 'gray-matter'
 import type { NoteEntry, NoteMeta, NoteSource } from '@shared/index'
 import { loadCollection } from './blog-collection'
@@ -57,10 +58,51 @@ export function parseNoteFile(relPath: string, raw: string): NoteEntry {
     if (typeof fm.book === 'string' && fm.book) meta.book = fm.book
     if (typeof fm.chapter === 'string' && fm.chapter) meta.chapter = fm.chapter
     if (typeof fm.cover === 'string' && fm.cover) meta.cover = fm.cover
+    const aiGeneratedAt = iso(fm.ai_generated_at)
+    if (aiGeneratedAt) meta.ai_generated_at = aiGeneratedAt
     return { path: relPath, meta }
   } catch {
     return { path: relPath, meta: emptyMeta(), parseError: true }
   }
+}
+
+export function hashNoteRaw(raw: string): string {
+  return crypto.createHash('sha256').update(raw).digest('hex')
+}
+
+export function composeAiNoteBody(aiBody: string, originalContent: string): string {
+  if (!originalContent) return aiBody
+  return `${aiBody}\n\n---\n\n## 原笔迹\n\n${originalContent}`
+}
+
+export function applyAiNote(
+  lib: string,
+  rel: string,
+  args: { aiBody: string; baseRawHash: string; aiGeneratedAt: string },
+): { body: string } {
+  const absolutePath = assertInsideRoots(lib, rel)
+  const raw = fs.readFileSync(absolutePath, 'utf8')
+  const parsed = matter(raw)
+  if (iso(parsed.data.ai_generated_at)) {
+    const error = new Error('ALREADY_GENERATED') as Error & { code: string }
+    error.code = 'ALREADY_GENERATED'
+    throw error
+  }
+  if (hashNoteRaw(raw) !== args.baseRawHash) {
+    const error = new Error('NOTE_CHANGED') as Error & { code: string }
+    error.code = 'NOTE_CHANGED'
+    throw error
+  }
+  const body = composeAiNoteBody(args.aiBody, parsed.content)
+  const temporaryPath = `${absolutePath}.${process.pid}.${Date.now()}.tmp`
+  try {
+    fs.writeFileSync(temporaryPath, matter.stringify(body, { ...parsed.data, ai_generated_at: args.aiGeneratedAt }), 'utf8')
+    fs.renameSync(temporaryPath, absolutePath)
+  } catch (error) {
+    fs.rmSync(temporaryPath, { force: true })
+    throw error
+  }
+  return { body }
 }
 
 function notesDirAbs(lib: string): string {

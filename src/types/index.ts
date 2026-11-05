@@ -154,6 +154,7 @@ export type NoteMeta = {
   book?: string
   chapter?: string
   cover?: string
+  ai_generated_at?: string
 }
 
 /** 笔记书架条目；path 为库内相对路径（正斜杠），如 notes/foo.md */

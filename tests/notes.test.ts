@@ -2,7 +2,8 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { sanitizeNoteFilename, serializeNote, parseNoteFile, scanNotes, createNoteFile, updateNoteMeta, importReadNotes } from '@electron/lib/notes'
+import matter from 'gray-matter'
+import { sanitizeNoteFilename, serializeNote, parseNoteFile, scanNotes, createNoteFile, updateNoteMeta, importReadNotes, hashNoteRaw, composeAiNoteBody, applyAiNote } from '@electron/lib/notes'
 
 let lib: string
 beforeEach(() => { lib = fs.mkdtempSync(path.join(os.tmpdir(), 'notes-test-')) })
@@ -18,7 +19,7 @@ describe('sanitizeNoteFilename', () => {
 
 describe('serializeNote / parseNoteFile 往返', () => {
   it('字段全量往返', () => {
-    const meta = { title: 'T', url: 'https://a.b/c', source: 'anthropic' as const, rating: 4, summary: 's', highlight: 'h', collected_at: '2026-10-20T00:00:00.000Z', read_at: '2026-10-18T00:00:00.000Z', cover: 'notes/covers/t.svg' }
+    const meta = { title: 'T', url: 'https://a.b/c', source: 'anthropic' as const, rating: 4, summary: 's', highlight: 'h', collected_at: '2026-10-20T00:00:00.000Z', read_at: '2026-10-18T00:00:00.000Z', cover: 'notes/covers/t.svg', ai_generated_at: '2026-11-05T00:00:00.000Z' }
     const raw = serializeNote(meta, '正文内容')
     const entry = parseNoteFile('notes/t.md', raw)
     expect(entry.meta).toEqual(meta)
@@ -32,6 +33,43 @@ describe('serializeNote / parseNoteFile 往返', () => {
   it('frontmatter 损坏 → parseError: true，不抛', () => {
     const entry = parseNoteFile('notes/bad.md', '---\n: [broken\n---\nx')
     expect(entry.parseError).toBe(true)
+  })
+})
+
+describe('AI 笔记写回', () => {
+  it('只在原笔迹非空时追加附录，且原 content 逐字保留', () => {
+    const originalContent = '\n![内嵌](data:image/png;base64,AAAA)\n'
+    expect(composeAiNoteBody('AI 正文', originalContent)).toBe(`AI 正文\n\n---\n\n## 原笔迹\n\n${originalContent}`)
+    expect(composeAiNoteBody('AI 正文', '')).toBe('AI 正文')
+  })
+
+  it('原子写回保留未知 frontmatter，并同时写入正文和永久标记', () => {
+    const created = createNoteFile(lib, { title: 'A', url: 'https://a' })
+    const absolutePath = path.join(lib, created.path)
+    const originalContent = '\n原笔迹  \n\n![图](data:image/png;base64,AAAA)\n'
+    const raw = `---\ntitle: A\nurl: https://a\nsource: anthropic\ncustom_field: keep\n---\n${originalContent}`
+    fs.writeFileSync(absolutePath, raw, 'utf8')
+    const generatedAt = '2026-11-05T01:02:03.000Z'
+
+    const result = applyAiNote(lib, created.path, { aiBody: 'AI 正文', baseRawHash: hashNoteRaw(raw), aiGeneratedAt: generatedAt })
+    const written = fs.readFileSync(absolutePath, 'utf8')
+    const parsed = matter(written)
+
+    expect(result.body).toBe(composeAiNoteBody('AI 正文', originalContent))
+    expect(parsed.data.custom_field).toBe('keep')
+    expect(parsed.data.ai_generated_at).toBe(generatedAt)
+    expect(parsed.content).toBe(result.body)
+  })
+
+  it('生成期间发生编辑时拒绝覆盖', () => {
+    const created = createNoteFile(lib, { title: 'A', url: 'https://a', body: '原文' })
+    const absolutePath = path.join(lib, created.path)
+    const raw = fs.readFileSync(absolutePath, 'utf8')
+    const baseRawHash = hashNoteRaw(raw)
+    fs.writeFileSync(absolutePath, `${raw}\n新编辑`, 'utf8')
+
+    expect(() => applyAiNote(lib, created.path, { aiBody: 'AI', baseRawHash, aiGeneratedAt: '2026-11-05T00:00:00.000Z' })).toThrow('NOTE_CHANGED')
+    expect(fs.readFileSync(absolutePath, 'utf8')).toBe(`${raw}\n新编辑`)
   })
 })
 
