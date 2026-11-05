@@ -160,6 +160,11 @@ export type NoteMeta = {
 /** 笔记书架条目；path 为库内相对路径（正斜杠），如 notes/foo.md */
 export type NoteEntry = { path: string; meta: NoteMeta; parseError?: boolean; coverUrl?: string }
 
+export type AiNoteStage = 'reading' | 'round1' | 'round2' | 'curating' | 'writing'
+export type AiNoteProgress = { generationId: string; path: string; stage: AiNoteStage }
+export type AiNoteCandidate = { generationId: string; path: string; body: string }
+export type AiNoteApplied = { path: string; body: string; aiGeneratedAt: string }
+
 export type BlogCollectionEntry = {
   sourceUrl: string   // 主键（去重依据）
   filePath: string    // 文件路径（推荐流程与手动收藏均存绝对路径）
@@ -824,6 +829,10 @@ export type IpcApi = {
   notesImportRead: () => Promise<{ created: number; skipped: number }>
   notesGenerateCovers: (a: { path: string }) => Promise<{ candidates: NoteCoverCandidate[] }>
   notesSaveCover: (a: { path: string; design: NoteCoverDesign }) => Promise<{ cover: string; coverUrl: string }>
+  notesGenerateAi: (a: { path: string }) => Promise<AiNoteCandidate>
+  notesApplyAi: (a: { generationId: string }) => Promise<AiNoteApplied>
+  notesAbortAi: (a: { generationId: string }) => Promise<void>
+  onNotesAiProgress: (cb: (payload: AiNoteProgress) => void) => () => void
 
   // Books
   booksList: () => Promise<BookEntry[]>

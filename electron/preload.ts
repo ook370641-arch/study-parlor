@@ -149,6 +149,14 @@ const api: IpcApi = {
   notesImportRead: () => ipcRenderer.invoke('notes:importRead'),
   notesGenerateCovers: (a) => ipcRenderer.invoke('notes:generateCovers', a),
   notesSaveCover: (a) => ipcRenderer.invoke('notes:saveCover', a),
+  notesGenerateAi: (a) => ipcRenderer.invoke('notes:generateAi', a),
+  notesApplyAi: (a) => ipcRenderer.invoke('notes:applyAi', a),
+  notesAbortAi: (a) => ipcRenderer.invoke('notes:abortAi', a),
+  onNotesAiProgress: (cb) => {
+    const handler = (_event: unknown, payload: import('@shared/index').AiNoteProgress) => cb(payload)
+    ipcRenderer.on('notes:aiProgress', handler)
+    return () => ipcRenderer.removeListener('notes:aiProgress', handler)
+  },
 
   booksList: () => ipcRenderer.invoke('books:list'),
   booksImport: () => ipcRenderer.invoke('books:import'),

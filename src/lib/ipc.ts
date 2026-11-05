@@ -108,6 +108,10 @@ export const ipc = {
   get notesImportRead() { return ensure().notesImportRead },
   get notesGenerateCovers() { return ensure().notesGenerateCovers },
   get notesSaveCover() { return ensure().notesSaveCover },
+  get notesGenerateAi() { return ensure().notesGenerateAi },
+  get notesApplyAi() { return ensure().notesApplyAi },
+  get notesAbortAi() { return ensure().notesAbortAi },
+  get onNotesAiProgress() { return ensure().onNotesAiProgress },
 
   get articleAssistantGenerateGuide() { return ensure().articleAssistantGenerateGuide },
   get articleAssistantSendMessage() { return ensure().articleAssistantSendMessage },
