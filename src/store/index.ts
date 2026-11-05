@@ -19,6 +19,7 @@ import type {
   LocalMaterial,
   NotepadCategory, NotepadFontSize, NotepadItem, NotepadLogEntry,
   NoteEntry, NoteMeta, NoteSource, NoteSortBy,
+  AiNoteCandidate, AiNoteStage,
   BookEntry, BookTocItem, ChapterMeta, BookGuideContext,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
@@ -384,6 +385,7 @@ type AppStore = {
   writingTone: WritingTone
   writingListTab: 'articles' | 'repository' | 'notes'
   notesList: NoteEntry[] | null
+  aiNoteGeneration: { path: string; stage: AiNoteStage; candidate: AiNoteCandidate | null; applying: boolean } | null
   notesSortBy: NoteSortBy
   notesCategory: 'all' | NoteSource
   writingAssistantWidth: number
@@ -466,6 +468,9 @@ type AppStore = {
     body?: string
   }) => Promise<{ path: string; created: boolean }>
   updateNoteMetaAction: (path: string, patch: Partial<NoteMeta>) => Promise<void>
+  generateAiNote: (path: string) => Promise<void>
+  applyAiNote: () => Promise<void>
+  cancelAiNote: () => Promise<void>
   deleteNoteAction: (path: string) => Promise<void>
   importReadNotesAction: () => Promise<{ created: number; skipped: number } | null>
   setNotesSortBy: (s: NoteSortBy) => void
@@ -509,6 +514,17 @@ let companionSelectSeq = 0
 
 // selectArticleCompanion 的单调序号：同 companionSelectSeq，对照槽的过期读取结果一律丢弃。
 let articleCompanionSelectSeq = 0
+let stopNotesAiProgress: (() => void) | null = null
+
+function aiNoteErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.includes('MISSING_API_KEY')) return '请先在设置中配置联网搜索 API Key'
+  if (message.includes('NOTE_CHANGED')) return '笔记在预览期间已修改，未覆盖新内容'
+  if (message.includes('ALREADY_GENERATED')) return '这篇笔记已经生成过'
+  if (message.includes('SOURCE_NOT_FOUND')) return '找不到对应的本地来源正文'
+  if (message.includes('SAVE_FAILED')) return '笔记保存失败，请稍后重试'
+  return 'AI 笔记生成失败，请重试'
+}
 
 // 书籍：切换书/章节的单调序号，丢弃过期读取结果
 let bookSelectSeq = 0
@@ -648,6 +664,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingTone: 'parchment',
   writingListTab: 'articles',
   notesList: null,
+  aiNoteGeneration: null,
   notesSortBy: 'source',
   notesCategory: 'all',
   writingAssistantWidth: 320,
@@ -2259,6 +2276,75 @@ export const useStore = create<AppStore>((set, get) => ({
   updateNoteMetaAction: async (p, patch) => {
     await ipc.notesUpdateMeta({ path: p, patch })
     set(s => ({ notesList: s.notesList?.map(e => e.path === p ? { ...e, meta: { ...e.meta, ...patch } } : e) ?? null }))
+  },
+  generateAiNote: async (notePath) => {
+    if (get().aiNoteGeneration) return
+    set({ aiNoteGeneration: { path: notePath, stage: 'reading', candidate: null, applying: false } })
+    if (!stopNotesAiProgress) {
+      stopNotesAiProgress = ipc.onNotesAiProgress(payload => {
+        set(state => state.aiNoteGeneration?.path === payload.path
+          ? { aiNoteGeneration: { ...state.aiNoteGeneration, stage: payload.stage } }
+          : {})
+      })
+    }
+    try {
+      const writingFile = get().writingFile
+      if (writingFile?.path === notePath && writingFile.dirty) await get().saveWritingFile()
+      const companion = get().articleCompanion
+      if (companion?.filePath === notePath && companion.dirty) await get().saveArticleCompanion()
+      if ((get().writingFile?.path === notePath && get().writingFile?.dirty)
+        || (get().articleCompanion?.filePath === notePath && get().articleCompanion?.dirty)) throw new Error('SAVE_FAILED')
+      const candidate = await ipc.notesGenerateAi({ path: notePath })
+      set(state => ({
+        aiNoteGeneration: state.aiNoteGeneration?.path === notePath
+          ? { ...state.aiNoteGeneration, candidate }
+          : state.aiNoteGeneration,
+      }))
+    } catch (error) {
+      set({ aiNoteGeneration: null })
+      get().showToast(aiNoteErrorMessage(error))
+    }
+  },
+  applyAiNote: async () => {
+    const generation = get().aiNoteGeneration
+    const candidate = generation?.candidate
+    if (!generation || !candidate || generation.applying) return
+    set({ aiNoteGeneration: { ...generation, applying: true } })
+    try {
+      const writingFile = get().writingFile
+      if (writingFile?.path === candidate.path && writingFile.dirty) await get().saveWritingFile()
+      const companion = get().articleCompanion
+      if (companion?.filePath === candidate.path && companion.dirty) await get().saveArticleCompanion()
+      if ((get().writingFile?.path === candidate.path && get().writingFile?.dirty)
+        || (get().articleCompanion?.filePath === candidate.path && get().articleCompanion?.dirty)) throw new Error('SAVE_FAILED')
+      const applied = await ipc.notesApplyAi({ generationId: candidate.generationId })
+      set(state => ({
+        aiNoteGeneration: null,
+        notesList: state.notesList?.map(item => item.path === applied.path
+          ? { ...item, meta: { ...item.meta, ai_generated_at: applied.aiGeneratedAt } }
+          : item) ?? null,
+        writingFile: state.writingFile?.path === applied.path
+          ? { ...state.writingFile, body: applied.body, dirty: false, saving: 'saved' as const }
+          : state.writingFile,
+        articleCompanion: state.articleCompanion?.filePath === applied.path
+          ? { ...state.articleCompanion, body: applied.body, dirty: false, saving: 'saved' as const }
+          : state.articleCompanion,
+      }))
+      void get().loadNotes().catch(() => {})
+    } catch (error) {
+      await ipc.notesAbortAi({ generationId: candidate.generationId }).catch(() => {})
+      set({ aiNoteGeneration: null })
+      get().showToast(aiNoteErrorMessage(error))
+    }
+  },
+  cancelAiNote: async () => {
+    const candidate = get().aiNoteGeneration?.candidate
+    if (!candidate) return
+    try {
+      await ipc.notesAbortAi({ generationId: candidate.generationId })
+    } finally {
+      set({ aiNoteGeneration: null })
+    }
   },
   deleteNoteAction: async (p) => {
     await ipc.notesDelete({ path: p })

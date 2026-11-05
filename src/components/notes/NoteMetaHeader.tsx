@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import type { NoteEntry } from '@shared/index'
 import { StarRating } from './StarRating'
 import { NoteCoverGenerator } from './NoteCoverGenerator'
+import { AiNoteGenerator } from './AiNoteGenerator'
 
 export function NoteMetaHeader({ entry }: { entry: NoteEntry }) {
   const updateNoteMetaAction = useStore(s => s.updateNoteMetaAction)
@@ -34,12 +35,15 @@ export function NoteMetaHeader({ entry }: { entry: NoteEntry }) {
         <span>
           {meta.read_at ? `读完于 ${meta.read_at.slice(0, 10)} · ` : ''}收录于 {meta.collected_at.slice(0, 10)}
         </span>
-        <button
-          data-testid="note-meta-info-toggle"
-          title="链接与亮点" aria-label="链接与亮点"
-          className="ml-auto text-parchment/45 hover:text-parchment"
-          onClick={() => setInfoOpen(o => !o)}
-        >ⓘ</button>
+        <div className="ml-auto flex items-center gap-2">
+          <AiNoteGenerator entry={entry} />
+          <button
+            data-testid="note-meta-info-toggle"
+            title="链接与亮点" aria-label="链接与亮点"
+            className="text-parchment/45 hover:text-parchment"
+            onClick={() => setInfoOpen(o => !o)}
+          >ⓘ</button>
+        </div>
       </div>
       <input
         data-testid="note-meta-summary"

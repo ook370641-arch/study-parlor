@@ -57,7 +57,7 @@ export function NoteBoard() {
           </div>
           <NoteMetaHeader key={`meta-${entry.path}`} entry={entry} />
           <WritingEditor
-            key={file.path}
+            key={`${file.path}:${entry.meta.ai_generated_at ?? 'original'}`}
             initial={file.body}
             onChange={md => updateWritingBody(md)}
             theme="academic"
