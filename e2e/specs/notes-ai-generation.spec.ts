@@ -100,8 +100,8 @@ test.describe('@p1 AI 笔记两轮生成', () => {
 
   async function openMainNote(): Promise<void> {
     const cover = new CoverPage(window)
-    await cover.enterIfNeeded('E2E 测试员')
     await cover.goToBriefing()
+    await window.locator('[data-testid="briefing-source-writing"]').click()
     await window.locator('[data-testid="writing-list-tab-notes"]').click()
     await window.locator('[data-testid="note-card-a"]').click()
     await expect(window.locator('[data-testid="note-board"]')).toBeVisible()
@@ -146,7 +146,6 @@ test.describe('@p1 AI 笔记两轮生成', () => {
 
   test('对照页只允许当前文章来源笔记，写回不跳页', async () => {
     const cover = new CoverPage(window)
-    await cover.enterIfNeeded('E2E 测试员')
     await cover.goToBriefing()
     await window.locator('[data-testid="anthropic-article-row"]').filter({ hasText: 'E2E AI Note' }).click()
     await window.locator('[data-testid="article-panel-tab-companion-anthropic"]').click()

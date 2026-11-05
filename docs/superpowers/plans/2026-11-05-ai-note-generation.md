@@ -284,5 +284,5 @@ Run: `git add e2e/specs/notes-ai-generation.spec.ts e2e/source-map.json docs/REA
 
 - Task 0–6 已按 TDD 完成并分别提交；Task 7 的 E2E 脚本、source map 与文档已完成。
 - 定向 Vitest 45/45 通过，生产资源 `npx electron-vite build` 通过，文档检查通过。
-- E2E 未执行：需要用户单独授权启动 Electron 测试实例。完整 `npm run build` 仍受两个未触碰文件的既有类型错误阻断，详见 spec §10。
+- 定向 E2E 3/3 通过。完整 `npm run build` 仍受两个未触碰文件的既有类型错误阻断，详见 spec §10。
 
