@@ -115,7 +115,7 @@
 
 ### 16. 设置 / 向导 / LLM 配置
 
-**现状**：首次配置向导（`SetupWizard`）+ Settings 页 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。Model 输入框可探活 `/models` 并刷新可选模型，保存后沿用现有多配置生效流程。Demo 信息说明默认只读、点击「编辑」才可修改；设置页提供六个信息入口的显隐开关，持久化到 `demoNotesHidden`。
+**现状**：首次配置向导（`SetupWizard`）+ Settings 页 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。配置按厂商命名；Model 下拉框可探活 `/models`，并按配置持久化最近成功获取的模型列表。Demo 信息说明默认只读、点击「编辑」才可修改；设置页提供六个信息入口的显隐开关，持久化到 `demoNotesHidden`。
 **历史链**：06-05 setup-wizard → 06-14 settings → 06-14 settings-page → 09-19 llm-config-switch
 
 ### 17. DIY 术语

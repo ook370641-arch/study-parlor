@@ -21,7 +21,7 @@ describe('planLlmConfigs', () => {
   })
 
   it('已有配置且 activeId 有效 → 原样返回，changed=false', () => {
-    const configs: LlmConfig[] = [{ id: 'cfg-a', ...ENV }]
+    const configs: LlmConfig[] = [{ id: 'cfg-a', ...ENV, models: ['kimi-k2.6', 'kimi-k3'] }]
     const r = planLlmConfigs({ llmConfigs: configs, activeLlmConfigId: 'cfg-a' }, ENV)
     expect(r).toEqual({ configs, activeId: 'cfg-a', changed: false })
   })
@@ -107,5 +107,16 @@ describe('createLlmConfigActions', () => {
   it('save 未知 id → 错误码', () => {
     const { io } = makeIO({ llmConfigs: [{ id: 'cfg-a', ...ENV }], activeLlmConfigId: 'cfg-a' })
     expect(createLlmConfigActions(makeCfg(), io).save('nope', ENV)).toEqual({ ok: false, code: 'LLM_CONFIG_NOT_FOUND' })
+  })
+
+  it('saveModels 只记住最近探活列表，不修改凭证和当前模型', () => {
+    const original: LlmConfig = { id: 'cfg-a', ...ENV }
+    const { io, read } = makeIO({ llmConfigs: [original], activeLlmConfigId: 'cfg-a' })
+    const cfg = makeCfg()
+    const actions = createLlmConfigActions(cfg, io)
+
+    expect(actions.saveModels('cfg-a', ['kimi-k2.6', 'kimi-k3'])).toEqual({ ok: true })
+    expect(read().llmConfigs[0]).toEqual({ ...original, models: ['kimi-k2.6', 'kimi-k3'] })
+    expect(cfg).toEqual(makeCfg())
   })
 })

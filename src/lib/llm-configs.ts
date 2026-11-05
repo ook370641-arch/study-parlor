@@ -8,11 +8,18 @@ function hostOf(baseUrl: string): string {
   }
 }
 
-/** 配置条目标识：model 名；重名追加 @host；都空则「未命名配置」 */
+/** 配置条目标识：厂商名；重名追加 @host；无法识别则用 host */
 export function llmConfigLabel(c: LlmConfig, all: LlmConfig[]): string {
-  const base = c.model.trim() || hostOf(c.baseUrl) || '未命名配置'
-  const dup = all.some(o => o.id !== c.id && o.model.trim() && o.model.trim() === c.model.trim())
-  if (!dup || !c.model.trim()) return base
+  const providerOf = (config: LlmConfig): string => {
+    const host = hostOf(config.baseUrl).toLowerCase()
+    const model = config.model.trim().toLowerCase()
+    if (host.includes('kimi') || model.startsWith('kimi-')) return 'Kimi'
+    if (host.includes('deepseek') || model.startsWith('deepseek-')) return 'DeepSeek'
+    return hostOf(config.baseUrl) || '未命名配置'
+  }
+  const base = providerOf(c)
+  const dup = all.some(o => o.id !== c.id && providerOf(o) === base)
+  if (!dup) return base
   const host = hostOf(c.baseUrl)
   return host ? `${base}@${host}` : base
 }

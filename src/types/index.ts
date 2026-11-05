@@ -556,7 +556,7 @@ export interface BookGuideContext {
   prevChapterSummary?: string
 }
 
-export type LlmConfig = { id: string; apiKey: string; baseUrl: string; model: string }
+export type LlmConfig = { id: string; apiKey: string; baseUrl: string; model: string; models?: string[] }
 
 /** 浏览位置槽位:某文档(filePath)的首可见块索引(粗粒度,见 src/lib/scroll-memory.ts) */
 export interface ScrollMemorySlot {
@@ -771,7 +771,8 @@ export type IpcApi = {
   getConfig: () => Promise<AppConfig>
   llmConfigList: () => Promise<{ configs: LlmConfig[]; activeId: string }>
   llmConfigSetActive: (id: string) => Promise<{ ok: true } | { ok: false; code: string }>
-  llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string }) => Promise<{ ok: true; id: string } | { ok: false; code: string }>
+  llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string; models?: string[] }) => Promise<{ ok: true; id: string } | { ok: false; code: string }>
+  llmConfigSaveModels: (id: string, models: string[]) => Promise<{ ok: true } | { ok: false; code: string }>
   llmConfigListModels: (creds: { apiKey: string; baseUrl: string }) => Promise<{ ok: true; models: string[] } | { ok: false; reason?: string }>
   configSetLibraryPath: (path: string) => Promise<{ ok: true }>
 

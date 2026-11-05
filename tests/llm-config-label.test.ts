@@ -6,17 +6,18 @@ const a: LlmConfig = { id: 'cfg-a', apiKey: '', baseUrl: 'https://api.kimi.com/c
 const b: LlmConfig = { id: 'cfg-b', apiKey: '', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-v4-pro' }
 
 describe('llmConfigLabel', () => {
-  it('默认用 model 名', () => {
-    expect(llmConfigLabel(a, [a, b])).toBe('kimi-k3')
+  it('默认用厂商名', () => {
+    expect(llmConfigLabel(a, [a, b])).toBe('Kimi')
+    expect(llmConfigLabel(b, [a, b])).toBe('DeepSeek')
   })
-  it('model 为空时用 host', () => {
-    const c = { ...a, model: '' }
-    expect(llmConfigLabel(c, [c])).toBe('api.kimi.com')
+  it('无法识别厂商时用 host', () => {
+    const c = { ...a, baseUrl: 'https://relay.example.com/v1', model: '' }
+    expect(llmConfigLabel(c, [c])).toBe('relay.example.com')
   })
-  it('model 重名时追加 @host 区分', () => {
+  it('厂商重名时追加 @host 区分', () => {
     const d: LlmConfig = { id: 'cfg-d', apiKey: '', baseUrl: 'https://relay.example.com/v1', model: 'kimi-k3' }
-    expect(llmConfigLabel(a, [a, d])).toBe('kimi-k3@api.kimi.com')
-    expect(llmConfigLabel(d, [a, d])).toBe('kimi-k3@relay.example.com')
+    expect(llmConfigLabel(a, [a, d])).toBe('Kimi@api.kimi.com')
+    expect(llmConfigLabel(d, [a, d])).toBe('Kimi@relay.example.com')
   })
   it('model 与 host 都为空 → 未命名配置', () => {
     const c = { ...a, model: '', baseUrl: '' }

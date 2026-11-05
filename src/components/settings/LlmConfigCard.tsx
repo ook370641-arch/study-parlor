@@ -27,6 +27,7 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus | null>(null)
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [modelListStatus, setModelListStatus] = useState<VerifyStatus | null>(null)
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false)
 
   const toFields = (c: LlmConfig): Fields => ({ apiKey: c.apiKey, baseUrl: c.baseUrl, model: c.model })
 
@@ -37,7 +38,7 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
       setConfigs(configs)
       setActiveId(activeId)
       const cur = configs.find(c => c.id === activeId) ?? configs[0]
-      if (cur) { setEditingId(cur.id); setForm(toFields(cur)) }
+      if (cur) { setEditingId(cur.id); setForm(toFields(cur)); setAvailableModels(cur.models ?? []) }
     }).catch(err => onError(err?.message || '读取 LLM 配置失败'))
     return () => { mounted = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,8 +55,9 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
     setEditingId(id)
     setForm(toFields(c))
     setVerifyStatus(null)
-    setAvailableModels([])
+    setAvailableModels(c.models ?? [])
     setModelListStatus(null)
+    setModelDropdownOpen(false)
   }
 
   const startDraft = () => {
@@ -64,13 +66,15 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
     setVerifyStatus(null)
     setAvailableModels([])
     setModelListStatus(null)
+    setModelDropdownOpen(false)
   }
 
   const cancelDraft = () => {
     setDraft(null)
     setVerifyStatus(null)
-    setAvailableModels([])
+    setAvailableModels(editingConfig?.models ?? [])
     setModelListStatus(null)
+    setModelDropdownOpen(false)
     if (editingConfig) setForm(toFields(editingConfig)) // 还原查看中的配置
   }
 
@@ -79,13 +83,13 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
     setConfigs(next)
     setActiveId(act)
     const target = next.find(c => c.id === (selectId ?? editingId)) ?? next.find(c => c.id === act) ?? next[0]
-    if (target) { setEditingId(target.id); setForm(toFields(target)) }
+    if (target) { setEditingId(target.id); setForm(toFields(target)); setAvailableModels(target.models ?? []) }
   }
 
   const saveDraft = async () => {
     if (!draft) return
     try {
-      const r = await ipc.llmConfigSave(null, draft)
+      const r = await ipc.llmConfigSave(null, { ...draft, models: availableModels })
       if (!r.ok) { onError('保存新配置失败'); return }
       setDraft(null)
       await reload(r.id)
@@ -98,7 +102,7 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
   const saveEditing = async () => {
     if (!editingId) return
     try {
-      const r = await ipc.llmConfigSave(editingId, form)
+      const r = await ipc.llmConfigSave(editingId, { ...form, models: availableModels })
       if (!r.ok) { onError('保存配置失败'); return }
       await reload()
       showToast(isEditingActive ? '配置已保存，立即生效' : '配置已保存')
@@ -138,12 +142,16 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
   }
 
   const refreshModels = async () => {
-    setAvailableModels([])
     setModelListStatus({ kind: 'loading', message: '正在获取模型列表...' })
     try {
       const result = await ipc.llmConfigListModels({ apiKey: fields.apiKey.trim(), baseUrl: fields.baseUrl.trim() })
       if (result.ok) {
         setAvailableModels(result.models)
+        if (!draft && editingId) {
+          const saved = await ipc.llmConfigSaveModels(editingId, result.models)
+          if (!saved.ok) { setModelListStatus({ kind: 'error', message: '模型列表保存失败' }); return }
+          setConfigs(current => current.map(c => c.id === editingId ? { ...c, models: result.models } : c))
+        }
         setModelListStatus({ kind: 'success', message: result.models.length > 0 ? `已更新，共 ${result.models.length} 个模型` : '接口未返回可选模型' })
       } else {
         setModelListStatus({ kind: 'error', message: result.reason || '获取模型列表失败' })
@@ -185,16 +193,59 @@ export function LlmConfigCard({ isAcademic, showToast, onError }: Props) {
       <div>
         <div className={labelCls}>Model</div>
         <div className="flex gap-2">
-          <input data-testid="settings-model-input" type="text" value={f.model} disabled={disabled}
-            list="settings-model-options" onChange={e => setFields({ ...f, model: e.target.value })} className={`flex-1 ${inputCls}`} />
+          <div className="relative flex-1" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setModelDropdownOpen(false) }}>
+            <input
+              data-testid="settings-model-input"
+              type="text"
+              role="combobox"
+              aria-expanded={modelDropdownOpen}
+              aria-controls="settings-model-options"
+              value={f.model}
+              disabled={disabled}
+              onClick={() => { if (availableModels.length > 0) setModelDropdownOpen(true) }}
+              onChange={e => { setFields({ ...f, model: e.target.value }); setModelDropdownOpen(availableModels.length > 0) }}
+              onKeyDown={e => { if (e.key === 'Escape') setModelDropdownOpen(false) }}
+              className={`w-full ${availableModels.length > 0 ? 'pr-8' : ''} ${inputCls}`}
+            />
+            {availableModels.length > 0 && (
+              <button
+                data-testid="settings-model-dropdown-toggle"
+                type="button"
+                aria-label="展开模型列表"
+                tabIndex={-1}
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => setModelDropdownOpen(open => !open)}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}
+              >
+                {modelDropdownOpen ? '▴' : '▾'}
+              </button>
+            )}
+            {modelDropdownOpen && availableModels.length > 0 && (
+              <div id="settings-model-options" data-testid="settings-model-options" className={`absolute left-0 right-0 top-full z-20 mt-1 max-h-40 overflow-y-auto rounded-md border shadow-lg ${isAcademic ? 'border-slate/30 bg-ink' : 'border-[#1a1a1a]/10 bg-white'}`}>
+                {availableModels.map(model => (
+                  <button
+                    key={model}
+                    data-testid="settings-model-option"
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => { setFields({ ...f, model }); setModelDropdownOpen(false) }}
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                      f.model === model
+                        ? (isAcademic ? 'bg-ember/15 text-ember' : 'bg-[#1a1a1a]/5 text-[#1a1a1a]')
+                        : (isAcademic ? 'text-parchment/80 hover:bg-parchment/5' : 'text-[#555] hover:bg-[#1a1a1a]/5')
+                    }`}
+                  >
+                    {model}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button data-testid="settings-model-refresh" type="button" onClick={refreshModels}
             disabled={!f.apiKey.trim() || !f.baseUrl.trim() || modelListStatus?.kind === 'loading'} className={ghostBtnCls}>
             {modelListStatus?.kind === 'loading' ? '探活中...' : '探活并更新'}
           </button>
         </div>
-        <datalist id="settings-model-options" data-testid="settings-model-options">
-          {availableModels.map(model => <option key={model} value={model} />)}
-        </datalist>
         {modelListStatus && (
           <div data-testid="settings-model-list-status" className={`mt-1 text-xs ${
             modelListStatus.kind === 'error' ? 'text-wine' :

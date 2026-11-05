@@ -15,6 +15,7 @@ vi.mock('@/lib/ipc', () => ({
     getState: vi.fn().mockResolvedValue({}),
     llmConfigList: vi.fn(),
     llmConfigListModels: vi.fn(),
+    llmConfigSaveModels: vi.fn(),
     llmConfigSetActive: vi.fn(),
     llmConfigSave: vi.fn(),
     configSetLibraryPath: vi.fn(),
@@ -39,6 +40,7 @@ describe('Settings · AI 服务', () => {
     })
     vi.mocked(ipc.setupProbeKey).mockResolvedValue({ ok: true })
     vi.mocked(ipc.llmConfigListModels).mockResolvedValue({ ok: true, models: ['kimi-k2.6', 'kimi-k3'] })
+    vi.mocked(ipc.llmConfigSaveModels).mockResolvedValue({ ok: true })
     vi.mocked(ipc.setupSelectDirectory).mockResolvedValue({ canceled: true, path: null })
     vi.mocked(ipc.searchCheckConfig).mockResolvedValue({ configured: false })
     vi.mocked(ipc.setSearchApiKey).mockResolvedValue(undefined)
@@ -66,7 +68,7 @@ describe('Settings · AI 服务', () => {
     expect(draft).toBeInTheDocument()
     // 原配置摘要钉在上方，数据可见（未丢）
     const summary = screen.getByTestId('settings-llm-current-summary')
-    expect(summary).toHaveTextContent('kimi-k3')
+    expect(summary).toHaveTextContent('Kimi')
     expect(summary).toHaveTextContent('使用中')
     // 草稿字段为空
     expect(within(draft).getByTestId('settings-api-key-input')).toHaveValue('')
@@ -93,7 +95,7 @@ describe('Settings · AI 服务', () => {
 
     await waitFor(() => {
       expect(ipc.llmConfigSave).toHaveBeenCalledWith(null, {
-        apiKey: 'sk-ds-test', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-v4-pro'
+        apiKey: 'sk-ds-test', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-v4-pro', models: []
       })
     })
     await waitFor(() => expect(screen.getAllByTestId('settings-llm-config-chip')).toHaveLength(2))
@@ -136,7 +138,7 @@ describe('Settings · AI 服务', () => {
     fireEvent.click(screen.getByTestId('settings-ai-save-button'))
     await waitFor(() => {
       expect(ipc.llmConfigSave).toHaveBeenCalledWith('cfg-kimi', {
-        apiKey: 'sk-kimi-test', baseUrl: 'https://api.kimi.com/coding/v1', model: 'kimi-k3.1'
+        apiKey: 'sk-kimi-test', baseUrl: 'https://api.kimi.com/coding/v1', model: 'kimi-k3.1', models: []
       })
     })
   })
@@ -150,10 +152,29 @@ describe('Settings · AI 服务', () => {
     await waitFor(() => expect(ipc.llmConfigListModels).toHaveBeenCalledWith({
       apiKey: 'sk-kimi-test', baseUrl: 'https://api.kimi.com/coding/v1'
     }))
-    expect(screen.getByTestId('settings-model-input')).toHaveAttribute('list', 'settings-model-options')
-    const options = within(screen.getByTestId('settings-model-options')).getAllByRole('option', { hidden: true })
-    expect(options.map(option => option.getAttribute('value'))).toEqual(['kimi-k2.6', 'kimi-k3'])
+    const input = screen.getByTestId('settings-model-input')
+    expect(screen.queryByTestId('settings-model-options')).not.toBeInTheDocument()
+    fireEvent.click(input)
+    const options = screen.getAllByTestId('settings-model-option')
+    expect(options.map(option => option.textContent)).toEqual(['kimi-k2.6', 'kimi-k3'])
+    expect(options[0]).toBeVisible()
+    fireEvent.click(options[0])
+    expect(input).toHaveValue('kimi-k2.6')
+    expect(screen.queryByTestId('settings-model-options')).not.toBeInTheDocument()
+    expect(ipc.llmConfigSaveModels).toHaveBeenCalledWith('cfg-kimi', ['kimi-k2.6', 'kimi-k3'])
     expect(screen.getByTestId('settings-model-list-status')).toHaveTextContent('已更新，共 2 个模型')
+  })
+
+  it('重新进入设置时恢复该配置最近探活的下拉模型', async () => {
+    mockConfigs([{ ...KIMI, models: ['kimi-k2.6', 'kimi-k3'] }], 'cfg-kimi')
+    render(<Settings />)
+
+    await waitFor(() => screen.getByDisplayValue('kimi-k3'))
+    expect(screen.queryByTestId('settings-model-options')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('settings-model-input'))
+    const options = screen.getAllByTestId('settings-model-option')
+    expect(options.map(option => option.textContent)).toEqual(['kimi-k2.6', 'kimi-k3'])
+    expect(ipc.llmConfigListModels).not.toHaveBeenCalled()
   })
 
   it('模型列表获取失败时保留当前模型并显示原因', async () => {

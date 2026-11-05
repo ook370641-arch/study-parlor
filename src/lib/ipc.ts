@@ -64,6 +64,7 @@ export const ipc = {
   get llmConfigList() { return ensure().llmConfigList },
   get llmConfigSetActive() { return ensure().llmConfigSetActive },
   get llmConfigSave() { return ensure().llmConfigSave },
+  get llmConfigSaveModels() { return ensure().llmConfigSaveModels },
   get llmConfigListModels() { return ensure().llmConfigListModels },
   get configSetLibraryPath() { return ensure().configSetLibraryPath },
 

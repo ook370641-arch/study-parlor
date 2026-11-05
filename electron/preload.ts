@@ -89,8 +89,9 @@ const api: IpcApi = {
   getConfig: () => ipcRenderer.invoke('config:get'),
   llmConfigList: () => ipcRenderer.invoke('llmConfig:list'),
   llmConfigSetActive: (id: string) => ipcRenderer.invoke('llmConfig:setActive', id),
-  llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string }) =>
+  llmConfigSave: (id: string | null, fields: { apiKey: string; baseUrl: string; model: string; models?: string[] }) =>
     ipcRenderer.invoke('llmConfig:save', id, fields),
+  llmConfigSaveModels: (id: string, models: string[]) => ipcRenderer.invoke('llmConfig:saveModels', id, models),
   llmConfigListModels: (creds: { apiKey: string; baseUrl: string }) =>
     ipcRenderer.invoke('llmConfig:listModels', creds),
   configSetLibraryPath: (p: string) => ipcRenderer.invoke('config:setLibraryPath', p),

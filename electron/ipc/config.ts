@@ -2,7 +2,7 @@ import { ipcMain } from 'electron'
 import { loadEnv, updateEnvKeys } from '../env'
 import type { AppConfig } from '../env'
 import { getCurrentState, patchState } from './state'
-import { createLlmConfigActions, type LlmCreds } from '../lib/llm-configs'
+import { createLlmConfigActions, type LlmConfigFields } from '../lib/llm-configs'
 import { listModelsWithCredentials } from '../lib/kimi'
 
 export function registerConfigIpc(cfg: AppConfig) {
@@ -16,7 +16,9 @@ export function registerConfigIpc(cfg: AppConfig) {
 
   ipcMain.handle('llmConfig:setActive', async (_, id: string) => actions.setActive(id))
 
-  ipcMain.handle('llmConfig:save', async (_, id: string | null, fields: LlmCreds) => actions.save(id, fields))
+  ipcMain.handle('llmConfig:save', async (_, id: string | null, fields: LlmConfigFields) => actions.save(id, fields))
+
+  ipcMain.handle('llmConfig:saveModels', async (_, id: string, models: string[]) => actions.saveModels(id, models))
 
   ipcMain.handle('llmConfig:listModels', async (_, creds: { apiKey: string; baseUrl: string }) =>
     listModelsWithCredentials({ apiKey: creds.apiKey.trim(), baseUrl: creds.baseUrl.trim() }))
