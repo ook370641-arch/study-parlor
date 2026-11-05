@@ -2758,5 +2758,217 @@
     "url": "paintings/360-%E7%BA%A2%E6%A5%94%E5%AD%90%E6%89%93%E8%BF%9B%E7%99%BD%E8%89%B2-beat-the-whites-with-the-red-wedge.jpg",
     "category": "constructivism",
     "focus": "50% 68%"
+  },
+  {
+    "id": "gonsalves-1",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "林中书屋（Woods Within）",
+    "url": "paintings/361-%E6%9E%97%E4%B8%AD%E4%B9%A6%E5%B1%8B-woods-within.jpg",
+    "category": "magic-realism",
+    "focus": "50% 59%"
+  },
+  {
+    "id": "gonsalves-2",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "湖中女树（题名待核）",
+    "url": "paintings/362-%E6%B9%96%E4%B8%AD%E5%A5%B3%E6%A0%91-%E9%A2%98%E5%90%8D%E5%BE%85%E6%A0%B8.jpg",
+    "category": "magic-realism",
+    "focus": "100% 37%"
+  },
+  {
+    "id": "gonsalves-3",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "岩石成城（Stepping Stones）",
+    "url": "paintings/363-%E5%B2%A9%E7%9F%B3%E6%88%90%E5%9F%8E-stepping-stones.jpg",
+    "category": "magic-realism"
+  },
+  {
+    "id": "gonsalves-4",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "城市杂技（High Park Pickets）",
+    "url": "paintings/364-%E5%9F%8E%E5%B8%82%E6%9D%82%E6%8A%80-high-park-pickets.jpg",
+    "category": "magic-realism"
+  },
+  {
+    "id": "gonsalves-5",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "洪水来了（Here Comes the Flood）",
+    "url": "paintings/365-%E6%B4%AA%E6%B0%B4%E6%9D%A5%E4%BA%86-here-comes-the-flood.jpg",
+    "category": "magic-realism",
+    "focus": "50% 65%"
+  },
+  {
+    "id": "gonsalves-6",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "铁路旁的房子（House by the Railroad）",
+    "url": "paintings/366-%E9%93%81%E8%B7%AF%E6%97%81%E7%9A%84%E6%88%BF%E5%AD%90-house-by-the-railroad.jpg",
+    "category": "magic-realism",
+    "focus": "50% 73%"
+  },
+  {
+    "id": "gonsalves-7",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "中世纪月光（Medieval Moonlight）",
+    "url": "paintings/367-%E4%B8%AD%E4%B8%96%E7%BA%AA%E6%9C%88%E5%85%89-medieval-moonlight.jpg",
+    "category": "magic-realism",
+    "focus": "50% 64%"
+  },
+  {
+    "id": "gonsalves-8",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "马赛克护城河（Mosaic Moat）",
+    "url": "paintings/368-%E9%A9%AC%E8%B5%9B%E5%85%8B%E6%8A%A4%E5%9F%8E%E6%B2%B3-mosaic-moat.jpg",
+    "category": "magic-realism",
+    "focus": "50% 66%"
+  },
+  {
+    "id": "gonsalves-9",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "未完成的拼图（Unfinished Puzzle）",
+    "url": "paintings/369-%E6%9C%AA%E5%AE%8C%E6%88%90%E7%9A%84%E6%8B%BC%E5%9B%BE-unfinished-puzzle.jpg",
+    "category": "magic-realism",
+    "focus": "50% 59%"
+  },
+  {
+    "id": "gonsalves-10",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "为鸟而建（For the Birds）",
+    "url": "paintings/370-%E4%B8%BA%E9%B8%9F%E8%80%8C%E5%BB%BA-for-the-birds.jpg",
+    "category": "magic-realism",
+    "focus": "100% 35%"
+  },
+  {
+    "id": "gonsalves-11",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "月亮之上（Over the Moon）",
+    "url": "paintings/371-%E6%9C%88%E4%BA%AE%E4%B9%8B%E4%B8%8A-over-the-moon.jpg",
+    "category": "magic-realism",
+    "focus": "50% 33%"
+  },
+  {
+    "id": "gonsalves-12",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "漂浮的秋叶（Fall Floating）",
+    "url": "paintings/372-%E6%BC%82%E6%B5%AE%E7%9A%84%E7%A7%8B%E5%8F%B6-fall-floating.jpg",
+    "category": "magic-realism",
+    "focus": "0% 58%"
+  },
+  {
+    "id": "gonsalves-13",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "大教堂峭壁（Cathedral Bluffs）",
+    "url": "paintings/373-%E5%A4%A7%E6%95%99%E5%A0%82%E5%B3%AD%E5%A3%81-cathedral-bluffs.jpg",
+    "category": "magic-realism"
+  },
+  {
+    "id": "gonsalves-14",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "大雪（Big Snow）",
+    "url": "paintings/374-%E5%A4%A7%E9%9B%AA-big-snow.jpg",
+    "category": "magic-realism",
+    "focus": "100% 61%"
+  },
+  {
+    "id": "gonsalves-15",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "烛光回廊（Candlelit Cloisters）",
+    "url": "paintings/375-%E7%83%9B%E5%85%89%E5%9B%9E%E5%BB%8A-candlelit-cloisters.jpg",
+    "category": "magic-realism",
+    "focus": "0% 86%"
+  },
+  {
+    "id": "gonsalves-16",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "黑板宇宙（Chalkboard Universe）",
+    "url": "paintings/376-%E9%BB%91%E6%9D%BF%E5%AE%87%E5%AE%99-chalkboard-universe.jpg",
+    "category": "magic-realism",
+    "focus": "0% 59%"
+  },
+  {
+    "id": "gonsalves-17",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "舞动的风（The Dancing Wind）",
+    "url": "paintings/377-%E8%88%9E%E5%8A%A8%E7%9A%84%E9%A3%8E-the-dancing-wind.jpg",
+    "category": "magic-realism",
+    "focus": "0% 71%"
+  },
+  {
+    "id": "gonsalves-18",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "萤火虫星座（Firefly Constellation）",
+    "url": "paintings/378-%E8%90%A4%E7%81%AB%E8%99%AB%E6%98%9F%E5%BA%A7-firefly-constellation.jpg",
+    "category": "magic-realism",
+    "focus": "100% 24%"
+  },
+  {
+    "id": "gonsalves-19",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "洪水围栏（Flood Fences）",
+    "url": "paintings/379-%E6%B4%AA%E6%B0%B4%E5%9B%B4%E6%A0%8F-flood-fences.jpg",
+    "category": "magic-realism"
+  },
+  {
+    "id": "gonsalves-20",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "湖中淑女（Ladies of the Lake）",
+    "url": "paintings/380-%E6%B9%96%E4%B8%AD%E6%B7%91%E5%A5%B3-ladies-of-the-lake.jpg",
+    "category": "magic-realism",
+    "focus": "50% 57%"
+  },
+  {
+    "id": "gonsalves-21",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "水上登山（Aquatic Mountaineering）",
+    "url": "paintings/381-%E6%B0%B4%E4%B8%8A%E7%99%BB%E5%B1%B1-aquatic-mountaineering.jpg",
+    "category": "magic-realism",
+    "focus": "100% 100%"
+  },
+  {
+    "id": "gonsalves-22",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "林间办公室（Arborial Office）",
+    "url": "paintings/382-%E6%9E%97%E9%97%B4%E5%8A%9E%E5%85%AC%E5%AE%A4-arborial-office.jpg",
+    "category": "magic-realism",
+    "focus": "50% 29%"
+  },
+  {
+    "id": "gonsalves-23",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "石上雕琢（Carved in Stone）",
+    "url": "paintings/383-%E7%9F%B3%E4%B8%8A%E9%9B%95%E7%90%A2-carved-in-stone.jpg",
+    "category": "magic-realism",
+    "focus": "50% 55%"
+  },
+  {
+    "id": "gonsalves-24",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "国际象棋大师（Chess Master）",
+    "url": "paintings/384-%E5%9B%BD%E9%99%85%E8%B1%A1%E6%A3%8B%E5%A4%A7%E5%B8%88-chess-master.jpg",
+    "category": "magic-realism",
+    "focus": "50% 28%"
+  },
+  {
+    "id": "gonsalves-25",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "社区肖像（Community Portrait）",
+    "url": "paintings/385-%E7%A4%BE%E5%8C%BA%E8%82%96%E5%83%8F-community-portrait.jpg",
+    "category": "magic-realism",
+    "focus": "50% 66%"
+  },
+  {
+    "id": "gonsalves-26",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "新月蚀（New Moon Eclipsed）",
+    "url": "paintings/386-%E6%96%B0%E6%9C%88%E8%9A%80-new-moon-eclipsed.jpg",
+    "category": "magic-realism",
+    "focus": "50% 27%"
+  },
+  {
+    "id": "gonsalves-27",
+    "painter": "罗布·贡萨尔维斯 / Rob Gonsalves",
+    "title": "图书馆（The Library）",
+    "url": "paintings/387-%E5%9B%BE%E4%B9%A6%E9%A6%86-the-library.jpg",
+    "category": "magic-realism",
+    "focus": "50% 28%"
   }
 ]
