@@ -1,5 +1,6 @@
 ---
-status: planned
+status: current
+verified: 2026-11-05
 ---
 
 # AI Note Generation Implementation Plan
@@ -278,4 +279,10 @@ Expected: 全部 PASS。
 - [ ] **Step 5: 提交**
 
 Run: `git add e2e/specs/notes-ai-generation.spec.ts e2e/source-map.json docs/README.md docs/superpowers/specs/2026-11-05-ai-note-generation-design.md docs/superpowers/plans/2026-11-05-ai-note-generation.md && git commit -m "test(notes): verify one-time ai note generation"`
+
+## 执行记录
+
+- Task 0–6 已按 TDD 完成并分别提交；Task 7 的 E2E 脚本、source map 与文档已完成。
+- 定向 Vitest 45/45 通过，生产资源 `npx electron-vite build` 通过，文档检查通过。
+- E2E 未执行：需要用户单独授权启动 Electron 测试实例。完整 `npm run build` 仍受两个未触碰文件的既有类型错误阻断，详见 spec §10。
 

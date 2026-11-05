@@ -121,6 +121,17 @@ describe('AI 笔记两轮生成管线', () => {
     expect(chatNonStream).toHaveBeenCalledTimes(5)
   })
 
+  it('规划查询去重后不足两个时重试，不静默缩减为单查询', async () => {
+    mockSuccessfulPipeline({
+      round1Outputs: ['["same query", "same query"]', '["theory origins", "adjacent critique"]'],
+      coordinates: defaultCoordinates.map(item => ({ ...item, sourceIds: ['W1-1'] })),
+    })
+
+    await expect(generateAiNoteBody(config, input, () => {})).resolves.toBe(validBody)
+    expect(searchWeb).toHaveBeenCalledTimes(4)
+    expect(chatNonStream).toHaveBeenCalledTimes(5)
+  })
+
   it('长度越界只修订一次，合格则返回', async () => {
     mockSuccessfulPipeline({ writeBodies: ['太短', validBody] })
 

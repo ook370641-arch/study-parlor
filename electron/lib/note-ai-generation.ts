@@ -67,7 +67,9 @@ function parseQueries(text: string): string[] {
     .filter(item => item.length > 0 && item.length <= 200 && /[A-Za-z]/.test(item))
     .slice(0, 3)
   if (queries.length < 2 || queries.length !== Math.min(value.length, 3)) throw generationError('NOTE_GENERATION_INVALID')
-  return Array.from(new Set(queries))
+  const uniqueQueries = Array.from(new Set(queries))
+  if (uniqueQueries.length < 2) throw generationError('NOTE_GENERATION_INVALID')
+  return uniqueQueries
 }
 
 async function planQueries(config: AppConfig, content: string): Promise<string[]> {

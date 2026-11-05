@@ -211,8 +211,14 @@
       "sources": [
         "electron/lib/notes.ts",
         "electron/lib/note-covers.ts",
+        "electron/lib/note-ai-source.ts",
+        "electron/lib/note-ai-generation.ts",
         "electron/ipc/notes.ts",
         "electron/prompts/note-cover.md",
+        "electron/prompts/note-ai-*.md",
+        "electron/preload.ts",
+        "src/lib/ipc.ts",
+        "src/lib/note-ai.ts",
         "src/pages/Briefing.tsx",
         "src/store/index.ts",
         "src/lib/note-cover.ts",
@@ -221,7 +227,8 @@
         "src/components/writing/WritingListColumn.tsx"
       ],
       "specs": [
-        "notes-bookshelf.spec.ts"
+        "notes-bookshelf.spec.ts",
+        "notes-ai-generation.spec.ts"
       ]
     },
     "books": {

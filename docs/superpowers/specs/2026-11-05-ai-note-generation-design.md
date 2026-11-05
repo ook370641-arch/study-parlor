@@ -1,5 +1,6 @@
 ---
-status: planned
+status: current
+verified: 2026-11-05
 ---
 
 # AI 笔记两轮检索与单文件生成设计
@@ -267,3 +268,10 @@ onNotesAiProgress(callback): Unsubscribe
 - AI 正文独立可读、结构清晰、长度适中，能联系原笔迹并提供思想脉络。
 - 原笔迹逐字保留，任何失败路径不损坏或删除原文件。
 - 博客与书籍、主编辑器与对照页行为一致；无隐藏的一轮／不联网降级。
+
+## 10. 实现与验证记录（2026-11-05）
+
+- 实现严格沿用本规格：主进程候选会话与路径锁、两个 Sparkles 入口、两轮搜索与独立策展、原子写回和双编辑器同步均已接入；没有新增独立 AI 文件或重新生成入口。
+- 定向 Vitest：8 个测试文件、45 个用例通过；既有 NoteBoard、封面、导读 tab 相邻测试通过。
+- `node scripts/e2e-changed.js` 已确认新 spec 被 notes group 覆盖且无孤儿警告；`e2e/specs/notes-ai-generation.spec.ts` 使用本地 Kimi/Tavily mock，因项目禁止未经单独确认启动第二个 Electron 实例，本次未执行。
+- `npx electron-vite build` 通过。`npm run build` 被未触碰的 `src/components/demo/DemoNotePopover.tsx` 未使用变量错误阻断；独立 node tsconfig 检查另有未触碰的 `electron/ipc/files.ts` 既有 `DocType` 错误，本功能未扩大修改范围。
