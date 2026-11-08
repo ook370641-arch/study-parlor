@@ -90,7 +90,7 @@
 
 ### 13. 笔记系统（书架/专辑墙）
 
-**现状**：在用——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。同书章节在墙、列表与对照挑选器聚合为一个书组，下拉始终指向原始笔记路径；无原图笔记可由 Kimi 根据正文创造三版独立 SVG 符号，选中后才写入 `notes/covers/`，封面优先级为生成封面 → Anthropic 原图 → 来源渐变。博客／章节笔记支持一次性 AI 两轮检索蒸馏：主笔记与精确匹配的对照页共用 Sparkles 入口，预览确认后把 AI 正文与原笔迹附录原子写回同一文件（2026-11-05）。
+**现状**：在用——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。同书章节在墙、列表与对照挑选器聚合为一个书组，下拉始终指向原始笔记路径；无原图笔记可由 Kimi 根据正文创造三版独立 SVG 符号，选中后才写入 `notes/covers/`，封面优先级为生成封面 → Anthropic 原图 → 来源渐变。博客／章节笔记支持一次性 AI 两轮检索蒸馏：写作后增加独立措辞优化，先交代问题、答案与核心矛盾，再用日常语言解释概念；主笔记与精确匹配的对照页共用 Sparkles 入口，预览确认后把 AI 正文与原笔迹附录原子写回同一文件（2026-11-08）。
 - current：`specs/2026-11-05-ai-note-generation-design.md` + `plans/2026-11-05-ai-note-generation.md`（两轮检索与资料策展、单文件原笔迹附录、双入口与永久防重；含验证记录）
 - current：`specs/2026-11-02-notes-annotations-and-covers-design.md`（同书章节聚合与正文驱动的三版 SVG 封面生成；含九符号实验与验证记录）
 **历史链**：10-20 notes-bookshelf → 10-20 notes-bookshelf-requirements → 10-22 notes-album-wall → 10-26 blog-notes-album-wall-and-note-creation（博客↔笔记联动）→ 11-02 notes-annotations-and-covers → 11-05 ai-note-generation（current）→ 11-08 ai-note-readability（阅读体验实施计划）

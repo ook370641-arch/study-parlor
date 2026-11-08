@@ -168,10 +168,12 @@ export async function generateAiNoteBody(
 
   onStage('writing')
   const writePrompt = `${prompt('note-ai-write.md')}\n\n${materials}\n\n## 策展思想坐标\n${JSON.stringify(coordinates)}\n\n## 紧凑来源编号表\n${sourceMapBlock(allResults)}`
-  let body = (await callModel(config, writePrompt, 0.5, true)).trim()
+  const draft = (await callModel(config, writePrompt, 0.5, true)).trim()
+  const polishPrompt = `${prompt('note-ai-polish.md')}\n\n## 待优化初稿\n${draft}`
+  let body = (await callModel(config, polishPrompt, 0.3, true)).trim()
   if (!validLength(body)) {
-    const revisionPrompt = `${writePrompt}\n\n# 针对性修订\n上一版正文汉字数为 ${chineseCharacterCount(body)}，不在 900–1600 之间。只针对篇幅与信息密度修订，保持原有结构目标、原笔迹连接和真实引用，不新增案例或原始搜索摘要。\n\n## 上一版\n${body}`
-    body = (await callModel(config, revisionPrompt, 0.5, true)).trim()
+    const revisionPrompt = `${polishPrompt}\n\n# 针对性修订\n上一版正文汉字数为 ${chineseCharacterCount(body)}，不在 900–1600 之间。只针对篇幅修订，保持开篇概要、通俗表达、关键区分、原笔迹连接和真实引用，不新增案例或原始搜索摘要。\n\n## 上一版\n${body}`
+    body = (await callModel(config, revisionPrompt, 0.3, true)).trim()
   }
   if (!validLength(body)) throw generationError('NOTE_GENERATION_INVALID')
   return body

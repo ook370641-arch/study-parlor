@@ -26,12 +26,14 @@ const defaultCoordinates = [
 type MockOptions = {
   round1Outputs?: string[]
   writeBodies?: string[]
+  polishBodies?: string[]
   coordinates?: typeof defaultCoordinates
 }
 
 function mockSuccessfulPipeline(options: MockOptions = {}): void {
   let round1Index = 0
   let writeIndex = 0
+  let polishIndex = 0
   vi.mocked(chatNonStream).mockImplementation(async (_config, args) => {
     const prompt = args.messages[0]?.content ?? ''
     if (prompt.includes('第一轮：思想宽域定位')) {
@@ -40,6 +42,10 @@ function mockSuccessfulPipeline(options: MockOptions = {}): void {
     }
     if (prompt.includes('第二轮：思想脉络深钻')) return '["lineage deep dive", "framework boundaries"]'
     if (prompt.includes('资料策展')) return JSON.stringify(options.coordinates ?? defaultCoordinates)
+    if (prompt.includes('措辞优化')) {
+      const bodies = options.polishBodies ?? [validBody]
+      return bodies[Math.min(polishIndex++, bodies.length - 1)]
+    }
     if (prompt.includes('笔记写作')) {
       const bodies = options.writeBodies ?? [validBody]
       return bodies[Math.min(writeIndex++, bodies.length - 1)]
@@ -67,7 +73,7 @@ describe('AI 笔记两轮生成管线', () => {
     expect(searchWeb).toHaveBeenCalledTimes(4)
     expect(stages).toEqual(['round1', 'round2', 'curating', 'writing'])
     const calls = vi.mocked(chatNonStream).mock.calls
-    expect(calls).toHaveLength(4)
+    expect(calls).toHaveLength(5)
     const round2Prompt = calls[1][1].messages[0].content
     const writePrompt = calls[3][1].messages[0].content
     expect(round2Prompt).toContain('[W1-1]')
@@ -76,6 +82,17 @@ describe('AI 笔记两轮生成管线', () => {
     expect(writePrompt).toContain('[W2-1]')
     expect(writePrompt).toContain('https://example.com/lineage%20deep%20dive')
     expect(writePrompt).not.toContain('仅供策展的完整原始摘要')
+  })
+
+  it('成稿经过独立措辞优化，优化器收到完整初稿', async () => {
+    const academicDraft = `## 核心\n\n${'核心命题与解释框架'.repeat(120)}\n\n[W1-1]`
+    const polishedBody = `## 先说结论\n\n${'先说明问题，再解释原因。'.repeat(90)}\n\n[W1-1]`
+    mockSuccessfulPipeline({ writeBodies: [academicDraft], polishBodies: [polishedBody] })
+
+    await expect(generateAiNoteBody(config, input, () => {})).resolves.toBe(polishedBody)
+    const calls = vi.mocked(chatNonStream).mock.calls
+    expect(calls).toHaveLength(5)
+    expect(calls[4][1].messages[0].content).toContain(academicDraft)
   })
 
   it('第二轮无独特增益时只策展首轮关系，不向写作堆入第二轮摘要', async () => {
@@ -118,7 +135,7 @@ describe('AI 笔记两轮生成管线', () => {
     mockSuccessfulPipeline({ round1Outputs: ['not json', '["theory origins", "adjacent critique"]'] })
 
     await expect(generateAiNoteBody(config, input, () => {})).resolves.toBe(validBody)
-    expect(chatNonStream).toHaveBeenCalledTimes(5)
+    expect(chatNonStream).toHaveBeenCalledTimes(6)
   })
 
   it('规划查询去重后不足两个时重试，不静默缩减为单查询', async () => {
@@ -129,22 +146,22 @@ describe('AI 笔记两轮生成管线', () => {
 
     await expect(generateAiNoteBody(config, input, () => {})).resolves.toBe(validBody)
     expect(searchWeb).toHaveBeenCalledTimes(4)
-    expect(chatNonStream).toHaveBeenCalledTimes(5)
+    expect(chatNonStream).toHaveBeenCalledTimes(6)
   })
 
   it('长度越界只修订一次，合格则返回', async () => {
-    mockSuccessfulPipeline({ writeBodies: ['太短', validBody] })
+    mockSuccessfulPipeline({ polishBodies: ['太短', validBody] })
 
     await expect(generateAiNoteBody(config, input, () => {})).resolves.toBe(validBody)
     const calls = vi.mocked(chatNonStream).mock.calls
-    expect(calls).toHaveLength(5)
-    expect(calls[4][1].messages[0].content).toContain('针对性修订')
+    expect(calls).toHaveLength(6)
+    expect(calls[5][1].messages[0].content).toContain('针对性修订')
   })
 
   it('修订后仍越界则拒绝候选', async () => {
-    mockSuccessfulPipeline({ writeBodies: ['太短', '仍然太短'] })
+    mockSuccessfulPipeline({ polishBodies: ['太短', '仍然太短'] })
 
     await expect(generateAiNoteBody(config, input, () => {})).rejects.toThrow('NOTE_GENERATION_INVALID')
-    expect(chatNonStream).toHaveBeenCalledTimes(5)
+    expect(chatNonStream).toHaveBeenCalledTimes(6)
   })
 })
