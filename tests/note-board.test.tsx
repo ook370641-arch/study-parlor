@@ -28,6 +28,16 @@ describe('NoteBoard 阅读室', () => {
     fireEvent.click(getByTestId('note-back-to-wall'))
     expect(spy).toHaveBeenCalled()
   })
+  it('正文与写作页共享宽度和字号设置', () => {
+    useStore.setState({ writingUIFontSize: 'xl' })
+    const { getByTestId } = render(<NoteBoard />)
+    const board = getByTestId('note-board')
+    expect(board.style.getPropertyValue('--writing-body-size')).toBe('23px')
+    const editor = getByTestId('note-editor')
+    expect(editor).toHaveClass('px-8', 'py-6')
+    expect(editor.style.fontSize).toBe('var(--writing-body-size)')
+    expect(editor.querySelector('[style*="max-width"]')).toBeNull()
+  })
   it('链接/亮点输入收在 ⓘ 弹层，默认不可见，点 toggle 可见', () => {
     const { getByTestId, queryByTestId } = render(<NoteBoard />)
     expect(queryByTestId('note-meta-url')).toBeNull()

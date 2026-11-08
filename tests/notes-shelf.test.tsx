@@ -31,6 +31,14 @@ describe('NotesShelf 点击分派', () => {
     fireEvent.click(getByTestId('note-card-a'))
     expect(spy).toHaveBeenCalledWith('notes/a.md')
   })
+  it('笔记列文字和封面随界面字号缩放', () => {
+    useStore.setState({ writingUIFontSize: 'xl' })
+    const { getByTestId } = render(<NotesShelf />)
+    expect(getByTestId('notes-shelf').style.fontSize).toBe('14px')
+    const row = getByTestId('note-card-a')
+    expect(row.querySelector('.truncate')).toHaveClass('text-[1em]')
+    expect(row.firstElementChild).toHaveClass('w-[1.5em]', 'h-[2em]')
+  })
   it('对照 armed 点击放入对照槽', () => {
     const spy = vi.fn()
     useStore.setState({ writingAssistantOpen: true, writingPanelMode: 'companion', selectCompanionFile: spy })

@@ -42,6 +42,13 @@ describe('NotesWall', () => {
     fireEvent.click(getByTestId('wall-album-a'))
     expect(spy).toHaveBeenCalledWith('notes/a.md')
   })
+  it('专辑墙文字和封面随界面字号缩放', () => {
+    useStore.setState({ writingUIFontSize: 'xl' })
+    const { container, getByTestId } = render(<NotesWall />)
+    expect(getByTestId('notes-wall').style.fontSize).toBe('14px')
+    expect(getByTestId('wall-album-a').querySelector('.line-clamp-2')).toHaveClass('text-[1em]')
+    expect((container.querySelector('.grid') as HTMLElement).style.gridTemplateColumns).toBe('repeat(auto-fill, minmax(175px, 1fr))')
+  })
   it('同书只显示一张卡，切换章节只打开所选笔记', () => {
     const spy = vi.fn()
     useStore.setState({ notesList: [bookChapter('ch1', '2026-09-01'), bookChapter('ch2', '2026-09-02')], selectWritingFile: spy })

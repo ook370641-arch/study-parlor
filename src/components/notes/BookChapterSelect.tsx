@@ -7,12 +7,13 @@ function optionLabel(entry: BookNoteDisplayItem['entries'][number]): string {
   return `${noteChapter(entry)}${annotation ? ` · ${annotation}` : ''}`
 }
 
-export function BookChapterSelect({ group, currentPath, onPick, testId, className = '' }: {
+export function BookChapterSelect({ group, currentPath, onPick, testId, className = '', fontSize }: {
   group: BookNoteDisplayItem
   currentPath?: string
   onPick: (path: string) => void
   testId?: string
   className?: string
+  fontSize?: string
 }) {
   const [selectedPath, setSelectedPath] = useState(currentPath ?? group.latest.path)
 
@@ -33,6 +34,7 @@ export function BookChapterSelect({ group, currentPath, onPick, testId, classNam
         onPick(event.target.value)
       }}
       className={`rounded border border-parchment/20 bg-[#1a120d]/90 px-1.5 py-0.5 text-[10px] text-parchment/75 outline-none ${className}`}
+      style={{ fontSize }}
     >
       {group.entries.map((entry) => (
         <option key={entry.path} value={entry.path}>{optionLabel(entry)}</option>

@@ -6,6 +6,7 @@ import { noteCoverImage } from '@/lib/note-cover'
 import { BookChapterSelect } from './BookChapterSelect'
 import { NoteCover } from './NoteCover'
 import { NoteCoverGenerator } from './NoteCoverGenerator'
+import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 
 function urlSlug(url: string): string {
   return url.split('/').pop() || 'note'
@@ -20,18 +21,21 @@ export function NotesWall() {
   const setNotesSortBy = useStore(s => s.setNotesSortBy)
   const selectWritingFile = useStore(s => s.selectWritingFile)
   const articleMetaCache = useStore(s => s.anthropicBlogCache.articleMetaCache)
+  const writingUISize = useStore(s => s.writingUIFontSize)
 
   const sorted = useMemo(() => groupNotesForDisplay(notesList ?? [], notesSortBy, notesCategory), [notesList, notesSortBy, notesCategory])
+  const uiSize = WRITING_UI_STYLES[writingUISize]
+  const coverMinWidth = Math.round(150 * Number.parseInt(uiSize, 10) / 12)
 
   return (
-    <div data-testid="notes-wall" className="h-full overflow-y-auto px-8 py-6">
+    <div data-testid="notes-wall" className="h-full overflow-y-auto px-8 py-6" style={{ fontSize: uiSize }}>
       <div className="flex items-center gap-2 pb-5">
         <select
           data-testid="notes-wall-category-select"
           aria-label="筛选笔记来源"
           value={notesCategory}
           onChange={(e) => setNotesCategory(e.target.value as 'all' | NoteSource)}
-          className="bg-transparent text-[11px] text-parchment/80 border border-parchment/20 rounded px-1.5 py-1 outline-none"
+          className="bg-transparent text-[1em] text-parchment/80 border border-parchment/20 rounded px-1.5 py-1 outline-none"
         >
           <option value="all">全部来源</option>
           <option value="anthropic">Anthropic</option>
@@ -44,7 +48,7 @@ export function NotesWall() {
           aria-label="排序笔记"
           value={notesSortBy}
           onChange={(e) => setNotesSortBy(e.target.value as NoteSortBy)}
-          className="bg-transparent text-[11px] text-parchment/60 border border-parchment/20 rounded px-1.5 py-1 outline-none"
+          className="bg-transparent text-[1em] text-parchment/60 border border-parchment/20 rounded px-1.5 py-1 outline-none"
         >
           <option value="source">按类型</option>
           <option value="time">最新收录</option>
@@ -53,12 +57,12 @@ export function NotesWall() {
       </div>
       {sorted.length === 0 && notesList !== null ? (
         <div data-testid="notes-wall-empty" className="flex h-[calc(100%-3rem)] items-center justify-center px-6">
-          <p className="text-center text-parchment/40 text-sm">
+          <p className="text-center text-parchment/40 text-[1em]">
             {notesCategory === 'all' ? '书架还空着——点左侧「导入已读」把读过的文章放上架' : '该分类下暂无笔记'}
           </p>
         </div>
       ) : (
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+        <div className="grid gap-5" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${coverMinWidth}px, 1fr))` }}>
           {sorted.map(item => {
             const entry = item.kind === 'book' ? item.latest : item.entry
             const coverEntry = item.kind === 'book' ? item.entries.find(note => note.coverUrl) ?? entry : entry
@@ -78,8 +82,8 @@ export function NotesWall() {
                   <NoteCover entry={coverEntry} className="absolute inset-0 w-full h-full" />
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(20,12,8,0) 40%, rgba(20,12,8,.88))' }} />
                   <div className="absolute inset-x-0 bottom-0 p-2.5">
-                    <div className="text-[12px] leading-snug text-[#f0e2c8] line-clamp-2">{item.kind === 'book' ? item.book : entry.meta.title}</div>
-                    <div className="mt-1 text-[10px] text-parchment/60">
+                    <div className="text-[1em] leading-snug text-[#f0e2c8] line-clamp-2">{item.kind === 'book' ? item.book : entry.meta.title}</div>
+                    <div className="mt-1 text-[0.833em] text-parchment/60">
                       {rating > 0 ? '★'.repeat(rating) : '未评'}
                     </div>
                   </div>
@@ -88,6 +92,7 @@ export function NotesWall() {
                   <BookChapterSelect
                     group={item}
                     onPick={(path) => { void selectWritingFile(path) }}
+                    fontSize="0.833em"
                     className="absolute right-2 top-2 z-10 max-w-[calc(100%-1rem)]"
                   />
                 )}

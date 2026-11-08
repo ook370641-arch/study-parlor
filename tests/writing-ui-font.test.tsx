@@ -41,7 +41,11 @@ describe('writing UI font size', () => {
       writingListTab: 'articles',
       writingTree: { writing: [{ kind: 'file', name: 'a.md', path: 'writing/a.md' }], repository: [] },
       writingFile: null,
+      lastWritingFile: null,
+      writingAssistantOpen: false,
+      writingPanelMode: 'assistant',
       loadWritingTree: vi.fn(),
+      loadNotes: vi.fn(),
       selectWritingFile: vi.fn(),
     } as any)
   })
@@ -63,5 +67,43 @@ describe('writing UI font size', () => {
     render(<WritingListColumn theme="academic" />)
     expect(screen.getByTestId('writing-list-tab-articles').style.fontSize).toBe('var(--writing-ui-size)')
     expect(screen.getByTestId('writing-tree-node').style.fontSize).toBe('var(--writing-ui-size)')
+  })
+
+  it('notes tab restores the remembered note outside companion mode', async () => {
+    const selectWritingFile = vi.fn()
+    useStore.setState({
+      lastWritingFile: 'notes/a.md',
+      writingFile: { path: 'writing/a.md', body: '# a', kind: 'md', dirty: false, saving: 'idle' },
+      selectWritingFile,
+    } as any)
+    render(<WritingListColumn theme="academic" />)
+    fireEvent.click(screen.getByTestId('writing-list-tab-notes'))
+    await waitFor(() => expect(selectWritingFile).toHaveBeenCalledWith('notes/a.md'))
+  })
+
+  it('notes tab opens the wall when there is no remembered note', async () => {
+    const selectWritingFile = vi.fn()
+    useStore.setState({
+      writingFile: { path: 'writing/a.md', body: '# a', kind: 'md', dirty: false, saving: 'idle' },
+      selectWritingFile,
+    } as any)
+    render(<WritingListColumn theme="academic" />)
+    fireEvent.click(screen.getByTestId('writing-list-tab-notes'))
+    await waitFor(() => expect(selectWritingFile).toHaveBeenCalledWith(null))
+  })
+
+  it('notes tab does not replace the main file while companion mode is armed', async () => {
+    const selectWritingFile = vi.fn()
+    useStore.setState({
+      lastWritingFile: 'notes/a.md',
+      writingFile: { path: 'writing/a.md', body: '# a', kind: 'md', dirty: false, saving: 'idle' },
+      writingAssistantOpen: true,
+      writingPanelMode: 'companion',
+      selectWritingFile,
+    } as any)
+    render(<WritingListColumn theme="academic" />)
+    fireEvent.click(screen.getByTestId('writing-list-tab-notes'))
+    await waitFor(() => expect(useStore.getState().writingListTab).toBe('notes'))
+    expect(selectWritingFile).not.toHaveBeenCalled()
   })
 })

@@ -4,6 +4,7 @@ import type { NoteSortBy, NoteSource } from '@shared/index'
 import { groupNotesForDisplay } from '@/lib/notes-list'
 import { PromptDialog } from '../writing/PromptDialog'
 import { NoteRow } from './NoteRow'
+import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 
 export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newspaper' }) {
   void theme // 配色与 parchment 色系保持一致，theme 签名保留
@@ -19,6 +20,7 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
   const panelMode = useStore(s => s.writingPanelMode)
   const selectWritingFile = useStore(s => s.selectWritingFile)
   const selectCompanionFile = useStore(s => s.selectCompanionFile)
+  const writingUISize = useStore(s => s.writingUIFontSize)
 
   const [newNote, setNewNote] = useState<{ step: 'title' } | { step: 'url'; title: string } | null>(null)
 
@@ -33,13 +35,13 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
   }
 
   return (
-    <div data-testid="notes-shelf" className="flex flex-col">
+    <div data-testid="notes-shelf" className="flex flex-col" style={{ fontSize: WRITING_UI_STYLES[writingUISize] }}>
       <div className="flex items-center gap-2 px-3 pt-2">
         <select
           data-testid="notes-category-select"
           value={notesCategory}
           onChange={(e) => setNotesCategory(e.target.value as 'all' | NoteSource)}
-          className="bg-transparent text-[11px] text-parchment/80 border border-parchment/20 rounded px-1.5 py-0.5 outline-none"
+          className="bg-transparent text-[1em] text-parchment/80 border border-parchment/20 rounded px-1.5 py-0.5 outline-none"
         >
           <option value="all">全部</option>
           <option value="anthropic">Anthropic</option>
@@ -48,19 +50,19 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
           <option value="unknown">未知</option>
         </select>
         <button data-testid="notes-new-button" onClick={() => setNewNote({ step: 'title' })}
-          className="ml-auto text-[11px] text-parchment border border-ember/50 bg-ember/15 rounded px-2 py-0.5">
+          className="ml-auto text-[1em] text-parchment border border-ember/50 bg-ember/15 rounded px-2 py-0.5">
           ＋ 新笔记
         </button>
       </div>
       <div className="flex items-center gap-2 px-3 pt-1.5 pb-1">
         <button data-testid="notes-import-button" title="导入已读" aria-label="导入已读"
           onClick={() => { void importReadNotesAction() }}
-          className="text-[11px] text-parchment/60 hover:text-parchment border border-parchment/20 rounded px-1.5 py-0.5">
+          className="text-[1em] text-parchment/60 hover:text-parchment border border-parchment/20 rounded px-1.5 py-0.5">
           ⬆
         </button>
         <select data-testid="notes-sort-select" value={notesSortBy}
           onChange={(e) => setNotesSortBy(e.target.value as NoteSortBy)}
-          className="bg-transparent text-[11px] text-parchment/60 border border-parchment/20 rounded px-1.5 py-0.5 outline-none">
+          className="bg-transparent text-[1em] text-parchment/60 border border-parchment/20 rounded px-1.5 py-0.5 outline-none">
           <option value="source">类型</option>
           <option value="time">时间</option>
           <option value="rating">星标</option>
@@ -68,7 +70,7 @@ export function NotesShelf({ theme = 'academic' }: { theme?: 'academic' | 'newsp
       </div>
       <div className="px-1.5 pb-3">
         {sorted.length === 0 && notesList !== null && (
-          <div data-testid="notes-empty" className="px-3 py-6 text-center text-[11px] text-parchment/40">
+          <div data-testid="notes-empty" className="px-3 py-6 text-center text-[1em] text-parchment/40">
             {notesCategory === 'all' ? '书架还空着——点「导入已读」把读过的文章放上架' : '该分类下暂无笔记'}
           </div>
         )}
