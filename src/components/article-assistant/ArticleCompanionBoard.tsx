@@ -15,7 +15,6 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
   const file = useStore((s) => s.articleCompanion)
   const updateBody = useStore((s) => s.updateArticleCompanionBody)
   const save = useStore((s) => s.saveArticleCompanion)
-  const close = useStore((s) => s.closeArticleCompanion)
   const notesList = useStore((s) => s.notesList)
   const readerFilePath = useStore((s) => s.anthropicReaderFilePath)
   const currentArticle = useStore((s) => s.anthropicBlogCache.articles.find((article) => article.filePath === s.anthropicReaderFilePath))
@@ -34,8 +33,8 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
   const bodyStyle = isAcademic ? ACADEMIC_BODY_STYLES[briefingFontSize] : NEWSPAPER_BODY_STYLES[briefingFontSize]
   // 报纸版式为浅底，面板配色照抄 GuideSidebar 的 newspaper 分支（墨黑正文 + 暖褐次要）
   const cls = isAcademic
-    ? { hint: 'text-parchment/40', border: 'border-parchment/10', filename: 'text-parchment/80', muted: 'text-parchment/50', close: 'text-parchment/60 hover:text-ember', body: 'text-parchment/90' }
-    : { hint: 'text-[#6b5d52]/60', border: 'border-[#1a1a1a]/10', filename: 'text-[#1a1a1a]', muted: 'text-[#6b5d52]', close: 'text-[#6b5d52] hover:text-[#8a3a3a]', body: 'text-[#1a1a1a]' }
+    ? { hint: 'text-parchment/40', border: 'border-parchment/10', filename: 'text-parchment/80', muted: 'text-parchment/50', body: 'text-parchment/90' }
+    : { hint: 'text-[#6b5d52]/60', border: 'border-[#1a1a1a]/10', filename: 'text-[#1a1a1a]', muted: 'text-[#6b5d52]', body: 'text-[#1a1a1a]' }
 
   useEffect(() => {
     if (!file?.dirty) return
@@ -84,25 +83,25 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
            : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
            : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span> : null}
         </span>
-        {showAiGenerator && noteEntry && (
-          <span data-testid="article-companion-ai-entry" className="shrink-0">
-            <AiNoteGenerator entry={noteEntry} originalBody={file.body} theme={theme} />
-          </span>
-        )}
-        {file.kind === 'md' && !file.readonly && (
-          <button
-            type="button"
-            data-testid="article-companion-insert-hr"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => hrAction?.((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) useStore.getState().showToast('当前位置不支持该操作') })}
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#6b5d52] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/10'}`}
-            title="分割线"
-          >
-            <HrIcon size={22} />
-          </button>
-        )}
-        <div className="flex-1" />
-        <button data-testid="article-companion-close" className={`${cls.close} flex h-9 w-9 items-center justify-center text-xl leading-none`} onClick={() => void close()} aria-label="关闭对照">✕</button>
+        <div data-testid="article-companion-actions" className="ml-auto flex items-center gap-2">
+          {showAiGenerator && noteEntry && (
+            <span data-testid="article-companion-ai-entry" className="shrink-0">
+              <AiNoteGenerator entry={noteEntry} originalBody={file.body} theme={theme} />
+            </span>
+          )}
+          {file.kind === 'md' && !file.readonly && (
+            <button
+              type="button"
+              data-testid="article-companion-insert-hr"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => hrAction?.((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) useStore.getState().showToast('当前位置不支持该操作') })}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#6b5d52] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/10'}`}
+              title="分割线"
+            >
+              <HrIcon size={22} />
+            </button>
+          )}
+        </div>
       </div>
       {file.kind === 'md' && !file.readonly ? (
         <div className={`flex-1 min-h-0 overflow-y-auto px-4 py-4 ${cls.body}`}
