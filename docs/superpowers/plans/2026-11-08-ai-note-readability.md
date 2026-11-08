@@ -120,7 +120,8 @@ Stage only the prompt, any conditional pipeline/test changes, and the three docu
 ## Execution result
 
 - Prompt-only candidate: `../ai-note-readability-quality/prompt-only.md`. The opening improved, but undefined JTBD terminology and expressions such as `局部最优／因果结构／成果映射／立论` kept the cold-read cost too high.
-- Final candidate: `../ai-note-readability-quality/polishing-node.md`. The opening defines JTBD and the correlation–causation conflict directly; examples, reasoning, boundaries, personal connection, and four actual sources remain readable.
+- Polishing-node candidate: `../ai-note-readability-quality/polishing-node.md`. The opening defines JTBD and the correlation–causation conflict directly; examples, reasoning, boundaries, personal connection, and four actual sources remain readable.
 - Both real generations left the source note SHA-256 unchanged: `85991507c117fe43202baf305cb187d3948a0c6fe20445070aec3c32c4e56634`.
 - The polishing behavior test failed before implementation because the generator returned the academic draft; it passes after the node was added.
 - Focused Vitest: 2 files, 14 tests passed. `npx electron-vite build`, `npm run docs:check`, and `git diff --check` passed. Electron E2E was not run.
+- Follow-up book-context candidate: `../ai-note-readability-quality/chapter-context-v2.md`. It identifies the foreword's role within the opening four sentences. This version replaced the user's note atomically, with the 513-character original appendix preserved and the prior file backed up as `before-replacement.md`.
