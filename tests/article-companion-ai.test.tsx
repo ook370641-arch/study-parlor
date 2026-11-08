@@ -35,9 +35,14 @@ beforeEach(() => {
 
 describe('对照页 AI 笔记入口', () => {
   it('当前博客与对照笔记精确匹配时显示 Sparkles', () => {
-    const { getByTestId } = render(<ArticleCompanionBoard />)
+    const { getByTestId, getByText } = render(<ArticleCompanionBoard />)
     expect(getByTestId('article-companion-ai-entry')).toBeTruthy()
     expect(getByTestId('note-ai-generate')).toHaveAttribute('aria-label', '生成笔记')
+    expect(getByText('a.md')).toHaveClass('text-base')
+    expect(getByTestId('article-companion-insert-hr')).toHaveClass('h-9', 'w-9')
+    expect(getByTestId('article-companion-insert-hr').querySelector('svg')).toHaveAttribute('width', '22')
+    expect(getByTestId('note-ai-generate')).toHaveClass('h-9', 'w-9')
+    expect(getByTestId('note-ai-generate').querySelector('svg')).toHaveAttribute('width', '18')
   })
 
   it('错配、只读与已生成笔记不显示入口', () => {

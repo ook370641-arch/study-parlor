@@ -62,6 +62,10 @@ describe('对照页笔记快捷入口', () => {
 
     const shortcut = screen.getByTestId('article-note-shortcut-anthropic')
     expect(shortcut.querySelector('svg')).not.toBeNull()
+    expect(shortcut).toHaveClass('h-9', 'w-9')
+    expect(shortcut.querySelector('svg')).toHaveAttribute('width', '20')
+    expect(shortcut.parentElement).toHaveClass('h-11')
+    expect(screen.getByTestId('article-panel-tab-companion-anthropic')).toHaveClass('text-sm')
     expect(shortcut).not.toHaveTextContent('笔记')
     fireEvent.click(shortcut)
 

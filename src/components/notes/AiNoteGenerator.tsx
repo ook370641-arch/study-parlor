@@ -16,7 +16,7 @@ const STAGE_LABEL: Record<AiNoteStage, string> = {
 
 function SparklesIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z" />
       <path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
       <path d="m5 2 .7 1.8L7.5 4.5l-1.8.7L5 7l-.7-1.8-1.8-.7 1.8-.7L5 2Z" />
@@ -56,16 +56,16 @@ export function AiNoteGenerator({ entry, originalBody, theme = 'academic' }: { e
             setProgressOpen(true)
             void generate(entry.path)
           }}
-          className={`rounded p-1 ${buttonTone} disabled:cursor-wait disabled:opacity-70`}
+          className={`flex h-9 w-9 items-center justify-center rounded ${buttonTone} disabled:cursor-wait disabled:opacity-70`}
         >
           {generation && !candidate ? (
-            <svg data-testid="note-ai-spinner" className="animate-spin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+            <svg data-testid="note-ai-spinner" className="animate-spin" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
               <circle cx="12" cy="12" r="8" strokeOpacity=".25" />
               <path d="M20 12a8 8 0 0 0-8-8" />
             </svg>
           ) : <SparklesIcon />}
         </button>
-        {generation && !candidate && <span data-testid="note-ai-stage" className={`whitespace-nowrap text-[10px] ${stageTone}`}>{STAGE_LABEL[generation.stage]}</span>}
+        {generation && !candidate && <span data-testid="note-ai-stage" className={`whitespace-nowrap text-xs ${stageTone}`}>{STAGE_LABEL[generation.stage]}</span>}
       </div>
       {generation && !candidate && progressOpen && createPortal(
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 p-6" data-testid="note-ai-generating">

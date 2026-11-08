@@ -57,23 +57,23 @@ export function ArticleGuideTabs({ source, theme = 'academic' }: { source: Artic
   }
 
   const tabCls = (m: ArticlePanelMode) =>
-    `text-[11px] tracking-[0.2em] font-serif px-2 py-1 rounded transition-colors ${mode === m ? 'text-ember bg-ember/10' : 'text-parchment/60 hover:text-parchment/90'}`
+    `text-sm tracking-[0.2em] font-serif px-3 py-1.5 rounded transition-colors ${mode === m ? 'text-ember bg-ember/10' : 'text-parchment/60 hover:text-parchment/90'}`
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="h-9 flex items-center gap-1 px-3 border-b border-parchment/10 shrink-0">
+      <div className="h-11 flex items-center gap-2 px-3 border-b border-parchment/10 shrink-0">
         <button data-testid={`article-panel-tab-guide-${source}`} className={tabCls('guide')} onClick={() => setMode(source, 'guide')}>导读</button>
         <button data-testid={`article-panel-tab-companion-${source}`} className={tabCls('companion')} onClick={() => setMode(source, 'companion')}>对照</button>
         {mode === 'companion' && (
           <button
             data-testid={`article-note-shortcut-${source}`}
             aria-label={source === 'anthropic' ? '打开当前文章笔记' : '打开当前章节笔记'}
-            className="ml-auto flex h-7 w-7 items-center justify-center rounded border border-parchment/15 text-parchment/65 transition-colors hover:border-ember/40 hover:bg-ember/10 hover:text-ember disabled:cursor-default disabled:opacity-30 disabled:hover:border-parchment/15 disabled:hover:bg-transparent disabled:hover:text-parchment/65"
+            className="ml-auto flex h-9 w-9 items-center justify-center rounded border border-parchment/15 text-parchment/65 transition-colors hover:border-ember/40 hover:bg-ember/10 hover:text-ember disabled:cursor-default disabled:opacity-30 disabled:hover:border-parchment/15 disabled:hover:bg-transparent disabled:hover:text-parchment/65"
             onClick={() => void openNote()}
             disabled={!noteTargetReady || openingNote || companion?.filePath === currentNotePath}
             title={source === 'anthropic' ? '打开当前文章笔记' : '打开当前章节笔记'}
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 3.5h11a2 2 0 0 1 2 2v15H7a2 2 0 0 1-2-2v-15Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 3.5v17M11 8h4M11 11.5h4" />
             </svg>
