@@ -385,7 +385,7 @@ type AppStore = {
   writingTone: WritingTone
   writingListTab: 'articles' | 'repository' | 'notes'
   notesList: NoteEntry[] | null
-  aiNoteGeneration: { path: string; stage: AiNoteStage; candidate: AiNoteCandidate | null; applying: boolean } | null
+  aiNoteGenerations: Record<string, { path: string; stage: AiNoteStage; candidate: AiNoteCandidate | null; applying: boolean }>
   notesSortBy: NoteSortBy
   notesCategory: 'all' | NoteSource
   writingAssistantWidth: number
@@ -469,8 +469,8 @@ type AppStore = {
   }) => Promise<{ path: string; created: boolean }>
   updateNoteMetaAction: (path: string, patch: Partial<NoteMeta>) => Promise<void>
   generateAiNote: (path: string) => Promise<void>
-  applyAiNote: () => Promise<void>
-  cancelAiNote: () => Promise<void>
+  applyAiNote: (path: string) => Promise<void>
+  cancelAiNote: (path: string) => Promise<void>
   deleteNoteAction: (path: string) => Promise<void>
   importReadNotesAction: () => Promise<{ created: number; skipped: number } | null>
   setNotesSortBy: (s: NoteSortBy) => void
@@ -664,7 +664,7 @@ export const useStore = create<AppStore>((set, get) => ({
   writingTone: 'parchment',
   writingListTab: 'articles',
   notesList: null,
-  aiNoteGeneration: null,
+  aiNoteGenerations: {},
   notesSortBy: 'source',
   notesCategory: 'all',
   writingAssistantWidth: 320,
@@ -2278,13 +2278,24 @@ export const useStore = create<AppStore>((set, get) => ({
     set(s => ({ notesList: s.notesList?.map(e => e.path === p ? { ...e, meta: { ...e.meta, ...patch } } : e) ?? null }))
   },
   generateAiNote: async (notePath) => {
-    if (get().aiNoteGeneration) return
-    set({ aiNoteGeneration: { path: notePath, stage: 'reading', candidate: null, applying: false } })
+    if (get().aiNoteGenerations[notePath]) return
+    set(state => ({
+      aiNoteGenerations: {
+        ...state.aiNoteGenerations,
+        [notePath]: { path: notePath, stage: 'reading', candidate: null, applying: false },
+      },
+    }))
     if (!stopNotesAiProgress) {
       stopNotesAiProgress = ipc.onNotesAiProgress(payload => {
-        set(state => state.aiNoteGeneration?.path === payload.path
-          ? { aiNoteGeneration: { ...state.aiNoteGeneration, stage: payload.stage } }
-          : {})
+        set(state => {
+          const generation = state.aiNoteGenerations[payload.path]
+          return generation ? {
+            aiNoteGenerations: {
+              ...state.aiNoteGenerations,
+              [payload.path]: { ...generation, stage: payload.stage },
+            },
+          } : {}
+        })
       })
     }
     try {
@@ -2295,21 +2306,28 @@ export const useStore = create<AppStore>((set, get) => ({
       if ((get().writingFile?.path === notePath && get().writingFile?.dirty)
         || (get().articleCompanion?.filePath === notePath && get().articleCompanion?.dirty)) throw new Error('SAVE_FAILED')
       const candidate = await ipc.notesGenerateAi({ path: notePath })
-      set(state => ({
-        aiNoteGeneration: state.aiNoteGeneration?.path === notePath
-          ? { ...state.aiNoteGeneration, candidate }
-          : state.aiNoteGeneration,
-      }))
+      set(state => {
+        const generation = state.aiNoteGenerations[notePath]
+        return generation ? {
+          aiNoteGenerations: { ...state.aiNoteGenerations, [notePath]: { ...generation, candidate } },
+        } : {}
+      })
     } catch (error) {
-      set({ aiNoteGeneration: null })
+      set(state => {
+        const generations = { ...state.aiNoteGenerations }
+        delete generations[notePath]
+        return { aiNoteGenerations: generations }
+      })
       get().showToast(aiNoteErrorMessage(error))
     }
   },
-  applyAiNote: async () => {
-    const generation = get().aiNoteGeneration
+  applyAiNote: async (notePath) => {
+    const generation = get().aiNoteGenerations[notePath]
     const candidate = generation?.candidate
     if (!generation || !candidate || generation.applying) return
-    set({ aiNoteGeneration: { ...generation, applying: true } })
+    set(state => ({
+      aiNoteGenerations: { ...state.aiNoteGenerations, [notePath]: { ...generation, applying: true } },
+    }))
     try {
       const writingFile = get().writingFile
       if (writingFile?.path === candidate.path && writingFile.dirty) await get().saveWritingFile()
@@ -2318,32 +2336,44 @@ export const useStore = create<AppStore>((set, get) => ({
       if ((get().writingFile?.path === candidate.path && get().writingFile?.dirty)
         || (get().articleCompanion?.filePath === candidate.path && get().articleCompanion?.dirty)) throw new Error('SAVE_FAILED')
       const applied = await ipc.notesApplyAi({ generationId: candidate.generationId })
-      set(state => ({
-        aiNoteGeneration: null,
-        notesList: state.notesList?.map(item => item.path === applied.path
-          ? { ...item, meta: { ...item.meta, ai_generated_at: applied.aiGeneratedAt } }
-          : item) ?? null,
-        writingFile: state.writingFile?.path === applied.path
-          ? { ...state.writingFile, body: applied.body, dirty: false, saving: 'saved' as const }
-          : state.writingFile,
-        articleCompanion: state.articleCompanion?.filePath === applied.path
-          ? { ...state.articleCompanion, body: applied.body, dirty: false, saving: 'saved' as const }
-          : state.articleCompanion,
-      }))
+      set(state => {
+        const generations = { ...state.aiNoteGenerations }
+        delete generations[notePath]
+        return {
+          aiNoteGenerations: generations,
+          notesList: state.notesList?.map(item => item.path === applied.path
+            ? { ...item, meta: { ...item.meta, ai_generated_at: applied.aiGeneratedAt } }
+            : item) ?? null,
+          writingFile: state.writingFile?.path === applied.path
+            ? { ...state.writingFile, body: applied.body, dirty: false, saving: 'saved' as const }
+            : state.writingFile,
+          articleCompanion: state.articleCompanion?.filePath === applied.path
+            ? { ...state.articleCompanion, body: applied.body, dirty: false, saving: 'saved' as const }
+            : state.articleCompanion,
+        }
+      })
       void get().loadNotes().catch(() => {})
     } catch (error) {
       await ipc.notesAbortAi({ generationId: candidate.generationId }).catch(() => {})
-      set({ aiNoteGeneration: null })
+      set(state => {
+        const generations = { ...state.aiNoteGenerations }
+        delete generations[notePath]
+        return { aiNoteGenerations: generations }
+      })
       get().showToast(aiNoteErrorMessage(error))
     }
   },
-  cancelAiNote: async () => {
-    const candidate = get().aiNoteGeneration?.candidate
+  cancelAiNote: async (notePath) => {
+    const candidate = get().aiNoteGenerations[notePath]?.candidate
     if (!candidate) return
     try {
       await ipc.notesAbortAi({ generationId: candidate.generationId })
     } finally {
-      set({ aiNoteGeneration: null })
+      set(state => {
+        const generations = { ...state.aiNoteGenerations }
+        delete generations[notePath]
+        return { aiNoteGenerations: generations }
+      })
     }
   },
   deleteNoteAction: async (p) => {

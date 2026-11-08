@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '@/store'
 import { GuideSidebar } from './GuideSidebar'
 import { ArticleCompanionBoard } from './ArticleCompanionBoard'
+import { noteChapter } from '@/lib/notes-list'
 import type { BriefingTheme } from '@shared/index'
 
 export type ArticleSideSource = 'anthropic' | 'book'
@@ -11,6 +12,18 @@ export function ArticleGuideTabs({ source, theme = 'academic' }: { source: Artic
   const mode = useStore((s) => s.articlePanelMode[source])
   const setMode = useStore((s) => s.setArticlePanelMode)
   const [openingNote, setOpeningNote] = useState(false)
+  const companion = useStore((s) => s.articleCompanion)
+  const currentNotePath = useStore((s) => {
+    if (source === 'anthropic') {
+      const article = s.anthropicBlogCache.articles.find((a) => a.filePath === s.anthropicReaderFilePath)
+      return s.notesList?.find((note) => note.meta.url === article?.url)?.path ?? null
+    }
+    const book = s.booksList.find((item) => item.dir === s.activeBookDir)
+    const chapter = s.activeChapter
+    return s.notesList?.find((note) => note.meta.source === 'book' && note.meta.book === book?.title
+      && noteChapter(note) === chapter?.meta.title
+      && !/ · 标注(?: \d+)?$/.test(note.meta.title))?.path ?? null
+  })
   const noteTargetReady = useStore((s) => source === 'anthropic'
     ? !!s.anthropicReaderFilePath && s.anthropicBlogCache.articles.some((a) => a.filePath === s.anthropicReaderFilePath)
     : !!s.activeChapter)
@@ -54,12 +67,16 @@ export function ArticleGuideTabs({ source, theme = 'academic' }: { source: Artic
         {mode === 'companion' && (
           <button
             data-testid={`article-note-shortcut-${source}`}
-            className="ml-auto text-[11px] tracking-[0.2em] font-serif px-2 py-1 rounded transition-colors text-parchment/60 hover:text-parchment/90 disabled:opacity-40"
+            aria-label={source === 'anthropic' ? '打开当前文章笔记' : '打开当前章节笔记'}
+            className="ml-auto flex h-7 w-7 items-center justify-center rounded border border-parchment/15 text-parchment/65 transition-colors hover:border-ember/40 hover:bg-ember/10 hover:text-ember disabled:cursor-default disabled:opacity-30 disabled:hover:border-parchment/15 disabled:hover:bg-transparent disabled:hover:text-parchment/65"
             onClick={() => void openNote()}
-            disabled={!noteTargetReady || openingNote}
+            disabled={!noteTargetReady || openingNote || companion?.filePath === currentNotePath}
             title={source === 'anthropic' ? '打开当前文章笔记' : '打开当前章节笔记'}
           >
-            {openingNote ? '打开中…' : '笔记'}
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 3.5h11a2 2 0 0 1 2 2v15H7a2 2 0 0 1-2-2v-15Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 3.5v17M11 8h4M11 11.5h4" />
+            </svg>
           </button>
         )}
       </div>

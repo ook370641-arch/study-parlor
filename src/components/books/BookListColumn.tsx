@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useStore } from '@/store'
 import { Tooltip } from '@/components/Tooltip'
 import type { BriefingTheme } from '@shared/index'
@@ -9,12 +10,16 @@ interface Props {
 
 /** 书架列：书卡 + 导入入口。 */
 export function BookListColumn({ theme, onRequestDelete }: Props) {
+  const [collapsedDir, setCollapsedDir] = useState<string | null>(null)
   const books = useStore((s) => s.booksList)
   const loading = useStore((s) => s.booksLoading)
   const importing = useStore((s) => s.booksImporting)
   const reparsing = useStore((s) => s.booksReparsing)
   const activeDir = useStore((s) => s.activeBookDir)
+  const toc = useStore((s) => s.activeBookToc)
+  const activeChapterPath = useStore((s) => s.activeChapter?.path ?? null)
   const selectBook = useStore((s) => s.selectBook)
+  const selectChapter = useStore((s) => s.selectChapter)
   const importBook = useStore((s) => s.importBook)
   const reparseBook = useStore((s) => s.reparseBook)
   const isAcademic = theme !== 'newspaper'
@@ -33,13 +38,14 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
         )}
         {books.map((b, i) => {
           const active = activeDir === b.dir
+          const expanded = active && collapsedDir !== b.dir
           return (
             <div key={b.dir} className="relative group">
               <button
                 type="button"
                 data-testid={`book-card-${i}`}
-                onClick={() => void selectBook(b.dir)}
-                className={`w-full text-left rounded px-3 py-2 transition-colors ${
+                onClick={() => { setCollapsedDir(null); void selectBook(b.dir) }}
+                className={`w-full text-left rounded pl-8 pr-6 py-2 transition-colors ${
                   active
                     ? isAcademic
                       ? 'bg-ember/15 border border-ember/40'
@@ -89,6 +95,27 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
                   </Tooltip>
                 )}
               </button>
+              <button
+                type="button"
+                data-testid={`book-chapters-toggle-${i}`}
+                aria-label={expanded ? '折叠章节' : '展开章节'}
+                aria-expanded={expanded}
+                onClick={() => {
+                  if (!active) {
+                    setCollapsedDir(null)
+                    void selectBook(b.dir)
+                  } else {
+                    setCollapsedDir(expanded ? b.dir : null)
+                  }
+                }}
+                className={`absolute left-1.5 top-2 flex h-6 w-6 items-center justify-center rounded ${
+                  isAcademic ? 'text-parchment/50 hover:bg-parchment/10 hover:text-parchment' : 'text-[#6b5d52] hover:bg-[#1a1a1a]/[0.06]'
+                }`}
+              >
+                <svg aria-hidden="true" viewBox="0 0 20 20" className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="1.7">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m7 4 6 6-6 6" />
+                </svg>
+              </button>
               {active && onRequestDelete && (
                 <button
                   type="button"
@@ -106,6 +133,30 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
                   </svg>
                 </button>
+              )}
+              {expanded && (
+                <div data-testid="book-chapter-list" className={`ml-4 mr-1 mt-1 space-y-0.5 border-l pl-2 ${isAcademic ? 'border-parchment/15' : 'border-[#1a1a1a]/15'}`}>
+                  {toc.map((chapter, chapterIndex) => {
+                    const path = `${b.dir}/${chapter.chapterFile}`
+                    const chapterActive = activeChapterPath === path
+                    return (
+                      <Tooltip key={chapter.chapterFile} content={chapter.title} theme={tipTheme}>
+                        <button
+                          type="button"
+                          data-testid={`chapter-row-${chapterIndex}`}
+                          onClick={() => void selectChapter(path)}
+                          className={`w-full truncate rounded px-2 py-1.5 text-left text-xs transition-colors ${
+                            chapterActive
+                              ? isAcademic ? 'bg-ember/15 text-ember' : 'bg-[#1a1a1a]/[0.08] text-[#2a1f1a]'
+                              : isAcademic ? 'text-parchment/70 hover:bg-parchment/10' : 'text-[#2a1f1a]/75 hover:bg-[#1a1a1a]/[0.04]'
+                          }`}
+                        >
+                          {chapterIndex + 1}. {chapter.title}
+                        </button>
+                      </Tooltip>
+                    )
+                  })}
+                </div>
               )}
             </div>
           )

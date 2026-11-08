@@ -23,7 +23,7 @@ function setBlogCompanion(url = 'https://example.com/a/'): void {
     activeChapter: null,
     activeBookDir: null,
     booksList: [],
-    aiNoteGeneration: null,
+    aiNoteGenerations: {},
     generateAiNote: vi.fn(),
   })
 }

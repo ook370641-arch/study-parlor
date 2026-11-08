@@ -38,7 +38,7 @@ beforeEach(() => {
   mockIpc.notesList.mockResolvedValue([{ ...entry, meta: { ...entry.meta, ai_generated_at: applied.aiGeneratedAt } }])
   mockIpc.onNotesAiProgress.mockReturnValue(vi.fn())
   useStore.setState({
-    aiNoteGeneration: null,
+    aiNoteGenerations: {},
     notesList: [entry],
     writingFile: { path: entry.path, body: '原笔迹', kind: 'md', dirty: false, saving: 'idle' },
     articleCompanion: null,
@@ -54,31 +54,31 @@ describe('AI 笔记 store', () => {
     expect(mockIpc.writingWrite).toHaveBeenCalledWith({ path: entry.path, body: '最新原笔迹' })
     expect(mockIpc.notesGenerateAi).toHaveBeenCalledWith({ path: entry.path })
     expect(mockIpc.writingWrite.mock.invocationCallOrder[0]).toBeLessThan(mockIpc.notesGenerateAi.mock.invocationCallOrder[0])
-    expect(useStore.getState().aiNoteGeneration).toEqual({ path: entry.path, stage: 'reading', candidate, applying: false })
+    expect(useStore.getState().aiNoteGenerations[entry.path]).toEqual({ path: entry.path, stage: 'reading', candidate, applying: false })
   })
 
   it('确认后同步主笔记、对照笔记和永久标记', async () => {
     useStore.setState({
-      aiNoteGeneration: { path: entry.path, stage: 'writing', candidate, applying: false },
+      aiNoteGenerations: { [entry.path]: { path: entry.path, stage: 'writing', candidate, applying: false } },
       articleCompanion: { key: 'article', filePath: entry.path, kind: 'md', body: '原笔迹', readonly: false, dirty: false, saving: 'idle' },
     })
 
-    await useStore.getState().applyAiNote()
+    await useStore.getState().applyAiNote(entry.path)
 
     expect(mockIpc.notesApplyAi).toHaveBeenCalledWith({ generationId: candidate.generationId })
     expect(useStore.getState().writingFile).toMatchObject({ body: applied.body, dirty: false, saving: 'saved' })
     expect(useStore.getState().articleCompanion).toMatchObject({ body: applied.body, dirty: false, saving: 'saved' })
     expect(useStore.getState().notesList?.[0].meta.ai_generated_at).toBe(applied.aiGeneratedAt)
-    expect(useStore.getState().aiNoteGeneration).toBeNull()
+    expect(useStore.getState().aiNoteGenerations).toEqual({})
   })
 
   it('取消候选只释放候选，不改编辑器正文', async () => {
-    useStore.setState({ aiNoteGeneration: { path: entry.path, stage: 'writing', candidate, applying: false } })
+    useStore.setState({ aiNoteGenerations: { [entry.path]: { path: entry.path, stage: 'writing', candidate, applying: false } } })
 
-    await useStore.getState().cancelAiNote()
+    await useStore.getState().cancelAiNote(entry.path)
 
     expect(mockIpc.notesAbortAi).toHaveBeenCalledWith({ generationId: candidate.generationId })
-    expect(useStore.getState().aiNoteGeneration).toBeNull()
+    expect(useStore.getState().aiNoteGenerations).toEqual({})
     expect(useStore.getState().writingFile?.body).toBe('原笔迹')
   })
 
@@ -87,8 +87,32 @@ describe('AI 笔记 store', () => {
 
     await useStore.getState().generateAiNote(entry.path)
 
-    expect(useStore.getState().aiNoteGeneration).toBeNull()
+    expect(useStore.getState().aiNoteGenerations).toEqual({})
     await useStore.getState().generateAiNote(entry.path)
     expect(mockIpc.notesGenerateAi).toHaveBeenCalledTimes(2)
+  })
+
+  it('不同笔记可并行生成并分别保留候选', async () => {
+    const otherPath = 'notes/b.md'
+    const otherCandidate = { generationId: 'generation-2', path: otherPath, body: '另一篇 AI 正文' }
+    let resolveFirst!: (value: typeof candidate) => void
+    let resolveSecond!: (value: typeof otherCandidate) => void
+    mockIpc.notesGenerateAi.mockImplementation(({ path }: { path: string }) => new Promise(resolve => {
+      if (path === entry.path) resolveFirst = resolve
+      else resolveSecond = resolve
+    }))
+
+    const first = useStore.getState().generateAiNote(entry.path)
+    const second = useStore.getState().generateAiNote(otherPath)
+    expect(mockIpc.notesGenerateAi).toHaveBeenCalledTimes(2)
+
+    resolveSecond(otherCandidate)
+    await second
+    expect(useStore.getState().aiNoteGenerations[entry.path]?.candidate).toBeNull()
+    expect(useStore.getState().aiNoteGenerations[otherPath]?.candidate).toEqual(otherCandidate)
+
+    resolveFirst(candidate)
+    await first
+    expect(useStore.getState().aiNoteGenerations[entry.path]?.candidate).toEqual(candidate)
   })
 })

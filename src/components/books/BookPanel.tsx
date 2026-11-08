@@ -6,11 +6,10 @@ import { CompanionWritingPicker } from '@/components/article-assistant/Companion
 import { DemoInfoButton, DemoNotePopover } from '@/components/demo/DemoNotePopover'
 import type { DemoNote } from '@/lib/demo-notes'
 import { BookListColumn } from './BookListColumn'
-import { ChapterListColumn } from './ChapterListColumn'
 import { BookReader } from './BookReader'
 import type { BriefingTheme } from '@shared/index'
 
-/** 书籍来源面板：书籍列 + 章节列 + 章节阅读器（右栏导读/对照由阅读器挂载）。 */
+/** 书籍来源面板：可展开书籍列 + 章节阅读器（右栏导读/对照由阅读器挂载）。 */
 export function BookPanel({ theme }: { theme: BriefingTheme }) {
   const loadBooks = useStore((s) => s.loadBooks)
   const removeBook = useStore((s) => s.removeBook)
@@ -20,7 +19,6 @@ export function BookPanel({ theme }: { theme: BriefingTheme }) {
   const notesList = useStore((s) => s.notesList)
   const loadNotes = useStore((s) => s.loadNotes)
   const [listCollapsed, setListCollapsed] = useState(false)
-  const [chapterCollapsed, setChapterCollapsed] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ dir: string; title: string } | null>(null)
   const [openNote, setOpenNote] = useState<DemoNote['id'] | null>(null)
   const bookInfoRef = useRef<HTMLSpanElement>(null)
@@ -103,18 +101,6 @@ export function BookPanel({ theme }: { theme: BriefingTheme }) {
               onRequestDelete={(dir, title) => setPendingDelete({ dir, title })}
             />
           )}
-        </BriefingListColumn>
-      </div>
-
-      <div data-testid="book-chapter-column" className="contents">
-        <BriefingListColumn
-          collapsed={chapterCollapsed}
-          onToggle={() => setChapterCollapsed((c) => !c)}
-          theme={theme}
-          width={56}
-          title="章节"
-        >
-          <ChapterListColumn theme={theme} />
         </BriefingListColumn>
       </div>
 

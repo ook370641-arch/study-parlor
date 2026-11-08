@@ -77,8 +77,8 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
 
   return (
     <div data-testid="article-companion-board" className="flex flex-col h-full min-h-0">
-      <div className={`flex items-center gap-2 px-3 h-9 border-b ${cls.border} shrink-0`}>
-        <span className={`truncate text-[11px] min-w-0 font-serif ${cls.filename}`}>{base}</span>
+      <div className={`flex items-center gap-2 px-3 h-10 border-b ${cls.border} shrink-0`}>
+        <span className={`truncate text-[13px] min-w-0 font-serif ${cls.filename}`}>{base}</span>
         <span data-testid="article-companion-save-status" className="shrink-0 text-[10px]">
           {file.saving === 'saving' ? <span className={cls.muted}>保存中…</span>
            : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
@@ -86,7 +86,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
         </span>
         {showAiGenerator && noteEntry && (
           <span data-testid="article-companion-ai-entry" className="shrink-0">
-            <AiNoteGenerator entry={noteEntry} theme={theme} />
+            <AiNoteGenerator entry={noteEntry} originalBody={file.body} theme={theme} />
           </span>
         )}
         {file.kind === 'md' && !file.readonly && (
@@ -95,10 +95,10 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
             data-testid="article-companion-insert-hr"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => hrAction?.((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) useStore.getState().showToast('当前位置不支持该操作') })}
-            className={`shrink-0 px-1 rounded ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#6b5d52] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/10'}`}
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#6b5d52] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/10'}`}
             title="分割线"
           >
-            <HrIcon />
+            <HrIcon size={18} />
           </button>
         )}
         <div className="flex-1" />

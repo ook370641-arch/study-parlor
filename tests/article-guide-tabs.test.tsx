@@ -60,7 +60,10 @@ describe('对照页笔记快捷入口', () => {
   it('博客已有对应笔记时直接在对照槽打开，不重复创建', async () => {
     render(<ArticleGuideTabs source="anthropic" />)
 
-    fireEvent.click(screen.getByTestId('article-note-shortcut-anthropic'))
+    const shortcut = screen.getByTestId('article-note-shortcut-anthropic')
+    expect(shortcut.querySelector('svg')).not.toBeNull()
+    expect(shortcut).not.toHaveTextContent('笔记')
+    fireEvent.click(shortcut)
 
     await waitFor(() => expect(useStore.getState().articleCompanion?.filePath).toBe(existingNote.path))
     expect(mockIpc.notesCreate).not.toHaveBeenCalled()
@@ -81,5 +84,22 @@ describe('对照页笔记快捷入口', () => {
       source: 'book',
       book: 'Book A',
     })
+  })
+
+  it('当前对照已是对应笔记时禁用快捷入口', () => {
+    useStore.setState({
+      articleCompanion: {
+        key: article.filePath,
+        filePath: existingNote.path,
+        kind: 'md',
+        body: '',
+        readonly: false,
+        dirty: false,
+        saving: 'idle',
+      },
+    })
+    render(<ArticleGuideTabs source="anthropic" />)
+
+    expect(screen.getByTestId('article-note-shortcut-anthropic')).toBeDisabled()
   })
 })
