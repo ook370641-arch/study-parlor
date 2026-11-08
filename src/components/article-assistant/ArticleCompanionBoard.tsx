@@ -77,9 +77,9 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
 
   return (
     <div data-testid="article-companion-board" className="flex flex-col h-full min-h-0">
-      <div className={`flex items-center gap-2 px-3 h-10 border-b ${cls.border} shrink-0`}>
-        <span className={`truncate text-[13px] min-w-0 font-serif ${cls.filename}`}>{base}</span>
-        <span data-testid="article-companion-save-status" className="shrink-0 text-[10px]">
+      <div className={`flex items-center gap-2 px-3 h-12 border-b ${cls.border} shrink-0`}>
+        <span className={`truncate text-base min-w-0 font-serif ${cls.filename}`}>{base}</span>
+        <span data-testid="article-companion-save-status" className="shrink-0 text-xs">
           {file.saving === 'saving' ? <span className={cls.muted}>保存中…</span>
            : file.saving === 'saved' ? <span className="text-emerald-400/70">已保存 ✓</span>
            : file.saving === 'error' ? <span className="text-red-400/70">保存失败</span> : null}
@@ -95,14 +95,14 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
             data-testid="article-companion-insert-hr"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => hrAction?.((ctx: any) => { const ok = insertHrBelow(ctx); if (ok === false) useStore.getState().showToast('当前位置不支持该操作') })}
-            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#6b5d52] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/10'}`}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${isAcademic ? 'text-parchment/60 hover:text-parchment hover:bg-parchment/10' : 'text-[#6b5d52] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/10'}`}
             title="分割线"
           >
-            <HrIcon size={18} />
+            <HrIcon size={22} />
           </button>
         )}
         <div className="flex-1" />
-        <button data-testid="article-companion-close" className={`${cls.close} text-sm leading-none px-1`} onClick={() => void close()} aria-label="关闭对照">✕</button>
+        <button data-testid="article-companion-close" className={`${cls.close} flex h-9 w-9 items-center justify-center text-xl leading-none`} onClick={() => void close()} aria-label="关闭对照">✕</button>
       </div>
       {file.kind === 'md' && !file.readonly ? (
         <div className={`flex-1 min-h-0 overflow-y-auto px-4 py-4 ${cls.body}`}
