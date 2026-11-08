@@ -127,6 +127,20 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
     if (r.ok) await loadWritingTree()
   }
 
+  const handleTabClick = async (nextTab: 'articles' | 'repository' | 'notes') => {
+    setTab(nextTab)
+    if (nextTab !== 'notes') return
+    const state = useStore.getState()
+    if (state.writingAssistantOpen && state.writingPanelMode === 'companion') return
+    const remembered = state.lastWritingFile
+    if (remembered && writingRootOf(remembered) === 'notes') {
+      if (state.writingFile?.path !== remembered) await state.selectWritingFile(remembered)
+      return
+    }
+    if (state.writingFile?.dirty) await state.saveWritingFile()
+    if (state.writingFile) await state.selectWritingFile(null)
+  }
+
   const handleRefreshRepo = async () => {
     const before = new Set(collectWritingPaths(useStore.getState().writingTree?.repository))
     setScanning(true)
@@ -150,7 +164,7 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
             role="tab"
             aria-pressed={tab === t}
             data-testid={`writing-list-tab-${t}`}
-            onClick={() => setTab(t)}
+            onClick={() => { void handleTabClick(t) }}
             className={`flex-1 py-1.5 transition-colors ${
               tab === t
                 ? isAcademic ? 'bg-ember/20 text-ember' : 'bg-[#1a1a1a] text-white'

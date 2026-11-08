@@ -4,11 +4,13 @@ import { WritingEditor } from '@/components/writing/WritingEditor'
 import { NoteMetaHeader } from './NoteMetaHeader'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 import { Quote } from '@/components/Quote'
+import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
 
 export function NoteBoard() {
   const file = useStore(s => s.writingFile)
   const notesList = useStore(s => s.notesList)
   const briefingTheme = useStore(s => s.briefingTheme)
+  const writingUISize = useStore(s => s.writingUIFontSize)
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
   const closeNoteToWall = useStore(s => s.closeNoteToWall)
@@ -30,8 +32,20 @@ export function NoteBoard() {
     )
   }
 
+  const body = WRITING_BODY_FROM_UI[writingUISize]
+  const color = briefingTheme === 'newspaper' ? '#1a1a1a' : '#e8d5b7'
+
   return (
-    <div data-testid="note-board" className="flex flex-col h-full">
+    <div
+      data-testid="note-board"
+      className="flex flex-col h-full"
+      style={{
+        ['--writing-body-size' as string]: body.size,
+        ['--writing-body-weight' as string]: body.weight,
+        ['--writing-tone-color' as string]: color,
+        ['--writing-ui-quote-size' as string]: WRITING_UI_QUOTE_SIZES[writingUISize],
+      }}
+    >
       <div className="flex items-center gap-2 px-3 h-9 border-b border-parchment/10 shrink-0">
         <button
           data-testid="note-back-to-wall"
@@ -48,22 +62,23 @@ export function NoteBoard() {
            : null}
         </span>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="mx-auto px-6 py-8" style={{ maxWidth: 680 }}>
-          {/* 画作 + 语录与文章/仓库阅读区同款（照抄 WritingBoard） */}
-          {briefingTheme !== 'newspaper' && <PaintingPlate />}
-          <div className="flex justify-center mb-4">
-            <Quote surface="briefing" />
-          </div>
-          <NoteMetaHeader key={`meta-${entry.path}`} entry={entry} />
-          <WritingEditor
-            key={`${file.path}:${entry.meta.ai_generated_at ?? 'original'}`}
-            initial={file.body}
-            onChange={md => updateWritingBody(md)}
-            theme="academic"
-            filePath={file.path}
-          />
+      <div
+        data-testid="note-editor"
+        className="flex-1 min-h-0 overflow-y-auto px-8 py-6"
+        style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}
+      >
+        {briefingTheme !== 'newspaper' && <PaintingPlate />}
+        <div className="flex justify-center mb-4">
+          <Quote surface="writing" />
         </div>
+        <NoteMetaHeader key={`meta-${entry.path}`} entry={entry} />
+        <WritingEditor
+          key={`${file.path}:${entry.meta.ai_generated_at ?? 'original'}`}
+          initial={file.body}
+          onChange={md => updateWritingBody(md)}
+          theme="academic"
+          filePath={file.path}
+        />
       </div>
     </div>
   )

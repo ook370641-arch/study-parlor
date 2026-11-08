@@ -30,10 +30,10 @@ export function NoteRow({ entry, group, onOpen }: { entry: NoteEntry; group?: Bo
         style={selected ? { background: 'rgba(217,119,87,.16)', boxShadow: 'inset 2px 0 0 #d97757' } : undefined}
         onClick={() => onOpen(currentEntry.path)}
       >
-        <NoteCover entry={coverEntry} className="shrink-0 w-[18px] h-[24px] rounded-[2px]" />
+        <NoteCover entry={coverEntry} className="shrink-0 w-[1.5em] h-[2em] rounded-[2px]" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[11.5px] leading-snug text-parchment/90">{group?.book ?? title}</div>
-          <div className="mt-0.5 text-[9px] text-parchment/45">
+          <div className="truncate text-[1em] leading-snug text-parchment/90">{group?.book ?? title}</div>
+          <div className="mt-0.5 text-[0.75em] text-parchment/45">
             {(group?.rating ?? rating) > 0 ? '★'.repeat(group?.rating ?? rating) : '未评'} · {SOURCE_LABEL[source]} · {collected_at.slice(0, 10)}
           </div>
         </div>
@@ -42,13 +42,14 @@ export function NoteRow({ entry, group, onOpen }: { entry: NoteEntry; group?: Bo
             group={group}
             currentPath={currentEntry.path}
             onPick={(path) => { setSelectedPath(path); onOpen(path) }}
+            fontSize="0.75em"
             className="mr-3 max-w-[45%] shrink-0"
           />
         )}
         <button
           data-testid={`note-delete-${slug}`}
           title="删除笔记" aria-label="删除笔记"
-          className="absolute top-0.5 right-1 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] leading-none text-parchment/45"
+          className="absolute top-0.5 right-1 opacity-0 group-hover:opacity-100 transition-opacity text-[1em] leading-none text-parchment/45"
           onClick={(e) => { e.stopPropagation(); setConfirming(true) }}
         >✕</button>
       </div>
