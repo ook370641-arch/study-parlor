@@ -95,6 +95,27 @@ describe('AI 笔记两轮生成管线', () => {
     expect(calls[4][1].messages[0].content).toContain(academicDraft)
   })
 
+  it('书籍目录与当前章节标记进入写作和措辞优化提示词', async () => {
+    mockSuccessfulPipeline()
+    const bookInput = {
+      ...input,
+      sourceIdentity: { type: 'book' as const, book: '书', chapter: '第一章' },
+      bookContext: { bookTitle: '书', tocTitles: ['序言', '第一章', '第二章'] },
+    }
+
+    await generateAiNoteBody(config, bookInput, () => {})
+
+    const calls = vi.mocked(chatNonStream).mock.calls
+    const writePrompt = calls[3][1].messages[0].content
+    const polishPrompt = calls[4][1].messages[0].content
+    for (const prompt of [writePrompt, polishPrompt]) {
+      expect(prompt).toContain('本书：《书》')
+      expect(prompt).toContain('1. 序言')
+      expect(prompt).toContain('2. 第一章 ←（本章）')
+      expect(prompt).toContain('3. 第二章')
+    }
+  })
+
   it('第二轮无独特增益时只策展首轮关系，不向写作堆入第二轮摘要', async () => {
     const coordinates = defaultCoordinates.map(item => ({ ...item, sourceIds: ['W1-1'] }))
     mockSuccessfulPipeline({ coordinates })

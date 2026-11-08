@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
-import type { NoteEntry } from '@shared/index'
+import type { BookGuideContext, NoteEntry } from '@shared/index'
 import { hashNoteRaw, parseNoteFile } from './notes'
 import { loadCollection } from './blog-collection'
 import { scanBooks } from './books'
@@ -18,6 +18,7 @@ export type AiNoteInput = {
   guideText: string | null
   originalNote: string
   sourceIdentity: AiNoteSourceIdentity
+  bookContext?: BookGuideContext
 }
 
 export type AiNoteSnapshot = {
@@ -125,13 +126,17 @@ function inferChapter(entry: NoteEntry): string {
   return entry.meta.title.startsWith(prefix) ? entry.meta.title.slice(prefix.length).replace(/ · 标注(?: \d+)?$/, '').trim() : ''
 }
 
-function findBookSource(libraryPath: string, entry: NoteEntry): { sourcePath: string; chapter: string } {
+function findBookSource(libraryPath: string, entry: NoteEntry): { sourcePath: string; chapter: string; bookContext: BookGuideContext } {
   const bookTitle = entry.meta.book?.trim()
   const chapter = inferChapter(entry)
   const book = scanBooks(libraryPath).find(item => item.title === bookTitle)
   const item = book?.toc.find(tocItem => tocItem.title === chapter)
   if (!book || !item) throw sourceError('SOURCE_NOT_FOUND')
-  return { sourcePath: resolveLibraryFile(libraryPath, path.join(book.dir, item.chapterFile)), chapter }
+  return {
+    sourcePath: resolveLibraryFile(libraryPath, path.join(book.dir, item.chapterFile)),
+    chapter,
+    bookContext: { bookTitle: book.title, tocTitles: book.toc.map(tocItem => tocItem.title) },
+  }
 }
 
 export function readAiNoteSnapshot(libraryPath: string, relativePath: string): AiNoteSnapshot {
@@ -158,7 +163,15 @@ export function assembleAiNoteInput(libraryPath: string, snapshot: AiNoteSnapsho
   const identity: AiNoteSourceIdentity = entry.meta.source === 'book'
     ? { type: 'book', book: entry.meta.book ?? '', chapter: inferChapter(entry) }
     : { type: 'blog', url: normalizeSourceUrl(entry.meta.url) }
-  const sourcePath = identity.type === 'book' ? findBookSource(libraryPath, entry).sourcePath : findBlogSource(libraryPath, identity.url)
+  let sourcePath: string
+  let bookContext: BookGuideContext | undefined
+  if (identity.type === 'book') {
+    const bookSource = findBookSource(libraryPath, entry)
+    sourcePath = bookSource.sourcePath
+    bookContext = bookSource.bookContext
+  } else {
+    sourcePath = findBlogSource(libraryPath, identity.url)
+  }
   const source = readSource(sourcePath)
   return {
     notePath: entry.path,
@@ -167,5 +180,6 @@ export function assembleAiNoteInput(libraryPath: string, snapshot: AiNoteSnapsho
     guideText: source.guideText,
     originalNote: cleanEmbeddedImages(snapshot.originalContent),
     sourceIdentity: identity,
+    ...(bookContext ? { bookContext } : {}),
   }
 }

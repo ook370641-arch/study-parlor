@@ -118,11 +118,12 @@ type AiNoteInput = {
   guideText: string | null
   originalNote: string
   sourceIdentity: { type: 'blog'; url: string } | { type: 'book'; book: string; chapter: string }
+  bookContext?: { bookTitle: string; tocTitles: string[] }
 }
 ```
 
 - 博客优先通过 `.collection.json` 的 `entries/read` 将 URL 映射到 `filePath`，再以 `Anthropic博客/**/*.md` 的 `source_url` 精确匹配兜底。
-- 书籍通过 `books/<书>/book.json` 的章节标题定位 `chapterFile`，读取章节正文；所有路径继续经受学习库边界校验。
+- 书籍通过 `books/<书>/book.json` 的章节标题定位 `chapterFile`，读取章节正文；同时装配 `bookContext`（书名＋完整目录标题），复用 `buildBookContextBlock` 标记当前章节。写作与措辞优化都接收该上下文，但不注入其他章节正文；所有路径继续经受学习库边界校验。
 - 对应 `<来源>.guide.md` 存在且可解析时，使用其正文作为 `guideText`；缺失或损坏时传 `null`，不另起导读生成管线。
 - `originalNote` 是当前笔记正文。传入模型前剔除内嵌 Base64 图片并保留 `[内嵌图片]` 占位；磁盘原内容不作清洗或改写。
 - 同一笔记不会二次生成，因此不存在把旧 AI 正文再次作为输入的链路。
@@ -153,6 +154,7 @@ type AiNoteInput = {
 - 全文精华不等于逐节摘要，主动牺牲覆盖率以换取理解效率，但不得少到只剩结论卡片。
 - 开篇先交付“问题—答案—核心矛盾”；关键概念随用随解释，必要时用短例子建立直觉。
 - 书籍章节在材料足够时用一句话点明本章在全书中的作用，不展开目录介绍，不编造前后章节关系。
+- 目录中的“←（本章）”是章节位置的事实依据；其他章节只有标题，不得据此假装读过其正文。
 - 例子只写帮助理解或证明论点所必需的部分，不展开无关过程、数字与产品清单。
 - 自然回应原笔迹中的真实关注点，需要修正时给出理由，不使用学术评语腔。
 - 自然组织 3–5 个部分，每节只回答一个问题；标题直接写出问题或结论，一句只推进一层意思。
@@ -273,6 +275,7 @@ onNotesAiProgress(callback): Unsubscribe
 - 博客 URL 规范化与文件定位、书籍书名＋章节定位、导读存在／缺失、Base64 图片清洗。
 - 第一轮与第二轮分别使用 2–3 个查询；第二轮规划收到第一轮结果；写作收到策展素材而非原始资料堆。
 - 完整初稿进入独立措辞优化并返回优化后正文；篇幅修订沿用措辞优化要求，不重新引入学术腔。
+- 书籍输入装配完整目录标题；写作与措辞优化提示词均收到当前章节标记，博客输入不携带书籍上下文。
 - 第二轮无独特增益时不伪造引用；有增益时策展结果保留 W2 编号。
 - 空原笔迹、非空原笔迹、未知 frontmatter 保留、附录逐字一致、原子写回与长度修订。
 - 已生成直接拒绝、同路径并发只运行一次、失败／取消可重试、`NOTE_CHANGED` 不覆盖新编辑。
@@ -318,3 +321,6 @@ onNotesAiProgress(callback): Unsubscribe
 - 新增措辞优化行为测试先确认失败，再实现节点。最终定向 Vitest 2 文件 14/14 通过，`npx electron-vite build`、`npm run docs:check` 与 `git diff --check` 通过；未运行会启动 Electron 的 E2E。
 - 后续补充书籍章节定位：材料足够时，把“本章在全书中的作用”包含在开篇 2–4 句内，不额外增加背景段。第三版虽有点题但整体过密，未采用；第四版 `../ai-note-readability-quality/chapter-context-v2.md` 通过通读验收。
 - 第四版已原子替换用户的 JTBD 序言笔记，旧文件备份为 `../ai-note-readability-quality/before-replacement.md`；原笔迹 513 个字符逐字保留，替换后 SHA-256 为 `2c821e8d65980777dde519e35bee1d26ec8fdf868a032fa35744602ff09867e0`。
+- 随后补齐真实目录输入：`bookContext` 复用章节导读的目录块，写作与措辞优化均可看到 12 个目录标题和 `Foreword ←（本章）`。真实候选 `../ai-note-readability-quality/book-context.md` 正确引用第 6 章 `Getting customers to switch`，已核对目录。
+- 目录版候选已原子替换同一笔记，原笔迹 513 个字符再次逐字校验一致；替换前文件备份为 `../ai-note-readability-quality/before-book-context.md`，替换后 SHA-256 为 `858b1329502bd41de49766fdb57956ab5485f7b2e19a8e47de76f42e1a7d5023`。
+- 目录装配与双提示词传递测试先失败、实现后通过；最终定向 Vitest 2 文件 15/15 通过，`npx electron-vite build`、`npm run docs:check` 与 `git diff --check` 通过。`npx tsc --noEmit -p tsconfig.node.json` 仍只报未触碰的 `electron/ipc/files.ts:657` 既有 `DocType` 错误。

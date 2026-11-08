@@ -6,6 +6,7 @@ import { chatNonStream } from './kimi'
 import { getSearchApiKey } from './credentials'
 import { extractJsonArray } from './extract-json'
 import { searchWeb, type TavilyResult } from './search'
+import { buildBookContextBlock } from './book-guide'
 
 const PROMPTS_DIR = (() => {
   const candidates = [
@@ -31,10 +32,17 @@ function prompt(name: string): string {
   return fs.readFileSync(path.join(PROMPTS_DIR, name), 'utf8')
 }
 
+function bookContextBlock(input: AiNoteInput): string | null {
+  if (!input.bookContext || input.sourceIdentity.type !== 'book') return null
+  return `## 书籍上下文\n${buildBookContextBlock(input.bookContext, input.sourceIdentity.chapter)}`
+}
+
 function materialBlock(input: AiNoteInput): string {
+  const bookContext = bookContextBlock(input)
   return [
     `标题：${input.title}`,
     `来源：${JSON.stringify(input.sourceIdentity)}`,
+    ...(bookContext ? [bookContext] : []),
     `## 导读\n${input.guideText ?? '（无可用导读）'}`,
     `## 用户原笔迹\n${input.originalNote || '（空）'}`,
     `## 来源正文\n${input.sourceText}`,
@@ -169,7 +177,8 @@ export async function generateAiNoteBody(
   onStage('writing')
   const writePrompt = `${prompt('note-ai-write.md')}\n\n${materials}\n\n## 策展思想坐标\n${JSON.stringify(coordinates)}\n\n## 紧凑来源编号表\n${sourceMapBlock(allResults)}`
   const draft = (await callModel(config, writePrompt, 0.5, true)).trim()
-  const polishPrompt = `${prompt('note-ai-polish.md')}\n\n## 待优化初稿\n${draft}`
+  const bookContext = bookContextBlock(input)
+  const polishPrompt = `${prompt('note-ai-polish.md')}${bookContext ? `\n\n${bookContext}` : ''}\n\n## 待优化初稿\n${draft}`
   let body = (await callModel(config, polishPrompt, 0.3, true)).trim()
   if (!validLength(body)) {
     const revisionPrompt = `${polishPrompt}\n\n# 针对性修订\n上一版正文汉字数为 ${chineseCharacterCount(body)}，不在 900–1600 之间。只针对篇幅修订，保持开篇概要、通俗表达、关键区分、原笔迹连接和真实引用，不新增案例或原始搜索摘要。\n\n## 上一版\n${body}`

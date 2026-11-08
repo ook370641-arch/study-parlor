@@ -59,7 +59,11 @@ describe('AI 笔记来源装配', () => {
     const bookDirectory = path.join(libraryPath, 'books', 'book-dir')
     writeBookJson(bookDirectory, {
       title: '书', importedAt: '2026-11-05T00:00:00.000Z', sourceFile: 'source.pdf', hasToc: true,
-      toc: [{ title: '第一章', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }],
+      toc: [
+        { title: '序言', chapterFile: 'chapters/00.md', pageStart: 1, pageEnd: 1 },
+        { title: '第一章', chapterFile: 'chapters/01.md', pageStart: 2, pageEnd: 3 },
+        { title: '第二章', chapterFile: 'chapters/02.md', pageStart: 4, pageEnd: 5 },
+      ],
     })
     writeLibraryFile('books/book-dir/chapters/01.md', '---\ntitle: 第一章\n---\n章节正文')
     writeLibraryFile('books/book-dir/chapters/01.guide.md', '---\ntype: article-assistant\n---\n章节导读')
@@ -69,6 +73,7 @@ describe('AI 笔记来源装配', () => {
     expect(input.sourceText).toBe('章节正文')
     expect(input.guideText).toBe('章节导读')
     expect(input.sourceIdentity).toEqual({ type: 'book', book: '书', chapter: '第一章' })
+    expect(input.bookContext).toEqual({ bookTitle: '书', tocTitles: ['序言', '第一章', '第二章'] })
   })
 
   it('来源无法定位或正文为空时给出稳定错误', () => {
