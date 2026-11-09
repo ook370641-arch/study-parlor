@@ -7,7 +7,7 @@ import { ACADEMIC_BODY_STYLES, NEWSPAPER_BODY_STYLES } from '@/lib/briefing-font
 import { useScrollMemory } from '@/lib/use-scroll-memory'
 import { insertHrBelow } from '@/lib/milkdown-insert-hr'
 import { HrIcon } from '@/lib/writing-toolbar-icons'
-import { AiNoteGenerator } from '@/components/notes/AiNoteGenerator'
+import { AiNoteGenerationProgress, AiNoteGenerator } from '@/components/notes/AiNoteGenerator'
 import { canGenerateCompanionAiNote, type AiNoteSourceTarget } from '@/lib/note-ai'
 import type { BriefingTheme } from '@shared/index'
 
@@ -20,6 +20,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
   const currentArticle = useStore((s) => s.anthropicBlogCache.articles.find((article) => article.filePath === s.anthropicReaderFilePath))
   const activeChapter = useStore((s) => s.activeChapter)
   const currentBook = useStore((s) => s.booksList.find((book) => book.dir === s.activeBookDir))
+  const aiGeneration = useStore((s) => s.articleCompanion ? s.aiNoteGenerations[s.articleCompanion.filePath] ?? null : null)
   // 本实例编辑器 action(registerLocalAction 通道):供头部「分割线」按钮调命令。
   // 必须包 () => a:裸传 setHrAction 会让 React 把 action 当 updater 用 prevState
   // 调用 → milkdown .action(null) 抛「action is not a function」(2026-10-02 崩溃)
@@ -73,6 +74,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
     sourceTarget = { type: 'book', book: currentBook.title, chapter: activeChapter.meta.title }
   }
   const showAiGenerator = !!noteEntry && canGenerateCompanionAiNote(noteEntry, sourceTarget, file)
+  const showAiProgress = showAiGenerator && !!aiGeneration && !aiGeneration.candidate
 
   return (
     <div data-testid="article-companion-board" className="flex flex-col h-full min-h-0">
@@ -86,7 +88,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
         <div data-testid="article-companion-actions" className="ml-auto flex items-center gap-2">
           {showAiGenerator && noteEntry && (
             <span data-testid="article-companion-ai-entry" className="shrink-0">
-              <AiNoteGenerator entry={noteEntry} originalBody={file.body} theme={theme} />
+              <AiNoteGenerator entry={noteEntry} theme={theme} />
             </span>
           )}
           {file.kind === 'md' && !file.readonly && (
@@ -103,7 +105,9 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
           )}
         </div>
       </div>
-      {file.kind === 'md' && !file.readonly ? (
+      {showAiProgress && noteEntry ? (
+        <AiNoteGenerationProgress entry={noteEntry} originalBody={file.body} theme={theme} />
+      ) : file.kind === 'md' && !file.readonly ? (
         <div className={`flex-1 min-h-0 overflow-y-auto px-4 py-4 ${cls.body}`}
           ref={companionScrollRef}
           onScroll={onCompanionScroll}

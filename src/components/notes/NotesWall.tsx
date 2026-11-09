@@ -97,7 +97,7 @@ export function NotesWall() {
                   />
                 )}
                 {!noteCoverImage(coverEntry, articleMetaCache) && (
-                  <NoteCoverGenerator entry={entry} className="absolute left-2 top-2 z-10" />
+                  <NoteCoverGenerator entry={entry} fillCover className="absolute left-2 top-2 z-10" />
                 )}
               </div>
             )

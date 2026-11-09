@@ -21,7 +21,7 @@ beforeEach(() => {
 
 describe('AiNoteGenerator', () => {
   it('显示可识别的 Sparkles 入口并开始生成', () => {
-    const { getByTestId } = render(<AiNoteGenerator entry={entry} originalBody="原笔迹" />)
+    const { getByTestId } = render(<AiNoteGenerator entry={entry} />)
     const button = getByTestId('note-ai-generate')
     expect(button).toHaveAttribute('aria-label', '生成笔记')
     expect(button.querySelector('svg')).not.toBeNull()
@@ -29,19 +29,14 @@ describe('AiNoteGenerator', () => {
     expect(useStore.getState().generateAiNote).toHaveBeenCalledWith(entry.path)
   })
 
-  it('生成动画可收起并从原入口重新打开', () => {
+  it('主笔记生成时只显示顶部状态，不弹生成进度窗', () => {
     useStore.setState({ aiNoteGenerations: { [entry.path]: { path: entry.path, stage: 'round2', candidate: null, applying: false } } })
-    const { getByTestId, getByText, queryByTestId } = render(<AiNoteGenerator entry={entry} originalBody="原笔迹内容" />)
+    const { getByTestId, queryByTestId } = render(<AiNoteGenerator entry={entry} />)
     expect(getByTestId('note-ai-stage')).toHaveTextContent('第二轮检索')
-    expect(getByTestId('note-ai-generating')).toBeTruthy()
-    fireEvent.click(getByTestId('note-ai-generating-close'))
     expect(queryByTestId('note-ai-generating')).toBeNull()
+    expect(queryByTestId('note-ai-view-original')).toBeNull()
     fireEvent.click(getByTestId('note-ai-generate'))
-    expect(getByTestId('note-ai-generating')).toBeTruthy()
     expect(useStore.getState().generateAiNote).not.toHaveBeenCalled()
-    fireEvent.click(getByTestId('note-ai-view-original'))
-    expect(getByTestId('note-ai-original')).toBeTruthy()
-    expect(getByText('原笔迹内容')).toBeTruthy()
   })
 
   it('候选只在预览中出现，确认或取消调用对应动作', () => {
@@ -53,7 +48,7 @@ describe('AiNoteGenerator', () => {
         },
       },
     })
-    const { getByTestId, getByText } = render(<AiNoteGenerator entry={entry} originalBody="原笔迹" />)
+    const { getByTestId, getByText } = render(<AiNoteGenerator entry={entry} />)
     expect(getByTestId('note-ai-preview')).toBeTruthy()
     expect(getByText('蒸馏内容')).toBeTruthy()
     fireEvent.click(getByTestId('note-ai-apply'))
@@ -64,7 +59,7 @@ describe('AiNoteGenerator', () => {
 
   it('已生成笔记不再显示入口', () => {
     const generated = { ...entry, meta: { ...entry.meta, ai_generated_at: '2026-11-05T00:00:00.000Z' } }
-    const { queryByTestId } = render(<AiNoteGenerator entry={generated} originalBody="原笔迹" />)
+    const { queryByTestId } = render(<AiNoteGenerator entry={generated} />)
     expect(queryByTestId('note-ai-generate')).toBeNull()
   })
 })

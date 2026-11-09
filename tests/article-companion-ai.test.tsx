@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import { ArticleCompanionBoard } from '@/components/article-assistant/ArticleCompanionBoard'
 import { useStore } from '@/store'
 import type { NoteEntry } from '@shared/index'
@@ -79,5 +79,21 @@ describe('对照页 AI 笔记入口', () => {
 
     useStore.setState({ activeChapter: { path: 'chapter-path', content: '正文', meta: { title: '第二章', chapterIndex: 1, pageRange: [3, 4] } } })
     expect(render(<ArticleCompanionBoard />).queryByTestId('note-ai-generate')).toBeNull()
+  })
+
+  it('生成动画像导读一样占正文区，查看原笔迹才弹窗', () => {
+    useStore.setState({
+      aiNoteGenerations: {
+        [blogEntry.path]: { path: blogEntry.path, stage: 'round2', candidate: null, applying: false },
+      },
+    })
+    const { getByTestId, getByText, queryByTestId } = render(<ArticleCompanionBoard />)
+
+    expect(getByTestId('note-ai-generating')).not.toHaveClass('fixed')
+    expect(queryByTestId('article-companion-editor-scroll')).toBeNull()
+    expect(queryByTestId('note-ai-original')).toBeNull()
+    fireEvent.click(getByTestId('note-ai-view-original'))
+    expect(getByTestId('note-ai-original')).toBeTruthy()
+    expect(getByText('原笔迹', { selector: 'p' })).toBeTruthy()
   })
 })

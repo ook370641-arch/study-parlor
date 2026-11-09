@@ -45,6 +45,10 @@ describe('NoteCoverGenerator', () => {
   it('展示三个内容符号候选，选中保存后刷新笔记列表', async () => {
     const { getByTestId, findAllByTestId, getAllByTestId, getAllByText, queryByTestId } = render(<NoteCoverGenerator entry={entry} />)
     fireEvent.click(getByTestId('note-cover-generate'))
+    expect(queryByTestId('note-cover-dialog')).toBeNull()
+    await waitFor(() => expect(getByTestId('note-cover-generate')).toHaveTextContent('待挑选'))
+    expect(queryByTestId('note-cover-dialog')).toBeNull()
+    fireEvent.click(getByTestId('note-cover-generate'))
     expect(await findAllByTestId('note-cover-candidate')).toHaveLength(3)
     expect(getAllByText(/创作意图/)).toHaveLength(3)
     fireEvent.click(getAllByTestId('note-cover-select')[1])
@@ -61,27 +65,41 @@ describe('NoteCoverGenerator', () => {
     fireEvent.click(getByTestId('note-cover-generate'))
     expect(mockIpc.notesGenerateCovers).toHaveBeenCalledTimes(1)
     resolve({ candidates })
+    await waitFor(() => expect(getByTestId('note-cover-generate')).toHaveTextContent('待挑选'))
+    fireEvent.click(getByTestId('note-cover-generate'))
     expect(await findAllByTestId('note-cover-candidate')).toHaveLength(3)
   })
 
-  it('关闭弹窗后后台继续生成，入口从生成中变为待挑选并可恢复候选', async () => {
+  it('静默生成后由入口打开候选，不会自动弹窗', async () => {
     let resolve: (value: { candidates: NoteCoverCandidate[] }) => void = () => {}
     mockIpc.notesGenerateCovers.mockReturnValue(new Promise(resolver => { resolve = resolver }))
     const { getByTestId, queryByTestId, findAllByTestId } = render(<NoteCoverGenerator entry={entry} />)
 
     fireEvent.click(getByTestId('note-cover-generate'))
-    fireEvent.click(getByTestId('note-cover-cancel'))
-
     expect(queryByTestId('note-cover-dialog')).toBeNull()
     expect(getByTestId('note-cover-generate')).toHaveTextContent('生成中')
     expect(getByTestId('note-cover-generate').querySelector('[data-testid="note-cover-generating-spinner"]')).not.toBeNull()
 
     resolve({ candidates })
     await waitFor(() => expect(getByTestId('note-cover-generate')).toHaveTextContent('待挑选'))
+    expect(queryByTestId('note-cover-dialog')).toBeNull()
     fireEvent.click(getByTestId('note-cover-generate'))
 
     expect(await findAllByTestId('note-cover-candidate')).toHaveLength(3)
     expect(mockIpc.notesGenerateCovers).toHaveBeenCalledTimes(1)
+  })
+
+  it('封面画幅内显示生成动画', async () => {
+    let resolve: (value: { candidates: NoteCoverCandidate[] }) => void = () => {}
+    mockIpc.notesGenerateCovers.mockReturnValue(new Promise(resolver => { resolve = resolver }))
+    const { getByTestId, queryByTestId } = render(<div className="relative"><NoteCoverGenerator entry={entry} fillCover /></div>)
+
+    fireEvent.click(getByTestId('note-cover-generate'))
+
+    expect(getByTestId('note-cover-generating-overlay')).toHaveClass('absolute', 'inset-0')
+    expect(queryByTestId('note-cover-dialog')).toBeNull()
+    resolve({ candidates })
+    await waitFor(() => expect(queryByTestId('note-cover-generating-overlay')).toBeNull())
   })
 
   it('保存失败保留旧封面并提示', async () => {
@@ -91,6 +109,8 @@ describe('NoteCoverGenerator', () => {
     useStore.setState({ showToast })
     const { container, getByTestId, findAllByTestId, getAllByTestId } = render(<><NoteCover entry={covered} /><NoteCoverGenerator entry={covered} /></>)
     expect(container.querySelector('img')).toHaveAttribute('src', covered.coverUrl)
+    fireEvent.click(getByTestId('note-cover-generate'))
+    await waitFor(() => expect(getByTestId('note-cover-generate')).toHaveTextContent('待挑选'))
     fireEvent.click(getByTestId('note-cover-generate'))
     await findAllByTestId('note-cover-candidate')
     fireEvent.click(getAllByTestId('note-cover-select')[0])

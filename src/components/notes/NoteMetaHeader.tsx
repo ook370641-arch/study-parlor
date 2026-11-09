@@ -8,7 +8,6 @@ import { AiNoteGenerator } from './AiNoteGenerator'
 export function NoteMetaHeader({ entry }: { entry: NoteEntry }) {
   const updateNoteMetaAction = useStore(s => s.updateNoteMetaAction)
   const { path, meta } = entry
-  const originalBody = useStore(s => s.writingFile?.path === path ? s.writingFile.body : '')
   const [infoOpen, setInfoOpen] = useState(false)
 
   const inputCls = 'bg-transparent outline-none border-none min-w-0 placeholder:text-parchment/25'
@@ -37,7 +36,7 @@ export function NoteMetaHeader({ entry }: { entry: NoteEntry }) {
           {meta.read_at ? `读完于 ${meta.read_at.slice(0, 10)} · ` : ''}收录于 {meta.collected_at.slice(0, 10)}
         </span>
         <div className="ml-auto flex items-center gap-2">
-          <AiNoteGenerator entry={entry} originalBody={originalBody} />
+          <AiNoteGenerator entry={entry} />
           <button
             data-testid="note-meta-info-toggle"
             title="链接与亮点" aria-label="链接与亮点"

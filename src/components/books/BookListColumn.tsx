@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useStore } from '@/store'
+import { ipc } from '@/lib/ipc'
 import { Tooltip } from '@/components/Tooltip'
-import type { BriefingTheme } from '@shared/index'
+import type { BookTocItem, BriefingTheme } from '@shared/index'
 
 interface Props {
   theme: BriefingTheme
@@ -10,7 +11,9 @@ interface Props {
 
 /** 书架列：书卡 + 导入入口。 */
 export function BookListColumn({ theme, onRequestDelete }: Props) {
-  const [collapsedDir, setCollapsedDir] = useState<string | null>(null)
+  const [expandedOverrides, setExpandedOverrides] = useState<Record<string, boolean>>({})
+  const [chapterLists, setChapterLists] = useState<Record<string, BookTocItem[]>>({})
+  const [loadingDirs, setLoadingDirs] = useState<Record<string, boolean>>({})
   const books = useStore((s) => s.booksList)
   const loading = useStore((s) => s.booksLoading)
   const importing = useStore((s) => s.booksImporting)
@@ -18,12 +21,15 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
   const activeDir = useStore((s) => s.activeBookDir)
   const toc = useStore((s) => s.activeBookToc)
   const activeChapterPath = useStore((s) => s.activeChapter?.path ?? null)
+  const booksLastChapter = useStore((s) => s.booksLastChapter)
   const selectBook = useStore((s) => s.selectBook)
   const selectChapter = useStore((s) => s.selectChapter)
+  const showToast = useStore((s) => s.showToast)
   const importBook = useStore((s) => s.importBook)
   const reparseBook = useStore((s) => s.reparseBook)
   const isAcademic = theme !== 'newspaper'
   const tipTheme = isAcademic ? 'academic' : 'newspaper'
+  const recentChapterPath = booksLastChapter?.replace(/\\/g, '/')
 
   return (
     <div data-testid="book-list-column" className="flex flex-col h-full min-h-0">
@@ -38,13 +44,14 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
         )}
         {books.map((b, i) => {
           const active = activeDir === b.dir
-          const expanded = active && collapsedDir !== b.dir
+          const expanded = expandedOverrides[b.dir] ?? active
+          const chapters = active ? toc : chapterLists[b.dir] ?? []
           return (
             <div key={b.dir} className="relative group">
               <button
                 type="button"
                 data-testid={`book-card-${i}`}
-                onClick={() => { setCollapsedDir(null); void selectBook(b.dir) }}
+                onClick={() => { setExpandedOverrides(prev => ({ ...prev, [b.dir]: true })); void selectBook(b.dir) }}
                 className={`w-full text-left rounded pl-8 pr-6 py-2 transition-colors ${
                   active
                     ? isAcademic
@@ -101,12 +108,14 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
                 aria-label={expanded ? '折叠章节' : '展开章节'}
                 aria-expanded={expanded}
                 onClick={() => {
-                  if (!active) {
-                    setCollapsedDir(null)
-                    void selectBook(b.dir)
-                  } else {
-                    setCollapsedDir(expanded ? b.dir : null)
-                  }
+                  const nextExpanded = !expanded
+                  setExpandedOverrides(prev => ({ ...prev, [b.dir]: nextExpanded }))
+                  if (!nextExpanded || active || chapterLists[b.dir]) return
+                  setLoadingDirs(prev => ({ ...prev, [b.dir]: true }))
+                  void ipc.booksChapters({ bookDir: b.dir })
+                    .then(chapters => setChapterLists(prev => ({ ...prev, [b.dir]: chapters })))
+                    .catch(() => showToast('章节列表读取失败'))
+                    .finally(() => setLoadingDirs(prev => ({ ...prev, [b.dir]: false })))
                 }}
                 className={`absolute left-1.5 top-2 flex h-6 w-6 items-center justify-center rounded ${
                   isAcademic ? 'text-parchment/50 hover:bg-parchment/10 hover:text-parchment' : 'text-[#6b5d52] hover:bg-[#1a1a1a]/[0.06]'
@@ -135,27 +144,52 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
                 </button>
               )}
               {expanded && (
-                <div data-testid="book-chapter-list" className={`ml-4 mr-1 mt-1 space-y-0.5 border-l pl-2 ${isAcademic ? 'border-parchment/15' : 'border-[#1a1a1a]/15'}`}>
-                  {toc.map((chapter, chapterIndex) => {
-                    const path = `${b.dir}/${chapter.chapterFile}`
-                    const chapterActive = activeChapterPath === path
-                    return (
-                      <Tooltip key={chapter.chapterFile} content={chapter.title} theme={tipTheme}>
-                        <button
-                          type="button"
-                          data-testid={`chapter-row-${chapterIndex}`}
-                          onClick={() => void selectChapter(path)}
-                          className={`w-full truncate rounded px-2 py-1.5 text-left text-xs transition-colors ${
-                            chapterActive
-                              ? isAcademic ? 'bg-ember/15 text-ember' : 'bg-[#1a1a1a]/[0.08] text-[#2a1f1a]'
-                              : isAcademic ? 'text-parchment/70 hover:bg-parchment/10' : 'text-[#2a1f1a]/75 hover:bg-[#1a1a1a]/[0.04]'
-                          }`}
-                        >
-                          {chapterIndex + 1}. {chapter.title}
-                        </button>
-                      </Tooltip>
-                    )
-                  })}
+                <div data-testid="book-chapter-list" className={`ml-2 mr-1 mt-1 overflow-hidden rounded-md border ${isAcademic ? 'border-parchment/10 bg-black/10' : 'border-[#1a1a1a]/10 bg-white/25'}`}>
+                  <div className={`flex items-center justify-between border-b px-2.5 py-1.5 text-[10px] tracking-[0.12em] ${isAcademic ? 'border-parchment/10 text-parchment/35' : 'border-[#1a1a1a]/10 text-[#6b5d52]/60'}`}>
+                    <span>章节目录</span>
+                    <span className="tabular-nums">{chapters.length} 章</span>
+                  </div>
+                  {loadingDirs[b.dir] ? (
+                    <div className={`px-3 py-3 text-[11px] ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]'}`}>读取章节…</div>
+                  ) : (
+                    <div className="space-y-0.5 p-1">
+                      {chapters.map((chapter, chapterIndex) => {
+                        const path = `${b.dir}/${chapter.chapterFile}`
+                        const chapterActive = activeChapterPath === path
+                        const recent = recentChapterPath === path
+                        return (
+                          <Tooltip key={chapter.chapterFile} content={chapter.title} theme={tipTheme}>
+                            <button
+                              type="button"
+                              data-testid={active ? `chapter-row-${chapterIndex}` : `${b.dir}-chapter-row-${chapterIndex}`}
+                              onClick={() => {
+                                if (active) void selectChapter(path)
+                                else void selectBook(b.dir).then(() => selectChapter(path))
+                              }}
+                              className={`flex w-full items-center gap-2 rounded border-l-2 px-2 py-1.5 text-left text-xs transition-colors ${
+                                chapterActive
+                                  ? isAcademic ? 'border-l-ember bg-ember/15 text-ember' : 'border-l-[#8a3a3a] bg-[#1a1a1a]/[0.08] text-[#2a1f1a]'
+                                  : isAcademic ? 'border-l-transparent text-parchment/70 hover:bg-parchment/10' : 'border-l-transparent text-[#2a1f1a]/75 hover:bg-[#1a1a1a]/[0.04]'
+                              }`}
+                            >
+                              <span className="flex w-2 shrink-0 items-center justify-center">
+                                {recent && (
+                                  <span
+                                    data-testid="book-recent-chapter-marker"
+                                    role="img"
+                                    aria-label="最近阅读"
+                                    title="最近阅读"
+                                    className={`h-1.5 w-1.5 rounded-full ${isAcademic ? 'bg-ember shadow-[0_0_0_3px_rgba(217,119,87,0.14)]' : 'bg-[#b0503c] shadow-[0_0_0_3px_rgba(176,80,60,0.12)]'}`}
+                                  />
+                                )}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">{chapterIndex + 1}. {chapter.title}</span>
+                            </button>
+                          </Tooltip>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
