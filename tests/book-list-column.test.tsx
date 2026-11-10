@@ -83,6 +83,39 @@ describe('BookListColumn 书籍条目', () => {
     expect(useStore.getState().activeBookDir).toBe('book-a')
   })
 
+  it('切换选中书籍后保留各书目录的展开与手动折叠状态', () => {
+    useStore.setState({
+      booksList: [
+        ...useStore.getState().booksList,
+        { dir: 'book-b', title: 'Book B', importedAt: '2026-10-28T00:00:00.000Z', hasToc: true, chapterCount: 1, parserVersion: 3 },
+        { dir: 'book-c', title: 'Book C', importedAt: '2026-10-29T00:00:00.000Z', hasToc: true, chapterCount: 1, parserVersion: 3 },
+      ],
+      selectBook: vi.fn(async (dir: string) => {
+        useStore.setState({ activeBookDir: dir })
+      }),
+    })
+    render(<BookListColumn theme="academic" />)
+
+    expect(screen.getByTestId('chapter-row-0')).toBeTruthy()
+    expect(screen.getByTestId('book-chapters-toggle-1')).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByTestId('book-chapters-toggle-2')).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(screen.getByTestId('book-card-1'))
+
+    expect(screen.getByTestId('book-a-chapter-row-0')).toBeTruthy()
+    expect(screen.getByTestId('chapter-row-0')).toBeTruthy()
+    expect(screen.getByTestId('book-chapters-toggle-2')).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(screen.getByTestId('book-chapters-toggle-0'))
+    expect(screen.queryByTestId('book-a-chapter-row-0')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('book-card-2'))
+
+    expect(screen.queryByTestId('book-a-chapter-row-0')).toBeNull()
+    expect(screen.getByTestId('book-b-chapter-row-0')).toBeTruthy()
+    expect(screen.getByTestId('chapter-row-0')).toBeTruthy()
+  })
+
   it('最近阅读章节使用无文字圆点标记', () => {
     useStore.setState({ booksLastChapter: 'book-a/chapters/01.md' })
     render(<BookListColumn theme="academic" />)

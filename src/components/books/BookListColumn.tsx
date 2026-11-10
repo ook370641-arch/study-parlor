@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { Tooltip } from '@/components/Tooltip'
+import { noteChapter } from '@/lib/notes-list'
 import type { BookTocItem, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -22,6 +23,7 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
   const toc = useStore((s) => s.activeBookToc)
   const activeChapterPath = useStore((s) => s.activeChapter?.path ?? null)
   const booksLastChapter = useStore((s) => s.booksLastChapter)
+  const notesList = useStore((s) => s.notesList)
   const selectBook = useStore((s) => s.selectBook)
   const selectChapter = useStore((s) => s.selectChapter)
   const showToast = useStore((s) => s.showToast)
@@ -30,6 +32,14 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
   const isAcademic = theme !== 'newspaper'
   const tipTheme = isAcademic ? 'academic' : 'newspaper'
   const recentChapterPath = booksLastChapter?.replace(/\\/g, '/')
+
+  useEffect(() => {
+    if (!activeDir) return
+    setExpandedOverrides(prev => (
+      prev[activeDir] === undefined ? { ...prev, [activeDir]: true } : prev
+    ))
+    setChapterLists(prev => ({ ...prev, [activeDir]: toc }))
+  }, [activeDir, toc])
 
   return (
     <div data-testid="book-list-column" className="flex flex-col h-full min-h-0">
@@ -157,6 +167,10 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
                         const path = `${b.dir}/${chapter.chapterFile}`
                         const chapterActive = activeChapterPath === path
                         const recent = recentChapterPath === path
+                        const hasAiNote = !!notesList?.some(entry => entry.meta.source === 'book'
+                          && entry.meta.ai_generated_at
+                          && entry.meta.book === b.title
+                          && noteChapter(entry) === chapter.title)
                         return (
                           <Tooltip key={chapter.chapterFile} content={chapter.title} theme={tipTheme}>
                             <button
@@ -184,6 +198,17 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
                                 )}
                               </span>
                               <span className="min-w-0 flex-1 truncate">{chapterIndex + 1}. {chapter.title}</span>
+                              {hasAiNote && (
+                                <span
+                                  data-testid="book-ai-note-marker"
+                                  role="img"
+                                  aria-label="已生成 AI 笔记"
+                                  title="已生成 AI 笔记"
+                                  className={`shrink-0 text-[10px] ${isAcademic ? 'text-ember/70' : 'text-[#b0503c]/70'}`}
+                                >
+                                  ✦
+                                </span>
+                              )}
                             </button>
                           </Tooltip>
                         )
