@@ -82,6 +82,25 @@ describe('AI 笔记 store', () => {
     expect(useStore.getState().writingFile?.body).toBe('原笔迹')
   })
 
+  it('写入失败保留候选且不释放会话，随后可以重试', async () => {
+    useStore.setState({
+      aiNoteGenerations: { [entry.path]: { path: entry.path, stage: 'writing', candidate, applying: false } },
+    })
+    mockIpc.notesApplyAi.mockRejectedValueOnce(new Error('SAVE_FAILED'))
+
+    await useStore.getState().applyAiNote(entry.path)
+
+    expect(mockIpc.notesAbortAi).not.toHaveBeenCalled()
+    expect(useStore.getState().aiNoteGenerations[entry.path]).toEqual({
+      path: entry.path, stage: 'writing', candidate, applying: false,
+    })
+
+    await useStore.getState().applyAiNote(entry.path)
+
+    expect(mockIpc.notesApplyAi).toHaveBeenCalledTimes(2)
+    expect(useStore.getState().aiNoteGenerations).toEqual({})
+  })
+
   it('生成失败清理状态并保留重试能力', async () => {
     mockIpc.notesGenerateAi.mockRejectedValueOnce(new Error('MISSING_API_KEY'))
 

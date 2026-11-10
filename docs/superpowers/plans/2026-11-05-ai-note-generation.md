@@ -1,6 +1,6 @@
 ---
 status: current
-verified: 2026-11-05
+verified: 2026-11-10
 ---
 
 # AI Note Generation Implementation Plan
@@ -9,7 +9,7 @@ verified: 2026-11-05
 
 **Goal:** 为博客与书籍章节笔记提供一次性 AI 生成能力，以两轮 Tavily 检索和资料策展生成结构化正文，并把原笔迹逐字保留在同一文件末尾。
 
-**Architecture:** 主进程负责来源装配、两轮检索、候选会话、路径锁与原子写回；渲染进程只负责入口资格、进度预览和确认。AI 正文与原笔迹只在用户确认后合并，`ai_generated_at` 是跨入口、跨重启的永久防重标记。
+**Architecture:** 主进程负责来源装配、两轮检索、候选会话、路径锁与原子写回；渲染进程负责入口资格、进度和生成后的自动写入。AI 正文生成后立即与原笔迹合并写回，写入失败保留候选供重试或取消；`ai_generated_at` 是跨入口、跨重启的永久防重标记。
 
 **Tech Stack:** Electron 30、React 18、TypeScript、Zustand、gray-matter、Kimi OpenAI 兼容 API、Tavily、Vitest、Playwright。
 
@@ -170,7 +170,7 @@ Run: `npx vitest run tests/notes-ai-ipc.test.ts`
 
 - [ ] **Step 3: 实现会话和 API**
 
-保存 `generationId → { path, baseRawHash, aiBody }`；锁从 generate 持有到 apply/abort/失败。依次发送 `reading/round1/round2/curating/writing`。apply 先校验候选，再调用原子写回，所有结束路径清理候选与锁。
+保存 `generationId → { path, baseRawHash, aiBody }`；锁从 generate 持有到 apply 成功、abort 或生成失败。依次发送 `reading/round1/round2/curating/writing`。apply 先校验候选，再调用原子写回；写入失败保留候选与锁供重试或取消。
 
 - [ ] **Step 4: 确认通过并提交**
 
@@ -196,15 +196,15 @@ Run: `git add electron/ipc/notes.ts electron/preload.ts src/types/index.ts src/l
 
 - [ ] **Step 1: 写资格、组件和 store 失败测试**
 
-覆盖未知来源、parseError、已生成无入口；点击前等待 dirty 保存；Sparkles → 进度 → 预览；取消可重试；确认后 notesList、主编辑器正文/dirty/saving 同步，旧自动保存不得回写。
+覆盖未知来源、parseError、已生成无入口；点击前等待 dirty 保存；Sparkles → 进度 → 自动写入；写入失败保留候选并可重试或取消；成功后 notesList、主编辑器正文/dirty/saving 同步，旧自动保存不得回写。
 
 - [ ] **Step 2: 确认失败**
 
 Run: `npx vitest run tests/note-ai.test.ts tests/ai-note-generator.test.tsx tests/notes-ai-store.test.ts`
 
-- [ ] **Step 3: 实现入口、预览和 store 动作**
+- [ ] **Step 3: 实现入口、自动写入和 store 动作**
 
-`AiNoteGenerator` 用 portal 显示候选与“写入笔记”/“取消”。生成前只保存目标主编辑器或目标对照的 dirty 内容；apply 后刷新 `notesList`，同步目标 `writingFile` 与 `articleCompanion`，设 `dirty: false`、`saving: 'saved'`。
+`AiNoteGenerator` 在 generate 成功后立即 apply；异常候选才通过 portal 提供“写入笔记”/“取消”。生成前只保存目标主编辑器或目标对照的 dirty 内容；apply 后刷新 `notesList`，同步目标 `writingFile` 与 `articleCompanion`，设 `dirty: false`、`saving: 'saved'`。
 
 - [ ] **Step 4: 确认通过并提交**
 

@@ -656,6 +656,7 @@ export type StateJson = {
   /** 书籍来源最后打开的书（books/<书名> 绝对路径；失效时回退第一本） */
   booksLastBook?: string | null
   booksLastChapter?: string | null
+  booksLastChapters?: Record<string, string>
   bookScrollMemory?: ScrollMemorySlot | null
   annotationHighlightColor?: AnnotationHighlightColor
   articleCompanionMap?: Record<string, string>

@@ -44,7 +44,11 @@ export function AiNoteGenerator({ entry, theme = 'academic' }: { entry: NoteEntr
           aria-label={generation && !candidate ? '正在生成笔记' : '生成笔记'}
           disabled={!!generation}
           onClick={() => {
-            if (!generation) void generate(entry.path)
+            if (!generation) {
+              void generate(entry.path)
+                .then(() => apply(entry.path))
+                .catch(() => {})
+            }
           }}
           className={`flex h-9 w-9 items-center justify-center rounded ${buttonTone} disabled:cursor-wait disabled:opacity-70`}
         >

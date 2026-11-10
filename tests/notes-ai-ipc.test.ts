@@ -90,7 +90,7 @@ describe('AI 笔记 IPC 会话', () => {
     expect(fs.readFileSync(path.join(libraryPath, notePath), 'utf8')).toBe(originalRaw)
   })
 
-  it('预览期间的新编辑触发 NOTE_CHANGED，且不得被覆盖', async () => {
+  it('写入冲突保留候选且不覆盖新编辑，恢复原文件后可重试同一候选', async () => {
     const dependencies = makeDependencies()
     const handlers = createNotesAiHandlers(config, dependencies)
     const candidate = await handlers.generate(makeEvent(), { path: notePath })
@@ -98,7 +98,11 @@ describe('AI 笔记 IPC 会话', () => {
 
     await expect(handlers.apply({ generationId: candidate.generationId })).rejects.toThrow('NOTE_CHANGED')
     expect(fs.readFileSync(path.join(libraryPath, notePath), 'utf8')).toBe(`${originalRaw}\n新编辑`)
-    await expect(handlers.generate(makeEvent(), { path: notePath })).resolves.toMatchObject({ body: 'AI 正文' })
+    fs.writeFileSync(path.join(libraryPath, notePath), originalRaw, 'utf8')
+    await expect(handlers.apply({ generationId: candidate.generationId })).resolves.toMatchObject({
+      path: notePath,
+      body: 'AI 正文\n\n---\n\n## 原笔迹\n\n原笔迹\n',
+    })
   })
 
   it('已有永久标记时直接拒绝，不进入来源生成或模型调用', async () => {

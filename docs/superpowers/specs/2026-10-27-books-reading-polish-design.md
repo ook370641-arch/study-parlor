@@ -398,5 +398,6 @@ v2 那次重解析已经删掉的导读无法恢复，需重新生成。
 
 - 活动书变化时缓存其目录，并记录默认展开状态；已有手动折叠值不覆盖。切换书籍后，已展开目录保持展开，从未展开的非活动书仍默认收起。
 - 章节行复用 `notesList` 的书籍、章节与 `ai_generated_at` 元数据显示 `✦`；旧笔记继续通过 `noteChapter` 从「书名 · 章节」标题推导，不新增持久字段。
-- 回归测试：`tests/book-list-column.test.tsx` 覆盖切换书籍与手动折叠；`tests/book-chapter-note-marker.test.tsx` 覆盖显式章节、旧标题推导和误标防护。
+- `booksLastChapters` 按书持久化最近章节；`selectBook` 优先恢复本书记录并滚动到当前行，旧数据回退到全局 `booksLastChapter`，无记录时不默认打开第一章，删书清理对应记录。
+- 回归测试：`tests/book-list-column.test.tsx` 覆盖切换书籍、手动折叠和滚动定位；`tests/books-store.test.ts` 覆盖逐书恢复、旧数据兼容与删除清理；`tests/book-chapter-note-marker.test.tsx` 覆盖显式章节、旧标题推导和误标防护。
 

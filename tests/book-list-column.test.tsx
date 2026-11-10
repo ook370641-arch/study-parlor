@@ -116,6 +116,32 @@ describe('BookListColumn 书籍条目', () => {
     expect(screen.getByTestId('chapter-row-0')).toBeTruthy()
   })
 
+  it('章节恢复后滚动到当前行，手动展开其他书不触发滚动', async () => {
+    const scrollIntoView = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scrollIntoView })
+    mockIpc.booksChapters.mockResolvedValue([{ title: 'Other Chapter', chapterFile: 'chapters/02.md', chapterIndex: 1, pageRange: [3, 4] }])
+    useStore.setState({
+      booksList: [
+        ...useStore.getState().booksList,
+        { dir: 'book-b', title: 'Book B', importedAt: '2026-10-28T00:00:00.000Z', hasToc: true, chapterCount: 1, parserVersion: 3 },
+      ],
+      activeChapter: {
+        path: 'book-a/chapters/01.md',
+        content: 'x',
+        meta: { title: 'Chapter 1', chapterIndex: 1, pageRange: [1, 2] },
+      },
+    })
+    render(<BookListColumn theme="academic" />)
+
+    await vi.waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' }))
+    scrollIntoView.mockClear()
+
+    fireEvent.click(screen.getByTestId('book-chapters-toggle-1'))
+
+    expect(await screen.findByTestId('book-b-chapter-row-0')).toBeTruthy()
+    expect(scrollIntoView).not.toHaveBeenCalled()
+  })
+
   it('最近阅读章节使用无文字圆点标记', () => {
     useStore.setState({ booksLastChapter: 'book-a/chapters/01.md' })
     render(<BookListColumn theme="academic" />)

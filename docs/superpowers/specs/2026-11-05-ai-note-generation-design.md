@@ -1,6 +1,6 @@
 ---
 status: current
-verified: 2026-11-08
+verified: 2026-11-10
 ---
 
 # AI 笔记两轮检索与单文件生成设计
@@ -86,13 +86,13 @@ verified: 2026-11-08
 
 在对照页生成后直接刷新当前对照笔记，不跳页、不切换主文、不新建文件。主编辑器和对照页共享同一生成状态与持久标记，任一入口成功后另一入口立即消失。
 
-### 2.4 生成与确认
+### 2.4 生成与自动写入
 
 1. 点击图标后，先等待当前主笔记或对照笔记的脏内容保存完成。
 2. 主进程锁定笔记路径并检查持久标记，随后展示读取材料、第一轮检索、第二轮检索、资料策展和写作进度。
-3. 完成后显示生成正文预览；此时尚未修改笔记文件。
-4. 用户确认“写入笔记”后，主进程一次性写入 AI 正文、原笔迹附录和 `ai_generated_at`。
-5. 取消预览只丢弃候选；失败或取消均允许重试。只有成功写入才构成“已生成”。
+3. 生成完成后立即自动写入 AI 正文、原笔迹附录和 `ai_generated_at`，不再把预览确认作为正常流程的落盘闸门。
+4. 自动写入失败时保留候选与生成会话，预览提供重试和取消；只有主动取消才丢弃未写入候选。
+5. 只有成功写入才构成“已生成”并显示章节标识；生成结束或写入失败不得伪装成已生成。
 
 ## 3. 数据契约与来源装配
 
@@ -215,9 +215,9 @@ onNotesAiProgress(callback): Unsubscribe
 
 ### 6.2 写回格式
 
-确认写入时再次读取文件并计算 raw hash：
+自动写入时再次读取文件并计算 raw hash：
 
-- 与生成前快照不同：返回 `NOTE_CHANGED`，不覆盖用户的新编辑，候选失效并释放锁。
+- 与生成前快照不同：返回 `NOTE_CHANGED`，不覆盖用户的新编辑；保留候选与锁，用户可在预览中重试或取消后重新生成。
 - 已有 `ai_generated_at`：返回 `ALREADY_GENERATED`，不重复写入。
 - 校验通过：以当前 frontmatter 为基础加入 `ai_generated_at`，保留未知字段，组合正文后通过临时文件＋重命名原子替换。
 
@@ -242,7 +242,7 @@ onNotesAiProgress(callback): Unsubscribe
 - 刷新 `notesList`，使两个入口同时依据 `ai_generated_at` 消失。
 - 若 `writingFile.path` 等于目标路径，更新其正文与保存状态。
 - 若 `articleCompanion.filePath` 等于目标路径，更新对照正文、dirty 与保存状态，不卸载当前对照。
-- 清理候选与路径锁；生成失败、取消或来源变化时保留原文件与重试能力。
+- 成功写入或主动取消后清理候选与路径锁；生成失败保留原文件与重试能力，写入失败保留候选供重试或取消。
 
 ## 7. 错误处理与降级
 
@@ -252,7 +252,7 @@ onNotesAiProgress(callback): Unsubscribe
 - 来源正文无法定位、为空或越出学习库：返回 `SOURCE_NOT_FOUND` / `SOURCE_INVALID`，不写文件。
 - 导读缺失或损坏：以 `guideText: null` 继续，不因此改变入口资格。
 - 长度一次修订后仍不合格：返回 `NOTE_GENERATION_INVALID`，不写文件。
-- 预览期间文件被外部或其他编辑器修改：返回 `NOTE_CHANGED`，优先保护新编辑。
+- 自动写入前或重试期间文件被外部或其他编辑器修改：返回 `NOTE_CHANGED`，优先保护新编辑并保留候选。
 - 最终写盘失败：原文件保持原样，不设置 `ai_generated_at`，界面保留重试入口。
 
 ## 8. 文件边界
@@ -263,7 +263,7 @@ onNotesAiProgress(callback): Unsubscribe
 - `electron/ipc/notes.ts`：候选会话、路径锁、三个 IPC 与进度事件。
 - `electron/preload.ts`、`src/lib/ipc.ts`、`src/types/index.ts`：类型安全 API。
 - `src/lib/note-ai.ts`：主笔记与对照场景的入口资格纯逻辑。
-- `src/components/notes/AiNoteGenerator.tsx`：四芒星入口、进度、预览与确认／取消。
+- `src/components/notes/AiNoteGenerator.tsx`：四芒星入口、进度、生成后自动写入，以及异常预览中的重试／取消。
 - `src/components/notes/NoteMetaHeader.tsx`、`src/components/article-assistant/ArticleCompanionBoard.tsx`：两个入口接入。
 - `src/store/index.ts`：保存前置、生成动作与写回后的双编辑器状态同步。
 - `e2e/source-map.json`：登记新模块和 `notes-ai-generation.spec.ts`。
@@ -286,10 +286,10 @@ onNotesAiProgress(callback): Unsubscribe
 
 使用现有本地 mock server 同时模拟 Kimi 与 Tavily，验证：
 
-1. 主笔记四芒星 → 两轮进度 → 预览 → 确认写回 → 原笔迹仍在末尾。
+1. 主笔记四芒星 → 两轮进度 → 自动写回 → 原笔迹仍在末尾。
 2. 对照页匹配合法笔记可生成，写回不跳页；错配与已生成无入口。
 3. 重复点击、重启后再次打开、直接重复 IPC 均不产生第二次模型调用或第二份文件。
-4. 搜索失败与预览期间编辑均不改变原笔记。
+4. 搜索失败与写入期间编辑均不改变原笔记；写入失败可重试同一候选，取消后才释放会话。
 
 新增 `e2e/specs/notes-ai-generation.spec.ts` 并登记到 notes group。按 diff 运行受影响 Vitest 与定向 E2E，不跑全量 E2E；完成后运行 `npm run docs:check` 与生产构建。
 
@@ -324,3 +324,9 @@ onNotesAiProgress(callback): Unsubscribe
 - 随后补齐真实目录输入：`bookContext` 复用章节导读的目录块，写作与措辞优化均可看到 12 个目录标题和 `Foreword ←（本章）`。真实候选 `../ai-note-readability-quality/book-context.md` 正确引用第 6 章 `Getting customers to switch`，已核对目录。
 - 目录版候选已原子替换同一笔记，原笔迹 513 个字符再次逐字校验一致；替换前文件备份为 `../ai-note-readability-quality/before-book-context.md`，替换后 SHA-256 为 `858b1329502bd41de49766fdb57956ab5485f7b2e19a8e47de76f42e1a7d5023`。
 - 目录装配与双提示词传递测试先失败、实现后通过；最终定向 Vitest 2 文件 15/15 通过，`npx electron-vite build`、`npm run docs:check` 与 `git diff --check` 通过。`npx tsc --noEmit -p tsconfig.node.json` 仍只报未触碰的 `electron/ipc/files.ts:657` 既有 `DocType` 错误。
+
+### 2026-11-10
+
+- JTBD 第 2、3 章的真实文件自 11 月 2 日后未写入，确认旧流程的生成候选仅保存在内存，必须二次确认才落盘；写入失败还会同时清理渲染状态与主进程会话，造成“生成过但没有 AI 正文”。
+- 正常流程改为 generate 成功后立即 apply；主进程与 store 在写入失败时保留同一候选和路径锁，允许重试或主动取消。`ai_generated_at` 与章节 `✦` 仍只在实际写盘成功后出现。
+- 定向 Vitest 7 文件 46/46 通过，`npx electron-vite build`、`npm run docs:check` 与 `git diff --check` 通过；E2E spec 已同步自动写入与冲突重试流程，但按隔离约定未启动 Electron 执行。

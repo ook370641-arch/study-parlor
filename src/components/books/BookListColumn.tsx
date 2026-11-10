@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { Tooltip } from '@/components/Tooltip'
@@ -15,6 +15,7 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
   const [expandedOverrides, setExpandedOverrides] = useState<Record<string, boolean>>({})
   const [chapterLists, setChapterLists] = useState<Record<string, BookTocItem[]>>({})
   const [loadingDirs, setLoadingDirs] = useState<Record<string, boolean>>({})
+  const chapterRows = useRef<Record<string, HTMLButtonElement | null>>({})
   const books = useStore((s) => s.booksList)
   const loading = useStore((s) => s.booksLoading)
   const importing = useStore((s) => s.booksImporting)
@@ -40,6 +41,10 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
     ))
     setChapterLists(prev => ({ ...prev, [activeDir]: toc }))
   }, [activeDir, toc])
+
+  useEffect(() => {
+    if (activeChapterPath) chapterRows.current[activeChapterPath]?.scrollIntoView({ block: 'nearest' })
+  }, [activeChapterPath])
 
   return (
     <div data-testid="book-list-column" className="flex flex-col h-full min-h-0">
@@ -175,6 +180,7 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
                           <Tooltip key={chapter.chapterFile} content={chapter.title} theme={tipTheme}>
                             <button
                               type="button"
+                              ref={(node) => { chapterRows.current[path] = node }}
                               data-testid={active ? `chapter-row-${chapterIndex}` : `${b.dir}-chapter-row-${chapterIndex}`}
                               onClick={() => {
                                 if (active) void selectChapter(path)

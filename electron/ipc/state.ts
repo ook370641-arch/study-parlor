@@ -52,6 +52,7 @@ const DEFAULT: StateJson = {
   articlePanelMode: { anthropic: 'guide', book: 'guide' },
   booksLastBook: null,
   booksLastChapter: null,
+  booksLastChapters: {},
   bookScrollMemory: null,
   annotationHighlightColor: 'gold',
   articleCompanionMap: {},

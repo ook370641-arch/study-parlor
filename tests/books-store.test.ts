@@ -52,6 +52,7 @@ beforeEach(() => {
     bookContext: null,
     booksLastBook: null,
     booksLastChapter: null,
+    booksLastChapters: {},
     bookScrollMemory: null,
     annotationHighlightColor: 'gold',
     articleCompanion: null,
@@ -69,7 +70,11 @@ describe('书籍阅读记忆', () => {
     } as any)
 
     await useStore.getState().selectChapter('book-a/chapters/01.md')
-    expect(patchStateMock).toHaveBeenCalledWith(expect.objectContaining({ booksLastChapter: 'book-a/chapters/01.md' }))
+    expect(useStore.getState().booksLastChapters).toEqual({ 'book-a': 'book-a/chapters/01.md' })
+    expect(patchStateMock).toHaveBeenCalledWith(expect.objectContaining({
+      booksLastChapter: 'book-a/chapters/01.md',
+      booksLastChapters: { 'book-a': 'book-a/chapters/01.md' },
+    }))
 
     useStore.getState().flushBookScrollPosition('book-a/chapters/01.md', 7)
     expect(patchStateSyncMock).toHaveBeenCalledWith({ bookScrollMemory: { filePath: 'book-a/chapters/01.md', blockIndex: 7 } })
@@ -108,6 +113,32 @@ describe('书籍阅读记忆', () => {
     expect(useStore.getState().activeChapter?.path).toBe('book-a/chapters/01.md')
   })
 
+  it('按书恢复各自最近章节，无记录时不打开第一章', async () => {
+    const chapterA = 'book-a/chapters/02.md'
+    const chapterB = 'book-b/chapters/01.md'
+    booksChaptersMock.mockImplementation(async ({ bookDir }) => {
+      if (bookDir === 'book-a') return [
+        { title: 'A1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 },
+        { title: 'A2', chapterFile: 'chapters/02.md', pageStart: 3, pageEnd: 4 },
+      ]
+      return [{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }]
+    })
+    useStore.setState({
+      booksLastChapter: chapterB,
+      booksLastChapters: { 'book-a': chapterA, 'book-b': chapterB },
+    } as any)
+
+    await useStore.getState().selectBook('book-a')
+    expect(useStore.getState().activeChapter?.path).toBe(chapterA)
+
+    await useStore.getState().selectBook('book-b')
+    expect(useStore.getState().activeChapter?.path).toBe(chapterB)
+
+    await useStore.getState().selectBook('book-c')
+    expect(useStore.getState().activeChapter).toBeNull()
+    expect(booksReadChapterMock.mock.calls.map(([arg]) => arg.chapterPath)).toEqual([chapterA, chapterB])
+  })
+
   it.each([
     ['其他书', 'book-b/chapters/01.md', [{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }]],
     ['已不在目录中的章节', 'book-a/chapters/removed.md', [{ title: 'C1', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }]],
@@ -125,14 +156,23 @@ describe('书籍阅读记忆', () => {
     const dir = 'book-a'
     useStore.setState({
       booksLastChapter: `${dir}/chapters/01.md`,
+      booksLastChapters: {
+        [dir]: `${dir}/chapters/01.md`,
+        'book-b': 'book-b/chapters/02.md',
+      },
       bookScrollMemory: { filePath: `${dir}/chapters/01.md`, blockIndex: 7 },
     } as any)
 
     await useStore.getState().removeBook(dir)
 
     expect(useStore.getState().booksLastChapter).toBeNull()
+    expect(useStore.getState().booksLastChapters).toEqual({ 'book-b': 'book-b/chapters/02.md' })
     expect(useStore.getState().bookScrollMemory).toBeNull()
-    expect(patchStateMock).toHaveBeenCalledWith(expect.objectContaining({ booksLastChapter: null, bookScrollMemory: null }))
+    expect(patchStateMock).toHaveBeenCalledWith(expect.objectContaining({
+      booksLastChapter: null,
+      booksLastChapters: { 'book-b': 'book-b/chapters/02.md' },
+      bookScrollMemory: null,
+    }))
   })
 
   it('删除后到达的待处理滚动 flush 不会恢复已删章节', async () => {

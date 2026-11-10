@@ -145,6 +145,7 @@ type AppStore = {
   bookContext: BookGuideContext | null
   booksLastBook: string | null
   booksLastChapter: string | null
+  booksLastChapters: Record<string, string>
   bookScrollMemory: ScrollMemorySlot | null
   annotationHighlightColor: AnnotationHighlightColor
   setAnnotationHighlightColor: (color: AnnotationHighlightColor) => void
@@ -638,6 +639,7 @@ export const useStore = create<AppStore>((set, get) => ({
   bookContext: null,
   booksLastBook: null,
   booksLastChapter: null,
+  booksLastChapters: {},
   bookScrollMemory: null,
   annotationHighlightColor: 'gold',
   anthropicBlogCache: { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {} },
@@ -742,6 +744,7 @@ export const useStore = create<AppStore>((set, get) => ({
       articlePanelMode: { anthropic: state.articlePanelMode?.anthropic ?? 'guide', book: state.articlePanelMode?.book ?? 'guide' },
       booksLastBook: state.booksLastBook ?? null,
       booksLastChapter: state.booksLastChapter ?? null,
+      booksLastChapters: state.booksLastChapters ?? {},
       bookScrollMemory: state.bookScrollMemory ?? null,
       annotationHighlightColor: state.annotationHighlightColor ?? 'gold',
       articleCompanionMap: state.articleCompanionMap ?? {},
@@ -1219,7 +1222,7 @@ export const useStore = create<AppStore>((set, get) => ({
     }
     set({ booksLastBook: dir })
     void ipc.patchState({ booksLastBook: dir } as Partial<StateJson>)
-    const lastChapter = get().booksLastChapter?.replace(/\\/g, '/')
+    const lastChapter = (get().booksLastChapters[dir] ?? get().booksLastChapter)?.replace(/\\/g, '/')
     const normalizedDir = dir.replace(/\\/g, '/')
     const restoreItem = get().activeBookToc.find((item) => lastChapter === `${normalizedDir}/${item.chapterFile}`)
     if (restoreItem) await get().selectChapter(`${dir}/${restoreItem.chapterFile}`)
@@ -1270,8 +1273,9 @@ export const useStore = create<AppStore>((set, get) => ({
           ...(prevChapterSummary ? { prevChapterSummary } : {}),
         },
       })
-      set({ booksLastChapter: chapterPath })
-      void ipc.patchState({ booksLastChapter: chapterPath } as Partial<StateJson>)
+      const booksLastChapters = bookDir ? { ...get().booksLastChapters, [bookDir]: chapterPath } : get().booksLastChapters
+      set({ booksLastChapter: chapterPath, booksLastChapters })
+      void ipc.patchState({ booksLastChapter: chapterPath, booksLastChapters } as Partial<StateJson>)
       await get().syncBookCompanion(chapterPath)
     } catch (err) {
       if (seq === chapterSelectSeq) get().showToast(err instanceof Error ? err.message : '章节读取失败')
@@ -1357,7 +1361,14 @@ export const useStore = create<AppStore>((set, get) => ({
     }
     const readingMemoryPatch: Partial<StateJson> = {}
     const lastChapter = get().booksLastChapter
+    const booksLastChapters = get().booksLastChapters
     const scrollMemory = get().bookScrollMemory
+    if (booksLastChapters[dir]) {
+      const next = { ...booksLastChapters }
+      delete next[dir]
+      set({ booksLastChapters: next })
+      readingMemoryPatch.booksLastChapters = next
+    }
     if (lastChapter && underDir(lastChapter)) {
       set({ booksLastChapter: null })
       readingMemoryPatch.booksLastChapter = null
@@ -2354,11 +2365,14 @@ export const useStore = create<AppStore>((set, get) => ({
       })
       void get().loadNotes().catch(() => {})
     } catch (error) {
-      await ipc.notesAbortAi({ generationId: candidate.generationId }).catch(() => {})
       set(state => {
-        const generations = { ...state.aiNoteGenerations }
-        delete generations[notePath]
-        return { aiNoteGenerations: generations }
+        const current = state.aiNoteGenerations[notePath]
+        return current ? {
+          aiNoteGenerations: {
+            ...state.aiNoteGenerations,
+            [notePath]: { ...current, applying: false },
+          },
+        } : {}
       })
       get().showToast(aiNoteErrorMessage(error))
     }

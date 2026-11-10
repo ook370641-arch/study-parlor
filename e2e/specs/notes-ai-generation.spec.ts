@@ -107,20 +107,15 @@ test.describe('@p1 AI 笔记两轮生成', () => {
     await expect(window.locator('[data-testid="note-board"]')).toBeVisible()
   }
 
-  test('主笔记预览确认后保留原笔迹，重复 IPC 与重载都不会再生成', async () => {
+  test('主笔记生成后自动写入并保留原笔迹，重复 IPC 与重载都不会再生成', async () => {
     await openMainNote()
     const rawBefore = fs.readFileSync(noteAbsolutePath, 'utf8')
     await window.locator('[data-testid="note-ai-generate"]').click()
-    await expect(window.locator('[data-testid="note-ai-preview"]')).toBeVisible()
-    await expect(window.locator('[data-testid="note-ai-preview"]')).toContainText('核心蒸馏')
-    expect(fs.readFileSync(noteAbsolutePath, 'utf8')).toBe(rawBefore)
-    expect(chatRequests).toBe(4)
-    expect(searchRequests).toBe(4)
-
-    await window.locator('[data-testid="note-ai-apply"]').click()
     await expect(window.locator('[data-testid="note-ai-preview"]')).toHaveCount(0)
     await expect(window.locator('[data-testid="note-ai-generate"]')).toHaveCount(0)
     await expect(window.locator('[data-testid="note-board"] .ProseMirror')).toContainText('我的关注点：概念边界。')
+    expect(chatRequests).toBe(4)
+    expect(searchRequests).toBe(4)
     const written = fs.readFileSync(noteAbsolutePath, 'utf8')
     expect(written).toContain('核心蒸馏')
     expect(written).toContain('ai_generated_at:')
@@ -162,8 +157,6 @@ test.describe('@p1 AI 笔记两轮生成', () => {
     }, articlePath)
     await expect(window.locator('[data-testid="note-ai-generate"]')).toBeVisible()
     await window.locator('[data-testid="note-ai-generate"]').click()
-    await expect(window.locator('[data-testid="note-ai-preview"]')).toBeVisible()
-    await window.locator('[data-testid="note-ai-apply"]').click()
     await expect(window.locator('[data-testid="note-ai-preview"]')).toHaveCount(0)
     await expect(window.locator('[data-testid="anthropic-reader-title"]')).toHaveText('E2E AI Note')
     await expect(window.locator('[data-testid="article-companion-board"] .ProseMirror')).toContainText('我的关注点：概念边界。')
@@ -171,7 +164,7 @@ test.describe('@p1 AI 笔记两轮生成', () => {
     expect(fs.readFileSync(noteAbsolutePath, 'utf8').endsWith(ORIGINAL_CONTENT)).toBe(true)
   })
 
-  test('整轮搜索失败与预览期间编辑都不会损坏原笔记', async () => {
+  test('整轮搜索失败与生成期间编辑都不会损坏原笔记，冲突候选可重试', async () => {
     await openMainNote()
     const rawBefore = fs.readFileSync(noteAbsolutePath, 'utf8')
     failSearches = true
@@ -180,12 +173,17 @@ test.describe('@p1 AI 笔记两轮生成', () => {
     expect(fs.readFileSync(noteAbsolutePath, 'utf8')).toBe(rawBefore)
 
     failSearches = false
+    const requestsBeforeRetry = chatRequests
     await window.locator('[data-testid="note-ai-generate"]').click()
+    await expect.poll(() => chatRequests).toBeGreaterThan(requestsBeforeRetry)
+    fs.writeFileSync(noteAbsolutePath, `${rawBefore}\n生成期间的新编辑\n`, 'utf8')
     await expect(window.locator('[data-testid="note-ai-preview"]')).toBeVisible()
-    fs.writeFileSync(noteAbsolutePath, `${rawBefore}\n预览期间的新编辑\n`, 'utf8')
+    expect(fs.readFileSync(noteAbsolutePath, 'utf8')).toBe(`${rawBefore}\n生成期间的新编辑\n`)
+
+    fs.writeFileSync(noteAbsolutePath, rawBefore, 'utf8')
     await window.locator('[data-testid="note-ai-apply"]').click()
     await expect(window.locator('[data-testid="note-ai-preview"]')).toHaveCount(0)
-    expect(fs.readFileSync(noteAbsolutePath, 'utf8')).toBe(`${rawBefore}\n预览期间的新编辑\n`)
-    await expect(window.locator('[data-testid="note-ai-generate"]')).toBeVisible()
+    await expect(window.locator('[data-testid="note-ai-generate"]')).toHaveCount(0)
+    expect(fs.readFileSync(noteAbsolutePath, 'utf8')).toContain('核心蒸馏')
   })
 })

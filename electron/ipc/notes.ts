@@ -55,17 +55,14 @@ export function createNotesAiHandlers(config: AppConfig, dependencies: NotesAiDe
       if (!candidate) throw ipcError('NOTE_GENERATION_INVALID')
       const lockKey = process.platform === 'win32' ? candidate.path.toLowerCase() : candidate.path
       const aiGeneratedAt = now()
-      try {
-        const result = applyAiNote(config.libraryPath, candidate.path, {
-          aiBody: candidate.aiBody,
-          baseRawHash: candidate.baseRawHash,
-          aiGeneratedAt,
-        })
-        return { path: candidate.path, body: result.body, aiGeneratedAt }
-      } finally {
-        candidates.delete(args.generationId)
-        lockedPaths.delete(lockKey)
-      }
+      const result = applyAiNote(config.libraryPath, candidate.path, {
+        aiBody: candidate.aiBody,
+        baseRawHash: candidate.baseRawHash,
+        aiGeneratedAt,
+      })
+      candidates.delete(args.generationId)
+      lockedPaths.delete(lockKey)
+      return { path: candidate.path, body: result.body, aiGeneratedAt }
     },
     abort: async (args: { generationId: string }): Promise<void> => {
       const candidate = candidates.get(args.generationId)

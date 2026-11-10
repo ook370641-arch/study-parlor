@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { AiNoteGenerator } from '@/components/notes/AiNoteGenerator'
 import { useStore } from '@/store'
 import type { NoteEntry } from '@shared/index'
@@ -13,9 +13,9 @@ beforeEach(() => {
   cleanup()
   useStore.setState({
     aiNoteGenerations: {},
-    generateAiNote: vi.fn(),
-    applyAiNote: vi.fn(),
-    cancelAiNote: vi.fn(),
+    generateAiNote: vi.fn().mockResolvedValue(undefined),
+    applyAiNote: vi.fn().mockResolvedValue(undefined),
+    cancelAiNote: vi.fn().mockResolvedValue(undefined),
   })
 })
 
@@ -27,6 +27,31 @@ describe('AiNoteGenerator', () => {
     expect(button.querySelector('svg')).not.toBeNull()
     fireEvent.click(button)
     expect(useStore.getState().generateAiNote).toHaveBeenCalledWith(entry.path)
+  })
+
+  it('生成成功后自动写入，无需再次点击', async () => {
+    const generate = vi.fn().mockResolvedValue(undefined)
+    const apply = vi.fn().mockResolvedValue(undefined)
+    useStore.setState({ generateAiNote: generate, applyAiNote: apply })
+    const { getByTestId } = render(<AiNoteGenerator entry={entry} />)
+
+    fireEvent.click(getByTestId('note-ai-generate'))
+
+    await waitFor(() => expect(apply).toHaveBeenCalledWith(entry.path))
+    expect(generate).toHaveBeenCalledWith(entry.path)
+    expect(generate.mock.invocationCallOrder[0]).toBeLessThan(apply.mock.invocationCallOrder[0])
+  })
+
+  it('生成失败时不自动写入', async () => {
+    const generate = vi.fn().mockRejectedValue(new Error('生成失败'))
+    const apply = vi.fn().mockResolvedValue(undefined)
+    useStore.setState({ generateAiNote: generate, applyAiNote: apply })
+    const { getByTestId } = render(<AiNoteGenerator entry={entry} />)
+
+    fireEvent.click(getByTestId('note-ai-generate'))
+
+    await waitFor(() => expect(generate).toHaveBeenCalledWith(entry.path))
+    expect(apply).not.toHaveBeenCalled()
   })
 
   it('主笔记生成时只显示顶部状态，不弹生成进度窗', () => {
