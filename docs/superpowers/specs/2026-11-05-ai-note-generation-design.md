@@ -334,4 +334,5 @@ onNotesAiProgress(callback): Unsubscribe
 
 - JTBD 第 2、3 章的真实文件自 11 月 2 日后未写入，确认旧流程的生成候选仅保存在内存，必须二次确认才落盘；写入失败还会同时清理渲染状态与主进程会话，造成“生成过但没有 AI 正文”。
 - 正常流程改为 generate 成功后立即 apply；主进程与 store 在写入失败时保留同一候选和路径锁，允许重试或主动取消。`ai_generated_at` 与章节 `✦` 仍只在实际写盘成功后出现。
-- 定向 Vitest 7 文件 46/46 通过，`npx electron-vite build`、`npm run docs:check` 与 `git diff --check` 通过；E2E spec 已同步自动写入与冲突重试流程，但按隔离约定未启动 Electron 执行。
+- 独立复审后补齐三个生命周期边界：`applying` 期间卸载两侧编辑器；刷新后可按路径恢复原候选；非当前书重解析或删除后失效本地目录缓存。
+- 定向 Vitest 8 文件 52/52 通过，`npx electron-vite build`、`npm run docs:check` 与 `git diff --check` 通过；E2E spec 已同步自动写入、冲突重试与刷新恢复流程，但按隔离约定未启动 Electron 执行。
