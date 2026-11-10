@@ -110,14 +110,14 @@
 ### 15. 迭代记事板
 
 **现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；旁注打开时入口/面板左移并保持可交互；接单/归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
-- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md`（Agent 认领标记与今日完成高亮）
+- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md` + `plans/2026-11-11-notepad-agent-claims.md`（Agent 认领标记与今日完成高亮）
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（含记事板与旁注共存交互；同名 plan 为实施记录）
 **历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）
 
 ### 16. 设置 / 向导 / LLM 配置
 
 **现状**：首次配置向导（`SetupWizard`）+ Settings 页 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。配置按厂商命名；Model 下拉框可探活 `/models`，并按配置持久化最近成功获取的模型列表。Demo 信息说明默认只读、点击「编辑」才可修改；设置页提供六个信息入口的显隐开关，持久化到 `demoNotesHidden`。
-- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md`（C 三栏设置中心、卷宗/扩展整合、全局卷宗注入与烛光随行移除）
+- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md` + `plans/2026-11-11-settings-center.md`（C 三栏设置中心、卷宗/扩展整合、全局卷宗注入与烛光随行移除）
 **历史链**：06-05 setup-wizard → 06-14 settings → 06-14 settings-page → 09-19 llm-config-switch
 
 ### 17. DIY 术语
@@ -146,7 +146,7 @@
 ### 21. 扩展页与分组导览
 
 **现状**：Extension 页（`Extension.tsx`）与分组导览（`GuidePopover`）在用。
-- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md`（扩展迁入设置中心；学习库说明并入常规子页）
+- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md` + `plans/2026-11-11-settings-center.md`（扩展迁入设置中心；学习库说明并入常规子页）
 **历史链**：06-05 extension-page → 06-05 group-guide-button
 
 ### 22. E2E 与工程基建

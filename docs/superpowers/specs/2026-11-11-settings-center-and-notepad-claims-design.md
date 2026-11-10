@@ -95,7 +95,7 @@ status: planned
 
 ### 5.2 去重与容错
 
-- 删除 `assemblePrompt` 末尾的旧画像段，以及 wild-card/group inspiration 中重复的画像占位与替换。
+- 删除 `assemblePrompt` 末尾的旧画像段、wild-card 中重复的画像占位，以及 group inspiration 已无实际模板占位的画像替换代码。
 - 同步清理仅为旧注入服务的 renderer 传参和类型，避免同一卷宗出现两次。
 - 画像读取沿用 `loadProfile` 现有容错；空卷宗不阻断任何生成。
 - 不新增每功能开关，不把 API Key、学习库路径等无关配置写入提示词。
