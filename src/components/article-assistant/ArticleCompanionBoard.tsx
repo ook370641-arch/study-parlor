@@ -75,6 +75,7 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
   }
   const showAiGenerator = !!noteEntry && canGenerateCompanionAiNote(noteEntry, sourceTarget, file)
   const showAiProgress = showAiGenerator && !!aiGeneration && !aiGeneration.candidate
+  const showAiApplying = !!aiGeneration?.applying
 
   return (
     <div data-testid="article-companion-board" className="flex flex-col h-full min-h-0">
@@ -107,6 +108,10 @@ export function ArticleCompanionBoard({ theme = 'academic' }: { theme?: Briefing
       </div>
       {showAiProgress && noteEntry ? (
         <AiNoteGenerationProgress entry={noteEntry} originalBody={file.body} theme={theme} />
+      ) : showAiApplying ? (
+        <div data-testid="article-companion-applying" role="status" className={`flex flex-1 items-center justify-center text-sm ${cls.body}`}>
+          正在写入 AI 笔记…
+        </div>
       ) : file.kind === 'md' && !file.readonly ? (
         <div className={`flex-1 min-h-0 overflow-y-auto px-4 py-4 ${cls.body}`}
           ref={companionScrollRef}

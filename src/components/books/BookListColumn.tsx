@@ -17,6 +17,7 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
   const [loadingDirs, setLoadingDirs] = useState<Record<string, boolean>>({})
   const chapterRows = useRef<Record<string, HTMLButtonElement | null>>({})
   const books = useStore((s) => s.booksList)
+  const previousBooks = useRef(books)
   const loading = useStore((s) => s.booksLoading)
   const importing = useStore((s) => s.booksImporting)
   const reparsing = useStore((s) => s.booksReparsing)
@@ -45,6 +46,33 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
   useEffect(() => {
     if (activeChapterPath) chapterRows.current[activeChapterPath]?.scrollIntoView({ block: 'nearest' })
   }, [activeChapterPath])
+
+  useEffect(() => {
+    const previous = previousBooks.current
+    previousBooks.current = books
+    const invalidatedDirs = previous.filter(oldBook => {
+      const next = books.find(book => book.dir === oldBook.dir)
+      return !next || next.parserVersion !== oldBook.parserVersion
+    }).map(book => book.dir)
+    if (invalidatedDirs.length === 0) return
+
+    setChapterLists(prev => {
+      const next = { ...prev }
+      for (const dir of invalidatedDirs) delete next[dir]
+      return next
+    })
+    for (const dir of invalidatedDirs) {
+      for (const path of Object.keys(chapterRows.current)) {
+        if (path.startsWith(dir + '/') || path.startsWith(dir + '\\')) delete chapterRows.current[path]
+      }
+      if (!books.some(book => book.dir === dir) || activeDir === dir || !expandedOverrides[dir]) continue
+      setLoadingDirs(prev => ({ ...prev, [dir]: true }))
+      void ipc.booksChapters({ bookDir: dir })
+        .then(chapters => setChapterLists(prev => ({ ...prev, [dir]: chapters })))
+        .catch(() => showToast('章节列表读取失败'))
+        .finally(() => setLoadingDirs(prev => ({ ...prev, [dir]: false })))
+    }
+  }, [books, activeDir, expandedOverrides, showToast])
 
   return (
     <div data-testid="book-list-column" className="flex flex-col h-full min-h-0">

@@ -8,6 +8,7 @@ import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-fon
 
 export function NoteBoard() {
   const file = useStore(s => s.writingFile)
+  const aiApplying = useStore(s => s.writingFile ? s.aiNoteGenerations[s.writingFile.path]?.applying ?? false : false)
   const notesList = useStore(s => s.notesList)
   const briefingTheme = useStore(s => s.briefingTheme)
   const writingUISize = useStore(s => s.writingUIFontSize)
@@ -72,13 +73,19 @@ export function NoteBoard() {
           <Quote surface="writing" />
         </div>
         <NoteMetaHeader key={`meta-${entry.path}`} entry={entry} />
-        <WritingEditor
-          key={`${file.path}:${entry.meta.ai_generated_at ?? 'original'}`}
-          initial={file.body}
-          onChange={md => updateWritingBody(md)}
-          theme="academic"
-          filePath={file.path}
-        />
+        {aiApplying ? (
+          <div data-testid="note-ai-applying" role="status" className="flex min-h-40 items-center justify-center text-sm opacity-60">
+            正在写入 AI 笔记…
+          </div>
+        ) : (
+          <WritingEditor
+            key={`${file.path}:${entry.meta.ai_generated_at ?? 'original'}`}
+            initial={file.body}
+            onChange={md => updateWritingBody(md)}
+            theme="academic"
+            filePath={file.path}
+          />
+        )}
       </div>
     </div>
   )

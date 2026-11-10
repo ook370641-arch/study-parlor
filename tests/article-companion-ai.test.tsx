@@ -4,7 +4,7 @@ import { ArticleCompanionBoard } from '@/components/article-assistant/ArticleCom
 import { useStore } from '@/store'
 import type { NoteEntry } from '@shared/index'
 
-vi.mock('@/components/writing/WritingEditor', () => ({ WritingEditor: () => null }))
+vi.mock('@/components/writing/WritingEditor', () => ({ WritingEditor: () => <div data-testid="companion-writing-editor" /> }))
 
 const blogEntry: NoteEntry = {
   path: 'notes/a.md',
@@ -95,5 +95,23 @@ describe('对照页 AI 笔记入口', () => {
     fireEvent.click(getByTestId('note-ai-view-original'))
     expect(getByTestId('note-ai-original')).toBeTruthy()
     expect(getByText('原笔迹', { selector: 'p' })).toBeTruthy()
+  })
+
+  it('AI 自动写入期间卸载对照编辑器，阻止新输入被覆盖', () => {
+    useStore.setState({
+      aiNoteGenerations: {
+        [blogEntry.path]: {
+          path: blogEntry.path,
+          stage: 'writing',
+          candidate: { generationId: 'generation-1', path: blogEntry.path, body: 'AI 正文' },
+          applying: true,
+        },
+      },
+    })
+
+    const { queryByTestId, getByTestId } = render(<ArticleCompanionBoard />)
+
+    expect(queryByTestId('companion-writing-editor')).toBeNull()
+    expect(getByTestId('article-companion-applying')).toHaveTextContent('正在写入')
   })
 })

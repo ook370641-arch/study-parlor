@@ -4,7 +4,7 @@ import { useStore } from '@/store'
 import { NoteBoard } from '@/components/notes/NoteBoard'
 import type { NoteEntry } from '@shared/index'
 
-vi.mock('@/components/writing/WritingEditor', () => ({ WritingEditor: () => null }))
+vi.mock('@/components/writing/WritingEditor', () => ({ WritingEditor: () => <div data-testid="main-writing-editor" /> }))
 
 const entry: NoteEntry = {
   path: 'notes/a.md',
@@ -16,6 +16,7 @@ beforeEach(() => {
   useStore.setState({
     notesList: [entry],
     writingFile: { path: 'notes/a.md', body: '# 正文', kind: 'md', dirty: false, saving: 'idle' },
+    aiNoteGenerations: {},
     updateWritingBody: vi.fn(), saveWritingFile: vi.fn(),
   })
 })
@@ -44,5 +45,23 @@ describe('NoteBoard 阅读室', () => {
     fireEvent.click(getByTestId('note-meta-info-toggle'))
     expect(getByTestId('note-meta-url')).toBeTruthy()
     expect(getByTestId('note-meta-highlight')).toBeTruthy()
+  })
+
+  it('AI 自动写入期间卸载主笔记编辑器，阻止新输入被覆盖', () => {
+    useStore.setState({
+      aiNoteGenerations: {
+        [entry.path]: {
+          path: entry.path,
+          stage: 'writing',
+          candidate: { generationId: 'generation-1', path: entry.path, body: 'AI 正文' },
+          applying: true,
+        },
+      },
+    })
+
+    const { queryByTestId, getByTestId } = render(<NoteBoard />)
+
+    expect(queryByTestId('main-writing-editor')).toBeNull()
+    expect(getByTestId('note-ai-applying')).toHaveTextContent('正在写入')
   })
 })

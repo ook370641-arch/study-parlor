@@ -90,7 +90,7 @@ describe('AI 笔记 IPC 会话', () => {
     expect(fs.readFileSync(path.join(libraryPath, notePath), 'utf8')).toBe(originalRaw)
   })
 
-  it('写入冲突保留候选且不覆盖新编辑，恢复原文件后可重试同一候选', async () => {
+  it('写入冲突保留候选且不覆盖新编辑，重新生成可恢复同一候选并在恢复原文件后写入', async () => {
     const dependencies = makeDependencies()
     const handlers = createNotesAiHandlers(config, dependencies)
     const candidate = await handlers.generate(makeEvent(), { path: notePath })
@@ -98,8 +98,11 @@ describe('AI 笔记 IPC 会话', () => {
 
     await expect(handlers.apply({ generationId: candidate.generationId })).rejects.toThrow('NOTE_CHANGED')
     expect(fs.readFileSync(path.join(libraryPath, notePath), 'utf8')).toBe(`${originalRaw}\n新编辑`)
+    const recovered = await handlers.generate(makeEvent(), { path: notePath })
+    expect(recovered).toEqual(candidate)
+    expect(dependencies.generateBody).toHaveBeenCalledTimes(1)
     fs.writeFileSync(path.join(libraryPath, notePath), originalRaw, 'utf8')
-    await expect(handlers.apply({ generationId: candidate.generationId })).resolves.toMatchObject({
+    await expect(handlers.apply({ generationId: recovered.generationId })).resolves.toMatchObject({
       path: notePath,
       body: 'AI 正文\n\n---\n\n## 原笔迹\n\n原笔迹\n',
     })

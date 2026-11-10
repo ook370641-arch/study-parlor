@@ -180,6 +180,13 @@ test.describe('@p1 AI 笔记两轮生成', () => {
     await expect(window.locator('[data-testid="note-ai-preview"]')).toBeVisible()
     expect(fs.readFileSync(noteAbsolutePath, 'utf8')).toBe(`${rawBefore}\n生成期间的新编辑\n`)
 
+    const requestsBeforeRecovery = chatRequests
+    await window.reload()
+    await openMainNote()
+    await window.locator('[data-testid="note-ai-generate"]').click()
+    await expect(window.locator('[data-testid="note-ai-preview"]')).toBeVisible()
+    expect(chatRequests).toBe(requestsBeforeRecovery)
+
     fs.writeFileSync(noteAbsolutePath, rawBefore, 'utf8')
     await window.locator('[data-testid="note-ai-apply"]').click()
     await expect(window.locator('[data-testid="note-ai-preview"]')).toHaveCount(0)

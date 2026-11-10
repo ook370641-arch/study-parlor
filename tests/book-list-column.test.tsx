@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 const mockIpc = vi.hoisted(() => ({ booksChapters: vi.fn() }))
 
@@ -13,6 +13,7 @@ import { useStore } from '@/store'
 beforeEach(() => {
   cleanup()
   vi.clearAllMocks()
+  mockIpc.booksChapters.mockReset()
   mockIpc.booksChapters.mockResolvedValue([])
   useStore.setState({
     booksList: [{
@@ -81,6 +82,53 @@ describe('BookListColumn 书籍条目', () => {
     expect(await screen.findByTestId('book-b-chapter-row-0')).toHaveTextContent('1. Other Chapter')
     expect(screen.getByTestId('chapter-row-0')).toHaveTextContent('1. Chapter 1')
     expect(useStore.getState().activeBookDir).toBe('book-a')
+  })
+
+  it('展开非当前书在重解析版本更新后重新读取并显示新目录', async () => {
+    mockIpc.booksChapters
+      .mockResolvedValueOnce([{ title: 'Old Chapter', chapterFile: 'chapters/old.md', chapterIndex: 1, pageRange: [1, 2] }])
+      .mockResolvedValueOnce([{ title: 'New Chapter', chapterFile: 'chapters/new.md', chapterIndex: 1, pageRange: [1, 2] }])
+    useStore.setState({
+      booksList: [
+        ...useStore.getState().booksList,
+        { dir: 'book-b', title: 'Book B', importedAt: '2026-10-28T00:00:00.000Z', hasToc: true, chapterCount: 1, parserVersion: 3 },
+      ],
+    })
+    render(<BookListColumn theme="academic" />)
+    fireEvent.click(screen.getByTestId('book-chapters-toggle-1'))
+    expect(await screen.findByText('1. Old Chapter')).toBeTruthy()
+
+    act(() => useStore.setState({
+      booksList: useStore.getState().booksList.map(book => book.dir === 'book-b' ? { ...book, parserVersion: 4 } : book),
+    }))
+
+    expect(await screen.findByText('1. New Chapter')).toBeTruthy()
+    expect(screen.queryByText('1. Old Chapter')).toBeNull()
+    expect(mockIpc.booksChapters).toHaveBeenCalledTimes(2)
+  })
+
+  it('删除书籍后清理目录缓存，同路径重导入可读取新目录', async () => {
+    mockIpc.booksChapters
+      .mockResolvedValueOnce([{ title: 'Old Chapter', chapterFile: 'chapters/old.md', chapterIndex: 1, pageRange: [1, 2] }])
+      .mockResolvedValueOnce([{ title: 'New Chapter', chapterFile: 'chapters/new.md', chapterIndex: 1, pageRange: [1, 2] }])
+    useStore.setState({
+      booksList: [
+        ...useStore.getState().booksList,
+        { dir: 'book-b', title: 'Book B', importedAt: '2026-10-28T00:00:00.000Z', hasToc: true, chapterCount: 1, parserVersion: 3 },
+      ],
+    })
+    render(<BookListColumn theme="academic" />)
+    fireEvent.click(screen.getByTestId('book-chapters-toggle-1'))
+    expect(await screen.findByText('1. Old Chapter')).toBeTruthy()
+    const removedBook = useStore.getState().booksList[1]
+
+    act(() => useStore.setState({ booksList: [useStore.getState().booksList[0]] }))
+    act(() => useStore.setState({ booksList: [...useStore.getState().booksList, removedBook] }))
+
+    expect(screen.queryByText('1. Old Chapter')).toBeNull()
+    fireEvent.click(screen.getByTestId('book-chapters-toggle-1'))
+    fireEvent.click(screen.getByTestId('book-chapters-toggle-1'))
+    expect(await screen.findByText('1. New Chapter')).toBeTruthy()
   })
 
   it('切换选中书籍后保留各书目录的展开与手动折叠状态', () => {

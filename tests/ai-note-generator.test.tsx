@@ -42,18 +42,6 @@ describe('AiNoteGenerator', () => {
     expect(generate.mock.invocationCallOrder[0]).toBeLessThan(apply.mock.invocationCallOrder[0])
   })
 
-  it('生成失败时不自动写入', async () => {
-    const generate = vi.fn().mockRejectedValue(new Error('生成失败'))
-    const apply = vi.fn().mockResolvedValue(undefined)
-    useStore.setState({ generateAiNote: generate, applyAiNote: apply })
-    const { getByTestId } = render(<AiNoteGenerator entry={entry} />)
-
-    fireEvent.click(getByTestId('note-ai-generate'))
-
-    await waitFor(() => expect(generate).toHaveBeenCalledWith(entry.path))
-    expect(apply).not.toHaveBeenCalled()
-  })
-
   it('主笔记生成时只显示顶部状态，不弹生成进度窗', () => {
     useStore.setState({ aiNoteGenerations: { [entry.path]: { path: entry.path, stage: 'round2', candidate: null, applying: false } } })
     const { getByTestId, queryByTestId } = render(<AiNoteGenerator entry={entry} />)

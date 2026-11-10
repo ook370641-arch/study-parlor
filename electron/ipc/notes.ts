@@ -33,6 +33,12 @@ export function createNotesAiHandlers(config: AppConfig, dependencies: NotesAiDe
     generate: async (event: AiNoteEvent, args: { path: string }): Promise<AiNoteCandidate> => {
       const notePath = args.path.replace(/\\/g, '/')
       const lockKey = process.platform === 'win32' ? notePath.toLowerCase() : notePath
+      for (const [generationId, candidate] of candidates) {
+        const candidateLockKey = process.platform === 'win32' ? candidate.path.toLowerCase() : candidate.path
+        if (candidateLockKey === lockKey) {
+          return { generationId, path: candidate.path, body: candidate.aiBody }
+        }
+      }
       if (lockedPaths.has(lockKey)) throw ipcError('ALREADY_RUNNING')
       lockedPaths.add(lockKey)
       const generationId = createId()

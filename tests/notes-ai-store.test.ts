@@ -107,6 +107,7 @@ describe('AI 笔记 store', () => {
     await useStore.getState().generateAiNote(entry.path)
 
     expect(useStore.getState().aiNoteGenerations).toEqual({})
+    expect(mockIpc.notesApplyAi).not.toHaveBeenCalled()
     await useStore.getState().generateAiNote(entry.path)
     expect(mockIpc.notesGenerateAi).toHaveBeenCalledTimes(2)
   })

@@ -93,6 +93,7 @@ verified: 2026-11-10
 3. 生成完成后立即自动写入 AI 正文、原笔迹附录和 `ai_generated_at`，不再把预览确认作为正常流程的落盘闸门。
 4. 自动写入失败时保留候选与生成会话，预览提供重试和取消；只有主动取消才丢弃未写入候选。
 5. 只有成功写入才构成“已生成”并显示章节标识；生成结束或写入失败不得伪装成已生成。
+6. `applying` 期间卸载主笔记与对照编辑器，阻断写入在途的新输入；渲染进程刷新后，同路径再次 generate 返回原候选，不重新调用模型。
 
 ## 3. 数据契约与来源装配
 
@@ -213,6 +214,8 @@ onNotesAiProgress(callback): Unsubscribe
 
 主进程保存候选会话：`generationId → { path, baseRawHash, aiBody }`。路径锁从生成开始持有到写入、取消或失败，防止两个入口对同一笔记并发生成。已存在 `ai_generated_at` 时直接返回 `ALREADY_GENERATED`，不得启动搜索或模型调用。
 
+同路径已有完成候选时，`generate` 直接返回原 `generationId` 与正文供刷新后的渲染进程恢复；只有仍在生成、尚无候选时才返回 `ALREADY_RUNNING`。
+
 ### 6.2 写回格式
 
 自动写入时再次读取文件并计算 raw hash：
@@ -243,6 +246,8 @@ onNotesAiProgress(callback): Unsubscribe
 - 若 `writingFile.path` 等于目标路径，更新其正文与保存状态。
 - 若 `articleCompanion.filePath` 等于目标路径，更新对照正文、dirty 与保存状态，不卸载当前对照。
 - 成功写入或主动取消后清理候选与路径锁；生成失败保留原文件与重试能力，写入失败保留候选供重试或取消。
+
+`applying` 从保存前置开始即为主笔记和对照笔记卸载编辑器，直到成功或失败；不得在 IPC 在途期间保留可输入的 `contenteditable`。
 
 ## 7. 错误处理与降级
 
