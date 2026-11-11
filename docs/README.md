@@ -109,10 +109,9 @@
 
 ### 15. 迭代记事板
 
-**现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；旁注打开时入口/面板左移并保持可交互；接单/归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
-- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md` + `plans/2026-11-11-notepad-agent-claims.md`（Agent 认领标记与今日完成高亮）
+**现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；待办可显示 Agent 认领者，认领独立存于 `notepad-claims.json`，面板重开或窗口聚焦时刷新；已完成时间线按本地日期只高亮今日条目并显示「今日完成 · 待测试」；旁注打开时入口/面板左移并保持可交互；接单/归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（含记事板与旁注共存交互；同名 plan 为实施记录）
-**历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）
+**历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）→ 11-11 settings-center-and-notepad-claims（记事板认领与今日高亮部分；设置中心部分仍见第 16 节 planned）→ 11-11 notepad-agent-claims
 
 ### 16. 设置 / 向导 / LLM 配置
 

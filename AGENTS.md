@@ -134,7 +134,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 封面右上角铅笔按钮打开的记事板面板，用户随手记录对应用的迭代需求。**2026-10-19 起条目化**：每条需求三分类（bug / 新功能 / 功能优化），面板 ✓ 完成后自动归档到档案页。
 
-**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `notepadItems` 字段并回应。该文件在工作区外，沙箱读取可能需要提权。
+**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `notepadItems` 字段，同时读取 `~/.studyparlor/notepad-claims.json` 并在汇报中标出已认领条目及认领者。这些文件在工作区外，沙箱读取可能需要提权。
 
 **关键字段（state.json）**：
 
@@ -143,7 +143,16 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 - `notepadFontSize: 'sm' | 'base' | 'lg'`、`notepadPanelSize: { w, h } | null` — 面板字号与自定义尺寸
 - `coverNotepad`（纯字符串）已废弃，仅作一次性迁移源（非空且 notepadItems 为空时按行迁入后清空）
 
-**归档约定**：agent 完成某条需求后，须把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`）。**app 运行中不要直接改 state.json**（内存旧值会覆盖），应让用户在面板点 ✓ 或先关闭 app。详见 `.agents/skills/notepad-triage/SKILL.md`。
+**Agent 接单协议**：用户指定条目后，开始探索或修改前先认领；取消接单时释放。使用当前分支名作为认领者：
+
+```bash
+node scripts/notepad-claim.cjs claim <item-id> <current-branch>
+node scripts/notepad-claim.cjs release <item-id> <current-branch>
+```
+
+已被其他 Agent 认领时默认跳过；只有用户明确要求接管时才在 `claim` 末尾加 `--force`。同一 Agent 重复认领幂等，不设置自动过期。
+
+**归档约定**：agent 完成某条需求后，须把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`）。**app 运行中不要直接改 state.json**（内存旧值会覆盖），应让用户在面板点 ✓ 或先关闭 app；面板归档会由 `state:patch` 自动清理认领。应用关闭后手工归档时，写回 `state.json` 后执行上述 `release`，并确认认领已清理。详见 `.agents/skills/notepad-triage/SKILL.md`。
 
 相关代码：`src/components/NotepadPanel.tsx`（双 tab 面板：待完成 / 已完成时间线；旁注打开时与入口一起左移）、`src/lib/notepad.ts`（分类猜测/迁移/统计/短标题纯逻辑）、`src/store/index.ts`（`notepadItems` / `notepadLog` / `addNotepadItem` / `resolveNotepadItem`）、`electron/ipc/state.ts`（DEFAULT 字段）。
 

@@ -1,5 +1,5 @@
 ---
-status: planned
+status: historical
 ---
 
 # Notepad Agent Claims Implementation Plan
