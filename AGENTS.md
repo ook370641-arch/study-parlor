@@ -107,9 +107,17 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 1. `learner-base.md` (基座)
 2. `mode-review.md` (仅 review 模式，注入文件 body)
 3. `difficulty-mid.md` 或 `difficulty-low.md` (条件注入)
-4. 用户 profile 段
+
+卷宗由 `profile-prompt.ts` 的 `withProfilePrompt` 在 `kimi.ts` 的 `buildChatBody` 统一注入，流式与非流式请求共享同一实现；各功能 prompt 不再重复拼接 profile。
 
 `llm-tasks.ts` 封装非流式调用（灵感生成、归档 finalization）。
+
+### 设置中心
+
+- `src/pages/Settings.tsx` 是三栏外壳：左栏「常规 / 卷宗 / 扩展」，中栏为上下文子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载内容。
+- 常规子页固定为「AI 与搜索 / 界面与画作 / 学习库与归档」；扩展含「我的语言 / 自选配图 / 本地 Agent 打通」，原扩展学习库说明并入「学习库与归档」。
+- 主页只保留设置入口；简报原烛光位置改为设置入口，通过 `settingsReturnTo` 返回来源页。旧 `profile` / `extension` 独立路由已移除。
+- 烛光随行及其光层、开关和专属样式已移除；移除墓碑见 `docs/superpowers/plans/2026-11-11-settings-center.md` 与共享 spec。
 
 ### 会话生命周期 (`src/lib/`)
 
@@ -242,7 +250,7 @@ STUDY_LIBRARY_PATH=...            # 学习库根目录
 
 - 暗色主题，调色板：深褐 `#2a1f1a` / 米色 `#e8d5b7` / 暖橙 `#d97757`
 - Tailwind 自定义颜色在 `tailwind.config.ts` 中定义（`parchment`, `ember`, `wine`, `ink`, `slate` 等）
-- 页面路由：`cover` → `home` → (`study` | `profile`)，`preStudy` 是模态层
+- 页面路由：`cover` → `home` → (`study` | `settings`)，简报也可进入 `settings`；`preStudy` 是模态层
 
 ## 启动问题排查
 

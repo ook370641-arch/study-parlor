@@ -1,5 +1,5 @@
 ---
-status: planned
+status: historical
 ---
 
 # 设置中心与记事板 Agent 认领设计（2026-11-11）

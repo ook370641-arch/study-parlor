@@ -40,7 +40,7 @@
 
 ### 4. 报告、渲染与个人页
 
-**现状**：MD 渲染（`src/components/md/`）、报告 frontmatter 展示、学习报告流程图（`electron/lib/diagram.ts` + `SVGRenderer`）、Profile 页在用。
+**现状**：MD 渲染（`src/components/md/`）、报告 frontmatter 展示、学习报告流程图（`electron/lib/diagram.ts` + `SVGRenderer`）在用；卷宗已迁入设置中心（见第 16 节）。
 **历史链**：05-27 md-renderer → 05-27 report-frontmatter-display → 06-03 learning-report-diagram → 06-04 profile-page-redesign
 
 ### 5. 寓言对话
@@ -111,13 +111,12 @@
 
 **现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；待办可显示 Agent 认领者，认领独立存于 `notepad-claims.json`，面板重开或窗口聚焦时刷新；已完成时间线按本地日期只高亮今日条目并显示「今日完成 · 待测试」；旁注打开时入口/面板左移并保持可交互；接单/归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（含记事板与旁注共存交互；同名 plan 为实施记录）
-**历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）→ 11-11 settings-center-and-notepad-claims（记事板认领与今日高亮部分；设置中心部分仍见第 16 节 planned）→ 11-11 notepad-agent-claims
+**历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）→ 11-11 settings-center-and-notepad-claims（记事板认领与今日高亮部分）→ 11-11 notepad-agent-claims
 
 ### 16. 设置 / 向导 / LLM 配置
 
-**现状**：首次配置向导（`SetupWizard`）+ Settings 页 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。配置按厂商命名；Model 下拉框可探活 `/models`，并按配置持久化最近成功获取的模型列表。Demo 信息说明默认只读、点击「编辑」才可修改；设置页提供六个信息入口的显隐开关，持久化到 `demoNotesHidden`。
-- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md` + `plans/2026-11-11-settings-center.md`（C 三栏设置中心、卷宗/扩展整合、全局卷宗注入与烛光随行移除）
-**历史链**：06-05 setup-wizard → 06-14 settings → 06-14 settings-page → 09-19 llm-config-switch
+**现状**：首次配置向导（`SetupWizard`）+ C 三栏设置中心 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。左栏为「常规 / 卷宗 / 扩展」，常规中栏拆为「AI 与搜索 / 界面与画作 / 学习库与归档」，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载。卷宗由 `profile-prompt.ts` 在 `kimi.ts` 的 `buildChatBody` 全局注入流式与非流式请求。配置按厂商命名；Model 下拉框可探活 `/models`，并按配置持久化最近成功获取的模型列表。Demo 信息说明默认只读、点击「编辑」才可修改；六个信息入口的显隐持久化到 `demoNotesHidden`。烛光随行已移除，简报原位置改为设置入口。
+**历史链**：06-05 setup-wizard → 06-14 settings → 06-14 settings-page → 09-19 llm-config-switch → 11-11 settings-center-and-notepad-claims（设置中心、全局卷宗注入与烛光移除墓碑）
 
 ### 17. DIY 术语
 
@@ -144,9 +143,8 @@
 
 ### 21. 扩展页与分组导览
 
-**现状**：Extension 页（`Extension.tsx`）与分组导览（`GuidePopover`）在用。
-- planned：`specs/2026-11-11-settings-center-and-notepad-claims-design.md` + `plans/2026-11-11-settings-center.md`（扩展迁入设置中心；学习库说明并入常规子页）
-**历史链**：06-05 extension-page → 06-05 group-guide-button
+**现状**：扩展已迁入设置中心 `ExtensionSettings.tsx`，含「我的语言 / 自选配图 / 本地 Agent 打通」；学习库说明并入「常规 → 学习库与归档」。分组导览（`GuidePopover`）在用。
+**历史链**：06-05 extension-page → 06-05 group-guide-button → 11-11 settings-center-and-notepad-claims（扩展迁移）
 
 ### 22. E2E 与工程基建
 

@@ -1,5 +1,5 @@
 ---
-status: planned
+status: historical
 ---
 
 # Settings Center Implementation Plan
