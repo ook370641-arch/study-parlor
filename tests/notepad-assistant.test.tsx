@@ -12,6 +12,7 @@ const store = vi.hoisted(() => ({
   deleteNotepadItem: vi.fn(),
   moveNotepadItem: vi.fn(),
   updateNotepadItem: vi.fn(),
+  refreshNotepad: vi.fn(),
   setNotepadFontSize: vi.fn(),
   setNotepadPanelSize: vi.fn(),
 }))

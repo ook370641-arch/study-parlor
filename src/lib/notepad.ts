@@ -18,6 +18,14 @@ export function newNotepadId(): string {
   return `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 }
 
+export function stripNotepadClaims<T extends NotepadItem>(items: T[]): T[] {
+  return items.map(item => {
+    const next = { ...item }
+    delete next.claim
+    return next
+  })
+}
+
 /** 文本 → 分类猜测：含 bug/修复/问题/收起/不符 等 → bug；删减/优化/集成/长期 → 功能优化；否则新功能 */
 export function guessCategory(text: string): NotepadCategory {
   if (/bug|修复|问题|收起|不符|错误|失败/i.test(text)) return 'bug'

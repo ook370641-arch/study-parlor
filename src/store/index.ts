@@ -26,7 +26,7 @@ import { ipc } from '@/lib/ipc'
 import type { DemoNote, DemoNoteOverrides } from '@/lib/demo-notes'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
-import { deriveTitle, migrateCoverNotepad, newNotepadId } from '@/lib/notepad'
+import { deriveTitle, migrateCoverNotepad, newNotepadId, stripNotepadClaims } from '@/lib/notepad'
 import { inferBookChapter, noteChapter } from '@/lib/notes-list'
 
 export type AssistantSession = {
@@ -266,6 +266,7 @@ type AppStore = {
   deleteNotepadItem: (id: string) => void
   moveNotepadItem: (id: string, toIndex: number) => void
   updateNotepadItem: (id: string, patch: { text?: string; category?: NotepadCategory }) => void
+  refreshNotepad: () => Promise<void>
   setNotepadFontSize: (size: NotepadFontSize) => void
   setNotepadPanelSize: (size: { w: number; h: number }) => void
   goto: (p: Page) => Promise<void>
@@ -845,12 +846,24 @@ export const useStore = create<AppStore>((set, get) => ({
     debounceSaveNotepad({ coverNotepad: text } as Partial<StateJson>)
   },
 
+  refreshNotepad: async () => {
+    try {
+      const state = await ipc.getState()
+      set({
+        notepadItems: migrateCoverNotepad(state.coverNotepad ?? '', state.notepadItems),
+        notepadLog: Array.isArray(state.notepadLog) ? state.notepadLog : [],
+      })
+    } catch {
+      get().showToast('记事板刷新失败')
+    }
+  },
+
   addNotepadItem: (text, category) => {
     const t = text.trim()
     if (!t) return
     const items = [...get().notepadItems, { id: newNotepadId(), title: deriveTitle(t), text: t, category, createdAt: new Date().toISOString() }]
     set({ notepadItems: items })
-    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
 
   resolveNotepadItem: (id) => {
@@ -860,13 +873,13 @@ export const useStore = create<AppStore>((set, get) => ({
     const items = notepadItems.filter(i => i.id !== id)
     const log = [...notepadLog, { ...item, resolvedAt: new Date().toISOString(), source: 'user' as const }]
     set({ notepadItems: items, notepadLog: log })
-    ipc.patchState({ notepadItems: items, notepadLog: log } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items), notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)
   },
 
   deleteNotepadItem: (id) => {
     const items = get().notepadItems.filter(i => i.id !== id)
     set({ notepadItems: items })
-    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
   updateNotepadItem: (id, patch) => {
     // 文本变更时短标题一并重算（面板待办行展示用 title 兜底见 deriveTitle）
@@ -874,7 +887,7 @@ export const useStore = create<AppStore>((set, get) => ({
       ? { ...i, ...patch, ...(patch.text ? { title: deriveTitle(patch.text) } : {}) }
       : i)
     set({ notepadItems: items })
-    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
 
   moveNotepadItem: (id, toIndex) => {
@@ -884,7 +897,7 @@ export const useStore = create<AppStore>((set, get) => ({
     const [item] = items.splice(from, 1)
     items.splice(Math.max(0, Math.min(items.length, toIndex)), 0, item)
     set({ notepadItems: items })
-    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
 
   setNotepadFontSize: (size) => {

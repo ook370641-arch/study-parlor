@@ -47,6 +47,7 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
   const deleteNotepadItem = useStore(s => s.deleteNotepadItem)
   const moveNotepadItem = useStore(s => s.moveNotepadItem)
   const updateNotepadItem = useStore(s => s.updateNotepadItem)
+  const refreshNotepad = useStore(s => s.refreshNotepad)
   const setNotepadFontSize = useStore(s => s.setNotepadFontSize)
   const setNotepadPanelSize = useStore(s => s.setNotepadPanelSize)
 
@@ -66,6 +67,14 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
   const [editCategory, setEditCategory] = useState<NotepadCategory>('feature')
 
   const size = liveSize ?? panelSize ?? DEFAULT_SIZE
+
+  useEffect(() => {
+    if (!open) return
+    void refreshNotepad()
+    const onFocus = () => { void refreshNotepad() }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [open, refreshNotepad])
 
   // 点击面板外 / Esc 收起
   useEffect(() => {
@@ -275,9 +284,20 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                       <span className={`shrink-0 text-[10px] font-bold rounded px-1.5 py-px border mt-[0.15em] ${CATEGORY_CHIP[item.category]}`}>
                         {NOTEPAD_CATEGORY_LABELS[item.category]}
                       </span>
-                      <span className={`flex-1 leading-relaxed text-parchment/90
-                                        ${completingId === item.id ? 'line-through' : ''}`}>
-                        {item.text}
+                      <span className="flex-1 min-w-0 flex flex-col items-start">
+                        <span className={`leading-relaxed text-parchment/90
+                                          ${completingId === item.id ? 'line-through' : ''}`}>
+                          {item.text}
+                        </span>
+                        {item.claim && (
+                          <span
+                            data-testid={`notepad-claim-${item.id}`}
+                            title={`认领于 ${new Date(item.claim.claimedAt).toLocaleString()}`}
+                            className="mt-1 inline-flex w-fit items-center rounded-full border border-ember/30 bg-ember/10 px-2 py-0.5 text-[10px] text-ember"
+                          >
+                            处理中 · {item.claim.claimedBy}
+                          </span>
+                        )}
                       </span>
                     </>
                   )}
