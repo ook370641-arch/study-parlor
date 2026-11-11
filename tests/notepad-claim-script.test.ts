@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -12,6 +12,16 @@ function fixture() {
 }
 function run(dir: string, args: string[]) {
   return execFileSync(process.execPath, [script, ...args], { env: { ...process.env, E2E_CONFIG_DIR: dir }, encoding: 'utf8' })
+}
+function claimConcurrently(dir: string, agent: string, barrier: string) {
+  return new Promise<number | null>((resolve, reject) => {
+    const child = spawn(process.execPath, [script, 'claim', 'n4', agent], {
+      env: { ...process.env, E2E_CONFIG_DIR: dir, NODE_OPTIONS: `--require=${barrier}` },
+      stdio: 'ignore'
+    })
+    child.on('error', reject)
+    child.on('close', resolve)
+  })
 }
 
 describe('notepad-claim CLI', () => {
@@ -34,5 +44,38 @@ describe('notepad-claim CLI', () => {
   it('claim 不存在的待办会失败', () => {
     const dir = fixture()
     expect(() => run(dir, ['claim', 'missing', 'codex/a'])).toThrow()
+  })
+
+  it('并发认领只允许一个 Agent 成功', async () => {
+    const dir = fixture()
+    const claims = Object.fromEntries(Array.from({ length: 20000 }, (_, index) => [`old-${index}`, { claimedBy: 'codex/old', claimedAt: 'now' }]))
+    fs.writeFileSync(path.join(dir, 'notepad-claims.json'), JSON.stringify(claims))
+    const barrier = path.join(dir, 'barrier.cjs')
+    fs.writeFileSync(barrier, `
+      const fs = require('node:fs')
+      const path = require('node:path')
+      const dir = process.env.E2E_CONFIG_DIR
+      fs.writeFileSync(path.join(dir, 'ready-' + process.pid), '')
+      while (!fs.existsSync(path.join(dir, 'go'))) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10)
+    `)
+    const agents = Array.from({ length: 12 }, (_, index) => `codex/${index}`)
+    const pending = agents.map(agent => claimConcurrently(dir, agent, barrier))
+    while (fs.readdirSync(dir).filter(file => file.startsWith('ready-')).length < agents.length) {
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+    fs.writeFileSync(path.join(dir, 'go'), '')
+    const results = await Promise.all(pending)
+    const successful = agents.filter((_, index) => results[index] === 0)
+    expect(successful).toHaveLength(1)
+  }, 15000)
+
+  it('清理异常进程留下的 stale lock', () => {
+    const dir = fixture()
+    const lock = path.join(dir, 'notepad-claims.json.lock')
+    fs.writeFileSync(lock, 'stale')
+    const staleTime = new Date(Date.now() - 60000)
+    fs.utimesSync(lock, staleTime, staleTime)
+    expect(run(dir, ['claim', 'n4', 'codex/a'])).toContain('codex/a')
+    expect(fs.existsSync(lock)).toBe(false)
   })
 })
