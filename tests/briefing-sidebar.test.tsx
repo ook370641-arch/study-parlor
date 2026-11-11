@@ -108,6 +108,7 @@ describe('BriefingSourceSidebar', () => {
   it('在原烛光位置提供设置入口并返回简报', () => {
     render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="academic" />)
     const cluster = screen.getByTestId('briefing-rail-controls')
+    expect(within(cluster).queryByTestId('briefing-candlelight-toggle')).not.toBeInTheDocument()
     fireEvent.click(within(cluster).getByTestId('briefing-settings-button'))
     expect(useStore.getState().currentPage).toBe('settings')
     expect(useStore.getState().settingsReturnTo).toBe('briefing')
