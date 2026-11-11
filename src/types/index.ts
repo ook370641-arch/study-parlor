@@ -567,6 +567,7 @@ export interface ScrollMemorySlot {
 /** 迭代记事板分类：bug / 新功能 / 功能优化 */
 export type NotepadCategory = 'bug' | 'feature' | 'improvement'
 export type NotepadFontSize = 'sm' | 'base' | 'lg'
+export type NotepadClaim = { claimedBy: string; claimedAt: string }
 export interface NotepadItem {
   id: string
   /** 短标题（≤15字）：创建时由首句兜底生成，agent 归档时可改写为准确标题 */
@@ -574,6 +575,7 @@ export interface NotepadItem {
   text: string
   category: NotepadCategory
   createdAt: string
+  claim?: NotepadClaim
 }
 export interface NotepadLogEntry extends NotepadItem {
   resolvedAt: string
