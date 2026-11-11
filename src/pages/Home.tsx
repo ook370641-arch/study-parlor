@@ -73,19 +73,6 @@ export function Home() {
         onClose={() => setOpenNote(null)}
         theme={theme}
       />
-      <Button variant="ghost" theme={theme}
-        data-testid="home-profile-button"
-        onClick={() => goto('profile')}
-        className="absolute top-4 right-20 font-sans text-sm z-10">
-        {t.libraryName}
-      </Button>
-      <Button variant="ghost" theme={theme}
-        data-testid="home-extension-button"
-        onClick={() => goto('extension')}
-        className="absolute top-4 right-4 font-sans text-sm z-10">
-        扩展
-      </Button>
-
       <div data-testid="home-greeting" className={`relative z-[5] text-center font-sans text-sm mb-8 ${isAcademic ? 'text-parchment/60' : 'text-[#555]'}`}>
         {t.homeGreeting}，{profile.name}
       </div>

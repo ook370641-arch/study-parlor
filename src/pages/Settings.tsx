@@ -1,11 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useStore } from '@/store'
-import { Button } from '@/components/Button'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { StudyControlsGroup } from '@/components/StudyControlsGroup'
-import { LlmConfigCard } from '@/components/settings/LlmConfigCard'
-import { ipc } from '@/lib/ipc'
-import { DEMO_NOTES, DEMO_NOTE_ORDER } from '@/lib/demo-notes'
+import { GeneralSettings } from '@/components/settings/GeneralSettings'
+import { ProfileSettings } from '@/components/settings/ProfileSettings'
+import { ExtensionSettings } from '@/components/settings/ExtensionSettings'
+
+type Primary = 'general' | 'profile' | 'extension'
+type GeneralSection = 'ai' | 'appearance' | 'library'
+type ExtensionSection = 'terminology' | 'paintings' | 'agent'
+
+const PRIMARY_SECTIONS: { id: Primary; label: string; description: string }[] = [
+  { id: 'general', label: '常规', description: '模型、界面与学习库' },
+  { id: 'profile', label: '卷宗', description: '你的学习者侧写' },
+  { id: 'extension', label: '扩展', description: '语言、配图与 Agent' },
+]
+
+const GENERAL_SECTIONS: { id: GeneralSection; label: string }[] = [
+  { id: 'ai', label: 'AI 与搜索' },
+  { id: 'appearance', label: '界面与画作' },
+  { id: 'library', label: '学习库与归档' },
+]
+
+const EXTENSION_SECTIONS: { id: ExtensionSection; label: string }[] = [
+  { id: 'terminology', label: '我的语言' },
+  { id: 'paintings', label: '自选配图' },
+  { id: 'agent', label: '本地 Agent 打通' },
+]
 
 export function Settings() {
   const goto = useStore(s => s.goto)
@@ -13,69 +34,10 @@ export function Settings() {
   const showToast = useStore(s => s.showToast)
   const theme = useStore((s) => s.briefingTheme)
   const isAcademic = theme !== 'newspaper'
-  const archivedTopics = useStore((s) => s.archivedTopics)
-  const restoreTopic = useStore((s) => s.restoreTopic)
-  const paintingDeleteEnabled = useStore((s) => s.paintingDeleteEnabled)
-  const setPaintingDeleteEnabled = useStore((s) => s.setPaintingDeleteEnabled)
-  const demoNotesHidden = useStore((s) => s.demoNotesHidden)
-  const toggleDemoNoteVisibility = useStore((s) => s.toggleDemoNoteVisibility)
-
-  const [libraryPath, setLibraryPath] = useState('')
+  const [primary, setPrimary] = useState<Primary>('general')
+  const [generalSection, setGeneralSection] = useState<GeneralSection>('ai')
+  const [extensionSection, setExtensionSection] = useState<ExtensionSection>('terminology')
   const [error, setError] = useState<string | null>(null)
-  const [searchApiKey, setSearchApiKey] = useState('')
-  const [showSearchKey, setShowSearchKey] = useState(false)
-  const [searchConfigured, setSearchConfigured] = useState(false)
-
-  useEffect(() => {
-    let mounted = true
-    ipc.getConfig().then(cfg => {
-      if (!mounted) return
-      setLibraryPath(cfg.libraryPath)
-    }).catch(err => {
-      setError(err.message || '读取配置失败')
-    })
-    ipc.searchCheckConfig()
-      .then(({ configured }) => { if (mounted) setSearchConfigured(configured) })
-      .catch(err => { if (mounted) setError(err.message || '读取搜索配置失败') })
-    return () => { mounted = false }
-  }, [])
-
-  const handleSelectDirectory = async () => {
-    try {
-      const result = await ipc.setupSelectDirectory()
-      if (!result.canceled && result.path) {
-        setLibraryPath(result.path)
-      }
-    } catch (err: any) {
-      setError(err.message || '选择目录失败')
-    }
-  }
-
-  const handleSaveSearchKey = async () => {
-    setError(null)
-    const key = searchApiKey.trim()
-    if (!key) {
-      setError('请输入 Tavily API Key')
-      return
-    }
-    try {
-      await ipc.setSearchApiKey(key)
-      setSearchApiKey('')
-      setSearchConfigured(true)
-      showToast('Tavily API Key 已保存')
-    } catch (err: any) {
-      setError(err.message || '保存 Tavily API Key 失败')
-    }
-  }
-
-  const handleRestoreTopic = async (dirName: string) => {
-    try {
-      await restoreTopic(dirName)
-      showToast(`「${dirName}」已恢复`)
-    } catch (err: any) {
-      showToast('恢复失败：' + (err?.message ?? err))
-    }
-  }
 
   return (
     <div data-testid="settings-page" className={`fixed inset-0 ${isAcademic ? '' : 'bg-[#f5f2ed]'}`}>
@@ -83,7 +45,7 @@ export function Settings() {
       <StudyControlsGroup surface="home" className="absolute top-4 right-4 z-10" />
 
       <div className="absolute top-10 left-6 right-6 bottom-5 z-10">
-        <div className="max-w-3xl mx-auto h-full flex flex-col">
+        <div className="max-w-7xl mx-auto h-full flex flex-col">
           <div className={`${isAcademic ? 'bg-ink/72' : 'bg-white'} backdrop-blur-md border ${isAcademic ? 'border-slate/30' : 'border-[#1a1a1a]/10'} rounded-xl flex flex-col h-full overflow-hidden`}>
             <div className={`flex justify-between items-center px-6 pt-5 pb-3 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'} shrink-0`}>
               <h2 className="text-2xl font-serif font-semibold">设置 · 仪器调校</h2>
@@ -96,157 +58,87 @@ export function Settings() {
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-6 py-5">
-              {error && (
-                <div data-testid="settings-error-display" className={`mb-4 ${isAcademic ? 'bg-wine/10 border-wine/40' : 'bg-red-50 border-red-200'} border rounded-md px-4 py-3`}>
-                  <p className={`text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>{error}</p>
-                </div>
-              )}
+            <div data-testid="settings-layout" className="grid grid-cols-[150px_220px_minmax(0,1fr)] flex-1 min-h-0">
+              <nav className={`border-r ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'} p-3 space-y-2 overflow-y-auto`}>
+                {PRIMARY_SECTIONS.map(section => (
+                  <button
+                    key={section.id}
+                    data-testid={`settings-primary-${section.id}`}
+                    onClick={() => setPrimary(section.id)}
+                    className={`w-full text-left px-3 py-3 rounded-lg border transition-colors ${
+                      primary === section.id
+                        ? (isAcademic ? 'bg-ember/10 border-ember/30 text-parchment' : 'bg-[#1a1a1a]/5 border-[#1a1a1a]/15 text-[#1a1a1a]')
+                        : (isAcademic ? 'border-transparent text-parchment/60 hover:bg-slate/10 hover:text-parchment' : 'border-transparent text-[#777] hover:bg-[#1a1a1a]/5 hover:text-[#1a1a1a]')
+                    }`}
+                  >
+                    <span className="block text-sm font-sans font-semibold">{section.label}</span>
+                    <span className={`block mt-1 text-[11px] ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>{section.description}</span>
+                  </button>
+                ))}
+              </nav>
 
-              {/* AI 服务 */}
-              <LlmConfigCard isAcademic={isAcademic} showToast={showToast} onError={setError} />
-
-              {/* 联网搜索 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>联网搜索</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>Tavily API Key</div>
-                    <div className="flex gap-2">
-                      <input
-                        data-testid="settings-search-api-key-input"
-                        type={showSearchKey ? 'text' : 'password'}
-                        value={searchApiKey}
-                        onChange={e => setSearchApiKey(e.target.value)}
-                        placeholder={searchConfigured ? '已配置，输入新 key 可覆盖' : 'tvly-...'}
-                        className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
-                      />
+              <nav className={`border-r ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'} p-3 overflow-y-auto`}>
+                {primary === 'general' && (
+                  <div className="space-y-1">
+                    {GENERAL_SECTIONS.map(section => (
                       <button
-                        data-testid="settings-search-api-key-toggle"
-                        type="button"
-                        onClick={() => setShowSearchKey(!showSearchKey)}
-                        className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
+                        key={section.id}
+                        data-testid={`settings-general-${section.id}`}
+                        onClick={() => setGeneralSection(section.id)}
+                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-sans border transition-colors ${
+                          generalSection === section.id
+                            ? (isAcademic ? 'bg-ember/10 text-parchment border-ember/30' : 'bg-[#1a1a1a]/5 text-[#1a1a1a] border-[#1a1a1a]/15')
+                            : (isAcademic ? 'text-parchment/60 hover:bg-slate/10 hover:text-parchment border-transparent' : 'text-[#777] hover:bg-[#1a1a1a]/5 hover:text-[#1a1a1a] border-transparent')
+                        }`}
                       >
-                        {showSearchKey ? '隐藏' : '显示'}
+                        {section.label}
                       </button>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <div className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
-                        Key 会加密存储在系统密钥库中，不会写入 .env 文件；联网资料仅在你主动开启时使用。
-                      </div>
-                      <Button data-testid="settings-search-save-button" onClick={handleSaveSearchKey} disabled={!searchApiKey.trim()}>
-                        保存
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 画作 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>画作</h3>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    data-testid="settings-painting-delete-toggle"
-                    type="checkbox"
-                    checked={paintingDeleteEnabled}
-                    onChange={e => { void setPaintingDeleteEnabled(e.target.checked) }}
-                    className="mt-0.5 accent-[#d97757]"
-                  />
-                  <span>
-                    <span className={`block text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>封面显示画作删除按钮</span>
-                    <span className={`block text-xs mt-0.5 ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
-                      点击封面右上角垃圾桶，将当前画作从库中隐藏并自动换下一幅；隐藏记录在 state.json，可手动恢复。
-                    </span>
-                  </span>
-                </label>
-              </div>
-
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>信息说明</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {DEMO_NOTE_ORDER.map((noteId) => (
-                    <label key={noteId} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        data-testid={`settings-demo-note-toggle-${noteId}`}
-                        type="checkbox"
-                        checked={!demoNotesHidden.includes(noteId)}
-                        onChange={() => toggleDemoNoteVisibility(noteId)}
-                        className="accent-[#d97757]"
-                      />
-                      <span className={`text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>
-                        显示{DEMO_NOTES[noteId].title.split(' · ')[0]}说明
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                <p className={`mt-3 text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
-                  关闭后只隐藏对应的 i 入口，不删除已经编辑的说明文案。
-                </p>
-              </div>
-
-              {/* 学习库 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>学习库</h3>
-                <div>
-                  <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目录路径</div>
-                  <div className="flex gap-2">
-                    <input
-                      data-testid="settings-library-path-input"
-                      type="text"
-                      value={libraryPath}
-                      onChange={e => setLibraryPath(e.target.value)}
-                      className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
-                    />
-                    <button
-                      data-testid="settings-select-directory-button"
-                      type="button"
-                      onClick={handleSelectDirectory}
-                      className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
-                    >
-                      选择目录
-                    </button>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>保存后需重启应用生效。</div>
-                    <Button data-testid="settings-library-save-button" onClick={async () => {
-                      try {
-                        await ipc.configSetLibraryPath(libraryPath.trim())
-                        showToast('学习库路径已保存')
-                      } catch (err: any) {
-                        setError(err?.message || '保存学习库路径失败')
-                      }
-                    }} disabled={!libraryPath.trim()}>
-                      保存
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* 已归档主题 */}
-              <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
-                <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>已归档主题</h3>
-                {archivedTopics.length === 0 ? (
-                  <div className={`text-sm ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
-                    暂无归档的主题。
-                  </div>
-                ) : (
-                  <ul data-testid="settings-archived-topics" className="space-y-2">
-                    {archivedTopics.map((dirName) => (
-                      <li key={dirName} className="flex items-center justify-between gap-3">
-                        <span className={`text-sm truncate ${isAcademic ? 'text-parchment/80' : 'text-[#555]'}`}>{dirName}</span>
-                        <button
-                          data-testid="settings-restore-topic-button"
-                          onClick={() => handleRestoreTopic(dirName)}
-                          className={`px-3 py-1 text-xs border rounded transition-colors shrink-0 ${isAcademic ? 'border-slate/40 text-parchment/80 hover:border-ember hover:text-ember' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]'}`}
-                        >
-                          恢复
-                        </button>
-                      </li>
                     ))}
-                  </ul>
+                  </div>
                 )}
+
+                {primary === 'profile' && (
+                  <div className="px-3 py-2">
+                    <div className={`text-sm font-sans font-semibold ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>学习者卷宗</div>
+                    <p className={`mt-2 text-xs leading-relaxed ${isAcademic ? 'text-parchment/45' : 'text-[#777]'}`}>
+                      供所有 AI 生成参考
+                    </p>
+                  </div>
+                )}
+
+                {primary === 'extension' && (
+                  <div className="space-y-1">
+                    {EXTENSION_SECTIONS.map(section => (
+                      <button
+                        key={section.id}
+                        data-testid={`settings-extension-${section.id}`}
+                        onClick={() => setExtensionSection(section.id)}
+                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-sans border transition-colors ${
+                          extensionSection === section.id
+                            ? (isAcademic ? 'bg-ember/10 text-parchment border-ember/30' : 'bg-[#1a1a1a]/5 text-[#1a1a1a] border-[#1a1a1a]/15')
+                            : (isAcademic ? 'text-parchment/60 hover:bg-slate/10 hover:text-parchment border-transparent' : 'text-[#777] hover:bg-[#1a1a1a]/5 hover:text-[#1a1a1a] border-transparent')
+                        }`}
+                      >
+                        {section.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </nav>
+
+              <div className="min-w-0 min-h-0 flex flex-col">
+                {error && (
+                  <div data-testid="settings-error-display" className={`mx-6 mt-5 shrink-0 ${isAcademic ? 'bg-wine/10 border-wine/40' : 'bg-red-50 border-red-200'} border rounded-md px-4 py-3`}>
+                    <p className={`text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>{error}</p>
+                  </div>
+                )}
+                <div className="flex-1 min-h-0">
+                  {primary === 'general' && (
+                    <GeneralSettings section={generalSection} isAcademic={isAcademic} showToast={showToast} onError={setError} />
+                  )}
+                  {primary === 'profile' && <ProfileSettings />}
+                  {primary === 'extension' && <ExtensionSettings section={extensionSection} />}
+                </div>
               </div>
             </div>
           </div>

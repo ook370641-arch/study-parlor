@@ -20,8 +20,6 @@ import { initAnthropicRuntime } from '@/lib/anthropic-runtime'
 const Cover    = lazy(() => import('@/pages/Cover').then(m => ({ default: m.Cover })))
 const Home     = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })))
 const Study    = lazy(() => import('@/pages/Study').then(m => ({ default: m.Study })))
-const Profile  = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })))
-const Extension = lazy(() => import('@/pages/Extension').then(m => ({ default: m.Extension })))
 const Settings = lazy(() => import('@/pages/Settings').then(m => ({ default: m.Settings })))
 const Briefing = lazy(() => import('@/pages/Briefing').then(m => ({ default: m.Briefing })))
 
@@ -241,8 +239,6 @@ export function App() {
             {page === 'cover' && <Cover />}
             {page === 'home' && <Home />}
             {page === 'study' && <Study />}
-            {page === 'profile' && <Profile />}
-            {page === 'extension' && <Extension />}
             {page === 'settings' && <Settings />}
             {page === 'briefing' && <Briefing />}
           </Suspense>

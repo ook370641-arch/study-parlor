@@ -30,6 +30,7 @@ test.describe('@p1 主题归档与重命名', () => {
     await home.goToSettings()
     const settings = new SettingsPage(window)
     await settings.waitForLoaded()
+    await settings.openLibrary()
     await expect(window.locator(SELECTORS.settings.archivedTopics)).toContainText('archive-topic')
     await settings.restoreArchivedTopic('archive-topic')
 

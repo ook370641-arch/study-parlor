@@ -5,7 +5,8 @@ export class ExtensionPage {
   constructor(private page: Page) {}
 
   async goto() {
-    await this.page.locator(SELECTORS.home.extensionButton).click()
+    await this.page.locator(SELECTORS.home.settingsButton).click()
+    await this.page.locator(SELECTORS.settings.primary('extension')).click()
     await this.page.locator(SELECTORS.extension.page).waitFor({ state: 'visible' })
   }
 
@@ -15,10 +16,6 @@ export class ExtensionPage {
 
   get terminologyPanel() {
     return this.page.locator(SELECTORS.extension.terminologyPanel)
-  }
-
-  get libraryDirectoryCard() {
-    return this.page.locator(SELECTORS.extension.libraryDirectoryCard)
   }
 
   get localAgentCard() {

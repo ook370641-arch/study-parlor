@@ -52,7 +52,7 @@ export type AssistantSession = {
   activeChunkIndex: number | null
 }
 
-type Page = 'cover' | 'home' | 'study' | 'profile' | 'extension' | 'settings' | 'briefing'
+type Page = 'cover' | 'home' | 'study' | 'settings' | 'briefing'
 
 type Session = {
   mode: Mode
