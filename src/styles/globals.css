@@ -290,27 +290,6 @@ html, body, #root { height: 100%; }
   .briefing-colophon { transition: none; }
 }
 
-/* ===== 烛光调制（F1）+ 全场让路 ===== */
-.candle-glow.candle-warm { filter: saturate(1.3) brightness(1.12); }
-.candle-glow.candle-breathe { animation: candleBreathe 4s ease-in-out infinite; }
-@keyframes candleBreathe { 50% { opacity: 0.62 !important; } }
-@media (prefers-reduced-motion: reduce) {
-  .candle-glow.candle-breathe { animation: none; }
-  .candle-glow.candle-warm { filter: saturate(1.15); }
-}
-
-/* ===== 烛光标注辉光（F1）：hover 标注时 ✎ 标记发光 ===== */
-.anno-wrap:hover .anno-pen {
-  text-shadow: 0 0 8px rgba(238, 194, 135, 0.8);
-}
-
-/* 烛光随行：默认隐藏光标增强沉浸感，交互元素始终显示 */
-.cursor-hidden { cursor: none; }
-.cursor-hidden button, .cursor-hidden a, .cursor-hidden [role="button"],
-.cursor-hidden input, .cursor-hidden textarea, .cursor-hidden [contenteditable],
-.cursor-hidden summary, .cursor-hidden select, .cursor-hidden [tabindex] {
-  cursor: auto;
-}
 .book-chapter-reader .md-body p + p {
   margin-top: 1em;
 }

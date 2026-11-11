@@ -121,9 +121,7 @@ type AppStore = {
   briefingTheme: BriefingTheme
   briefingFontSize: BriefingFontSize
   studyFontSize: BriefingFontSize
-  candlelightEnabled: boolean
   paintingPlateEnabled: boolean
-  toggleCandlelight: () => Promise<void>
   togglePaintingPlate: () => Promise<void>
   // Anthropic 博客
   briefingSource: BriefingSourceId
@@ -628,7 +626,6 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingTheme: 'academic',
   briefingFontSize: 'base',
   studyFontSize: 'lg',
-  candlelightEnabled: true,
   paintingPlateEnabled: false,
   briefingSource: 'writing',
   booksList: [],
@@ -750,7 +747,6 @@ export const useStore = create<AppStore>((set, get) => ({
       articleCompanionMap: state.articleCompanionMap ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
-      candlelightEnabled: state.candlelightEnabled ?? true,
       paintingPlateEnabled: state.paintingPlateEnabled ?? false,
       session_count: state.ui?.session_count ?? 0,
       archivedTopics: Array.isArray(state.archivedTopics) ? state.archivedTopics : [],
@@ -1162,11 +1158,6 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ writingCodeblockCollapsed: map } as Partial<StateJson>)
   },
 
-  toggleCandlelight: async () => {
-    const next = !get().candlelightEnabled
-    set({ candlelightEnabled: next })
-    await ipc.patchState({ candlelightEnabled: next } as Partial<StateJson>)
-  },
   togglePaintingPlate: async () => {
     const next = !get().paintingPlateEnabled
     set({ paintingPlateEnabled: next })

@@ -14,15 +14,7 @@ import { ipc } from '@/lib/ipc'
 describe('store lighting toggles', () => {
   beforeEach(() => {
     vi.mocked(ipc.patchState).mockClear()
-    useStore.setState({ candlelightEnabled: true, paintingPlateEnabled: false })
-  })
-
-  it('candlelightEnabled defaults on and toggles with persistence', async () => {
-    await useStore.getState().toggleCandlelight()
-    expect(useStore.getState().candlelightEnabled).toBe(false)
-    expect(ipc.patchState).toHaveBeenCalledWith({ candlelightEnabled: false })
-    await useStore.getState().toggleCandlelight()
-    expect(useStore.getState().candlelightEnabled).toBe(true)
+    useStore.setState({ paintingPlateEnabled: false })
   })
 
   it('paintingPlateEnabled defaults off and toggles with persistence', async () => {

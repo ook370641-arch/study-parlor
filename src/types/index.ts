@@ -625,7 +625,6 @@ export type StateJson = {
   writingUIFontSize?: BriefingFontSize
   /** 各写作文件的折叠代码块 hash 多重集合(filePath → codeblockHash 列表) */
   writingCodeblockCollapsed?: Record<string, string[]>
-  candlelightEnabled?: boolean
   paintingPlateEnabled?: boolean
   /** 已归档（隐藏）的主题目录名，主页/卫星图不显示，可在设置恢复 */
   archivedTopics?: string[]

@@ -24,7 +24,7 @@ import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 describe('BriefingSourceSidebar', () => {
   beforeEach(() => {
     cleanup()
-    useStore.setState({ briefingSource: 'writing', writingCompanionPicker: null })
+    useStore.setState({ currentPage: 'briefing', briefingSource: 'writing', writingCompanionPicker: null })
   })
 
   it('renders newspaper theme colors when theme is newspaper', () => {
@@ -105,17 +105,16 @@ describe('BriefingSourceSidebar', () => {
     expect(within(cluster).getByTestId('briefing-theme-toggle')).toBeInTheDocument()
   })
 
-  it('hosts candlelight and painting-plate toggles in the rail controls cluster', () => {
-    useStore.setState({ currentPaintings: { briefing: { id: 'p1', src: '' } } } as any)
+  it('在原烛光位置提供设置入口并返回简报', () => {
     render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="academic" />)
     const cluster = screen.getByTestId('briefing-rail-controls')
-    expect(within(cluster).getByTestId('briefing-candlelight-toggle')).toBeInTheDocument()
-    expect(within(cluster).getByTestId('painting-plate-toggle')).toBeInTheDocument()
+    fireEvent.click(within(cluster).getByTestId('briefing-settings-button'))
+    expect(useStore.getState().currentPage).toBe('settings')
+    expect(useStore.getState().settingsReturnTo).toBe('briefing')
   })
 
-  it('hides candlelight and painting-plate toggles in newspaper theme', () => {
+  it('报纸主题也保留设置入口', () => {
     render(<BriefingSourceSidebar collapsed={false} onToggle={vi.fn()} theme="newspaper" />)
-    expect(screen.queryByTestId('briefing-candlelight-toggle')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('painting-plate-toggle')).not.toBeInTheDocument()
+    expect(screen.getByTestId('briefing-settings-button')).toBeInTheDocument()
   })
 })
