@@ -675,7 +675,7 @@ export type IpcApi = {
   /** 同步落盘(sendSync):仅退出路径(beforeunload)使用,保证渲染进程卸载前必达主进程 */
   patchStateSync: (patch: Partial<StateJson>) => void
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
-  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string; localMaterials?: LocalMaterial[] }) => Promise<void>
+  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string; localMaterials?: LocalMaterial[] }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; description?: string; body: string; progress_summary?: string }>
   llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[]; mastery_assessment?: string; mastery_checklist?: string[]; future_advice?: string[] }>
@@ -683,11 +683,9 @@ export type IpcApi = {
   llmGroupInspiration: (args: {
     groupName: string
     topics: { dirName: string; title: string }[]
-    profile: Profile
     strategy?: 'v1' | 'v2' | 'v3'
   }) => Promise<NewTopic>
   llmWildcardInspiration: (args: {
-    profile: Profile
     topics: { title: string }[]
   }) => Promise<NewTopic>
   llmGenerateFableFromReport: (args: {

@@ -1,5 +1,7 @@
 import type { AppConfig } from '../env'
 import type { Message } from '@shared/index'
+import { loadProfile } from './library-data'
+import { withProfilePrompt } from './profile-prompt'
 
 export type ToolDef = { type: 'function'; function: { name: string; description: string; parameters: Record<string, unknown> } }
 export type NativeToolCallRaw = { id?: string; name?: string; arguments?: string }
@@ -91,7 +93,7 @@ export function buildChatBody(
   const body: Record<string, any> = {
     model: cfg.model,
     stream: args.stream,
-    messages: args.messages,
+    messages: withProfilePrompt(args.messages, loadProfile(cfg.libraryPath)),
   }
 
   if (isKimiK3Model(cfg.model)) {

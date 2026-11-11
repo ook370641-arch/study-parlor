@@ -1865,9 +1865,9 @@ export const useStore = create<AppStore>((set, get) => ({
     const requestId = ++wildcardRequestId
     set({ wildcardLoading: true, wildcardError: null })
     try {
-      const { profile, library } = get()
+      const { library } = get()
       const topics = library.map(t => ({ title: t.title }))
-      const result = await ipc.llmWildcardInspiration({ profile, topics })
+      const result = await ipc.llmWildcardInspiration({ topics })
       if (requestId !== wildcardRequestId) return
       get().setWildcardInspiration(result)
     } catch (err: any) {

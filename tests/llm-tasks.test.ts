@@ -10,7 +10,6 @@ import {
 } from '@electron/lib/llm-tasks'
 
 const cfg = { apiKey: 'k', baseUrl: 'https://x', model: 'm', libraryPath: '/' }
-const profile = { name: '张三', profile_text: 'p', preferred_topics: ['a', 'b'] }
 
 describe('finalizeProgress', () => {
   it('extracts title, body and progress_summary from XML response', async () => {
@@ -77,8 +76,7 @@ describe('generateGroupInspiration', () => {
     })) as any)
     const out = await generateGroupInspiration(cfg, {
       groupName: 'AI Tools',
-      topics: [{ dirName: 'claude-code', title: 'Claude Code' }],
-      profile
+      topics: [{ dirName: 'claude-code', title: 'Claude Code' }]
     })
     expect(out.topic).toBe('MCP协议')
     expect(out.hook).toBe('你已熟悉各类AI工具...')
@@ -93,8 +91,7 @@ describe('generateGroupInspiration', () => {
     })) as any)
     const out = await generateGroupInspiration(cfg, {
       groupName: 'G',
-      topics: [{ dirName: 'a', title: 'A' }],
-      profile
+      topics: [{ dirName: 'a', title: 'A' }]
     })
     expect(out.topic).toBe('X')
     expect(out.hook).toBe('hx')
@@ -109,8 +106,7 @@ describe('generateGroupInspiration', () => {
     })) as any)
     const out = await generateGroupInspiration(cfg, {
       groupName: 'G',
-      topics: [{ dirName: 'a', title: 'A' }],
-      profile
+      topics: [{ dirName: 'a', title: 'A' }]
     })
     expect(out.topic).toBe('嵌套JSON')
     expect(out.hook).toBe('带前后文字')
@@ -123,8 +119,7 @@ describe('generateGroupInspiration', () => {
     })) as any)
     await expect(generateGroupInspiration(cfg, {
       groupName: 'TestGroup',
-      topics: [],
-      profile
+      topics: []
     })).rejects.toThrow()
   })
 
@@ -135,8 +130,7 @@ describe('generateGroupInspiration', () => {
 
     await expect(generateGroupInspiration(cfg, {
       groupName: 'TestGroup',
-      topics: [],
-      profile
+      topics: []
     })).rejects.toThrow('JSON parse failed after extraction')
   })
 
@@ -147,8 +141,7 @@ describe('generateGroupInspiration', () => {
 
     await expect(generateGroupInspiration(cfg, {
       groupName: 'TestGroup',
-      topics: [],
-      profile
+      topics: []
     })).rejects.toThrow('JSON parse failed after extraction')
   })
 
@@ -160,8 +153,7 @@ describe('generateGroupInspiration', () => {
     vi.stubGlobal('fetch', fetchSpy as any)
     await generateGroupInspiration(cfg, {
       groupName: 'Philosophy',
-      topics: [{ dirName: 'kant', title: '康德' }, { dirName: 'nietzsche', title: '尼采' }],
-      profile
+      topics: [{ dirName: 'kant', title: '康德' }, { dirName: 'nietzsche', title: '尼采' }]
     })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.messages[0].content).toContain('Philosophy')
@@ -178,7 +170,6 @@ describe('generateGroupInspiration', () => {
     await generateGroupInspiration(cfg, {
       groupName: 'AI PM',
       topics: [{ dirName: 'agent', title: 'Agent' }],
-      profile,
       strategy: 'v3'
     })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
@@ -194,8 +185,7 @@ describe('generateGroupInspiration', () => {
     vi.stubGlobal('fetch', fetchSpy as any)
     await generateGroupInspiration({ ...cfg, model: 'deepseek-v4-pro' }, {
       groupName: 'AI PM',
-      topics: [{ dirName: 'agent', title: 'Agent' }],
-      profile
+      topics: [{ dirName: 'agent', title: 'Agent' }]
     })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
     expect(body.thinking).toEqual({ type: 'enabled' })
@@ -212,7 +202,6 @@ describe('generateWildcardInspiration', () => {
       })
     })) as any)
     const out = await generateWildcardInspiration(cfg, {
-      profile,
       topics: [{ title: '康德' }, { title: 'React Hooks' }]
     })
     expect(out.topic).toBe('熵增定律')
@@ -227,25 +216,22 @@ describe('generateWildcardInspiration', () => {
       })
     })) as any)
     const out = await generateWildcardInspiration(cfg, {
-      profile,
       topics: [{ title: '康德' }]
     })
     expect(out.topic).toBe('量子纠缠')
     expect(out.hook).toBe('粒子间的幽灵同步。')
   })
 
-  it('passes profile and topics into prompt', async () => {
+  it('passes topics into prompt', async () => {
     const fetchSpy = vi.fn(async () => ({
       ok: true,
       json: async () => ({ choices: [{ message: { content: '{"topic":"T","hook":"h"}' } }] })
     }))
     vi.stubGlobal('fetch', fetchSpy as any)
     await generateWildcardInspiration(cfg, {
-      profile: { ...profile, profile_text: '产品经理，喜欢哲学' },
       topics: [{ title: '康德' }, { title: '尼采' }]
     })
     const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
-    expect(body.messages[0].content).toContain('产品经理，喜欢哲学')
     expect(body.messages[0].content).toContain('康德')
     expect(body.messages[0].content).toContain('尼采')
   })
@@ -256,7 +242,6 @@ describe('generateWildcardInspiration', () => {
     })) as any)
 
     await expect(generateWildcardInspiration(cfg, {
-      profile,
       topics: []
     })).rejects.toThrow('JSON parse failed after extraction')
   })
@@ -267,7 +252,6 @@ describe('generateWildcardInspiration', () => {
     })) as any)
 
     await expect(generateWildcardInspiration(cfg, {
-      profile,
       topics: []
     })).rejects.toThrow('JSON parse failed after extraction')
   })
@@ -277,7 +261,6 @@ describe('generateWildcardInspiration', () => {
       ok: true, json: async () => ({ choices: [{ message: { content: 'not json' } }] })
     })) as any)
     await expect(generateWildcardInspiration(cfg, {
-      profile,
       topics: []
     })).rejects.toThrow()
   })
