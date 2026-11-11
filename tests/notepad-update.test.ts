@@ -2,14 +2,21 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import type { NotepadItem } from '@shared/index'
 
-vi.mock('@/lib/ipc', () => ({ ipc: { patchState: vi.fn() } }))
+vi.mock('@/lib/ipc', () => ({ ipc: { patchState: vi.fn(), getState: vi.fn() } }))
 
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 
 beforeEach(() => {
   vi.mocked(ipc.patchState).mockClear()
+  vi.mocked(ipc.getState).mockReset()
 })
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>(resolvePromise => { resolve = resolvePromise })
+  return { promise, resolve }
+}
 
 describe('updateNotepadItem', () => {
   it('改内容和分类，短标题随文本重算', () => {
@@ -109,5 +116,46 @@ describe('记事板 claim 写回隔离', () => {
     const patch = vi.mocked(ipc.patchState).mock.calls.at(-1)?.[0]
     expect(patch?.notepadItems?.[1]).not.toHaveProperty('claim')
     expect(useStore.getState().notepadItems[1].claim).toEqual(claim)
+  })
+})
+
+describe('refreshNotepad 过期快照隔离', () => {
+  const snapshotItem = (id: string, text: string): NotepadItem => ({
+    id,
+    text,
+    category: 'feature',
+    createdAt: '2026-11-11T00:00:00Z',
+  })
+
+  it('刷新等待期间新增的本地条目不被旧快照覆盖', async () => {
+    const response = deferred<any>()
+    vi.mocked(ipc.getState).mockReturnValue(response.promise)
+    useStore.setState({ notepadItems: [snapshotItem('initial', '初始')], notepadLog: [], coverNotepad: '' })
+
+    const refreshing = useStore.getState().refreshNotepad()
+    useStore.getState().addNotepadItem('本地新增', 'feature')
+    const localItems = useStore.getState().notepadItems
+    response.resolve({ coverNotepad: '', notepadItems: [snapshotItem('remote-stale', '旧快照')], notepadLog: [] })
+    await refreshing
+
+    expect(useStore.getState().notepadItems).toEqual(localItems)
+  })
+
+  it('多次刷新乱序返回时只有后启动请求的快照生效', async () => {
+    const firstResponse = deferred<any>()
+    const secondResponse = deferred<any>()
+    vi.mocked(ipc.getState).mockReturnValueOnce(firstResponse.promise).mockReturnValueOnce(secondResponse.promise)
+    useStore.setState({ notepadItems: [snapshotItem('initial', '初始')], notepadLog: [], coverNotepad: '' })
+
+    const firstRefresh = useStore.getState().refreshNotepad()
+    const secondRefresh = useStore.getState().refreshNotepad()
+    secondResponse.resolve({ coverNotepad: '', notepadItems: [snapshotItem('remote-new', '新快照')], notepadLog: [] })
+    await secondRefresh
+    expect(useStore.getState().notepadItems.map(item => item.id)).toEqual(['remote-new'])
+
+    firstResponse.resolve({ coverNotepad: '', notepadItems: [snapshotItem('remote-stale', '旧快照')], notepadLog: [] })
+    await firstRefresh
+
+    expect(useStore.getState().notepadItems.map(item => item.id)).toEqual(['remote-new'])
   })
 })
