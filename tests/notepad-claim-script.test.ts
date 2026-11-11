@@ -46,6 +46,33 @@ describe('notepad-claim CLI', () => {
     expect(() => run(dir, ['claim', 'missing', 'codex/a'])).toThrow()
   })
 
+  it.each([null, []])('claims 根节点为 %s 时 claim 从空对象开始', value => {
+    const dir = fixture()
+    fs.writeFileSync(path.join(dir, 'notepad-claims.json'), JSON.stringify(value))
+    expect(run(dir, ['claim', 'n4', 'codex/a'])).toContain('已认领')
+    expect(JSON.parse(fs.readFileSync(path.join(dir, 'notepad-claims.json'), 'utf8'))).toEqual({
+      n4: { claimedBy: 'codex/a', claimedAt: expect.any(String) }
+    })
+  })
+
+  it('claim 忽略畸形目标条目并清理其他无效条目', () => {
+    const dir = fixture()
+    fs.writeFileSync(path.join(dir, 'notepad-claims.json'), JSON.stringify({
+      n4: { claimedBy: 1, claimedAt: null },
+      stale: null
+    }))
+    expect(run(dir, ['claim', 'n4', 'codex/a'])).toContain('已认领')
+    expect(JSON.parse(fs.readFileSync(path.join(dir, 'notepad-claims.json'), 'utf8'))).toEqual({
+      n4: { claimedBy: 'codex/a', claimedAt: expect.any(String) }
+    })
+  })
+
+  it('release 将畸形目标条目视为未认领', () => {
+    const dir = fixture()
+    fs.writeFileSync(path.join(dir, 'notepad-claims.json'), JSON.stringify({ n4: [] }))
+    expect(run(dir, ['release', 'n4', 'codex/a'])).toContain('无需释放')
+  })
+
   it('并发认领只允许一个 Agent 成功', async () => {
     const dir = fixture()
     const claims = Object.fromEntries(Array.from({ length: 20000 }, (_, index) => [`old-${index}`, { claimedBy: 'codex/old', claimedAt: 'now' }]))

@@ -1,11 +1,11 @@
 import path from 'node:path'
-import { safeReadJson, safeWriteJson } from './safe-json'
+import { readClaimsFile, withClaimsLock, writeClaimsFile } from './notepad-claims-shared.cjs'
 import type { NotepadClaim, NotepadItem } from '@shared/index'
 
 export type NotepadClaimsFile = Record<string, NotepadClaim>
 
 export function readNotepadClaims(stateDir: string): NotepadClaimsFile {
-  return safeReadJson(path.join(stateDir, 'notepad-claims.json'), { fallback: {} })
+  return readClaimsFile(path.join(stateDir, 'notepad-claims.json'))
 }
 
 export function mergeNotepadClaims(items: NotepadItem[], claims: NotepadClaimsFile): NotepadItem[] {
@@ -14,8 +14,10 @@ export function mergeNotepadClaims(items: NotepadItem[], claims: NotepadClaimsFi
 
 export function pruneNotepadClaims(stateDir: string, items: NotepadItem[]): void {
   const file = path.join(stateDir, 'notepad-claims.json')
-  const claims = readNotepadClaims(stateDir)
-  const ids = new Set(items.map(item => item.id))
-  const next = Object.fromEntries(Object.entries(claims).filter(([id]) => ids.has(id)))
-  if (Object.keys(next).length !== Object.keys(claims).length) safeWriteJson(file, next)
+  withClaimsLock(file, () => {
+    const claims = readClaimsFile(file)
+    const ids = new Set(items.map(item => item.id))
+    const next = Object.fromEntries(Object.entries(claims).filter(([id]) => ids.has(id)))
+    if (Object.keys(next).length !== Object.keys(claims).length) writeClaimsFile(file, next)
+  })
 }
