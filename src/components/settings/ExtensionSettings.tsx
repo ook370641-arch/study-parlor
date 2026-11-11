@@ -53,7 +53,7 @@ export function ExtensionSettings({ section }: { section: ExtensionSection }) {
               </ol>
               <div className={`${isAcademic ? 'bg-ink/40' : 'bg-white'} border-l-2 border-green-600/50 pl-3 py-2 text-xs ${isAcademic ? 'text-parchment/50' : 'text-[#777]'} space-y-1`}>
                 <p>🔑 首次使用时，skill 会询问你的 Study Parlor 项目位置，读取 <code className={`${isAcademic ? 'bg-ink' : 'bg-white'} px-1 rounded`}>.env</code> 中的 <code className={`${isAcademic ? 'bg-ink' : 'bg-white'} px-1 rounded`}>STUDY_LIBRARY_PATH</code> 并永久保存到 skill 文件中。下次使用无需再配置。</p>
-                <p className={`${isAcademic ? 'text-ember/70' : 'text-[#1a1a1a]'}`}>⚠️ 请确保 skill 配置的学习库路径与上方"学习库"中显示的路径一致，否则生成的报告将不会在学习库中显示。</p>
+                <p className={`${isAcademic ? 'text-ember/70' : 'text-[#1a1a1a]'}`}>⚠️ 请确保 skill 配置的学习库路径与「常规 → 学习库与归档」中显示的路径一致，否则生成的报告将不会在学习库中显示。</p>
               </div>
             </div>
           </div>
