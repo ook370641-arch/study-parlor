@@ -144,7 +144,7 @@
 ### 21. 扩展页与分组导览
 
 **现状**：扩展已迁入设置中心 `ExtensionSettings.tsx`，含「我的语言 / 自选配图 / 本地 Agent 打通」；学习库说明并入「常规 → 学习库与归档」。分组导览（`GuidePopover`）在用。
-**历史链**：06-05 extension-page → 06-05 group-guide-button → 11-11 settings-center-and-notepad-claims（扩展迁移）
+**历史链**：06-05 extension-page → 06-05 group-guide-button → 11-11 settings-center（plan）→ 11-11 settings-center-and-notepad-claims（扩展迁移）
 
 ### 22. E2E 与工程基建
 
