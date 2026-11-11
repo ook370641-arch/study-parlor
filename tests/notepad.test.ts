@@ -7,6 +7,7 @@ import {
   migrateCoverNotepad,
   computeNotepadStats,
   groupLogByMonth,
+  isResolvedToday,
 } from '@/lib/notepad'
 import type { NotepadItem, NotepadLogEntry } from '@shared/index'
 
@@ -80,5 +81,19 @@ describe('groupLogByMonth', () => {
   it('按解决月份降序分组', () => {
     const groups = groupLogByMonth([entry('2026-08-05T00:00:00.000Z'), entry('2026-10-01T00:00:00.000Z')])
     expect(groups.map(g => g.month)).toEqual(['2026-10', '2026-08'])
+  })
+})
+
+describe('isResolvedToday', () => {
+  it('按本地年月日判断，而不是截取 UTC ISO 日期', () => {
+    const now = new Date(2026, 10, 11, 8, 0)
+    const earlierToday = new Date(2026, 10, 11, 0, 5).toISOString()
+    const yesterdayLate = new Date(2026, 10, 10, 23, 55).toISOString()
+    expect(isResolvedToday(earlierToday, now)).toBe(true)
+    expect(isResolvedToday(yesterdayLate, now)).toBe(false)
+  })
+
+  it('无效日期返回 false', () => {
+    expect(isResolvedToday('not-a-date', new Date(2026, 10, 11))).toBe(false)
   })
 })

@@ -6,7 +6,7 @@
 // A−/A+ 字号，点击面板外/Esc 收起。
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
-import { NOTEPAD_CATEGORY_LABELS, computeNotepadStats, deriveTitle } from '@/lib/notepad'
+import { NOTEPAD_CATEGORY_LABELS, computeNotepadStats, deriveTitle, isResolvedToday } from '@/lib/notepad'
 import type { NotepadCategory, NotepadFontSize, NotepadItem } from '@shared/index'
 
 const CATEGORIES: NotepadCategory[] = ['feature', 'improvement', 'bug']
@@ -442,6 +442,7 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                 {sortedLog.map((entry, i) => {
                   const expanded = expandedId === entry.id
                   const isLast = i === sortedLog.length - 1
+                  const today = isResolvedToday(entry.resolvedAt)
                   const x = xOf(i)
                   const mode = modeOf(i)
                   const px = i > 0 ? xOf(i - 1) : null
@@ -477,24 +478,26 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                           )}
                           <circle
                             cx={x} cy={NODE_Y} r={isLast ? 5 : 4}
-                            fill={isLast ? '#d97757' : '#2a1f1a'}
-                            stroke={isLast ? '#d97757' : 'rgba(217,119,87,.7)'}
+                            fill={today || isLast ? '#d97757' : '#2a1f1a'}
+                            stroke={today || isLast ? '#d97757' : 'rgba(217,119,87,.7)'}
                             strokeWidth={2}
                             style={isLast ? { filter: 'drop-shadow(0 0 5px rgba(217,119,87,.9))' } : undefined}
                           />
                         </svg>
                       </div>
                       <div
-                        data-testid="notepad-log-entry"
+                        data-testid={today ? 'notepad-log-today' : 'notepad-log-entry'}
                         onClick={() => setExpandedId(expanded ? null : entry.id)}
                         className={`flex-1 min-w-0 my-1 rounded-lg px-3 py-2 cursor-pointer transition-colors
-                                    hover:bg-parchment/5 ${expanded ? 'bg-parchment/5' : ''}`}
+                                    hover:bg-parchment/5 ${expanded ? 'bg-parchment/5' : ''}
+                                    ${today ? 'border border-ember/35 bg-ember/10' : ''}`}
                       >
                         <div className="flex items-center gap-2">
                           <span className={`shrink-0 text-[10px] font-bold rounded px-1.5 py-px border ${CATEGORY_CHIP[entry.category]}`}>
                             {NOTEPAD_CATEGORY_LABELS[entry.category]}
                           </span>
                           <span className="shrink-0 text-[10px] text-parchment/50 tabular-nums">{fmtDate(entry.resolvedAt).slice(5)}</span>
+                          {today && <span className="shrink-0 text-[10px] text-ember">今日完成 · 待测试</span>}
                           {entry.source === 'agent' && <span className="shrink-0 text-[10px] text-parchment/30">agent</span>}
                         </div>
                         <div className="leading-relaxed text-parchment/90 mt-0.5 truncate">

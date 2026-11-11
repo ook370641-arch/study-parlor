@@ -14,6 +14,14 @@ export function deriveTitle(text: string): string {
   return firstClause.length > 15 ? firstClause.slice(0, 15) + '…' : firstClause
 }
 
+export function isResolvedToday(resolvedAt: string, now = new Date()): boolean {
+  const resolved = new Date(resolvedAt)
+  if (Number.isNaN(resolved.getTime())) return false
+  return resolved.getFullYear() === now.getFullYear()
+    && resolved.getMonth() === now.getMonth()
+    && resolved.getDate() === now.getDate()
+}
+
 export function newNotepadId(): string {
   return `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 }
