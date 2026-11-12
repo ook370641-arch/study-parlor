@@ -144,10 +144,12 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 **当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `notepadItems` 字段，同时读取 `~/.studyparlor/notepad-claims.json` 并在汇报中标出已认领条目及认领者。这些文件在工作区外，沙箱读取可能需要提权。
 
+**当用户说"看下评论"（或类似表述）时**：读取 `notepadLog[].comments[]`，只汇报并处理没有 `resolvedAt` 的评论；已有 `resolvedAt` / `resolution` 的是历史处理记录，不要重复接单。评论挂在已完成条目下，不重新移回待办。
+
 **关键字段（state.json）**：
 
 - `notepadItems: [{ id, title?, text, category, createdAt }]` — 待办条目；`category` 为 `'bug' | 'feature' | 'improvement'`；`title` 短标题创建时自动生成兜底
-- `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent' }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结
+- `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent', comments? }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结；`comments: [{ id, text, createdAt, resolvedAt?, resolution? }]` 是用户对已完成条目的反馈，点「评论」按钮才展开右侧输入框
 - `notepadFontSize: 'sm' | 'base' | 'lg'`、`notepadPanelSize: { w, h } | null` — 面板字号与自定义尺寸
 - `coverNotepad`（纯字符串）已废弃，仅作一次性迁移源（非空且 notepadItems 为空时按行迁入后清空）
 
@@ -162,7 +164,9 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 
 **归档约定**：agent 完成某条需求后，须把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`）。**app 运行中不要直接改 state.json**（内存旧值会覆盖），应让用户在面板点 ✓ 或先关闭 app；面板归档会由 `state:patch` 自动清理认领。应用关闭后手工归档时，写回 `state.json` 后执行上述 `release`，并确认认领已清理。详见 `.agents/skills/notepad-triage/SKILL.md`。
 
-相关代码：`src/components/NotepadPanel.tsx`（双 tab 面板：待完成 / 已完成时间线；旁注打开时与入口一起左移）、`src/lib/notepad.ts`（分类猜测/迁移/统计/短标题纯逻辑）、`src/store/index.ts`（`notepadItems` / `notepadLog` / `addNotepadItem` / `resolveNotepadItem`）、`electron/ipc/state.ts`（DEFAULT 字段）。
+**评论处理记录**：agent 实际完成并验证评论要求的修改后，为对应 comment 写 `resolvedAt` 和简短 `resolution`（做了什么、验证结果、提交号），供面板展示和后续 agent 查阅。写回同样禁止直接修改运行中的 app 状态；先请用户关闭 app，再继续写回。
+
+相关代码：`src/components/NotepadPanel.tsx`（双 tab 面板：待完成 / 已完成时间线；已完成条目右侧评论；旁注打开时与入口一起左移）、`src/lib/notepad.ts`（分类猜测/迁移/统计/短标题纯逻辑）、`src/store/index.ts`（`notepadItems` / `notepadLog` / `addNotepadItem` / `resolveNotepadItem` / `addNotepadComment`）、`electron/ipc/state.ts`（DEFAULT 字段）。
 
 **接单时按 category 自动区分打法**（看到条目先识别类型，不要用同一套流程套所有需求）：
 

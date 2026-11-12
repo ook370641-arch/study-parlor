@@ -4,7 +4,7 @@ description: >
   迭代记事板的需求分诊与归档助手。读取 ~/.studyparlor/state.json 的 notepadItems（待办）与
   notepadLog（已解决档案），帮助用户浏览、分类、接单迭代需求。
   每次迭代完成后，自动把已解决条目从 notepadItems 移入 notepadLog（写 resolvedAt + source:'agent'）。
-  触发词："迭代需求"、"记事板"、"notepad"。
+  触发词："迭代需求"、"记事板"、"notepad"、"看下评论"。
 ---
 
 # /notepad-triage — 迭代记事板分诊与归档
@@ -14,10 +14,11 @@ description: >
 `~/.studyparlor/state.json`（Windows: `%USERPROFILE%\.studyparlor\state.json`）的两个字段：
 
 - `notepadItems`: `[{ id, title, text, category, createdAt }]` — 待办条目；`title` 创建时自动生成兜底
-- `notepadLog`: `[{ id, title, text, category, createdAt, resolvedAt, source }]` — 已解决档案；`title` 为短标题，面板默认只显示它，全文点击展开
+- `notepadLog`: `[{ id, title, text, category, createdAt, resolvedAt, source, comments? }]` — 已解决档案；`title` 为短标题，面板默认只显示它，全文点击展开
 
 `category` 三选一：`'bug'`（bug）/ `'feature'`（新功能）/ `'improvement'`（功能优化）。
 `source`：`'user'`（用户在面板点 ✓）/ `'agent'`（本 skill 归档）。
+`comments`：`[{ id, text, createdAt, resolvedAt?, resolution? }]`，已完成条目的用户反馈与处理记录。
 
 旧字段 `coverNotepad`（纯文本）已被 `notepadItems` 取代；如它仍非空且 `notepadItems` 为空，
 按非空行拆分、去掉行首编号后迁入（分类规则见下），并清空 `coverNotepad`。
@@ -34,6 +35,8 @@ description: >
 1. 读 `state.json` 与 `notepad-claims.json`，汇报 `notepadItems` 时标出已认领条目及认领者，按 category 分组展示（bug / 新功能 / 功能优化）
 2. 附简短统计：待办 N 条、本月已解决 M 条（来自 notepadLog 的 resolvedAt）
 3. 用户指出"哪条已完成/要做哪条"时进入对应分支
+
+用户说"看下评论"时，改为遍历 `notepadLog[].comments[]`：只列出没有 `resolvedAt` 的评论，并带上所属条目标题、条目 id 与 comment id；已有 `resolvedAt` / `resolution` 的记录只作历史参考，不重复处理。
 
 ### 2. 归档已解决条目（每次迭代收尾必做）
 
@@ -74,6 +77,13 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 替用户记录新需求时：要求用户指定三分类之一（若文本明显可推断可直接建议默认值），
 向 `notepadItems` 追加 `{ id: 'n' + Date.now().toString(36) + 随机4位, text, category, createdAt: 当前ISO }`。
 同样遵守"app 运行中不改 state.json"的前提——运行中让用户在面板里自行输入。
+
+### 5. 处理已完成条目的评论
+
+1. 用户指定评论后，按评论内容识别 bug / feature / improvement，并遵循 AGENTS.md 的对应开发流程；父条目保留在 `notepadLog`，不要移回 `notepadItems`
+2. 完成代码修改与验证后，找到所属条目和匹配 comment，保留原字段并追加 `resolvedAt: <当前 ISO 时间>`、`resolution: <简短处理摘要 + 验证结果 + 提交号>`
+3. 写回前同样检查 app 是否运行；运行中不要直接改 `state.json`，先请用户关闭 app，再继续写回
+4. 向用户汇报处理了哪条评论；后续"看下评论"只处理仍未解决的评论
 
 ## 分类参考（guessCategory 同款规则）
 

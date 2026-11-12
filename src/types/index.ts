@@ -568,6 +568,13 @@ export interface ScrollMemorySlot {
 export type NotepadCategory = 'bug' | 'feature' | 'improvement'
 export type NotepadFontSize = 'sm' | 'base' | 'lg'
 export type NotepadClaim = { claimedBy: string; claimedAt: string }
+export interface NotepadComment {
+  id: string
+  text: string
+  createdAt: string
+  resolvedAt?: string
+  resolution?: string
+}
 export interface NotepadItem {
   id: string
   /** 短标题（≤15字）：创建时由首句兜底生成，agent 归档时可改写为准确标题 */
@@ -580,6 +587,7 @@ export interface NotepadItem {
 export interface NotepadLogEntry extends NotepadItem {
   resolvedAt: string
   source: 'user' | 'agent'
+  comments?: NotepadComment[]
 }
 
 export type StateJson = {

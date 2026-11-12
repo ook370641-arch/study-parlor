@@ -159,3 +159,29 @@ describe('refreshNotepad 过期快照隔离', () => {
     expect(useStore.getState().notepadItems.map(item => item.id)).toEqual(['remote-new'])
   })
 })
+
+describe('addNotepadComment', () => {
+  it('给已完成条目追加未解决评论并持久化', () => {
+    useStore.setState({
+      notepadLog: [{
+        id: 'done',
+        title: '已完成',
+        text: '原始需求',
+        category: 'improvement',
+        createdAt: '2026-11-01T00:00:00.000Z',
+        resolvedAt: '2026-11-02T00:00:00.000Z',
+        source: 'agent',
+      }],
+    } as any)
+
+    useStore.getState().addNotepadComment('done', '还需要补充说明')
+
+    const comment = useStore.getState().notepadLog[0].comments?.[0]
+    expect(comment).toMatchObject({ id: expect.any(String), text: '还需要补充说明', createdAt: expect.any(String) })
+    expect(comment?.resolvedAt).toBeUndefined()
+    expect(comment?.resolution).toBeUndefined()
+    expect(ipc.patchState).toHaveBeenCalledWith({
+      notepadLog: [expect.objectContaining({ id: 'done', comments: [expect.objectContaining({ text: '还需要补充说明' })] })],
+    })
+  })
+})

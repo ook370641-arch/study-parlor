@@ -12,6 +12,7 @@ const store = vi.hoisted(() => ({
   deleteNotepadItem: vi.fn(),
   moveNotepadItem: vi.fn(),
   updateNotepadItem: vi.fn(),
+  addNotepadComment: vi.fn(),
   refreshNotepad: vi.fn(),
   setNotepadFontSize: vi.fn(),
   setNotepadPanelSize: vi.fn(),
@@ -152,5 +153,52 @@ describe('NotepadPanel 已完成时间线', () => {
     expect(entries).toHaveLength(2)
     expect(entries[0]).toHaveTextContent('最近完成的需求')
     expect(entries[1]).toHaveTextContent('较早完成的需求')
+  })
+
+  it('点击新增评论按钮后才显示输入框，保存时写入当前条目', () => {
+    store.notepadLog = [{
+      id: 'done-comment',
+      title: '已完成的优化',
+      text: '原始需求',
+      category: 'improvement',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      resolvedAt: '2026-11-05T00:00:00.000Z',
+      source: 'agent',
+    }]
+    renderPanel()
+    fireEvent.click(screen.getByTestId('notepad-tab-done'))
+
+    expect(screen.queryByTestId('notepad-comment-input-done-comment')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('notepad-comment-add-done-comment'))
+    expect(screen.getByTestId('notepad-comment-input-done-comment')).toBeInTheDocument()
+    fireEvent.change(screen.getByTestId('notepad-comment-input-done-comment'), { target: { value: '还需要补充处理记录' } })
+    fireEvent.click(screen.getByTestId('notepad-comment-save-done-comment'))
+
+    expect(store.addNotepadComment).toHaveBeenCalledWith('done-comment', '还需要补充处理记录')
+  })
+
+  it('展开已完成条目时显示评论及 agent 处理记录', () => {
+    store.notepadLog = [{
+      id: 'done-history',
+      title: '已完成的需求',
+      text: '原始需求',
+      category: 'feature',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      resolvedAt: '2026-11-05T00:00:00.000Z',
+      source: 'agent',
+      comments: [{
+        id: 'comment-1',
+        text: '这个入口还不够明显',
+        createdAt: '2026-11-06T00:00:00.000Z',
+        resolvedAt: '2026-11-07T00:00:00.000Z',
+        resolution: '已增加独立入口',
+      }],
+    }]
+    renderPanel()
+    fireEvent.click(screen.getByTestId('notepad-tab-done'))
+    fireEvent.click(screen.getByText('已完成的需求'))
+
+    expect(screen.getByText('这个入口还不够明显')).toBeInTheDocument()
+    expect(screen.getByTestId('notepad-comment-comment-1')).toHaveTextContent('已增加独立入口')
   })
 })
