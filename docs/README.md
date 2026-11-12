@@ -57,7 +57,7 @@
 
 **现状**：在用。博客面板 `AnthropicBlogPanel` + 发现/抓取链 `electron/lib/anthropic-*`（`ipc/anthropic.ts`）；导读走 guide-v2 管线。**精选集**（`BlogCollectionSection` + `blog-collection.ts`）与**推荐流**（`blog-recommend.ts`）保留——注意「收入精选集」按钮随三来源移除一并删除（10-08），博客侧精选集不受影响。重新推荐先展示逻辑说明并允许填写方向备注，备注进入画像 prompt 与批次记录；历史可直接切换批次，展示画像、认知缺口、检索词与逐篇推荐详情。
 - superseded：`specs/2026-08-07-anthropic-blog-sections-design.md`（栏目配置与发现链路被 08-08 blog-multi-source 取代）
-- planned：`specs/2026-11-13-blog-my-groups-and-ordering-design.md`（两侧独立筛选；我的三组折叠与共享拖拽排序；保留推荐、导入和删除逻辑）
+- planned：`specs/2026-11-13-blog-my-groups-and-ordering-design.md` + `plans/2026-11-13-blog-my-groups-and-ordering.md`（两侧独立筛选；我的三组折叠与共享拖拽排序；保留推荐、导入和删除逻辑）
 **历史链**：07-10 anthropic-blog-briefing → 07-10 briefing-blog-reader-ui-fixes → 07-11 briefing-blog-reader-ui-fixes → 07-11 briefing-blog-reader-ui-redesign → 07-11 anthropic-blog-ui-redesign → 07-15 briefing-blog-polish → 07-15 briefing-blog-polish-v2 → 08-07 anthropic-blog-sections（plan；spec 已标 superseded）→ 08-08 blog-multi-source → 08-23 blog-recommend-collection → 08-30 blog-recommend-iteration → 08-31 blog-recommend-page → 09-16 source-sidebar-order-and-blog-typography → 09-18 blog-panel-upgrade → 09-23 blog-panel-ui-polish → 11-13 blog-my-groups-and-ordering（planned）
 
 ### 8. 简报来源 — 求职/前沿/拾贝（已移除）
