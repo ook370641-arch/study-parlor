@@ -36,6 +36,7 @@ test.describe('@p1 painting delete', () => {
     await cover.enterApp('E2E 测试员')
 
     await window.locator(SELECTORS.home.settingsButton).click()
+    await window.locator(SELECTORS.settings.general('appearance')).click()
     const toggle = window.locator(SELECTORS.settings.paintingDeleteToggle)
     await expect(toggle).toBeChecked()
     await toggle.click()

@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import type { Difficulty, LocalMaterial, Mode, Profile } from '@shared/index'
+import type { Difficulty, LocalMaterial, Mode } from '@shared/index'
 
 const PROMPTS_DIR = (() => {
   const candidates = [
@@ -21,7 +21,6 @@ function read(name: string): string {
 export type AssembleArgs = {
   mode: Mode
   difficulty: Difficulty
-  profile: Profile
   reviewFileBody?: string
   progressSummary?: string
   selectedTopic?: string
@@ -74,16 +73,5 @@ export function assemblePrompt(args: AssembleArgs): string {
   if (args.difficulty === 'mid') parts.push(read('difficulty-mid.md'))
   if (args.difficulty === 'low') parts.push(read('difficulty-low.md'))
 
-  parts.push(formatProfile(args.profile))
-
   return parts.join('\n\n---\n\n')
-}
-
-function formatProfile(p: Profile): string {
-  return [
-    `# 学习者画像`,
-    `姓名:${p.name}`,
-    `画像:${p.profile_text}`,
-    `偏好领域:${p.preferred_topics.join(' / ')}`
-  ].join('\n')
 }

@@ -14,8 +14,24 @@ export function deriveTitle(text: string): string {
   return firstClause.length > 15 ? firstClause.slice(0, 15) + '…' : firstClause
 }
 
+export function isResolvedToday(resolvedAt: string, now = new Date()): boolean {
+  const resolved = new Date(resolvedAt)
+  if (Number.isNaN(resolved.getTime())) return false
+  return resolved.getFullYear() === now.getFullYear()
+    && resolved.getMonth() === now.getMonth()
+    && resolved.getDate() === now.getDate()
+}
+
 export function newNotepadId(): string {
   return `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+}
+
+export function stripNotepadClaims<T extends NotepadItem>(items: T[]): T[] {
+  return items.map(item => {
+    const next = { ...item }
+    delete next.claim
+    return next
+  })
 }
 
 /** 文本 → 分类猜测：含 bug/修复/问题/收起/不符 等 → bug；删减/优化/集成/长期 → 功能优化；否则新功能 */

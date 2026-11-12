@@ -22,13 +22,16 @@ description: >
 旧字段 `coverNotepad`（纯文本）已被 `notepadItems` 取代；如它仍非空且 `notepadItems` 为空，
 按非空行拆分、去掉行首编号后迁入（分类规则见下），并清空 `coverNotepad`。
 
+认领数据独立保存在同目录的 `notepad-claims.json`，结构为
+`Record<itemId, { claimedBy, claimedAt }>`；不要把 `claim` 写进 `state.json`。
+
 ## 流程
 
 ### 1. 读取与汇报
 
 用户说"看看迭代需求"等触发语时：
 
-1. 读 `state.json`，汇报 `notepadItems`，按 category 分组展示（bug / 新功能 / 功能优化）
+1. 读 `state.json` 与 `notepad-claims.json`，汇报 `notepadItems` 时标出已认领条目及认领者，按 category 分组展示（bug / 新功能 / 功能优化）
 2. 附简短统计：待办 N 条、本月已解决 M 条（来自 notepadLog 的 resolvedAt）
 3. 用户指出"哪条已完成/要做哪条"时进入对应分支
 
@@ -46,12 +49,25 @@ app 未运行时，直接编辑 state.json：
 2. 追加到 `notepadLog`：`{ ...item, title: <你总结的短标题>, resolvedAt: <当前 ISO 时间>, source: 'agent' }`
    - **标题规则**：≤15 字，「对象 + 动作」式概括（如"封面画作裁剪功能"、"记事板外点不收起"），不带"目前打算/有一个bug"这类口语前缀；用户事后可凭标题一眼认出是哪条
 3. 保留其余字段原样（先整体读入、改、整体写回，UTF-8 无 BOM）
-4. 向用户汇报：归档了哪条、当前待办剩几条
+4. 执行 `node scripts/notepad-claim.cjs release <item-id> <current-branch>` 释放自己的认领
+5. 向用户汇报：归档了哪条、当前待办剩几条
+
+若 app 运行中由用户在面板点 ✓ 归档，`state:patch` 会自动清理认领；确认认领已清理即可，
+不要直接编辑运行中的 state.json。
 
 ### 3. 接单迭代
 
-用户指定要做的条目后：正常完成开发工作（遵循 AGENTS.md），
-完成后**回到第 2 步归档该条目**，再总结。
+用户指定要做的条目后，开始探索或修改前先以当前分支名认领：
+
+```bash
+node scripts/notepad-claim.cjs claim <item-id> <current-branch>
+node scripts/notepad-claim.cjs release <item-id> <current-branch>
+```
+
+1. `claim` 成功后才进入探索和开发；同一 Agent 重复执行幂等，不设置自动过期
+2. 已被其他 Agent 认领时默认跳过；只有用户明确要求接管时才在 `claim` 末尾加 `--force`
+3. 取消接单时执行 `release`；只能释放自己的认领
+4. 正常完成开发工作（遵循 AGENTS.md），完成后**回到第 2 步归档该条目**，遵守运行限制并确认认领已清理，再总结
 
 ### 4. 新增条目
 

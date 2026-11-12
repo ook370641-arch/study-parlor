@@ -21,7 +21,13 @@ export class ProfilePage {
     this.editButton = page.locator(SELECTORS.profile.editButton)
     this.saveButton = page.locator(SELECTORS.profile.saveButton)
     this.cancelButton = page.locator(SELECTORS.profile.cancelButton)
-    this.exitButton = page.locator(SELECTORS.profile.exitButton)
+    this.exitButton = page.locator(SELECTORS.settings.backButton)
+  }
+
+  async goto() {
+    await this.page.locator(SELECTORS.home.settingsButton).click()
+    await this.page.locator(SELECTORS.settings.primary('profile')).click()
+    await this.waitForLoaded()
   }
 
   async waitForLoaded() {

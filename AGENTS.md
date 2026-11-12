@@ -107,9 +107,17 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 1. `learner-base.md` (基座)
 2. `mode-review.md` (仅 review 模式，注入文件 body)
 3. `difficulty-mid.md` 或 `difficulty-low.md` (条件注入)
-4. 用户 profile 段
+
+卷宗由 `profile-prompt.ts` 的 `withProfilePrompt` 在 `kimi.ts` 的 `buildChatBody` 统一注入，流式与非流式请求共享同一实现；各功能 prompt 不再重复拼接 profile。
 
 `llm-tasks.ts` 封装非流式调用（灵感生成、归档 finalization）。
+
+### 设置中心
+
+- `src/pages/Settings.tsx` 是三栏外壳：左栏「常规 / 卷宗 / 扩展」，中栏为上下文子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载内容。
+- 常规子页固定为「AI 与搜索 / 界面与画作 / 学习库与归档」；扩展含「我的语言 / 自选配图 / 本地 Agent 打通」，原扩展学习库说明并入「学习库与归档」。
+- 主页只保留设置入口；简报原烛光位置改为设置入口，通过 `settingsReturnTo` 返回来源页。旧 `profile` / `extension` 独立路由已移除。
+- 烛光随行及其光层、开关和专属样式已移除；移除墓碑见 `docs/superpowers/plans/2026-11-11-settings-center.md` 与共享 spec。
 
 ### 会话生命周期 (`src/lib/`)
 
@@ -134,7 +142,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 封面右上角铅笔按钮打开的记事板面板，用户随手记录对应用的迭代需求。**2026-10-19 起条目化**：每条需求三分类（bug / 新功能 / 功能优化），面板 ✓ 完成后自动归档到档案页。
 
-**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `notepadItems` 字段并回应。该文件在工作区外，沙箱读取可能需要提权。
+**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `notepadItems` 字段，同时读取 `~/.studyparlor/notepad-claims.json` 并在汇报中标出已认领条目及认领者。这些文件在工作区外，沙箱读取可能需要提权。
 
 **关键字段（state.json）**：
 
@@ -143,7 +151,16 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 - `notepadFontSize: 'sm' | 'base' | 'lg'`、`notepadPanelSize: { w, h } | null` — 面板字号与自定义尺寸
 - `coverNotepad`（纯字符串）已废弃，仅作一次性迁移源（非空且 notepadItems 为空时按行迁入后清空）
 
-**归档约定**：agent 完成某条需求后，须把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`）。**app 运行中不要直接改 state.json**（内存旧值会覆盖），应让用户在面板点 ✓ 或先关闭 app。详见 `.agents/skills/notepad-triage/SKILL.md`。
+**Agent 接单协议**：用户指定条目后，开始探索或修改前先认领；取消接单时释放。使用当前分支名作为认领者：
+
+```bash
+node scripts/notepad-claim.cjs claim <item-id> <current-branch>
+node scripts/notepad-claim.cjs release <item-id> <current-branch>
+```
+
+已被其他 Agent 认领时默认跳过；只有用户明确要求接管时才在 `claim` 末尾加 `--force`。同一 Agent 重复认领幂等，不设置自动过期。
+
+**归档约定**：agent 完成某条需求后，须把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`）。**app 运行中不要直接改 state.json**（内存旧值会覆盖），应让用户在面板点 ✓ 或先关闭 app；面板归档会由 `state:patch` 自动清理认领。应用关闭后手工归档时，写回 `state.json` 后执行上述 `release`，并确认认领已清理。详见 `.agents/skills/notepad-triage/SKILL.md`。
 
 相关代码：`src/components/NotepadPanel.tsx`（双 tab 面板：待完成 / 已完成时间线；旁注打开时与入口一起左移）、`src/lib/notepad.ts`（分类猜测/迁移/统计/短标题纯逻辑）、`src/store/index.ts`（`notepadItems` / `notepadLog` / `addNotepadItem` / `resolveNotepadItem`）、`electron/ipc/state.ts`（DEFAULT 字段）。
 
@@ -233,7 +250,7 @@ STUDY_LIBRARY_PATH=...            # 学习库根目录
 
 - 暗色主题，调色板：深褐 `#2a1f1a` / 米色 `#e8d5b7` / 暖橙 `#d97757`
 - Tailwind 自定义颜色在 `tailwind.config.ts` 中定义（`parchment`, `ember`, `wine`, `ink`, `slate` 等）
-- 页面路由：`cover` → `home` → (`study` | `profile`)，`preStudy` 是模态层
+- 页面路由：`cover` → `home` → (`study` | `settings`)，简报也可进入 `settings`；`preStudy` 是模态层
 
 ## 启动问题排查
 

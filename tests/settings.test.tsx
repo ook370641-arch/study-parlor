@@ -49,6 +49,24 @@ describe('Settings · AI 服务', () => {
     useStore.setState({ demoNotesHidden: [] } as any)
   })
 
+  it('按 C 三栏拆分常规、卷宗和扩展', async () => {
+    useStore.setState({ archivedTopics: ['old-topic'] })
+    render(<Settings />)
+    await waitFor(() => screen.getByDisplayValue('sk-kimi-test'))
+    expect(screen.getByTestId('settings-layout')).toHaveClass('grid')
+    expect(screen.getByTestId('settings-primary-general')).toBeInTheDocument()
+    expect(screen.getByTestId('settings-primary-profile')).toBeInTheDocument()
+    expect(screen.getByTestId('settings-primary-extension')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('settings-general-appearance'))
+    expect(screen.getByTestId('settings-painting-delete-toggle')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('sk-kimi-test')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('settings-general-library'))
+    expect(screen.getByTestId('settings-library-path-input')).toBeInTheDocument()
+    expect(screen.getByTestId('settings-archived-topics')).toBeInTheDocument()
+  })
+
   it('单配置：维持现状——无切换器，字段回填，有新增入口', async () => {
     render(<Settings />)
     await waitFor(() => expect(screen.getByDisplayValue('sk-kimi-test')).toBeInTheDocument())
@@ -201,6 +219,7 @@ describe('Settings · AI 服务', () => {
 
   it('学习库独立保存走 configSetLibraryPath', async () => {
     render(<Settings />)
+    fireEvent.click(screen.getByTestId('settings-general-library'))
     await waitFor(() => screen.getByDisplayValue('C:/test-library'))
     fireEvent.change(screen.getByTestId('settings-library-path-input'), { target: { value: 'D:/new-lib' } })
     fireEvent.click(screen.getByTestId('settings-library-save-button'))
@@ -210,6 +229,7 @@ describe('Settings · AI 服务', () => {
   it('信息说明显示开关覆盖六类入口并持久化隐藏项', async () => {
     render(<Settings />)
     await waitFor(() => screen.getByDisplayValue('sk-kimi-test'))
+    fireEvent.click(screen.getByTestId('settings-general-appearance'))
 
     expect(screen.getAllByTestId(/^settings-demo-note-toggle-/)).toHaveLength(6)
     fireEvent.click(screen.getByTestId('settings-demo-note-toggle-book-source'))

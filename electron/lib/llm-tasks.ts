@@ -11,7 +11,7 @@ import { extractXmlTag, extractXmlTags, extractJsonObject, extractJsonArray } fr
 import { parseNoteCoverDesigns, renderNoteCoverSvg } from './note-covers'
 import { assertInsideRoots } from './writing-tree'
 import type { AppConfig } from '../env'
-import type { Profile, NewTopic, Message, ContinueTopicSuggestion } from '@shared/index'
+import type { NewTopic, Message, ContinueTopicSuggestion } from '@shared/index'
 
 const PROMPTS_DIR = (() => {
   const candidates = [
@@ -269,7 +269,6 @@ function isValidNewTopic(value: unknown): value is NewTopic {
 export async function generateWildcardInspiration(
   cfg: AppConfig,
   args: {
-    profile: Profile
     topics: { title: string }[]
   }
 ): Promise<NewTopic> {
@@ -278,7 +277,6 @@ export async function generateWildcardInspiration(
     : '（学习库为空）'
 
   const prompt = read('wild-card-v1.md')
-    .replace('{{profile_text}}', args.profile.profile_text)
     .replace('{{topic_list}}', topicList)
 
   const text = await chatNonStream(cfg, {
@@ -314,7 +312,6 @@ export async function generateGroupInspiration(
   args: {
     groupName: string
     topics: { dirName: string; title: string }[]
-    profile: Profile
     strategy?: 'v1' | 'v2' | 'v3'
   }
 ): Promise<NewTopic> {
@@ -335,8 +332,6 @@ export async function generateGroupInspiration(
   const prompt = read(strategyFile)
     .replace('{{group_name}}', args.groupName)
     .replace('{{topic_summaries}}', summaries.join('\n'))
-    .replace('{{profile_text}}', args.profile.profile_text)
-    .replace('{{preferred_topics}}', args.profile.preferred_topics.join(' / '))
 
   const text = await chatNonStream(cfg, {
     messages: [{ role: 'user', content: prompt }],

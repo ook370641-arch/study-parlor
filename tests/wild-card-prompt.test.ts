@@ -11,8 +11,8 @@ function readPrompt(name: string): string {
 describe('wild-card-v1.md', () => {
   const prompt = readPrompt('wild-card-v1.md')
 
-  it('contains required placeholders', () => {
-    expect(prompt).toContain('{{profile_text}}')
+  it('contains topic placeholder without legacy profile placeholder', () => {
+    expect(prompt).not.toContain('{{profile_text}}')
     expect(prompt).toContain('{{topic_list}}')
   })
 

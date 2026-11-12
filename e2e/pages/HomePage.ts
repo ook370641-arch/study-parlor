@@ -8,8 +8,6 @@ export class HomePage {
   readonly continueUnsavedButton: Locator
   readonly burnUnsavedButton: Locator
   readonly settingsButton: Locator
-  readonly profileButton: Locator
-  readonly extensionButton: Locator
 
   constructor(private page: Page) {
     this.greeting = page.locator(SELECTORS.home.greeting)
@@ -18,8 +16,6 @@ export class HomePage {
     this.continueUnsavedButton = page.locator(SELECTORS.home.continueUnsavedButton)
     this.burnUnsavedButton = page.locator(SELECTORS.home.burnUnsavedButton)
     this.settingsButton = page.locator(SELECTORS.home.settingsButton)
-    this.profileButton = page.locator(SELECTORS.home.profileButton)
-    this.extensionButton = page.locator(SELECTORS.home.extensionButton)
   }
 
   async waitForLoaded() {
@@ -77,11 +73,13 @@ export class HomePage {
   }
 
   async goToProfile() {
-    await this.profileButton.click()
+    await this.settingsButton.click()
+    await this.page.locator(SELECTORS.settings.primary('profile')).click()
   }
 
   async goToExtension() {
-    await this.extensionButton.click()
+    await this.settingsButton.click()
+    await this.page.locator(SELECTORS.settings.primary('extension')).click()
   }
 
   async switchInspirationStrategy() {

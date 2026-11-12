@@ -11,7 +11,8 @@ import {
   saveBlogCache,
   migrateLibraryData,
 } from '../lib/library-data'
-import type { StateJson, Profile, AnthropicBlogCache } from '@shared/index'
+import { mergeNotepadClaims, pruneNotepadClaims, readNotepadClaims } from '../lib/notepad-claims'
+import type { StateJson, Profile, AnthropicBlogCache, NotepadItem } from '@shared/index'
 
 function getStateFile(): string {
   return path.join(getStateDir(), 'state.json')
@@ -134,7 +135,13 @@ export function registerStateIpc(cfg?: AppConfig) {
     }
   }
 
-  ipcMain.handle('state:get', async (): Promise<StateJson> => withLibraryData(readStateJson()))
+  ipcMain.handle('state:get', async (): Promise<StateJson> => {
+    const state = withLibraryData(readStateJson())
+    return {
+      ...state,
+      notepadItems: mergeNotepadClaims(state.notepadItems ?? [], readNotepadClaims(getStateDir())),
+    }
+  })
 
   ipcMain.handle('state:patch', async (_, patch: Partial<StateJson>) => {
     patchState(patch)
@@ -228,6 +235,9 @@ export function patchState(patch: Partial<StateJson>): void {
     }
 
     safeWriteJson(getStateFile(), merged)
+    if ('notepadItems' in statePatch) {
+      pruneNotepadClaims(getStateDir(), merged.notepadItems as NotepadItem[])
+    }
   }
 
   if (Object.keys(libraryPatch).length > 0 && lib) {

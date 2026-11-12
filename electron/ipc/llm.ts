@@ -6,7 +6,7 @@ import { generateDiagram } from '../lib/diagram'
 import { topicDir } from '../lib/library-layout'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { Message, Profile, Mode, Difficulty, LocalMaterial } from '@shared/index'
+import type { Message, Mode, Difficulty, LocalMaterial } from '@shared/index'
 import { assemblePrompt } from '../lib/prompts'
 
 const sessions = new Map<string, AbortController>()
@@ -25,7 +25,6 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
     sessionId: string
     mode: Mode
     difficulty: Difficulty
-    profile: Profile
     reviewFileBody?: string
     progressSummary?: string
     history: Message[]
@@ -50,7 +49,7 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
       // 否则抛出后只在主进程终端 console.error,渲染层永远收不到 llm:error,UI 卡死。
       const system = assemblePrompt({
         mode: args.mode, difficulty: args.difficulty,
-        profile: args.profile, reviewFileBody: args.reviewFileBody,
+        reviewFileBody: args.reviewFileBody,
         progressSummary: args.progressSummary,
         selectedTopic: args.selectedTopic,
         userRequirement: args.userRequirement,
@@ -96,7 +95,6 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   ipcMain.handle('llm:groupInspiration', async (_, args: {
     groupName: string
     topics: { dirName: string; title: string }[]
-    profile: Profile
     strategy?: 'v1' | 'v2' | 'v3'
   }) => {
     try {
@@ -117,7 +115,6 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
   })
 
   ipcMain.handle('llm:wildcardInspiration', async (_, args: {
-    profile: Profile
     topics: { title: string }[]
   }) => {
     try {

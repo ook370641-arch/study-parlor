@@ -13,7 +13,6 @@ export function GroupRecCard({
   topics: { dirName: string; title: string }[]
   onClickTopic: (topic: string) => void
 }) {
-  const profile = useStore((s) => s.profile)
   const theme = useStore((s) => s.briefingTheme)
   const isAcademic = theme !== 'newspaper'
   const inspirationStrategy = useStore((s) => s.inspirationStrategy)
@@ -37,7 +36,6 @@ export function GroupRecCard({
       const result = await ipc.llmGroupInspiration({
         groupName: group.name,
         topics,
-        profile,
         strategy: inspirationStrategy
       })
       setGroupInspiration(group.id, result)
@@ -50,7 +48,7 @@ export function GroupRecCard({
     } finally {
       setLoading(false)
     }
-  }, [group.id, group.name, topics, profile, lastRefresh, setGroupInspiration, inspirationStrategy])
+  }, [group.id, group.name, topics, lastRefresh, setGroupInspiration, inspirationStrategy])
 
   const refresh = useCallback(() => {
     load(true)

@@ -26,7 +26,7 @@ import { ipc } from '@/lib/ipc'
 import type { DemoNote, DemoNoteOverrides } from '@/lib/demo-notes'
 import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/paintings'
 import type { Painting } from '@shared/index'
-import { deriveTitle, migrateCoverNotepad, newNotepadId } from '@/lib/notepad'
+import { deriveTitle, migrateCoverNotepad, newNotepadId, stripNotepadClaims } from '@/lib/notepad'
 import { inferBookChapter, noteChapter } from '@/lib/notes-list'
 
 export type AssistantSession = {
@@ -52,7 +52,7 @@ export type AssistantSession = {
   activeChunkIndex: number | null
 }
 
-type Page = 'cover' | 'home' | 'study' | 'profile' | 'extension' | 'settings' | 'briefing'
+type Page = 'cover' | 'home' | 'study' | 'settings' | 'briefing'
 
 type Session = {
   mode: Mode
@@ -121,9 +121,7 @@ type AppStore = {
   briefingTheme: BriefingTheme
   briefingFontSize: BriefingFontSize
   studyFontSize: BriefingFontSize
-  candlelightEnabled: boolean
   paintingPlateEnabled: boolean
-  toggleCandlelight: () => Promise<void>
   togglePaintingPlate: () => Promise<void>
   // Anthropic 博客
   briefingSource: BriefingSourceId
@@ -267,6 +265,7 @@ type AppStore = {
   deleteNotepadItem: (id: string) => void
   moveNotepadItem: (id: string, toIndex: number) => void
   updateNotepadItem: (id: string, patch: { text?: string; category?: NotepadCategory }) => void
+  refreshNotepad: () => Promise<void>
   setNotepadFontSize: (size: NotepadFontSize) => void
   setNotepadPanelSize: (size: { w: number; h: number }) => void
   goto: (p: Page) => Promise<void>
@@ -572,6 +571,8 @@ function debounceSaveExpanded(patch: Partial<StateJson>) {
 }
 
 let notepadSaveTimer: ReturnType<typeof setTimeout> | null = null
+let notepadRefreshRequestId = 0
+let notepadLocalVersion = 0
 function debounceSaveNotepad(patch: Partial<StateJson>) {
   if (notepadSaveTimer) clearTimeout(notepadSaveTimer)
   notepadSaveTimer = setTimeout(() => {
@@ -626,7 +627,6 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingTheme: 'academic',
   briefingFontSize: 'base',
   studyFontSize: 'lg',
-  candlelightEnabled: true,
   paintingPlateEnabled: false,
   briefingSource: 'writing',
   booksList: [],
@@ -750,7 +750,6 @@ export const useStore = create<AppStore>((set, get) => ({
       articleCompanionMap: state.articleCompanionMap ?? {},
       fableStyleTags: state.fableStyleTags ?? ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
       lastFableTags: state.lastFableTags ?? [],
-      candlelightEnabled: state.candlelightEnabled ?? true,
       paintingPlateEnabled: state.paintingPlateEnabled ?? false,
       session_count: state.ui?.session_count ?? 0,
       archivedTopics: Array.isArray(state.archivedTopics) ? state.archivedTopics : [],
@@ -848,12 +847,28 @@ export const useStore = create<AppStore>((set, get) => ({
     debounceSaveNotepad({ coverNotepad: text } as Partial<StateJson>)
   },
 
+  refreshNotepad: async () => {
+    const requestId = ++notepadRefreshRequestId
+    const localVersion = notepadLocalVersion
+    try {
+      const state = await ipc.getState()
+      if (requestId !== notepadRefreshRequestId || localVersion !== notepadLocalVersion) return
+      set({
+        notepadItems: migrateCoverNotepad(state.coverNotepad ?? '', state.notepadItems),
+        notepadLog: Array.isArray(state.notepadLog) ? state.notepadLog : [],
+      })
+    } catch {
+      if (requestId === notepadRefreshRequestId) get().showToast('记事板刷新失败')
+    }
+  },
+
   addNotepadItem: (text, category) => {
     const t = text.trim()
     if (!t) return
     const items = [...get().notepadItems, { id: newNotepadId(), title: deriveTitle(t), text: t, category, createdAt: new Date().toISOString() }]
+    notepadLocalVersion++
     set({ notepadItems: items })
-    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
 
   resolveNotepadItem: (id) => {
@@ -862,22 +877,25 @@ export const useStore = create<AppStore>((set, get) => ({
     if (!item) return
     const items = notepadItems.filter(i => i.id !== id)
     const log = [...notepadLog, { ...item, resolvedAt: new Date().toISOString(), source: 'user' as const }]
+    notepadLocalVersion++
     set({ notepadItems: items, notepadLog: log })
-    ipc.patchState({ notepadItems: items, notepadLog: log } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items), notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)
   },
 
   deleteNotepadItem: (id) => {
     const items = get().notepadItems.filter(i => i.id !== id)
+    notepadLocalVersion++
     set({ notepadItems: items })
-    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
   updateNotepadItem: (id, patch) => {
     // 文本变更时短标题一并重算（面板待办行展示用 title 兜底见 deriveTitle）
     const items = get().notepadItems.map(i => i.id === id
       ? { ...i, ...patch, ...(patch.text ? { title: deriveTitle(patch.text) } : {}) }
       : i)
+    notepadLocalVersion++
     set({ notepadItems: items })
-    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
 
   moveNotepadItem: (id, toIndex) => {
@@ -886,8 +904,9 @@ export const useStore = create<AppStore>((set, get) => ({
     if (from < 0) return
     const [item] = items.splice(from, 1)
     items.splice(Math.max(0, Math.min(items.length, toIndex)), 0, item)
+    notepadLocalVersion++
     set({ notepadItems: items })
-    ipc.patchState({ notepadItems: items } as Partial<StateJson>)
+    ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
 
   setNotepadFontSize: (size) => {
@@ -1142,11 +1161,6 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ writingCodeblockCollapsed: map } as Partial<StateJson>)
   },
 
-  toggleCandlelight: async () => {
-    const next = !get().candlelightEnabled
-    set({ candlelightEnabled: next })
-    await ipc.patchState({ candlelightEnabled: next } as Partial<StateJson>)
-  },
   togglePaintingPlate: async () => {
     const next = !get().paintingPlateEnabled
     set({ paintingPlateEnabled: next })
@@ -1862,9 +1876,9 @@ export const useStore = create<AppStore>((set, get) => ({
     const requestId = ++wildcardRequestId
     set({ wildcardLoading: true, wildcardError: null })
     try {
-      const { profile, library } = get()
+      const { library } = get()
       const topics = library.map(t => ({ title: t.title }))
-      const result = await ipc.llmWildcardInspiration({ profile, topics })
+      const result = await ipc.llmWildcardInspiration({ topics })
       if (requestId !== wildcardRequestId) return
       get().setWildcardInspiration(result)
     } catch (err: any) {

@@ -41,6 +41,7 @@ export class SettingsPage {
   }
 
   async fillLibraryPath(path: string) {
+    await this.openLibrary()
     await this.libraryPathInput.fill(path)
   }
 
@@ -62,7 +63,12 @@ export class SettingsPage {
   }
 
   async saveLibraryPath() {
+    await this.openLibrary()
     await this.page.locator(SELECTORS.settings.librarySaveButton).click()
+  }
+
+  async openLibrary() {
+    await this.page.locator(SELECTORS.settings.general('library')).click()
   }
 
   async addLlmConfig() {
@@ -95,6 +101,7 @@ export class SettingsPage {
 
   /** 恢复某个已归档主题（在「已归档主题」区块点「恢复」）。 */
   async restoreArchivedTopic(dirName: string) {
+    await this.openLibrary()
     const row = this.page.locator(SELECTORS.settings.archivedTopics).locator('li', { hasText: dirName })
     await row.waitFor({ state: 'visible' })
     await row.locator(SELECTORS.settings.restoreTopicButton).click()

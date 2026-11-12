@@ -1,5 +1,8 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { probeModel, chatNonStream, chatStream, parseSseChunk, buildChatBody } from '@electron/lib/kimi'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
 const cfg = {
   apiKey: 'sk-test',
@@ -344,6 +347,46 @@ describe('buildChatBody Kimi disabled temperature', () => {
       { messages: msgs, temperature: 0.3, stream: false, thinking: { type: 'disabled' } }
     )
     expect(body.temperature).toBe(0.6)
+  })
+})
+
+describe('buildChatBody profile injection', () => {
+  let libraryPath: string
+
+  beforeEach(() => {
+    libraryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'study-parlor-profile-'))
+  })
+
+  afterEach(() => {
+    fs.rmSync(libraryPath, { recursive: true, force: true })
+  })
+
+  it('流式与非流式 article-assistant 请求注入相同卷宗', () => {
+    fs.writeFileSync(path.join(libraryPath, '.profile.json'), JSON.stringify({
+      name: '夜读者',
+      profile_text: '偏直觉理解',
+      preferred_topics: ['心理', '数学']
+    }), 'utf8')
+    const messages = [
+      { role: 'system' as const, content: '你是文章助手' },
+      { role: 'user' as const, content: '生成导读' }
+    ]
+    const profileCfg = { ...cfg, libraryPath }
+
+    const nonStream = buildChatBody(profileCfg, { messages, temperature: 0.7, stream: false })
+    const stream = buildChatBody(profileCfg, { messages, temperature: 0.7, stream: true })
+
+    expect(nonStream.stream).toBe(false)
+    expect(stream.stream).toBe(true)
+    expect(nonStream.messages).toEqual(stream.messages)
+    expect(nonStream.messages[0].content).toBe('你是文章助手\n\n---\n\n# 学习者卷宗\n姓名:夜读者\n画像:偏直觉理解\n偏好领域:心理 / 数学')
+    expect(nonStream.messages[1]).toEqual(messages[1])
+  })
+
+  it('空卷宗不增加 system 消息', () => {
+    const messages = [{ role: 'user' as const, content: '生成导读' }]
+    const body = buildChatBody({ ...cfg, libraryPath }, { messages, temperature: 0.7, stream: false })
+    expect(body.messages).toBe(messages)
   })
 })
 

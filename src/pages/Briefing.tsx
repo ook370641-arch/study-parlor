@@ -11,7 +11,6 @@ import { WritingBoard } from '@/components/writing/WritingBoard'
 import { NoteBoard } from '@/components/notes/NoteBoard'
 import { NotesWall } from '@/components/notes/NotesWall'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
-import { CandlelightLayer } from '@/components/briefing/CandlelightLayer'
 import {
   ACADEMIC_BODY_STYLES,
   NEWSPAPER_BODY_STYLES,
@@ -127,7 +126,6 @@ export function Briefing() {
       {source === 'writing' && (
         <WritingAssistantPanel />
       )}
-      <CandlelightLayer />
     </div>
   )
 }

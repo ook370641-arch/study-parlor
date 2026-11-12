@@ -567,6 +567,7 @@ export interface ScrollMemorySlot {
 /** 迭代记事板分类：bug / 新功能 / 功能优化 */
 export type NotepadCategory = 'bug' | 'feature' | 'improvement'
 export type NotepadFontSize = 'sm' | 'base' | 'lg'
+export type NotepadClaim = { claimedBy: string; claimedAt: string }
 export interface NotepadItem {
   id: string
   /** 短标题（≤15字）：创建时由首句兜底生成，agent 归档时可改写为准确标题 */
@@ -574,6 +575,7 @@ export interface NotepadItem {
   text: string
   category: NotepadCategory
   createdAt: string
+  claim?: NotepadClaim
 }
 export interface NotepadLogEntry extends NotepadItem {
   resolvedAt: string
@@ -623,7 +625,6 @@ export type StateJson = {
   writingUIFontSize?: BriefingFontSize
   /** 各写作文件的折叠代码块 hash 多重集合(filePath → codeblockHash 列表) */
   writingCodeblockCollapsed?: Record<string, string[]>
-  candlelightEnabled?: boolean
   paintingPlateEnabled?: boolean
   /** 已归档（隐藏）的主题目录名，主页/卫星图不显示，可在设置恢复 */
   archivedTopics?: string[]
@@ -675,7 +676,7 @@ export type IpcApi = {
   /** 同步落盘(sendSync):仅退出路径(beforeunload)使用,保证渲染进程卸载前必达主进程 */
   patchStateSync: (patch: Partial<StateJson>) => void
   llmProbe: () => Promise<{ ok: boolean; reason?: string }>
-  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; profile: Profile; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string; localMaterials?: LocalMaterial[] }) => Promise<void>
+  llmStart: (args: { sessionId: string; mode: Mode; difficulty: Difficulty; reviewFileBody?: string; progressSummary?: string; history: Message[]; temperature: number; selectedTopic?: string; userRequirement?: string; externalMaterialsSummary?: string; localMaterials?: LocalMaterial[] }) => Promise<void>
   llmAbort: (sessionId: string) => Promise<void>
   llmFinalizeProgress: (history: Message[]) => Promise<{ title: string; description?: string; body: string; progress_summary?: string }>
   llmFinalizeReview: (args: { history: Message[]; existingBody: string }) => Promise<{ summary: string; gaps: string[]; mastery_assessment?: string; mastery_checklist?: string[]; future_advice?: string[] }>
@@ -683,11 +684,9 @@ export type IpcApi = {
   llmGroupInspiration: (args: {
     groupName: string
     topics: { dirName: string; title: string }[]
-    profile: Profile
     strategy?: 'v1' | 'v2' | 'v3'
   }) => Promise<NewTopic>
   llmWildcardInspiration: (args: {
-    profile: Profile
     topics: { title: string }[]
   }) => Promise<NewTopic>
   llmGenerateFableFromReport: (args: {

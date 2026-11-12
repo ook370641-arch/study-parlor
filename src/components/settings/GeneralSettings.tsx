@@ -1,0 +1,271 @@
+import { useEffect, useState } from 'react'
+import { useStore } from '@/store'
+import { Button } from '@/components/Button'
+import { LlmConfigCard } from '@/components/settings/LlmConfigCard'
+import { ipc } from '@/lib/ipc'
+import { DEMO_NOTES, DEMO_NOTE_ORDER } from '@/lib/demo-notes'
+import { useTerminology } from '@/lib/terminology'
+
+type GeneralSection = 'ai' | 'appearance' | 'library'
+
+interface GeneralSettingsProps {
+  section: GeneralSection
+  isAcademic: boolean
+  showToast: (message: string) => void
+  onError: (message: string | null) => void
+}
+
+interface SectionProps extends Omit<GeneralSettingsProps, 'section'> {}
+
+export function GeneralSettings({ section, isAcademic, showToast, onError }: GeneralSettingsProps) {
+  return (
+    <div className="h-full overflow-y-auto px-6 py-5">
+      {section === 'ai' && <AiAndSearchSettings isAcademic={isAcademic} showToast={showToast} onError={onError} />}
+      {section === 'appearance' && <AppearanceSettings isAcademic={isAcademic} showToast={showToast} onError={onError} />}
+      {section === 'library' && <LibrarySettings isAcademic={isAcademic} showToast={showToast} onError={onError} />}
+    </div>
+  )
+}
+
+function AiAndSearchSettings({ isAcademic, showToast, onError }: SectionProps) {
+  const [searchApiKey, setSearchApiKey] = useState('')
+  const [showSearchKey, setShowSearchKey] = useState(false)
+  const [searchConfigured, setSearchConfigured] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    ipc.searchCheckConfig()
+      .then(({ configured }) => { if (mounted) setSearchConfigured(configured) })
+      .catch(err => { if (mounted) onError(err.message || '读取搜索配置失败') })
+    return () => { mounted = false }
+  }, [onError])
+
+  const handleSaveSearchKey = async () => {
+    onError(null)
+    const key = searchApiKey.trim()
+    if (!key) {
+      onError('请输入 Tavily API Key')
+      return
+    }
+    try {
+      await ipc.setSearchApiKey(key)
+      setSearchApiKey('')
+      setSearchConfigured(true)
+      showToast('Tavily API Key 已保存')
+    } catch (err: any) {
+      onError(err.message || '保存 Tavily API Key 失败')
+    }
+  }
+
+  return (
+    <>
+      <LlmConfigCard isAcademic={isAcademic} showToast={showToast} onError={onError} />
+
+      <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+        <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>联网搜索</h3>
+        <div className="space-y-4">
+          <div>
+            <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>Tavily API Key</div>
+            <div className="flex gap-2">
+              <input
+                data-testid="settings-search-api-key-input"
+                type={showSearchKey ? 'text' : 'password'}
+                value={searchApiKey}
+                onChange={e => setSearchApiKey(e.target.value)}
+                placeholder={searchConfigured ? '已配置，输入新 key 可覆盖' : 'tvly-...'}
+                className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+              />
+              <button
+                data-testid="settings-search-api-key-toggle"
+                type="button"
+                onClick={() => setShowSearchKey(!showSearchKey)}
+                className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
+              >
+                {showSearchKey ? '隐藏' : '显示'}
+              </button>
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <div className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
+                Key 会加密存储在系统密钥库中，不会写入 .env 文件；联网资料仅在你主动开启时使用。
+              </div>
+              <Button data-testid="settings-search-save-button" onClick={handleSaveSearchKey} disabled={!searchApiKey.trim()}>
+                保存
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function AppearanceSettings({ isAcademic }: SectionProps) {
+  const paintingDeleteEnabled = useStore((s) => s.paintingDeleteEnabled)
+  const setPaintingDeleteEnabled = useStore((s) => s.setPaintingDeleteEnabled)
+  const demoNotesHidden = useStore((s) => s.demoNotesHidden)
+  const toggleDemoNoteVisibility = useStore((s) => s.toggleDemoNoteVisibility)
+
+  return (
+    <>
+      <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+        <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>画作</h3>
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            data-testid="settings-painting-delete-toggle"
+            type="checkbox"
+            checked={paintingDeleteEnabled}
+            onChange={e => { void setPaintingDeleteEnabled(e.target.checked) }}
+            className="mt-0.5 accent-[#d97757]"
+          />
+          <span>
+            <span className={`block text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>封面显示画作删除按钮</span>
+            <span className={`block text-xs mt-0.5 ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
+              点击封面右上角垃圾桶，将当前画作从库中隐藏并自动换下一幅；隐藏记录在 state.json，可手动恢复。
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+        <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>信息说明</h3>
+        <div className="grid grid-cols-2 gap-3">
+          {DEMO_NOTE_ORDER.map((noteId) => (
+            <label key={noteId} className="flex items-center gap-2 cursor-pointer">
+              <input
+                data-testid={`settings-demo-note-toggle-${noteId}`}
+                type="checkbox"
+                checked={!demoNotesHidden.includes(noteId)}
+                onChange={() => toggleDemoNoteVisibility(noteId)}
+                className="accent-[#d97757]"
+              />
+              <span className={`text-sm ${isAcademic ? 'text-parchment/80' : 'text-[#1a1a1a]'}`}>
+                显示{DEMO_NOTES[noteId].title.split(' · ')[0]}说明
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className={`mt-3 text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
+          关闭后只隐藏对应的 i 入口，不删除已经编辑的说明文案。
+        </p>
+      </div>
+    </>
+  )
+}
+
+function LibrarySettings({ isAcademic, showToast, onError }: SectionProps) {
+  const t = useTerminology()
+  const archivedTopics = useStore((s) => s.archivedTopics)
+  const restoreTopic = useStore((s) => s.restoreTopic)
+  const [libraryPath, setLibraryPath] = useState('')
+
+  useEffect(() => {
+    let mounted = true
+    ipc.getConfig().then(cfg => {
+      if (mounted) setLibraryPath(cfg.libraryPath)
+    }).catch(err => {
+      if (mounted) onError(err.message || '读取配置失败')
+    })
+    return () => { mounted = false }
+  }, [onError])
+
+  const handleSelectDirectory = async () => {
+    try {
+      const result = await ipc.setupSelectDirectory()
+      if (!result.canceled && result.path) setLibraryPath(result.path)
+    } catch (err: any) {
+      onError(err.message || '选择目录失败')
+    }
+  }
+
+  const handleRestoreTopic = async (dirName: string) => {
+    try {
+      await restoreTopic(dirName)
+      showToast(`「${dirName}」已恢复`)
+    } catch (err: any) {
+      showToast('恢复失败：' + (err?.message ?? err))
+    }
+  }
+
+  return (
+    <>
+      <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+        <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>学习库</h3>
+        <div>
+          <div className={`text-[11px] ${isAcademic ? 'text-parchment/60' : 'text-[#777]'} font-sans mb-1`}>目录路径</div>
+          <div className="flex gap-2">
+            <input
+              data-testid="settings-library-path-input"
+              type="text"
+              value={libraryPath}
+              onChange={e => setLibraryPath(e.target.value)}
+              className={`flex-1 ${isAcademic ? 'bg-ink/50 border-slate/40 text-parchment placeholder:text-parchment/30 focus:border-ember/60' : 'bg-white border-[#1a1a1a]/15 text-[#1a1a1a] placeholder:text-[#999] focus:border-[#1a1a1a]'} border rounded-md px-3 py-2 text-sm focus:outline-none`}
+            />
+            <button
+              data-testid="settings-select-directory-button"
+              type="button"
+              onClick={handleSelectDirectory}
+              className={`px-3 py-2 border ${isAcademic ? 'border-slate/40 text-parchment/80 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:text-[#1a1a1a]'} rounded-md text-sm transition-colors shrink-0`}
+            >
+              选择目录
+            </button>
+          </div>
+          <div className="mt-2 flex items-center justify-between">
+            <div className={`text-xs ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>保存后需重启应用生效。</div>
+            <Button data-testid="settings-library-save-button" onClick={async () => {
+              try {
+                await ipc.configSetLibraryPath(libraryPath.trim())
+                showToast('学习库路径已保存')
+              } catch (err: any) {
+                onError(err?.message || '保存学习库路径失败')
+              }
+            }} disabled={!libraryPath.trim()}>
+              保存
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div data-testid="extension-library-directory-card" className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+        <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-2 flex items-center gap-2`}>
+          <span>📁</span> {t.libraryName}
+        </h3>
+        <div className={`text-sm ${isAcademic ? 'text-parchment/70' : 'text-[#555]'} space-y-2`}>
+          <div className="flex items-center gap-2">
+            <span>根目录：</span>
+            <code className={`${isAcademic ? 'bg-ink' : 'bg-white'} px-2 py-0.5 rounded text-xs ${isAcademic ? 'text-parchment/60' : 'text-[#555]'}`}>
+              {libraryPath || '加载中...'}
+            </code>
+          </div>
+          <div className={`${isAcademic ? 'bg-ink/40' : 'bg-white'} border-l-2 border-ember/50 pl-3 py-2 text-xs ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>
+            📌 扩展原理：所有学习内容统一保存到这里。<br />
+            学习报告（study）、复习记录、寓言故事（fable）、流程图 —— 全部写入本目录，应用自动扫描显示。
+          </div>
+        </div>
+      </div>
+
+      <div className={`${isAcademic ? 'bg-parchment/5 border-slate/20' : 'bg-white border-[#1a1a1a]/10'} border rounded-lg p-4 mb-4`}>
+        <h3 className={`${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'} font-semibold mb-4`}>已归档主题</h3>
+        {archivedTopics.length === 0 ? (
+          <div className={`text-sm ${isAcademic ? 'text-parchment/40' : 'text-[#888]'}`}>
+            暂无归档的主题。
+          </div>
+        ) : (
+          <ul data-testid="settings-archived-topics" className="space-y-2">
+            {archivedTopics.map((dirName) => (
+              <li key={dirName} className="flex items-center justify-between gap-3">
+                <span className={`text-sm truncate ${isAcademic ? 'text-parchment/80' : 'text-[#555]'}`}>{dirName}</span>
+                <button
+                  data-testid="settings-restore-topic-button"
+                  onClick={() => handleRestoreTopic(dirName)}
+                  className={`px-3 py-1 text-xs border rounded transition-colors shrink-0 ${isAcademic ? 'border-slate/40 text-parchment/80 hover:border-ember hover:text-ember' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]'}`}
+                >
+                  恢复
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
+  )
+}
