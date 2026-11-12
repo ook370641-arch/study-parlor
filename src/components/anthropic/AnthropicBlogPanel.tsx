@@ -199,7 +199,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const openOrImportArticle = useCallback(async (article: AnthropicArticleMeta) => {
     // 对照模式：已保存文章改为在右侧对照槽打开（主区正文不变）。
     // 路由必须可见：强制展开导读面板 + toast，否则面板折叠时点了像没反应（2026-09-23 根因）
-    if (useStore.getState().articlePanelMode.anthropic === 'companion' && article.isSaved && article.filePath) {
+    if (readerFilePath && useStore.getState().articlePanelMode.anthropic === 'companion' && article.isSaved && article.filePath) {
       const st = useStore.getState()
       const main = st.anthropicReaderFilePath
       if (main === article.filePath) {
@@ -227,7 +227,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
       }
     }
     await importArticle(article.url)
-  }, [importArticle, openReader, openConstitutionReport])
+  }, [importArticle, openReader, openConstitutionReport, readerFilePath])
 
   return (
     <div

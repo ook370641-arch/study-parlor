@@ -564,4 +564,25 @@ describe('AnthropicBlogPanel', () => {
     expect(setArticleAssistantGuideCollapsed).toHaveBeenCalledWith(false)
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('对照'))
   })
+
+  it('对照模式下从专辑墙打开首篇文章：仍进入主阅读器', async () => {
+    const openReader = vi.fn()
+    const selectArticleCompanion = vi.fn()
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [{ ...article('old-1', 'Old Article'), isSaved: true, filePath: 'lib/old-1.md' }],
+        loading: false, error: null, sectionStatus: {},
+      },
+      anthropicReaderFilePath: null,
+      lastAnthropicReaderFile: null,
+      articlePanelMode: { anthropic: 'companion', book: 'guide' },
+      openAnthropicReader: openReader,
+      selectArticleCompanion,
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('blog-wall-card-old-1'))
+    await waitFor(() => expect(openReader).toHaveBeenCalledWith('lib/old-1.md'))
+    expect(selectArticleCompanion).not.toHaveBeenCalled()
+  })
 })
