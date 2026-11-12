@@ -4,7 +4,7 @@ description: >
   迭代记事板的需求分诊与归档助手。读取 ~/.studyparlor/state.json 的 notepadItems（待办）与
   notepadLog（已解决档案），帮助用户浏览、分类、接单迭代需求。
   每次迭代完成后，自动把已解决条目从 notepadItems 移入 notepadLog（写 resolvedAt + source:'agent'）。
-  触发词："迭代需求"、"记事板"、"notepad"、"看下评论"。
+  触发词："迭代需求"、"记事板"、"notepad"、"看下评论"、"追下issue"。
 ---
 
 # /notepad-triage — 迭代记事板分诊与归档
@@ -36,7 +36,7 @@ description: >
 2. 附简短统计：待办 N 条、本月已解决 M 条（来自 notepadLog 的 resolvedAt）
 3. 用户指出"哪条已完成/要做哪条"时进入对应分支
 
-用户说"看下评论"时，改为遍历 `notepadLog[].comments[]`：只列出没有 `resolvedAt` 的评论，并带上所属条目标题、条目 id 与 comment id；已有 `resolvedAt` / `resolution` 的记录只作历史参考，不重复处理。
+用户说"看下评论"或"追下 issue"时，`issue` 只指评论：遍历 `notepadLog[].comments[]`，不要查看或处理 `notepadItems` 的新需求 / 功能迭代 / bug。只列出没有 `resolvedAt` 的评论，并带上所属条目标题、条目 id 与 comment id；已有 `resolvedAt` / `resolution` 的记录只作历史参考，不重复处理。
 
 ### 2. 归档已解决条目（每次迭代收尾必做）
 

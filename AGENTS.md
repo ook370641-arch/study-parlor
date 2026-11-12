@@ -144,7 +144,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 **当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `notepadItems` 字段，同时读取 `~/.studyparlor/notepad-claims.json` 并在汇报中标出已认领条目及认领者。这些文件在工作区外，沙箱读取可能需要提权。
 
-**当用户说"看下评论"（或类似表述）时**：读取 `notepadLog[].comments[]`，只汇报并处理没有 `resolvedAt` 的评论；已有 `resolvedAt` / `resolution` 的是历史处理记录，不要重复接单。评论挂在已完成条目下，不重新移回待办。
+**当用户说"看下评论"、"追下 issue"（或类似表述）时**：`issue` 专指已完成条目下的评论。只读取 `notepadLog[].comments[]` 中没有 `resolvedAt` 的条目，不要查看或处理 `notepadItems` 里的新需求 / 功能迭代 / bug；已有 `resolvedAt` / `resolution` 的是历史处理记录，不要重复接单。评论挂在已完成条目下，不重新移回待办。
 
 **关键字段（state.json）**：
 
