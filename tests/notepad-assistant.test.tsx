@@ -12,7 +12,7 @@ const store = vi.hoisted(() => ({
   deleteNotepadItem: vi.fn(),
   moveNotepadItem: vi.fn(),
   updateNotepadItem: vi.fn(),
-  addNotepadComment: vi.fn(),
+  saveNotepadComment: vi.fn(),
   refreshNotepad: vi.fn(),
   setNotepadFontSize: vi.fn(),
   setNotepadPanelSize: vi.fn(),
@@ -155,7 +155,7 @@ describe('NotepadPanel 已完成时间线', () => {
     expect(entries[1]).toHaveTextContent('较早完成的需求')
   })
 
-  it('点击新增评论按钮后才显示输入框，保存时写入当前条目', () => {
+  it('点击新增评论按钮后才显示输入框，输入即保存且没有保存取消按钮', () => {
     store.notepadLog = [{
       id: 'done-comment',
       title: '已完成的优化',
@@ -172,9 +172,37 @@ describe('NotepadPanel 已完成时间线', () => {
     fireEvent.click(screen.getByTestId('notepad-comment-add-done-comment'))
     expect(screen.getByTestId('notepad-comment-input-done-comment')).toBeInTheDocument()
     fireEvent.change(screen.getByTestId('notepad-comment-input-done-comment'), { target: { value: '还需要补充处理记录' } })
-    fireEvent.click(screen.getByTestId('notepad-comment-save-done-comment'))
 
-    expect(store.addNotepadComment).toHaveBeenCalledWith('done-comment', '还需要补充处理记录')
+    expect(store.saveNotepadComment).toHaveBeenCalledWith('done-comment', expect.any(String), '还需要补充处理记录')
+    expect(screen.queryByTestId('notepad-comment-save-done-comment')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('notepad-comment-cancel-done-comment')).not.toBeInTheDocument()
+  })
+
+  it('点击评论区域外自动收起，已输入内容不会随面板关闭丢失', () => {
+    store.notepadLog = [{
+      id: 'done-autosave',
+      title: '已完成的优化',
+      text: '原始需求',
+      category: 'improvement',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      resolvedAt: '2026-11-05T00:00:00.000Z',
+      source: 'agent',
+    }]
+    const onClose = renderPanel()
+    fireEvent.click(screen.getByTestId('notepad-tab-done'))
+    fireEvent.click(screen.getByTestId('notepad-comment-add-done-autosave'))
+    fireEvent.change(screen.getByTestId('notepad-comment-input-done-autosave'), { target: { value: '会自动保存的评论' } })
+    expect(store.saveNotepadComment).toHaveBeenCalledWith('done-autosave', expect.any(String), '会自动保存的评论')
+
+    fireEvent.mouseDown(screen.getByText('原始需求'))
+    expect(screen.queryByTestId('notepad-comment-input-done-autosave')).not.toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByTestId('notepad-comment-add-done-autosave'))
+    fireEvent.change(screen.getByTestId('notepad-comment-input-done-autosave'), { target: { value: '外点也不丢失' } })
+    fireEvent.mouseDown(screen.getByTestId('notepad-test-outside'))
+    expect(store.saveNotepadComment).toHaveBeenCalledWith('done-autosave', expect.any(String), '外点也不丢失')
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('展开已完成条目时显示评论及 agent 处理记录', () => {

@@ -265,7 +265,7 @@ type AppStore = {
   deleteNotepadItem: (id: string) => void
   moveNotepadItem: (id: string, toIndex: number) => void
   updateNotepadItem: (id: string, patch: { text?: string; category?: NotepadCategory }) => void
-  addNotepadComment: (id: string, text: string) => void
+  saveNotepadComment: (id: string, commentId: string, text: string) => void
   refreshNotepad: () => Promise<void>
   setNotepadFontSize: (size: NotepadFontSize) => void
   setNotepadPanelSize: (size: { w: number; h: number }) => void
@@ -899,12 +899,17 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
 
-  addNotepadComment: (id, text) => {
-    const t = text.trim()
-    if (!t) return
-    const log = get().notepadLog.map(entry => entry.id === id
-      ? { ...entry, comments: [...(entry.comments ?? []), { id: newNotepadId(), text: t, createdAt: new Date().toISOString() }] }
-      : entry)
+  saveNotepadComment: (id, commentId, text) => {
+    const log = get().notepadLog.map(entry => {
+      if (entry.id !== id) return entry
+      const existing = (entry.comments ?? []).find(comment => comment.id === commentId)
+      const comments = !text.trim()
+        ? (entry.comments ?? []).filter(comment => comment.id !== commentId)
+        : existing
+          ? (entry.comments ?? []).map(comment => comment.id === commentId ? { ...comment, text } : comment)
+          : [...(entry.comments ?? []), { id: commentId, text, createdAt: new Date().toISOString() }]
+      return { ...entry, comments }
+    })
     notepadLocalVersion++
     set({ notepadLog: log })
     ipc.patchState({ notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)

@@ -149,7 +149,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 **关键字段（state.json）**：
 
 - `notepadItems: [{ id, title?, text, category, createdAt }]` — 待办条目；`category` 为 `'bug' | 'feature' | 'improvement'`；`title` 短标题创建时自动生成兜底
-- `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent', comments? }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结；`comments: [{ id, text, createdAt, resolvedAt?, resolution? }]` 是用户对已完成条目的反馈，点「评论」按钮才展开右侧输入框
+- `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent', comments? }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结；`comments: [{ id, text, createdAt, resolvedAt?, resolution? }]` 是用户对已完成条目的反馈，点「评论」按钮才展开右侧输入框，输入即自动保存，无保存/取消按钮，点评论区域外自动收起
 - `notepadFontSize: 'sm' | 'base' | 'lg'`、`notepadPanelSize: { w, h } | null` — 面板字号与自定义尺寸
 - `coverNotepad`（纯字符串）已废弃，仅作一次性迁移源（非空且 notepadItems 为空时按行迁入后清空）
 

@@ -160,8 +160,8 @@ describe('refreshNotepad 过期快照隔离', () => {
   })
 })
 
-describe('addNotepadComment', () => {
-  it('给已完成条目追加未解决评论并持久化', () => {
+describe('saveNotepadComment', () => {
+  it('输入即写入未完成评论，再次输入更新同一条而不重复新增', () => {
     useStore.setState({
       notepadLog: [{
         id: 'done',
@@ -174,14 +174,19 @@ describe('addNotepadComment', () => {
       }],
     } as any)
 
-    useStore.getState().addNotepadComment('done', '还需要补充说明')
+    useStore.getState().saveNotepadComment('done', 'comment-draft', '还需要')
 
     const comment = useStore.getState().notepadLog[0].comments?.[0]
-    expect(comment).toMatchObject({ id: expect.any(String), text: '还需要补充说明', createdAt: expect.any(String) })
+    expect(comment).toMatchObject({ id: 'comment-draft', text: '还需要', createdAt: expect.any(String) })
     expect(comment?.resolvedAt).toBeUndefined()
     expect(comment?.resolution).toBeUndefined()
     expect(ipc.patchState).toHaveBeenCalledWith({
-      notepadLog: [expect.objectContaining({ id: 'done', comments: [expect.objectContaining({ text: '还需要补充说明' })] })],
+      notepadLog: [expect.objectContaining({ id: 'done', comments: [expect.objectContaining({ text: '还需要' })] })],
     })
+
+    useStore.getState().saveNotepadComment('done', 'comment-draft', '还需要补充说明')
+    const comments = useStore.getState().notepadLog[0].comments
+    expect(comments).toHaveLength(1)
+    expect(comments?.[0]).toMatchObject({ id: 'comment-draft', text: '还需要补充说明', createdAt: comment?.createdAt })
   })
 })

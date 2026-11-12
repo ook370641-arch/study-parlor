@@ -6,7 +6,7 @@
 // A−/A+ 字号，点击面板外/Esc 收起。
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
-import { NOTEPAD_CATEGORY_LABELS, computeNotepadStats, deriveTitle, isResolvedToday } from '@/lib/notepad'
+import { NOTEPAD_CATEGORY_LABELS, computeNotepadStats, deriveTitle, isResolvedToday, newNotepadId } from '@/lib/notepad'
 import type { NotepadCategory, NotepadFontSize, NotepadItem } from '@shared/index'
 
 const CATEGORIES: NotepadCategory[] = ['feature', 'improvement', 'bug']
@@ -47,18 +47,20 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
   const deleteNotepadItem = useStore(s => s.deleteNotepadItem)
   const moveNotepadItem = useStore(s => s.moveNotepadItem)
   const updateNotepadItem = useStore(s => s.updateNotepadItem)
-  const addNotepadComment = useStore(s => s.addNotepadComment)
+  const saveNotepadComment = useStore(s => s.saveNotepadComment)
   const refreshNotepad = useStore(s => s.refreshNotepad)
   const setNotepadFontSize = useStore(s => s.setNotepadFontSize)
   const setNotepadPanelSize = useStore(s => s.setNotepadPanelSize)
 
   const panelRef = useRef<HTMLDivElement | null>(null)
+  const commentAreaRef = useRef<HTMLDivElement | null>(null)
   const [tab, setTab] = useState<'pending' | 'done'>('pending')
   const [draft, setDraft] = useState('')
   const [draftCategory, setDraftCategory] = useState<NotepadCategory>('feature')
   const [completingId, setCompletingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [commentingId, setCommentingId] = useState<string | null>(null)
+  const [commentDraftId, setCommentDraftId] = useState<string | null>(null)
   const [commentDraft, setCommentDraft] = useState('')
   const [liveSize, setLiveSize] = useState<{ w: number; h: number } | null>(null)
   // 待办手动排序：dragId=已按下拖动手柄的条目，dropIndex=相对原数组的插入位
@@ -84,19 +86,20 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
     if (!open) return
     const onDown = (e: MouseEvent) => {
       const t = e.target as HTMLElement
+      if (commentingId && commentAreaRef.current && !commentAreaRef.current.contains(t)) collapseComment()
       if (panelRef.current?.contains(t)) return
       if (t.closest('[data-testid="notepad-fab-button"]')) return
       if (t.closest('[data-testid="article-assistant-tab"], [data-testid="article-assistant-chat-window"]')) return
       onClose()
     }
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { collapseComment(); onClose() } }
     document.addEventListener('mousedown', onDown)
     window.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('mousedown', onDown)
       window.removeEventListener('keydown', onKey)
     }
-  }, [open, onClose])
+  }, [open, onClose, commentingId])
 
   if (!open) return null
 
@@ -146,15 +149,19 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
   const startComment = (id: string) => {
     setExpandedId(id)
     setCommentingId(id)
+    setCommentDraftId(newNotepadId())
     setCommentDraft('')
   }
 
-  const submitComment = (id: string) => {
-    const text = commentDraft.trim()
-    if (!text) return
-    addNotepadComment(id, text)
+  const collapseComment = () => {
     setCommentingId(null)
+    setCommentDraftId(null)
     setCommentDraft('')
+  }
+
+  const changeComment = (id: string, text: string) => {
+    setCommentDraft(text)
+    if (commentDraftId) saveNotepadComment(id, commentDraftId, text)
   }
 
   // 拖放结束提交排序：dropIndex 是相对原数组的插入位，被拖项先移除后插入位需减 1 修正
@@ -538,8 +545,12 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                                 记入 {fmtDate(entry.createdAt)} · 解决于 {fmtDate(entry.resolvedAt)}
                               </div>
                             </div>
-                            <div className="w-[42%] shrink-0 border-l border-parchment/15 pl-3" onClick={e => e.stopPropagation()}>
-                              {(entry.comments ?? []).map(comment => (
+                            <div
+                              ref={commentingId === entry.id ? commentAreaRef : null}
+                              className="w-[42%] shrink-0 border-l border-parchment/15 pl-3"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              {(entry.comments ?? []).filter(comment => commentingId !== entry.id || comment.id !== commentDraftId).map(comment => (
                                 <div key={comment.id} data-testid={`notepad-comment-${comment.id}`} className="mb-2 rounded bg-parchment/5 px-2 py-1.5">
                                   <div className="whitespace-pre-wrap text-parchment/80">{comment.text}</div>
                                   <div className={`mt-1 text-[10px] ${comment.resolvedAt ? 'text-parchment/35' : 'text-ember/70'}`}>
@@ -559,22 +570,10 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                                     rows={3}
                                     data-testid={`notepad-comment-input-${entry.id}`}
                                     value={commentDraft}
-                                    onChange={e => setCommentDraft(e.target.value)}
-                                    placeholder="写下反馈…"
+                                    onChange={e => changeComment(entry.id, e.target.value)}
+                                    placeholder="写下反馈，自动保存…"
                                     className="w-full resize-none rounded border border-parchment/20 bg-parchment/5 px-2 py-1 text-[0.85em] text-parchment outline-none placeholder:text-parchment/30 focus:border-ember/50"
                                   />
-                                  <div className="mt-1 flex justify-end gap-2 text-[10px]">
-                                    <button type="button" onClick={() => { setCommentingId(null); setCommentDraft('') }} className="text-parchment/40 hover:text-parchment/70">取消</button>
-                                    <button
-                                      type="button"
-                                      data-testid={`notepad-comment-save-${entry.id}`}
-                                      disabled={!commentDraft.trim()}
-                                      onClick={() => submitComment(entry.id)}
-                                      className="text-ember disabled:opacity-30"
-                                    >
-                                      保存
-                                    </button>
-                                  </div>
                                 </div>
                               )}
                             </div>
