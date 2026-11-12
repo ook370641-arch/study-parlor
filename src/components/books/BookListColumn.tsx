@@ -26,6 +26,7 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
   const activeChapterPath = useStore((s) => s.activeChapter?.path ?? null)
   const booksLastChapter = useStore((s) => s.booksLastChapter)
   const notesList = useStore((s) => s.notesList)
+  const loadNotes = useStore((s) => s.loadNotes)
   const selectBook = useStore((s) => s.selectBook)
   const selectChapter = useStore((s) => s.selectChapter)
   const showToast = useStore((s) => s.showToast)
@@ -34,6 +35,10 @@ export function BookListColumn({ theme, onRequestDelete }: Props) {
   const isAcademic = theme !== 'newspaper'
   const tipTheme = isAcademic ? 'academic' : 'newspaper'
   const recentChapterPath = booksLastChapter?.replace(/\\/g, '/')
+
+  useEffect(() => {
+    if (notesList === null) void loadNotes()
+  }, [notesList, loadNotes])
 
   useEffect(() => {
     if (!activeDir) return

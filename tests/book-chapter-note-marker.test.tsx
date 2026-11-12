@@ -102,3 +102,14 @@ describe('BookListColumn 章节 AI 笔记标识', () => {
     expect(screen.queryByTestId('book-ai-note-marker')).toBeNull()
   })
 })
+
+describe('BookListColumn notes loading', () => {
+  it('loads notes on mount when notesList is uninitialized', () => {
+    const loadNotes = vi.fn().mockResolvedValue(undefined)
+    useStore.setState({ notesList: null, loadNotes })
+
+    render(<BookListColumn theme="academic" />)
+
+    expect(loadNotes).toHaveBeenCalledTimes(1)
+  })
+})

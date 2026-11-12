@@ -31,6 +31,7 @@ beforeEach(() => {
     activeBookToc: [{ title: 'Chapter 1', chapterFile: 'chapters/01.md', chapterIndex: 1, pageRange: [1, 2] }],
     activeChapter: null,
     booksLastChapter: null,
+    notesList: [],
     selectBook: vi.fn(),
     selectChapter: vi.fn(),
     importBook: vi.fn(),
