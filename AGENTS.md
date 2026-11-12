@@ -149,7 +149,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 **关键字段（state.json）**：
 
 - `notepadItems: [{ id, title?, text, category, createdAt }]` — 待办条目；`category` 为 `'bug' | 'feature' | 'improvement'`；`title` 短标题创建时自动生成兜底
-- `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent', comments? }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结；`comments: [{ id, text, createdAt, resolvedAt?, resolution? }]` 是用户对已完成条目的反馈，点「评论」按钮才展开右侧输入框，输入即自动保存，无保存/取消按钮，点评论区域外自动收起
+- `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent', comments? }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结；`comments: [{ id, text, createdAt, resolvedAt?, resolution? }]` 是用户对已完成条目的反馈，点「评论」按钮才展开右侧输入框，输入即自动保存，无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无删除按钮
 - `notepadFontSize: 'sm' | 'base' | 'lg'`、`notepadPanelSize: { w, h } | null` — 面板字号与自定义尺寸
 - `coverNotepad`（纯字符串）已废弃，仅作一次性迁移源（非空且 notepadItems 为空时按行迁入后清空）
 
@@ -166,7 +166,7 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 
 **评论处理记录**：agent 实际完成并验证评论要求的修改后，为对应 comment 写 `resolvedAt` 和简短 `resolution`（做了什么、验证结果、提交号），供面板展示和后续 agent 查阅。写回同样禁止直接修改运行中的 app 状态；先请用户关闭 app，再继续写回。
 
-相关代码：`src/components/NotepadPanel.tsx`（双 tab 面板：待完成 / 已完成时间线；已完成条目右侧评论；旁注打开时与入口一起左移）、`src/lib/notepad.ts`（分类猜测/迁移/统计/短标题纯逻辑）、`src/store/index.ts`（`notepadItems` / `notepadLog` / `addNotepadItem` / `resolveNotepadItem` / `addNotepadComment`）、`electron/ipc/state.ts`（DEFAULT 字段）。
+相关代码：`src/components/NotepadPanel.tsx`（双 tab 面板：待完成 / 已完成时间线；已完成条目右侧评论；旁注打开时与入口一起左移）、`src/lib/notepad.ts`（分类猜测/迁移/统计/短标题纯逻辑）、`src/store/index.ts`（`notepadItems` / `notepadLog` / `addNotepadItem` / `resolveNotepadItem` / `saveNotepadComment`）、`electron/ipc/state.ts`（DEFAULT 字段）。
 
 **接单时按 category 自动区分打法**（看到条目先识别类型，不要用同一套流程套所有需求）：
 

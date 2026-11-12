@@ -146,11 +146,11 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
     setEditingId(null)
   }
 
-  const startComment = (id: string) => {
+  const startComment = (id: string, existing?: { id: string; text: string }) => {
     setExpandedId(id)
     setCommentingId(id)
-    setCommentDraftId(newNotepadId())
-    setCommentDraft('')
+    setCommentDraftId(existing?.id ?? newNotepadId())
+    setCommentDraft(existing?.text ?? '')
   }
 
   const collapseComment = () => {
@@ -551,7 +551,13 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                               onClick={e => e.stopPropagation()}
                             >
                               {(entry.comments ?? []).filter(comment => commentingId !== entry.id || comment.id !== commentDraftId).map(comment => (
-                                <div key={comment.id} data-testid={`notepad-comment-${comment.id}`} className="mb-2 rounded bg-parchment/5 px-2 py-1.5">
+                                <div
+                                  key={comment.id}
+                                  data-testid={`notepad-comment-${comment.id}`}
+                                  title="双击编辑；清空文字自动删除"
+                                  onDoubleClick={e => { e.stopPropagation(); startComment(entry.id, comment) }}
+                                  className="mb-2 cursor-text rounded bg-parchment/5 px-2 py-1.5"
+                                >
                                   <div className="whitespace-pre-wrap text-parchment/80">{comment.text}</div>
                                   <div className={`mt-1 text-[10px] ${comment.resolvedAt ? 'text-parchment/35' : 'text-ember/70'}`}>
                                     {fmtDate(comment.createdAt)} · {comment.resolvedAt ? '已处理' : '待处理'}

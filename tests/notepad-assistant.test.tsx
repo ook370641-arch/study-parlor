@@ -229,4 +229,36 @@ describe('NotepadPanel 已完成时间线', () => {
     expect(screen.getByText('这个入口还不够明显')).toBeInTheDocument()
     expect(screen.getByTestId('notepad-comment-comment-1')).toHaveTextContent('已增加独立入口')
   })
+
+  it('双击已有评论进入编辑态，清空文字自动删除且没有删除按钮', () => {
+    store.notepadLog = [{
+      id: 'done-edit-comment',
+      title: '已完成的需求',
+      text: '原始需求',
+      category: 'improvement',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      resolvedAt: '2026-11-05T00:00:00.000Z',
+      source: 'agent',
+      comments: [{
+        id: 'comment-edit',
+        text: '原评论内容',
+        createdAt: '2026-11-06T00:00:00.000Z',
+        resolvedAt: '2026-11-07T00:00:00.000Z',
+        resolution: '已处理',
+      }],
+    }]
+    renderPanel()
+    fireEvent.click(screen.getByTestId('notepad-tab-done'))
+    fireEvent.click(screen.getByText('已完成的需求'))
+
+    fireEvent.doubleClick(screen.getByTestId('notepad-comment-comment-edit'))
+    const input = screen.getByTestId('notepad-comment-input-done-edit-comment')
+    expect(input).toHaveValue('原评论内容')
+
+    fireEvent.change(input, { target: { value: '修改后的评论' } })
+    expect(store.saveNotepadComment).toHaveBeenCalledWith('done-edit-comment', 'comment-edit', '修改后的评论')
+    fireEvent.change(input, { target: { value: '' } })
+    expect(store.saveNotepadComment).toHaveBeenCalledWith('done-edit-comment', 'comment-edit', '')
+    expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument()
+  })
 })

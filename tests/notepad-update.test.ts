@@ -189,4 +189,26 @@ describe('saveNotepadComment', () => {
     expect(comments).toHaveLength(1)
     expect(comments?.[0]).toMatchObject({ id: 'comment-draft', text: '还需要补充说明', createdAt: comment?.createdAt })
   })
+
+  it('清空已有评论时移除记录并持久化', () => {
+    useStore.setState({
+      notepadLog: [{
+        id: 'done-delete',
+        title: '已完成',
+        text: '原始需求',
+        category: 'improvement',
+        createdAt: '2026-11-01T00:00:00.000Z',
+        resolvedAt: '2026-11-02T00:00:00.000Z',
+        source: 'agent',
+        comments: [{ id: 'comment-delete', text: '待删除', createdAt: '2026-11-03T00:00:00.000Z' }],
+      }],
+    } as any)
+
+    useStore.getState().saveNotepadComment('done-delete', 'comment-delete', '   ')
+
+    expect(useStore.getState().notepadLog[0].comments).toEqual([])
+    expect(ipc.patchState).toHaveBeenCalledWith({
+      notepadLog: [expect.objectContaining({ id: 'done-delete', comments: [] })],
+    })
+  })
 })
