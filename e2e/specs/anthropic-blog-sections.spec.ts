@@ -4,7 +4,7 @@ import { SELECTORS } from '../helpers/selectors'
 import { seedAnthropicArticle, seedStateJson } from '../helpers/test-library'
 
 const SEL = {
-  sectionChip: '[data-testid="anthropic-section-chip"]',
+  sourceChips: '[data-testid^="list-source-"]',
   sectionTag: '[data-testid="anthropic-section-tag"]',
   sectionError: '[data-testid="anthropic-section-error"]',
   // SELECTORS.briefing 无 guideChunk 常量（仅 articleAssistant 有），按 brief 约束内联
@@ -59,9 +59,10 @@ test.describe('Anthropic 多栏目 @p1', () => {
     const cover = new CoverPage(window)
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
+    await window.locator('[data-testid="list-view-all"]').click()
 
     // 栏目色签行：五个 chip（Task 1 五源：engineering/research/alignment/interpretability/product）
-    await expect(window.locator(SEL.sectionChip)).toHaveCount(5)
+    await expect(window.locator(SEL.sourceChips)).toHaveCount(6)
 
     // 合并时间线：seeded 三篇按 publishedAt 倒序（宪法条目在 E2E 无报告产物不出现）
     const titles = await window.locator(SELECTORS.briefing.anthropicArticleTitle).allTextContents()
@@ -72,7 +73,7 @@ test.describe('Anthropic 多栏目 @p1', () => {
 
     // 色签过滤（Task 6 状态机已提交）：All 态点 research → 单选 research
     // （institute 经 filterGroupOf 归 research → Inst New 仍可见；Eng Old 隐藏）
-    await window.locator(`${SEL.sectionChip}[data-section="research"]`).click()
+    await window.locator('[data-testid="list-source-research"]').click()
     await expect(
       window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Eng Old' })
     ).toHaveCount(0)
@@ -82,8 +83,8 @@ test.describe('Anthropic 多栏目 @p1', () => {
     await expect(
       window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Inst New' })
     ).toHaveCount(1)
-    // 点灭 research（空选择回退 All）→ 全部恢复
-    await window.locator(`${SEL.sectionChip}[data-section="research"]`).click()
+    // 全部来源 → 全部恢复
+    await window.locator('[data-testid="list-source-all"]').click()
     await expect(
       window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Eng Old' })
     ).toHaveCount(1)
@@ -122,6 +123,7 @@ test.describe('Anthropic 多栏目 @p1', () => {
     const cover = new CoverPage(window)
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
+    await window.locator('[data-testid="list-view-all"]').click()
     // 合并时间线里宪法报告（local 置顶）恒为第一行，必须按标题锁定 seeded 文章行
     await window
       .locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Inst Guide")`)

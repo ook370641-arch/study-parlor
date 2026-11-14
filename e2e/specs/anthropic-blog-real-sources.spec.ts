@@ -40,6 +40,7 @@ test.describe('@real 博客五源完整性', () => {
     const cover = new CoverPage(window)
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible({ timeout: 20000 })
+    await window.locator('[data-testid="list-view-all"]').click()
 
     // 首轮真实 discover：新文章合入提示出现则点击（commit 全量）
     const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)

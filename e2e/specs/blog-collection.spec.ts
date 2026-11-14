@@ -1,11 +1,17 @@
 import { test, expect } from '../fixtures/electron'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+
+const RECOMMEND_BUTTON = '[data-testid="blog-collection-section"] [data-testid="blog-recommend-button"]'
+const RECOMMEND_HISTORY = '[data-testid="blog-collection-section"] [data-testid="blog-rec-history"]'
+const READ_HEADER = '[data-testid="list-group-header-read"]'
 
 test.describe('博客收藏夹与推荐', () => {
   test.use({ extraEnv: { E2E_ANTHROPIC_RECOMMEND: '1' } })
 
-  test('收藏夹区渲染、推荐 mock 产出、理由展开、移除→空态', async ({ window }) => {
+  test('收藏夹区渲染、推荐 mock 产出、理由展开、移除→空态', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
@@ -13,11 +19,11 @@ test.describe('博客收藏夹与推荐', () => {
 
     // UI 出口：收藏夹区与推荐按钮
     await expect(window.locator('[data-testid="blog-collection-section"]')).toBeVisible()
-    await expect(window.locator('[data-testid="blog-recommend-button"]')).toBeVisible()
+    await expect(window.locator(RECOMMEND_BUTTON)).toBeVisible()
     await expect(window.locator('[data-testid="blog-collection-empty"]')).toBeVisible()
 
     // 触发推荐（E2E mock 分支：不触网，确定性产出 1 条）
-    await window.locator('[data-testid="blog-recommend-button"]').click()
+    await window.locator(RECOMMEND_BUTTON).click()
     await window.locator('[data-testid="blog-recommend-start"]').click()
     await expect(window.locator('[data-testid^="blog-collection-open-"]').first()).toBeVisible({ timeout: 15000 })
 
@@ -29,6 +35,8 @@ test.describe('博客收藏夹与推荐', () => {
     await window.locator('[data-testid^="blog-collection-remove-"]').first().click()
     await window.locator('[data-testid="confirm-dialog-confirm"]').click()
     await expect(window.locator('[data-testid="blog-collection-empty"]')).toBeVisible()
+    const collection = JSON.parse(fs.readFileSync(path.join(testLibraryPath, 'Anthropic博客', '.collection.json'), 'utf8'))
+    expect(collection.dismissed).toContain('https://alignment.anthropic.com/e2e-recommend/')
   })
 
   test('推荐完成右栏自动出推荐页（核心方向/导读），手动已读入夹，批次可删除', async ({ window }) => {
@@ -38,7 +46,7 @@ test.describe('博客收藏夹与推荐', () => {
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
 
     // 触发推荐 mock → 右栏自动切到推荐页
-    await window.locator('[data-testid="blog-recommend-button"]').click()
+    await window.locator(RECOMMEND_BUTTON).click()
     await window.locator('[data-testid="blog-recommend-note"]').fill('E2E 推荐备注')
     await window.locator('[data-testid="blog-recommend-start"]').click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible({ timeout: 15000 })
@@ -49,13 +57,13 @@ test.describe('博客收藏夹与推荐', () => {
 
     // 推荐页卡片手动标已读 → 已读夹出现
     await window.locator('[data-testid^="blog-rec-read-"]').first().click()
-    await expect(window.locator('[data-testid="blog-read-toggle"]')).toBeVisible({ timeout: 5000 })
-    await expect(window.locator('[data-testid="blog-read-count"]')).toHaveText('1')
+    await expect(window.locator(READ_HEADER)).toBeVisible({ timeout: 5000 })
+    await expect(window.locator(READ_HEADER)).toContainText('1')
 
     // 删除本批 → 推荐页回空态，已读夹不受影响
     await window.locator('[data-testid="blog-rec-delete-batch"]').click()
     await expect(window.locator('[data-testid="blog-rec-empty"]')).toBeVisible()
-    await expect(window.locator('[data-testid="blog-read-count"]')).toHaveText('1')
+    await expect(window.locator(READ_HEADER)).toContainText('1')
   })
 
   test('推荐记录固定入口 + 已读/收藏互斥搬家', async ({ window }) => {
@@ -70,18 +78,18 @@ test.describe('博客收藏夹与推荐', () => {
     ).toHaveAttribute('fill', '#d97757')
 
     // 推荐 mock → 右栏自动出推荐页；关闭后可通过固定入口回来
-    await window.locator('[data-testid="blog-recommend-button"]').click()
+    await window.locator(RECOMMEND_BUTTON).click()
     await window.locator('[data-testid="blog-recommend-start"]').click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible({ timeout: 15000 })
     await window.locator('[data-testid="blog-rec-close"]').click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeHidden()
-    await window.locator('[data-testid="blog-rec-history"]').click()
+    await window.locator(RECOMMEND_HISTORY).click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible()
 
     // 互斥：pick 初始在收藏夹（推荐自动入夹）；标已读 → 出收藏夹、入已读
     await window.locator('[data-testid^="blog-rec-read-"]').first().click()
     await window.locator('[data-testid="blog-rec-close"]').click()
-    await expect(window.locator('[data-testid="blog-read-count"]')).toHaveText('1')
+    await expect(window.locator(READ_HEADER)).toContainText('1')
     await expect(window.locator('[data-testid="blog-collection-empty"]')).toBeVisible()
   })
 
@@ -91,7 +99,7 @@ test.describe('博客收藏夹与推荐', () => {
     await cover.goToBriefing()
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
 
-    await window.locator('[data-testid="blog-recommend-button"]').click()
+    await window.locator(RECOMMEND_BUTTON).click()
     await window.locator('[data-testid="blog-recommend-start"]').click()
     await expect(window.locator('[data-testid="blog-rec-view"]')).toBeVisible({ timeout: 15000 })
 

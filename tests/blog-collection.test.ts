@@ -89,6 +89,7 @@ describe('applyRecommend', () => {
   it('推荐批次替换 recommend 条目，保留 manual', () => {
     const c: BlogCollectionFile = {
       ...empty(),
+      order: { groups: ['favorite', 'saved', 'read'], saved: ['u1'], read: [], favorite: ['u2'] },
       entries: [
         { sourceUrl: 'u1', filePath: 'a.md', title: 't', addedAt: 'x', origin: 'manual' },
         { sourceUrl: 'u2', filePath: 'b.md', title: 't', addedAt: 'x', origin: 'recommend', reason: 'old' },
@@ -99,6 +100,7 @@ describe('applyRecommend', () => {
     const c2 = applyRecommend(c, batch, picks)
     expect(c2.entries.map(e => e.sourceUrl).sort()).toEqual(['u1', 'u3'])
     expect(c2.history[0]).toEqual(batch)
+    expect(c2.order).toEqual(c.order)
   })
   it('历史批次追加最新在前，超 20 批滚动丢弃最旧', () => {
     const c: BlogCollectionFile = { ...empty(), history: Array.from({ length: 20 }, (_, i) => ({ batch: 19 - i, generatedAt: 'g', profile: 'p', gaps: [], queries: [], searchUsed: false })) }

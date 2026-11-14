@@ -12,6 +12,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
 
     // 切换到 Anthropic 来源
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
 
     // 列表默认展开，折叠容器可见
     const listColumn = window.locator(SELECTORS.briefing.listColumn)
@@ -35,6 +36,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
 
     // 切换到 Anthropic 来源
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
     const listColumn = window.locator(SELECTORS.briefing.listColumn)
     await expect(listColumn).toBeVisible()
 
@@ -87,6 +89,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
 
     // 切换到 Anthropic 来源
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
     await expect(window.locator(SELECTORS.briefing.listColumn)).toBeVisible()
 
     // 等待文章列表加载（处理新文章检测提示）
@@ -126,6 +129,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
     await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
 
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
     const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
     await prompt.waitFor({ timeout: 120000 }).catch(() => {})
     const promptVisible = await prompt.isVisible().catch(() => false)
@@ -170,6 +174,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
     await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
 
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
     const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
     await prompt.waitFor({ timeout: 120000 }).catch(() => {})
     const promptVisible = await prompt.isVisible().catch(() => false)
@@ -209,6 +214,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
 
     // 切换到 Anthropic 来源并打开一篇文章
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
     const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)
     await prompt.waitFor({ timeout: 120000 }).catch(() => {})
     const promptVisible = await prompt.isVisible().catch(() => false)
@@ -249,6 +255,7 @@ test.describe('@real Anthropic 博客 UI 优化 (v1.2)', () => {
 
     // 切换到 Anthropic 来源（自动检测触发）
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
 
     // 等待自动检测完成 —— 要么出现新文章提示条，要么已有缓存在列表中
     const prompt = window.locator(SELECTORS.briefing.anthropicNewArticlesPrompt)

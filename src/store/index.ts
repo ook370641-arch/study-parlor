@@ -2,7 +2,7 @@
 import { create } from 'zustand'
 import { normalizeStudyFontSize } from '@/lib/study-font-size'
 import { mergeArticlesByUrl } from '@/lib/anthropic-articles'
-import { reorderBlog as reorderBlogOrder } from '@/lib/blog-groups'
+import { reconcileBlogOrder, reorderBlog as reorderBlogOrder } from '@/lib/blog-groups'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
@@ -1640,9 +1640,9 @@ export const useStore = create<AppStore>((set, get) => ({
   },
   reorderBlog: async (request) => {
     const previous = get().blogCollection
-    if (!previous.order) return
-    const optimistic = reorderBlogOrder(previous.order, request)
-    if (optimistic === previous.order) return
+    const currentOrder = previous.order ?? reconcileBlogOrder(previous, get().anthropicBlogCache.articles)
+    const optimistic = reorderBlogOrder(currentOrder, request)
+    if (optimistic === currentOrder) return
     set({ blogCollection: { ...previous, order: optimistic } })
     const result = await ipc.anthropicCollectionReorder(request).catch(() => null)
     if (result?.ok) {

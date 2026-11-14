@@ -71,7 +71,7 @@ export function applyRecommend(
 ): BlogCollectionFile {
   const manual = c.entries.filter(e => e.origin === 'manual')
   const history = [batch, ...c.history].slice(0, 20)
-  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history, read: c.read }
+  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history, read: c.read, order: c.order }
 }
 
 /** 标记已读：幂等（已存在直接返回原对象），新条目插到最前；互斥：已读即出收藏夹 */

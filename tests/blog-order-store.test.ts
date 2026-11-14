@@ -82,4 +82,26 @@ describe('blog reorder store action', () => {
 
     expect(useStore.getState().blogCollection).toEqual(serverCollection)
   })
+
+  it('集合尚未载入 order 时按当前文章派生后再排序', async () => {
+    useStore.setState({
+      blogCollection: { ...previous, order: undefined },
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: ['a', 'b'].map(url => ({ url, title: url, summary: null, publishedAt: null, imageUrl: null, isSaved: true, filePath: `${url}.md` })),
+        loading: false,
+        error: null,
+      },
+    })
+    const serverCollection: BlogCollectionFile = {
+      ...previous,
+      order: { ...previous.order!, saved: ['b', 'a'] },
+    }
+    vi.mocked(ipc.anthropicCollectionReorder).mockResolvedValue({ ok: true, collection: serverCollection })
+
+    await useStore.getState().reorderBlog(request)
+
+    expect(ipc.anthropicCollectionReorder).toHaveBeenCalledWith(request)
+    expect(useStore.getState().blogCollection).toEqual(serverCollection)
+  })
 })

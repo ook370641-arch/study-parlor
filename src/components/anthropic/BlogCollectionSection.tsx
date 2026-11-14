@@ -163,7 +163,7 @@ export function BlogCollectionSection({
           onGroupDragOver={event => { if (event.dataTransfer.types.includes(GROUP_MIME)) event.preventDefault() }}
           onGroupDrop={event => dropGroup(event, group)}
           recommendationTools={group === 'favorite' ? <BlogRecommendationTools theme={theme} /> : undefined}>
-          <div ref={node => { listRefs.current[group] = node }} data-testid={`blog-${group}-list`}
+          <div ref={node => { listRefs.current[group] = node }} data-testid={`blog-list-${group}-order`}
             data-order={groups[group].map(article => article.url).join(',')}
             className={`mt-1.5 space-y-1.5 overflow-y-auto ${heights[group] == null ? 'max-h-64' : ''}`}
             style={heights[group] != null ? { height: heights[group] } : undefined}>

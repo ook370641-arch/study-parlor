@@ -132,6 +132,7 @@
         "electron/lib/blog-recommend.ts",
         "src/lib/anthropic-articles.ts",
         "src/lib/anthropic-sections.ts",
+        "src/lib/blog-groups.ts",
         "src/lib/section-filter.ts",
         "src/lib/scroll-memory.ts"
       ],

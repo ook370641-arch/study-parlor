@@ -143,7 +143,8 @@ describe('BlogCollectionSection', () => {
 
     expect(screen.getByTestId('blog-recommendation-tools')).toBeInTheDocument()
     expect(screen.getByTestId('blog-collection-empty')).toBeInTheDocument()
-    const list = screen.getByTestId('blog-saved-list')
+    const list = screen.getByTestId('blog-list-saved-order')
+    expect(list).toHaveAttribute('data-order', 'saved')
     Object.defineProperty(list, 'offsetHeight', { value: 120 })
     fireEvent.pointerDown(screen.getByTestId('blog-saved-resize'), { clientY: 100 })
     fireEvent.pointerMove(window, { clientY: 140 })

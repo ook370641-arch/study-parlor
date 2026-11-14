@@ -1,5 +1,5 @@
 ---
-status: planned
+status: historical
 ---
 
 # 博客我的分组与共享排序 Implementation Plan
@@ -68,7 +68,7 @@ export function deriveBlogMineGroups(
 ): Record<BlogMineGroup, AnthropicArticleMeta[]>
 ```
 
-- [ ] **Step 1: 写旧数据派生、互斥流转和过滤顺序测试**
+- [x] **Step 1: 写旧数据派生、互斥流转和过滤顺序测试**
 
 在 `tests/blog-groups.test.ts` 至少加入以下具体用例：
 
@@ -117,13 +117,13 @@ it('过滤视图只按可见目标改变相对顺序', () => {
 
 另补两组测试：收藏／已读条目不在文章缓存时仍生成可显示的 fallback meta；非法 URL、重复 URL、非法分组名被清理且其他数组不变。
 
-- [ ] **Step 2: 运行测试并确认失败**
+- [x] **Step 2: 运行测试并确认失败**
 
 Run: `npx vitest run tests/blog-groups.test.ts`
 
 Expected: FAIL，提示无法解析 `@/lib/blog-groups`。
 
-- [ ] **Step 3: 实现最小纯逻辑**
+- [x] **Step 3: 实现最小纯逻辑**
 
 `src/lib/blog-groups.ts` 不导入 Electron、React 或 Node API。实现时遵守：
 
@@ -149,13 +149,13 @@ export function reorderBlog(order: BlogOrder, request: BlogReorderRequest): Blog
 
 `reconcileBlogOrder` 先按当前 entries/read/cache 求合法成员，再保留旧顺序、去重并补齐缺失项；`change.to` 只有在校验目标组确实包含该 URL 时才执行 prepend/append。`deriveBlogMineGroups` 用顺序数组映射，收藏和已读优先使用缓存 meta，缓存缺失时用 entry 的 `sourceUrl/title/filePath` 构造 meta。
 
-- [ ] **Step 4: 运行测试并确认通过**
+- [x] **Step 4: 运行测试并确认通过**
 
 Run: `npx vitest run tests/blog-groups.test.ts`
 
 Expected: 全部 PASS。
 
-- [ ] **Step 5: 提交纯逻辑**
+- [x] **Step 5: 提交纯逻辑**
 
 ```bash
 git add src/types/index.ts src/lib/blog-groups.ts tests/blog-groups.test.ts
@@ -193,7 +193,7 @@ ipc.anthropicCollectionReorder(request: BlogReorderRequest): Promise<
 useStore.getState().reorderBlog(request: BlogReorderRequest): Promise<void>
 ```
 
-- [ ] **Step 1: 写旧文件兼容和持久化失败回滚测试**
+- [x] **Step 1: 写旧文件兼容和持久化失败回滚测试**
 
 在 `tests/blog-collection.test.ts` 增加：
 
@@ -212,13 +212,13 @@ it('旧文件无 order 时按当前集合并派生，保存后可读回', () => 
 
 在 `tests/blog-order-store.test.ts` mock `ipc.anthropicCollectionReorder`，分别验证成功时使用返回的完整 collection，失败时恢复拖拽前的 `blogCollection` 并调用 `showToast('排序保存失败，请重试')`。
 
-- [ ] **Step 2: 运行测试并确认失败**
+- [x] **Step 2: 运行测试并确认失败**
 
 Run: `npx vitest run tests/blog-collection.test.ts tests/blog-order-store.test.ts`
 
 Expected: FAIL，旧断言没有 `order`，store 没有 `reorderBlog`。
 
-- [ ] **Step 3: 接入主进程读写与 IPC**
+- [x] **Step 3: 接入主进程读写与 IPC**
 
 在 `blog-collection.ts` 引入 `loadBlogCache` 和纯逻辑：
 
@@ -238,7 +238,7 @@ export function saveCollection(
 
 `loadCollection` 同样用 cache 校正 raw order，但不写盘。新增 IPC 时先按请求调用 `reorderBlog(current.order!, request)`，再 `saveCollection`；非法请求或写入异常返回 `{ ok: false, message }`。在 `IpcApi`、preload 和 renderer facade 使用同一 `BlogReorderRequest` 类型。
 
-- [ ] **Step 4: 实现 store 的乐观更新与回滚**
+- [x] **Step 4: 实现 store 的乐观更新与回滚**
 
 ```ts
 reorderBlog: async (request) => {
@@ -254,13 +254,13 @@ reorderBlog: async (request) => {
 }
 ```
 
-- [ ] **Step 5: 运行测试并确认通过**
+- [x] **Step 5: 运行测试并确认通过**
 
 Run: `npx vitest run tests/blog-groups.test.ts tests/blog-collection.test.ts tests/blog-order-store.test.ts`
 
 Expected: 全部 PASS。
 
-- [ ] **Step 6: 提交持久化边界**
+- [x] **Step 6: 提交持久化边界**
 
 ```bash
 git add electron/lib/blog-collection.ts electron/ipc/anthropic.ts electron/preload.ts src/types/index.ts src/lib/ipc.ts src/store/index.ts tests/blog-collection.test.ts tests/blog-order-store.test.ts
@@ -296,7 +296,7 @@ interface BlogFilterTabsProps {
 }
 ```
 
-- [ ] **Step 1: 写筛选状态和双侧独立性测试**
+- [x] **Step 1: 写筛选状态和双侧独立性测试**
 
 替换旧的 Mine/All/多源互斥测试，至少覆盖：
 
@@ -314,13 +314,13 @@ it('切换我的或全部不清空来源', () => {
 
 在 `tests/blog-filter-tabs.test.tsx` 渲染两个受控 `BlogFilterTabs`，点击 wall 的「全部」后断言 list 仍显示「我的」激活；点击 list 的 Research 后断言 wall 的来源不变。
 
-- [ ] **Step 2: 运行测试并确认失败**
+- [x] **Step 2: 运行测试并确认失败**
 
 Run: `npx vitest run tests/section-filter.test.ts tests/blog-filter-tabs.test.tsx`
 
 Expected: FAIL，新函数和组件不存在。
 
-- [ ] **Step 3: 实现单来源筛选和标签组件**
+- [x] **Step 3: 实现单来源筛选和标签组件**
 
 ```ts
 export const DEFAULT_BLOG_FILTER: BlogViewFilter = { view: 'mine', source: 'all' }
@@ -330,7 +330,7 @@ export const selectBlogSource = (filter: BlogViewFilter, source: BlogSourceFilte
 
 `BlogFilterTabs` 始终渲染来源二级标签；一级只有「我的 / 全部」。使用 `data-testid="${area}-view-${view}"` 与 `data-testid="${area}-source-${source}"`，两种主题沿用现有边框、文字和 option 配色。
 
-- [ ] **Step 4: 将 panel 改为两套状态**
+- [x] **Step 4: 将 panel 改为两套状态**
 
 ```ts
 const [listFilter, setListFilter] = useState<BlogViewFilter>(DEFAULT_BLOG_FILTER)
@@ -339,13 +339,13 @@ const [wallFilter, setWallFilter] = useState<BlogViewFilter>(DEFAULT_BLOG_FILTER
 
 第二列查询只过滤 list；wall 继续使用自己的 `wallSort` 和 `sortBlogArticles`，内置报告在全部来源下置顶。移除共享 `filter` 以及旧的 `toggleMineChip/toggleSourceChip` 调用。
 
-- [ ] **Step 5: 运行测试并确认通过**
+- [x] **Step 5: 运行测试并确认通过**
 
 Run: `npx vitest run tests/section-filter.test.ts tests/blog-filter-tabs.test.tsx tests/anthropic-blog-panel.test.tsx`
 
 Expected: 全部 PASS；旧多源断言已由新单源状态机取代。
 
-- [ ] **Step 6: 提交筛选边界**
+- [x] **Step 6: 提交筛选边界**
 
 ```bash
 git add src/lib/section-filter.ts src/components/anthropic/BlogFilterTabs.tsx src/components/anthropic/AnthropicBlogPanel.tsx tests/section-filter.test.ts tests/blog-filter-tabs.test.tsx tests/anthropic-blog-panel.test.tsx
@@ -382,7 +382,7 @@ interface BlogMineGroupSectionProps {
 }
 ```
 
-- [ ] **Step 1: 写推荐位置、折叠和手柄可见性测试**
+- [x] **Step 1: 写推荐位置、折叠和手柄可见性测试**
 
 ```tsx
 it('推荐工具紧跟收藏标题并位于卡片之前', () => {
@@ -403,13 +403,13 @@ it('收藏折叠时工具和内容一起隐藏', () => {
 
 另测手柄类名为 `opacity-0 group-hover/header:opacity-100`，折叠按钮点击只调用 `onToggle`，不调用拖拽回调。
 
-- [ ] **Step 2: 运行测试并确认失败**
+- [x] **Step 2: 运行测试并确认失败**
 
 Run: `npx vitest run tests/blog-mine-group-section.test.tsx`
 
 Expected: FAIL，组件不存在。
 
-- [ ] **Step 3: 实现分组结构**
+- [x] **Step 3: 实现分组结构**
 
 ```tsx
 <section data-group-section={group}>
@@ -422,17 +422,17 @@ Expected: FAIL，组件不存在。
 </section>
 ```
 
-- [ ] **Step 4: 提取推荐工具并保留现有行为**
+- [x] **Step 4: 提取推荐工具并保留现有行为**
 
 `BlogRecommendationTools` 直接使用现有 store：`openRecommendView(history[0].batch)`、`startBlogRecommend(note)`、`cancelBlogRecommend()`。保留推荐备注对话框、阶段文案、生成中取消和空历史时不显示记录按钮。不得复制一套推荐请求逻辑。
 
-- [ ] **Step 5: 运行测试并确认通过**
+- [x] **Step 5: 运行测试并确认通过**
 
 Run: `npx vitest run tests/blog-mine-group-section.test.tsx tests/blog-collection-section.test.tsx tests/blog-recommend-view.test.tsx`
 
 Expected: 全部 PASS。
 
-- [ ] **Step 6: 提交共享组件**
+- [x] **Step 6: 提交共享组件**
 
 ```bash
 git add src/components/anthropic/BlogMineGroupSection.tsx src/components/anthropic/BlogRecommendationTools.tsx tests/blog-mine-group-section.test.tsx tests/blog-collection-section.test.tsx
@@ -457,7 +457,7 @@ git commit -m "feat: add shared blog group sections"
 - Consumes: Task 1 的 `deriveBlogMineGroups`、Task 2 的 `saveCollection(..., change?, articles?)`、Task 4 的分组与推荐组件。
 - Produces: `BlogCollectionSection` 接收当前第二列过滤后的 `groups`、`collapsedGroups`、`onToggleGroup`、`onReorder`、`onOpenArticle`、`onRequestDelete`；全部视图仍由 `AnthropicArticleRow` 渲染。
 
-- [ ] **Step 1: 写三组归属和按钮语义测试**
+- [x] **Step 1: 写三组归属和按钮语义测试**
 
 ```tsx
 it('已保存未读未收藏文章进入 saved，并保留收藏/已读/取消导入按钮', () => {
@@ -481,19 +481,19 @@ it('已读与收藏继续使用不同删除请求', () => {
 
 保留推荐理由展开、推荐徽标、缺失文件打开、分组高度调整和空态测试；新增测试确认收藏折叠时推荐工具消失。
 
-- [ ] **Step 2: 运行测试并确认失败**
+- [x] **Step 2: 运行测试并确认失败**
 
 Run: `npx vitest run tests/blog-collection-section.test.tsx tests/anthropic-article-row.test.tsx`
 
 Expected: FAIL，saved 分组和新 props 尚未实现。
 
-- [ ] **Step 3: 平移第二列并新增已保存卡片**
+- [x] **Step 3: 平移第二列并新增已保存卡片**
 
 按 `collection.order.groups` 渲染三组；每组使用 Task 4 标题。`saved` 卡片提供收藏、已读、取消导入；`read` 沿用 ReadCard；`favorite` 沿用 CollectionCard。只有手柄设置 `draggable`，卡片主体 `onClick={() => onOpenArticle(article)}`。
 
 第二列保留每组高度调节 ref 与 pointer handler；整体折叠 rail、更新提示、来源错误和搜索继续留在 `AnthropicBlogPanel`。
 
-- [ ] **Step 4: 将现有状态变更接到顺序校正**
+- [x] **Step 4: 将现有状态变更接到顺序校正**
 
 给 `saveCollection` 增加可选 articles 快照，避免导入／删除时读到旧磁盘缓存：
 
@@ -507,13 +507,13 @@ saveCollection(lib, next, { sourceUrl, to: 'saved', position: 'prepend' }, artic
 
 导入成功时构造 `isSaved: true, filePath` 的 articles 快照并转入 saved；删除成功时构造 `isSaved: false` 的快照并 normalize，从 saved 删除但保留其他标记。复用现有删除确认，不新增第二套删除入口。
 
-- [ ] **Step 5: 运行测试并确认通过**
+- [x] **Step 5: 运行测试并确认通过**
 
 Run: `npx vitest run tests/blog-groups.test.ts tests/blog-collection.test.ts tests/blog-collection-section.test.tsx tests/anthropic-article-row.test.tsx tests/anthropic-delete.test.ts`
 
 Expected: 全部 PASS。
 
-- [ ] **Step 6: 提交第二列与生命周期**
+- [x] **Step 6: 提交第二列与生命周期**
 
 ```bash
 git add src/components/anthropic/BlogCollectionSection.tsx src/components/anthropic/AnthropicBlogPanel.tsx src/components/anthropic/AnthropicArticleRow.tsx electron/ipc/anthropic.ts electron/lib/blog-collection.ts tests/blog-collection-section.test.tsx tests/anthropic-article-row.test.tsx tests/anthropic-delete.test.ts
@@ -534,7 +534,7 @@ git commit -m "feat: add saved read and favorite blog groups"
 - Consumes: Task 1 的 `BlogReorderRequest`、Task 2 的 `reorderBlog`、Task 3 的独立 filter、Task 4 的分组与推荐组件、Task 5 的三组数据。
 - Produces: `BlogWall` 接收 `filter`、`groups`、`order`、`collapsedGroups`、`onToggleGroup`、`onReorder`；`onOpenArticle` 和现有删除／标记回调保持原语义。
 
-- [ ] **Step 1: 写手柄与正文点击分离测试**
+- [x] **Step 1: 写手柄与正文点击分离测试**
 
 在 `tests/blog-wall.test.tsx` 增加：
 
@@ -574,13 +574,13 @@ it('拖到其他分组不发送排序请求', () => {
 
 另测三组同屏、组名顺序来自 `order.groups`、收藏推荐工具位置、折叠独立，以及全部视图仍渲染日期排序而不渲染手柄。
 
-- [ ] **Step 2: 运行测试并确认失败**
+- [x] **Step 2: 运行测试并确认失败**
 
 Run: `npx vitest run tests/blog-wall.test.tsx tests/anthropic-blog-panel.test.tsx`
 
 Expected: FAIL，旧 BlogWall props 与新拖拽结构不一致。
 
-- [ ] **Step 3: 实现专辑墙分组与卡片操作**
+- [x] **Step 3: 实现专辑墙分组与卡片操作**
 
 我的视图按 `order.groups` 渲染 `BlogMineGroupSection`；收藏组的 `recommendationTools` 使用共享组件。每组卡片按对应 URL 顺序显示，过滤只改变可见集合。
 
@@ -611,7 +611,7 @@ Expected: FAIL，旧 BlogWall props 与新拖拽结构不一致。
 </article>
 ```
 
-- [ ] **Step 4: 实现分组和文章放置规则**
+- [x] **Step 4: 实现分组和文章放置规则**
 
 拖拽 dataTransfer 分别写入 `application/x-blog-group` 与 `application/x-blog-article`。drop 时生成 Task 1 已定义的请求：
 
@@ -622,17 +622,17 @@ onReorder({ kind: 'group', source, target, placement })
 
 只有 payload 类型和目标组匹配时才 `preventDefault` 并接受 drop；没有可见目标文章时不调用排序。专辑墙以目标卡片水平中线计算 before/after，第二列以列表行垂直中线计算。操作按钮和手柄事件停止冒泡，拖拽后的 click 不得再次打开文章。
 
-- [ ] **Step 5: 接入统一 store action**
+- [x] **Step 5: 接入统一 store action**
 
 第二列与专辑墙的 `onReorder` 都调用 `void useStore.getState().reorderBlog(request)`。成功返回完整 collection 后两侧一起刷新；失败由 Task 2 的回滚处理。不得分别维护两份文章顺序。
 
-- [ ] **Step 6: 运行测试并确认通过**
+- [x] **Step 6: 运行测试并确认通过**
 
 Run: `npx vitest run tests/blog-wall.test.tsx tests/anthropic-blog-panel.test.tsx tests/blog-mine-group-section.test.tsx tests/blog-order-store.test.ts`
 
 Expected: 全部 PASS。
 
-- [ ] **Step 7: 提交专辑墙与拖拽**
+- [x] **Step 7: 提交专辑墙与拖拽**
 
 ```bash
 git add src/components/anthropic/BlogWall.tsx src/components/anthropic/AnthropicBlogPanel.tsx tests/blog-wall.test.tsx tests/anthropic-blog-panel.test.tsx
@@ -657,7 +657,7 @@ git commit -m "feat: add interactive blog album groups"
 - Consumes: 前六个任务的全部 UI、IPC 和持久化行为。
 - Produces: 可审查的完整功能、更新后的现状文档和可重复运行的定向验证命令。
 
-- [ ] **Step 1: 更新定向 E2E 覆盖最终交互**
+- [x] **Step 1: 更新定向 E2E 覆盖最终交互**
 
 在现有 spec 中更新旧 Mine/All 选择器，并增加以下场景，不新建重复 spec：
 
@@ -686,7 +686,7 @@ test('我的三组独立筛选、手柄排序与重启持久化', async ({ windo
 
 把 `seedArticles` 的返回值扩展为 `{ aUrl, bUrl, aPath, aTitle }`；两个分组容器的 `data-order` 均使用当前完整组内 URL 顺序 `join(',')`。另覆盖：三组折叠、推荐工具随收藏折叠、分组拖拽、取消已读回 saved、推荐移出写 dismissed、删除批次不改 read、全部日期排序、内置报告置顶和报纸版控件。
 
-- [ ] **Step 2: 更新 source-map 并先运行所有受影响单元测试**
+- [x] **Step 2: 更新 source-map 并先运行所有受影响单元测试**
 
 在 `anthropic-blog.sources` 添加 `src/lib/blog-groups.ts`；组件已由 `src/components/anthropic/**` 覆盖。
 
@@ -708,6 +708,8 @@ Run: `npm run docs:check`
 
 Expected: 文档引用、frontmatter 和索引检查全部通过。
 
+实施记录：`npx electron-vite build` 与 `npm run docs:check` 通过。两项 TypeScript 检查仍仅报告基线已有的 `DemoNotePopover.tsx`、`electron/ipc/files.ts` 和 `notepad-claims.ts` 错误，因此 `npm run build` 的完整门禁尚未通过。
+
 - [ ] **Step 4: 经用户明确确认后运行定向 E2E**
 
 先列出受影响 spec：
@@ -720,13 +722,15 @@ Run: `node scripts/e2e-changed.js --run --no-retries`
 
 Expected: 受影响 spec 全部 PASS；若出现失败，只处理本次改动导致的问题，不扩大范围。
 
-- [ ] **Step 5: 更新现状文档与完成记录**
+实施记录：仅完成 Playwright `--list` 语法检查与 18 个受影响 spec 列举；尚未启动 Electron 或执行 E2E。
+
+- [x] **Step 5: 更新现状文档与完成记录**
 
 将 `docs/README.md` 域 7 的现状改为「我的三组 + 独立筛选 + 共享排序」，移除 planned 指针并保留历史链。功能落地后把本 spec 和 plan 标为 `status: historical`；不得把计划文档描述成未完成的当前设计。
 
 再次运行 `npm run docs:check`，Expected: 全部通过。
 
-- [ ] **Step 6: 提交最终回归与文档**
+- [x] **Step 6: 提交最终回归与文档**
 
 ```bash
 git add e2e/specs/blog-collection.spec.ts e2e/specs/blog-album-wall.spec.ts e2e/specs/anthropic-blog-multi-source.spec.ts e2e/specs/anthropic-blog-ui.spec.ts e2e/source-map.json docs/README.md docs/superpowers/specs/2026-11-13-blog-my-groups-and-ordering-design.md docs/superpowers/plans/2026-11-13-blog-my-groups-and-ordering.md

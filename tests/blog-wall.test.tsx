@@ -119,6 +119,7 @@ describe('BlogWall', () => {
     expect(screen.getByTestId('blog-wall-card-saved')).toBeInTheDocument()
     expect(screen.getByTestId('blog-wall-card-read')).toBeInTheDocument()
     expect(screen.getByTestId('blog-wall-card-favorite')).toBeInTheDocument()
+    expect(screen.getByTestId('blog-wall-saved-order')).toHaveAttribute('data-order', 'saved')
     expect(screen.queryByTestId('blog-wall-sort-select')).not.toBeInTheDocument()
   })
 

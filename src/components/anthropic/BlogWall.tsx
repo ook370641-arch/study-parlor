@@ -114,7 +114,12 @@ export function BlogWall({
     : articles.length > 0
 
   const grid = (items: AnthropicArticleMeta[], group?: BlogMineGroup) => (
-    <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))' }}>
+    <div
+      data-testid={group ? `blog-wall-${group}-order` : undefined}
+      data-order={group ? items.map(article => article.url).join(',') : undefined}
+      className="grid gap-5"
+      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))' }}
+    >
       {items.map(article => <WallCard key={article.url} article={article} group={group} onOpenArticle={onOpenArticle} onReorder={onReorder} />)}
     </div>
   )
