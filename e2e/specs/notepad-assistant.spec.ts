@@ -100,4 +100,33 @@ test.describe('@p1 notepad with article assistant', () => {
     await expect(yesterdayEntry).not.toHaveClass(/border-ember\/35/)
     await expect(yesterdayEntry).not.toHaveClass(/bg-ember\/10/)
   })
+
+  test('restores a mistaken resolution and permanently deletes its log entry', async ({ window, testConfigDir }) => {
+    const id = 'e2e-log-manage'
+    seedStateJson(testConfigDir, {
+      notepadItems: [],
+      notepadLog: [{
+        id, title: '误完成的需求', text: '误完成的需求', category: 'improvement',
+        createdAt: '2026-11-14T00:00:00Z', resolvedAt: '2026-11-14T01:00:00Z', source: 'user',
+        comments: [{ id: 'e2e-comment', text: '恢复后仍保留', createdAt: '2026-11-14T01:30:00Z' }],
+      }],
+    })
+
+    await window.getByTestId('notepad-fab-button').click()
+    await window.getByTestId('notepad-tab-done').click()
+    await window.getByTestId(`notepad-restore-${id}`).click()
+    await window.getByTestId('notepad-tab-pending').click()
+    await expect(window.getByTestId('notepad-item')).toContainText('误完成的需求')
+
+    const statePath = path.join(testConfigDir, 'state.json')
+    await expect.poll(() => JSON.parse(fs.readFileSync(statePath, 'utf8')).notepadItems[0]?.id).toBe(id)
+    await window.getByTestId('notepad-resolve').click()
+    await window.getByTestId('notepad-tab-done').click()
+    await expect.poll(() => JSON.parse(fs.readFileSync(statePath, 'utf8')).notepadLog[0]?.comments?.[0]?.text).toBe('恢复后仍保留')
+
+    await window.getByTestId(`notepad-delete-log-${id}`).click()
+    await window.getByTestId('confirm-dialog-confirm').click()
+    await expect(window.getByTestId(`notepad-delete-log-${id}`)).toHaveCount(0)
+    await expect.poll(() => JSON.parse(fs.readFileSync(statePath, 'utf8')).notepadLog).toEqual([])
+  })
 })

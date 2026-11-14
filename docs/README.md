@@ -110,10 +110,9 @@
 
 ### 15. 迭代记事板
 
-**现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；待办可显示 Agent 认领者，认领独立存于 `notepad-claims.json`，面板重开或窗口聚焦时刷新；已完成时间线按本地日期只高亮今日条目并显示「今日完成 · 待测试」；已完成条目可点「评论」按钮展开右侧输入框，输入即自动保存、无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无删除按钮；评论含待处理/已处理状态与 Agent 处理摘要；旁注打开时入口/面板左移并保持可交互；接单、评论处理与归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
-- planned：`specs/2026-11-14-notepad-log-management-design.md` + `plans/2026-11-14-notepad-log-management.md`
+**现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；待办可显示 Agent 认领者，认领独立存于 `notepad-claims.json`，面板重开或窗口聚焦时刷新；已完成时间线按本地日期只高亮今日条目并显示「今日完成 · 待测试」；已完成条目可恢复待办或确认后永久删除，恢复保留评论；可点「评论」按钮展开右侧输入框，输入即自动保存、无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无评论删除按钮；评论含待处理/已处理状态与 Agent 处理摘要；旁注打开时入口/面板左移并保持可交互；接单、评论处理与归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（含记事板与旁注共存交互；同名 plan 为实施记录）
-**历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）→ 11-11 settings-center-and-notepad-claims（记事板认领与今日高亮部分）→ 11-11 notepad-agent-claims
+**历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）→ 11-11 settings-center-and-notepad-claims（记事板认领与今日高亮部分）→ 11-11 notepad-agent-claims → 11-14 notepad-log-management
 
 ### 16. 设置 / 向导 / LLM 配置
 
