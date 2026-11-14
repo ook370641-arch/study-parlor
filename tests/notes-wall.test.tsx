@@ -32,6 +32,7 @@ describe('NotesWall', () => {
   })
   it('渲染全部专辑卡', () => {
     const { getByTestId } = render(<NotesWall />)
+    expect(getByTestId('notes-wall')).toHaveAttribute('data-album-wall', 'notes')
     expect(getByTestId('wall-album-a')).toBeTruthy()
     expect(getByTestId('wall-album-b')).toBeTruthy()
   })

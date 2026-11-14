@@ -59,6 +59,7 @@ describe('BlogWall', () => {
   it('全部视图渲染封面、日期顺序和已导入标记，不渲染拖拽手柄', () => {
     const current = wallProps()
     const { container } = render(<BlogWall {...current} />)
+    expect(screen.getByTestId('blog-wall')).toHaveAttribute('data-album-wall', 'blog')
     expect(screen.getByText('已保存文章')).toBeInTheDocument()
     expect(screen.getByTestId('blog-wall-saved-saved')).toBeInTheDocument()
     expect(screen.getByTestId('blog-wall-cover-fallback-read')).toBeInTheDocument()

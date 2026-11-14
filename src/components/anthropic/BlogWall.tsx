@@ -6,6 +6,8 @@ import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthrop
 import { BlogFilterTabs } from './BlogFilterTabs'
 import { BlogMineGroupSection } from './BlogMineGroupSection'
 import { BlogRecommendationTools } from './BlogRecommendationTools'
+import { AlbumCard } from '@/components/album-wall/AlbumCard'
+import { AlbumGrid, AlbumWall } from '@/components/album-wall/AlbumWall'
 
 interface Props {
   articles: AnthropicArticleMeta[]
@@ -58,23 +60,14 @@ function WallCard({ article, group, onOpenArticle, onReorder }: {
   }
 
   return (
-    <article
-      data-testid={`blog-wall-card-${article.url}`}
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpenArticle(article)}
-      onKeyDown={event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onOpenArticle(article)
-        }
-      }}
+    <AlbumCard
+      testId={`blog-wall-card-${article.url}`}
+      title={article.title}
+      onOpen={() => onOpenArticle(article)}
       onDragOver={event => { if (group && event.dataTransfer.types.includes(ARTICLE_MIME)) event.preventDefault() }}
       onDrop={dropArticle}
-      className="group relative cursor-pointer overflow-hidden rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ember/70"
-      style={{ aspectRatio: '3/4', boxShadow: '0 6px 16px rgba(0,0,0,.35)', background: `linear-gradient(135deg, ${color}88, ${color}22 58%, #1a120d)` }}
-    >
-      {group && (
+      style={{ background: `linear-gradient(135deg, ${color}88, ${color}22 58%, #1a120d)` }}
+      topLeft={group ? (
         <span
           data-testid={`blog-wall-article-handle-${article.url}`}
           title="拖拽排序"
@@ -87,18 +80,15 @@ function WallCard({ article, group, onOpenArticle, onReorder }: {
           }}
           className="absolute left-2 top-2 z-20 cursor-grab rounded bg-black/45 px-1.5 py-0.5 text-xs text-white/85 opacity-0 transition-opacity group-hover:opacity-100"
         >⠿</span>
-      )}
-      <div data-testid={`blog-wall-cover-fallback-${article.url}`} className="absolute inset-0 flex items-center justify-center p-5 text-center font-serif text-lg text-white/65">
+      ) : undefined}
+      fallback={<div data-testid={`blog-wall-cover-fallback-${article.url}`} className="absolute inset-0 flex items-center justify-center p-5 text-center font-serif text-lg text-white/65">
         {section?.label ?? 'Anthropic'}
-      </div>
-      {article.imageUrl && <img src={coverImageUrl(article.imageUrl)} alt="" loading="lazy" decoding="async" onError={event => { event.currentTarget.style.display = 'none' }} className="absolute inset-0 h-full w-full object-cover" />}
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(20,12,8,0) 32%, rgba(20,12,8,.94))' }} />
-      {article.isSaved && <span data-testid={`blog-wall-saved-${article.url}`} className="absolute right-2 top-2 rounded bg-black/45 px-1.5 py-0.5 text-[9px] text-white/85">已导入</span>}
-      <div className="absolute inset-x-0 bottom-0 p-3 text-[#f0e2c8]">
-        <div className="line-clamp-3 text-[13px] leading-snug group-hover:line-clamp-none">{article.title}</div>
-        <div className="mt-2 text-[10px] text-[#f0e2c8]/65">{section?.label ?? 'Anthropic'}{article.publishedAt ? ` · ${article.publishedAt.slice(0, 10)}` : ''}</div>
-      </div>
-    </article>
+      </div>}
+      cover={article.imageUrl ? <img src={coverImageUrl(article.imageUrl)} alt="" loading="lazy" decoding="async" onError={event => { event.currentTarget.style.display = 'none' }} className="absolute inset-0 h-full w-full object-cover" /> : undefined}
+      topRight={article.isSaved ? <span data-testid={`blog-wall-saved-${article.url}`} className="absolute right-2 top-2 rounded bg-black/45 px-1.5 py-0.5 text-[9px] text-white/85">已导入</span> : undefined}
+      titleClassName="line-clamp-3 text-[13px] group-hover:line-clamp-none"
+      meta={<div className="mt-2 text-[10px] text-[#f0e2c8]/65">{section?.label ?? 'Anthropic'}{article.publishedAt ? ` · ${article.publishedAt.slice(0, 10)}` : ''}</div>}
+    />
   )
 }
 
@@ -114,14 +104,9 @@ export function BlogWall({
     : articles.length > 0
 
   const grid = (items: AnthropicArticleMeta[], group?: BlogMineGroup) => (
-    <div
-      data-testid={group ? `blog-wall-${group}-order` : undefined}
-      data-order={group ? items.map(article => article.url).join(',') : undefined}
-      className="grid gap-5"
-      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))' }}
-    >
+    <AlbumGrid testId={group ? `blog-wall-${group}-order` : undefined} order={group ? items.map(article => article.url).join(',') : undefined}>
       {items.map(article => <WallCard key={article.url} article={article} group={group} onOpenArticle={onOpenArticle} onReorder={onReorder} />)}
-    </div>
+    </AlbumGrid>
   )
 
   const dropGroup = (event: DragEvent<HTMLElement>, target: BlogMineGroup) => {
@@ -134,7 +119,7 @@ export function BlogWall({
   }
 
   return (
-    <div data-testid="blog-wall" className={`h-full overflow-y-auto px-8 py-6 ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>
+    <AlbumWall domain="blog" testId="blog-wall" className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}>
       <div className="flex flex-wrap items-center gap-2 pb-5 pr-24">
         <BlogFilterTabs area="wall" value={filter} onChange={onFilterChange} theme={theme} />
         {filter.view === 'all' && (
@@ -174,6 +159,6 @@ export function BlogWall({
           <button type="button" data-testid="blog-wall-clear-filters" onClick={onClearFilters} className={isAcademic ? 'text-ember' : 'text-[#8a3a3a]'}>清空筛选</button>
         </div>
       ) : grid(articles)}
-    </div>
+    </AlbumWall>
   )
 }
