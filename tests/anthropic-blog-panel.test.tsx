@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({
   ipc: {
@@ -129,6 +129,49 @@ describe('AnthropicBlogPanel', () => {
     fireEvent.click(screen.getByTestId('list-view-all'))
     expect(screen.queryByTestId('blog-collection-section')).not.toBeInTheDocument()
     expect(screen.getByTestId('anthropic-article-row')).toBeInTheDocument()
+  })
+
+  it('专辑墙三组使用独立筛选与折叠，并复用共享排序 action', () => {
+    const reorderBlog = vi.fn()
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('saved', 'Saved'), section: 'engineering', isSaved: true, filePath: 'saved.md' },
+          { ...article('read', 'Read'), section: 'engineering', isSaved: true, filePath: 'read.md' },
+          { ...article('favorite', 'Favorite'), section: 'research', isSaved: true, filePath: 'favorite.md' },
+        ],
+        loading: false,
+        error: null,
+      },
+      blogCollection: {
+        version: 1,
+        entries: [{ sourceUrl: 'favorite', filePath: 'favorite.md', title: 'Favorite', addedAt: 'x', origin: 'manual' }],
+        dismissed: [], history: [],
+        read: [{ sourceUrl: 'read', filePath: 'read.md', title: 'Read', readAt: 'x' }],
+        order: { groups: ['saved', 'read', 'favorite'], saved: ['saved'], read: ['read'], favorite: ['favorite'] },
+      },
+      reorderBlog,
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    const wall = screen.getByTestId('blog-wall')
+    expect(screen.getByTestId('blog-wall-card-saved')).toBeInTheDocument()
+    expect(screen.getByTestId('blog-wall-card-read')).toBeInTheDocument()
+    expect(screen.getByTestId('blog-wall-card-favorite')).toBeInTheDocument()
+    fireEvent.click(within(wall).getByRole('button', { name: '收起已读' }))
+    expect(screen.queryByTestId('blog-wall-card-read')).not.toBeInTheDocument()
+    expect(screen.getByTestId('blog-read-card-read')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('wall-source-research'))
+    expect(screen.queryByTestId('blog-wall-card-saved')).not.toBeInTheDocument()
+    expect(screen.getByTestId('blog-wall-card-favorite')).toBeInTheDocument()
+    expect(screen.getByTestId('blog-saved-card-saved')).toBeInTheDocument()
+
+    fireEvent.drop(screen.getByTestId('wall-group-header-read'), {
+      dataTransfer: { types: ['application/x-blog-group'], getData: () => 'saved' },
+    })
+    expect(reorderBlog).toHaveBeenCalledWith({ kind: 'group', source: 'saved', target: 'read', placement: 'before' })
   })
 
   it('renders swap painting button in empty state (anthropic source has no page-level chrome)', () => {

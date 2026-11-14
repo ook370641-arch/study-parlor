@@ -118,6 +118,11 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
     read: false,
     favorite: false,
   })
+  const [wallCollapsedGroups, setWallCollapsedGroups] = useState<Record<BlogMineGroup, boolean>>({
+    saved: false,
+    read: false,
+    favorite: false,
+  })
 
   // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成；合并时间线按日期倒序
   const displayArticles = useMemo(() => sortArticlesByDateDesc(withConstitutionEntry(articles)), [articles])
@@ -136,18 +141,29 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
     () => reconcileBlogOrder(blogCollection, displayArticles),
     [blogCollection, displayArticles]
   )
+  const derivedMineGroups = useMemo(
+    () => deriveBlogMineGroups(displayArticles, blogCollection),
+    [displayArticles, blogCollection]
+  )
   const mineGroups = useMemo(() => {
-    const groups = deriveBlogMineGroups(displayArticles, blogCollection)
     const q = query.trim().toLowerCase()
     const matches = (article: AnthropicArticleMeta) =>
       articlesForFilter([article], listFilter).length > 0 &&
       (!q || article.title?.toLowerCase().includes(q) || (article.summary ?? '').toLowerCase().includes(q))
     return {
-      saved: groups.saved.filter(matches),
-      read: groups.read.filter(matches),
-      favorite: groups.favorite.filter(matches),
+      saved: derivedMineGroups.saved.filter(matches),
+      read: derivedMineGroups.read.filter(matches),
+      favorite: derivedMineGroups.favorite.filter(matches),
     }
-  }, [displayArticles, blogCollection, query, listFilter])
+  }, [derivedMineGroups, query, listFilter])
+  const wallGroups = useMemo(() => {
+    const matches = (article: AnthropicArticleMeta) => articlesForFilter([article], wallFilter).length > 0
+    return {
+      saved: derivedMineGroups.saved.filter(matches),
+      read: derivedMineGroups.read.filter(matches),
+      favorite: derivedMineGroups.favorite.filter(matches),
+    }
+  }, [derivedMineGroups, wallFilter])
   const wallArticles = useMemo(
     () => sortBlogArticles(articlesForFilter(displayArticles, wallFilter), wallSort),
     [displayArticles, wallFilter, wallSort]
@@ -503,6 +519,11 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               loading={loading}
               filter={wallFilter}
               sortBy={wallSort}
+              groups={wallGroups}
+              order={blogOrder}
+              collapsedGroups={wallCollapsedGroups}
+              onToggleGroup={group => setWallCollapsedGroups(current => ({ ...current, [group]: !current[group] }))}
+              onReorder={request => { void reorderBlog(request) }}
               onFilterChange={setWallFilter}
               onSortByChange={setWallSort}
               onOpenArticle={article => { void openOrImportArticle(article) }}
