@@ -189,12 +189,32 @@ export type BlogRecommendBatch = {
   picks?: BlogRecommendPick[] // 本批挑选快照；旧批次无此字段
 }
 
+export type BlogMineGroup = 'saved' | 'read' | 'favorite'
+
+export type BlogOrder = {
+  groups: BlogMineGroup[]
+  saved: string[]
+  read: string[]
+  favorite: string[]
+}
+
+export type BlogOrderChange = {
+  sourceUrl: string
+  to: BlogMineGroup | null
+  position?: 'prepend' | 'append'
+}
+
+export type BlogReorderRequest =
+  | { kind: 'group'; source: BlogMineGroup; target: BlogMineGroup; placement: 'before' | 'after' }
+  | { kind: 'article'; group: BlogMineGroup; sourceUrl: string; targetUrl: string; placement: 'before' | 'after' }
+
 export type BlogCollectionFile = {
   version: 1
   entries: BlogCollectionEntry[]
   dismissed: string[]      // 用户移除过的推荐 sourceUrl，后续批次不再推荐
   history: BlogRecommendBatch[]  // 往期推荐历史（含用户画像），最新在前
   read: BlogReadEntry[]    // 已读文章，最新在前；后续批次不再推荐
+  order?: BlogOrder
 }
 
 export type BlogRecommendErrorCode =
@@ -805,12 +825,12 @@ export type IpcApi = {
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
   anthropicImportArticle: (url: string) => Promise<
-    | { ok: true; filePath: string; wasAlreadySaved: boolean }
+    | { ok: true; filePath: string; wasAlreadySaved: boolean; collection: BlogCollectionFile }
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
   anthropicCancelImport: (url?: string) => Promise<void>
   anthropicDeleteArticle: (args: { filePath: string }) => Promise<
-    { ok: true } | { ok: false; message: string }
+    { ok: true; collection: BlogCollectionFile } | { ok: false; message: string }
   >
   anthropicWriteArticleBody: (args: { filePath: string; body: string }) => Promise<{ ok: true } | { ok: false; code: 'ARTICLE_PATH_FORBIDDEN' | 'ARTICLE_WRITE_ERROR' }>
   /** 后台元数据回填进度：sitemap 老文章逐页取到元数据后分批推送 */
@@ -821,6 +841,9 @@ export type IpcApi = {
     anthropicCollectionMarkRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemoveRead: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemoveBatch: (args: { batch: number }) => Promise<{ ok: true; collection: BlogCollectionFile }>
+    anthropicCollectionReorder: (request: BlogReorderRequest) => Promise<
+      { ok: true; collection: BlogCollectionFile } | { ok: false; message: string }
+    >
     anthropicRecommendStart: (note?: string) => Promise<{ ok: true } | { ok: false; code: 'ALREADY_RUNNING' }>
     anthropicRecommendCancel: () => Promise<void>
     onAnthropicRecommendStage: (cb: (p: { stage: RecommendStage }) => void) => () => void

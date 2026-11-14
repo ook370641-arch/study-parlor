@@ -4,11 +4,12 @@ import { ipc } from '@/lib/ipc'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
-import { BlogCollectionSection } from './BlogCollectionSection'
+import { BlogCollectionSection, type BlogDeleteRequest } from './BlogCollectionSection'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { ConstitutionReportView } from './ConstitutionReportView'
 import { BlogRecommendView } from './BlogRecommendView'
 import { BlogWall } from './BlogWall'
+import { BlogFilterTabs } from './BlogFilterTabs'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
@@ -16,15 +17,22 @@ import { CompanionWritingPicker } from '@/components/article-assistant/Companion
 import { findNewArticleUrls, sortArticlesByDateDesc, sortBlogArticles, type BlogWallSort } from '@/lib/anthropic-articles'
 import { withConstitutionEntry } from '@/lib/constitution-report'
 import { ANTHROPIC_SOURCES, filterGroupOf } from '@/lib/anthropic-sections'
-import { ALL_SOURCE_KEYS, clickAllChip, toggleMineChip, toggleSourceChip, type BlogFilter } from '@/lib/section-filter'
-import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
+import { DEFAULT_BLOG_FILTER, type BlogViewFilter } from '@/lib/section-filter'
+import { deriveBlogMineGroups, reconcileBlogOrder } from '@/lib/blog-groups'
+import type { AnthropicArticleMeta, AnthropicError, BlogMineGroup, BriefingTheme } from '@shared/index'
 
-type PendingDelete =
-  | { kind: 'mine'; article: AnthropicArticleMeta }
-  | { kind: 'collection' | 'read'; sourceUrl: string; filePath: string; title: string }
+type PendingDelete = BlogDeleteRequest
 
 interface Props {
   theme?: BriefingTheme
+}
+
+function articlesForFilter(articles: AnthropicArticleMeta[], filter: BlogViewFilter): AnthropicArticleMeta[] {
+  return articles.filter(article => {
+    if (article.local) return filter.view === 'all' && filter.source === 'all'
+    if (filter.view === 'mine' && !article.isSaved) return false
+    return filter.source === 'all' || filterGroupOf(article) === filter.source
+  })
 }
 
 // Keyframe styles extracted to module level to avoid re-injecting on every render
@@ -85,6 +93,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const toggleBlogRead = useStore((s) => s.toggleBlogRead)
   const removeBlogCollection = useStore((s) => s.removeBlogCollection)
   const removeBlogRead = useStore((s) => s.removeBlogRead)
+  const reorderBlog = useStore((s) => s.reorderBlog)
   // 写作树对照挑选器：对照 tab 下点来源栏「写作」后替换本栏文章列表
   const pickerOpen = useStore((s) => s.writingCompanionPicker === 'anthropic')
 
@@ -101,19 +110,25 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [checkError, setCheckError] = useState<AnthropicError | null>(null)
   const [checkKey, setCheckKey] = useState(0)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
-  const [filter, setFilter] = useState<BlogFilter>({ mode: 'all' })
+  const [listFilter, setListFilter] = useState<BlogViewFilter>(DEFAULT_BLOG_FILTER)
+  const [wallFilter, setWallFilter] = useState<BlogViewFilter>(DEFAULT_BLOG_FILTER)
   const [wallSort, setWallSort] = useState<BlogWallSort>('newest')
+  const [listCollapsedGroups, setListCollapsedGroups] = useState<Record<BlogMineGroup, boolean>>({
+    saved: false,
+    read: false,
+    favorite: false,
+  })
+  const [wallCollapsedGroups, setWallCollapsedGroups] = useState<Record<BlogMineGroup, boolean>>({
+    saved: false,
+    read: false,
+    favorite: false,
+  })
 
   // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成；合并时间线按日期倒序
   const displayArticles = useMemo(() => sortArticlesByDateDesc(withConstitutionEntry(articles)), [articles])
 
   const filtered = useMemo(() => {
-    const bySource = filter.mode === 'all'
-      ? displayArticles
-      : filter.mode === 'mine'
-        // 本地内置条目（宪法报告）不算「已导入」
-        ? displayArticles.filter((a) => a.isSaved && !a.local)
-        : displayArticles.filter((a) => filter.selected.has(filterGroupOf(a)))
+    const bySource = articlesForFilter(displayArticles, listFilter)
     const q = query.trim().toLowerCase()
     if (!q) return bySource
     return bySource.filter(
@@ -121,8 +136,38 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         a.title?.toLowerCase().includes(q) ||
         (a.summary ?? '').toLowerCase().includes(q)
     )
-  }, [displayArticles, query, filter])
-  const wallArticles = useMemo(() => sortBlogArticles(filtered, wallSort), [filtered, wallSort])
+  }, [displayArticles, query, listFilter])
+  const blogOrder = useMemo(
+    () => reconcileBlogOrder(blogCollection, displayArticles),
+    [blogCollection, displayArticles]
+  )
+  const derivedMineGroups = useMemo(
+    () => deriveBlogMineGroups(displayArticles, blogCollection),
+    [displayArticles, blogCollection]
+  )
+  const mineGroups = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const matches = (article: AnthropicArticleMeta) =>
+      articlesForFilter([article], listFilter).length > 0 &&
+      (!q || article.title?.toLowerCase().includes(q) || (article.summary ?? '').toLowerCase().includes(q))
+    return {
+      saved: derivedMineGroups.saved.filter(matches),
+      read: derivedMineGroups.read.filter(matches),
+      favorite: derivedMineGroups.favorite.filter(matches),
+    }
+  }, [derivedMineGroups, query, listFilter])
+  const wallGroups = useMemo(() => {
+    const matches = (article: AnthropicArticleMeta) => articlesForFilter([article], wallFilter).length > 0
+    return {
+      saved: derivedMineGroups.saved.filter(matches),
+      read: derivedMineGroups.read.filter(matches),
+      favorite: derivedMineGroups.favorite.filter(matches),
+    }
+  }, [derivedMineGroups, wallFilter])
+  const wallArticles = useMemo(
+    () => sortBlogArticles(articlesForFilter(displayArticles, wallFilter), wallSort),
+    [displayArticles, wallFilter, wallSort]
+  )
 
   // 加载收藏夹
   useEffect(() => {
@@ -347,8 +392,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               </div>
             )}
 
-            <BlogCollectionSection theme={theme} onRequestRemove={(t) => setPendingDelete(t)} />
-
             <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
               <input
                 type="text"
@@ -360,46 +403,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             </div>
 
             <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`} data-testid="anthropic-section-filter">
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  data-testid="anthropic-filter-mine"
-                  aria-pressed={filter.mode === 'mine'}
-                  title="只看已导入的文章"
-                  onClick={() => setFilter((prev) => toggleMineChip(prev))}
-                  className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${filter.mode === 'mine' ? 'border-ember text-ember' : themeClasses.muted}`}
-                  style={filter.mode === 'mine' ? {} : { borderColor: 'transparent' }}
-                >
-                  Mine
-                </button>
-                <button
-                  type="button"
-                  data-testid="anthropic-filter-all"
-                  aria-pressed={filter.mode === 'all'}
-                  onClick={() => setFilter(clickAllChip())}
-                  className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${filter.mode === 'all' ? 'border-ember text-ember' : themeClasses.muted}`}
-                  style={filter.mode === 'all' ? {} : { borderColor: 'transparent' }}
-                >
-                  All
-                </button>
-                {ANTHROPIC_SOURCES.map((s) => {
-                  const active = filter.mode === 'pick' && filter.selected.has(s.key)
-                  return (
-                    <button
-                      key={s.key}
-                      type="button"
-                      data-testid="anthropic-section-chip"
-                      data-section={s.key}
-                      aria-pressed={active}
-                      onClick={() => setFilter((prev) => toggleSourceChip(prev, s.key, ALL_SOURCE_KEYS))}
-                      className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${active ? '' : themeClasses.muted}`}
-                      style={active ? { borderColor: s.color, color: s.color } : { borderColor: 'transparent' }}
-                    >
-                      {s.label}
-                    </button>
-                  )
-                })}
-              </div>
+              <BlogFilterTabs area="list" value={listFilter} onChange={setListFilter} theme={theme} />
             </div>
 
             <div
@@ -419,18 +423,33 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                 <AnthropicErrorMessage error={error} onRetry={() => discover()} theme={theme} />
               )}
 
-              {!loading && !error && filtered.length === 0 && (
-                <div className={`text-center py-12 text-sm ${themeClasses.muted}`}>
-                  {articles.length === 0 ? (
-                    <p>暂无文章，正在自动检测新文章…</p>
-                  ) : (
-                    <p>没有匹配"{query}"的文章。</p>
-                  )}
-                </div>
+              {!loading && !error && listFilter.view === 'mine' && (
+                <BlogCollectionSection
+                  theme={theme}
+                  groups={mineGroups}
+                  order={blogOrder}
+                  collapsedGroups={listCollapsedGroups}
+                  onToggleGroup={group => setListCollapsedGroups(current => ({ ...current, [group]: !current[group] }))}
+                  onReorder={request => { void reorderBlog(request) }}
+                  onOpenArticle={article => { void openOrImportArticle(article) }}
+                  onRequestDelete={setPendingDelete}
+                />
               )}
 
-              <div className="space-y-3">
-                {filtered.map((article) => {
+              {!loading && !error && listFilter.view === 'all' && (
+                <>
+                  {filtered.length === 0 && (
+                    <div className={`text-center py-12 text-sm ${themeClasses.muted}`}>
+                      {articles.length === 0 ? (
+                        <p>暂无文章，正在自动检测新文章…</p>
+                      ) : (
+                        <p>没有匹配"{query}"的文章。</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {filtered.map((article) => {
                   const inCol = blogCollection.entries.some(e => e.sourceUrl === article.url)
                   const isRead = blogCollection.read.some(r => r.sourceUrl === article.url)
                   return (
@@ -438,7 +457,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       key={article.url}
                       article={article}
                       theme={theme}
-                      showUnimport={filter.mode === 'mine'}
+                      onOpenArticle={article => { void openOrImportArticle(article) }}
                       onRequestDelete={(a) => setPendingDelete({ kind: 'mine', article: a })}
                       inCollection={inCol}
                       onToggleCollection={
@@ -454,8 +473,10 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       }
                     />
                   )
-                })}
-              </div>
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -496,12 +517,17 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             <BlogWall
               articles={wallArticles}
               loading={loading}
-              filter={filter}
+              filter={wallFilter}
               sortBy={wallSort}
-              onFilterChange={setFilter}
+              groups={wallGroups}
+              order={blogOrder}
+              collapsedGroups={wallCollapsedGroups}
+              onToggleGroup={group => setWallCollapsedGroups(current => ({ ...current, [group]: !current[group] }))}
+              onReorder={request => { void reorderBlog(request) }}
+              onFilterChange={setWallFilter}
               onSortByChange={setWallSort}
               onOpenArticle={article => { void openOrImportArticle(article) }}
-              onClearFilters={() => { setFilter({ mode: 'all' }); setQuery('') }}
+              onClearFilters={() => setWallFilter({ view: 'all', source: 'all' })}
               theme={theme}
             />
           </div>

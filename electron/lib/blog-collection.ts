@@ -1,6 +1,8 @@
 import path from 'path'
 import { safeReadJson, safeWriteJson } from './safe-json'
-import type { BlogCollectionFile, BlogCollectionEntry, BlogRecommendBatch, BlogReadEntry } from '@shared/index'
+import { loadBlogCache } from './library-data'
+import { reconcileBlogOrder } from '../../src/lib/blog-groups'
+import type { BlogCollectionFile, BlogCollectionEntry, BlogOrderChange, BlogRecommendBatch, BlogReadEntry } from '@shared/index'
 
 export function collectionPath(lib: string): string {
   return path.join(lib, 'Anthropic博客', '.collection.json')
@@ -10,18 +12,26 @@ const EMPTY: BlogCollectionFile = { version: 1, entries: [], dismissed: [], hist
 
 export function loadCollection(lib: string): BlogCollectionFile {
   const raw = safeReadJson<Partial<BlogCollectionFile>>(collectionPath(lib), { fallback: {} })
-  if (raw.version !== 1) return { ...EMPTY }
-  return {
+  const collection: BlogCollectionFile = raw.version !== 1 ? { ...EMPTY } : {
     version: 1,
     entries: Array.isArray(raw.entries) ? raw.entries : [],
     dismissed: Array.isArray(raw.dismissed) ? raw.dismissed : [],
     history: Array.isArray(raw.history) ? raw.history : [],
     read: Array.isArray(raw.read) ? raw.read : [],
+    order: raw.order,
   }
+  return { ...collection, order: reconcileBlogOrder(collection, loadBlogCache(lib).cache.articles) }
 }
 
-export function saveCollection(lib: string, c: BlogCollectionFile): void {
-  safeWriteJson(collectionPath(lib), c)
+export function saveCollection(
+  lib: string,
+  collection: BlogCollectionFile,
+  change?: BlogOrderChange,
+  articles = loadBlogCache(lib).cache.articles
+): BlogCollectionFile {
+  const next = { ...collection, order: reconcileBlogOrder(collection, articles, change) }
+  safeWriteJson(collectionPath(lib), next)
+  return next
 }
 
 export function addManualEntry(
@@ -61,7 +71,7 @@ export function applyRecommend(
 ): BlogCollectionFile {
   const manual = c.entries.filter(e => e.origin === 'manual')
   const history = [batch, ...c.history].slice(0, 20)
-  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history, read: c.read }
+  return { version: 1, entries: [...manual, ...pickEntries], dismissed: c.dismissed, history, read: c.read, order: c.order }
 }
 
 /** 标记已读：幂等（已存在直接返回原对象），新条目插到最前；互斥：已读即出收藏夹 */

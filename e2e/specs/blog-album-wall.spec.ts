@@ -27,7 +27,7 @@ function seedArticles(testLibraryPath: string, testConfigDir: string) {
       sectionStatus: {},
     },
   })
-  return { aUrl, aPath, aTitle: WALL_A_TITLE }
+  return { aUrl, bUrl, aPath, bPath, aTitle: WALL_A_TITLE }
 }
 
 async function gotoBlog(window: any) {
@@ -44,11 +44,12 @@ test.describe('博客专辑墙与对应笔记', () => {
     await gotoBlog(window)
 
     await expect(window.locator('[data-testid="blog-wall"]')).toBeVisible()
+    await window.locator('[data-testid="wall-view-all"]').click()
     await expect(window.locator('[data-testid="blog-wall-sort-select"]')).toHaveValue('newest')
     await window.locator('[data-testid="blog-wall-sort-select"]').selectOption('oldest')
-    await window.locator('[data-testid="blog-wall-filter-select"]').selectOption('research')
+    await window.locator('[data-testid="wall-source-research"]').click()
     await expect(window.locator(`[data-testid="blog-wall-card-${aUrl}"]`)).toHaveCount(0)
-    await window.locator('[data-testid="blog-wall-filter-select"]').selectOption('all')
+    await window.locator('[data-testid="wall-source-all"]').click()
 
     await window.locator(`[data-testid="blog-wall-card-${aUrl}"]`).click()
     await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toBeVisible()
@@ -60,6 +61,48 @@ test.describe('博客专辑墙与对应笔记', () => {
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
     await expect(window.locator('[data-testid="blog-wall"]')).toBeVisible()
     await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toHaveCount(0)
+  })
+
+  test('我的三组独立筛选、折叠、手柄排序与重启持久化', async ({ window, testLibraryPath, testConfigDir }) => {
+    const { aUrl, bUrl } = seedArticles(testLibraryPath, testConfigDir)
+    await gotoBlog(window)
+
+    await expect(window.locator('[data-testid="list-view-mine"]')).toHaveAttribute('aria-pressed', 'true')
+    await window.locator('[data-testid="wall-view-all"]').click()
+    await expect(window.locator('[data-testid="list-view-mine"]')).toHaveAttribute('aria-pressed', 'true')
+    await window.locator('[data-testid="wall-source-research"]').click()
+    await expect(window.locator('[data-testid="list-source-all"]')).toHaveAttribute('aria-pressed', 'true')
+    await expect(window.locator('[data-testid="blog-list-saved-order"]')).toHaveAttribute('data-order', `${aUrl},${bUrl}`)
+
+    await window.locator('[data-testid="wall-source-all"]').click()
+    await window.locator('[data-testid="wall-view-mine"]').click()
+    const wall = window.locator('[data-testid="blog-wall"]')
+    const wallFavorite = wall.locator('[data-group-section="favorite"]')
+    await expect(wallFavorite.locator('[data-testid="blog-recommendation-tools"]')).toBeVisible()
+    await wallFavorite.getByRole('button', { name: '收起收藏' }).click()
+    await expect(wallFavorite.locator('[data-testid="blog-recommendation-tools"]')).toHaveCount(0)
+    await expect(window.locator('[data-testid="blog-collection-section"] [data-testid="blog-recommendation-tools"]')).toBeVisible()
+
+    await window.locator('[data-testid="wall-group-handle-read"]').dragTo(
+      window.locator('[data-testid="wall-group-header-saved"]'),
+      { targetPosition: { x: 20, y: 5 } }
+    )
+    const collectionPath = path.join(testLibraryPath, 'Anthropic博客', '.collection.json')
+    await expect.poll(() => JSON.parse(fs.readFileSync(collectionPath, 'utf8')).order.groups).toEqual(['read', 'saved', 'favorite'])
+
+    const handle = window.locator(`[data-testid="blog-wall-article-handle-${aUrl}"]`)
+    const target = window.locator(`[data-testid="blog-wall-card-${bUrl}"]`)
+    const targetBox = await target.boundingBox()
+    await handle.dragTo(target, { targetPosition: { x: Math.max(20, (targetBox?.width ?? 180) - 20), y: 20 } })
+    const expectedOrder = `${bUrl},${aUrl}`
+    await expect(window.locator('[data-testid="blog-list-saved-order"]')).toHaveAttribute('data-order', expectedOrder)
+    await expect(window.locator('[data-testid="blog-wall-saved-order"]')).toHaveAttribute('data-order', expectedOrder)
+    await expect.poll(() => JSON.parse(fs.readFileSync(collectionPath, 'utf8')).order.saved.join(',')).toBe(expectedOrder)
+
+    await window.reload()
+    await gotoBlog(window)
+    await expect(window.locator('[data-testid="blog-wall-saved-order"]')).toHaveAttribute('data-order', expectedOrder)
+    await expect(window.locator('[data-testid="blog-list-saved-order"]')).toHaveAttribute('data-order', expectedOrder)
   })
 
   test('当前博客一键创建对应笔记，再次执行复用同一文件', async ({ window, testLibraryPath, testConfigDir }) => {
@@ -98,11 +141,12 @@ test.describe('博客专辑墙与对应笔记', () => {
     await expect(title).toHaveCSS('display', '-webkit-box')
   })
 
-  test('筛选下拉框在学术版和报纸版使用对应底色与文字色', async ({ window, testLibraryPath, testConfigDir }) => {
+  test('排序下拉框在学术版和报纸版使用对应底色与文字色', async ({ window, testLibraryPath, testConfigDir }) => {
     seedArticles(testLibraryPath, testConfigDir)
     await gotoBlog(window)
-    const select = window.locator('[data-testid="blog-wall-filter-select"]')
-    const option = select.locator('option[value="all"]')
+    await window.locator('[data-testid="wall-view-all"]').click()
+    const select = window.locator('[data-testid="blog-wall-sort-select"]')
+    const option = select.locator('option[value="newest"]')
     await expect(select).toHaveCSS('background-color', 'rgb(42, 31, 26)')
     await expect(select).toHaveCSS('color', 'rgb(232, 213, 183)')
     await expect(option).toHaveCSS('background-color', 'rgb(42, 31, 26)')

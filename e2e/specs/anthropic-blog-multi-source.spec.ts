@@ -7,17 +7,19 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 const SEL = {
-  sectionChip: '[data-testid="anthropic-section-chip"]',
+  sourceChips: '[data-testid^="list-source-"]',
   sectionTag: '[data-testid="anthropic-section-tag"]',
   sectionError: '[data-testid="anthropic-section-error"]',
-  filterAll: '[data-testid="anthropic-filter-all"]',
-  filterMine: '[data-testid="anthropic-filter-mine"]',
+  filterAll: '[data-testid="list-view-all"]',
+  filterMine: '[data-testid="list-view-mine"]',
   guideChunk: '[data-testid="guide-chunk"]',
 }
 
 const PROFILE = { name: 'E2E 测试员', profile_text: '', preferred_topics: [] }
 
 type SectionKey = 'engineering' | 'research' | 'alignment' | 'interpretability' | 'product' | 'institute'
+
+const sourceChip = (section: SectionKey | 'all') => `[data-testid="list-source-${section}"]`
 
 function seedSectionArticle(
   libPath: string,
@@ -98,11 +100,12 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       const cover = new CoverPage(window)
       await cover.goToBriefing()
       await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
+      await window.locator(SEL.filterAll).click()
 
       // chip 行：Mine + All + 五源
       await expect(window.locator(SEL.filterMine)).toHaveCount(1)
       await expect(window.locator(SEL.filterAll)).toHaveCount(1)
-      await expect(window.locator(SEL.sectionChip)).toHaveCount(5)
+      await expect(window.locator(SEL.sourceChips)).toHaveCount(6)
 
       // 时间线：constitution 自动置顶 + 11 篇 seeded 按 publishedAt 倒序
       const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
@@ -123,51 +126,46 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       ])
 
       // All → 单选 research：constitution 隐藏、institute 可见、engineering 隐藏
-      await window.locator(`${SEL.sectionChip}[data-section="research"]`).click()
+      await window.locator(sourceChip('research')).click()
       await expect(window.locator(SELECTORS.briefing.anthropicConstitutionPill)).toHaveCount(0)
       await expect(
         window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Eng A")`)
       ).toHaveCount(0)
       await expect(await visibleTitles(window)).toEqual(['E2E Inst A', 'E2E Res A', 'E2E Res B'])
 
-      // + 多选 alignment：research + alignment + institute 可见，engineering 隐藏
-      await window.locator(`${SEL.sectionChip}[data-section="alignment"]`).click()
-      await expect(await visibleTitles(window)).toEqual(['E2E Inst A', 'E2E Res A', 'E2E Algn A', 'E2E Res B', 'E2E Algn B'])
+      // 来源二级标签始终单选：alignment 替代 research
+      await window.locator(sourceChip('alignment')).click()
+      await expect(await visibleTitles(window)).toEqual(['E2E Algn A', 'E2E Algn B'])
 
-      // 点灭 alignment → 回单选 research
-      await window.locator(`${SEL.sectionChip}[data-section="alignment"]`).click()
-      await expect(await visibleTitles(window)).toEqual(['E2E Inst A', 'E2E Res A', 'E2E Res B'])
-
-      // 点灭 research（空选择回退 All）→ 全部恢复 + constitution 回到置顶
-      await window.locator(`${SEL.sectionChip}[data-section="research"]`).click()
+      // 全部来源恢复完整时间线和内置报告
+      await window.locator(sourceChip('all')).click()
       await expect(rows).toHaveCount(12)
       await expect(rows.first().locator(SELECTORS.briefing.anthropicConstitutionPill)).toBeVisible()
 
-      // 只选 engineering：constitution 可见、institute 隐藏
-      await window.locator(`${SEL.sectionChip}[data-section="engineering"]`).click()
-      await expect(window.locator(SELECTORS.briefing.anthropicConstitutionPill)).toHaveCount(1)
+      // 只选 engineering：constitution 与 institute 都隐藏
+      await window.locator(sourceChip('engineering')).click()
+      await expect(window.locator(SELECTORS.briefing.anthropicConstitutionPill)).toHaveCount(0)
       await expect(await visibleTitles(window)).toEqual(['E2E Eng A', 'E2E Eng B'])
       await expect(
         window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Inst A")`)
       ).toHaveCount(0)
 
-      // Mine：只剩已导入 2 篇（日期倒序），constitution（内置非导入）隐藏；源 chip 清零
+      // Mine 保留来源筛选：已保存组只显示 engineering 的已导入文章
       await window.locator(SEL.filterMine).click()
       await expect(window.locator(SEL.filterMine)).toHaveAttribute('aria-pressed', 'true')
       await expect(window.locator(SEL.filterAll)).toHaveAttribute('aria-pressed', 'false')
       await expect(window.locator(SELECTORS.briefing.anthropicConstitutionPill)).toHaveCount(0)
-      await expect(await visibleTitles(window)).toEqual(['E2E Res A', 'E2E Eng A'])
-      await expect(window.locator(`${SEL.sectionChip}[aria-pressed="true"]`)).toHaveCount(0)
+      await expect(await visibleTitles(window)).toEqual(['E2E Eng A'])
+      await expect(window.locator(sourceChip('engineering'))).toHaveAttribute('aria-pressed', 'true')
 
-      // mine 态点源 chip → mine 清零、该源单选
-      await window.locator(`${SEL.sectionChip}[data-section="product"]`).click()
-      await expect(window.locator(SEL.filterMine)).toHaveAttribute('aria-pressed', 'false')
+      // mine 态切换来源不改变视图；切回 All 后来源仍保留
+      await window.locator(sourceChip('product')).click()
+      await expect(window.locator(SEL.filterMine)).toHaveAttribute('aria-pressed', 'true')
+      await expect(await visibleTitles(window)).toEqual([])
+
+      await window.locator(SEL.filterAll).click()
       await expect(await visibleTitles(window)).toEqual(['E2E Prod A', 'E2E Prod B'])
-
-      // pick 态点 Mine → 前序清零，仅已导入；再点 Mine → 回退 All
-      await window.locator(SEL.filterMine).click()
-      await expect(await visibleTitles(window)).toEqual(['E2E Res A', 'E2E Eng A'])
-      await window.locator(SEL.filterMine).click()
+      await window.locator(sourceChip('all')).click()
       await expect(window.locator(SEL.filterAll)).toHaveAttribute('aria-pressed', 'true')
       await expect(rows).toHaveCount(12)
     })
@@ -193,6 +191,7 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       const cover = new CoverPage(window)
       await cover.goToBriefing()
       await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
+      await window.locator(SEL.filterAll).click()
 
       // Product 栏目失败提示条含 "Product"，且为可点击重试按钮
       const banner = window.locator(`${SEL.sectionError}[data-section="product"]`)
@@ -242,6 +241,7 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       const cover = new CoverPage(window)
       await cover.goToBriefing()
       await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
+      await window.locator(SEL.filterAll).click()
 
       const mockRow = window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Backfill 回填文章")`)
 
@@ -269,6 +269,7 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       await window.reload()
       await cover.goToBriefing()
       await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
+      await window.locator(SEL.filterAll).click()
       await expect(mockRow).toHaveCount(1, { timeout: 15000 })
 
       // 博客缓存已迁入学习库（Anthropic博客/.cache.json），state.json 不再保存

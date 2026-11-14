@@ -61,6 +61,7 @@ test.describe('博客排版对标官网', () => {
     await cover.goToBriefing()
     await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
 
     // 点击 fixture 文章行进阅读器（排除宪法置顶行）
     const row = window.locator(SELECTORS.briefing.anthropicArticleRow)

@@ -13,7 +13,14 @@ let dir: string
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'blog-col-')) })
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
 
-const empty = (): BlogCollectionFile => ({ version: 1, entries: [], dismissed: [], history: [], read: [] })
+const empty = (): BlogCollectionFile => ({
+  version: 1,
+  entries: [],
+  dismissed: [],
+  history: [],
+  read: [],
+  order: { groups: ['saved', 'read', 'favorite'], saved: [], read: [], favorite: [] },
+})
 
 describe('loadCollection', () => {
   it('缺文件返回空集合', () => {
@@ -32,6 +39,16 @@ describe('loadCollection', () => {
     fs.copyFileSync(p, p + '.bak')
     fs.writeFileSync(p, '{"broken')
     expect(loadCollection(dir).entries).toHaveLength(1)
+  })
+  it('旧文件无 order 时派生默认顺序，保存后可读回', () => {
+    fs.mkdirSync(path.join(dir, 'Anthropic博客'), { recursive: true })
+    fs.writeFileSync(collectionPath(dir), JSON.stringify({ version: 1, entries: [], dismissed: [], history: [], read: [] }))
+
+    const loaded = loadCollection(dir)
+    expect(loaded.order?.groups).toEqual(['saved', 'read', 'favorite'])
+    saveCollection(dir, loaded)
+
+    expect(loadCollection(dir).order).toEqual(loaded.order)
   })
 })
 
@@ -72,6 +89,7 @@ describe('applyRecommend', () => {
   it('推荐批次替换 recommend 条目，保留 manual', () => {
     const c: BlogCollectionFile = {
       ...empty(),
+      order: { groups: ['favorite', 'saved', 'read'], saved: ['u1'], read: [], favorite: ['u2'] },
       entries: [
         { sourceUrl: 'u1', filePath: 'a.md', title: 't', addedAt: 'x', origin: 'manual' },
         { sourceUrl: 'u2', filePath: 'b.md', title: 't', addedAt: 'x', origin: 'recommend', reason: 'old' },
@@ -82,6 +100,7 @@ describe('applyRecommend', () => {
     const c2 = applyRecommend(c, batch, picks)
     expect(c2.entries.map(e => e.sourceUrl).sort()).toEqual(['u1', 'u3'])
     expect(c2.history[0]).toEqual(batch)
+    expect(c2.order).toEqual(c.order)
   })
   it('历史批次追加最新在前，超 20 批滚动丢弃最旧', () => {
     const c: BlogCollectionFile = { ...empty(), history: Array.from({ length: 20 }, (_, i) => ({ batch: 19 - i, generatedAt: 'g', profile: 'p', gaps: [], queries: [], searchUsed: false })) }

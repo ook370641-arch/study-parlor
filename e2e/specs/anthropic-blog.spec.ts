@@ -27,6 +27,7 @@ test.describe('@real Anthropic 博客集成', () => {
 
     // 切换到 Anthropic 来源（中间列变为博客列表）
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
     const listColumn = window.locator(SELECTORS.briefing.listColumn)
     await expect(listColumn).toBeVisible()
 
@@ -100,6 +101,7 @@ test.describe('@real Anthropic 博客集成', () => {
       await cover.enterName('E2E 测试员')
       await cover.goToBriefing()
       await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+      await window.locator('[data-testid="list-view-all"]').click()
       // v1.2: auto-detect fires on mount with commit:false, surfacing the
       // check-error indicator (not the store-level error message).
       const panel = window.locator(SELECTORS.briefing.anthropicPanel)
@@ -111,6 +113,7 @@ test.describe('@real Anthropic 博客集成', () => {
       await cover.enterName('E2E 测试员')
       await cover.goToBriefing()
       await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+      await window.locator('[data-testid="list-view-all"]').click()
 
       // 本地内置条目不依赖网络抓取 — 离线下也必须置顶出现在列表
       const rows = window.locator(SELECTORS.briefing.anthropicArticleRow)
@@ -145,6 +148,7 @@ test.describe('@real Anthropic 博客集成', () => {
     await cover.enterName('E2E 测试员')
     await cover.goToBriefing()
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
     await expect(window.locator(SELECTORS.briefing.listColumn)).toBeVisible()
 
     // 处理新文章检测提示
@@ -182,6 +186,7 @@ test.describe('@real Anthropic 博客集成', () => {
     await window.locator(SELECTORS.writing.sourceButton).click()
     await window.waitForTimeout(1000)
     await window.locator(SELECTORS.briefing.sourceAnthropicButton).click()
+    await window.locator('[data-testid="list-view-all"]').click()
     await expect(window.locator(SELECTORS.briefing.listColumn)).toBeVisible()
 
     const savedRow = window

@@ -12,7 +12,8 @@ import type { ArticleMetaCache } from '../lib/anthropic-discover'
 import { loadCollection, saveCollection, addManualEntry, removeEntry, applyRecommend, markRead, removeRead, removeBatch } from '../lib/blog-collection'
 import { writeArticleBody } from '../lib/article-io'
 import { runBlogRecommend, collectLocalArticles } from '../lib/blog-recommend'
-import type { BlogRecommendErrorCode, BlogCollectionEntry, BlogRecommendBatch } from '@shared/index'
+import type { BlogRecommendErrorCode, BlogCollectionEntry, BlogRecommendBatch, BlogReorderRequest } from '@shared/index'
+import { reorderBlog as reorderBlogOrder } from '../../src/lib/blog-groups'
 
 let recommendAbort: AbortController | null = null
 
@@ -137,7 +138,16 @@ export function registerAnthropicIpc(cfg: AppConfig) {
     try {
       const listingMeta = getCurrentState().anthropicBlogCache?.articles.find((a) => a.url === url) ?? null
       const result = await importArticle(url, cfg.libraryPath, listingMeta)
-      return { ok: true as const, filePath: result.filePath, wasAlreadySaved: result.wasAlreadySaved }
+      const articles = (getCurrentState().anthropicBlogCache?.articles ?? []).map(article =>
+        article.url === url ? { ...article, isSaved: true, filePath: result.filePath } : article
+      )
+      const collection = saveCollection(
+        cfg.libraryPath,
+        loadCollection(cfg.libraryPath),
+        { sourceUrl: url, to: 'saved', position: 'prepend' },
+        articles
+      )
+      return { ok: true as const, filePath: result.filePath, wasAlreadySaved: result.wasAlreadySaved, collection }
     } catch (err) {
       const error = classifyError(err)
       return { ok: false as const, code: error.code, message: error.message }
@@ -149,7 +159,13 @@ export function registerAnthropicIpc(cfg: AppConfig) {
   })
 
   ipcMain.handle('anthropic:deleteArticle', async (_, args: { filePath: string }) => {
-    return deleteAnthropicArticleFile(cfg.libraryPath, args.filePath)
+    const result = deleteAnthropicArticleFile(cfg.libraryPath, args.filePath)
+    if (!result.ok) return result
+    const articles = (getCurrentState().anthropicBlogCache?.articles ?? []).map(article =>
+      article.filePath === args.filePath ? { ...article, isSaved: false, filePath: undefined } : article
+    )
+    const collection = saveCollection(cfg.libraryPath, loadCollection(cfg.libraryPath), undefined, articles)
+    return { ...result, collection }
   })
 
   ipcMain.handle('anthropic:writeArticleBody', async (_, args: { filePath: string; body: string }) => {
@@ -168,32 +184,54 @@ export function registerAnthropicIpc(cfg: AppConfig) {
 
   ipcMain.handle('anthropic:collectionAdd', async (_, args: { sourceUrl: string; filePath: string; title: string }) => {
     const next = addManualEntry(loadCollection(cfg.libraryPath), args)
-    saveCollection(cfg.libraryPath, next)
-    return { ok: true as const, collection: next }
+    const collection = saveCollection(cfg.libraryPath, next, { sourceUrl: args.sourceUrl, to: 'favorite', position: 'prepend' })
+    return { ok: true as const, collection }
   })
 
   ipcMain.handle('anthropic:collectionRemove', async (_, args: { sourceUrl: string }) => {
     const next = removeEntry(loadCollection(cfg.libraryPath), args.sourceUrl)
-    saveCollection(cfg.libraryPath, next)
-    return { ok: true as const, collection: next }
+    const collection = saveCollection(cfg.libraryPath, next, { sourceUrl: args.sourceUrl, to: 'saved', position: 'prepend' })
+    return { ok: true as const, collection }
   })
 
   ipcMain.handle('anthropic:collectionMarkRead', async (_, args: { sourceUrl: string; filePath: string; title: string }) => {
     const next = markRead(loadCollection(cfg.libraryPath), args)
-    saveCollection(cfg.libraryPath, next)
-    return { ok: true as const, collection: next }
+    const collection = saveCollection(cfg.libraryPath, next, { sourceUrl: args.sourceUrl, to: 'read', position: 'prepend' })
+    return { ok: true as const, collection }
   })
 
   ipcMain.handle('anthropic:collectionRemoveRead', async (_, args: { sourceUrl: string }) => {
     const next = removeRead(loadCollection(cfg.libraryPath), args.sourceUrl)
-    saveCollection(cfg.libraryPath, next)
-    return { ok: true as const, collection: next }
+    const collection = saveCollection(cfg.libraryPath, next, { sourceUrl: args.sourceUrl, to: 'saved', position: 'prepend' })
+    return { ok: true as const, collection }
   })
 
   ipcMain.handle('anthropic:collectionRemoveBatch', async (_, args: { batch: number }) => {
     const next = removeBatch(loadCollection(cfg.libraryPath), args.batch)
-    saveCollection(cfg.libraryPath, next)
-    return { ok: true as const, collection: next }
+    const collection = saveCollection(cfg.libraryPath, next)
+    return { ok: true as const, collection }
+  })
+
+  ipcMain.handle('anthropic:collectionReorder', async (_, request: BlogReorderRequest) => {
+    try {
+      const current = loadCollection(cfg.libraryPath)
+      const order = current.order
+      const groups = ['saved', 'read', 'favorite']
+      const valid = order && request && (request.placement === 'before' || request.placement === 'after') && (
+        request.kind === 'group'
+          ? groups.includes(request.source) && groups.includes(request.target)
+          : request.kind === 'article' && groups.includes(request.group) &&
+            order[request.group].includes(request.sourceUrl) && order[request.group].includes(request.targetUrl)
+      )
+      if (!order || !valid) return { ok: false as const, message: '无效排序请求' }
+      const nextOrder = reorderBlogOrder(order, request)
+      if (nextOrder === order) return { ok: false as const, message: '排序未变化' }
+      const next = { ...current, order: nextOrder }
+      const collection = saveCollection(cfg.libraryPath, next)
+      return { ok: true as const, collection }
+    } catch (error) {
+      return { ok: false as const, message: error instanceof Error ? error.message : '排序保存失败' }
+    }
   })
 
   ipcMain.handle('anthropic:recommendStart', async (event, note?: string) => {
@@ -234,11 +272,11 @@ export function registerAnthropicIpc(cfg: AppConfig) {
             batch: batch.batch,
           }]
           const next = applyRecommend(col, batch, pickEntries)
-          saveCollection(cfg.libraryPath, next)
+          const collection = saveCollection(cfg.libraryPath, next)
           send('anthropic:recommendStage', { stage: 'context' })
           setTimeout(() => {
             send('anthropic:recommendStage', { stage: 'pick' })
-            send('anthropic:recommendDone', { ok: true, collection: next })
+            send('anthropic:recommendDone', { ok: true, collection })
           }, 100)
           return
         }
@@ -250,8 +288,8 @@ export function registerAnthropicIpc(cfg: AppConfig) {
           return { sourceUrl: p.sourceUrl, filePath: a?.absPath ?? '', title: a?.title ?? p.sourceUrl, addedAt: now, origin: 'recommend' as const, reason: p.reason, gap: p.gap, guide: p.guide, batch: batch.batch }
         })
         const next = applyRecommend(loadCollection(cfg.libraryPath), batch, pickEntries)
-        saveCollection(cfg.libraryPath, next)
-        send('anthropic:recommendDone', { ok: true, collection: next })
+        const collection = saveCollection(cfg.libraryPath, next)
+        send('anthropic:recommendDone', { ok: true, collection })
       } catch (err) {
         if (ac.signal.aborted) send('anthropic:recommendDone', { ok: false, code: 'ABORTED' })
         else send('anthropic:recommendDone', { ok: false, code: recommendErrorCode(err) })

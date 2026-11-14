@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import { normalizeStudyFontSize } from '@/lib/study-font-size'
 import { mergeArticlesByUrl } from '@/lib/anthropic-articles'
+import { reconcileBlogOrder, reorderBlog as reorderBlogOrder } from '@/lib/blog-groups'
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
@@ -15,7 +16,7 @@ import type {
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
   WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   GuideProgress,
-  BlogCollectionFile, RecommendStage, ScrollMemorySlot,
+  BlogCollectionFile, BlogReorderRequest, RecommendStage, ScrollMemorySlot,
   LocalMaterial,
   NotepadCategory, NotepadFontSize, NotepadItem, NotepadLogEntry,
   NoteEntry, NoteMeta, NoteSource, NoteSortBy,
@@ -189,6 +190,7 @@ type AppStore = {
   openRecommendView: (batch: number) => void
   closeRecommendView: () => void
   removeBlogBatch: (batch: number) => Promise<void>
+  reorderBlog: (request: BlogReorderRequest) => Promise<void>
   startBlogRecommend: (note?: string) => Promise<void>
   cancelBlogRecommend: () => Promise<void>
 
@@ -1503,6 +1505,7 @@ export const useStore = create<AppStore>((set, get) => ({
               a.url === url ? { ...a, isSaved: true, filePath: result.filePath } : a
             ),
           },
+          blogCollection: result.collection,
           ...(openReader ? { anthropicReaderFilePath: result.filePath, anthropicReaderBody: null, anthropicReaderTitle: null, lastAnthropicReaderFile: result.filePath } : {}),
         }))
         // 导入后自动打开也要持久化「最后阅读」(此路径绕过 openAnthropicReader)
@@ -1602,6 +1605,7 @@ export const useStore = create<AppStore>((set, get) => ({
           a.filePath === filePath ? { ...a, isSaved: false, filePath: undefined } : a
         ),
       },
+      blogCollection: r.collection,
     })
     if (get().anthropicReaderFilePath === filePath) {
       get().closeAnthropicReader()
@@ -1638,6 +1642,20 @@ export const useStore = create<AppStore>((set, get) => ({
   removeBlogBatch: async (batch) => {
     const r = await ipc.anthropicCollectionRemoveBatch({ batch })
     if (r.ok) set({ blogCollection: r.collection })
+  },
+  reorderBlog: async (request) => {
+    const previous = get().blogCollection
+    const currentOrder = previous.order ?? reconcileBlogOrder(previous, get().anthropicBlogCache.articles)
+    const optimistic = reorderBlogOrder(currentOrder, request)
+    if (optimistic === currentOrder) return
+    set({ blogCollection: { ...previous, order: optimistic } })
+    const result = await ipc.anthropicCollectionReorder(request).catch(() => null)
+    if (result?.ok) {
+      set({ blogCollection: result.collection })
+    } else {
+      set({ blogCollection: previous })
+      get().showToast('排序保存失败，请重试')
+    }
   },
   toggleBlogRead: async (args) => {
     if (get().blogCollection.read.some(r => r.sourceUrl === args.sourceUrl)) {

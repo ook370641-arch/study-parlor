@@ -38,6 +38,17 @@ describe('AnthropicArticleRow', () => {
     expect(screen.queryByText('阅读')).not.toBeInTheDocument()
   })
 
+  it('uses the panel opening callback when supplied', () => {
+    const onOpenArticle = vi.fn()
+    const current = article({ isSaved: true, filePath: '/x.md' })
+    render(<AnthropicArticleRow article={current} onOpenArticle={onOpenArticle} />)
+
+    fireEvent.click(screen.getByTestId('anthropic-article-row'))
+
+    expect(onOpenArticle).toHaveBeenCalledWith(current)
+    expect(useStore.getState().importAnthropicArticle).not.toHaveBeenCalled()
+  })
+
   it('uses the same 512px CDN cover as the album wall', () => {
     const { container } = render(<AnthropicArticleRow article={article({ imageUrl: 'https://www-cdn.anthropic.com/images/a.jpg' })} theme="academic" />)
     expect(container.querySelector('img')).toHaveAttribute('src', 'https://www-cdn.anthropic.com/images/a.jpg?w=512&q=75&auto=format')

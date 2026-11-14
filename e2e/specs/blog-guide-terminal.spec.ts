@@ -52,6 +52,7 @@ async function openBlogArticle(window: Page, title: string): Promise<void> {
   const cover = new CoverPage(window)
   await cover.goToBriefing()
   await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
+  await window.locator('[data-testid="list-view-all"]').click()
   await window
     .locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("${title}")`)
     .click()
@@ -160,6 +161,7 @@ test.describe('@p1 博客导读终态（Task 8 验收）', () => {
       const cover = new CoverPage(window)
       await cover.goToBriefing()
       await expect(window.locator(SELECTORS.briefing.anthropicPanel)).toBeVisible()
+      await window.locator('[data-testid="list-view-all"]').click()
 
       // 行显示 Alignment 色签（新源 = engineering 体验的列表锚）
       const row = window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Alignment MSM")`)

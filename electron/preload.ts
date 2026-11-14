@@ -127,6 +127,7 @@ const api: IpcApi = {
   anthropicCollectionMarkRead: (a) => ipcRenderer.invoke('anthropic:collectionMarkRead', a),
   anthropicCollectionRemoveRead: (a) => ipcRenderer.invoke('anthropic:collectionRemoveRead', a),
   anthropicCollectionRemoveBatch: (a) => ipcRenderer.invoke('anthropic:collectionRemoveBatch', a),
+    anthropicCollectionReorder: (a) => ipcRenderer.invoke('anthropic:collectionReorder', a),
   anthropicRecommendStart: (note) => ipcRenderer.invoke('anthropic:recommendStart', note),
   anthropicRecommendCancel: () => ipcRenderer.invoke('anthropic:recommendCancel'),
   onAnthropicRecommendStage: (cb) => {

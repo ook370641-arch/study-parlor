@@ -1,142 +1,154 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-afterEach(cleanup)
-
-const mockIpc = vi.hoisted(() => ({
-  readMd: vi.fn().mockResolvedValue({ frontmatter: { title: 'x' }, body: '正文' }),
-  anthropicCollectionRemoveRead: vi.fn().mockResolvedValue({ ok: true, collection: { version: 1, entries: [], dismissed: [], history: [], read: [] } }),
-}))
+const mockIpc = vi.hoisted(() => ({ readMd: vi.fn() }))
 vi.mock('@/lib/ipc', () => ({ ipc: mockIpc }))
 
 import { useStore } from '@/store'
 import { BlogCollectionSection } from '@/components/anthropic/BlogCollectionSection'
-import type { BlogCollectionFile } from '@/types'
+import type { AnthropicArticleMeta, BlogCollectionFile } from '@shared/index'
 
-const newBatchCollection: BlogCollectionFile = {
+const savedArticle: AnthropicArticleMeta = { url: 'saved', title: 'Saved', summary: null, publishedAt: '2026-01-01', imageUrl: null, isSaved: true, filePath: 'saved.md' }
+const readArticle: AnthropicArticleMeta = { ...savedArticle, url: 'read', title: 'Read', filePath: 'read.md' }
+const favoriteArticle: AnthropicArticleMeta = { ...savedArticle, url: 'favorite', title: 'Favorite', filePath: 'favorite.md' }
+
+const collection: BlogCollectionFile = {
   version: 1,
-  entries: [],
+  entries: [{ sourceUrl: 'favorite', filePath: 'favorite.md', title: 'Favorite', addedAt: '2026-01-01', origin: 'recommend', reason: '推荐理由', gap: '缺口', guide: '导读' }],
   dismissed: [],
-  history: [{
-    batch: 2,
-    generatedAt: '2026-08-30T00:15:50.000Z',
-    focus: '构建 coding agent 评测集的原则',
-    profile: '画像散文',
-    gaps: ['缺口一'],
-    queries: ['evaluation'],
-    searchUsed: true,
-    picks: [{ sourceUrl: 'https://anthropic.com/a', title: '文章甲', filePath: 'lib/a.md', reason: '理由甲', gap: '缺口一' }],
-  }],
-  read: [{ sourceUrl: 'https://anthropic.com/r', title: '已读文', filePath: 'lib/r.md', readAt: '2026-08-30T00:00:00.000Z' }],
+  history: [{ batch: 1, generatedAt: 'x', profile: 'p', gaps: [], queries: [], searchUsed: false }],
+  read: [{ sourceUrl: 'read', filePath: 'read.md', title: 'Read', readAt: '2026-01-02' }],
+  order: { groups: ['saved', 'read', 'favorite'], saved: ['saved'], read: ['read'], favorite: ['favorite'] },
 }
+
+const props = () => ({
+  theme: 'academic' as const,
+  groups: { saved: [] as AnthropicArticleMeta[], read: [] as AnthropicArticleMeta[], favorite: [] as AnthropicArticleMeta[] },
+  order: collection.order!,
+  collapsedGroups: { saved: false, read: false, favorite: false },
+  onToggleGroup: vi.fn(),
+  onReorder: vi.fn(),
+  onOpenArticle: vi.fn(),
+  onRequestDelete: vi.fn(),
+})
 
 describe('BlogCollectionSection', () => {
   beforeEach(() => {
     cleanup()
     vi.clearAllMocks()
+    mockIpc.readMd.mockResolvedValue({ frontmatter: {}, body: '正文' })
     useStore.setState({
-      blogCollection: newBatchCollection,
+      blogCollection: collection,
       recommendRunning: false,
       recommendStage: null,
       briefingFontSize: 'base',
+      toggleBlogCollection: vi.fn(),
+      toggleBlogRead: vi.fn(),
+      removeBlogCollection: vi.fn(),
+      removeBlogRead: vi.fn(),
       openAnthropicReader: vi.fn(),
+      openRecommendView: vi.fn(),
       showToast: vi.fn(),
-    } as any)
+    } as never)
   })
 
-  it('已读区默认折叠，展开后点移出按钮上抛 read 复合删除请求；已读为空时不渲染已读区', () => {
-    const onRequestRemove = vi.fn()
-    render(<BlogCollectionSection theme="academic" onRequestRemove={onRequestRemove} />)
-    expect(screen.queryByTestId('blog-read-open-https://anthropic.com/r')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('blog-read-toggle'))
-    expect(screen.getByTestId('blog-read-open-https://anthropic.com/r')).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('blog-read-remove-https://anthropic.com/r'))
-    expect(onRequestRemove).toHaveBeenCalledWith({
-      kind: 'read', sourceUrl: 'https://anthropic.com/r', filePath: 'lib/r.md', title: '已读文',
-    })
-    // 不再直接调 IPC
-    expect(mockIpc.anthropicCollectionRemoveRead).not.toHaveBeenCalled()
+  it('已保存卡片保留收藏、已读和取消导入按钮', () => {
+    const current = props()
+    current.groups.saved = [savedArticle]
+    render(<BlogCollectionSection {...current} />)
 
-    // 已读为空时不渲染已读区
-    cleanup()
-    useStore.setState({ blogCollection: { ...newBatchCollection, read: [] } } as any)
-    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
-    expect(screen.queryByTestId('blog-read-section')).not.toBeInTheDocument()
+    expect(screen.getByTestId('blog-saved-card-saved')).toBeInTheDocument()
+    fireEvent.click(screen.getByTitle('收藏'))
+    expect(useStore.getState().toggleBlogCollection).toHaveBeenCalledWith({ sourceUrl: 'saved', filePath: 'saved.md', title: 'Saved' })
+    fireEvent.click(screen.getByTitle('标为已读'))
+    expect(useStore.getState().toggleBlogRead).toHaveBeenCalledWith({ sourceUrl: 'saved', filePath: 'saved.md', title: 'Saved' })
+    fireEvent.click(screen.getByTitle('取消导入（删除文章）'))
+    expect(current.onRequestDelete).toHaveBeenCalledWith({ kind: 'mine', article: savedArticle })
   })
 
-  it('区头为图标+计数（无「已读」文字标签）', () => {
-    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
-    expect(screen.getByTestId('blog-read-count')).toHaveTextContent('1')
-    expect(screen.getByTestId('blog-read-toggle')).toHaveAttribute('title', '已读')
+  it('已读与收藏继续使用不同删除请求', () => {
+    const current = props()
+    current.groups.read = [readArticle]
+    current.groups.favorite = [favoriteArticle]
+    render(<BlogCollectionSection {...current} />)
+
+    fireEvent.click(screen.getByTestId('blog-read-remove-read'))
+    expect(current.onRequestDelete).toHaveBeenCalledWith({ kind: 'read', sourceUrl: 'read', filePath: 'read.md', title: 'Read' })
+    fireEvent.click(screen.getByTestId('blog-collection-remove-favorite'))
+    expect(current.onRequestDelete).toHaveBeenCalledWith({ kind: 'collection', sourceUrl: 'favorite', filePath: 'favorite.md', title: 'Favorite' })
   })
 
-  it('收藏夹排序：手动在前，推荐（💡）后置，组内保序', () => {
-    useStore.setState({
-      blogCollection: {
-        version: 1, dismissed: [], history: [], read: [],
-        entries: [
-          { sourceUrl: 'u-r1', filePath: 'lib/r1.md', title: '推荐一', addedAt: 'a', origin: 'recommend' as const, batch: 1, reason: 'r', gap: 'g' },
-          { sourceUrl: 'u-m1', filePath: 'lib/m1.md', title: '手动一', addedAt: 'b', origin: 'manual' as const },
-          { sourceUrl: 'u-r2', filePath: 'lib/r2.md', title: '推荐二', addedAt: 'c', origin: 'recommend' as const, batch: 1, reason: 'r', gap: 'g' },
-          { sourceUrl: 'u-m2', filePath: 'lib/m2.md', title: '手动二', addedAt: 'd', origin: 'manual' as const },
-        ],
-      },
-    } as any)
-    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
-    const titles = screen.getAllByTestId(/^blog-collection-open-/).map((n) => n.textContent)
-    expect(titles).toEqual(['手动一', '手动二', '推荐一', '推荐二'])
+  it('只有手柄可拖拽，卡片正文仍通过面板打开', () => {
+    const current = props()
+    current.groups.saved = [savedArticle]
+    render(<BlogCollectionSection {...current} />)
+
+    expect(screen.getByTestId('blog-saved-card-saved')).not.toHaveAttribute('draggable')
+    expect(screen.getByTestId('blog-list-article-handle-saved')).toHaveAttribute('draggable', 'true')
+    fireEvent.click(screen.getByTestId('anthropic-article-row'))
+    expect(current.onOpenArticle).toHaveBeenCalledWith(savedArticle)
   })
 
-  it('收藏夹卡片只有移出+已读两按钮；移出上抛 collection 复合删除请求', () => {
-    const onRequestRemove = vi.fn()
-    useStore.setState({
-      blogCollection: {
-        version: 1, dismissed: [], history: [], read: [],
-        entries: [{ sourceUrl: 'u-m1', filePath: 'lib/m1.md', title: '手动一', addedAt: 'b', origin: 'manual' as const }],
-      },
-    } as any)
-    render(<BlogCollectionSection theme="academic" onRequestRemove={onRequestRemove} />)
-    fireEvent.click(screen.getByTestId('blog-collection-remove-u-m1'))
-    expect(onRequestRemove).toHaveBeenCalledWith({
-      kind: 'collection', sourceUrl: 'u-m1', filePath: 'lib/m1.md', title: '手动一',
-    })
-    // 卡片内有已读 toggle（书图标），无收藏 toggle
-    expect(screen.getByTestId('blog-collection-read-u-m1')).toBeInTheDocument()
-    expect(screen.queryByTestId('blog-fav-toggle')).not.toBeInTheDocument()
+  it('按共享顺序渲染分组，收藏折叠时推荐工具一起隐藏', () => {
+    const current = props()
+    current.order = { ...current.order, groups: ['favorite', 'saved', 'read'] }
+    current.collapsedGroups = { ...current.collapsedGroups, favorite: true }
+    render(<BlogCollectionSection {...current} />)
+
+    expect(screen.getAllByTestId(/^list-group-header-/).map(node => node.getAttribute('data-testid'))).toEqual([
+      'list-group-header-favorite', 'list-group-header-saved', 'list-group-header-read',
+    ])
+    expect(screen.queryByTestId('blog-recommendation-tools')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '展开收藏' }))
+    expect(current.onToggleGroup).toHaveBeenCalledWith('favorite')
   })
 
-  it('字号跟随 briefingFontSize（base → 3xl 后区头计数字号变大）', () => {
-    const { unmount } = render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
-    const baseSize = screen.getByTestId('blog-read-count').style.fontSize
-    unmount()
-    cleanup()
-    useStore.setState({ briefingFontSize: '3xl' } as any)
-    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
-    const bigSize = screen.getByTestId('blog-read-count').style.fontSize
-    expect(parseInt(bigSize)).toBeGreaterThan(parseInt(baseSize))
+  it('推荐理由、导读和缺口继续展开', () => {
+    const current = props()
+    current.groups.favorite = [favoriteArticle]
+    render(<BlogCollectionSection {...current} />)
+
+    fireEvent.click(screen.getByTestId('blog-collection-reason-favorite'))
+    expect(screen.getByText('为什么推荐：', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText('推荐理由')).toBeInTheDocument()
+    expect(screen.getByText('导读')).toBeInTheDocument()
+    expect(screen.getByText('缺口')).toBeInTheDocument()
   })
 
-  it('推荐按钮 title 为「重新推荐」，且不再有往期历史入口', () => {
-    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
-    expect(screen.getByTestId('blog-recommend-button')).toHaveAttribute('title', '重新推荐')
-    expect(screen.queryByTestId('blog-recommend-history')).not.toBeInTheDocument()
+  it('已读文件缺失时沿用原清理逻辑', async () => {
+    const current = props()
+    current.groups.read = [readArticle]
+    mockIpc.readMd.mockRejectedValue(new Error('missing'))
+    render(<BlogCollectionSection {...current} />)
+
+    fireEvent.click(screen.getByTestId('blog-read-open-read'))
+    await waitFor(() => expect(useStore.getState().removeBlogRead).toHaveBeenCalledWith('read'))
+    expect(useStore.getState().showToast).toHaveBeenCalledWith('该文件已被删除，已从已读移除')
+    expect(current.onOpenArticle).not.toHaveBeenCalled()
   })
 
-  it('重新推荐先展示逻辑说明，确认后携带备注启动', () => {
-    const startBlogRecommend = vi.fn()
-    useStore.setState({ startBlogRecommend } as any)
-    render(<BlogCollectionSection theme="academic" onRequestRemove={vi.fn()} />)
+  it('收藏文件存在时读取后通过面板打开', async () => {
+    const current = props()
+    current.groups.favorite = [favoriteArticle]
+    render(<BlogCollectionSection {...current} />)
 
-    fireEvent.click(screen.getByTestId('blog-recommend-button'))
+    fireEvent.click(screen.getByTestId('blog-collection-open-favorite'))
+    await waitFor(() => expect(current.onOpenArticle).toHaveBeenCalledWith(favoriteArticle))
+  })
 
-    expect(screen.getByTestId('blog-recommend-dialog')).toBeInTheDocument()
-    expect(screen.getByText(/写作画像/)).toBeInTheDocument()
-    expect(startBlogRecommend).not.toHaveBeenCalled()
+  it('每组可调整高度，收藏空态仍保留推荐入口', () => {
+    const current = props()
+    current.groups.saved = [savedArticle]
+    render(<BlogCollectionSection {...current} />)
 
-    fireEvent.change(screen.getByTestId('blog-recommend-note'), { target: { value: '重点关注多智能体协调' } })
-    fireEvent.click(screen.getByTestId('blog-recommend-start'))
-
-    expect(startBlogRecommend).toHaveBeenCalledWith('重点关注多智能体协调')
-    expect(screen.queryByTestId('blog-recommend-dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('blog-recommendation-tools')).toBeInTheDocument()
+    expect(screen.getByTestId('blog-collection-empty')).toBeInTheDocument()
+    const list = screen.getByTestId('blog-list-saved-order')
+    expect(list).toHaveAttribute('data-order', 'saved')
+    Object.defineProperty(list, 'offsetHeight', { value: 120 })
+    fireEvent.pointerDown(screen.getByTestId('blog-saved-resize'), { clientY: 100 })
+    fireEvent.pointerMove(window, { clientY: 140 })
+    expect(list).toHaveStyle({ height: '160px' })
+    fireEvent.pointerUp(window)
   })
 })
