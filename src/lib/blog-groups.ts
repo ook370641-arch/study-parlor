@@ -56,11 +56,11 @@ export function reconcileBlogOrder(
   articles: AnthropicArticleMeta[],
   change?: BlogOrderChange
 ): BlogOrder {
-  const favoriteEntries = [...collection.entries].sort(
+  const favoriteEntries = [...(collection.entries ?? [])].sort(
     (a, b) => Number(a.origin === 'recommend') - Number(b.origin === 'recommend')
   )
   const favorite = favoriteEntries.map(entry => entry.sourceUrl)
-  const read = collection.read.map(entry => entry.sourceUrl)
+  const read = (collection.read ?? []).map(entry => entry.sourceUrl)
   const marked = new Set([...favorite, ...read])
   const saved = articles
     .filter(article => article.isSaved && article.filePath && !marked.has(article.url))

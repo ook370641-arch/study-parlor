@@ -13,7 +13,14 @@ let dir: string
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'blog-col-')) })
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
 
-const empty = (): BlogCollectionFile => ({ version: 1, entries: [], dismissed: [], history: [], read: [] })
+const empty = (): BlogCollectionFile => ({
+  version: 1,
+  entries: [],
+  dismissed: [],
+  history: [],
+  read: [],
+  order: { groups: ['saved', 'read', 'favorite'], saved: [], read: [], favorite: [] },
+})
 
 describe('loadCollection', () => {
   it('缺文件返回空集合', () => {
@@ -32,6 +39,16 @@ describe('loadCollection', () => {
     fs.copyFileSync(p, p + '.bak')
     fs.writeFileSync(p, '{"broken')
     expect(loadCollection(dir).entries).toHaveLength(1)
+  })
+  it('旧文件无 order 时派生默认顺序，保存后可读回', () => {
+    fs.mkdirSync(path.join(dir, 'Anthropic博客'), { recursive: true })
+    fs.writeFileSync(collectionPath(dir), JSON.stringify({ version: 1, entries: [], dismissed: [], history: [], read: [] }))
+
+    const loaded = loadCollection(dir)
+    expect(loaded.order?.groups).toEqual(['saved', 'read', 'favorite'])
+    saveCollection(dir, loaded)
+
+    expect(loadCollection(dir).order).toEqual(loaded.order)
   })
 })
 

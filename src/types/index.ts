@@ -841,6 +841,9 @@ export type IpcApi = {
     anthropicCollectionMarkRead: (args: { sourceUrl: string; filePath: string; title: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemoveRead: (args: { sourceUrl: string }) => Promise<{ ok: true; collection: BlogCollectionFile }>
     anthropicCollectionRemoveBatch: (args: { batch: number }) => Promise<{ ok: true; collection: BlogCollectionFile }>
+    anthropicCollectionReorder: (request: BlogReorderRequest) => Promise<
+      { ok: true; collection: BlogCollectionFile } | { ok: false; message: string }
+    >
     anthropicRecommendStart: (note?: string) => Promise<{ ok: true } | { ok: false; code: 'ALREADY_RUNNING' }>
     anthropicRecommendCancel: () => Promise<void>
     onAnthropicRecommendStage: (cb: (p: { stage: RecommendStage }) => void) => () => void

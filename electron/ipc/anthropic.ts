@@ -12,7 +12,8 @@ import type { ArticleMetaCache } from '../lib/anthropic-discover'
 import { loadCollection, saveCollection, addManualEntry, removeEntry, applyRecommend, markRead, removeRead, removeBatch } from '../lib/blog-collection'
 import { writeArticleBody } from '../lib/article-io'
 import { runBlogRecommend, collectLocalArticles } from '../lib/blog-recommend'
-import type { BlogRecommendErrorCode, BlogCollectionEntry, BlogRecommendBatch } from '@shared/index'
+import type { BlogRecommendErrorCode, BlogCollectionEntry, BlogRecommendBatch, BlogReorderRequest } from '@shared/index'
+import { reorderBlog as reorderBlogOrder } from '../../src/lib/blog-groups'
 
 let recommendAbort: AbortController | null = null
 
@@ -194,6 +195,28 @@ export function registerAnthropicIpc(cfg: AppConfig) {
     const next = removeBatch(loadCollection(cfg.libraryPath), args.batch)
     saveCollection(cfg.libraryPath, next)
     return { ok: true as const, collection: next }
+  })
+
+  ipcMain.handle('anthropic:collectionReorder', async (_, request: BlogReorderRequest) => {
+    try {
+      const current = loadCollection(cfg.libraryPath)
+      const order = current.order
+      const groups = ['saved', 'read', 'favorite']
+      const valid = order && request && (request.placement === 'before' || request.placement === 'after') && (
+        request.kind === 'group'
+          ? groups.includes(request.source) && groups.includes(request.target)
+          : request.kind === 'article' && groups.includes(request.group) &&
+            order[request.group].includes(request.sourceUrl) && order[request.group].includes(request.targetUrl)
+      )
+      if (!order || !valid) return { ok: false as const, message: '无效排序请求' }
+      const nextOrder = reorderBlogOrder(order, request)
+      if (nextOrder === order) return { ok: false as const, message: '排序未变化' }
+      const next = { ...current, order: nextOrder }
+      saveCollection(cfg.libraryPath, next)
+      return { ok: true as const, collection: next }
+    } catch (error) {
+      return { ok: false as const, message: error instanceof Error ? error.message : '排序保存失败' }
+    }
   })
 
   ipcMain.handle('anthropic:recommendStart', async (event, note?: string) => {
