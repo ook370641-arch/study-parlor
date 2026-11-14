@@ -1,6 +1,6 @@
 // updateNotepadItem：行内编辑落库——内容/分类可改，文本变更时短标题重算
 import { beforeEach, describe, it, expect, vi } from 'vitest'
-import type { NotepadItem } from '@shared/index'
+import type { NotepadItem, NotepadLogEntry } from '@shared/index'
 
 vi.mock('@/lib/ipc', () => ({ ipc: { patchState: vi.fn(), getState: vi.fn() } }))
 
@@ -116,6 +116,51 @@ describe('记事板 claim 写回隔离', () => {
     const patch = vi.mocked(ipc.patchState).mock.calls.at(-1)?.[0]
     expect(patch?.notepadItems?.[1]).not.toHaveProperty('claim')
     expect(useStore.getState().notepadItems[1].claim).toEqual(claim)
+  })
+})
+
+describe('已完成条目恢复与删除', () => {
+  const resolvedEntry = (): NotepadLogEntry => ({
+    id: 'done',
+    title: '误完成条目',
+    text: '误完成条目',
+    category: 'improvement',
+    createdAt: '2026-11-14T00:00:00Z',
+    resolvedAt: '2026-11-14T01:00:00Z',
+    source: 'user',
+    comments: [{ id: 'comment', text: '保留这条反馈', createdAt: '2026-11-14T01:30:00Z' }],
+  })
+
+  it('恢复到待办首位，保留评论并原子写回两个数组', () => {
+    const pending: NotepadItem = { id: 'pending', text: '原有待办', category: 'feature', createdAt: '2026-11-14T00:30:00Z' }
+    useStore.setState({ notepadItems: [pending], notepadLog: [resolvedEntry()] } as any)
+
+    useStore.getState().restoreNotepadItem('done')
+
+    expect(useStore.getState().notepadItems.map(item => item.id)).toEqual(['done', 'pending'])
+    expect(useStore.getState().notepadItems[0].comments).toEqual(resolvedEntry().comments)
+    expect(useStore.getState().notepadItems[0]).not.toHaveProperty('resolvedAt')
+    expect(useStore.getState().notepadItems[0]).not.toHaveProperty('source')
+    expect(useStore.getState().notepadLog).toEqual([])
+    const patch = vi.mocked(ipc.patchState).mock.calls.at(-1)?.[0]
+    expect(patch?.notepadItems?.map(item => item.id)).toEqual(['done', 'pending'])
+    expect(patch?.notepadLog).toEqual([])
+  })
+
+  it('删除档案不影响待办，未知 id 不写回', () => {
+    const pending: NotepadItem = { id: 'pending', text: '原有待办', category: 'feature', createdAt: '2026-11-14T00:30:00Z' }
+    useStore.setState({ notepadItems: [pending], notepadLog: [resolvedEntry()] } as any)
+
+    useStore.getState().deleteNotepadLogEntry('done')
+
+    expect(useStore.getState().notepadItems).toEqual([pending])
+    expect(useStore.getState().notepadLog).toEqual([])
+    expect(vi.mocked(ipc.patchState).mock.calls.at(-1)?.[0]).toEqual({ notepadLog: [] })
+
+    vi.mocked(ipc.patchState).mockClear()
+    useStore.getState().deleteNotepadLogEntry('missing')
+    useStore.getState().restoreNotepadItem('missing')
+    expect(ipc.patchState).not.toHaveBeenCalled()
   })
 })
 

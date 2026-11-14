@@ -264,7 +264,9 @@ type AppStore = {
   setCoverNotepad: (text: string) => void
   addNotepadItem: (text: string, category: NotepadCategory) => void
   resolveNotepadItem: (id: string) => void
+  restoreNotepadItem: (id: string) => void
   deleteNotepadItem: (id: string) => void
+  deleteNotepadLogEntry: (id: string) => void
   moveNotepadItem: (id: string, toIndex: number) => void
   updateNotepadItem: (id: string, patch: { text?: string; category?: NotepadCategory }) => void
   saveNotepadComment: (id: string, commentId: string, text: string) => void
@@ -885,12 +887,39 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ notepadItems: stripNotepadClaims(items), notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)
   },
 
+  restoreNotepadItem: (id) => {
+    const entry = get().notepadLog.find(item => item.id === id)
+    if (!entry) return
+    const restored: NotepadItem = {
+      id: entry.id,
+      title: entry.title,
+      text: entry.text,
+      category: entry.category,
+      createdAt: entry.createdAt,
+      comments: entry.comments,
+    }
+    const items = [restored, ...get().notepadItems]
+    const log = get().notepadLog.filter(item => item.id !== id)
+    notepadLocalVersion++
+    set({ notepadItems: items, notepadLog: log })
+    ipc.patchState({ notepadItems: stripNotepadClaims(items), notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)
+  },
+
   deleteNotepadItem: (id) => {
     const items = get().notepadItems.filter(i => i.id !== id)
     notepadLocalVersion++
     set({ notepadItems: items })
     ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
+
+  deleteNotepadLogEntry: (id) => {
+    if (!get().notepadLog.some(item => item.id === id)) return
+    const log = get().notepadLog.filter(item => item.id !== id)
+    notepadLocalVersion++
+    set({ notepadLog: log })
+    ipc.patchState({ notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)
+  },
+
   updateNotepadItem: (id, patch) => {
     // 文本变更时短标题一并重算（面板待办行展示用 title 兜底见 deriveTitle）
     const items = get().notepadItems.map(i => i.id === id

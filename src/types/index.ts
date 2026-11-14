@@ -603,11 +603,11 @@ export interface NotepadItem {
   category: NotepadCategory
   createdAt: string
   claim?: NotepadClaim
+  comments?: NotepadComment[]
 }
 export interface NotepadLogEntry extends NotepadItem {
   resolvedAt: string
   source: 'user' | 'agent'
-  comments?: NotepadComment[]
 }
 
 export type StateJson = {
