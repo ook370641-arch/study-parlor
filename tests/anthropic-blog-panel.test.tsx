@@ -48,11 +48,9 @@ function webTitles(): (string | null | undefined)[] {
     .map((row) => row.querySelector('[data-testid="anthropic-article-title"]')?.textContent)
 }
 
-/** 按 data-section 查找五源 chip */
+/** 按来源查找第二列 chip */
 function chip(key: string): HTMLElement {
-  const el = screen.getAllByTestId('anthropic-section-chip').find((c) => c.getAttribute('data-section') === key)
-  if (!el) throw new Error(`chip ${key} not found`)
-  return el
+  return screen.getByTestId(`list-source-${key}`)
 }
 
 describe('AnthropicBlogPanel', () => {
@@ -81,6 +79,22 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getByTestId('briefing-list-column')).toBeInTheDocument()
   })
 
+  it('第二列与专辑墙的视图和来源筛选分别作用于自己的文章', () => {
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    fireEvent.click(screen.getByTestId('wall-view-all'))
+    expect(screen.getByTestId('blog-wall-card-old-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('anthropic-article-row')).not.toBeInTheDocument()
+    expect(screen.getByTestId('list-view-mine')).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByTestId('list-view-all'))
+    expect(screen.getAllByTestId('anthropic-article-row').length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByTestId('wall-source-research'))
+    expect(screen.queryByTestId('blog-wall-card-old-1')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('anthropic-article-row').length).toBeGreaterThan(0)
+    expect(screen.getByTestId('list-source-all')).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('renders swap painting button in empty state (anthropic source has no page-level chrome)', () => {
     render(<AnthropicBlogPanel theme="academic" />)
     expect(screen.getByTestId('anthropic-swap-painting-button')).toBeInTheDocument()
@@ -88,6 +102,7 @@ describe('AnthropicBlogPanel', () => {
 
   it('toggles collapsed rail and shows thumbnails', () => {
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
     const toggle = screen.getByTestId('briefing-list-column-toggle')
     fireEvent.click(toggle)
     expect(screen.getByTestId('briefing-list-column')).toHaveClass('w-14')
@@ -170,6 +185,7 @@ describe('AnthropicBlogPanel', () => {
       anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null,
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
     fireEvent.click(screen.getByTestId('briefing-list-column-toggle'))
     // 15 篇网络文章 + 1 个本地置顶的宪法报告条目
     expect(screen.getAllByTestId('anthropic-list-rail-thumb')).toHaveLength(16)
@@ -187,6 +203,7 @@ describe('AnthropicBlogPanel', () => {
       anthropicReaderFilePath: null, anthropicReaderBody: null, anthropicReaderTitle: null,
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
     fireEvent.click(screen.getByTestId('briefing-list-column-toggle'))
     // 首位永远是宪法报告条目（isSaved 视觉），其后才是文章列表
     const [constitution, saved, plain] = screen.getAllByTestId('anthropic-list-rail-thumb')
@@ -201,7 +218,7 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.queryByTestId('article-assistant-panel')).not.toBeInTheDocument()
   })
 
-  it('合并时间线按日期倒序渲染；All + 五源多选过滤状态机', () => {
+  it('合并时间线按日期倒序渲染，全部视图使用单来源筛选', () => {
     useStore.setState({
       anthropicBlogCache: {
         lastFetchedAt: null,
@@ -217,30 +234,21 @@ describe('AnthropicBlogPanel', () => {
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
 
-    // 初始 All：全源可见、All chip 高亮、五源 chip 全在（无 institute chip）
-    expect(screen.getAllByTestId('anthropic-section-chip')).toHaveLength(5)
-    expect(screen.getByTestId('anthropic-filter-all')).toHaveAttribute('aria-pressed', 'true')
     expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Eng Old', 'Align Low'])
 
-    // 点 Research → 仅它亮（institute 遗留归组 research，仍在列表）
     fireEvent.click(chip('research'))
     expect(chip('research')).toHaveAttribute('aria-pressed', 'true')
     expect(chip('alignment')).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.getByTestId('anthropic-filter-all')).toHaveAttribute('aria-pressed', 'false')
     expect(webTitles()).toEqual(['Inst New', 'Res Mid'])
 
-    // 再点 Alignment → 两个亮
-    fireEvent.click(chip('alignment'))
-    expect(chip('research')).toHaveAttribute('aria-pressed', 'true')
-    expect(chip('alignment')).toHaveAttribute('aria-pressed', 'true')
-    expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Align Low'])
+    fireEvent.click(chip('engineering'))
+    expect(chip('research')).toHaveAttribute('aria-pressed', 'false')
+    expect(chip('engineering')).toHaveAttribute('aria-pressed', 'true')
+    expect(webTitles()).toEqual(['Eng Old'])
 
-    // 点灭两个 → 回 All
-    fireEvent.click(chip('research'))
-    expect(webTitles()).toEqual(['Align Low'])
-    fireEvent.click(chip('alignment'))
-    expect(screen.getByTestId('anthropic-filter-all')).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByTestId('list-source-all'))
     expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Eng Old', 'Align Low'])
   })
 
@@ -262,7 +270,7 @@ describe('AnthropicBlogPanel', () => {
     expect(useStore.getState().discoverAnthropicArticles).toHaveBeenCalled()
   })
 
-  it('constitution 条目经 filterGroupOf 归 engineering：只选 research 时隐藏，选 engineering 时显示', () => {
+  it('constitution 内置报告只在全部视图的全部来源下显示', () => {
     useStore.setState({
       anthropicBlogCache: {
         lastFetchedAt: null,
@@ -276,20 +284,21 @@ describe('AnthropicBlogPanel', () => {
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
 
-    // 初始 All：宪法条目显示
     expect(screen.getAllByText("Claude's Constitution · 可视化双语读本")).not.toHaveLength(0)
 
-    // 只选 research → 宪法（engineering）隐藏
     fireEvent.click(chip('research'))
     expect(screen.queryByText("Claude's Constitution · 可视化双语读本")).not.toBeInTheDocument()
 
-    // 加选 engineering → 宪法显示
     fireEvent.click(chip('engineering'))
+    expect(screen.queryByText("Claude's Constitution · 可视化双语读本")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('list-source-all'))
     expect(screen.getAllByText("Claude's Constitution · 可视化双语读本")).not.toHaveLength(0)
   })
 
-  it('Mine chip：仅显示已导入文章，与源 chip 互斥', () => {
+  it('我的视图筛选已导入文章，来源选择在切换视图后保留', () => {
     useStore.setState({
       anthropicBlogCache: {
         lastFetchedAt: null,
@@ -305,34 +314,24 @@ describe('AnthropicBlogPanel', () => {
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
 
-    // 初始 All：Mine 在 All 之前，均未激活 mine
-    const mine = screen.getByTestId('anthropic-filter-mine')
-    const all = screen.getByTestId('anthropic-filter-all')
-    expect(mine.compareDocumentPosition(all) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(mine).toHaveAttribute('aria-pressed', 'false')
-    expect(webTitles()).toEqual(['Saved Eng', 'Unsaved Eng', 'Saved Res'])
-
-    // 点 Mine → 只剩已导入（宪法条目非导入，不显示）；All 与源 chip 全灭
-    fireEvent.click(mine)
+    const mine = screen.getByTestId('list-view-mine')
+    const all = screen.getByTestId('list-view-all')
     expect(mine).toHaveAttribute('aria-pressed', 'true')
     expect(all).toHaveAttribute('aria-pressed', 'false')
     expect(webTitles()).toEqual(['Saved Eng', 'Saved Res'])
     expect(screen.queryByText("Claude's Constitution · 可视化双语读本")).not.toBeInTheDocument()
 
-    // mine 态点源 chip → mine 清零、该源单选
     fireEvent.click(chip('engineering'))
-    expect(mine).toHaveAttribute('aria-pressed', 'false')
+    expect(mine).toHaveAttribute('aria-pressed', 'true')
+    expect(chip('engineering')).toHaveAttribute('aria-pressed', 'true')
+    expect(webTitles()).toEqual(['Saved Eng'])
+
+    fireEvent.click(all)
+    expect(all).toHaveAttribute('aria-pressed', 'true')
     expect(chip('engineering')).toHaveAttribute('aria-pressed', 'true')
     expect(webTitles()).toEqual(['Saved Eng', 'Unsaved Eng'])
 
-    // pick 态点 Mine → 源选择清零，仅已导入
-    fireEvent.click(mine)
-    expect(chip('engineering')).toHaveAttribute('aria-pressed', 'false')
-    expect(webTitles()).toEqual(['Saved Eng', 'Saved Res'])
-
-    // 再点 Mine → 回退 All
-    fireEvent.click(mine)
-    expect(all).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByTestId('list-source-all'))
     expect(webTitles()).toEqual(['Saved Eng', 'Unsaved Eng', 'Saved Res'])
   })
 
@@ -350,6 +349,7 @@ describe('AnthropicBlogPanel', () => {
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
 
     expect(screen.getAllByText('Inst')).not.toHaveLength(0)
     fireEvent.click(chip('research'))
@@ -371,6 +371,7 @@ describe('AnthropicBlogPanel', () => {
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
     // 2 篇网络文章 + 1 个本地置顶宪法条目
     expect(screen.getAllByTestId('anthropic-article-row')).toHaveLength(3)
     expect(screen.getAllByText('无配图')).toHaveLength(2)
@@ -389,6 +390,7 @@ describe('AnthropicBlogPanel', () => {
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
     expect(screen.queryByText('未知日期')).not.toBeInTheDocument()
     expect(screen.getByText(/2026年/)).toBeInTheDocument()
   })
@@ -409,6 +411,7 @@ describe('AnthropicBlogPanel', () => {
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
     const tags = screen.getAllByTestId('anthropic-section-tag')
     const labels = tags.map((t) => t.textContent)
     expect(labels).toEqual(expect.arrayContaining(['Engineering', 'Institute', 'Research', 'Alignment']))
@@ -435,7 +438,7 @@ describe('AnthropicBlogPanel', () => {
     await waitFor(() => expect(ipc.anthropicCollectionMarkRead).toHaveBeenCalledWith({ sourceUrl: 'old-1', filePath: 'lib/old-1.md', title: 'Old Article' }))
   })
 
-  it('Mine 模式下已导入行显示移出库按钮；点击弹确认框，确认后删除', async () => {
+  it('我的模式下已导入行显示移出库按钮；点击弹确认框，确认后删除', async () => {
     const deleteAnthropicArticle = vi.fn()
     useStore.setState({
       anthropicBlogCache: {
@@ -447,10 +450,6 @@ describe('AnthropicBlogPanel', () => {
       deleteAnthropicArticle,
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
-    // 默认 all 模式：不显示
-    expect(screen.queryByTestId('anthropic-row-unimport')).not.toBeInTheDocument()
-    // 切到 Mine
-    fireEvent.click(screen.getByTestId('anthropic-filter-mine'))
     const btn = screen.getByTestId('anthropic-row-unimport')
     fireEvent.click(btn)
     // 确认弹窗

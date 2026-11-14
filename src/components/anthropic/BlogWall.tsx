@@ -1,14 +1,15 @@
-import type { AnthropicArticleMeta, AnthropicSectionKey, BriefingTheme } from '@shared/index'
+import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
 import { coverImageUrl, type BlogWallSort } from '@/lib/anthropic-articles'
-import type { BlogFilter } from '@/lib/section-filter'
+import type { BlogViewFilter } from '@/lib/section-filter'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
+import { BlogFilterTabs } from './BlogFilterTabs'
 
 interface Props {
   articles: AnthropicArticleMeta[]
   loading: boolean
-  filter: BlogFilter
+  filter: BlogViewFilter
   sortBy: BlogWallSort
-  onFilterChange: (filter: BlogFilter) => void
+  onFilterChange: (filter: BlogViewFilter) => void
   onSortByChange: (sort: BlogWallSort) => void
   onOpenArticle: (article: AnthropicArticleMeta) => void
   onClearFilters: () => void
@@ -17,30 +18,19 @@ interface Props {
 
 export function BlogWall({ articles, loading, filter, sortBy, onFilterChange, onSortByChange, onOpenArticle, onClearFilters, theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
-  const selected = filter.mode === 'pick' ? [...filter.selected] : []
-  const filterValue = filter.mode === 'pick' && selected.length === 1 ? selected[0] : filter.mode === 'pick' ? 'custom' : filter.mode
   const selectCls = `text-[11px] border rounded px-2 py-1 outline-none ${isAcademic ? 'bg-[#2a1f1a] text-[#e8d5b7] border-parchment/20 focus:border-ember' : 'bg-[#f5f2ed] text-[#2a1f1a] border-[#c9c3b8] focus:border-[#8a3a3a]'}`
   const optionCls = isAcademic ? 'bg-[#2a1f1a] text-[#e8d5b7]' : 'bg-[#f5f2ed] text-[#2a1f1a]'
 
-  const changeFilter = (value: string) => {
-    if (value === 'all') onFilterChange({ mode: 'all' })
-    else if (value === 'mine') onFilterChange({ mode: 'mine' })
-    else if (value !== 'custom') onFilterChange({ mode: 'pick', selected: new Set([value as AnthropicSectionKey]) })
-  }
-
   return (
     <div data-testid="blog-wall" className={`h-full overflow-y-auto px-8 py-6 ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>
-      <div className="flex items-center gap-2 pb-5 pr-24">
-        <select data-testid="blog-wall-filter-select" aria-label="筛选博客" value={filterValue} onChange={e => changeFilter(e.target.value)} className={selectCls}>
-          <option className={optionCls} value="all">全部文章</option>
-          <option className={optionCls} value="mine">已导入</option>
-          {filterValue === 'custom' && <option className={optionCls} value="custom">已选 {selected.length} 个来源</option>}
-          {ANTHROPIC_SOURCES.map(source => <option className={optionCls} key={source.key} value={source.key}>{source.label}</option>)}
-        </select>
-        <select data-testid="blog-wall-sort-select" aria-label="排序博客" value={sortBy} onChange={e => onSortByChange(e.target.value as BlogWallSort)} className={selectCls}>
-          <option className={optionCls} value="newest">最新发布</option>
-          <option className={optionCls} value="oldest">最早发布</option>
-        </select>
+      <div className="flex flex-wrap items-center gap-2 pb-5 pr-24">
+        <BlogFilterTabs area="wall" value={filter} onChange={onFilterChange} theme={theme} />
+        {filter.view === 'all' && (
+          <select data-testid="blog-wall-sort-select" aria-label="排序博客" value={sortBy} onChange={e => onSortByChange(e.target.value as BlogWallSort)} className={selectCls}>
+            <option className={optionCls} value="newest">最新发布</option>
+            <option className={optionCls} value="oldest">最早发布</option>
+          </select>
+        )}
       </div>
       {loading && articles.length === 0 ? (
         <div data-testid="blog-wall-loading" className={`flex h-[calc(100%-3rem)] items-center justify-center text-sm ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]'}`}>正在加载博客…</div>

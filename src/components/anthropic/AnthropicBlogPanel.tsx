@@ -9,6 +9,7 @@ import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { ConstitutionReportView } from './ConstitutionReportView'
 import { BlogRecommendView } from './BlogRecommendView'
 import { BlogWall } from './BlogWall'
+import { BlogFilterTabs } from './BlogFilterTabs'
 import { SwapPaintingButton } from '@/components/SwapPaintingButton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ArticleAssistantPanel } from '@/components/article-assistant'
@@ -16,7 +17,7 @@ import { CompanionWritingPicker } from '@/components/article-assistant/Companion
 import { findNewArticleUrls, sortArticlesByDateDesc, sortBlogArticles, type BlogWallSort } from '@/lib/anthropic-articles'
 import { withConstitutionEntry } from '@/lib/constitution-report'
 import { ANTHROPIC_SOURCES, filterGroupOf } from '@/lib/anthropic-sections'
-import { ALL_SOURCE_KEYS, clickAllChip, toggleMineChip, toggleSourceChip, type BlogFilter } from '@/lib/section-filter'
+import { DEFAULT_BLOG_FILTER, type BlogViewFilter } from '@/lib/section-filter'
 import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
 
 type PendingDelete =
@@ -25,6 +26,14 @@ type PendingDelete =
 
 interface Props {
   theme?: BriefingTheme
+}
+
+function articlesForFilter(articles: AnthropicArticleMeta[], filter: BlogViewFilter): AnthropicArticleMeta[] {
+  return articles.filter(article => {
+    if (article.local) return filter.view === 'all' && filter.source === 'all'
+    if (filter.view === 'mine' && !article.isSaved) return false
+    return filter.source === 'all' || filterGroupOf(article) === filter.source
+  })
 }
 
 // Keyframe styles extracted to module level to avoid re-injecting on every render
@@ -101,19 +110,15 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [checkError, setCheckError] = useState<AnthropicError | null>(null)
   const [checkKey, setCheckKey] = useState(0)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
-  const [filter, setFilter] = useState<BlogFilter>({ mode: 'all' })
+  const [listFilter, setListFilter] = useState<BlogViewFilter>(DEFAULT_BLOG_FILTER)
+  const [wallFilter, setWallFilter] = useState<BlogViewFilter>(DEFAULT_BLOG_FILTER)
   const [wallSort, setWallSort] = useState<BlogWallSort>('newest')
 
   // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成；合并时间线按日期倒序
   const displayArticles = useMemo(() => sortArticlesByDateDesc(withConstitutionEntry(articles)), [articles])
 
   const filtered = useMemo(() => {
-    const bySource = filter.mode === 'all'
-      ? displayArticles
-      : filter.mode === 'mine'
-        // 本地内置条目（宪法报告）不算「已导入」
-        ? displayArticles.filter((a) => a.isSaved && !a.local)
-        : displayArticles.filter((a) => filter.selected.has(filterGroupOf(a)))
+    const bySource = articlesForFilter(displayArticles, listFilter)
     const q = query.trim().toLowerCase()
     if (!q) return bySource
     return bySource.filter(
@@ -121,8 +126,11 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         a.title?.toLowerCase().includes(q) ||
         (a.summary ?? '').toLowerCase().includes(q)
     )
-  }, [displayArticles, query, filter])
-  const wallArticles = useMemo(() => sortBlogArticles(filtered, wallSort), [filtered, wallSort])
+  }, [displayArticles, query, listFilter])
+  const wallArticles = useMemo(
+    () => sortBlogArticles(articlesForFilter(displayArticles, wallFilter), wallSort),
+    [displayArticles, wallFilter, wallSort]
+  )
 
   // 加载收藏夹
   useEffect(() => {
@@ -360,46 +368,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             </div>
 
             <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`} data-testid="anthropic-section-filter">
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  data-testid="anthropic-filter-mine"
-                  aria-pressed={filter.mode === 'mine'}
-                  title="只看已导入的文章"
-                  onClick={() => setFilter((prev) => toggleMineChip(prev))}
-                  className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${filter.mode === 'mine' ? 'border-ember text-ember' : themeClasses.muted}`}
-                  style={filter.mode === 'mine' ? {} : { borderColor: 'transparent' }}
-                >
-                  Mine
-                </button>
-                <button
-                  type="button"
-                  data-testid="anthropic-filter-all"
-                  aria-pressed={filter.mode === 'all'}
-                  onClick={() => setFilter(clickAllChip())}
-                  className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${filter.mode === 'all' ? 'border-ember text-ember' : themeClasses.muted}`}
-                  style={filter.mode === 'all' ? {} : { borderColor: 'transparent' }}
-                >
-                  All
-                </button>
-                {ANTHROPIC_SOURCES.map((s) => {
-                  const active = filter.mode === 'pick' && filter.selected.has(s.key)
-                  return (
-                    <button
-                      key={s.key}
-                      type="button"
-                      data-testid="anthropic-section-chip"
-                      data-section={s.key}
-                      aria-pressed={active}
-                      onClick={() => setFilter((prev) => toggleSourceChip(prev, s.key, ALL_SOURCE_KEYS))}
-                      className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${active ? '' : themeClasses.muted}`}
-                      style={active ? { borderColor: s.color, color: s.color } : { borderColor: 'transparent' }}
-                    >
-                      {s.label}
-                    </button>
-                  )
-                })}
-              </div>
+              <BlogFilterTabs area="list" value={listFilter} onChange={setListFilter} theme={theme} />
             </div>
 
             <div
@@ -438,7 +407,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       key={article.url}
                       article={article}
                       theme={theme}
-                      showUnimport={filter.mode === 'mine'}
+                      showUnimport={listFilter.view === 'mine'}
                       onRequestDelete={(a) => setPendingDelete({ kind: 'mine', article: a })}
                       inCollection={inCol}
                       onToggleCollection={
@@ -496,12 +465,12 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
             <BlogWall
               articles={wallArticles}
               loading={loading}
-              filter={filter}
+              filter={wallFilter}
               sortBy={wallSort}
-              onFilterChange={setFilter}
+              onFilterChange={setWallFilter}
               onSortByChange={setWallSort}
               onOpenArticle={article => { void openOrImportArticle(article) }}
-              onClearFilters={() => { setFilter({ mode: 'all' }); setQuery('') }}
+              onClearFilters={() => setWallFilter({ view: 'all', source: 'all' })}
               theme={theme}
             />
           </div>
