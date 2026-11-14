@@ -28,13 +28,22 @@ describe('deleteAnthropicArticle', () => {
   })
 
   it('marks article unsaved and closes the reader after successful delete', async () => {
-    anthropicDeleteArticle.mockResolvedValue({ ok: true })
+    const collection = {
+      version: 1 as const,
+      entries: [],
+      dismissed: [],
+      history: [],
+      read: [],
+      order: { groups: ['saved', 'read', 'favorite'] as const, saved: [], read: [], favorite: [] },
+    }
+    anthropicDeleteArticle.mockResolvedValue({ ok: true, collection })
     await useStore.getState().deleteAnthropicArticle('/lib/Anthropic博客/a.md')
     const s = useStore.getState()
     expect(s.anthropicBlogCache.articles[0].isSaved).toBe(false)
     expect(s.anthropicBlogCache.articles[0].filePath).toBeUndefined()
     expect(s.anthropicBlogCache.articles[1].isSaved).toBe(false)
     expect(s.anthropicReaderFilePath).toBeNull()
+    expect(s.blogCollection).toEqual(collection)
   })
 
   it('keeps state and toasts on failure', async () => {

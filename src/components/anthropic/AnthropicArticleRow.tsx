@@ -17,6 +17,7 @@ interface Props {
   onToggleCollection?: () => void
   isRead?: boolean
   onToggleRead?: () => void
+  onOpenArticle?: (article: AnthropicArticleMeta) => void
 }
 
 function formatDate(iso: string | null | undefined) {
@@ -47,7 +48,7 @@ function ImportSpinner() {
   )
 }
 
-export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete, showUnimport, inCollection, onToggleCollection, isRead, onToggleRead }: Props) {
+export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, theme = 'academic', onRequestDelete, showUnimport, inCollection, onToggleCollection, isRead, onToggleRead, onOpenArticle }: Props) {
   const isAcademic = theme !== 'newspaper'
   const importArticle = useStore((s) => s.importAnthropicArticle)
   const cancelImport = useStore((s) => s.cancelAnthropicImport)
@@ -66,6 +67,10 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
   }, [menu])
 
   const handleClick = useCallback(async () => {
+    if (onOpenArticle) {
+      onOpenArticle(article)
+      return
+    }
     // 本地内置条目（宪法报告）直接打开报告视图
     if (article.local === 'constitution') {
       openConstitutionReport()
@@ -110,7 +115,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
     } finally {
       setImporting(false)
     }
-  }, [importing, article.isSaved, article.filePath, article.url, article.local, cancelImport, importArticle, openReader, openConstitutionReport])
+  }, [importing, article, onOpenArticle, cancelImport, importArticle, openReader, openConstitutionReport])
 
   // --- Theme-dependent classes ---
   const bgClass = isAcademic ? 'bg-ink/30' : 'bg-white'

@@ -28,8 +28,10 @@ export function saveCollection(
   collection: BlogCollectionFile,
   change?: BlogOrderChange,
   articles = loadBlogCache(lib).cache.articles
-): void {
-  safeWriteJson(collectionPath(lib), { ...collection, order: reconcileBlogOrder(collection, articles, change) })
+): BlogCollectionFile {
+  const next = { ...collection, order: reconcileBlogOrder(collection, articles, change) }
+  safeWriteJson(collectionPath(lib), next)
+  return next
 }
 
 export function addManualEntry(

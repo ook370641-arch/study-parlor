@@ -5,6 +5,7 @@ vi.mock('@/lib/ipc', () => ({
     patchState: vi.fn(),
     getState: vi.fn(),
     anthropicCollectionReorder: vi.fn(),
+    anthropicImportArticle: vi.fn(),
   },
 }))
 vi.mock('@/lib/paintings', () => ({ manifest: [], pickRandom: vi.fn(() => null) }))
@@ -55,5 +56,30 @@ describe('blog reorder store action', () => {
 
     expect(useStore.getState().blogCollection).toEqual(previous)
     expect(useStore.getState().toast?.message).toBe('排序保存失败，请重试')
+  })
+
+  it('导入成功时同步主进程返回的共享顺序', async () => {
+    const serverCollection: BlogCollectionFile = {
+      ...previous,
+      order: { ...previous.order!, saved: ['a'] },
+    }
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [{ url: 'a', title: 'A', summary: null, publishedAt: null, imageUrl: null, isSaved: false }],
+        loading: false,
+        error: null,
+      },
+    })
+    vi.mocked(ipc.anthropicImportArticle).mockResolvedValue({
+      ok: true,
+      filePath: 'a.md',
+      wasAlreadySaved: false,
+      collection: serverCollection,
+    })
+
+    await useStore.getState().importAnthropicArticle('a')
+
+    expect(useStore.getState().blogCollection).toEqual(serverCollection)
   })
 })

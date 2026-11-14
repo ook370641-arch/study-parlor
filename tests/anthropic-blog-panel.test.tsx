@@ -95,6 +95,42 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getByTestId('list-source-all')).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('我的三组同屏，来源筛选同时过滤已保存、已读和收藏', () => {
+    useStore.setState({
+      anthropicBlogCache: {
+        lastFetchedAt: null,
+        articles: [
+          { ...article('saved', 'Saved'), section: 'engineering', isSaved: true, filePath: 'saved.md' },
+          { ...article('read', 'Read'), section: 'engineering', isSaved: true, filePath: 'read.md' },
+          { ...article('favorite', 'Favorite'), section: 'research', isSaved: true, filePath: 'favorite.md' },
+        ],
+        loading: false,
+        error: null,
+      },
+      blogCollection: {
+        version: 1,
+        entries: [{ sourceUrl: 'favorite', filePath: 'favorite.md', title: 'Favorite', addedAt: 'x', origin: 'manual' }],
+        dismissed: [],
+        history: [],
+        read: [{ sourceUrl: 'read', filePath: 'read.md', title: 'Read', readAt: 'x' }],
+        order: { groups: ['saved', 'read', 'favorite'], saved: ['saved'], read: ['read'], favorite: ['favorite'] },
+      },
+    } as any)
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    expect(screen.getByTestId('blog-saved-card-saved')).toBeInTheDocument()
+    expect(screen.getByTestId('blog-read-card-read')).toBeInTheDocument()
+    expect(screen.getByTestId('blog-favorite-card-favorite')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('list-source-research'))
+    expect(screen.queryByTestId('blog-saved-card-saved')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('blog-read-card-read')).not.toBeInTheDocument()
+    expect(screen.getByTestId('blog-favorite-card-favorite')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('list-view-all'))
+    expect(screen.queryByTestId('blog-collection-section')).not.toBeInTheDocument()
+    expect(screen.getByTestId('anthropic-article-row')).toBeInTheDocument()
+  })
+
   it('renders swap painting button in empty state (anthropic source has no page-level chrome)', () => {
     render(<AnthropicBlogPanel theme="academic" />)
     expect(screen.getByTestId('anthropic-swap-painting-button')).toBeInTheDocument()
@@ -477,6 +513,7 @@ describe('AnthropicBlogPanel', () => {
       },
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    fireEvent.click(screen.getByTestId('list-view-all'))
     fireEvent.click(screen.getByTestId('blog-fav-toggle'))
     await waitFor(() => expect(ipc.anthropicCollectionRemove).toHaveBeenCalledWith({ sourceUrl: 'old-1' }))
     expect(ipc.anthropicCollectionAdd).not.toHaveBeenCalled()

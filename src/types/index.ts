@@ -825,12 +825,12 @@ export type IpcApi = {
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
   anthropicImportArticle: (url: string) => Promise<
-    | { ok: true; filePath: string; wasAlreadySaved: boolean }
+    | { ok: true; filePath: string; wasAlreadySaved: boolean; collection: BlogCollectionFile }
     | { ok: false; code: AnthropicErrorCode; message: string }
   >
   anthropicCancelImport: (url?: string) => Promise<void>
   anthropicDeleteArticle: (args: { filePath: string }) => Promise<
-    { ok: true } | { ok: false; message: string }
+    { ok: true; collection: BlogCollectionFile } | { ok: false; message: string }
   >
   anthropicWriteArticleBody: (args: { filePath: string; body: string }) => Promise<{ ok: true } | { ok: false; code: 'ARTICLE_PATH_FORBIDDEN' | 'ARTICLE_WRITE_ERROR' }>
   /** 后台元数据回填进度：sitemap 老文章逐页取到元数据后分批推送 */

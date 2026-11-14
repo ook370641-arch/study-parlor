@@ -4,7 +4,7 @@ import { ipc } from '@/lib/ipc'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { AnthropicArticleReader } from './AnthropicArticleReader'
-import { BlogCollectionSection } from './BlogCollectionSection'
+import { BlogCollectionSection, type BlogDeleteRequest } from './BlogCollectionSection'
 import { AnthropicErrorMessage } from './AnthropicErrorMessage'
 import { ConstitutionReportView } from './ConstitutionReportView'
 import { BlogRecommendView } from './BlogRecommendView'
@@ -18,11 +18,10 @@ import { findNewArticleUrls, sortArticlesByDateDesc, sortBlogArticles, type Blog
 import { withConstitutionEntry } from '@/lib/constitution-report'
 import { ANTHROPIC_SOURCES, filterGroupOf } from '@/lib/anthropic-sections'
 import { DEFAULT_BLOG_FILTER, type BlogViewFilter } from '@/lib/section-filter'
-import type { AnthropicArticleMeta, AnthropicError, BriefingTheme } from '@shared/index'
+import { deriveBlogMineGroups, reconcileBlogOrder } from '@/lib/blog-groups'
+import type { AnthropicArticleMeta, AnthropicError, BlogMineGroup, BriefingTheme } from '@shared/index'
 
-type PendingDelete =
-  | { kind: 'mine'; article: AnthropicArticleMeta }
-  | { kind: 'collection' | 'read'; sourceUrl: string; filePath: string; title: string }
+type PendingDelete = BlogDeleteRequest
 
 interface Props {
   theme?: BriefingTheme
@@ -94,6 +93,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const toggleBlogRead = useStore((s) => s.toggleBlogRead)
   const removeBlogCollection = useStore((s) => s.removeBlogCollection)
   const removeBlogRead = useStore((s) => s.removeBlogRead)
+  const reorderBlog = useStore((s) => s.reorderBlog)
   // 写作树对照挑选器：对照 tab 下点来源栏「写作」后替换本栏文章列表
   const pickerOpen = useStore((s) => s.writingCompanionPicker === 'anthropic')
 
@@ -113,6 +113,11 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
   const [listFilter, setListFilter] = useState<BlogViewFilter>(DEFAULT_BLOG_FILTER)
   const [wallFilter, setWallFilter] = useState<BlogViewFilter>(DEFAULT_BLOG_FILTER)
   const [wallSort, setWallSort] = useState<BlogWallSort>('newest')
+  const [listCollapsedGroups, setListCollapsedGroups] = useState<Record<BlogMineGroup, boolean>>({
+    saved: false,
+    read: false,
+    favorite: false,
+  })
 
   // 宪法可视化报告是本地内置条目，不经过网络抓取，始终置顶合成；合并时间线按日期倒序
   const displayArticles = useMemo(() => sortArticlesByDateDesc(withConstitutionEntry(articles)), [articles])
@@ -127,6 +132,22 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         (a.summary ?? '').toLowerCase().includes(q)
     )
   }, [displayArticles, query, listFilter])
+  const blogOrder = useMemo(
+    () => reconcileBlogOrder(blogCollection, displayArticles),
+    [blogCollection, displayArticles]
+  )
+  const mineGroups = useMemo(() => {
+    const groups = deriveBlogMineGroups(displayArticles, blogCollection)
+    const q = query.trim().toLowerCase()
+    const matches = (article: AnthropicArticleMeta) =>
+      articlesForFilter([article], listFilter).length > 0 &&
+      (!q || article.title?.toLowerCase().includes(q) || (article.summary ?? '').toLowerCase().includes(q))
+    return {
+      saved: groups.saved.filter(matches),
+      read: groups.read.filter(matches),
+      favorite: groups.favorite.filter(matches),
+    }
+  }, [displayArticles, blogCollection, query, listFilter])
   const wallArticles = useMemo(
     () => sortBlogArticles(articlesForFilter(displayArticles, wallFilter), wallSort),
     [displayArticles, wallFilter, wallSort]
@@ -355,8 +376,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
               </div>
             )}
 
-            <BlogCollectionSection theme={theme} onRequestRemove={(t) => setPendingDelete(t)} />
-
             <div className={`px-4 py-2 border-b ${themeClasses.border} shrink-0`}>
               <input
                 type="text"
@@ -388,18 +407,33 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                 <AnthropicErrorMessage error={error} onRetry={() => discover()} theme={theme} />
               )}
 
-              {!loading && !error && filtered.length === 0 && (
-                <div className={`text-center py-12 text-sm ${themeClasses.muted}`}>
-                  {articles.length === 0 ? (
-                    <p>暂无文章，正在自动检测新文章…</p>
-                  ) : (
-                    <p>没有匹配"{query}"的文章。</p>
-                  )}
-                </div>
+              {!loading && !error && listFilter.view === 'mine' && (
+                <BlogCollectionSection
+                  theme={theme}
+                  groups={mineGroups}
+                  order={blogOrder}
+                  collapsedGroups={listCollapsedGroups}
+                  onToggleGroup={group => setListCollapsedGroups(current => ({ ...current, [group]: !current[group] }))}
+                  onReorder={request => { void reorderBlog(request) }}
+                  onOpenArticle={article => { void openOrImportArticle(article) }}
+                  onRequestDelete={setPendingDelete}
+                />
               )}
 
-              <div className="space-y-3">
-                {filtered.map((article) => {
+              {!loading && !error && listFilter.view === 'all' && (
+                <>
+                  {filtered.length === 0 && (
+                    <div className={`text-center py-12 text-sm ${themeClasses.muted}`}>
+                      {articles.length === 0 ? (
+                        <p>暂无文章，正在自动检测新文章…</p>
+                      ) : (
+                        <p>没有匹配"{query}"的文章。</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {filtered.map((article) => {
                   const inCol = blogCollection.entries.some(e => e.sourceUrl === article.url)
                   const isRead = blogCollection.read.some(r => r.sourceUrl === article.url)
                   return (
@@ -407,7 +441,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       key={article.url}
                       article={article}
                       theme={theme}
-                      showUnimport={listFilter.view === 'mine'}
+                      onOpenArticle={article => { void openOrImportArticle(article) }}
                       onRequestDelete={(a) => setPendingDelete({ kind: 'mine', article: a })}
                       inCollection={inCol}
                       onToggleCollection={
@@ -423,8 +457,10 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       }
                     />
                   )
-                })}
-              </div>
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

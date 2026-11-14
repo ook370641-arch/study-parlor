@@ -1500,6 +1500,7 @@ export const useStore = create<AppStore>((set, get) => ({
               a.url === url ? { ...a, isSaved: true, filePath: result.filePath } : a
             ),
           },
+          blogCollection: result.collection,
           ...(openReader ? { anthropicReaderFilePath: result.filePath, anthropicReaderBody: null, anthropicReaderTitle: null, lastAnthropicReaderFile: result.filePath } : {}),
         }))
         // 导入后自动打开也要持久化「最后阅读」(此路径绕过 openAnthropicReader)
@@ -1599,6 +1600,7 @@ export const useStore = create<AppStore>((set, get) => ({
           a.filePath === filePath ? { ...a, isSaved: false, filePath: undefined } : a
         ),
       },
+      blogCollection: r.collection,
     })
     if (get().anthropicReaderFilePath === filePath) {
       get().closeAnthropicReader()
