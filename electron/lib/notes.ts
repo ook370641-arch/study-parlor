@@ -6,6 +6,7 @@ import type { NoteEntry, NoteMeta, NoteSource } from '@shared/index'
 import { loadCollection } from './blog-collection'
 import { assertInsideRoots } from './writing-tree'
 import { noteCoverDataUrl } from './note-covers'
+import { countTextWords } from './text-stats'
 
 export const NOTES_DIR = 'notes'
 
@@ -60,7 +61,7 @@ export function parseNoteFile(relPath: string, raw: string): NoteEntry {
     if (typeof fm.cover === 'string' && fm.cover) meta.cover = fm.cover
     const aiGeneratedAt = iso(fm.ai_generated_at)
     if (aiGeneratedAt) meta.ai_generated_at = aiGeneratedAt
-    return { path: relPath, meta }
+    return { path: relPath, meta, wordCount: countTextWords(d.content) }
   } catch {
     return { path: relPath, meta: emptyMeta(), parseError: true }
   }

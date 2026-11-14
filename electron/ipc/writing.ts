@@ -9,6 +9,7 @@ import { ensureRoots, isNonMdPath } from '../lib/writing-tree'
 import { updateEntry, removeEntry, migrateEntry, migratePrefix, diffStale, loadCatalog, collectGroupDirs, groupSignature, updateGroupSummary, removeGroupSummary } from '../lib/writing-catalog'
 import { generateWritingSummary, generateGroupSummary } from '../lib/llm-tasks'
 import { previewFile } from '../lib/file-preview'
+import { attachWritingWallMetadata } from '../lib/writing-wall-metadata'
 
 const KNOWN_CODES: WritingErrorCode[] = ['WRITING_PATH_FORBIDDEN', 'WRITING_NOT_FOUND', 'WRITING_NAME_CONFLICT', 'PREVIEW_PARSE_ERROR', 'PDF_NO_TEXT']
 
@@ -56,7 +57,10 @@ export function registerWritingIpc(cfg: AppConfig): void {
   ipcMain.handle('writing:scanTree', () => {
     ensureRoots(lib)
     return wrapWriting(() => {
-      const trees = { writing: tree.scanRoot(lib, 'writing'), repository: tree.scanRoot(lib, 'repository') }
+      const trees = {
+        writing: attachWritingWallMetadata(lib, 'writing', tree.scanRoot(lib, 'writing')),
+        repository: attachWritingWallMetadata(lib, 'repository', tree.scanRoot(lib, 'repository')),
+      }
       lastScan = { at: Date.now(), trees }
       return trees
     })

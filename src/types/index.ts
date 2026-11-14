@@ -158,7 +158,7 @@ export type NoteMeta = {
 }
 
 /** 笔记书架条目；path 为库内相对路径（正斜杠），如 notes/foo.md */
-export type NoteEntry = { path: string; meta: NoteMeta; parseError?: boolean; coverUrl?: string }
+export type NoteEntry = { path: string; meta: NoteMeta; parseError?: boolean; coverUrl?: string; wordCount?: number }
 
 export type AiNoteStage = 'reading' | 'round1' | 'round2' | 'curating' | 'writing'
 export type AiNoteProgress = { generationId: string; path: string; stage: AiNoteStage }
@@ -500,6 +500,8 @@ export type WritingTreeNode = {
   path: string
   kind: 'dir' | 'file'
   children?: WritingTreeNode[]
+  wordCount?: number
+  mtimeMs?: number
   /** @deprecated 摘要不再附到树节点（见 writing:refreshCatalog diff 触发）；保留字段避免级联改动 */
   summary?: string
   /** @deprecated 同上 */
@@ -532,7 +534,7 @@ export type WritingToolActivity = {
   query?: string
   error?: string
 }
-export type WritingCatalogEntry = { title: string; summary: string; updatedAt?: string; mtimeMs?: number }
+export type WritingCatalogEntry = { title: string; summary: string; updatedAt?: string; mtimeMs?: number; wallMtimeMs?: number; wordCount?: number; cover?: string }
 export type WritingGroupSummaryEntry = { summary: string; signature: string }
 // stamped: 已确认含 created frontmatter 的文件 → 当时 mtimeMs（repository 扫描补 created 的台账，
 // 命中即跳过 readFileSync；文件变动后 mtime 变化自然失效）。仅 repository root 使用。

@@ -32,8 +32,20 @@ export function saveCatalog(lib: string, root: WritingRoot, catalog: WritingCata
 
 export function updateEntry(lib: string, root: WritingRoot, rel: string, entry: WritingCatalogEntry): void {
   const c = loadCatalog(lib, root)
-  c.entries[rel] = entry
+  c.entries[rel] = { ...c.entries[rel], ...entry }
   saveCatalog(lib, root, c)
+}
+
+export function updateWallMetadata(lib: string, root: WritingRoot, rel: string, metadata: { wallMtimeMs: number; wordCount: number; cover?: string }): void {
+  const catalog = loadCatalog(lib, root)
+  const existing = catalog.entries[rel]
+  catalog.entries[rel] = {
+    title: existing?.title ?? path.basename(rel, '.md'),
+    summary: existing?.summary ?? '',
+    ...existing,
+    ...metadata,
+  }
+  saveCatalog(lib, root, catalog)
 }
 
 export function removeEntry(lib: string, root: WritingRoot, rel: string): void {
