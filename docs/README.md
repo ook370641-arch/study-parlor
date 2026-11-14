@@ -85,6 +85,7 @@
 ### 12. 写作功能
 
 **现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。
+- planned：`specs/2026-11-14-writing-album-wall-design.md` + `plans/2026-11-14-writing-album-wall.md`
 - current：`specs/2026-08-11-writing-paste-and-formatting-design.md`（**编辑器行为设计基准**，改编辑器前必读，rules feature-development §13）
 **历史链**：07-19 writing-feature → 07-26 job-writing-assistant（求职半边已随三来源移除，写作助手 UI 统一半边仍在）→ 08-08 writing-ux-fixes → 08-09 writing-table-ui → 08-09 writing-tree-inline → 08-09 writing-list-behavior → 08-10 writing-assistant-agent-loop → 08-11 writing-paste-and-formatting（=current）→ 08-12 writing-repository-ux → 08-12 non-md-preview → 08-12 writing-format-fixes → 08-17 writing-daily-backup → 08-20 writing-companion-pane → 08-20 writing-html-preview → 08-23 writing-codeblock → 08-24 writing-html-delete-mode → 09-16 writing-html-file-display → 09-16 blog-companion-writing-picker
 
@@ -110,6 +111,7 @@
 ### 15. 迭代记事板
 
 **现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；待办可显示 Agent 认领者，认领独立存于 `notepad-claims.json`，面板重开或窗口聚焦时刷新；已完成时间线按本地日期只高亮今日条目并显示「今日完成 · 待测试」；已完成条目可点「评论」按钮展开右侧输入框，输入即自动保存、无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无删除按钮；评论含待处理/已处理状态与 Agent 处理摘要；旁注打开时入口/面板左移并保持可交互；接单、评论处理与归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
+- planned：`specs/2026-11-14-notepad-log-management-design.md` + `plans/2026-11-14-notepad-log-management.md`
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（含记事板与旁注共存交互；同名 plan 为实施记录）
 **历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）→ 11-11 settings-center-and-notepad-claims（记事板认领与今日高亮部分）→ 11-11 notepad-agent-claims
 
