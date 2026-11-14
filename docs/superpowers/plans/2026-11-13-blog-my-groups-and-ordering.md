@@ -722,7 +722,7 @@ Run: `node scripts/e2e-changed.js --run --no-retries`
 
 Expected: 受影响 spec 全部 PASS；若出现失败，只处理本次改动导致的问题，不扩大范围。
 
-实施记录：仅完成 Playwright `--list` 语法检查与 18 个受影响 spec 列举；尚未启动 Electron 或执行 E2E。
+实施记录：用户授权后执行 18 个受影响 spec，共 56 项，首轮 42 项通过。随后修复拖拽手柄遮挡推荐理由、隐形画作展签拦截返回键两处问题；修复后 40 项非 `@real` 定向场景通过，`startup-health` 单独复跑通过。`notes-ai-generation` 三项在 AI 生成按钮／预览断言持续失败，本次未改动其代码路径，按范围约束不扩展修复。八项手动 `@real` 场景在 discover 等待回填期间未出现文章或提示，未修改无关抓取链。
 
 - [x] **Step 5: 更新现状文档与完成记录**
 

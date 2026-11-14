@@ -33,7 +33,7 @@ export function BriefingReaderControls({
         <SwapPaintingButton
           surface="briefing"
           data-testid={swapTestId}
-          className="pointer-events-auto text-parchment/70 hover:text-parchment"
+          className="text-parchment/70 hover:text-parchment"
         />
       )}
       <button

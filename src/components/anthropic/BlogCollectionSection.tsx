@@ -139,7 +139,7 @@ export function BlogCollectionSection({
         onToggleRead={() => void toggleBlogRead({ sourceUrl: article.url, filePath: entry.filePath, title: entry.title })} />
     }
     return (
-      <div key={article.url} data-testid={`blog-${group}-card-${article.url}`} className="group/article relative"
+      <div key={article.url} data-testid={`blog-${group}-card-${article.url}`} className="group/article relative pl-5"
         onDragOver={event => { if (event.dataTransfer.types.includes(ARTICLE_MIME)) event.preventDefault() }}
         onDrop={event => dropArticle(event, group, article.url)}>
         <span data-testid={`blog-list-article-handle-${article.url}`} draggable onClick={event => event.stopPropagation()}
@@ -148,7 +148,7 @@ export function BlogCollectionSection({
             event.dataTransfer.setData(ARTICLE_MIME, JSON.stringify({ group, sourceUrl: article.url }))
             event.dataTransfer.effectAllowed = 'move'
           }}
-          className="absolute left-1 top-1 z-20 cursor-grab rounded px-1 opacity-0 transition-opacity group-hover/article:opacity-100">⠿</span>
+          className="absolute left-0 top-1 z-20 flex h-6 w-4 cursor-grab items-center justify-center rounded opacity-0 transition-opacity group-hover/article:opacity-100">⠿</span>
         {card}
       </div>
     )
