@@ -53,4 +53,39 @@ test.describe('@p1 阅读右栏浏览器', () => {
       await server.close()
     }
   })
+
+  test('网页内查找、匹配导航与快捷键', async ({ window, testLibraryPath, testConfigDir }) => {
+    const server = await createMockServer([
+      { path: '/first', handler: (_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+        res.end('<html><body><p>苏格拉底 一</p><p>苏格拉底 二</p><p>苏格拉底 三</p></body></html>')
+      } },
+    ])
+    try {
+      await openArticle(window, testLibraryPath, testConfigDir)
+      await window.getByTestId('article-panel-tab-browser-anthropic').click()
+      await window.getByTestId('browser-address').fill(`${server.url}/first`)
+      await window.getByTestId('browser-address').press('Enter')
+      await expect.poll(() => window.context().pages().some((page) => page.url() === `${server.url}/first`)).toBe(true)
+      const browserPage = window.context().pages().find((page) => page.url() === `${server.url}/first`)!
+      await expect(browserPage.getByText('苏格拉底 一')).toBeVisible()
+      await window.getByTestId('browser-find-open').click()
+      await window.getByTestId('browser-find-input').fill('苏格拉底')
+      await expect(window.getByTestId('browser-find-count')).toHaveText('1 / 3')
+      await window.getByTestId('browser-find-input').press('Enter')
+      await expect(window.getByTestId('browser-find-count')).toHaveText('2 / 3')
+      await window.getByTestId('browser-find-input').press('Shift+Enter')
+      await expect(window.getByTestId('browser-find-count')).toHaveText('1 / 3')
+      await window.getByTestId('browser-find-input').press('Escape')
+      await expect(window.getByTestId('browser-find-input')).toHaveCount(0)
+      await expect(window.getByTestId('browser-find-count')).toHaveCount(0)
+      await window.getByTestId('browser-address').click()
+      await window.keyboard.press('Control+F')
+      await expect(window.getByTestId('browser-find-input')).toBeVisible()
+      await window.getByTestId('browser-find-input').press('Escape')
+      await expect(window.getByTestId('browser-find-input')).toHaveCount(0)
+    } finally {
+      await server.close()
+    }
+  })
 })

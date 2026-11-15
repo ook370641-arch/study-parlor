@@ -176,10 +176,22 @@ const api: IpcApi = {
   browserGoForward: () => ipcRenderer.invoke('browser:goForward'),
   browserReload: () => ipcRenderer.invoke('browser:reload'),
   browserOpenExternal: () => ipcRenderer.invoke('browser:openExternal'),
+  browserFind: (a) => ipcRenderer.invoke('browser:find', a),
+  browserStopFind: () => ipcRenderer.invoke('browser:stopFind'),
   onBrowserState: (cb) => {
     const handler = (_event: unknown, state: import('@shared/index').BrowserViewState) => cb(state)
     ipcRenderer.on('browser:state', handler)
     return () => ipcRenderer.removeListener('browser:state', handler)
+  },
+  onBrowserFindResult: (cb) => {
+    const handler = (_event: unknown, result: import('@shared/index').BrowserFindResult) => cb(result)
+    ipcRenderer.on('browser:findResult', handler)
+    return () => ipcRenderer.removeListener('browser:findResult', handler)
+  },
+  onBrowserShortcut: (cb) => {
+    const handler = (_event: unknown, shortcut: import('@shared/index').BrowserShortcut) => cb(shortcut)
+    ipcRenderer.on('browser:shortcut', handler)
+    return () => ipcRenderer.removeListener('browser:shortcut', handler)
   },
 
   articleAssistantGenerateGuide: (a) => ipcRenderer.invoke('articleAssistant:generateGuide', a),

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ipc } from '@/lib/ipc'
-import type { BrowserBounds, BrowserViewState, BriefingTheme } from '@shared/index'
+import type { BrowserBounds, BrowserFindResult, BrowserViewState, BriefingTheme } from '@shared/index'
 
 const EMPTY_STATE: BrowserViewState = {
   url: '', title: '', loading: false, canGoBack: false, canGoForward: false, error: null,
@@ -37,6 +37,25 @@ export function BrowserPanel({ theme = 'academic' }: { theme?: BriefingTheme }) 
   const addressFocusedRef = useRef(false)
   const [viewState, setViewState] = useState<BrowserViewState>(EMPTY_STATE)
   const [address, setAddress] = useState('')
+  const findInputRef = useRef<HTMLInputElement>(null)
+  const [findVisible, setFindVisible] = useState(false)
+  const [findText, setFindText] = useState('')
+  const [findResult, setFindResult] = useState<BrowserFindResult>({ activeMatchOrdinal: 0, matches: 0 })
+
+  const openFind = () => {
+    setFindVisible(true)
+    requestAnimationFrame(() => {
+      findInputRef.current?.focus()
+      findInputRef.current?.select()
+    })
+  }
+
+  const closeFind = () => {
+    setFindVisible(false)
+    setFindText('')
+    setFindResult({ activeMatchOrdinal: 0, matches: 0 })
+    void ipc.browserStopFind()
+  }
 
   useEffect(() => {
     const element = placeholderRef.current
@@ -46,6 +65,11 @@ export function BrowserPanel({ theme = 'academic' }: { theme?: BriefingTheme }) 
       if (!active) return
       setViewState(state)
       if (!addressFocusedRef.current) setAddress(state.url)
+    })
+    const offFind = ipc.onBrowserFindResult(setFindResult)
+    const offShortcut = ipc.onBrowserShortcut((shortcut) => {
+      if (shortcut === 'find') openFind()
+      else closeFind()
     })
     const updateBounds = () => {
       if (active) void ipc.browserSetBounds(boundsFor(element))
@@ -68,6 +92,8 @@ export function BrowserPanel({ theme = 'academic' }: { theme?: BriefingTheme }) 
       observer.disconnect()
       window.removeEventListener('resize', updateBounds)
       offState()
+      offFind()
+      offShortcut()
       void ipc.browserHide()
     }
   }, [])
@@ -82,7 +108,16 @@ export function BrowserPanel({ theme = 'academic' }: { theme?: BriefingTheme }) 
   const isAcademic = theme === 'academic'
 
   return (
-    <div data-testid="browser-panel" className={`flex h-full min-h-0 flex-col ${isAcademic ? '' : 'bg-[#f5f2ed]'}`}>
+    <div
+      data-testid="browser-panel"
+      className={`flex h-full min-h-0 flex-col ${isAcademic ? '' : 'bg-[#f5f2ed]'}`}
+      onKeyDown={(event) => {
+        if (event.ctrlKey && event.key.toLowerCase() === 'f') {
+          event.preventDefault()
+          openFind()
+        }
+      }}
+    >
       <form
         className={`flex shrink-0 items-center gap-0.5 border-b p-2 ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}
         onSubmit={(event) => {
@@ -107,9 +142,42 @@ export function BrowserPanel({ theme = 'academic' }: { theme?: BriefingTheme }) 
           spellCheck={false}
           className={`mx-1 h-7 min-w-0 flex-1 rounded border px-2 text-xs outline-none focus:border-ember/60 ${isAcademic ? 'border-parchment/15 bg-black/20 text-parchment/80 placeholder:text-parchment/30' : 'border-[#1a1a1a]/15 bg-white text-[#4b423b] placeholder:text-[#8a7d72]'}`}
         />
-        <IconButton label="网页内查找" testId="browser-find-open" onClick={() => undefined}>⌕</IconButton>
+        <IconButton label="网页内查找" testId="browser-find-open" onClick={openFind}>⌕</IconButton>
         <IconButton label="用系统浏览器打开" testId="browser-open-external" disabled={!viewState.url} onClick={() => void ipc.browserOpenExternal()}>↗</IconButton>
       </form>
+      {findVisible && (
+        <div className={`flex shrink-0 items-center gap-1 border-b px-2 py-1.5 text-xs ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}>
+          <input
+            ref={findInputRef}
+            data-testid="browser-find-input"
+            aria-label="在网页中查找"
+            value={findText}
+            onChange={(event) => {
+              const text = event.target.value
+              setFindText(text)
+              if (text) void ipc.browserFind({ text, forward: true, findNext: false })
+              else void ipc.browserStopFind()
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                closeFind()
+              } else if (event.key === 'Enter' && findText) {
+                event.preventDefault()
+                void ipc.browserFind({ text: findText, forward: !event.shiftKey, findNext: true })
+              }
+            }}
+            placeholder="查找页面内容"
+            className={`h-7 min-w-0 flex-1 rounded border px-2 outline-none focus:border-ember/60 ${isAcademic ? 'border-parchment/15 bg-black/20 text-parchment/80' : 'border-[#1a1a1a]/15 bg-white text-[#4b423b]'}`}
+          />
+          <span data-testid="browser-find-count" className="w-12 shrink-0 text-center text-parchment/45">
+            {findResult.activeMatchOrdinal} / {findResult.matches}
+          </span>
+          <IconButton label="上一个匹配" testId="browser-find-previous" onClick={() => void ipc.browserFind({ text: findText, forward: false, findNext: true })}>↑</IconButton>
+          <IconButton label="下一个匹配" testId="browser-find-next" onClick={() => void ipc.browserFind({ text: findText, forward: true, findNext: true })}>↓</IconButton>
+          <IconButton label="关闭查找" testId="browser-find-close" onClick={closeFind}>×</IconButton>
+        </div>
+      )}
       {viewState.error && (
         <div className="flex shrink-0 items-center gap-2 bg-ember/10 px-3 py-2 text-xs text-ember">
           <span className="min-w-0 flex-1 truncate">{viewState.error}</span>

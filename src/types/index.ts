@@ -620,6 +620,8 @@ export type BrowserViewState = {
   canGoForward: boolean
   error: string | null
 }
+export type BrowserFindResult = { activeMatchOrdinal: number; matches: number }
+export type BrowserShortcut = 'find' | 'closeFind'
 
 export type StateJson = {
   version: 1
@@ -895,7 +897,11 @@ export type IpcApi = {
   browserGoForward: () => Promise<void>
   browserReload: () => Promise<void>
   browserOpenExternal: () => Promise<void>
+  browserFind: (args: { text: string; forward: boolean; findNext: boolean }) => Promise<void>
+  browserStopFind: () => Promise<void>
   onBrowserState: (cb: (state: BrowserViewState) => void) => () => void
+  onBrowserFindResult: (cb: (result: BrowserFindResult) => void) => () => void
+  onBrowserShortcut: (cb: (shortcut: BrowserShortcut) => void) => () => void
 
   // Article assistant
   articleAssistantGenerateGuide: (args: {

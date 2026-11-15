@@ -1,6 +1,6 @@
 import { WebContentsView, session, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
-import type { BrowserBounds, BrowserViewState } from '@shared/index'
+import type { BrowserBounds, BrowserFindResult, BrowserViewState } from '@shared/index'
 import { browserTargetForInput, isAllowedBrowserUrl } from './browser-url'
 
 export type BrowserController = {
@@ -12,6 +12,8 @@ export type BrowserController = {
   goForward: () => void
   reload: () => void
   openExternal: () => Promise<void>
+  find: (text: string, forward: boolean, findNext: boolean) => void
+  stopFind: () => void
   getState: () => BrowserViewState
 }
 
@@ -21,6 +23,9 @@ function createBrowserController(window: BrowserWindow): BrowserController {
   let view: WebContentsView | null = null
   let attached = false
   let error: string | null = null
+  let findText = ''
+  let findIndex = 0
+  let findRequest = 0
 
   const alive = () => !window.isDestroyed() && !!view && !view.webContents.isDestroyed()
 
@@ -46,6 +51,16 @@ function createBrowserController(window: BrowserWindow): BrowserController {
   }
 
   const emitState = () => send('browser:state', getState())
+
+  const stopFind = () => {
+    findRequest += 1
+    findText = ''
+    findIndex = 0
+    if (alive()) {
+      void view!.webContents.executeJavaScript('window.getSelection()?.removeAllRanges()').catch(() => {})
+    }
+    send('browser:findResult', { activeMatchOrdinal: 0, matches: 0 })
+  }
 
   const applyBounds = (bounds: BrowserBounds) => {
     if (!view || window.isDestroyed()) return
@@ -97,6 +112,7 @@ function createBrowserController(window: BrowserWindow): BrowserController {
     })
     contents.on('did-start-loading', () => {
       error = null
+      stopFind()
       emitState()
     })
     contents.on('did-stop-loading', emitState)
@@ -107,6 +123,15 @@ function createBrowserController(window: BrowserWindow): BrowserController {
       if (!isMainFrame || errorCode === -3) return
       error = '网页加载失败，请检查网址或网络'
       emitState()
+    })
+    contents.on('before-input-event', (event, input) => {
+      if (input.type !== 'keyDown') return
+      if (input.control && input.key.toLowerCase() === 'f') {
+        event.preventDefault()
+        send('browser:shortcut', 'find')
+      } else if (input.key === 'Escape') {
+        send('browser:shortcut', 'closeFind')
+      }
     })
     window.once('closed', () => {
       attached = false
@@ -124,6 +149,7 @@ function createBrowserController(window: BrowserWindow): BrowserController {
         window.contentView.addChildView(current)
         attached = true
       }
+      current.setVisible(true)
       if (!current.webContents.getURL() && restoreUrl && isAllowedBrowserUrl(restoreUrl)) {
         await load(restoreUrl)
       }
@@ -134,6 +160,7 @@ function createBrowserController(window: BrowserWindow): BrowserController {
       if (view && attached && !window.isDestroyed()) {
         window.contentView.removeChildView(view)
       }
+      view?.setVisible(false)
       attached = false
     },
     setBounds: applyBounds,
@@ -155,6 +182,54 @@ function createBrowserController(window: BrowserWindow): BrowserController {
         await shell.openExternal(view!.webContents.getURL())
       }
     },
+    find: (text, forward, findNext) => {
+      if (!alive()) return
+      if (!text) {
+        stopFind()
+        return
+      }
+      const request = ++findRequest
+      const continuing = findNext && text === findText
+      findText = text
+      const script = `(() => {
+        const query = ${JSON.stringify(text)}
+        const matches = []
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+        let node
+        while ((node = walker.nextNode())) {
+          if (!node.nodeValue || node.parentElement?.closest('script,style,noscript')) continue
+          const value = node.nodeValue.toLocaleLowerCase()
+          const normalizedQuery = query.toLocaleLowerCase()
+          let from = 0
+          let at
+          while ((at = value.indexOf(normalizedQuery, from)) !== -1) {
+            matches.push({ node, start: at, end: at + query.length })
+            from = at + query.length
+          }
+        }
+        if (!matches.length) return { activeMatchOrdinal: 0, matches: 0 }
+        const index = ${continuing}
+          ? (${findIndex} + ${forward ? 1 : -1} + matches.length) % matches.length
+          : 0
+        const match = matches[index]
+        const range = document.createRange()
+        range.setStart(match.node, match.start)
+        range.setEnd(match.node, match.end)
+        const selection = window.getSelection()
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+        match.node.parentElement?.scrollIntoView({ block: 'center' })
+        return { activeMatchOrdinal: index + 1, matches: matches.length }
+      })()`
+      void view!.webContents.executeJavaScript(script).then((result: BrowserFindResult) => {
+        if (request !== findRequest) return
+        findIndex = Math.max(0, result.activeMatchOrdinal - 1)
+        send('browser:findResult', result)
+      }).catch(() => {
+        if (request === findRequest) send('browser:findResult', { activeMatchOrdinal: 0, matches: 0 })
+      })
+    },
+    stopFind,
     getState,
   }
 }

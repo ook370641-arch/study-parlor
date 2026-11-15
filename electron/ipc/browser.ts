@@ -23,4 +23,8 @@ export function registerBrowserIpc(getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('browser:goForward', () => { controller()?.goForward() })
   ipcMain.handle('browser:reload', () => { controller()?.reload() })
   ipcMain.handle('browser:openExternal', () => controller()?.openExternal())
+  ipcMain.handle('browser:find', (_event, args: { text: string; forward: boolean; findNext: boolean }) => {
+    controller()?.find(args.text, args.forward, args.findNext)
+  })
+  ipcMain.handle('browser:stopFind', () => { controller()?.stopFind() })
 }
