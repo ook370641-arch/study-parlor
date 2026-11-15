@@ -162,7 +162,7 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 
 已被其他 Agent 认领时默认跳过；只有用户明确要求接管时才在 `claim` 末尾加 `--force`。同一 Agent 重复认领幂等，不设置自动过期。
 
-**归档约定**：agent 完成某条需求后，须把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`）。**app 运行中不要直接改 state.json**（内存旧值会覆盖），应让用户在面板点 ✓ 或先关闭 app；面板归档会由 `state:patch` 自动清理认领。应用关闭后手工归档时，写回 `state.json` 后执行上述 `release`，并确认认领已清理。详见 `.agents/skills/notepad-triage/SKILL.md`。
+**归档约定**：agent 完成某条需求后，必须自行把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`），不得要求用户手动点 ✓。**app 运行中不要直接改 state.json**（内存旧值会覆盖），须通过运行应用的 `state:patch` 通道完成同构更新并同步渲染进程 store；开发实例可通过既有 CDP 9222 连接调用。面板/`state:patch` 归档会自动清理认领。应用关闭后可写回 `state.json`，再执行上述 `release` 并确认认领已清理。无法归档属于交付阻塞，不得把手动打勾交给用户。详见 `.agents/skills/notepad-triage/SKILL.md`。
 
 **评论处理记录**：agent 实际完成并验证评论要求的修改后，为对应 comment 写 `resolvedAt` 和简短 `resolution`（做了什么、验证结果、提交号），供面板展示和后续 agent 查阅。写回同样禁止直接修改运行中的 app 状态；先请用户关闭 app，再继续写回。
 
