@@ -22,6 +22,7 @@ import type {
   NoteEntry, NoteMeta, NoteSource, NoteSortBy,
   AiNoteCandidate, AiNoteStage,
   BookEntry, BookTocItem, ChapterMeta, BookGuideContext,
+  ArticlePanelMode,
 } from '@shared/index'
 import { ipc } from '@/lib/ipc'
 import type { DemoNote, DemoNoteOverrides } from '@/lib/demo-notes'
@@ -29,6 +30,7 @@ import { pickRandom, paintingPool, preloadPaintings, manifest } from '@/lib/pain
 import type { Painting } from '@shared/index'
 import { deriveTitle, migrateCoverNotepad, newNotepadId, stripNotepadClaims } from '@/lib/notepad'
 import { inferBookChapter, noteChapter } from '@/lib/notes-list'
+import { restoreArticlePanelMode } from '@/lib/article-panel-mode'
 
 export type AssistantSession = {
   contextId: string
@@ -494,14 +496,15 @@ type AppStore = {
   moveWritingNode: (args: { src: string; targetDir: string; index: number | null }) => Promise<void>
   writingRenamed: (oldPath: string, newPath: string) => void
 
-  // 右栏统一：文章旁注面板模式（导读/对照）+ 对照槽
-  articlePanelMode: Record<'anthropic' | 'book', 'guide' | 'companion'>
+  // 右栏统一：文章旁注面板模式（导读/对照/浏览器）+ 对照槽
+  articlePanelMode: Record<'anthropic' | 'book', ArticlePanelMode>
+  browserLastUrl: string | null
   articleCompanionMap: Record<string, string>
   // 写作树对照挑选器：非 null 时左栏临时换成写作树（瞬态，不持久化），
   // 点文件 = 放入该栏目对照槽。source 切换/切回导读/折叠右栏时清空。
   writingCompanionPicker: 'anthropic' | 'book' | null
   articleCompanion: { key: string; filePath: string; kind: 'md' | 'html' | 'other'; body: string; readonly: boolean; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
-  setArticlePanelMode: (source: 'anthropic' | 'book', mode: 'guide' | 'companion') => void
+  setArticlePanelMode: (source: 'anthropic' | 'book', mode: ArticlePanelMode) => void
   openWritingCompanionPicker: (source: 'anthropic' | 'book') => void
   closeWritingCompanionPicker: () => void
   selectArticleCompanion: (source: 'anthropic' | 'book', mainKey: string, filePath: string, opts?: { readonly?: boolean }) => Promise<void>
@@ -697,6 +700,7 @@ export const useStore = create<AppStore>((set, get) => ({
   htmlDeleteDirty: false,
   htmlDeleteFlush: null,
   articlePanelMode: { anthropic: 'guide', book: 'guide' },
+  browserLastUrl: null,
   articleCompanionMap: {},
   articleCompanion: null,
   lastArticleCompanion: null,
@@ -749,7 +753,8 @@ export const useStore = create<AppStore>((set, get) => ({
       writingExpandedGroups: state.writingExpandedGroups ?? {},
       writingUIFontSize: state.writingUIFontSize ?? 'base',
       writingCodeblockCollapsed: state.writingCodeblockCollapsed ?? {},
-      articlePanelMode: { anthropic: state.articlePanelMode?.anthropic ?? 'guide', book: state.articlePanelMode?.book ?? 'guide' },
+      articlePanelMode: restoreArticlePanelMode(state.articlePanelMode),
+      browserLastUrl: state.browserLastUrl ?? null,
       booksLastBook: state.booksLastBook ?? null,
       booksLastChapter: state.booksLastChapter ?? null,
       booksLastChapters: state.booksLastChapters ?? {},

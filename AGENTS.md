@@ -211,6 +211,13 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 - **类型**: `BriefingSourceId` 含 `'book'`；`NoteSource` 含 `'book'`，`NoteMeta.book` / `chapter` 记书名与章节（笔记按书聚合）
 - **记录**: `docs/superpowers/specs/2026-10-27-books-source-design.md` + 同名 plan（historical）；章节聚合与封面现状见 `docs/superpowers/specs/2026-11-02-notes-annotations-and-covers-design.md`（current）
 
+### 阅读右栏内置浏览器（2026-11-16）
+
+- **交互**: 博客与书籍右栏共用「导读 / 对照 / 浏览器」；单页面、紧凑单排工具栏，支持 URL/Bing 搜索、导航、滚动、网页内查找与外部打开。
+- **实现**: `electron/lib/browser-view.ts` 懒创建单个 `WebContentsView`，`electron/ipc/browser.ts` 提供固定用途 IPC，`src/components/article-assistant/BrowserPanel.tsx` 承载工具栏与占位区；切页签、文章来源或折叠只隐藏视图，不销毁页面。
+- **持久化**: session 固定为 `persist:study-parlor-browser`；`browserLastUrl` 保存最后合法导航地址。启动时浏览器页签回退导读，不自动请求网页，点击浏览器后才恢复地址。
+- **边界**: 仅允许 HTTP(S)，拒绝网页新窗口与权限请求，保持 sandbox / contextIsolation；页内查找通过主进程注入 DOM 选区完成，不向网页暴露应用 IPC。
+
 ### 笔记封面与阅读标注（2026-11-02）
 
 - **章节聚合**: `src/lib/notes-list.ts` 派生书组，专辑墙、笔记列与对照挑选器共用 `BookChapterSelect`；不合并或改写用户原始笔记，旧标题只在视图层补章节。

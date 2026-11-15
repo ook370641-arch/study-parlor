@@ -72,10 +72,10 @@
 
 ### 10. 文章阅读 / 导读 / 助手 / 旁注
 
-**现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+ 对照右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与写作两来源。博客/书籍对照页顶部提供「笔记」快捷入口：当前文章/章节已有对应笔记则直接在对照槽打开，没有则自动新建后打开。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。划词工具在博客/书籍间共用，支持备注与五色持久高亮；备注外点/Esc 自动保存、始终可删除，高亮可换色/删除；笔记与高亮标记间切换不会被旧卡片的延迟关闭误伤。
+**现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+「导读 / 对照 / 浏览器」右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/browser.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与书籍阅读。内置浏览器使用单个 `WebContentsView`，支持 URL/Bing 搜索、页内查找、跨状态页面保持、最后 URL 与持久 Cookie 重启恢复；启动不自动加载网页。博客/书籍对照页顶部提供「笔记」快捷入口：当前文章/章节已有对应笔记则直接在对照槽打开，没有则自动新建后打开。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。划词工具在博客/书籍间共用，支持备注与五色持久高亮；备注外点/Esc 自动保存、始终可删除，高亮可换色/删除；笔记与高亮标记间切换不会被旧卡片的延迟关闭误伤。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（共享划词高亮、备注自动保存/删除与定位修复；同名 plan 为实施记录）
 - current：`specs/2026-11-02-notes-annotations-and-covers-design.md`（标注真实点击回归、亮黄色、书籍章节聚合与 SVG 封面）
-**历史链**：07-11 article-assistant → 07-11 article-assistant-guide-improvements → 07-11 briefing-assistant → 07-19 annotation-iteration → 07-22 briefing-ai-chat-enhancement → 08-02 agent-article-pipeline → 09-29 reading-position-companion-and-hr
+**历史链**：07-11 article-assistant → 07-11 article-assistant-guide-improvements → 07-11 briefing-assistant → 07-19 annotation-iteration → 07-22 briefing-ai-chat-enhancement → 08-02 agent-article-pipeline → 09-29 reading-position-companion-and-hr → 11-16 right-rail-browser
 
 ### 11. 网络搜索与外部资料
 
