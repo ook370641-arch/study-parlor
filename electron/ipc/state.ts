@@ -51,6 +51,7 @@ const DEFAULT: StateJson = {
   writingUIFontSize: 'base',
   writingCodeblockCollapsed: {},
   articlePanelMode: { anthropic: 'guide', book: 'guide' },
+  browserLastUrl: null,
   booksLastBook: null,
   booksLastChapter: null,
   booksLastChapters: {},

@@ -2,6 +2,7 @@ import { WebContentsView, session, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
 import type { BrowserBounds, BrowserFindResult, BrowserViewState } from '@shared/index'
 import { browserTargetForInput, isAllowedBrowserUrl } from './browser-url'
+import { patchState } from '../ipc/state'
 
 export type BrowserController = {
   show: (bounds: BrowserBounds, restoreUrl?: string | null) => Promise<BrowserViewState>
@@ -51,6 +52,11 @@ function createBrowserController(window: BrowserWindow): BrowserController {
   }
 
   const emitState = () => send('browser:state', getState())
+
+  const persistLastUrl = () => {
+    const url = alive() ? view!.webContents.getURL() : ''
+    if (isAllowedBrowserUrl(url)) patchState({ browserLastUrl: url })
+  }
 
   const stopFind = () => {
     findRequest += 1
@@ -116,8 +122,14 @@ function createBrowserController(window: BrowserWindow): BrowserController {
       emitState()
     })
     contents.on('did-stop-loading', emitState)
-    contents.on('did-navigate', emitState)
-    contents.on('did-navigate-in-page', emitState)
+    contents.on('did-navigate', () => {
+      persistLastUrl()
+      emitState()
+    })
+    contents.on('did-navigate-in-page', () => {
+      persistLastUrl()
+      emitState()
+    })
     contents.on('page-title-updated', emitState)
     contents.on('did-fail-load', (_event, errorCode, _description, _validatedUrl, isMainFrame) => {
       if (!isMainFrame || errorCode === -3) return

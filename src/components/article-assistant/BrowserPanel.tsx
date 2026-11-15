@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ipc } from '@/lib/ipc'
+import { useStore } from '@/store'
 import type { BrowserBounds, BrowserFindResult, BrowserViewState, BriefingTheme } from '@shared/index'
 
 const EMPTY_STATE: BrowserViewState = {
@@ -33,6 +34,7 @@ function IconButton({ label, testId, disabled, onClick, children }: {
 }
 
 export function BrowserPanel({ theme = 'academic' }: { theme?: BriefingTheme }) {
+  const browserLastUrl = useStore((state) => state.browserLastUrl)
   const placeholderRef = useRef<HTMLDivElement>(null)
   const addressFocusedRef = useRef(false)
   const [viewState, setViewState] = useState<BrowserViewState>(EMPTY_STATE)
@@ -77,7 +79,7 @@ export function BrowserPanel({ theme = 'academic' }: { theme?: BriefingTheme }) 
     const observer = new ResizeObserver(updateBounds)
     observer.observe(element)
     window.addEventListener('resize', updateBounds)
-    void ipc.browserShow({ bounds: boundsFor(element) }).then((state) => {
+    void ipc.browserShow({ bounds: boundsFor(element), restoreUrl: browserLastUrl }).then((state) => {
       if (!active) {
         void ipc.browserHide()
         return

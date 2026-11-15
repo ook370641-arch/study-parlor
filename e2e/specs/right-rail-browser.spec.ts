@@ -1,8 +1,10 @@
 import { test, expect } from '../fixtures/electron'
 import type { Page } from '@playwright/test'
+import fs from 'node:fs'
+import path from 'node:path'
 import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
-import { seedBlogArticleWithCache } from '../helpers/test-library'
+import { seedBlogArticleWithCache, seedBook } from '../helpers/test-library'
 import { createMockServer } from '../helpers/mock-server'
 
 async function openArticle(window: Page, libraryPath: string, configDir: string): Promise<void> {
@@ -84,6 +86,62 @@ test.describe('@p1 阅读右栏浏览器', () => {
       await expect(window.getByTestId('browser-find-input')).toBeVisible()
       await window.getByTestId('browser-find-input').press('Escape')
       await expect(window.getByTestId('browser-find-input')).toHaveCount(0)
+    } finally {
+      await server.close()
+    }
+  })
+
+  test('跨页签、来源与界面重载保持网页，启动只恢复地址', async ({ window, testLibraryPath, testConfigDir }) => {
+    seedBook(testLibraryPath, { title: 'E2E Browser Book', chapters: [{ title: '第一章', body: '正文。' }] })
+    const server = await createMockServer([
+      { path: '/first', handler: (_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+        res.end('<html><body><input aria-label="draft"></body></html>')
+      } },
+    ])
+    try {
+      await openArticle(window, testLibraryPath, testConfigDir)
+      await window.getByTestId('article-panel-tab-browser-anthropic').click()
+      await window.getByTestId('browser-address').fill(`${server.url}/first`)
+      await window.getByTestId('browser-address').press('Enter')
+      await expect.poll(() => window.context().pages().some((page) => page.url() === `${server.url}/first`)).toBe(true)
+      const browserPage = window.context().pages().find((page) => page.url() === `${server.url}/first`)!
+      await browserPage.getByLabel('draft').fill('保留我')
+
+      await window.getByTestId('article-panel-tab-guide-anthropic').click()
+      await window.getByTestId('article-panel-tab-browser-anthropic').click()
+      await expect(browserPage.getByLabel('draft')).toHaveValue('保留我')
+      await window.getByTestId('article-assistant-divider-toggle').click()
+      await window.getByTestId('article-assistant-divider-toggle').click()
+      await window.getByTestId('article-panel-tab-browser-anthropic').click()
+      await expect(browserPage.getByLabel('draft')).toHaveValue('保留我')
+
+      await window.getByTestId('briefing-source-book').click()
+      await window.getByTestId('book-card-0').click()
+      await window.getByTestId('chapter-row-0').click()
+      await expect(window.getByTestId('book-chapter-body')).toContainText('正文。')
+      await window.getByTestId('article-panel-tab-browser-book').click()
+      await expect(browserPage.getByLabel('draft')).toHaveValue('保留我')
+      await window.getByTestId('briefing-source-anthropic').click()
+      await window.getByTestId('article-panel-tab-browser-anthropic').click()
+      await expect(browserPage.getByLabel('draft')).toHaveValue('保留我')
+      expect(browserPage.url()).toBe(`${server.url}/first`)
+
+      await expect.poll(() => {
+        const state = JSON.parse(fs.readFileSync(path.join(testConfigDir, 'state.json'), 'utf8'))
+        return state.browserLastUrl
+      }).toBe(`${server.url}/first`)
+      server.clearRequests()
+      await window.reload()
+      const cover = new CoverPage(window)
+      await cover.nameInput.or(cover.briefingButton).waitFor({ state: 'visible' })
+      if (await cover.nameInput.isVisible()) await cover.enterName('E2E 测试员')
+      await cover.goToBriefing()
+      await window.getByTestId('briefing-source-anthropic').click()
+      await expect(window.getByTestId('browser-view-placeholder')).toHaveCount(0)
+      expect(server.requests).toHaveLength(0)
+      await window.getByTestId('article-panel-tab-browser-anthropic').click()
+      await expect(browserPage.getByLabel('draft')).toHaveValue('保留我')
     } finally {
       await server.close()
     }

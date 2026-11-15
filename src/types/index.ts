@@ -695,6 +695,7 @@ export type StateJson = {
   writingPanelMode?: 'assistant' | 'companion'
   writingCompanionMap?: Record<string, string>
   articlePanelMode?: Record<'anthropic' | 'book', ArticlePanelMode>
+  browserLastUrl?: string | null
   /** 书籍来源最后打开的书（books/<书名> 绝对路径；失效时回退第一本） */
   booksLastBook?: string | null
   booksLastChapter?: string | null
