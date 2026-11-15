@@ -60,7 +60,7 @@ status: planned
 地址栏提交时按以下规则处理：
 
 - `http://` 或 `https://` 开头的合法 URL：直接访问。
-- 不含空格的普通主机名或 localhost 地址：补 `https://` 后访问。
+- 不含空格的普通主机名：补 `https://` 后访问；localhost 与回环地址补 `http://`。
 - 其余输入：作为关键词编码后访问 `https://www.bing.com/search?q=...`。
 - `file:`、`javascript:`、`data:` 等协议不作为网址接受；这类输入不会被当作可执行导航。
 
