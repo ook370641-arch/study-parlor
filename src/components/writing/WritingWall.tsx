@@ -3,6 +3,7 @@ import type { BriefingTheme, WritingRoot, WritingTreeNode } from '@shared/index'
 import { AlbumCard } from '@/components/album-wall/AlbumCard'
 import { AlbumGrid, AlbumWall } from '@/components/album-wall/AlbumWall'
 import { AlbumGroupSection } from '@/components/album-wall/AlbumGroupSection'
+import { CoverGenerator } from '@/components/album-wall/CoverGenerator'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ipc } from '@/lib/ipc'
 import { useStore } from '@/store'
@@ -107,9 +108,30 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
                       className="transition-transform hover:-translate-y-0.5"
                       style={{ background: `linear-gradient(135deg, ${coverColor(file.path)}99, ${coverColor(file.path)}22 58%, #1a120d)` }}
                       fallback={<div className="absolute inset-0 flex items-center justify-center p-5 text-center font-serif text-lg text-white/65">{extension === 'MD' ? label : extension}</div>}
+                      cover={file.coverUrl ? <img src={file.coverUrl} alt={`${file.name} 封面`} className="absolute inset-0 h-full w-full object-cover" /> : undefined}
                       footerClassName="p-2.5"
                       titleClassName="line-clamp-2 text-[1em] text-[#f0e2c8]"
                       hoverMeta={typeof file.wordCount === 'number' ? <span data-testid={`writing-wall-word-count-${file.path}`}>{file.wordCount.toLocaleString('zh-CN')} 字</span> : undefined}
+                      topLeft={/\.md$/i.test(file.name) ? (
+                        <CoverGenerator
+                          hasCover={!!file.coverUrl}
+                          subject={root === 'writing' ? '文章' : '文档'}
+                          testIdPrefix="writing-cover"
+                          fillCover
+                          className="absolute left-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100"
+                          onGenerate={async () => {
+                            const result = await ipc.writingGenerateCovers({ path: file.path })
+                            if (!result.ok) throw new Error(result.message)
+                            return result.value.candidates
+                          }}
+                          onSave={async design => {
+                            const result = await ipc.writingSaveCover({ path: file.path, design })
+                            if (!result.ok) throw new Error(result.message)
+                            await loadWritingTree()
+                          }}
+                          onError={showToast}
+                        />
+                      ) : undefined}
                       topRight={<button
                         type="button"
                         data-testid={`writing-wall-delete-${file.path}`}

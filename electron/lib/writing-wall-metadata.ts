@@ -5,6 +5,7 @@ import type { WritingRoot, WritingTreeNode } from '@shared/index'
 import { countTextWords } from './text-stats'
 import { isNonMdPath } from './writing-tree'
 import { loadCatalog, updateWallMetadata } from './writing-catalog'
+import { writingCoverDataUrl } from './writing-covers'
 
 export function attachWritingWallMetadata(lib: string, root: WritingRoot, nodes: WritingTreeNode[]): WritingTreeNode[] {
   const catalog = loadCatalog(lib, root)
@@ -24,7 +25,7 @@ export function attachWritingWallMetadata(lib: string, root: WritingRoot, nodes:
 
     const cached = catalog.entries[node.path]
     if (cached?.wallMtimeMs === mtimeMs && typeof cached.wordCount === 'number') {
-      return { ...withTime, wordCount: cached.wordCount }
+      return { ...withTime, wordCount: cached.wordCount, coverUrl: cached.cover ? writingCoverDataUrl(lib, cached.cover) ?? undefined : undefined }
     }
 
     try {
@@ -32,7 +33,7 @@ export function attachWritingWallMetadata(lib: string, root: WritingRoot, nodes:
       const wordCount = countTextWords(parsed.content)
       const cover = typeof parsed.data.cover === 'string' ? parsed.data.cover : undefined
       updateWallMetadata(lib, root, node.path, { wallMtimeMs: mtimeMs, wordCount, cover })
-      return { ...withTime, wordCount }
+      return { ...withTime, wordCount, coverUrl: cover ? writingCoverDataUrl(lib, cover) ?? undefined : undefined }
     } catch {
       return withTime
     }

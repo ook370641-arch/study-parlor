@@ -37,16 +37,7 @@ const transcript = (h: Message[]) =>
     .map(m => `${m.role === 'user' ? '学者' : 'AI'}:${m.content}`)
     .join('\n\n')
 
-export async function generateNoteCoverCandidates(cfg: AppConfig, rel: string) {
-  if (!/^notes\/[^/]+\.md$/.test(rel) || rel.includes('\\')) throw new Error('Invalid note path')
-  const document = matter(fs.readFileSync(assertInsideRoots(cfg.libraryPath, rel), 'utf8'))
-  const metadata = [
-    `笔记标题：${typeof document.data.title === 'string' ? document.data.title : '未命名笔记'}`,
-    `来源：${typeof document.data.source === 'string' ? document.data.source : 'unknown'}`,
-    `摘要：${typeof document.data.summary === 'string' ? document.data.summary : ''}`,
-  ]
-  const body = document.content.trim().slice(0, 12000)
-  if (body) metadata.push('', '正文片段：', body)
+async function requestCoverCandidates(cfg: AppConfig, metadata: string[]) {
   const text = await chatNonStream(cfg, {
     messages: [
       { role: 'system', content: read('note-cover.md') },
@@ -59,6 +50,32 @@ export async function generateNoteCoverCandidates(cfg: AppConfig, rel: string) {
     design,
     svgDataUrl: `data:image/svg+xml;base64,${Buffer.from(renderNoteCoverSvg(design)).toString('base64')}`,
   }))
+}
+
+export async function generateNoteCoverCandidates(cfg: AppConfig, rel: string) {
+  if (!/^notes\/[^/]+\.md$/.test(rel) || rel.includes('\\')) throw new Error('Invalid note path')
+  const document = matter(fs.readFileSync(assertInsideRoots(cfg.libraryPath, rel), 'utf8'))
+  const metadata = [
+    `笔记标题：${typeof document.data.title === 'string' ? document.data.title : '未命名笔记'}`,
+    `来源：${typeof document.data.source === 'string' ? document.data.source : 'unknown'}`,
+    `摘要：${typeof document.data.summary === 'string' ? document.data.summary : ''}`,
+  ]
+  const body = document.content.trim().slice(0, 12000)
+  if (body) metadata.push('', '正文片段：', body)
+  return requestCoverCandidates(cfg, metadata)
+}
+
+export async function generateWritingCoverCandidates(cfg: AppConfig, rel: string) {
+  if (!/^(writing|repository)\/.+\.md$/.test(rel) || rel.includes('\\')) throw new Error('Invalid writing path')
+  const document = matter(fs.readFileSync(assertInsideRoots(cfg.libraryPath, rel), 'utf8'))
+  const metadata = [
+    `文章标题：${typeof document.data.title === 'string' ? document.data.title : path.basename(rel, '.md')}`,
+    `来源：${rel.startsWith('writing/') ? '文章' : '仓库'}`,
+    `摘要：${typeof document.data.summary === 'string' ? document.data.summary : ''}`,
+  ]
+  const body = document.content.trim().slice(0, 12000)
+  if (body) metadata.push('', '正文片段：', body)
+  return requestCoverCandidates(cfg, metadata)
 }
 
 export async function finalizeProgress(

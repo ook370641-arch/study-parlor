@@ -54,4 +54,14 @@ describe('attachWritingWallMetadata', () => {
     expect(pdf?.mtimeMs).toEqual(expect.any(Number))
     expect(pdf?.wordCount).toBeUndefined()
   })
+
+  it('只把根目录 .covers 内的 SVG 暴露为安全 data URL', () => {
+    const filePath = path.join(lib, 'writing', '研究', 'a.md')
+    fs.mkdirSync(path.join(lib, 'writing', '.covers'), { recursive: true })
+    fs.writeFileSync(path.join(lib, 'writing', '.covers', 'safe.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>')
+    fs.writeFileSync(filePath, matter.stringify('正文', { title: 'A', cover: 'writing/.covers/safe.svg' }))
+
+    const nodes = attachWritingWallMetadata(lib, 'writing', scanRoot(lib, 'writing'))
+    expect(nodes[0].children?.[0].coverUrl).toMatch(/^data:image\/svg\+xml;base64,/)
+  })
 })

@@ -502,6 +502,7 @@ export type WritingTreeNode = {
   children?: WritingTreeNode[]
   wordCount?: number
   mtimeMs?: number
+  coverUrl?: string
   /** @deprecated 摘要不再附到树节点（见 writing:refreshCatalog diff 触发）；保留字段避免级联改动 */
   summary?: string
   /** @deprecated 同上 */
@@ -948,6 +949,8 @@ export type IpcApi = {
   writingReadPreview: (a: { path: string }) => Promise<WritingResult<WritingPreviewResult>>
   writingOpenInSystem: (a: { path: string }) => Promise<WritingResult<null>>
   writingSaveHtml: (a: { path: string; html: string }) => Promise<WritingResult<null>>
+  writingGenerateCovers: (a: { path: string }) => Promise<WritingResult<{ candidates: NoteCoverCandidate[] }>>
+  writingSaveCover: (a: { path: string; design: NoteCoverDesign }) => Promise<WritingResult<{ cover: string; coverUrl: string }>>
   getPathForFile: (file: File) => string
   writingRefreshCatalog: () => Promise<WritingResult<{ refreshed: number }>>
   writingAssistantSendMessage: (a: {

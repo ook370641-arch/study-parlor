@@ -142,6 +142,8 @@ export const ipc = {
   get writingReadPreview() { return ensure().writingReadPreview },
   get writingOpenInSystem() { return ensure().writingOpenInSystem },
   get writingSaveHtml() { return ensure().writingSaveHtml },
+  get writingGenerateCovers() { return ensure().writingGenerateCovers },
+  get writingSaveCover() { return ensure().writingSaveCover },
   get getPathForFile() { return ensure().getPathForFile },
   get writingRefreshCatalog() { return ensure().writingRefreshCatalog },
   get writingAssistantSendMessage() { return ensure().writingAssistantSendMessage },
