@@ -76,13 +76,16 @@ export function WritingListColumn({ theme = 'academic', collapsed }: { theme?: '
   // 优先恢复上次打开的文件(lastWritingFile,跨重启持久化,2026-09-22 用户反馈),
   // 不在树里(被外部删除)回退第一篇。否则新建文章后的 tree 刷新会把编辑器抢走。
   useEffect(() => {
-    if (useStore.getState().writingListTab === 'notes') return
-    const current = useStore.getState().writingFile
-    if (current && writingTreeContainsPath(tree, current.path)) return
-    const last = useStore.getState().lastWritingFile
+    const state = useStore.getState()
+    if (state.writingListTab === 'notes') return
+    const root = state.writingListTab === 'repository' ? 'repository' : 'writing'
+    if (state.writingWallVisible?.[root]) return
+    const current = state.writingFile
+    if (current && writingRootOf(current.path) === root && writingTreeContainsPath(tree, current.path)) return
+    const last = state.lastWritingFile
     // 根守卫：lastWritingFile 可能是笔记路径（notes/），文章/仓库 tab 下不恢复
-    if (last && writingRootOf(last) !== 'notes' && writingTreeContainsPath(tree, last)) { selectWritingFile(last); return }
-    const first = tree ? firstWritingFilePath(tree.writing) : null
+    if (last && writingRootOf(last) === root && writingTreeContainsPath(tree, last)) { selectWritingFile(last); return }
+    const first = tree ? firstWritingFilePath(tree[root]) : null
     if (first) selectWritingFile(first)
   }, [tree, selectWritingFile])
 

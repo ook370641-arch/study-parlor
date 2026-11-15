@@ -109,6 +109,44 @@ describe('writing store', () => {
     })
   })
 
+  describe('showWritingWall', () => {
+    it('返回前保存 dirty 文档并进入对应墙模式', async () => {
+      vi.mocked(ipc.writingWrite).mockResolvedValue({ ok: true, value: null })
+      useStore.setState({
+        writingFile: { path: 'writing/a.md', body: '# new\n', kind: 'md', dirty: true, saving: 'idle' },
+        writingWallVisible: { writing: false, repository: false },
+      })
+
+      await useStore.getState().showWritingWall('writing')
+
+      expect(ipc.writingWrite).toHaveBeenCalledWith({ path: 'writing/a.md', body: '# new\n' })
+      expect(useStore.getState().writingFile).toBeNull()
+      expect(useStore.getState().writingWallVisible.writing).toBe(true)
+    })
+
+    it('保存失败时留在编辑器，不丢弃 dirty 文档', async () => {
+      vi.mocked(ipc.writingWrite).mockResolvedValue({ ok: false, code: 'WRITING_IO_ERROR', message: '失败' })
+      useStore.setState({
+        writingFile: { path: 'writing/a.md', body: '# new\n', kind: 'md', dirty: true, saving: 'idle' },
+        writingWallVisible: { writing: false, repository: false },
+      })
+
+      await useStore.getState().showWritingWall('writing')
+
+      expect(useStore.getState().writingFile?.dirty).toBe(true)
+      expect(useStore.getState().writingWallVisible.writing).toBe(false)
+    })
+
+    it('打开文档时退出对应墙模式', async () => {
+      vi.mocked(ipc.writingRead).mockResolvedValue({ ok: true, value: { frontmatter: {}, body: '# a\n' } })
+      useStore.setState({ writingWallVisible: { writing: true, repository: false } })
+
+      await useStore.getState().selectWritingFile('writing/a.md')
+
+      expect(useStore.getState().writingWallVisible.writing).toBe(false)
+    })
+  })
+
   describe('selectWritingFile × htmlDeleteFlush', () => {
     it('切换前调用已注册的 flush；flush 失败则中止切换', async () => {
       vi.mocked(ipc.writingRead).mockResolvedValue({

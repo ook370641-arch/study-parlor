@@ -81,4 +81,16 @@ describe('WritingListColumn', () => {
       expect(useStore.getState().toast?.message).toBe('已扫描，没有新文件')
     })
   })
+
+  it('显式专辑墙模式下不自动打开第一篇文章', async () => {
+    const selectWritingFile = vi.fn()
+    useStore.setState({
+      writingTree: { writing: [{ kind: 'file', name: 'a.md', path: 'writing/a.md' }], repository: [] },
+      writingWallVisible: { writing: true, repository: false },
+      selectWritingFile,
+    } as any)
+    render(<WritingListColumn theme="academic" />)
+    await waitFor(() => expect(useStore.getState().loadWritingTree).toHaveBeenCalled())
+    expect(selectWritingFile).not.toHaveBeenCalled()
+  })
 })

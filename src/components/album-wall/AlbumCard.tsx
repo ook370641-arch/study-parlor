@@ -1,7 +1,7 @@
 import type { CSSProperties, DragEvent, ReactNode } from 'react'
 
 export function AlbumCard({
-  testId, title, onOpen, fallback, cover, topLeft, topRight, meta,
+  testId, title, onOpen, fallback, cover, topLeft, topRight, meta, hoverMeta,
   className = '', titleClassName = '', footerClassName = 'p-3', scrimStyle,
   style, onDragOver, onDrop,
 }: {
@@ -13,6 +13,7 @@ export function AlbumCard({
   topLeft?: ReactNode
   topRight?: ReactNode
   meta?: ReactNode
+  hoverMeta?: ReactNode
   className?: string
   titleClassName?: string
   footerClassName?: string
@@ -45,6 +46,7 @@ export function AlbumCard({
       <div className={`absolute inset-x-0 bottom-0 text-[#f0e2c8] ${footerClassName}`}>
         <div className={`leading-snug ${titleClassName}`}>{title}</div>
         {meta}
+        {hoverMeta && <div className="mt-1 text-[0.833em] text-parchment/70 opacity-0 transition-opacity group-hover:opacity-100">{hoverMeta}</div>}
       </div>
     </article>
   )

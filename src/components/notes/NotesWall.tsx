@@ -82,6 +82,7 @@ export function NotesWall() {
                 footerClassName="p-2.5"
                 titleClassName="text-[1em] text-[#f0e2c8] line-clamp-2"
                 meta={<div className="mt-1 text-[0.833em] text-parchment/60">{rating > 0 ? '★'.repeat(rating) : '未评'}</div>}
+                hoverMeta={typeof entry.wordCount === 'number' ? <span data-testid={`note-wall-word-count-${urlSlug(entry.meta.url)}`}>{entry.wordCount.toLocaleString('zh-CN')} 字</span> : undefined}
                 topRight={item.kind === 'book' ? (
                   <BookChapterSelect
                     group={item}

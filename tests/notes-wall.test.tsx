@@ -43,6 +43,12 @@ describe('NotesWall', () => {
     fireEvent.click(getByTestId('wall-album-a'))
     expect(spy).toHaveBeenCalledWith('notes/a.md')
   })
+  it('hover 信息显示笔记正文字数', () => {
+    useStore.setState({ notesList: [{ ...mk('a', 'web'), wordCount: 123 }] })
+    const { getByTestId } = render(<NotesWall />)
+    expect(getByTestId('note-wall-word-count-a')).toHaveTextContent('123 字')
+    expect(getByTestId('note-wall-word-count-a').parentElement).toHaveClass('opacity-0', 'group-hover:opacity-100')
+  })
   it('专辑墙文字和封面随界面字号缩放', () => {
     useStore.setState({ writingUIFontSize: 'xl' })
     const { container, getByTestId } = render(<NotesWall />)

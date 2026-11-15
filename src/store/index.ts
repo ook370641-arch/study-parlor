@@ -6,7 +6,7 @@ import { reconcileBlogOrder, reorderBlog as reorderBlogOrder } from '@/lib/blog-
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
-import { childrenPathsOf, writingPreviewKindOf, isWritingTreePath } from '@/lib/writing-tree-utils'
+import { childrenPathsOf, writingPreviewKindOf, isWritingTreePath, writingRootOf } from '@/lib/writing-tree-utils'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
@@ -384,6 +384,7 @@ type AppStore = {
 
   // 写作板
   writingTree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null
+  writingWallVisible: Record<WritingRoot, boolean>
   writingFile: { path: string; body: string; kind: WritingPreviewKind; truncated?: boolean; previewError?: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
   writingError: string | null
   writingFontSize: BriefingFontSize
@@ -452,6 +453,7 @@ type AppStore = {
   setHtmlDeleteDirty: (dirty: boolean) => void
   registerHtmlDeleteFlush: (fn: (() => Promise<boolean>) | null) => void
   selectWritingFile: (filePath: string | null) => Promise<void>
+  showWritingWall: (root: WritingRoot) => Promise<void>
   closeNoteToWall: () => Promise<void>
   updateWritingBody: (body: string) => void
   saveWritingFile: () => Promise<void>
@@ -665,6 +667,7 @@ export const useStore = create<AppStore>((set, get) => ({
   articleAssistantGuideCollapsed: false,
   guideScrollToChunkIndex: null,
   writingTree: null,
+  writingWallVisible: { writing: false, repository: false },
   writingFile: null,
   writingError: null,
   writingFontSize: 'base',
@@ -2786,12 +2789,13 @@ export const useStore = create<AppStore>((set, get) => ({
       else set({ companionFile: null })
     }
     const kind = writingPreviewKindOf(filePath)
+    const selectedRoot = writingRootOf(filePath)
     // 非 md 文件没有编辑器/助手会话，读取失败时展示 previewError 而非整页错误
     if (kind !== 'md') {
       const r = await ipc.writingReadPreview({ path: filePath })
       if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
       if (r.ok) {
-        set({
+        set(state => ({
           writingFile: {
             path: filePath,
             body: r.value.content ?? '',
@@ -2801,10 +2805,19 @@ export const useStore = create<AppStore>((set, get) => ({
             saving: 'idle',
           },
           lastWritingFile: filePath,
-        })
+          writingWallVisible: selectedRoot === 'writing' || selectedRoot === 'repository'
+            ? { ...state.writingWallVisible, [selectedRoot]: false }
+            : state.writingWallVisible,
+        }))
       } else {
         // previewError 存类型化错误码（组件据此分支：PDF_NO_TEXT 专门提示 / 其余通用文案）
-        set({ writingFile: { path: filePath, body: '', kind, dirty: false, saving: 'idle', previewError: r.code }, lastWritingFile: filePath })
+        set(state => ({
+          writingFile: { path: filePath, body: '', kind, dirty: false, saving: 'idle', previewError: r.code },
+          lastWritingFile: filePath,
+          writingWallVisible: selectedRoot === 'writing' || selectedRoot === 'repository'
+            ? { ...state.writingWallVisible, [selectedRoot]: false }
+            : state.writingWallVisible,
+        }))
       }
       await restoreCompanion()
       return
@@ -2812,7 +2825,13 @@ export const useStore = create<AppStore>((set, get) => ({
     const r = await ipc.writingRead({ path: filePath })
     if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
     if (r.ok) {
-      set({ writingFile: { path: filePath, body: r.value.body ?? '', kind: 'md', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+      set(state => ({
+        writingFile: { path: filePath, body: r.value.body ?? '', kind: 'md', dirty: false, saving: 'idle' },
+        lastWritingFile: filePath,
+        writingWallVisible: selectedRoot === 'writing' || selectedRoot === 'repository'
+          ? { ...state.writingWallVisible, [selectedRoot]: false }
+          : state.writingWallVisible,
+      }))
       await restoreCompanion()
       // 切换文章时重置快照点亮状态，避免把上一篇文章的挂快照意图带到新文章
       if (cur?.path !== filePath) set({ writingAssistantSnapshotLit: false })
@@ -2828,6 +2847,17 @@ export const useStore = create<AppStore>((set, get) => ({
     } else {
       set({ writingError: r.message })
     }
+  },
+
+  showWritingWall: async (root) => {
+    const current = get().writingFile
+    if (current?.dirty) {
+      await get().saveWritingFile()
+      if (get().writingFile?.dirty) return
+    }
+    await get().selectWritingFile(null)
+    if (get().writingFile) return
+    set(state => ({ writingWallVisible: { ...state.writingWallVisible, [root]: true } }))
   },
 
   closeNoteToWall: async () => {

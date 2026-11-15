@@ -8,6 +8,7 @@ import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-fon
 import { useScrollMemory } from '@/lib/use-scroll-memory'
 import { Quote } from '@/components/Quote'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
+import { writingRootOf } from '@/lib/writing-tree-utils'
 
 export function WritingBoard() {
   const file = useStore(s => s.writingFile)
@@ -16,6 +17,7 @@ export function WritingBoard() {
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
   const saveAllDirtyWriting = useStore(s => s.saveAllDirtyWriting)
+  const showWritingWall = useStore(s => s.showWritingWall)
   const editorScrollRef = useRef<HTMLDivElement | null>(null)
 
   // Autosave: debounce 1.5s after body change
@@ -57,6 +59,15 @@ export function WritingBoard() {
   }
 
   const body = WRITING_BODY_FROM_UI[writingUISize]
+  const root = writingRootOf(file.path)
+  const backToWall = root === 'writing' || root === 'repository' ? (
+    <button
+      type="button"
+      data-testid="writing-back-to-wall"
+      onClick={() => { void showWritingWall(root) }}
+      className={`self-start px-3 pt-2 text-xs ${briefingTheme === 'newspaper' ? 'text-[#6b5d52] hover:text-[#8a3a3a]' : 'text-parchment/55 hover:text-ember'}`}
+    >← 专辑墙</button>
+  ) : null
   // 默认色跟主题走:报纸黑、学术暖米(spec A3)
   const color = briefingTheme === 'newspaper' ? '#1a1a1a' : '#e8d5b7'
 
@@ -70,6 +81,7 @@ export function WritingBoard() {
           ['--writing-tone-color' as string]: color,
           ['--writing-ui-quote-size' as string]: WRITING_UI_QUOTE_SIZES[writingUISize],
         }}>
+        {backToWall}
         {file.kind === 'html' ? (
           <HtmlPreview deletable file={{ path: file.path, body: file.body, previewError: file.previewError }} />
         ) : (
@@ -93,6 +105,7 @@ export function WritingBoard() {
         ['--writing-tone-color' as string]: color,
         ['--writing-ui-quote-size' as string]: WRITING_UI_QUOTE_SIZES[writingUISize],
       }}>
+      {backToWall}
       <WritingToolbar />
       {/* Save status indicator */}
       <div data-testid="writing-save-status" className="flex justify-end px-3 py-0.5 shrink-0 text-[10px]">

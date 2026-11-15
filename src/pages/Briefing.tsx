@@ -8,6 +8,7 @@ import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 import { BookPanel } from '@/components/books/BookPanel'
 import { WritingListColumn } from '@/components/writing/WritingListColumn'
 import { WritingBoard } from '@/components/writing/WritingBoard'
+import { WritingWall } from '@/components/writing/WritingWall'
 import { NoteBoard } from '@/components/notes/NoteBoard'
 import { NotesWall } from '@/components/notes/NotesWall'
 import { WritingAssistantPanel } from '@/components/writing-assistant/WritingAssistantPanel'
@@ -30,6 +31,7 @@ export function Briefing() {
   const htmlDeleteMode = useStore((s) => s.htmlDeleteMode)
   const source = useStore((s) => s.briefingSource)
   const writingTab = useStore((s) => s.writingListTab)
+  const writingWallVisible = useStore((s) => s.writingWallVisible)
   const writingFilePath = useStore((s) => s.writingFile?.path)
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -108,10 +110,12 @@ export function Briefing() {
                 />
                 {(() => {
                   const openRoot = writingFilePath ? writingRootOf(writingFilePath) : null
-                  if (openRoot === 'notes') return <NoteBoard />
-                  if (openRoot) return <WritingBoard />
-                  // 无打开文件：笔记 tab 落专辑墙
-                  return writingTab === 'notes' ? <NotesWall /> : <WritingBoard />
+                  const tabRoot = writingTab === 'articles' ? 'writing' : writingTab === 'repository' ? 'repository' : 'notes'
+                  const hasMatchingDocument = openRoot === tabRoot
+                  if (tabRoot === 'notes') return hasMatchingDocument ? <NoteBoard /> : <NotesWall />
+                  return hasMatchingDocument && !writingWallVisible[tabRoot]
+                    ? <WritingBoard />
+                    : <WritingWall root={tabRoot} theme={theme} />
                 })()}
               </main>
             ) : source === 'book' ? (
