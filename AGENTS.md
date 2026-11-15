@@ -203,6 +203,8 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 
 导入本地 PDF 或同一目录的 Markdown 文档序列 → 写入 `<学习库>/books/<书名>/`（PDF 复制为 `source.pdf`；Markdown 按文件名自然排序，每个文件一章）→ 切章为 `chapters/*.md`。扫描版 PDF 明确报错不入架；Markdown 章节标题取首个 H1（无则取文件名），无页码时阅读器只显示章号。核心映射：**书 = 来源，章 = "文章"**，章节完整复用导读/对照/旁注/笔记体系。
 
+- **新用户内置书（2026-11-16）**：`resources/default-books/` 保存两本书的净化快照（原件 + `book.json` + 解析章节，不含任何导读/对话/标注）。仅在首次 `setup:writeConfig` 时由 `electron/lib/default-books.ts` 复制；同名目录跳过，失败留在向导供重试。后续换库、升级与删书不补发，现有学习库不受影响；打包经 `electron-builder.yml` 的 `extraResources` 携带。
+
 - **主进程**: `electron/lib/book-parse.ts`（目录页解析/页码偏移/章节切分 + 版面重建纯逻辑）+ `electron/lib/books.ts`（库 IO）+ `electron/lib/book-guide.ts`（章节导读）+ `electron/ipc/books.ts`（`books:list / import / chapters / readChapter / bookGuide / delete` 六通道）
 - **正文重建（parserVersion 3）**: `itemsToRows` 保留每行的 `y/h/x0/x1` → `rowsToBlocks` 按行距（1.4× 常规行距）/字号（1.45×、1.2× 正文）/首行缩进判段与标题层级 → `blocksToMarkdown` 输出 `##`/`###`；页眉页脚按页顶页底 6% 区域过滤。目录页支持「标题 页码」「页码 标题」「标题块 + 页码块」三种布局。表格仍会被拍平，双栏段落顺序可能不等于阅读顺序。
 - **重解析**: `books:reparse` 原子替换 `chapters/`；旧章节导读按「章节文件同名 → 标题同名」保留，目录未变时保留全书导读。`parserVersion < 3` 的旧书在书架显示「重新解析」。

@@ -170,11 +170,22 @@
         "home.spec.ts",
         "profile.spec.ts",
         "smoke.spec.ts",
-        "onboarding-journey.spec.ts",
         "wild-card.spec.ts",
         "continue-suggestions.spec.ts",
         "extension-page.spec.ts",
         "notepad-assistant.spec.ts"
+      ]
+    },
+    "onboarding": {
+      "sources": [
+        "src/components/SetupWizard.tsx",
+        "electron/main.ts",
+        "electron/lib/default-books.ts",
+        "resources/default-books/**",
+        "electron-builder.yml"
+      ],
+      "specs": [
+        "onboarding-journey.spec.ts"
       ]
     },
     "library": {

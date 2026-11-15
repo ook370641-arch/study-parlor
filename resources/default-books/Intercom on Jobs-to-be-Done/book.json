@@ -1,0 +1,81 @@
+{
+  "title": "Intercom on Jobs-to-be-Done",
+  "importedAt": "2026-10-29T16:31:43.572Z",
+  "sourceFile": "source.pdf",
+  "hasToc": true,
+  "toc": [
+    {
+      "title": "Foreword",
+      "chapterFile": "chapters/01-foreword.md",
+      "pageStart": 4,
+      "pageEnd": 4
+    },
+    {
+      "title": "Introduction",
+      "chapterFile": "chapters/02-introduction.md",
+      "pageStart": 5,
+      "pageEnd": 5
+    },
+    {
+      "title": "Focus on the job",
+      "chapterFile": "chapters/03-focus-on-the-job.md",
+      "pageStart": 6,
+      "pageEnd": 10
+    },
+    {
+      "title": "Understanding your real competitors",
+      "chapterFile": "chapters/04-understanding-your-real-competitors.md",
+      "pageStart": 11,
+      "pageEnd": 13
+    },
+    {
+      "title": "More than mattresses: using Jobs-to-be-Done research for software",
+      "chapterFile": "chapters/05-more-than-mattresses-using-jobs-to-be-done-research-for-soft.md",
+      "pageStart": 14,
+      "pageEnd": 19
+    },
+    {
+      "title": "Getting customers to switch",
+      "chapterFile": "chapters/06-getting-customers-to-switch.md",
+      "pageStart": 20,
+      "pageEnd": 23
+    },
+    {
+      "title": "Where one job stops and another starts",
+      "chapterFile": "chapters/07-where-one-job-stops-and-another-starts.md",
+      "pageStart": 24,
+      "pageEnd": 28
+    },
+    {
+      "title": "A worse product can do a better job",
+      "chapterFile": "chapters/08-a-worse-product-can-do-a-better-job.md",
+      "pageStart": 29,
+      "pageEnd": 32
+    },
+    {
+      "title": "Abandoning personas: the story behind Job Stories",
+      "chapterFile": "chapters/09-abandoning-personas-the-story-behind-job-stories.md",
+      "pageStart": 33,
+      "pageEnd": 36
+    },
+    {
+      "title": "Designing features using Job Stories",
+      "chapterFile": "chapters/10-designing-features-using-job-stories.md",
+      "pageStart": 37,
+      "pageEnd": 44
+    },
+    {
+      "title": "Asking why the right way",
+      "chapterFile": "chapters/11-asking-why-the-right-way.md",
+      "pageStart": 45,
+      "pageEnd": 48
+    },
+    {
+      "title": "Conclusion",
+      "chapterFile": "chapters/12-conclusion.md",
+      "pageStart": 49,
+      "pageEnd": 51
+    }
+  ],
+  "parserVersion": 3
+}
