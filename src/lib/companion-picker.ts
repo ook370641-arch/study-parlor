@@ -6,7 +6,7 @@ export type CompanionPickerKey = 'anthropic' | 'book'
 // 窄结构参数：调用方（sidebar）从 store 取这几个字段组装，测试可直接造字面量。
 export interface CompanionPickerState {
   briefingSource: string
-  articlePanelMode: Partial<Record<CompanionPickerKey, 'guide' | 'companion'>>
+  articlePanelMode: Partial<Record<CompanionPickerKey, ArticlePanelMode>>
   articleAssistantGuideCollapsed: boolean
   anthropicReaderFilePath: string | null
   /** 当前打开的章节绝对路径（书籍来源下判定是否有可对照的主文档） */
@@ -24,3 +24,5 @@ export function companionPickerTarget(s: CompanionPickerState): CompanionPickerK
   }
   return null
 }
+import type { ArticlePanelMode } from '@shared/index'
+

@@ -65,16 +65,21 @@
       "sources": [
         "src/components/article-assistant/ArticleGuideTabs.tsx",
         "src/components/article-assistant/ArticleCompanionBoard.tsx",
+        "src/components/article-assistant/BrowserPanel.tsx",
         "src/components/article-assistant/CompanionWritingPicker.tsx",
+        "src/lib/article-panel-mode.ts",
         "src/lib/companion-picker.ts",
         "src/components/BriefingSourceSidebar.tsx",
         "src/components/writing/WritingEditor.tsx",
         "src/components/writing/HtmlPreview.tsx",
-        "electron/lib/article-io.ts"
+        "electron/lib/article-io.ts",
+        "electron/lib/browser-*.ts",
+        "electron/ipc/browser.ts"
       ],
       "specs": [
         "article-side-panel.spec.ts",
-        "article-companion-writing-picker.spec.ts"
+        "article-companion-writing-picker.spec.ts",
+        "right-rail-browser.spec.ts"
       ]
     },
     "writing": {

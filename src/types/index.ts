@@ -610,6 +610,17 @@ export interface NotepadLogEntry extends NotepadItem {
   comments?: NotepadComment[]
 }
 
+export type ArticlePanelMode = 'guide' | 'companion' | 'browser'
+export type BrowserBounds = { x: number; y: number; width: number; height: number }
+export type BrowserViewState = {
+  url: string
+  title: string
+  loading: boolean
+  canGoBack: boolean
+  canGoForward: boolean
+  error: string | null
+}
+
 export type StateJson = {
   version: 1
   profile: Profile
@@ -681,7 +692,7 @@ export type StateJson = {
   activeLlmConfigId?: string | null
   writingPanelMode?: 'assistant' | 'companion'
   writingCompanionMap?: Record<string, string>
-  articlePanelMode?: Record<'anthropic' | 'book', 'guide' | 'companion'>
+  articlePanelMode?: Record<'anthropic' | 'book', ArticlePanelMode>
   /** 书籍来源最后打开的书（books/<书名> 绝对路径；失效时回退第一本） */
   booksLastBook?: string | null
   booksLastChapter?: string | null
@@ -875,6 +886,16 @@ export type IpcApi = {
   booksDelete: (a: { bookDir: string }) => Promise<void>
   /** 用当前解析器原地重解析（保留 book.json 元数据，刷新 chapters/ 并清导读缓存） */
   booksReparse: (a: { bookDir: string }) => Promise<{ ok: true; book: BookEntry } | { ok: false; error: string }>
+
+  browserShow: (args: { bounds: BrowserBounds; restoreUrl?: string | null }) => Promise<BrowserViewState>
+  browserHide: () => Promise<void>
+  browserSetBounds: (bounds: BrowserBounds) => Promise<void>
+  browserNavigate: (input: string) => Promise<BrowserViewState>
+  browserGoBack: () => Promise<void>
+  browserGoForward: () => Promise<void>
+  browserReload: () => Promise<void>
+  browserOpenExternal: () => Promise<void>
+  onBrowserState: (cb: (state: BrowserViewState) => void) => () => void
 
   // Article assistant
   articleAssistantGenerateGuide: (args: {

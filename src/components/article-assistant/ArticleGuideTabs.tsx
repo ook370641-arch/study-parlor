@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useStore } from '@/store'
 import { GuideSidebar } from './GuideSidebar'
 import { ArticleCompanionBoard } from './ArticleCompanionBoard'
+import { BrowserPanel } from './BrowserPanel'
 import { noteChapter } from '@/lib/notes-list'
-import type { BriefingTheme } from '@shared/index'
+import type { BriefingTheme, ArticlePanelMode } from '@shared/index'
 
 export type ArticleSideSource = 'anthropic' | 'book'
-export type ArticlePanelMode = 'guide' | 'companion'
 
 export function ArticleGuideTabs({ source, theme = 'academic' }: { source: ArticleSideSource; theme?: BriefingTheme }) {
   const mode = useStore((s) => s.articlePanelMode[source])
@@ -64,6 +64,7 @@ export function ArticleGuideTabs({ source, theme = 'academic' }: { source: Artic
       <div className="h-11 flex items-center gap-2 px-3 border-b border-parchment/10 shrink-0">
         <button data-testid={`article-panel-tab-guide-${source}`} className={tabCls('guide')} onClick={() => setMode(source, 'guide')}>导读</button>
         <button data-testid={`article-panel-tab-companion-${source}`} className={tabCls('companion')} onClick={() => setMode(source, 'companion')}>对照</button>
+        <button data-testid={`article-panel-tab-browser-${source}`} className={tabCls('browser')} onClick={() => setMode(source, 'browser')}>浏览器</button>
         {mode === 'companion' && (
           <button
             data-testid={`article-note-shortcut-${source}`}
@@ -82,8 +83,10 @@ export function ArticleGuideTabs({ source, theme = 'academic' }: { source: Artic
       </div>
       {mode === 'guide' ? (
         <div className="flex-1 min-h-0 overflow-hidden"><GuideSidebar theme={theme} /></div>
-      ) : (
+      ) : mode === 'companion' ? (
         <ArticleCompanionBoard theme={theme} />
+      ) : (
+        <BrowserPanel theme={theme} />
       )}
     </div>
   )
