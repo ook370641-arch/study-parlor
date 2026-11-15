@@ -80,7 +80,9 @@
     "writing": {
       "sources": [
         "src/components/writing/**",
+        "src/components/album-wall/**",
         "src/components/writing-assistant/**",
+        "src/lib/writing-wall.ts",
         "src/lib/milkdown-*.ts",
         "src/lib/html-*.ts",
         "electron/lib/writing-*.ts",
@@ -89,7 +91,8 @@
         "src/lib/scroll-memory.ts"
       ],
       "specs": [
-        "writing-*.spec.ts"
+        "writing-*.spec.ts",
+        "writing-album-wall.spec.ts"
       ]
     },
     "study": {

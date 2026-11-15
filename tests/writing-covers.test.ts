@@ -38,6 +38,7 @@ describe('写作封面存储', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
     fs.rmSync(lib, { recursive: true, force: true })
   })
 
@@ -103,5 +104,19 @@ describe('写作封面存储', () => {
     expect(request.messages[1].content).toContain('注意力机制')
     expect(request.messages[1].content).not.toContain('TRIMMED')
     expect(fs.existsSync(path.join(lib, 'writing', '.covers'))).toBe(false)
+  })
+
+  it('E2E 使用确定性三候选，不请求模型', async () => {
+    createWriting(lib)
+    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('E2E_CONFIG_DIR', 'isolated-e2e')
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const candidates = await generateWritingCoverCandidates({ apiKey: 'k', baseUrl: 'https://x', model: 'm', libraryPath: lib }, 'writing/研究/a.md')
+    expect(candidates).toHaveLength(3)
+    expect(candidates.map(candidate => candidate.design.concept)).toEqual(['E2E 符号一', 'E2E 符号二', 'E2E 符号三'])
+    expect(candidates.every(candidate => candidate.svgDataUrl.startsWith('data:image/svg+xml;base64,'))).toBe(true)
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })

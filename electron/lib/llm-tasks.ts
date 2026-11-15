@@ -11,7 +11,7 @@ import { extractXmlTag, extractXmlTags, extractJsonObject, extractJsonArray } fr
 import { parseNoteCoverDesigns, renderNoteCoverSvg } from './note-covers'
 import { assertInsideRoots } from './writing-tree'
 import type { AppConfig } from '../env'
-import type { NewTopic, Message, ContinueTopicSuggestion } from '@shared/index'
+import type { NewTopic, Message, ContinueTopicSuggestion, NoteCoverDesign } from '@shared/index'
 
 const PROMPTS_DIR = (() => {
   const candidates = [
@@ -46,10 +46,14 @@ async function requestCoverCandidates(cfg: AppConfig, metadata: string[]) {
     temperature: 0.8,
     thinking: { type: 'enabled', reasoning_effort: 'high' },
   })
-  return parseNoteCoverDesigns(text).map(design => ({
+  return parseNoteCoverDesigns(text).map(coverCandidate)
+}
+
+function coverCandidate(design: NoteCoverDesign) {
+  return {
     design,
     svgDataUrl: `data:image/svg+xml;base64,${Buffer.from(renderNoteCoverSvg(design)).toString('base64')}`,
-  }))
+  }
 }
 
 export async function generateNoteCoverCandidates(cfg: AppConfig, rel: string) {
@@ -75,6 +79,19 @@ export async function generateWritingCoverCandidates(cfg: AppConfig, rel: string
   ]
   const body = document.content.trim().slice(0, 12000)
   if (body) metadata.push('', '正文片段：', body)
+  if (process.env.NODE_ENV === 'test' && process.env.E2E_CONFIG_DIR) {
+    return ['一', '二', '三'].map((label, index) => coverCandidate({
+      concept: `E2E 符号${label}`,
+      palette: { background: '#211a18', ink: '#e8d5b7', accent: index === 1 ? '#e8d5b7' : '#d97757', secondary: '#6f8892' },
+      background: 'linear',
+      grain: 0.06,
+      elements: [
+        { type: 'path', d: `M 40 ${80 + index * 20} C 120 20 180 220 280 120`, fill: 'none', stroke: 'ink', strokeWidth: 8 },
+        { type: 'circle', cx: 220, cy: 240, r: 46 + index * 8, fill: 'accent', opacity: 0.7 },
+        { type: 'polyline', points: '80,320 160,260 260,360', fill: 'none', stroke: 'secondary' },
+      ],
+    }))
+  }
   return requestCoverCandidates(cfg, metadata)
 }
 

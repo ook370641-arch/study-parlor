@@ -33,7 +33,7 @@ beforeEach(() => {
 describe('buildWritingWallGroups', () => {
   it('文件只进入实际目录，嵌套组显示路径，根文件进未分组', () => {
     expect(buildWritingWallGroups(nestedTree, 'default', {}).map(group => group.label)).toEqual(['研究 / 访谈', '未分组'])
-    expect(buildWritingWallGroups(nestedTree, 'default', '')[0]?.files).toHaveLength(2)
+    expect(buildWritingWallGroups(nestedTree, 'default', {})[0]?.files).toHaveLength(2)
   })
 
   it('最近修改和字数只在组内排序', () => {

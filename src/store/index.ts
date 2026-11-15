@@ -14,7 +14,7 @@ import type {
   Terminology, BriefingTheme, BriefingFontSize, BriefingSourceId, AnthropicBlogCache,
   ArticleAnnotation, AnnotationHighlightColor, ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
-  WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
+  WritingTreeNode, WritingRoot, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   GuideProgress,
   BlogCollectionFile, BlogReorderRequest, RecommendStage, ScrollMemorySlot,
   LocalMaterial,

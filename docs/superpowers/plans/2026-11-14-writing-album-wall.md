@@ -1,7 +1,3 @@
----
-status: planned
----
-
 # Writing Album Wall Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -227,4 +223,3 @@ Expected: affected specs PASS. Then run `npm run build` and `npm run docs:check`
 - [ ] **Step 5: Commit**
 
 Commit: `feat(writing): complete album wall interactions`
-

@@ -40,9 +40,9 @@ export function updateWallMetadata(lib: string, root: WritingRoot, rel: string, 
   const catalog = loadCatalog(lib, root)
   const existing = catalog.entries[rel]
   catalog.entries[rel] = {
+    ...existing,
     title: existing?.title ?? path.basename(rel, '.md'),
     summary: existing?.summary ?? '',
-    ...existing,
     ...metadata,
   }
   saveCatalog(lib, root, catalog)

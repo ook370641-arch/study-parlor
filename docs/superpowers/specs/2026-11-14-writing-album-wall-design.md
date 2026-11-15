@@ -1,5 +1,6 @@
 ---
-status: planned
+status: current
+verified: 2026-11-16
 ---
 
 # 写作专辑墙与共享展示层设计（2026-11-14）
@@ -66,4 +67,3 @@ status: planned
 - 组件：共享骨架下的博客/笔记回归；写作墙打开、返回、折叠、hover、删除确认、封面三候选与失败恢复。
 - IPC：写作封面路径限制、原子保存、删除清理；dirty 文档返回前保存。
 - 新增定向 `writing-album-wall.spec.ts` 并维护 `e2e/source-map.json`；运行受影响 Vitest、`node scripts/e2e-changed.js --run --no-retries`、`npm run build` 与 `npm run docs:check`。
-

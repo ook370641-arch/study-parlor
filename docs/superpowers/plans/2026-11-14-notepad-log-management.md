@@ -103,4 +103,3 @@ Seed one resolved entry, restore it, assert it returns to pending, resolve it ag
 
 Run: `npx vitest run tests/notepad-update.test.ts tests/notepad-assistant.test.tsx`
 Expected: PASS. Update domain 15 and change the spec from `planned` to historical by removing the status frontmatter. Commit: `feat(notepad): manage resolved items`
-

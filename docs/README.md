@@ -84,14 +84,14 @@
 
 ### 12. 写作功能
 
-**现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。
-- planned：`specs/2026-11-14-writing-album-wall-design.md` + `plans/2026-11-14-writing-album-wall.md`
+**现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。文章与仓库主区支持按实际目录分区的专辑墙，保留嵌套相对路径、根文件「未分组」、组内排序与折叠；卡片显示字数、删除入口和三候选 AI 封面，编辑器可保存后返回墙。字数使用独立 `wallMtimeMs` 缓存，写作封面保存在对应 root 的 `.covers/`，不影响 AI 摘要与笔记封面。
+- current：`specs/2026-11-14-writing-album-wall-design.md` + `plans/2026-11-14-writing-album-wall.md`（分区分组墙、共享展示骨架、字数缓存、写作 SVG 封面与删除链路）
 - current：`specs/2026-08-11-writing-paste-and-formatting-design.md`（**编辑器行为设计基准**，改编辑器前必读，rules feature-development §13）
-**历史链**：07-19 writing-feature → 07-26 job-writing-assistant（求职半边已随三来源移除，写作助手 UI 统一半边仍在）→ 08-08 writing-ux-fixes → 08-09 writing-table-ui → 08-09 writing-tree-inline → 08-09 writing-list-behavior → 08-10 writing-assistant-agent-loop → 08-11 writing-paste-and-formatting（=current）→ 08-12 writing-repository-ux → 08-12 non-md-preview → 08-12 writing-format-fixes → 08-17 writing-daily-backup → 08-20 writing-companion-pane → 08-20 writing-html-preview → 08-23 writing-codeblock → 08-24 writing-html-delete-mode → 09-16 writing-html-file-display → 09-16 blog-companion-writing-picker
+**历史链**：07-19 writing-feature → 07-26 job-writing-assistant（求职半边已随三来源移除，写作助手 UI 统一半边仍在）→ 08-08 writing-ux-fixes → 08-09 writing-table-ui → 08-09 writing-tree-inline → 08-09 writing-list-behavior → 08-10 writing-assistant-agent-loop → 08-11 writing-paste-and-formatting（=current）→ 08-12 writing-repository-ux → 08-12 non-md-preview → 08-12 writing-format-fixes → 08-17 writing-daily-backup → 08-20 writing-companion-pane → 08-20 writing-html-preview → 08-23 writing-codeblock → 08-24 writing-html-delete-mode → 09-16 writing-html-file-display → 09-16 blog-companion-writing-picker → 11-14 writing-album-wall
 
 ### 13. 笔记系统（书架/专辑墙）
 
-**现状**：在用——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。同书章节在墙、列表与对照挑选器聚合为一个书组，下拉始终指向原始笔记路径；无原图笔记可由 Kimi 根据正文创造三版独立 SVG 符号，生成时整个封面画幅显示动画且不自动弹窗，完成后通过「待挑选」入口打开候选，选中后才写入 `notes/covers/`，封面优先级为生成封面 → Anthropic 原图 → 来源渐变。博客／章节笔记支持一次性 AI 两轮检索蒸馏：写作后增加独立措辞优化，先交代问题、答案与核心矛盾，再用日常语言解释概念；书籍章节会接收完整目录标题与当前章节标记，在材料足够时用一句话点明本章在全书中的作用，不注入其他章节正文；主笔记与精确匹配的对照页共用 Sparkles 入口，多篇笔记可按路径并行生成，主笔记顶部显示阶段，对照页正文区复用导读罗盘展示进度，点击「查看原笔迹」才打开弹窗；生成完成后自动把 AI 正文与原笔迹附录原子写回同一文件，写入失败保留候选供重试或取消（2026-11-10）。
+**现状**：在用——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。同书章节在墙、列表与对照挑选器聚合为一个书组，下拉始终指向原始笔记路径；无原图笔记可由 Kimi 根据正文创造三版独立 SVG 符号，生成时整个封面画幅显示动画且不自动弹窗，完成后通过「待挑选」入口打开候选，选中后才写入 `notes/covers/`，封面优先级为生成封面 → Anthropic 原图 → 来源渐变。笔记墙增加 hover 字数，并与博客、文章/仓库共用 `AlbumWall` 展示骨架和 `CoverGenerator` 候选交互；评分、书籍章节聚合及各领域存储仍独立。博客／章节笔记支持一次性 AI 两轮检索蒸馏：写作后增加独立措辞优化，先交代问题、答案与核心矛盾，再用日常语言解释概念；书籍章节会接收完整目录标题与当前章节标记，在材料足够时用一句话点明本章在全书中的作用，不注入其他章节正文；主笔记与精确匹配的对照页共用 Sparkles 入口，多篇笔记可按路径并行生成，主笔记顶部显示阶段，对照页正文区复用导读罗盘展示进度，点击「查看原笔迹」才打开弹窗；生成完成后自动把 AI 正文与原笔迹附录原子写回同一文件，写入失败保留候选供重试或取消（2026-11-10）。
 - current：`specs/2026-11-05-ai-note-generation-design.md` + `plans/2026-11-05-ai-note-generation.md`（两轮检索与资料策展、单文件原笔迹附录、双入口与永久防重；含验证记录）
 - current：`specs/2026-11-02-notes-annotations-and-covers-design.md`（同书章节聚合与正文驱动的三版 SVG 封面生成；含九符号实验与验证记录）
 **历史链**：10-20 notes-bookshelf → 10-20 notes-bookshelf-requirements → 10-22 notes-album-wall → 10-26 blog-notes-album-wall-and-note-creation（博客↔笔记联动）→ 11-02 notes-annotations-and-covers → 11-05 ai-note-generation（current）→ 11-08 ai-note-readability（阅读体验实施计划）
