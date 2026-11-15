@@ -14,6 +14,7 @@ import { createStartupWatchdog } from './lib/startup-watchdog'
 import { registerReportSchemePrivileges, registerReportProtocol } from './lib/report-protocol'
 import { syncConstitutionReportToLibrary, resolveBundledReportDir } from './lib/report-sync'
 import { planLlmConfigs } from './lib/llm-configs'
+import { seedDefaultBooks } from './lib/default-books'
 
 // sp-report:// 特权注册必须在 app ready 之前
 registerReportSchemePrivileges()
@@ -257,6 +258,16 @@ async function bootstrap() {
   ipcMain.handle('setup:writeConfig', async (_, args) => {
     const { apiKey, baseUrl, model, libraryPath, name, profile_text, preferred_topics } = args
 
+    fs.mkdirSync(libraryPath, { recursive: true })
+    const testFile = path.join(libraryPath, '.write-test')
+    fs.writeFileSync(testFile, '')
+    fs.unlinkSync(testFile)
+
+    const defaultBooksDir = app.isPackaged
+      ? path.join(process.resourcesPath, 'default-books')
+      : path.join(app.getAppPath(), 'resources', 'default-books')
+    seedDefaultBooks(libraryPath, defaultBooksDir)
+
     // Mark setup as done BEFORE writing .env, because Vite dev server watches
     // .env and triggers a full-reload of the renderer — the reloaded page will
     // query boot:needsSetup immediately, so it must already be false.
@@ -265,22 +276,16 @@ async function bootstrap() {
     // 1. Write .env
     saveEnv({ apiKey, baseUrl, model, libraryPath })
 
-    // 2. Ensure directory exists and is writable
-    fs.mkdirSync(libraryPath, { recursive: true })
-    const testFile = path.join(libraryPath, '.write-test')
-    fs.writeFileSync(testFile, '')
-    fs.unlinkSync(testFile)
-
-    // 3. Inject into process.env
+    // 2. Inject into process.env
     process.env.KIMI_API_KEY = apiKey
     process.env.KIMI_BASE_URL = baseUrl
     process.env.KIMI_MODEL = model
     process.env.STUDY_LIBRARY_PATH = libraryPath
 
-    // 4. Reload config
+    // 3. Reload config
     const newCfg = loadEnv(process.env)
 
-    // 5. Update profile in state
+    // 4. Update profile in state
     patchState({
       profile: {
         name,
@@ -289,10 +294,10 @@ async function bootstrap() {
       }
     })
 
-    // 6. Store config for when renderer requests boot
+    // 5. Store config for when renderer requests boot
     pendingBootCfg = newCfg
 
-    // 7. Notify renderer setup is done (triggers page transition to LoadingScreen)
+    // 6. Notify renderer setup is done (triggers page transition to LoadingScreen)
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('setup:done')
     }

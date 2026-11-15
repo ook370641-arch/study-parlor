@@ -1,0 +1,63 @@
+{
+  "title": "DeepSeek SuperAgent",
+  "importedAt": "2026-11-04T16:25:27.030Z",
+  "sourceFile": "markdown",
+  "hasToc": true,
+  "toc": [
+    {
+      "title": "000 Philosophy",
+      "chapterFile": "chapters/01-000-philosophy.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    },
+    {
+      "title": "001 Domain model",
+      "chapterFile": "chapters/02-001-domain-model.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    },
+    {
+      "title": "002 Authorization",
+      "chapterFile": "chapters/03-002-authorization.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    },
+    {
+      "title": "003 Execution",
+      "chapterFile": "chapters/04-003-execution.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    },
+    {
+      "title": "004 Prompts",
+      "chapterFile": "chapters/05-004-prompts.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    },
+    {
+      "title": "005 Panel",
+      "chapterFile": "chapters/06-005-panel.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    },
+    {
+      "title": "006 Deployment",
+      "chapterFile": "chapters/07-006-deployment.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    },
+    {
+      "title": "007 Architecture",
+      "chapterFile": "chapters/08-007-architecture.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    },
+    {
+      "title": "008 Cookbook",
+      "chapterFile": "chapters/09-008-cookbook.md",
+      "pageStart": 0,
+      "pageEnd": 0
+    }
+  ],
+  "parserVersion": 3
+}

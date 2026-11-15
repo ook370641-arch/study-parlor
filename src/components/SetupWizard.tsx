@@ -278,6 +278,9 @@ export function SetupWizard({ onDone }: Props) {
                 <p className="text-sm text-parchment/50 leading-relaxed">
                   学习库是你存放所有学习笔记的目录。每次学习结束后，学者夜话会自动在这里创建新的笔记文件。你可以随时在学习库中查看、编辑这些笔记。
                 </p>
+                <p className="text-sm text-parchment/50 leading-relaxed">
+                  完成设置后，将自动加入两本入门书籍：《DeepSeek SuperAgent》和《Intercom on Jobs-to-be-Done》。
+                </p>
                 <div className="space-y-1.5">
                   <label className="field-label">目录路径</label>
                   <div className="flex gap-2">
