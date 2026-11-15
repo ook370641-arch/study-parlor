@@ -11,7 +11,7 @@ import { extractXmlTag, extractXmlTags, extractJsonObject, extractJsonArray } fr
 import { parseNoteCoverDesigns, renderNoteCoverSvg } from './note-covers'
 import { assertInsideRoots } from './writing-tree'
 import type { AppConfig } from '../env'
-import type { NewTopic, Message, ContinueTopicSuggestion } from '@shared/index'
+import type { NewTopic, Message, ContinueTopicSuggestion, NoteCoverDesign } from '@shared/index'
 
 const PROMPTS_DIR = (() => {
   const candidates = [
@@ -37,6 +37,25 @@ const transcript = (h: Message[]) =>
     .map(m => `${m.role === 'user' ? '学者' : 'AI'}:${m.content}`)
     .join('\n\n')
 
+async function requestCoverCandidates(cfg: AppConfig, metadata: string[]) {
+  const text = await chatNonStream(cfg, {
+    messages: [
+      { role: 'system', content: read('note-cover.md') },
+      { role: 'user', content: metadata.join('\n') },
+    ],
+    temperature: 0.8,
+    thinking: { type: 'enabled', reasoning_effort: 'high' },
+  })
+  return parseNoteCoverDesigns(text).map(coverCandidate)
+}
+
+function coverCandidate(design: NoteCoverDesign) {
+  return {
+    design,
+    svgDataUrl: `data:image/svg+xml;base64,${Buffer.from(renderNoteCoverSvg(design)).toString('base64')}`,
+  }
+}
+
 export async function generateNoteCoverCandidates(cfg: AppConfig, rel: string) {
   if (!/^notes\/[^/]+\.md$/.test(rel) || rel.includes('\\')) throw new Error('Invalid note path')
   const document = matter(fs.readFileSync(assertInsideRoots(cfg.libraryPath, rel), 'utf8'))
@@ -47,18 +66,33 @@ export async function generateNoteCoverCandidates(cfg: AppConfig, rel: string) {
   ]
   const body = document.content.trim().slice(0, 12000)
   if (body) metadata.push('', '正文片段：', body)
-  const text = await chatNonStream(cfg, {
-    messages: [
-      { role: 'system', content: read('note-cover.md') },
-      { role: 'user', content: metadata.join('\n') },
-    ],
-    temperature: 0.8,
-    thinking: { type: 'enabled', reasoning_effort: 'high' },
-  })
-  return parseNoteCoverDesigns(text).map(design => ({
-    design,
-    svgDataUrl: `data:image/svg+xml;base64,${Buffer.from(renderNoteCoverSvg(design)).toString('base64')}`,
-  }))
+  return requestCoverCandidates(cfg, metadata)
+}
+
+export async function generateWritingCoverCandidates(cfg: AppConfig, rel: string) {
+  if (!/^(writing|repository)\/.+\.md$/.test(rel) || rel.includes('\\')) throw new Error('Invalid writing path')
+  const document = matter(fs.readFileSync(assertInsideRoots(cfg.libraryPath, rel), 'utf8'))
+  const metadata = [
+    `文章标题：${typeof document.data.title === 'string' ? document.data.title : path.basename(rel, '.md')}`,
+    `来源：${rel.startsWith('writing/') ? '文章' : '仓库'}`,
+    `摘要：${typeof document.data.summary === 'string' ? document.data.summary : ''}`,
+  ]
+  const body = document.content.trim().slice(0, 12000)
+  if (body) metadata.push('', '正文片段：', body)
+  if (process.env.NODE_ENV === 'test' && process.env.E2E_CONFIG_DIR) {
+    return ['一', '二', '三'].map((label, index) => coverCandidate({
+      concept: `E2E 符号${label}`,
+      palette: { background: '#211a18', ink: '#e8d5b7', accent: index === 1 ? '#e8d5b7' : '#d97757', secondary: '#6f8892' },
+      background: 'linear',
+      grain: 0.06,
+      elements: [
+        { type: 'path', d: `M 40 ${80 + index * 20} C 120 20 180 220 280 120`, fill: 'none', stroke: 'ink', strokeWidth: 8 },
+        { type: 'circle', cx: 220, cy: 240, r: 46 + index * 8, fill: 'accent', opacity: 0.7 },
+        { type: 'polyline', points: '80,320 160,260 260,360', fill: 'none', stroke: 'secondary' },
+      ],
+    }))
+  }
+  return requestCoverCandidates(cfg, metadata)
 }
 
 export async function finalizeProgress(

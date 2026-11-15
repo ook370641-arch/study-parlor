@@ -6,7 +6,7 @@ import { reconcileBlogOrder, reorderBlog as reorderBlogOrder } from '@/lib/blog-
 import { nextThinkingEffort } from '@/lib/assistant-settings'
 import { countArticleHeadings, isGuideCacheCurrent } from '@/lib/guide-progress'
 import { resetAssistantStreamBuffers } from '@/lib/assistant-stream-buffers'
-import { childrenPathsOf, writingPreviewKindOf, isWritingTreePath } from '@/lib/writing-tree-utils'
+import { childrenPathsOf, writingPreviewKindOf, isWritingTreePath, writingRootOf } from '@/lib/writing-tree-utils'
 import type {
   Difficulty, Message, NewTopic, Profile, StateJson, Mode,
   TopicMeta, UnsavedSession, ArchiveResult, Group, GroupMapping,
@@ -14,7 +14,7 @@ import type {
   Terminology, BriefingTheme, BriefingFontSize, BriefingSourceId, AnthropicBlogCache,
   ArticleAnnotation, AnnotationHighlightColor, ArticleAssistantGuide, ArticleAssistantMessage, ArticleAssistantErrorCode,
   AnthropicArticleMeta, AnthropicError, AssistantThinkingEffort,
-  WritingTreeNode, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
+  WritingTreeNode, WritingRoot, WritingTone, WritingAssistantMessage, WritingToolEvent, WritingToolActivity, WritingPreviewKind,
   GuideProgress,
   BlogCollectionFile, BlogReorderRequest, RecommendStage, ScrollMemorySlot,
   LocalMaterial,
@@ -264,7 +264,9 @@ type AppStore = {
   setCoverNotepad: (text: string) => void
   addNotepadItem: (text: string, category: NotepadCategory) => void
   resolveNotepadItem: (id: string) => void
+  restoreNotepadItem: (id: string) => void
   deleteNotepadItem: (id: string) => void
+  deleteNotepadLogEntry: (id: string) => void
   moveNotepadItem: (id: string, toIndex: number) => void
   updateNotepadItem: (id: string, patch: { text?: string; category?: NotepadCategory }) => void
   saveNotepadComment: (id: string, commentId: string, text: string) => void
@@ -382,6 +384,7 @@ type AppStore = {
 
   // 写作板
   writingTree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null
+  writingWallVisible: Record<WritingRoot, boolean>
   writingFile: { path: string; body: string; kind: WritingPreviewKind; truncated?: boolean; previewError?: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
   writingError: string | null
   writingFontSize: BriefingFontSize
@@ -450,6 +453,7 @@ type AppStore = {
   setHtmlDeleteDirty: (dirty: boolean) => void
   registerHtmlDeleteFlush: (fn: (() => Promise<boolean>) | null) => void
   selectWritingFile: (filePath: string | null) => Promise<void>
+  showWritingWall: (root: WritingRoot) => Promise<void>
   closeNoteToWall: () => Promise<void>
   updateWritingBody: (body: string) => void
   saveWritingFile: () => Promise<void>
@@ -663,6 +667,7 @@ export const useStore = create<AppStore>((set, get) => ({
   articleAssistantGuideCollapsed: false,
   guideScrollToChunkIndex: null,
   writingTree: null,
+  writingWallVisible: { writing: false, repository: false },
   writingFile: null,
   writingError: null,
   writingFontSize: 'base',
@@ -885,12 +890,39 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ notepadItems: stripNotepadClaims(items), notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)
   },
 
+  restoreNotepadItem: (id) => {
+    const entry = get().notepadLog.find(item => item.id === id)
+    if (!entry) return
+    const restored: NotepadItem = {
+      id: entry.id,
+      title: entry.title,
+      text: entry.text,
+      category: entry.category,
+      createdAt: entry.createdAt,
+      comments: entry.comments,
+    }
+    const items = [restored, ...get().notepadItems]
+    const log = get().notepadLog.filter(item => item.id !== id)
+    notepadLocalVersion++
+    set({ notepadItems: items, notepadLog: log })
+    ipc.patchState({ notepadItems: stripNotepadClaims(items), notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)
+  },
+
   deleteNotepadItem: (id) => {
     const items = get().notepadItems.filter(i => i.id !== id)
     notepadLocalVersion++
     set({ notepadItems: items })
     ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
   },
+
+  deleteNotepadLogEntry: (id) => {
+    if (!get().notepadLog.some(item => item.id === id)) return
+    const log = get().notepadLog.filter(item => item.id !== id)
+    notepadLocalVersion++
+    set({ notepadLog: log })
+    ipc.patchState({ notepadLog: stripNotepadClaims(log) } as Partial<StateJson>)
+  },
+
   updateNotepadItem: (id, patch) => {
     // 文本变更时短标题一并重算（面板待办行展示用 title 兜底见 deriveTitle）
     const items = get().notepadItems.map(i => i.id === id
@@ -2757,12 +2789,13 @@ export const useStore = create<AppStore>((set, get) => ({
       else set({ companionFile: null })
     }
     const kind = writingPreviewKindOf(filePath)
+    const selectedRoot = writingRootOf(filePath)
     // 非 md 文件没有编辑器/助手会话，读取失败时展示 previewError 而非整页错误
     if (kind !== 'md') {
       const r = await ipc.writingReadPreview({ path: filePath })
       if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
       if (r.ok) {
-        set({
+        set(state => ({
           writingFile: {
             path: filePath,
             body: r.value.content ?? '',
@@ -2772,10 +2805,19 @@ export const useStore = create<AppStore>((set, get) => ({
             saving: 'idle',
           },
           lastWritingFile: filePath,
-        })
+          writingWallVisible: selectedRoot === 'writing' || selectedRoot === 'repository'
+            ? { ...state.writingWallVisible, [selectedRoot]: false }
+            : state.writingWallVisible,
+        }))
       } else {
         // previewError 存类型化错误码（组件据此分支：PDF_NO_TEXT 专门提示 / 其余通用文案）
-        set({ writingFile: { path: filePath, body: '', kind, dirty: false, saving: 'idle', previewError: r.code }, lastWritingFile: filePath })
+        set(state => ({
+          writingFile: { path: filePath, body: '', kind, dirty: false, saving: 'idle', previewError: r.code },
+          lastWritingFile: filePath,
+          writingWallVisible: selectedRoot === 'writing' || selectedRoot === 'repository'
+            ? { ...state.writingWallVisible, [selectedRoot]: false }
+            : state.writingWallVisible,
+        }))
       }
       await restoreCompanion()
       return
@@ -2783,7 +2825,13 @@ export const useStore = create<AppStore>((set, get) => ({
     const r = await ipc.writingRead({ path: filePath })
     if (seq !== writingSelectSeq) return // 更新的选中已发出，丢弃过期结果
     if (r.ok) {
-      set({ writingFile: { path: filePath, body: r.value.body ?? '', kind: 'md', dirty: false, saving: 'idle' }, lastWritingFile: filePath })
+      set(state => ({
+        writingFile: { path: filePath, body: r.value.body ?? '', kind: 'md', dirty: false, saving: 'idle' },
+        lastWritingFile: filePath,
+        writingWallVisible: selectedRoot === 'writing' || selectedRoot === 'repository'
+          ? { ...state.writingWallVisible, [selectedRoot]: false }
+          : state.writingWallVisible,
+      }))
       await restoreCompanion()
       // 切换文章时重置快照点亮状态，避免把上一篇文章的挂快照意图带到新文章
       if (cur?.path !== filePath) set({ writingAssistantSnapshotLit: false })
@@ -2799,6 +2847,17 @@ export const useStore = create<AppStore>((set, get) => ({
     } else {
       set({ writingError: r.message })
     }
+  },
+
+  showWritingWall: async (root) => {
+    const current = get().writingFile
+    if (current?.dirty) {
+      await get().saveWritingFile()
+      if (get().writingFile?.dirty) return
+    }
+    await get().selectWritingFile(null)
+    if (get().writingFile) return
+    set(state => ({ writingWallVisible: { ...state.writingWallVisible, [root]: true } }))
   },
 
   closeNoteToWall: async () => {

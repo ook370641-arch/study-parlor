@@ -5,7 +5,9 @@
 // 面板固定于界面右侧或左侧向上展开（入口见 NotepadFab），左上角拖拽手柄调大小，
 // A−/A+ 字号，点击面板外/Esc 收起。
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore } from '@/store'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { NOTEPAD_CATEGORY_LABELS, computeNotepadStats, deriveTitle, isResolvedToday, newNotepadId } from '@/lib/notepad'
 import type { NotepadCategory, NotepadFontSize, NotepadItem } from '@shared/index'
 
@@ -44,7 +46,9 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
   const panelSize = useStore(s => s.notepadPanelSize)
   const addNotepadItem = useStore(s => s.addNotepadItem)
   const resolveNotepadItem = useStore(s => s.resolveNotepadItem)
+  const restoreNotepadItem = useStore(s => s.restoreNotepadItem)
   const deleteNotepadItem = useStore(s => s.deleteNotepadItem)
+  const deleteNotepadLogEntry = useStore(s => s.deleteNotepadLogEntry)
   const moveNotepadItem = useStore(s => s.moveNotepadItem)
   const updateNotepadItem = useStore(s => s.updateNotepadItem)
   const saveNotepadComment = useStore(s => s.saveNotepadComment)
@@ -62,6 +66,7 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
   const [commentingId, setCommentingId] = useState<string | null>(null)
   const [commentDraftId, setCommentDraftId] = useState<string | null>(null)
   const [commentDraft, setCommentDraft] = useState('')
+  const [deletingLogId, setDeletingLogId] = useState<string | null>(null)
   const [liveSize, setLiveSize] = useState<{ w: number; h: number } | null>(null)
   // 待办手动排序：dragId=已按下拖动手柄的条目，dropIndex=相对原数组的插入位
   const [dragId, setDragId] = useState<string | null>(null)
@@ -157,6 +162,11 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
     setCommentingId(null)
     setCommentDraftId(null)
     setCommentDraft('')
+  }
+
+  const clearLogInteraction = (id: string) => {
+    setExpandedId(current => current === id ? null : current)
+    if (commentingId === id) collapseComment()
   }
 
   const changeComment = (id: string, text: string) => {
@@ -512,7 +522,7 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                       <div
                         data-testid={today ? 'notepad-log-today' : 'notepad-log-entry'}
                         onClick={() => setExpandedId(expanded ? null : entry.id)}
-                        className={`flex-1 min-w-0 my-1 rounded-lg px-3 py-2 cursor-pointer transition-colors
+                        className={`group flex-1 min-w-0 my-1 rounded-lg px-3 py-2 cursor-pointer transition-colors
                                     hover:bg-parchment/5 ${expanded ? 'bg-parchment/5' : ''}
                                     ${today ? 'border border-ember/35 bg-ember/10' : ''}`}
                       >
@@ -524,6 +534,28 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                           {today && <span className="shrink-0 text-[10px] text-ember">今日完成 · 待测试</span>}
                           {entry.source === 'agent' && <span className="shrink-0 text-[10px] text-parchment/30">agent</span>}
                           <span className="flex-1" />
+                          <button
+                            type="button"
+                            data-testid={`notepad-restore-${entry.id}`}
+                            title="恢复待办"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              clearLogInteraction(entry.id)
+                              restoreNotepadItem(entry.id)
+                            }}
+                            className="shrink-0 rounded border border-parchment/20 px-1.5 py-px text-[10px] text-parchment/55 opacity-0 transition-opacity hover:border-ember/50 hover:text-ember group-hover:opacity-100"
+                          >
+                            恢复
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`notepad-delete-log-${entry.id}`}
+                            title="永久删除"
+                            onClick={(event) => { event.stopPropagation(); setDeletingLogId(entry.id) }}
+                            className="shrink-0 rounded border border-[#c0605e]/30 px-1.5 py-px text-[10px] text-[#c0605e]/70 opacity-0 transition-opacity hover:border-[#c0605e]/60 hover:text-[#c0605e] group-hover:opacity-100"
+                          >
+                            删除
+                          </button>
                           <button
                             type="button"
                             data-testid={`notepad-comment-add-${entry.id}`}
@@ -620,6 +652,25 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
           <path d="M17 3 L3 17" /><path d="M17 9 L9 17" /><path d="M17 15 L15 17" />
         </svg>
       </div>
+      {deletingLogId && createPortal(
+        <ConfirmDialog
+          open
+          title="删除已完成条目"
+          icon="trash"
+          confirmLabel="永久删除"
+          confirmVariant="danger"
+          onCancel={() => setDeletingLogId(null)}
+          onConfirm={() => {
+            const id = deletingLogId
+            setDeletingLogId(null)
+            clearLogInteraction(id)
+            deleteNotepadLogEntry(id)
+          }}
+        >
+          <p>确定删除「{log.find(entry => entry.id === deletingLogId)?.title ?? '这条记录'}」？条目下的评论也会永久删除，无法恢复。</p>
+        </ConfirmDialog>,
+        document.body,
+      )}
     </div>
   )
 }

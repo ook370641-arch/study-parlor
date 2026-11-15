@@ -7,8 +7,10 @@ import { isNonMdExt } from '../../src/types'
 import * as tree from '../lib/writing-tree'
 import { ensureRoots, isNonMdPath } from '../lib/writing-tree'
 import { updateEntry, removeEntry, migrateEntry, migratePrefix, diffStale, loadCatalog, collectGroupDirs, groupSignature, updateGroupSummary, removeGroupSummary } from '../lib/writing-catalog'
-import { generateWritingSummary, generateGroupSummary } from '../lib/llm-tasks'
+import { generateWritingSummary, generateGroupSummary, generateWritingCoverCandidates } from '../lib/llm-tasks'
 import { previewFile } from '../lib/file-preview'
+import { attachWritingWallMetadata } from '../lib/writing-wall-metadata'
+import { deleteWritingCovers, saveWritingCover } from '../lib/writing-covers'
 
 const KNOWN_CODES: WritingErrorCode[] = ['WRITING_PATH_FORBIDDEN', 'WRITING_NOT_FOUND', 'WRITING_NAME_CONFLICT', 'PREVIEW_PARSE_ERROR', 'PDF_NO_TEXT']
 
@@ -56,7 +58,10 @@ export function registerWritingIpc(cfg: AppConfig): void {
   ipcMain.handle('writing:scanTree', () => {
     ensureRoots(lib)
     return wrapWriting(() => {
-      const trees = { writing: tree.scanRoot(lib, 'writing'), repository: tree.scanRoot(lib, 'repository') }
+      const trees = {
+        writing: attachWritingWallMetadata(lib, 'writing', tree.scanRoot(lib, 'writing')),
+        repository: attachWritingWallMetadata(lib, 'repository', tree.scanRoot(lib, 'repository')),
+      }
       lastScan = { at: Date.now(), trees }
       return trees
     })
@@ -99,14 +104,17 @@ export function registerWritingIpc(cfg: AppConfig): void {
   })
 
   ipcMain.handle('writing:delete', async (_, a: { path: string }) => {
+    let deletedMarkdown = false
     const result = await wrapWriting(() => {
       const abs = tree.assertInsideRoots(lib, a.path)
       if (fs.statSync(abs).isDirectory()) return tree.dissolveGroup(lib, a.path)
+      deletedMarkdown = a.path.toLowerCase().endsWith('.md')
       tree.deleteNode(lib, a.path)
       return { moved: [] as { from: string; to: string }[] }
     })
     if (result.ok) {
       try {
+        if (deletedMarkdown) deleteWritingCovers(lib, a.path)
         const root = rootFromPath(a.path)
         for (const m of result.value.moved) migrateEntry(lib, root, m.from, m.to)
         removeEntry(lib, root, a.path)
@@ -180,6 +188,12 @@ export function registerWritingIpc(cfg: AppConfig): void {
   // HTML 删除模式写回（原文，含按天备份；校验在 writeHtmlFile 内）
   ipcMain.handle('writing:saveHtml', (_, a: { path: string; html: string }) =>
     wrapWriting(() => { tree.writeHtmlFile(lib, a.path, a.html); return null }))
+
+  ipcMain.handle('writing:generateCovers', (_, a: { path: string }) =>
+    wrapWriting(async () => ({ candidates: await generateWritingCoverCandidates(cfg, a.path) })))
+
+  ipcMain.handle('writing:saveCover', (_, a: { path: string; design: import('../../src/types').NoteCoverDesign }) =>
+    wrapWriting(() => saveWritingCover(lib, a.path, a.design)))
 
   ipcMain.handle('writing:refreshCatalog', () =>
     wrapWriting(async () => {

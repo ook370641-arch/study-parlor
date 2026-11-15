@@ -9,7 +9,9 @@ const store = vi.hoisted(() => ({
   notepadPanelSize: null,
   addNotepadItem: vi.fn(),
   resolveNotepadItem: vi.fn(),
+  restoreNotepadItem: vi.fn(),
   deleteNotepadItem: vi.fn(),
+  deleteNotepadLogEntry: vi.fn(),
   moveNotepadItem: vi.fn(),
   updateNotepadItem: vi.fn(),
   saveNotepadComment: vi.fn(),
@@ -259,6 +261,35 @@ describe('NotepadPanel 已完成时间线', () => {
     expect(store.saveNotepadComment).toHaveBeenCalledWith('done-edit-comment', 'comment-edit', '修改后的评论')
     fireEvent.change(input, { target: { value: '' } })
     expect(store.saveNotepadComment).toHaveBeenCalledWith('done-edit-comment', 'comment-edit', '')
-    expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('notepad-comment-delete-comment-edit')).not.toBeInTheDocument()
+  })
+
+  it('已完成条目可恢复待办，并在确认后永久删除', () => {
+    store.notepadLog = [{
+      id: 'done-manage',
+      title: '短标题',
+      text: '完整需求正文',
+      category: 'improvement',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      resolvedAt: '2026-11-05T00:00:00.000Z',
+      source: 'user',
+    }]
+    renderPanel()
+    fireEvent.click(screen.getByTestId('notepad-tab-done'))
+
+    fireEvent.click(screen.getByTestId('notepad-comment-add-done-manage'))
+    fireEvent.click(screen.getByTestId('notepad-restore-done-manage'))
+    expect(store.restoreNotepadItem).toHaveBeenCalledWith('done-manage')
+    expect(screen.queryByTestId('notepad-comment-input-done-manage')).not.toBeInTheDocument()
+    expect(screen.queryByText('完整需求正文')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('notepad-delete-log-done-manage'))
+    expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('confirm-dialog-cancel'))
+    expect(store.deleteNotepadLogEntry).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByTestId('notepad-delete-log-done-manage'))
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'))
+    expect(store.deleteNotepadLogEntry).toHaveBeenCalledWith('done-manage')
   })
 })

@@ -7,6 +7,8 @@ import { BookChapterSelect } from './BookChapterSelect'
 import { NoteCover } from './NoteCover'
 import { NoteCoverGenerator } from './NoteCoverGenerator'
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
+import { AlbumCard } from '@/components/album-wall/AlbumCard'
+import { AlbumGrid, AlbumWall } from '@/components/album-wall/AlbumWall'
 
 function urlSlug(url: string): string {
   return url.split('/').pop() || 'note'
@@ -28,7 +30,7 @@ export function NotesWall() {
   const coverMinWidth = Math.round(150 * Number.parseInt(uiSize, 10) / 12)
 
   return (
-    <div data-testid="notes-wall" className="h-full overflow-y-auto px-8 py-6" style={{ fontSize: uiSize }}>
+    <AlbumWall domain="notes" testId="notes-wall" style={{ fontSize: uiSize }}>
       <div className="flex items-center gap-2 pb-5">
         <select
           data-testid="notes-wall-category-select"
@@ -62,48 +64,41 @@ export function NotesWall() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-5" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${coverMinWidth}px, 1fr))` }}>
+        <AlbumGrid minWidth={coverMinWidth}>
           {sorted.map(item => {
             const entry = item.kind === 'book' ? item.latest : item.entry
             const coverEntry = item.kind === 'book' ? item.entries.find(note => note.coverUrl) ?? entry : entry
             const rating = item.kind === 'book' ? item.rating : entry.meta.rating
             return (
-              <div
+              <AlbumCard
                 key={item.key}
-                className="group relative rounded-md transition-transform hover:-translate-y-0.5"
-                style={{ aspectRatio: '3/4', boxShadow: '0 6px 16px rgba(0,0,0,.5)' }}
-              >
-                <button
-                  type="button"
-                  data-testid={`wall-album-${urlSlug(entry.meta.url)}`}
-                  className="relative block h-full w-full overflow-hidden rounded-md text-left"
-                  onClick={() => { void selectWritingFile(entry.path) }}
-                >
-                  <NoteCover entry={coverEntry} className="absolute inset-0 w-full h-full" />
-                  <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(20,12,8,0) 40%, rgba(20,12,8,.88))' }} />
-                  <div className="absolute inset-x-0 bottom-0 p-2.5">
-                    <div className="text-[1em] leading-snug text-[#f0e2c8] line-clamp-2">{item.kind === 'book' ? item.book : entry.meta.title}</div>
-                    <div className="mt-1 text-[0.833em] text-parchment/60">
-                      {rating > 0 ? '★'.repeat(rating) : '未评'}
-                    </div>
-                  </div>
-                </button>
-                {item.kind === 'book' && (
+                testId={`wall-album-${urlSlug(entry.meta.url)}`}
+                title={item.kind === 'book' ? item.book : entry.meta.title}
+                onOpen={() => { void selectWritingFile(entry.path) }}
+                className="transition-transform hover:-translate-y-0.5"
+                style={{ boxShadow: '0 6px 16px rgba(0,0,0,.5)' }}
+                cover={<NoteCover entry={coverEntry} className="absolute inset-0 w-full h-full" />}
+                scrimStyle={{ background: 'linear-gradient(180deg, rgba(20,12,8,0) 40%, rgba(20,12,8,.88))' }}
+                footerClassName="p-2.5"
+                titleClassName="text-[1em] text-[#f0e2c8] line-clamp-2"
+                meta={<div className="mt-1 text-[0.833em] text-parchment/60">{rating > 0 ? '★'.repeat(rating) : '未评'}</div>}
+                hoverMeta={typeof entry.wordCount === 'number' ? <span data-testid={`note-wall-word-count-${urlSlug(entry.meta.url)}`}>{entry.wordCount.toLocaleString('zh-CN')} 字</span> : undefined}
+                topRight={item.kind === 'book' ? (
                   <BookChapterSelect
                     group={item}
                     onPick={(path) => { void selectWritingFile(path) }}
                     fontSize="0.833em"
                     className="absolute right-2 top-2 z-10 max-w-[calc(100%-1rem)]"
                   />
-                )}
-                {!noteCoverImage(coverEntry, articleMetaCache) && (
+                ) : undefined}
+                topLeft={!noteCoverImage(coverEntry, articleMetaCache) ? (
                   <NoteCoverGenerator entry={entry} fillCover className="absolute left-2 top-2 z-10" />
-                )}
-              </div>
+                ) : undefined}
+              />
             )
           })}
-        </div>
+        </AlbumGrid>
       )}
-    </div>
+    </AlbumWall>
   )
 }

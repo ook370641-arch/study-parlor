@@ -1,5 +1,6 @@
 import type { DragEvent, ReactNode } from 'react'
 import type { BlogMineGroup } from '@shared/index'
+import { AlbumGroupSection } from '@/components/album-wall/AlbumGroupSection'
 
 interface Props {
   area: 'list' | 'wall'
@@ -29,28 +30,20 @@ export function BlogMineGroupSection({
   children,
 }: Props) {
   return (
-    <section data-group-section={group}>
-      <div
-        data-testid={`${area}-group-header-${group}`}
-        draggable
-        onDragStart={onGroupDragStart}
-        onDragOver={onGroupDragOver}
-        onDrop={onGroupDrop}
-        className="group/header flex select-none items-center gap-1.5 py-1"
-      >
-        <span aria-hidden="true" data-testid={`${area}-group-handle-${group}`} className="cursor-grab opacity-0 transition-opacity group-hover/header:opacity-100">⠿</span>
-        <button type="button" onClick={onToggle} aria-label={`${collapsed ? '展开' : '收起'}${label}`} className="hover:text-ember">
-          {collapsed ? '▸' : '▾'}
-        </button>
-        <h3 className="font-serif">{label}</h3>
-        <span className="opacity-50">{count}</span>
-      </div>
-      {!collapsed && (
-        <>
-          {recommendationTools}
-          <div data-testid={`${area}-group-content-${group}`}>{children}</div>
-        </>
-      )}
-    </section>
+    <AlbumGroupSection
+      groupKey={group}
+      testIdPrefix={area}
+      label={label}
+      count={count}
+      collapsed={collapsed}
+      onToggle={onToggle}
+      draggable
+      onGroupDragStart={onGroupDragStart}
+      onGroupDragOver={onGroupDragOver}
+      onGroupDrop={onGroupDrop}
+    >
+      {recommendationTools}
+      {children}
+    </AlbumGroupSection>
   )
 }

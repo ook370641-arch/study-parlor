@@ -23,6 +23,7 @@ const HIDDEN_FILE_PATTERNS = [
   /^~\$/,
   // 按天备份目录（2026-08-17 设计：writing/.backups 镜像备份，不进目录树）
   /^\.backups$/,
+  /^\.covers$/,
 ]
 
 function isHidden(name: string): boolean {

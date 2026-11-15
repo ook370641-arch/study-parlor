@@ -41,10 +41,14 @@ description: >
 ### 2. 归档已解决条目（每次迭代收尾必做）
 
 **前提检查：app 是否在运行**。运行 `Get-Process electron -ErrorAction SilentlyContinue`
-（或任务管理器）。若 Study Parlor 正在运行：
+（或任务管理器）。无论 app 是否运行，agent 都必须自行完成归档，不得要求用户手动点 ✓。
+
+若 Study Parlor 正在运行：
 
 - **不要直接改 state.json**——app 内存中的旧状态会在下次保存时覆盖你的写入
-- 改为提示用户："请在记事板面板里给该条目点 ✓"，或请用户先关闭 app
+- 通过运行应用的 `state:patch` 通道自行归档，并同步渲染进程 store；开发实例可用既有 CDP 9222 连接调用 `useStore` 与 `window.api.patchState`，不要导航或重启页面
+- 写入 `resolvedAt`、≤15 字短标题与 `source: 'agent'`，剥离认领字段；通过 `state:get` 确认条目已移动，并确认 `notepad-claims.json` 中自己的认领已清理
+- 无法建立安全通道属于交付阻塞，先自行恢复通道，不得把手动打勾作为交付步骤
 
 app 未运行时，直接编辑 state.json：
 
@@ -55,8 +59,7 @@ app 未运行时，直接编辑 state.json：
 4. 执行 `node scripts/notepad-claim.cjs release <item-id> <current-branch>` 释放自己的认领
 5. 向用户汇报：归档了哪条、当前待办剩几条
 
-若 app 运行中由用户在面板点 ✓ 归档，`state:patch` 会自动清理认领；确认认领已清理即可，
-不要直接编辑运行中的 state.json。
+面板或 agent 通过 `state:patch` 归档时会自动清理认领；确认认领已清理即可。
 
 ### 3. 接单迭代
 
