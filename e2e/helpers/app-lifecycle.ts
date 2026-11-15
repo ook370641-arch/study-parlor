@@ -171,7 +171,8 @@ export async function startApp({
           } catch (err) {
             console.warn('[e2e] failed to close browser:', err)
           }
-          await killProcessTree(proc)
+          const exited = await waitForProcessExit(proc, 5000)
+          if (!exited) await killProcessTree(proc)
         },
       },
       window,

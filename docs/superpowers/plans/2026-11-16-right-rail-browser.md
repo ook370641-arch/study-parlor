@@ -1,5 +1,5 @@
 ---
-status: planned
+status: historical
 ---
 
 # 阅读右栏内置浏览器实施计划

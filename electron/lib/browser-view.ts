@@ -121,7 +121,10 @@ function createBrowserController(window: BrowserWindow): BrowserController {
       stopFind()
       emitState()
     })
-    contents.on('did-stop-loading', emitState)
+    contents.on('did-stop-loading', () => {
+      void contents.session.cookies.flushStore()
+      emitState()
+    })
     contents.on('did-navigate', () => {
       persistLastUrl()
       emitState()

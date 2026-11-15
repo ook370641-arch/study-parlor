@@ -6,6 +6,7 @@ import { CoverPage } from '../pages/CoverPage'
 import { SELECTORS } from '../helpers/selectors'
 import { seedBlogArticleWithCache, seedBook } from '../helpers/test-library'
 import { createMockServer } from '../helpers/mock-server'
+import { startApp, stopApp } from '../helpers/app-lifecycle'
 
 async function openArticle(window: Page, libraryPath: string, configDir: string): Promise<void> {
   seedBlogArticleWithCache(libraryPath, configDir, {
@@ -143,6 +144,51 @@ test.describe('@p1 阅读右栏浏览器', () => {
       await window.getByTestId('article-panel-tab-browser-anthropic').click()
       await expect(browserPage.getByLabel('draft')).toHaveValue('保留我')
     } finally {
+      await server.close()
+    }
+  })
+
+  test('完整应用重启后按需恢复最后地址与 Cookie', async ({ testLibraryPath, testConfigDir }) => {
+    let restoredCookie = ''
+    const server = await createMockServer([
+      { path: '/first', handler: (req, res) => {
+        restoredCookie = req.headers.cookie ?? ''
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Set-Cookie': 'browser_session=kept; Max-Age=86400; Path=/; HttpOnly' })
+        res.end('<html><body><p>恢复页</p></body></html>')
+      } },
+    ])
+    let electronApp: Awaited<ReturnType<typeof startApp>>['electronApp'] | undefined
+    try {
+      const first = await startApp({ testLibraryPath, testConfigDir })
+      electronApp = first.electronApp
+      await openArticle(first.window, testLibraryPath, testConfigDir)
+      await first.window.getByTestId('article-panel-tab-browser-anthropic').click()
+      await first.window.getByTestId('browser-address').fill(`${server.url}/first`)
+      await first.window.getByTestId('browser-address').press('Enter')
+      await expect.poll(() => first.window.context().pages().some((page) => page.url() === `${server.url}/first`)).toBe(true)
+      const firstBrowserPage = first.window.context().pages().find((page) => page.url() === `${server.url}/first`)!
+      await expect(firstBrowserPage.getByText('恢复页')).toBeVisible()
+      await firstBrowserPage.reload()
+      await expect.poll(() => restoredCookie).toContain('browser_session=kept')
+      await stopApp(electronApp)
+      electronApp = undefined
+
+      server.clearRequests()
+      restoredCookie = ''
+      const second = await startApp({ testLibraryPath, testConfigDir })
+      electronApp = second.electronApp
+      const window = second.window
+      const cover = new CoverPage(window)
+      await cover.goToBriefing()
+      await expect(window.getByTestId('article-panel-tab-browser-anthropic')).toBeVisible()
+      await expect(window.getByTestId('browser-view-placeholder')).toHaveCount(0)
+      expect(server.requests).toHaveLength(0)
+      await window.getByTestId('article-panel-tab-browser-anthropic').click()
+      await expect.poll(() => window.context().pages().some((page) => page.url() === `${server.url}/first`)).toBe(true)
+      await expect(window.getByTestId('browser-address')).toHaveValue(`${server.url}/first`)
+      expect(restoredCookie).toContain('browser_session=kept')
+    } finally {
+      await stopApp(electronApp)
       await server.close()
     }
   })
