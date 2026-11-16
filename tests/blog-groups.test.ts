@@ -99,6 +99,21 @@ describe('deriveBlogMineGroups', () => {
     expect(groups.favorite[0]).toMatchObject({ url: 'favorite', title: 'Favorite', filePath: 'favorite.md' })
     expect(groups.saved).toEqual([])
   })
+
+  it('旧 engineering 收藏链接从迁移后的 research 缓存恢复封面', () => {
+    const oldUrl = 'https://www.anthropic.com/engineering/infrastructure-noise'
+    const currentUrl = 'https://www.anthropic.com/research/infrastructure-noise'
+    const migrated = deriveBlogMineGroups([
+      { url: currentUrl, title: 'Infrastructure', summary: null, publishedAt: null, imageUrl: 'cover.jpg', isSaved: false },
+    ], {
+      ...collection,
+      entries: [],
+      read: [{ sourceUrl: oldUrl, filePath: 'old.md', title: 'Infrastructure', readAt: 'x' }],
+      order: { groups: ['saved', 'read', 'favorite'], saved: [], read: [oldUrl], favorite: [] },
+    })
+
+    expect(migrated.read[0]).toMatchObject({ url: oldUrl, filePath: 'old.md', imageUrl: 'cover.jpg', isSaved: true })
+  })
 })
 
 describe('reorderBlog', () => {

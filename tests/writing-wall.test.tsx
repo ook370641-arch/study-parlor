@@ -49,6 +49,7 @@ describe('WritingWall', () => {
     expect(screen.getAllByTestId(/^writing-wall-card-/)).toHaveLength(3)
     expect(screen.getByTestId('writing-wall-word-count-writing/研究/访谈/长.md')).toHaveTextContent('120 字')
     expect(screen.getByTestId('writing-wall-word-count-writing/研究/访谈/长.md').parentElement).toHaveClass('opacity-0', 'group-hover:opacity-100')
+    expect(screen.getByTestId('writing-wall-toolbar-writing')).toHaveClass('pr-32')
 
     fireEvent.click(screen.getByTestId('writing-wall-card-writing/研究/访谈/短.md'))
     expect(useStore.getState().selectWritingFile).toHaveBeenCalledWith('writing/研究/访谈/短.md')
@@ -113,16 +114,19 @@ describe('WritingWall', () => {
     expect(screen.queryByTestId('writing-cover-dialog')).not.toBeInTheDocument()
   })
 
-  it('显示安全封面，非 Markdown 不提供 AI 封面', () => {
+  it('显示安全封面，HTML 可生成封面，其他格式不提供 AI 封面', () => {
     useStore.setState({ writingTree: { writing: [
       { kind: 'file', name: '封面.md', path: 'writing/封面.md', coverUrl: 'data:image/svg+xml;base64,safe' },
+      { kind: 'file', name: '网页.html', path: 'writing/网页.html' },
       { kind: 'file', name: '资料.pdf', path: 'writing/资料.pdf' },
     ], repository: [] } })
     render(<WritingWall root="writing" />)
     const covered = screen.getByTestId('writing-wall-card-writing/封面.md')
+    const html = screen.getByTestId('writing-wall-card-writing/网页.html')
     const pdf = screen.getByTestId('writing-wall-card-writing/资料.pdf')
     expect(within(covered).getByRole('img', { name: '封面.md 封面' })).toHaveAttribute('src', 'data:image/svg+xml;base64,safe')
     expect(within(covered).getByTestId('writing-cover-generate')).toHaveTextContent('重新生成')
+    expect(within(html).getByTestId('writing-cover-generate')).toHaveTextContent('生成封面')
     expect(within(pdf).queryByTestId('writing-cover-generate')).not.toBeInTheDocument()
   })
 })

@@ -50,12 +50,16 @@ export function BlogFilterTabs({ area, value, onChange, theme = 'academic' }: Pr
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5" data-testid={`${area}-blog-filter-tabs`}>
-      {viewButton('mine', '我的')}
-      {viewButton('all', '全部')}
-      <span aria-hidden="true" className={isAcademic ? 'mx-1 text-parchment/20' : 'mx-1 text-[#6b5d52]/30'}>|</span>
-      {sourceButton('all', '全部来源')}
-      {ANTHROPIC_SOURCES.map(source => sourceButton(source.key, source.label, source.color))}
+    <div className="space-y-1.5" data-testid={`${area}-blog-filter-tabs`}>
+      <div className="flex flex-wrap items-center gap-1.5" data-testid={`${area}-view-filter-row`}>
+        {viewButton('mine', '我的')}
+        {viewButton('all', '全部')}
+      </div>
+      <div className={`flex flex-wrap items-center gap-1.5 border-l pl-2 ${isAcademic ? 'border-parchment/15' : 'border-[#6b5d52]/20'}`} data-testid={`${area}-source-filter-row`}>
+        <span className={`pr-0.5 text-[10px] ${muted}`}>来源</span>
+        {sourceButton('all', '全部来源')}
+        {ANTHROPIC_SOURCES.map(source => sourceButton(source.key, source.label, source.color))}
+      </div>
     </div>
   )
 }

@@ -369,9 +369,9 @@ type AppStore = {
   retryAssistantMessage: () => Promise<void>
   runAssistantStream: (history: ArticleAssistantMessage[], useSearch: boolean, selection?: string) => Promise<void>
   applyAssistantSearchResult: (sessionId: string, payload: { searchSources?: { title: string; url: string; snippet: string }[]; searchError?: 'NO_RESULTS' | 'SEARCH_ERROR' }) => void
-  appendAssistantChunk: (text: string) => void
-  appendAssistantReasoning: (text: string) => void
-  finishAssistantStreaming: () => void
+  appendAssistantChunk: (text: string, sessionId?: string) => void
+  appendAssistantReasoning: (text: string, sessionId?: string) => void
+  finishAssistantStreaming: (sessionId?: string, chatError?: ArticleAssistantErrorCode | null) => void
   abortAssistantStream: () => void
   articleAssistantGuideWidth: number
   articleAssistantGuideCollapsed: boolean
@@ -547,6 +547,26 @@ const deletedBookScrollDirs = new Set<string>()
  *  the race where a user message lands before loadAssistantSession completes and the
  *  cur.messages.length === 0 guard discards the loaded history. */
 let historyLoadPromise: Promise<void> | null = null
+
+const inactiveAssistantSessions = new Map<string, AssistantSession>()
+
+function resolveAssistantStream(current: AssistantSession | null, sessionId?: string) {
+  const id = sessionId ?? current?.abortId
+  if (!id) return null
+  if (current?.abortId === id) return { session: current, inactive: false }
+  for (const session of inactiveAssistantSessions.values()) {
+    if (session.abortId === id) return { session, inactive: true }
+  }
+  return null
+}
+
+async function writeAssistantSession(session: AssistantSession): Promise<void> {
+  const persistable = session.messages.filter(
+    message => message.content.trim().length > 0 || (message.role === 'user' && !!message.selection)
+  )
+  if (persistable.length === 0) return
+  await ipc.articleAssistantWriteSession({ parentPath: session.contextId, parentType: session.contextType, messages: persistable })
+}
 
 /** 并行导入时「最后点击的文章」才在完成时打开阅读器——主进程导入队列 FIFO 串行，
  *  若每篇完成都打开会连续抢阅读器（flipbook）。 */
@@ -1394,6 +1414,12 @@ export const useStore = create<AppStore>((set, get) => ({
       if (sess.streaming && sess.abortId) ipc.articleAssistantAbort({ sessionId: sess.abortId })
       get().closeAssistantSession()
     }
+    for (const [contextId, session] of inactiveAssistantSessions) {
+      if (!underDir(contextId)) continue
+      ipc.articleAssistantAbort({ sessionId: session.abortId })
+      resetAssistantStreamBuffers(session.abortId)
+      inactiveAssistantSessions.delete(contextId)
+    }
     bookGuideInFlight.delete(dir)
     try {
       await ipc.booksDelete({ bookDir: dir })
@@ -2006,8 +2032,16 @@ export const useStore = create<AppStore>((set, get) => ({
   openAssistantSession: (args) => {
     const prev = get().assistantSession
     if (prev && prev.contextId === args.contextId) return
+    if (prev?.streaming) inactiveAssistantSessions.set(prev.contextId, prev)
+    const cached = inactiveAssistantSessions.get(args.contextId)
+    inactiveAssistantSessions.delete(args.contextId)
     set({
-      assistantSession: {
+      assistantSession: cached ? {
+        ...cached,
+        articleTitle: args.articleTitle,
+        articleContent: args.articleContent,
+        bookContext: args.bookContext,
+      } : {
         contextId: args.contextId,
         contextType: args.contextType,
         articleTitle: args.articleTitle,
@@ -2028,13 +2062,16 @@ export const useStore = create<AppStore>((set, get) => ({
         }
       }
     })
-    historyLoadPromise = get().loadAssistantSession()
+    historyLoadPromise = cached ? null : get().loadAssistantSession()
   },
 
   closeAssistantSession: () => {
     const s = get().assistantSession
     if (!s) return
-    if (s.streaming) ipc.articleAssistantAbort({ sessionId: s.abortId })
+    if (s.streaming) {
+      ipc.articleAssistantAbort({ sessionId: s.abortId })
+      resetAssistantStreamBuffers(s.abortId)
+    }
     get().persistAssistantState()
     set({ assistantSession: null })
   },
@@ -2109,12 +2146,8 @@ export const useStore = create<AppStore>((set, get) => ({
   saveAssistantSession: async () => {
     const s = get().assistantSession
     if (!s) return
-    const persistable = s.messages.filter(
-      (m) => m.content.trim().length > 0 || (m.role === 'user' && !!m.selection)
-    )
-    if (persistable.length === 0) return
     try {
-      await ipc.articleAssistantWriteSession({ parentPath: s.contextId, parentType: s.contextType, messages: persistable })
+      await writeAssistantSession(s)
     } catch (_err) {
       get().showToast('旁注记录已暂存到恢复目录')
     }
@@ -2155,8 +2188,8 @@ export const useStore = create<AppStore>((set, get) => ({
   runAssistantStream: async (history, useSearch, selection) => {
     const s = get().assistantSession
     if (!s) return
-    resetAssistantStreamBuffers()
     const abortId = `article-assistant-${Date.now()}`
+    resetAssistantStreamBuffers(abortId)
     const placeholder: ArticleAssistantMessage = { role: 'assistant', content: '' }
     set({
       assistantSession: {
@@ -2195,54 +2228,69 @@ export const useStore = create<AppStore>((set, get) => ({
         : (err as Error & { code?: string })?.code === 'CHAT_TIMEOUT' ? 'CHAT_TIMEOUT'
         : 'CHAT_LLM_ERROR'
       const cur = get().assistantSession
-      if (!cur || cur.abortId !== abortId) return
-      const trimmed = cur.messages.at(-1)?.content.trim() === '' ? cur.messages.slice(0, -1) : cur.messages
-      set({ assistantSession: { ...cur, messages: trimmed, streaming: false, searchLoading: false, chatError: code } })
+      const resolved = resolveAssistantStream(cur, abortId)
+      if (!resolved) return
+      const session = resolved.session
+      const trimmed = session.messages.at(-1)?.content.trim() === '' ? session.messages.slice(0, -1) : session.messages
+      const next = { ...session, messages: trimmed, streaming: false, searchLoading: false, chatError: code }
+      if (resolved.inactive) inactiveAssistantSessions.set(next.contextId, next)
+      else set({ assistantSession: next })
     }
   },
 
   applyAssistantSearchResult: (sessionId, payload) => {
-    const s = get().assistantSession
-    if (!s || s.abortId !== sessionId) return
+    const resolved = resolveAssistantStream(get().assistantSession, sessionId)
+    if (!resolved) return
+    const s = resolved.session
     const msgs = s.messages.slice()
     const lastIdx = msgs.length - 1
     if (lastIdx >= 0 && msgs[lastIdx].role === 'assistant' && payload.searchSources) {
       msgs[lastIdx] = { ...msgs[lastIdx], searchSources: payload.searchSources }
     }
-    set({ assistantSession: { ...s, messages: msgs, searchLoading: false, searchError: payload.searchError ?? null } })
+    const next = { ...s, messages: msgs, searchLoading: false, searchError: payload.searchError ?? null }
+    if (resolved.inactive) inactiveAssistantSessions.set(next.contextId, next)
+    else set({ assistantSession: next })
   },
 
-  appendAssistantChunk: (text) => {
-    const s = get().assistantSession
-    if (!s || !s.streaming) return
+  appendAssistantChunk: (text, sessionId) => {
+    const resolved = resolveAssistantStream(get().assistantSession, sessionId)
+    if (!resolved || !resolved.session.streaming) return
+    const s = resolved.session
     const last = s.messages.at(-1)
     if (!last || last.role !== 'assistant') return
     const updated = s.messages.slice(0, -1)
     updated.push({ ...last, content: last.content + text })
-    set({ assistantSession: { ...s, messages: updated } })
+    const next = { ...s, messages: updated }
+    if (resolved.inactive) inactiveAssistantSessions.set(next.contextId, next)
+    else set({ assistantSession: next })
   },
 
-  appendAssistantReasoning: (text) => {
-    const s = get().assistantSession
-    if (!s || !s.streaming) return
+  appendAssistantReasoning: (text, sessionId) => {
+    const resolved = resolveAssistantStream(get().assistantSession, sessionId)
+    if (!resolved || !resolved.session.streaming) return
+    const s = resolved.session
     const last = s.messages.at(-1)
     if (!last || last.role !== 'assistant') return
     const updated = s.messages.slice(0, -1)
     updated.push({ ...last, reasoning: (last.reasoning ?? '') + text })
-    set({ assistantSession: { ...s, messages: updated } })
+    const next = { ...s, messages: updated }
+    if (resolved.inactive) inactiveAssistantSessions.set(next.contextId, next)
+    else set({ assistantSession: next })
   },
 
-  finishAssistantStreaming: () => {
-    const s = get().assistantSession
-    if (!s) return
-    set({ assistantSession: { ...s, streaming: false, searchLoading: false } })
-    get().saveAssistantSession()
+  finishAssistantStreaming: (sessionId, chatError = null) => {
+    const resolved = resolveAssistantStream(get().assistantSession, sessionId)
+    if (!resolved) return
+    const next = { ...resolved.session, streaming: false, searchLoading: false, chatError }
+    if (resolved.inactive) inactiveAssistantSessions.set(next.contextId, next)
+    else set({ assistantSession: next })
+    void writeAssistantSession(next).catch(() => get().showToast('旁注记录已暂存到恢复目录'))
   },
 
   abortAssistantStream: () => {
     const s = get().assistantSession
     if (!s || !s.streaming) return
-    resetAssistantStreamBuffers()
+    resetAssistantStreamBuffers(s.abortId)
     ipc.articleAssistantAbort({ sessionId: s.abortId })
     set({ assistantSession: { ...s, streaming: false, searchLoading: false } })
     get().saveAssistantSession()
@@ -2845,7 +2893,7 @@ export const useStore = create<AppStore>((set, get) => ({
       const wa = get().writingAssistant
       if (wa && wa.articlePath !== filePath) {
         if (wa.streaming) ipc.writingAssistantAbort({ sessionId: wa.sessionId })
-        resetAssistantStreamBuffers()
+        resetAssistantStreamBuffers(wa.sessionId)
         set({ writingAssistant: null })
       }
       if (!get().writingAssistant) await get().loadWritingAssistantSession(filePath)
@@ -3057,6 +3105,15 @@ export const useStore = create<AppStore>((set, get) => ({
     await Promise.all(tasks)
   },
 }))
+
+export function hasAssistantStream(sessionId: string): boolean {
+  const current = useStore.getState().assistantSession
+  if (current?.abortId === sessionId) return true
+  for (const session of inactiveAssistantSessions.values()) {
+    if (session.abortId === sessionId) return true
+  }
+  return false
+}
 
 // Expose store for E2E automation so tests can deterministically drive internal state.
 if (typeof window !== 'undefined') {

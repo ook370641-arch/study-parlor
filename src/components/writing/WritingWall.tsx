@@ -59,7 +59,7 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
       style={{ fontSize: uiSize }}
       className={isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}
       toolbar={
-        <div className="flex items-center gap-2 pb-5">
+        <div data-testid={`writing-wall-toolbar-${root}`} className="flex items-center gap-2 pb-5 pr-32">
           <span className="font-serif text-[1.1em]">{label}专辑墙</span>
           <span className="text-[0.833em] opacity-45">{groups.reduce((total, group) => total + group.files.length, 0)} 篇</span>
           <span className="flex-1" />
@@ -112,7 +112,7 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
                       footerClassName="p-2.5"
                       titleClassName="line-clamp-2 text-[1em] text-[#f0e2c8]"
                       hoverMeta={typeof file.wordCount === 'number' ? <span data-testid={`writing-wall-word-count-${file.path}`}>{file.wordCount.toLocaleString('zh-CN')} 字</span> : undefined}
-                      topLeft={/\.md$/i.test(file.name) ? (
+                      topLeft={/\.(?:md|html)$/i.test(file.name) ? (
                         <CoverGenerator
                           hasCover={!!file.coverUrl}
                           subject={root === 'writing' ? '文章' : '文档'}

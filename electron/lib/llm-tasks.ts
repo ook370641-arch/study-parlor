@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import matter from 'gray-matter'
+import TurndownService from 'turndown'
 import { chatNonStream } from './kimi'
 import { topicDir } from './library-layout'
 import { parseFrontmatter } from './frontmatter'
@@ -70,14 +71,19 @@ export async function generateNoteCoverCandidates(cfg: AppConfig, rel: string) {
 }
 
 export async function generateWritingCoverCandidates(cfg: AppConfig, rel: string) {
-  if (!/^(writing|repository)\/.+\.md$/.test(rel) || rel.includes('\\')) throw new Error('Invalid writing path')
-  const document = matter(fs.readFileSync(assertInsideRoots(cfg.libraryPath, rel), 'utf8'))
+  if (!/^(writing|repository)\/.+\.(?:md|html)$/.test(rel) || rel.includes('\\')) throw new Error('Invalid writing path')
+  const raw = fs.readFileSync(assertInsideRoots(cfg.libraryPath, rel), 'utf8')
+  const isHtml = rel.endsWith('.html')
+  const document = isHtml ? null : matter(raw)
+  const htmlTitle = isHtml ? raw.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() : undefined
   const metadata = [
-    `文章标题：${typeof document.data.title === 'string' ? document.data.title : path.basename(rel, '.md')}`,
+    `文章标题：${document && typeof document.data.title === 'string' ? document.data.title : htmlTitle || path.basename(rel, path.extname(rel))}`,
     `来源：${rel.startsWith('writing/') ? '文章' : '仓库'}`,
-    `摘要：${typeof document.data.summary === 'string' ? document.data.summary : ''}`,
+    `摘要：${document && typeof document.data.summary === 'string' ? document.data.summary : ''}`,
   ]
-  const body = document.content.trim().slice(0, 12000)
+  const turndown = isHtml ? new TurndownService() : null
+  turndown?.remove(['script', 'style', 'noscript'])
+  const body = (document?.content ?? turndown?.turndown(raw) ?? '').trim().slice(0, 12000)
   if (body) metadata.push('', '正文片段：', body)
   if (process.env.NODE_ENV === 'test' && process.env.E2E_CONFIG_DIR) {
     return ['一', '二', '三'].map((label, index) => coverCandidate({

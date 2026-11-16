@@ -188,7 +188,7 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getAllByTestId('anthropic-list-rail-thumb').length).toBeGreaterThan(0)
   })
 
-  it('文章列表容器 flex-1 自适应填充（不写死 max-h，2026-10-22 截断修复）', () => {
+  it('文章列表只使用栏容器滚动，不再嵌套第二个滚动区', () => {
     useStore.setState({
       anthropicBlogCache: {
         lastFetchedAt: null,
@@ -200,9 +200,25 @@ describe('AnthropicBlogPanel', () => {
     const { container } = render(<AnthropicBlogPanel theme="academic" />)
     const list = container.querySelector('[data-testid="anthropic-article-list"]')
     expect(list).not.toBeNull()
-    expect(list!.className).toContain('flex-1')
+    expect(list!.className).toContain('shrink-0')
     expect(list!.className).not.toContain('max-h-')
-    expect(list!.className).toContain('overflow-y-auto')
+    expect(list!.className).not.toContain('overflow-y-auto')
+  })
+
+  it('我的分组不限制高度，也不显示底部拖曳线', () => {
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    expect(screen.getByTestId('blog-list-saved-order')).not.toHaveClass('overflow-y-auto', 'max-h-64')
+    expect(screen.queryByTestId('blog-saved-resize')).not.toBeInTheDocument()
+  })
+
+  it('我的/全部与来源筛选分为主级和次级两行', () => {
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    expect(screen.getByTestId('list-view-mine').closest('[data-testid="list-view-filter-row"]')).not.toBeNull()
+    expect(screen.getByTestId('list-source-all').closest('[data-testid="list-source-filter-row"]')).not.toBeNull()
+    expect(screen.getByTestId('list-source-filter-row')).toHaveTextContent('来源')
+    expect(screen.getByTestId('list-view-filter-row')).not.toBe(screen.getByTestId('list-source-filter-row'))
   })
 
   it('shows new articles prompt after auto-detect finds new articles', async () => {
