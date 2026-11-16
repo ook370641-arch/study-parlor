@@ -43,8 +43,8 @@ function formatDate(iso: string | null | undefined) {
 }
 
 function CardThumb({ imageUrl, isAcademic }: { imageUrl?: string | null; isAcademic: boolean }) {
-  if (imageUrl) return <img src={imageUrl} alt="" className="h-12 w-12 shrink-0 rounded object-cover" loading="lazy" decoding="async" />
-  return <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded text-[9px] ${isAcademic ? 'bg-parchment/10 text-parchment/40' : 'bg-[#e8e4de] text-[#6b5d52]/60'}`}>无配图</div>
+  if (imageUrl) return <img src={imageUrl} alt="" className="h-14 w-14 shrink-0 rounded object-cover" loading="lazy" decoding="async" />
+  return <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded text-xs ${isAcademic ? 'bg-parchment/10 text-parchment/40' : 'bg-[#e8e4de] text-[#6b5d52]/60'}`}>无配图</div>
 }
 
 export function BlogCollectionSection({
@@ -121,7 +121,7 @@ export function BlogCollectionSection({
         onToggleRead={() => void toggleBlogRead({ sourceUrl: article.url, filePath: entry.filePath, title: entry.title })} />
     }
     return (
-      <div key={article.url} data-testid={`blog-${group}-card-${article.url}`} className="group/article relative pl-5"
+      <div key={article.url} data-testid={`blog-${group}-card-${article.url}`} className="group/article relative"
         onDragOver={event => { if (event.dataTransfer.types.includes(ARTICLE_MIME)) event.preventDefault() }}
         onDrop={event => dropArticle(event, group, article.url)}>
         <span data-testid={`blog-list-article-handle-${article.url}`} draggable onClick={event => event.stopPropagation()}
@@ -170,7 +170,7 @@ function ReadCard({ entry, isAcademic, titleSize, metaSize, imageUrl, dateIso, o
   onRemove: () => void
 }) {
   return (
-    <div className={`relative flex items-start gap-2 rounded border border-l-[3px] border-l-ember p-2 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
+    <div className={`relative flex items-start gap-3 rounded border border-l-[3px] border-l-ember p-4 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
       <CardThumb imageUrl={imageUrl} isAcademic={isAcademic} />
       <div className="min-w-0 flex-1 pr-5">
         <button type="button" data-testid={`blog-read-open-${entry.sourceUrl}`} onClick={onOpen}
@@ -201,8 +201,8 @@ function CollectionCard({ entry, isAcademic, titleSize, metaSize, imageUrl, date
   onToggleRead: () => void
 }) {
   return (
-    <div className={`relative rounded border border-l-[3px] border-l-ember p-2 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
-      <div className="flex items-start gap-2">
+    <div className={`relative rounded border border-l-[3px] border-l-ember p-4 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
+      <div className="flex items-start gap-3">
         {entry.origin === 'recommend' && (
           <button type="button" data-testid={`blog-collection-reason-${entry.sourceUrl}`} onClick={onToggleReason} className="mt-0.5 shrink-0" style={{ fontSize: titleSize }} title="推荐理由">&#128161;</button>
         )}

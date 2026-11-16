@@ -103,6 +103,21 @@ describe('BlogCollectionSection', () => {
     expect(current.onToggleGroup).toHaveBeenCalledWith('favorite')
   })
 
+  it('已读收藏卡片与全部列表同尺寸，分组标题清晰突出', () => {
+    const current = props()
+    current.groups.read = [readArticle]
+    current.groups.favorite = [favoriteArticle]
+    render(<BlogCollectionSection {...current} />)
+
+    expect(screen.getByTestId('blog-read-card-read').lastElementChild).toHaveClass('p-4')
+    expect(screen.getByTestId('blog-favorite-card-favorite').lastElementChild).toHaveClass('p-4')
+    for (const placeholder of screen.getAllByText('无配图')) {
+      expect(placeholder).toHaveClass('h-14', 'w-14')
+    }
+    expect(screen.getByTestId('list-group-header-read')).toHaveClass('text-lg')
+    expect(screen.getByTestId('list-group-header-favorite')).toHaveClass('text-lg')
+  })
+
   it('推荐理由、导读和缺口继续展开', () => {
     const current = props()
     current.groups.favorite = [favoriteArticle]
@@ -136,7 +151,7 @@ describe('BlogCollectionSection', () => {
     await waitFor(() => expect(current.onOpenArticle).toHaveBeenCalledWith(favoriteArticle))
   })
 
-  it('每组可调整高度，收藏空态仍保留推荐入口', () => {
+  it('收藏空态仍保留推荐入口', () => {
     const current = props()
     current.groups.saved = [savedArticle]
     render(<BlogCollectionSection {...current} />)
@@ -145,10 +160,5 @@ describe('BlogCollectionSection', () => {
     expect(screen.getByTestId('blog-collection-empty')).toBeInTheDocument()
     const list = screen.getByTestId('blog-list-saved-order')
     expect(list).toHaveAttribute('data-order', 'saved')
-    Object.defineProperty(list, 'offsetHeight', { value: 120 })
-    fireEvent.pointerDown(screen.getByTestId('blog-saved-resize'), { clientY: 100 })
-    fireEvent.pointerMove(window, { clientY: 140 })
-    expect(list).toHaveStyle({ height: '160px' })
-    fireEvent.pointerUp(window)
   })
 })

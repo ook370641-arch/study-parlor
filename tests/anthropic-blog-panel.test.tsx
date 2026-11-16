@@ -49,9 +49,9 @@ function webTitles(): (string | null | undefined)[] {
     .map((row) => row.querySelector('[data-testid="anthropic-article-title"]')?.textContent)
 }
 
-/** 按来源查找第二列 chip */
+/** 按来源操作第二列下拉框 */
 function chip(key: string): HTMLElement {
-  return screen.getByTestId(`list-source-${key}`)
+  return screen.getByTestId('list-source-select')
 }
 
 describe('AnthropicBlogPanel', () => {
@@ -90,10 +90,10 @@ describe('AnthropicBlogPanel', () => {
 
     fireEvent.click(screen.getByTestId('list-view-all'))
     expect(screen.getAllByTestId('anthropic-article-row').length).toBeGreaterThan(0)
-    fireEvent.click(screen.getByTestId('wall-source-research'))
+    fireEvent.change(screen.getByTestId('wall-source-select'), { target: { value: 'research' } })
     expect(screen.queryByTestId('blog-wall-card-old-1')).not.toBeInTheDocument()
     expect(screen.getAllByTestId('anthropic-article-row').length).toBeGreaterThan(0)
-    expect(screen.getByTestId('list-source-all')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('list-source-select')).toHaveValue('all')
   })
 
   it('我的三组同屏，来源筛选同时过滤已保存、已读和收藏', () => {
@@ -122,7 +122,7 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getByTestId('blog-saved-card-saved')).toBeInTheDocument()
     expect(screen.getByTestId('blog-read-card-read')).toBeInTheDocument()
     expect(screen.getByTestId('blog-favorite-card-favorite')).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('list-source-research'))
+    fireEvent.change(screen.getByTestId('list-source-select'), { target: { value: 'research' } })
     expect(screen.queryByTestId('blog-saved-card-saved')).not.toBeInTheDocument()
     expect(screen.queryByTestId('blog-read-card-read')).not.toBeInTheDocument()
     expect(screen.getByTestId('blog-favorite-card-favorite')).toBeInTheDocument()
@@ -164,7 +164,7 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.queryByTestId('blog-wall-card-read')).not.toBeInTheDocument()
     expect(screen.getByTestId('blog-read-card-read')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByTestId('wall-source-research'))
+    fireEvent.change(screen.getByTestId('wall-source-select'), { target: { value: 'research' } })
     expect(screen.queryByTestId('blog-wall-card-saved')).not.toBeInTheDocument()
     expect(screen.getByTestId('blog-wall-card-favorite')).toBeInTheDocument()
     expect(screen.getByTestId('blog-saved-card-saved')).toBeInTheDocument()
@@ -213,11 +213,12 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.queryByTestId('blog-saved-resize')).not.toBeInTheDocument()
   })
 
-  it('我的/全部与来源筛选分为主级和次级两行', () => {
+  it('我的/全部使用标签页，来源使用下拉框', () => {
     render(<AnthropicBlogPanel theme="academic" />)
 
     expect(screen.getByTestId('list-view-mine').closest('[data-testid="list-view-filter-row"]')).not.toBeNull()
-    expect(screen.getByTestId('list-source-all').closest('[data-testid="list-source-filter-row"]')).not.toBeNull()
+    expect(screen.getByTestId('list-view-filter-row')).toHaveAttribute('role', 'tablist')
+    expect(screen.getByTestId('list-source-select')).toHaveValue('all')
     expect(screen.getByTestId('list-source-filter-row')).toHaveTextContent('来源')
     expect(screen.getByTestId('list-view-filter-row')).not.toBe(screen.getByTestId('list-source-filter-row'))
   })
@@ -351,17 +352,15 @@ describe('AnthropicBlogPanel', () => {
 
     expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Eng Old', 'Align Low'])
 
-    fireEvent.click(chip('research'))
-    expect(chip('research')).toHaveAttribute('aria-pressed', 'true')
-    expect(chip('alignment')).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.change(chip('research'), { target: { value: 'research' } })
+    expect(chip('research')).toHaveValue('research')
     expect(webTitles()).toEqual(['Inst New', 'Res Mid'])
 
-    fireEvent.click(chip('engineering'))
-    expect(chip('research')).toHaveAttribute('aria-pressed', 'false')
-    expect(chip('engineering')).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.change(chip('engineering'), { target: { value: 'engineering' } })
+    expect(chip('engineering')).toHaveValue('engineering')
     expect(webTitles()).toEqual(['Eng Old'])
 
-    fireEvent.click(screen.getByTestId('list-source-all'))
+    fireEvent.change(screen.getByTestId('list-source-select'), { target: { value: 'all' } })
     expect(webTitles()).toEqual(['Inst New', 'Res Mid', 'Eng Old', 'Align Low'])
   })
 
@@ -401,13 +400,13 @@ describe('AnthropicBlogPanel', () => {
 
     expect(screen.getAllByText("Claude's Constitution · 可视化双语读本")).not.toHaveLength(0)
 
-    fireEvent.click(chip('research'))
+    fireEvent.change(chip('research'), { target: { value: 'research' } })
     expect(screen.queryByText("Claude's Constitution · 可视化双语读本")).not.toBeInTheDocument()
 
-    fireEvent.click(chip('engineering'))
+    fireEvent.change(chip('engineering'), { target: { value: 'engineering' } })
     expect(screen.queryByText("Claude's Constitution · 可视化双语读本")).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByTestId('list-source-all'))
+    fireEvent.change(screen.getByTestId('list-source-select'), { target: { value: 'all' } })
     expect(screen.getAllByText("Claude's Constitution · 可视化双语读本")).not.toHaveLength(0)
   })
 
@@ -434,17 +433,17 @@ describe('AnthropicBlogPanel', () => {
     expect(webTitles()).toEqual(['Saved Eng', 'Saved Res'])
     expect(screen.queryByText("Claude's Constitution · 可视化双语读本")).not.toBeInTheDocument()
 
-    fireEvent.click(chip('engineering'))
+    fireEvent.change(chip('engineering'), { target: { value: 'engineering' } })
     expect(mine).toHaveAttribute('aria-pressed', 'true')
-    expect(chip('engineering')).toHaveAttribute('aria-pressed', 'true')
+    expect(chip('engineering')).toHaveValue('engineering')
     expect(webTitles()).toEqual(['Saved Eng'])
 
     fireEvent.click(all)
     expect(all).toHaveAttribute('aria-pressed', 'true')
-    expect(chip('engineering')).toHaveAttribute('aria-pressed', 'true')
+    expect(chip('engineering')).toHaveValue('engineering')
     expect(webTitles()).toEqual(['Saved Eng', 'Unsaved Eng'])
 
-    fireEvent.click(screen.getByTestId('list-source-all'))
+    fireEvent.change(screen.getByTestId('list-source-select'), { target: { value: 'all' } })
     expect(webTitles()).toEqual(['Saved Eng', 'Unsaved Eng', 'Saved Res'])
   })
 
@@ -465,7 +464,7 @@ describe('AnthropicBlogPanel', () => {
     fireEvent.click(screen.getByTestId('list-view-all'))
 
     expect(screen.getAllByText('Inst')).not.toHaveLength(0)
-    fireEvent.click(chip('research'))
+    fireEvent.change(chip('research'), { target: { value: 'research' } })
     expect(screen.getAllByText('Inst')).not.toHaveLength(0)
     expect(screen.queryByText('Eng')).not.toBeInTheDocument()
   })
