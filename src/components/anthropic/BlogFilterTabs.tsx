@@ -13,7 +13,9 @@ export function BlogFilterTabs({ area, value, onChange, theme = 'academic' }: Pr
   const isAcademic = theme !== 'newspaper'
   const muted = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
   const buttonClass = (active: boolean) =>
-    `rounded-full border px-2 py-0.5 text-[10px] transition-colors ${active ? 'border-ember text-ember' : muted}`
+    `rounded px-3 py-1 text-xs transition-colors ${active
+      ? isAcademic ? 'bg-ember/20 text-ember' : 'bg-[#1a1a1a]/10 text-[#1a1a1a]'
+      : muted}`
 
   const viewButton = (view: BlogView, label: string) => {
     const active = value.view === view
@@ -21,28 +23,12 @@ export function BlogFilterTabs({ area, value, onChange, theme = 'academic' }: Pr
       <button
         key={`view-${view}`}
         type="button"
+        role="tab"
         data-testid={`${area}-view-${view}`}
+        aria-selected={active}
         aria-pressed={active}
         onClick={() => onChange(selectBlogView(value, view))}
         className={buttonClass(active)}
-        style={active ? undefined : { borderColor: 'transparent' }}
-      >
-        {label}
-      </button>
-    )
-  }
-
-  const sourceButton = (source: BlogSourceFilter, label: string, color?: string) => {
-    const active = value.source === source
-    return (
-      <button
-        key={`source-${source}`}
-        type="button"
-        data-testid={`${area}-source-${source}`}
-        aria-pressed={active}
-        onClick={() => onChange(selectBlogSource(value, source))}
-        className={buttonClass(active)}
-        style={active ? { borderColor: color ?? '#d97757', color: color ?? '#d97757' } : { borderColor: 'transparent' }}
       >
         {label}
       </button>
@@ -51,14 +37,25 @@ export function BlogFilterTabs({ area, value, onChange, theme = 'academic' }: Pr
 
   return (
     <div className="space-y-1.5" data-testid={`${area}-blog-filter-tabs`}>
-      <div className="flex flex-wrap items-center gap-1.5" data-testid={`${area}-view-filter-row`}>
+      <div role="tablist" aria-label="博客视图" className={`inline-flex items-center gap-0.5 rounded-md border p-0.5 ${isAcademic ? 'border-parchment/15' : 'border-[#6b5d52]/20'}`} data-testid={`${area}-view-filter-row`}>
         {viewButton('mine', '我的')}
         {viewButton('all', '全部')}
       </div>
-      <div className={`flex flex-wrap items-center gap-1.5 border-l pl-2 ${isAcademic ? 'border-parchment/15' : 'border-[#6b5d52]/20'}`} data-testid={`${area}-source-filter-row`}>
-        <span className={`pr-0.5 text-[10px] ${muted}`}>来源</span>
-        {sourceButton('all', '全部来源')}
-        {ANTHROPIC_SOURCES.map(source => sourceButton(source.key, source.label, source.color))}
+      <div className="flex items-center gap-2" data-testid={`${area}-source-filter-row`}>
+        <label htmlFor={`${area}-source-select`} className={`text-xs ${muted}`}>来源</label>
+        <select
+          id={`${area}-source-select`}
+          data-testid={`${area}-source-select`}
+          aria-label="按来源筛选"
+          value={value.source}
+          onChange={event => onChange(selectBlogSource(value, event.target.value as BlogSourceFilter))}
+          className={`rounded border px-2 py-1 text-xs outline-none ${isAcademic ? 'border-parchment/20 bg-[#2a1f1a] text-parchment/80' : 'border-[#c9c3b8] bg-[#f5f2ed] text-[#2a1f1a]'}`}
+        >
+          <option data-testid={`${area}-source-all`} value="all">全部来源</option>
+          {ANTHROPIC_SOURCES.map(source => (
+            <option key={source.key} data-testid={`${area}-source-${source.key}`} value={source.key}>{source.label}</option>
+          ))}
+        </select>
       </div>
     </div>
   )

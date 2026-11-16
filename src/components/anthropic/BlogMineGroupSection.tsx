@@ -37,6 +37,7 @@ export function BlogMineGroupSection({
       count={count}
       collapsed={collapsed}
       onToggle={onToggle}
+      headerClassName="text-lg"
       draggable
       onGroupDragStart={onGroupDragStart}
       onGroupDragOver={onGroupDragOver}

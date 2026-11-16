@@ -4,7 +4,7 @@ import { SELECTORS } from '../helpers/selectors'
 import { seedAnthropicArticle, seedStateJson } from '../helpers/test-library'
 
 const SEL = {
-  sourceChips: '[data-testid^="list-source-"]',
+  sourceChips: '[data-testid="list-source-select"] option',
   sectionTag: '[data-testid="anthropic-section-tag"]',
   sectionError: '[data-testid="anthropic-section-error"]',
   // SELECTORS.briefing 无 guideChunk 常量（仅 articleAssistant 有），按 brief 约束内联
@@ -73,7 +73,7 @@ test.describe('Anthropic 多栏目 @p1', () => {
 
     // 色签过滤（Task 6 状态机已提交）：All 态点 research → 单选 research
     // （institute 经 filterGroupOf 归 research → Inst New 仍可见；Eng Old 隐藏）
-    await window.locator('[data-testid="list-source-research"]').click()
+    await window.locator('[data-testid="list-source-select"]').selectOption('research')
     await expect(
       window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Eng Old' })
     ).toHaveCount(0)
@@ -84,7 +84,7 @@ test.describe('Anthropic 多栏目 @p1', () => {
       window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Inst New' })
     ).toHaveCount(1)
     // 全部来源 → 全部恢复
-    await window.locator('[data-testid="list-source-all"]').click()
+    await window.locator('[data-testid="list-source-select"]').selectOption('all')
     await expect(
       window.locator(SELECTORS.briefing.anthropicArticleTitle).filter({ hasText: 'E2E Eng Old' })
     ).toHaveCount(1)

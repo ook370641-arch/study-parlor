@@ -93,7 +93,7 @@ describe('BlogWall', () => {
   it('第一行来源筛选和日期排序更新面板状态', () => {
     const current = wallProps()
     render(<BlogWall {...current} />)
-    fireEvent.click(screen.getByTestId('wall-source-research'))
+    fireEvent.change(screen.getByTestId('wall-source-select'), { target: { value: 'research' } })
     expect(current.onFilterChange).toHaveBeenCalledWith({ view: 'all', source: 'research' })
     fireEvent.change(screen.getByTestId('blog-wall-sort-select'), { target: { value: 'oldest' } })
     expect(current.onSortByChange).toHaveBeenCalledWith('oldest')

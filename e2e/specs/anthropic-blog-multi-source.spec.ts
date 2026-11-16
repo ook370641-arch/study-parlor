@@ -7,7 +7,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 const SEL = {
-  sourceChips: '[data-testid^="list-source-"]',
+  sourceChips: '[data-testid="list-source-select"] option',
   sectionTag: '[data-testid="anthropic-section-tag"]',
   sectionError: '[data-testid="anthropic-section-error"]',
   filterAll: '[data-testid="list-view-all"]',
@@ -18,8 +18,6 @@ const SEL = {
 const PROFILE = { name: 'E2E 测试员', profile_text: '', preferred_topics: [] }
 
 type SectionKey = 'engineering' | 'research' | 'alignment' | 'interpretability' | 'product' | 'institute'
-
-const sourceChip = (section: SectionKey | 'all') => `[data-testid="list-source-${section}"]`
 
 function seedSectionArticle(
   libPath: string,
@@ -126,7 +124,7 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       ])
 
       // All → 单选 research：constitution 隐藏、institute 可见、engineering 隐藏
-      await window.locator(sourceChip('research')).click()
+      await window.locator('[data-testid="list-source-select"]').selectOption('research')
       await expect(window.locator(SELECTORS.briefing.anthropicConstitutionPill)).toHaveCount(0)
       await expect(
         window.locator(`${SELECTORS.briefing.anthropicArticleRow}:has-text("E2E Eng A")`)
@@ -134,16 +132,16 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       await expect(await visibleTitles(window)).toEqual(['E2E Inst A', 'E2E Res A', 'E2E Res B'])
 
       // 来源二级标签始终单选：alignment 替代 research
-      await window.locator(sourceChip('alignment')).click()
+      await window.locator('[data-testid="list-source-select"]').selectOption('alignment')
       await expect(await visibleTitles(window)).toEqual(['E2E Algn A', 'E2E Algn B'])
 
       // 全部来源恢复完整时间线和内置报告
-      await window.locator(sourceChip('all')).click()
+      await window.locator('[data-testid="list-source-select"]').selectOption('all')
       await expect(rows).toHaveCount(12)
       await expect(rows.first().locator(SELECTORS.briefing.anthropicConstitutionPill)).toBeVisible()
 
       // 只选 engineering：constitution 与 institute 都隐藏
-      await window.locator(sourceChip('engineering')).click()
+      await window.locator('[data-testid="list-source-select"]').selectOption('engineering')
       await expect(window.locator(SELECTORS.briefing.anthropicConstitutionPill)).toHaveCount(0)
       await expect(await visibleTitles(window)).toEqual(['E2E Eng A', 'E2E Eng B'])
       await expect(
@@ -156,16 +154,16 @@ test.describe('@p1 Anthropic 博客五来源（Task 8 验收）', () => {
       await expect(window.locator(SEL.filterAll)).toHaveAttribute('aria-pressed', 'false')
       await expect(window.locator(SELECTORS.briefing.anthropicConstitutionPill)).toHaveCount(0)
       await expect(await visibleTitles(window)).toEqual(['E2E Eng A'])
-      await expect(window.locator(sourceChip('engineering'))).toHaveAttribute('aria-pressed', 'true')
+      await expect(window.locator('[data-testid="list-source-select"]')).toHaveValue('engineering')
 
       // mine 态切换来源不改变视图；切回 All 后来源仍保留
-      await window.locator(sourceChip('product')).click()
+      await window.locator('[data-testid="list-source-select"]').selectOption('product')
       await expect(window.locator(SEL.filterMine)).toHaveAttribute('aria-pressed', 'true')
       await expect(await visibleTitles(window)).toEqual([])
 
       await window.locator(SEL.filterAll).click()
       await expect(await visibleTitles(window)).toEqual(['E2E Prod A', 'E2E Prod B'])
-      await window.locator(sourceChip('all')).click()
+      await window.locator('[data-testid="list-source-select"]').selectOption('all')
       await expect(window.locator(SEL.filterAll)).toHaveAttribute('aria-pressed', 'true')
       await expect(rows).toHaveCount(12)
     })
