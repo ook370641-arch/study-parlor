@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import type { DragEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
+import { useState } from 'react'
+import type { DragEvent, ReactNode } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { BRIEFING_LIST_STYLES } from '@/lib/briefing-font-size'
@@ -60,26 +60,8 @@ export function BlogCollectionSection({
   const removeBlogRead = useStore(state => state.removeBlogRead)
   const showToast = useStore(state => state.showToast)
   const [expandedReason, setExpandedReason] = useState<string | null>(null)
-  const [heights, setHeights] = useState<Partial<Record<BlogMineGroup, number>>>({})
-  const listRefs = useRef<Record<BlogMineGroup, HTMLDivElement | null>>({ saved: null, read: null, favorite: null })
   const listStyles = BRIEFING_LIST_STYLES[fontSize]
   const muted = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
-
-  const startResize = (group: BlogMineGroup) => (event: ReactPointerEvent) => {
-    event.preventDefault()
-    const startY = event.clientY
-    const startHeight = listRefs.current[group]?.offsetHeight ?? 0
-    const onMove = (move: PointerEvent) => setHeights(current => ({
-      ...current,
-      [group]: Math.min(560, Math.max(80, startHeight + move.clientY - startY)),
-    }))
-    const onUp = () => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-    }
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-  }
 
   const openMarkedFile = async (article: AnthropicArticleMeta, onGone: () => Promise<void>, message: string) => {
     try {
@@ -163,20 +145,14 @@ export function BlogCollectionSection({
           onGroupDragOver={event => { if (event.dataTransfer.types.includes(GROUP_MIME)) event.preventDefault() }}
           onGroupDrop={event => dropGroup(event, group)}
           recommendationTools={group === 'favorite' ? <BlogRecommendationTools theme={theme} /> : undefined}>
-          <div ref={node => { listRefs.current[group] = node }} data-testid={`blog-list-${group}-order`}
+          <div data-testid={`blog-list-${group}-order`}
             data-order={groups[group].map(article => article.url).join(',')}
-            className={`mt-1.5 space-y-1.5 overflow-y-auto ${heights[group] == null ? 'max-h-64' : ''}`}
-            style={heights[group] != null ? { height: heights[group] } : undefined}>
+            className="mt-1.5 space-y-1.5">
             {groups[group].length === 0 && (!recommendRunning || group !== 'favorite') && (
               <p data-testid={group === 'favorite' ? 'blog-collection-empty' : `blog-${group}-empty`} className={muted} style={{ fontSize: listStyles.meta }}>{EMPTY_TEXT[group]}</p>
             )}
             {groups[group].map(article => renderCard(group, article))}
           </div>
-          {groups[group].length > 0 && (
-            <div data-testid={`blog-${group}-resize`} title="拖拽调整列表高度" onPointerDown={startResize(group)} className="group flex h-2 cursor-row-resize touch-none items-center justify-center">
-              <span className={`w-10 border-t-2 border-dotted ${isAcademic ? 'border-parchment/25 group-hover:border-ember' : 'border-[#6b5d52]/30 group-hover:border-ember'}`} />
-            </div>
-          )}
         </BlogMineGroupSection>
       ))}
     </div>

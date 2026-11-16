@@ -66,6 +66,10 @@ export function buildAssistantUserPrompt(args: {
     sections.push(`# 历史对话\n${historyText}`)
   }
 
+  if (args.selection && args.selection.trim()) {
+    sections.push(`# 当前提问优先级\n- 当前选中文本是本次提问的唯一锚点，用户当前的问题都针对这段新选中文本。\n- 历史对话仅作表达背景；不要沿用上一条选段或把当前问题解释成对上一选段的追问。`)
+  }
+
   sections.push(
     args.socratic === false
       ? '请针对用户当前问题或选中文本直接给出简明回答。'

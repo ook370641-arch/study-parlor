@@ -62,6 +62,23 @@ describe('buildAssistantUserPrompt', () => {
     expect(out).not.toContain('# 网络搜索结果')
     expect(out).not.toContain('# 历史对话')
   })
+
+  it('把当前选中文本置于历史对话之上，避免连续答疑串到上一选段', () => {
+    const out = buildAssistantUserPrompt({
+      articleContent: '文章正文',
+      guide: null,
+      selection: '这次选中的新句子',
+      messages: [
+        { role: 'user', content: '上一句是什么意思？', selection: '上一段' },
+        { role: 'assistant', content: '上一段的解释' },
+        { role: 'user', content: '为什么这么说？', selection: '这次选中的新句子' },
+      ],
+    })
+
+    expect(out).toContain('当前选中文本是本次提问的唯一锚点')
+    expect(out).toContain('不要沿用上一条选段或把当前问题解释成对上一选段的追问')
+    expect(out.indexOf('# 当前提问优先级')).toBeGreaterThan(out.indexOf('# 历史对话'))
+  })
 })
 
 describe('buildAssistantSystemPrompt socratic modes', () => {

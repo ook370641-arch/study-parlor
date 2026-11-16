@@ -6,6 +6,7 @@ import matter from 'gray-matter'
 import type { NoteCoverDesign } from '@shared/index'
 import { deleteWritingCovers, saveWritingCover, writingCoverDataUrl } from '@electron/lib/writing-covers'
 import { generateWritingCoverCandidates } from '@electron/lib/llm-tasks'
+import { attachWritingWallMetadata } from '@electron/lib/writing-wall-metadata'
 
 function makeDesign(index = 0): NoteCoverDesign {
   return {
@@ -42,7 +43,7 @@ describe('写作封面存储', () => {
     fs.rmSync(lib, { recursive: true, force: true })
   })
 
-  it('只接受文章或仓库 Markdown，保存后保留正文与未知 frontmatter', () => {
+  it('Markdown 封面保留正文与未知 frontmatter，其他格式仍被拒绝', () => {
     const absolutePath = createWriting(lib)
     expect(() => saveWritingCover(lib, 'notes/a.md', makeDesign())).toThrow()
     expect(() => saveWritingCover(lib, 'writing/a.pdf', makeDesign())).toThrow()
@@ -104,6 +105,32 @@ describe('写作封面存储', () => {
     expect(request.messages[1].content).toContain('注意力机制')
     expect(request.messages[1].content).not.toContain('TRIMMED')
     expect(fs.existsSync(path.join(lib, 'writing', '.covers'))).toBe(false)
+  })
+
+  it('HTML 只把可见正文注入封面提示词，封面存入目录元数据且不改原文', async () => {
+    const rel = 'writing/网页.html'
+    const absolutePath = path.join(lib, rel)
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true })
+    const html = '<!doctype html><html><head><title>网页标题</title><style>.hidden{color:red}</style><script>secret()</script></head><body><main><h1>可见标题</h1><p>有效正文</p></main></body></html>'
+    fs.writeFileSync(absolutePath, html)
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify({ designs: [makeDesign(0), makeDesign(1), makeDesign(2)] }) } }] }),
+    }))
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await generateWritingCoverCandidates({ apiKey: 'k', baseUrl: 'https://x', model: 'm', libraryPath: lib }, rel)
+    const request = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string)
+    expect(request.messages[1].content).toContain('可见标题')
+    expect(request.messages[1].content).toContain('有效正文')
+    expect(request.messages[1].content).not.toContain('<main>')
+    expect(request.messages[1].content).not.toContain('color:red')
+    expect(request.messages[1].content).not.toContain('secret()')
+
+    const saved = saveWritingCover(lib, rel, makeDesign(1))
+    expect(fs.readFileSync(absolutePath, 'utf8')).toBe(html)
+    const [entry] = attachWritingWallMetadata(lib, 'writing', [{ kind: 'file', name: '网页.html', path: rel }])
+    expect(entry.coverUrl).toBe(saved.coverUrl)
   })
 
   it('E2E 使用确定性三候选，不请求模型', async () => {

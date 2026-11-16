@@ -87,6 +87,17 @@ function fallbackMeta(url: string, entry: BlogCollectionEntry | BlogReadEntry): 
   }
 }
 
+function migratedAnthropicSlug(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    if (parsed.hostname !== 'www.anthropic.com' && parsed.hostname !== 'anthropic.com') return null
+    const match = parsed.pathname.match(/^\/(?:engineering|research)\/([^/]+)\/?$/i)
+    return match?.[1]?.toLowerCase() ?? null
+  } catch {
+    return null
+  }
+}
+
 export function deriveBlogMineGroups(
   articles: AnthropicArticleMeta[],
   collection: BlogCollectionFile
@@ -96,8 +107,13 @@ export function deriveBlogMineGroups(
   const favorites = new Map(collection.entries.map(entry => [entry.sourceUrl, entry]))
   const reads = new Map(collection.read.map(entry => [entry.sourceUrl, entry]))
   const withFallback = (url: string, entry: BlogCollectionEntry | BlogReadEntry) => {
-    const article = cached.get(url)
-    return article ? { ...article, filePath: article.filePath ?? entry.filePath } : fallbackMeta(url, entry)
+    const slug = migratedAnthropicSlug(url)
+    const article = cached.get(url) ?? (slug
+      ? articles.find(candidate => migratedAnthropicSlug(candidate.url) === slug)
+      : undefined)
+    return article
+      ? { ...article, url, isSaved: true, filePath: article.filePath ?? entry.filePath }
+      : fallbackMeta(url, entry)
   }
 
   return {
