@@ -1,3 +1,6 @@
+import type { KeyboardEvent, MouseEvent } from 'react'
+import type { BriefingTheme } from '@shared/index'
+
 // 博客面板统一图标族（spec: 2026-09-23-blog-panel-ui-polish-design.md §5）
 // 内联 SVG，stroke 1.8；颜色由 className 传入（未激活 parchment/30，激活 text-ember）
 interface BlogIconProps {
@@ -53,14 +56,53 @@ export function RefreshIcon({ size = 14, className }: BlogIconProps) {
   )
 }
 
-export function UnimportIcon({ size = 14, className }: BlogIconProps) {
+export function TrashIcon({ size = 14, className }: BlogIconProps) {
   return (
-    <svg data-testid="blog-icon-unimport" width={size} height={size} viewBox="0 0 24 24"
+    <svg data-testid="blog-icon-trash" width={size} height={size} viewBox="0 0 24 24"
       fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
-      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-      <path d="M12 3v6" />
-      <path d="m9 6 3-3 3 3" />
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
     </svg>
+  )
+}
+
+export function BlogDeleteButton({ theme, testId, title, onClick, className = '' }: {
+  theme: BriefingTheme
+  testId: string
+  title: string
+  onClick: () => void
+  className?: string
+}) {
+  const isAcademic = theme !== 'newspaper'
+  const handleClick = (event: MouseEvent<HTMLSpanElement>) => {
+    event.stopPropagation()
+    event.preventDefault()
+    onClick()
+  }
+  const handleKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.stopPropagation()
+    event.preventDefault()
+    onClick()
+  }
+  return (
+    <span
+      data-testid={testId}
+      role="button"
+      tabIndex={0}
+      aria-label={title}
+      title={title}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={`inline-flex h-7 w-7 shrink-0 cursor-pointer select-none items-center justify-center rounded-md border transition-colors ${
+        isAcademic
+          ? 'border-red-400/30 bg-red-400/10 text-red-300 hover:border-red-300/60 hover:bg-red-400/20 hover:text-red-200'
+          : 'border-red-700/25 bg-red-700/5 text-red-700/70 hover:border-red-700/50 hover:bg-red-700/15 hover:text-red-700'
+      } ${className}`}
+    >
+      <TrashIcon size={15} />
+    </span>
   )
 }

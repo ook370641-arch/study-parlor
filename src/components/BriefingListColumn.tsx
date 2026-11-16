@@ -12,10 +12,11 @@ interface Props {
   renderWhenCollapsed?: boolean
   /** 标题行右侧、折叠按钮左侧的附加控件（如 demo 的 `i` 说明入口）。折叠态不渲染，避免 56px 窄栏塞两个按钮。 */
   headerExtra?: ReactNode
+  stableScrollbar?: boolean
   children: React.ReactNode
 }
 
-export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, title, renderWhenCollapsed = false, headerExtra, children }: Props) {
+export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, title, renderWhenCollapsed = false, headerExtra, stableScrollbar = false, children }: Props) {
   const isAcademic = theme !== 'newspaper'
 
   const themeClasses = isAcademic
@@ -78,7 +79,7 @@ export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, tit
       ) : (
         <div
           className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${collapsed ? 'overflow-x-hidden' : ''}`}
-          style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+          style={{ willChange: 'transform', transform: 'translateZ(0)', scrollbarGutter: stableScrollbar ? 'stable' : undefined }}
         >
           {children}
         </div>

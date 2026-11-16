@@ -1,15 +1,15 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
-import { BookIcon, BookmarkIcon, HistoryIcon, RefreshIcon, UnimportIcon } from '@/components/anthropic/blog-icons'
+import { BookIcon, BookmarkIcon, HistoryIcon, RefreshIcon, TrashIcon } from '@/components/anthropic/blog-icons'
 
 afterEach(cleanup)
 
 describe('blog-icons', () => {
   it('五个图标都渲染 svg，带各自 testid', () => {
     render(<>
-      <BookIcon /><BookmarkIcon /><HistoryIcon /><RefreshIcon /><UnimportIcon />
+      <BookIcon /><BookmarkIcon /><HistoryIcon /><RefreshIcon /><TrashIcon />
     </>)
-    for (const id of ['blog-icon-book', 'blog-icon-bookmark', 'blog-icon-history', 'blog-icon-refresh', 'blog-icon-unimport']) {
+    for (const id of ['blog-icon-book', 'blog-icon-bookmark', 'blog-icon-history', 'blog-icon-refresh', 'blog-icon-trash']) {
       expect(screen.getByTestId(id)).toBeInTheDocument()
     }
   })

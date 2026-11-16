@@ -550,7 +550,7 @@ describe('AnthropicBlogPanel', () => {
     await waitFor(() => expect(ipc.anthropicCollectionMarkRead).toHaveBeenCalledWith({ sourceUrl: 'old-1', filePath: 'lib/old-1.md', title: 'Old Article' }))
   })
 
-  it('我的模式下已导入行显示移出库按钮；点击弹确认框，确认后删除', async () => {
+  it.each(['mine', 'all'] as const)('%s 模式下已导入行显示删除按钮；点击弹确认框，确认后删除', async (view) => {
     const deleteAnthropicArticle = vi.fn()
     useStore.setState({
       anthropicBlogCache: {
@@ -562,12 +562,21 @@ describe('AnthropicBlogPanel', () => {
       deleteAnthropicArticle,
     } as any)
     render(<AnthropicBlogPanel theme="academic" />)
+    if (view === 'all') fireEvent.click(screen.getByTestId('list-view-all'))
     const btn = screen.getByTestId('anthropic-row-unimport')
+    expect(btn).toHaveClass('h-7', 'w-7')
+    expect(btn.querySelector('[data-testid="blog-icon-trash"]')).toBeInTheDocument()
     fireEvent.click(btn)
     // 确认弹窗
     expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'))
     await waitFor(() => expect(deleteAnthropicArticle).toHaveBeenCalledWith('lib/old-1.md'))
+  })
+
+  it('博客列表固定滚动条占位，避免切换视图改变卡片宽度', () => {
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    expect(screen.getByTestId('anthropic-article-list').parentElement?.parentElement).toHaveStyle({ scrollbarGutter: 'stable' })
   })
 
   it('未保存文章行不显示已读按钮', () => {

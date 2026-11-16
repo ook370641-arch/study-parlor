@@ -62,8 +62,12 @@ describe('BlogCollectionSection', () => {
     expect(useStore.getState().toggleBlogCollection).toHaveBeenCalledWith({ sourceUrl: 'saved', filePath: 'saved.md', title: 'Saved' })
     fireEvent.click(screen.getByTitle('标为已读'))
     expect(useStore.getState().toggleBlogRead).toHaveBeenCalledWith({ sourceUrl: 'saved', filePath: 'saved.md', title: 'Saved' })
-    fireEvent.click(screen.getByTitle('取消导入（删除文章）'))
+    const deleteButton = screen.getByTestId('anthropic-row-unimport')
+    expect(deleteButton).toHaveClass('h-7', 'w-7')
+    expect(deleteButton.querySelector('[data-testid="blog-icon-trash"]')).toBeInTheDocument()
+    fireEvent.click(deleteButton)
     expect(current.onRequestDelete).toHaveBeenCalledWith({ kind: 'mine', article: savedArticle })
+    expect(current.onOpenArticle).not.toHaveBeenCalled()
   })
 
   it('已读与收藏继续使用不同删除请求', () => {
@@ -72,10 +76,25 @@ describe('BlogCollectionSection', () => {
     current.groups.favorite = [favoriteArticle]
     render(<BlogCollectionSection {...current} />)
 
-    fireEvent.click(screen.getByTestId('blog-read-remove-read'))
+    const readDelete = screen.getByTestId('blog-read-remove-read')
+    const favoriteDelete = screen.getByTestId('blog-collection-remove-favorite')
+    for (const button of [readDelete, favoriteDelete]) {
+      expect(button).toHaveClass('h-7', 'w-7')
+      expect(button.querySelector('[data-testid="blog-icon-trash"]')).toBeInTheDocument()
+    }
+    fireEvent.click(readDelete)
     expect(current.onRequestDelete).toHaveBeenCalledWith({ kind: 'read', sourceUrl: 'read', filePath: 'read.md', title: 'Read' })
-    fireEvent.click(screen.getByTestId('blog-collection-remove-favorite'))
+    fireEvent.click(favoriteDelete)
     expect(current.onRequestDelete).toHaveBeenCalledWith({ kind: 'collection', sourceUrl: 'favorite', filePath: 'favorite.md', title: 'Favorite' })
+  })
+
+  it('我的分组与卡片去掉额外左右内边距', () => {
+    const current = props()
+    current.groups.saved = [savedArticle]
+    render(<BlogCollectionSection {...current} />)
+
+    expect(screen.getByTestId('blog-collection-section')).toHaveClass('px-0')
+    expect(screen.getByTestId('blog-collection-section')).not.toHaveClass('px-4')
   })
 
   it('只有手柄可拖拽，卡片正文仍通过面板打开', () => {

@@ -7,7 +7,7 @@ import type { AnthropicArticleMeta, BlogCollectionEntry, BlogMineGroup, BlogOrde
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { BlogMineGroupSection } from './BlogMineGroupSection'
 import { BlogRecommendationTools } from './BlogRecommendationTools'
-import { BookIcon, UnimportIcon } from './blog-icons'
+import { BlogDeleteButton, BookIcon } from './blog-icons'
 
 export type BlogDeleteRequest =
   | { kind: 'mine'; article: AnthropicArticleMeta }
@@ -137,7 +137,7 @@ export function BlogCollectionSection({
   }
 
   return (
-    <div data-testid="blog-collection-section" className={`shrink-0 border-b px-4 py-2 ${isAcademic ? 'border-slate/30' : 'border-[#c9c3b8]'}`}>
+    <div data-testid="blog-collection-section" className={`shrink-0 border-b px-0 py-2 ${isAcademic ? 'border-slate/30' : 'border-[#c9c3b8]'}`}>
       {order.groups.map(group => (
         <BlogMineGroupSection key={group} area="list" group={group} label={LABELS[group]} count={groups[group].length}
           collapsed={collapsedGroups[group]} onToggle={() => onToggleGroup(group)}
@@ -172,16 +172,14 @@ function ReadCard({ entry, isAcademic, titleSize, metaSize, imageUrl, dateIso, o
   return (
     <div className={`relative flex items-start gap-3 rounded border border-l-[3px] border-l-ember p-4 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
       <CardThumb imageUrl={imageUrl} isAcademic={isAcademic} />
-      <div className="min-w-0 flex-1 pr-5">
+      <div className="min-w-0 flex-1 pr-10">
         <button type="button" data-testid={`blog-read-open-${entry.sourceUrl}`} onClick={onOpen}
           className={`block w-full truncate text-left ${isAcademic ? 'text-parchment hover:text-ember' : 'text-[#1a1a1a] hover:text-ember'}`}
           style={{ fontSize: titleSize }}>{entry.title}</button>
         <p className={isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'} style={{ fontSize: metaSize }}>{formatDate(dateIso)}</p>
       </div>
-      <span data-testid={`blog-read-remove-${entry.sourceUrl}`} role="button" title="移出已读并删除文章" onClick={onRemove}
-        className={`absolute right-1.5 top-1.5 ${isAcademic ? 'text-parchment/30 hover:text-red-400' : 'text-[#6b5d52]/40 hover:text-red-600'}`}>
-        <UnimportIcon size={13} />
-      </span>
+      <BlogDeleteButton theme={isAcademic ? 'academic' : 'newspaper'} testId={`blog-read-remove-${entry.sourceUrl}`}
+        title="移出已读并删除文章" onClick={onRemove} className="absolute right-1.5 top-1.5" />
     </div>
   )
 }
@@ -207,7 +205,7 @@ function CollectionCard({ entry, isAcademic, titleSize, metaSize, imageUrl, date
           <button type="button" data-testid={`blog-collection-reason-${entry.sourceUrl}`} onClick={onToggleReason} className="mt-0.5 shrink-0" style={{ fontSize: titleSize }} title="推荐理由">&#128161;</button>
         )}
         <CardThumb imageUrl={imageUrl} isAcademic={isAcademic} />
-        <div className="min-w-0 flex-1 pr-11">
+        <div className="min-w-0 flex-1 pr-16">
           <button type="button" data-testid={`blog-collection-open-${entry.sourceUrl}`} onClick={onOpen}
             className={`block w-full truncate text-left ${isAcademic ? 'text-parchment hover:text-ember' : 'text-[#1a1a1a] hover:text-ember'}`}
             style={{ fontSize: titleSize }}>{entry.title}</button>
@@ -215,14 +213,12 @@ function CollectionCard({ entry, isAcademic, titleSize, metaSize, imageUrl, date
             {dateText}{entry.origin === 'recommend' ? ' · 推荐' : ''}
           </p>
         </div>
-        <span className="absolute right-1.5 top-1.5 flex items-center gap-2.5">
-          <span data-testid={`blog-collection-remove-${entry.sourceUrl}`} role="button" title="移出收藏并删除文章" onClick={onRemove}
-            className={isAcademic ? 'text-parchment/30 hover:text-red-400' : 'text-[#6b5d52]/40 hover:text-red-600'}><UnimportIcon size={13} /></span>
-          <span data-testid={`blog-collection-read-${entry.sourceUrl}`} role="button" aria-pressed={isRead}
-            title={isRead ? '已读（点击取消）' : '标为已读'} onClick={onToggleRead}
-            className={isRead ? 'text-ember' : `${isAcademic ? 'text-parchment/30' : 'text-[#6b5d52]/40'} hover:text-ember`}>
-            <BookIcon active={isRead} size={13} />
-          </span>
+        <BlogDeleteButton theme={isAcademic ? 'academic' : 'newspaper'} testId={`blog-collection-remove-${entry.sourceUrl}`}
+          title="移出收藏并删除文章" onClick={onRemove} className="absolute right-1.5 top-1.5" />
+        <span data-testid={`blog-collection-read-${entry.sourceUrl}`} role="button" aria-pressed={isRead}
+          title={isRead ? '已读（点击取消）' : '标为已读'} onClick={onToggleRead}
+          className={`absolute right-9 top-1.5 flex h-7 w-7 items-center justify-center ${isRead ? 'text-ember' : `${isAcademic ? 'text-parchment/30' : 'text-[#6b5d52]/40'} hover:text-ember`}`}>
+          <BookIcon active={isRead} size={13} />
         </span>
       </div>
       {expanded && entry.origin === 'recommend' && (
