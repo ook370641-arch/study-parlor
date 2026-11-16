@@ -9,6 +9,8 @@ vi.mock('@/lib/ipc', () => ({
     onArticleAssistantReasoningChunk: vi.fn(() => () => {}),
     onArticleAssistantGuideProgress: vi.fn(() => () => {}),
     articleAssistantWriteSession: vi.fn().mockResolvedValue({ filePath: '/x.assistant.md' }),
+    articleAssistantReadSession: vi.fn().mockResolvedValue(null),
+    articleAssistantReadGuide: vi.fn().mockResolvedValue(null),
     articleAssistantWriteGuide: vi.fn(),
     articleAssistantAbort: vi.fn(),
   },
@@ -123,5 +125,32 @@ describe('assistant session runtime', () => {
     useStore.getState().abortAssistantStream()
     vi.advanceTimersByTime(120)
     expect(useStore.getState().assistantSession!.messages.at(-1)!.content).toBe('')
+  })
+
+  it('切换章节后旧回答继续在后台生成，且不与当前章节缓冲串台', () => {
+    vi.useFakeTimers()
+    useStore.setState({ assistantSession: makeSession({ contextId: '/lib/chapter-a.md', abortId: 's1' }) })
+    useStore.getState().openAssistantSession({
+      contextId: '/lib/chapter-b.md',
+      contextType: 'book-chapter',
+      articleContent: 'B 正文',
+    })
+    useStore.setState({ assistantSession: makeSession({ contextId: '/lib/chapter-b.md', abortId: 's2' }) })
+
+    chunkCb()('s1', 'A 回答')
+    chunkCb()('s2', 'B 回答')
+    vi.advanceTimersByTime(60)
+    doneCb()('s1')
+
+    expect(useStore.getState().assistantSession?.contextId).toBe('/lib/chapter-b.md')
+    expect(useStore.getState().assistantSession?.messages.at(-1)?.content).toBe('B 回答')
+
+    useStore.getState().openAssistantSession({
+      contextId: '/lib/chapter-a.md',
+      contextType: 'book-chapter',
+      articleContent: 'A 正文',
+    })
+    expect(useStore.getState().assistantSession?.messages.at(-1)?.content).toBe('A 回答')
+    expect(useStore.getState().assistantSession?.streaming).toBe(false)
   })
 })

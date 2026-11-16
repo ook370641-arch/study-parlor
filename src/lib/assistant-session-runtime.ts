@@ -1,5 +1,5 @@
 import { ipc } from '@/lib/ipc'
-import { useStore } from '@/store'
+import { hasAssistantStream, useStore } from '@/store'
 import type { ArticleAssistantErrorCode } from '@shared/index'
 import {
   appendToContentBuffer,
@@ -17,60 +17,53 @@ let attached = false
 
 const FLUSH_MS = 50
 
-function flushBuffers() {
-  clearFlushTimer()
+function flushBuffers(sessionId: string) {
+  clearFlushTimer(sessionId)
   const state = useStore.getState()
-  const content = drainContentBuffer()
+  const content = drainContentBuffer(sessionId)
   if (content) {
-    state.appendAssistantChunk(content)
+    state.appendAssistantChunk(content, sessionId)
   }
-  const reasoning = drainReasoningBuffer()
+  const reasoning = drainReasoningBuffer(sessionId)
   if (reasoning) {
-    state.appendAssistantReasoning(reasoning)
+    state.appendAssistantReasoning(reasoning, sessionId)
   }
 }
 
 // 固定窗口节流（非 debounce）：首个 chunk 开窗，窗口内 chunk 合并；连续 token 流不会饿死 UI。
-function scheduleFlush() {
-  if (hasFlushTimer()) return
-  setFlushTimer(setTimeout(flushBuffers, FLUSH_MS))
+function scheduleFlush(sessionId: string) {
+  if (hasFlushTimer(sessionId)) return
+  setFlushTimer(setTimeout(() => flushBuffers(sessionId), FLUSH_MS), sessionId)
 }
 
 export function attachAssistantSessionListeners() {
   if (attached) return
   attached = true
   ipc.onLlmChunk((sid, text) => {
-    const s = useStore.getState().assistantSession
-    if (!s || s.abortId !== sid) return
-    appendToContentBuffer(text)
-    scheduleFlush()
+    if (!hasAssistantStream(sid)) return
+    appendToContentBuffer(text, sid)
+    scheduleFlush(sid)
   })
   ipc.onLlmDone((sid) => {
-    const s = useStore.getState().assistantSession
-    if (!s || s.abortId !== sid) return
-    flushBuffers()
-    useStore.getState().finishAssistantStreaming()
+    if (!hasAssistantStream(sid)) return
+    flushBuffers(sid)
+    useStore.getState().finishAssistantStreaming(sid)
   })
   ipc.onLlmError((sid, err) => {
-    const s = useStore.getState().assistantSession
-    if (!s || s.abortId !== sid) return
-    flushBuffers()
+    if (!hasAssistantStream(sid)) return
+    flushBuffers(sid)
     const code: ArticleAssistantErrorCode = err.code === 'CHAT_NETWORK_ERROR' ? 'CHAT_NETWORK_ERROR'
       : err.code === 'CHAT_TIMEOUT' ? 'CHAT_TIMEOUT'
       : 'CHAT_LLM_ERROR'
-    const cur = useStore.getState().assistantSession
-    if (!cur) return
-    useStore.setState({ assistantSession: { ...cur, streaming: false, searchLoading: false, chatError: code } })
+    useStore.getState().finishAssistantStreaming(sid, code)
   })
   ipc.onArticleAssistantReasoningChunk((sid, text) => {
-    const s = useStore.getState().assistantSession
-    if (!s || s.abortId !== sid) return
-    appendToReasoningBuffer(text)
-    scheduleFlush()
+    if (!hasAssistantStream(sid)) return
+    appendToReasoningBuffer(text, sid)
+    scheduleFlush(sid)
   })
   ipc.onArticleAssistantSearchDone((sid, payload) => {
-    const s = useStore.getState().assistantSession
-    if (!s || s.abortId !== sid) return
+    if (!hasAssistantStream(sid)) return
     useStore.getState().applyAssistantSearchResult(sid, payload)
   })
   ipc.onArticleAssistantGuideProgress((payload) => {

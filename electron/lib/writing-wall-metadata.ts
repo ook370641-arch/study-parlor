@@ -21,7 +21,10 @@ export function attachWritingWallMetadata(lib: string, root: WritingRoot, nodes:
       return node
     }
     const withTime = { ...node, mtimeMs }
-    if (isNonMdPath(node.path)) return withTime
+    if (isNonMdPath(node.path)) {
+      const cover = catalog.entries[node.path]?.cover
+      return { ...withTime, coverUrl: cover ? writingCoverDataUrl(lib, cover) ?? undefined : undefined }
+    }
 
     const cached = catalog.entries[node.path]
     if (cached?.wallMtimeMs === mtimeMs && typeof cached.wordCount === 'number') {

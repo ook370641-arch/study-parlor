@@ -5,9 +5,10 @@ import matter from 'gray-matter'
 import type { NoteCoverDesign, WritingRoot } from '@shared/index'
 import { renderNoteCoverSvg, validateNoteCoverDesign } from './note-covers'
 import { assertInsideRoots } from './writing-tree'
+import { loadCatalog, updateEntry } from './writing-catalog'
 
 function writingRootOf(rel: string): WritingRoot {
-  if (!/^(writing|repository)\/.+\.md$/.test(rel) || rel.includes('\\')) {
+  if (!/^(writing|repository)\/.+\.(?:md|html)$/.test(rel) || rel.includes('\\')) {
     throw Object.assign(new Error('Invalid writing path'), { code: 'WRITING_PATH_FORBIDDEN' })
   }
   return rel.startsWith('writing/') ? 'writing' : 'repository'
@@ -39,8 +40,11 @@ export function saveWritingCover(lib: string, rel: string, value: NoteCoverDesig
   const root = writingRootOf(rel)
   const design = validateNoteCoverDesign(value)
   const documentPath = assertInsideRoots(lib, rel)
-  const document = matter(fs.readFileSync(documentPath, 'utf8'))
-  const oldCover = typeof document.data.cover === 'string' ? document.data.cover : ''
+  const isHtml = rel.endsWith('.html')
+  const document = isHtml ? null : matter(fs.readFileSync(documentPath, 'utf8'))
+  const oldCover = document
+    ? typeof document.data.cover === 'string' ? document.data.cover : ''
+    : loadCatalog(lib, root).entries[rel]?.cover ?? ''
   const designHash = createHash('sha256').update(JSON.stringify(design)).digest('hex').slice(0, 12)
   const cover = `${root}/.covers/${pathHash(rel)}${designHash}.svg`
   const coverPath = assertInsideRoots(lib, cover)
@@ -53,8 +57,17 @@ export function saveWritingCover(lib: string, rel: string, value: NoteCoverDesig
   fs.writeFileSync(coverTmp, svg, 'utf8')
   fs.renameSync(coverTmp, coverPath)
   try {
-    fs.writeFileSync(documentTmp, matter.stringify(document.content, { ...document.data, cover }), 'utf8')
-    fs.renameSync(documentTmp, documentPath)
+    if (document) {
+      fs.writeFileSync(documentTmp, matter.stringify(document.content, { ...document.data, cover }), 'utf8')
+      fs.renameSync(documentTmp, documentPath)
+    } else {
+      const existing = loadCatalog(lib, root).entries[rel]
+      updateEntry(lib, root, rel, {
+        title: existing?.title ?? path.basename(rel, '.html'),
+        summary: existing?.summary ?? '',
+        cover,
+      })
+    }
   } catch (error) {
     fs.rmSync(documentTmp, { force: true })
     if (!coverExisted && oldCover !== cover) fs.rmSync(coverPath, { force: true })

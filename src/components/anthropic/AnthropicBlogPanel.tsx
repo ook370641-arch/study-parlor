@@ -408,7 +408,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
 
             <div
               data-testid="anthropic-article-list"
-              className="mx-4 my-3 flex-1 min-h-[120px] overflow-y-auto overscroll-contain"
+              className="mx-4 my-3 shrink-0"
               style={{ willChange: 'transform', transform: 'translateZ(0)' }}
             >
               {loading && articles.length === 0 && (
