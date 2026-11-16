@@ -34,6 +34,7 @@ vi.mock('@/lib/paintings', () => ({
 }))
 
 import { useStore } from '@/store'
+import { ipc } from '@/lib/ipc'
 import { AnthropicBlogPanel } from '@/components/anthropic/AnthropicBlogPanel'
 
 function article(url: string, title: string) {
@@ -252,6 +253,23 @@ describe('AnthropicBlogPanel', () => {
     await waitFor(() => {
       expect(screen.getByTestId('article-assistant-panel')).toBeInTheDocument()
     })
+  })
+
+  it('阅读器内嵌图片用于显示，但交给旁注的正文不含 Base64', async () => {
+    const rawBody = '正文\n\n![架构图](./assets/architecture.png)'
+    const dataUrl = 'data:image/png;base64,VERY_LARGE_IMAGE_PAYLOAD'
+    vi.mocked(ipc.readMd).mockResolvedValue({ frontmatter: { title: '图文文章' }, body: rawBody })
+    vi.mocked(ipc.readAssetAsDataUrl).mockResolvedValue(dataUrl)
+    useStore.setState({
+      anthropicReaderFilePath: '/lib/Anthropic博客/image.md',
+      anthropicReaderBody: null,
+      anthropicReaderTitle: null,
+    } as any)
+
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    await waitFor(() => expect(screen.getByRole('img', { name: '架构图' })).toHaveAttribute('src', dataUrl))
+    expect(useStore.getState().anthropicReaderBody).toBe(rawBody)
   })
 
   it('collapsed rail renders ALL filtered articles (no 10-item cap)', () => {

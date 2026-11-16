@@ -40,9 +40,28 @@ describe('buildWritingWallGroups', () => {
     expect(buildWritingWallGroups(nestedTree, 'modified', {})[0].files.map(file => file.name)).toEqual(['长.md', '短.md'])
     expect(buildWritingWallGroups(nestedTree, 'words', {})[0].files.map(file => file.name)).toEqual(['长.md', '短.md'])
   })
+
+  it('仓库模式保留父子层级，文章仍归属于实际目录', () => {
+    const groups = buildWritingWallGroups(nestedTree, 'default', {}, true)
+    expect(groups.map(group => group.label)).toEqual(['研究', '未分组'])
+    expect(groups[0].files).toHaveLength(0)
+    expect(groups[0].children.map(group => group.label)).toEqual(['访谈'])
+    expect(groups[0].children[0].files.map(file => file.name)).toEqual(['短.md', '长.md'])
+  })
 })
 
 describe('WritingWall', () => {
+  it('仓库子组嵌套且默认收起，展开后显示文章', () => {
+    const repositoryTree = [{ ...nestedTree[0], path: 'repository/研究', children: [{ ...nestedTree[0].children![0], path: 'repository/研究/访谈', children: nestedTree[0].children![0].children!.map(file => ({ ...file, path: file.path.replace('writing/', 'repository/') })) }] }]
+    useStore.setState({ writingTree: { writing: [], repository: repositoryTree } } as any)
+    render(<WritingWall root="repository" />)
+
+    expect(screen.getByTestId('writing-wall-repository-group-header-repository/研究')).toHaveTextContent('研究2')
+    expect(screen.queryByTestId('writing-wall-card-repository/研究/访谈/短.md')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '展开访谈' }))
+    expect(screen.getByTestId('writing-wall-card-repository/研究/访谈/短.md')).toBeInTheDocument()
+  })
+
   it('支持打开、分组折叠、组内排序和 hover 字数', () => {
     render(<WritingWall root="writing" />)
     expect(screen.getByTestId('writing-wall-writing')).toHaveAttribute('data-album-wall', 'writing')

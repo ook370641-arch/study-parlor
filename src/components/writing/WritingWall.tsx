@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { BriefingTheme, WritingRoot, WritingTreeNode } from '@shared/index'
 import { AlbumCard } from '@/components/album-wall/AlbumCard'
 import { AlbumGrid, AlbumWall } from '@/components/album-wall/AlbumWall'
@@ -7,7 +7,7 @@ import { CoverGenerator } from '@/components/album-wall/CoverGenerator'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ipc } from '@/lib/ipc'
 import { useStore } from '@/store'
-import { buildWritingWallGroups, type WritingWallSort } from '@/lib/writing-wall'
+import { buildWritingWallGroups, type WritingWallGroup, type WritingWallSort } from '@/lib/writing-wall'
 import { displayWritingName } from '@/lib/writing-tree-utils'
 import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 
@@ -16,6 +16,10 @@ const COVER_COLORS = ['#956243', '#516b62', '#80617e', '#8b794a', '#536b87', '#8
 function coverColor(filePath: string): string {
   const hash = [...filePath].reduce((total, char) => total + char.charCodeAt(0), 0)
   return COVER_COLORS[hash % COVER_COLORS.length]
+}
+
+function groupFileCount(group: WritingWallGroup): number {
+  return group.files.length + group.children.reduce((total, child) => total + groupFileCount(child), 0)
 }
 
 export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; theme?: BriefingTheme }) {
@@ -30,7 +34,7 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
   const [pendingDelete, setPendingDelete] = useState<WritingTreeNode | null>(null)
   const [deleting, setDeleting] = useState(false)
   const sort = sortByRoot[root]
-  const groups = useMemo(() => buildWritingWallGroups(tree?.[root] ?? [], sort, writingOrder), [tree, root, sort, writingOrder])
+  const groups = useMemo(() => buildWritingWallGroups(tree?.[root] ?? [], sort, writingOrder, root === 'repository'), [tree, root, sort, writingOrder])
   const uiSize = WRITING_UI_STYLES[writingUISize]
   const coverMinWidth = Math.round(150 * Number.parseInt(uiSize, 10) / 12)
   const isAcademic = theme !== 'newspaper'
@@ -52,6 +56,79 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
     }
   }
 
+  const renderGroup = (group: WritingWallGroup, depth = 0): ReactNode => {
+    const defaultCollapsed = depth > 0
+    const isCollapsed = collapsed[group.key] ?? defaultCollapsed
+    return (
+      <AlbumGroupSection
+        key={group.key}
+        groupKey={group.key}
+        testIdPrefix={`writing-wall-${root}`}
+        label={group.label}
+        count={groupFileCount(group)}
+        collapsed={isCollapsed}
+        onToggle={() => setCollapsed(current => ({ ...current, [group.key]: !(current[group.key] ?? defaultCollapsed) }))}
+      >
+        {group.files.length > 0 && (
+          <AlbumGrid minWidth={coverMinWidth} testId={`writing-wall-grid-${group.key}`} order={group.files.map(file => file.path).join(',')}>
+            {group.files.map(file => {
+              const title = displayWritingName(file)
+              const extension = file.name.includes('.') ? file.name.split('.').pop()?.toUpperCase() : ''
+              return (
+                <AlbumCard
+                  key={file.path}
+                  testId={`writing-wall-card-${file.path}`}
+                  title={title}
+                  onOpen={() => { void selectWritingFile(file.path) }}
+                  className="transition-transform hover:-translate-y-0.5"
+                  style={{ background: `linear-gradient(135deg, ${coverColor(file.path)}99, ${coverColor(file.path)}22 58%, #1a120d)` }}
+                  fallback={<div className="absolute inset-0 flex items-center justify-center p-5 text-center font-serif text-lg text-white/65">{extension === 'MD' ? label : extension}</div>}
+                  cover={file.coverUrl ? <img src={file.coverUrl} alt={`${file.name} 封面`} className="absolute inset-0 h-full w-full object-cover" /> : undefined}
+                  footerClassName="p-2.5"
+                  titleClassName="line-clamp-2 text-[1em] text-[#f0e2c8]"
+                  hoverMeta={typeof file.wordCount === 'number' ? <span data-testid={`writing-wall-word-count-${file.path}`}>{file.wordCount.toLocaleString('zh-CN')} 字</span> : undefined}
+                  topLeft={/\.md$/i.test(file.name) ? (
+                    <CoverGenerator
+                      hasCover={!!file.coverUrl}
+                      subject={root === 'writing' ? '文章' : '文档'}
+                      testIdPrefix="writing-cover"
+                      fillCover
+                      className="absolute left-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100"
+                      onGenerate={async () => {
+                        const result = await ipc.writingGenerateCovers({ path: file.path })
+                        if (!result.ok) throw new Error(result.message)
+                        return result.value.candidates
+                      }}
+                      onSave={async design => {
+                        const result = await ipc.writingSaveCover({ path: file.path, design })
+                        if (!result.ok) throw new Error(result.message)
+                        await loadWritingTree()
+                      }}
+                      onError={showToast}
+                    />
+                  ) : undefined}
+                  topRight={<button
+                    type="button"
+                    data-testid={`writing-wall-delete-${file.path}`}
+                    title="删除文章"
+                    aria-label={`删除${title}`}
+                    className="absolute right-2 top-2 z-20 rounded bg-black/45 px-1.5 py-0.5 text-xs text-white/80 opacity-0 transition-opacity hover:text-red-300 group-hover:opacity-100"
+                    onClick={event => { event.stopPropagation(); setPendingDelete(file) }}
+                  >🗑</button>}
+                />
+              )
+            })}
+          </AlbumGrid>
+        )}
+        {group.children.length > 0 && (
+          <div className={`ml-3 mt-2 space-y-3 border-l pl-4 ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}>
+            {group.children.map(child => renderGroup(child, depth + 1))}
+          </div>
+        )}
+      </AlbumGroupSection>
+    )
+  }
+
   return (
     <AlbumWall
       domain={root}
@@ -61,7 +138,7 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
       toolbar={
         <div className="flex items-center gap-2 pb-5">
           <span className="font-serif text-[1.1em]">{label}专辑墙</span>
-          <span className="text-[0.833em] opacity-45">{groups.reduce((total, group) => total + group.files.length, 0)} 篇</span>
+          <span className="text-[0.833em] opacity-45">{groups.reduce((total, group) => total + groupFileCount(group), 0)} 篇</span>
           <span className="flex-1" />
           <select
             data-testid={`writing-wall-sort-${root}`}
@@ -85,67 +162,7 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
         </div>
       ) : (
         <div className="space-y-7">
-          {groups.map(group => (
-            <AlbumGroupSection
-              key={group.key}
-              groupKey={group.key}
-              testIdPrefix={`writing-wall-${root}`}
-              label={group.label}
-              count={group.files.length}
-              collapsed={collapsed[group.key] ?? false}
-              onToggle={() => setCollapsed(current => ({ ...current, [group.key]: !(current[group.key] ?? false) }))}
-            >
-              <AlbumGrid minWidth={coverMinWidth} testId={`writing-wall-grid-${group.key}`} order={group.files.map(file => file.path).join(',')}>
-                {group.files.map(file => {
-                  const title = displayWritingName(file)
-                  const extension = file.name.includes('.') ? file.name.split('.').pop()?.toUpperCase() : ''
-                  return (
-                    <AlbumCard
-                      key={file.path}
-                      testId={`writing-wall-card-${file.path}`}
-                      title={title}
-                      onOpen={() => { void selectWritingFile(file.path) }}
-                      className="transition-transform hover:-translate-y-0.5"
-                      style={{ background: `linear-gradient(135deg, ${coverColor(file.path)}99, ${coverColor(file.path)}22 58%, #1a120d)` }}
-                      fallback={<div className="absolute inset-0 flex items-center justify-center p-5 text-center font-serif text-lg text-white/65">{extension === 'MD' ? label : extension}</div>}
-                      cover={file.coverUrl ? <img src={file.coverUrl} alt={`${file.name} 封面`} className="absolute inset-0 h-full w-full object-cover" /> : undefined}
-                      footerClassName="p-2.5"
-                      titleClassName="line-clamp-2 text-[1em] text-[#f0e2c8]"
-                      hoverMeta={typeof file.wordCount === 'number' ? <span data-testid={`writing-wall-word-count-${file.path}`}>{file.wordCount.toLocaleString('zh-CN')} 字</span> : undefined}
-                      topLeft={/\.md$/i.test(file.name) ? (
-                        <CoverGenerator
-                          hasCover={!!file.coverUrl}
-                          subject={root === 'writing' ? '文章' : '文档'}
-                          testIdPrefix="writing-cover"
-                          fillCover
-                          className="absolute left-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100"
-                          onGenerate={async () => {
-                            const result = await ipc.writingGenerateCovers({ path: file.path })
-                            if (!result.ok) throw new Error(result.message)
-                            return result.value.candidates
-                          }}
-                          onSave={async design => {
-                            const result = await ipc.writingSaveCover({ path: file.path, design })
-                            if (!result.ok) throw new Error(result.message)
-                            await loadWritingTree()
-                          }}
-                          onError={showToast}
-                        />
-                      ) : undefined}
-                      topRight={<button
-                        type="button"
-                        data-testid={`writing-wall-delete-${file.path}`}
-                        title="删除文章"
-                        aria-label={`删除${title}`}
-                        className="absolute right-2 top-2 z-20 rounded bg-black/45 px-1.5 py-0.5 text-xs text-white/80 opacity-0 transition-opacity hover:text-red-300 group-hover:opacity-100"
-                        onClick={event => { event.stopPropagation(); setPendingDelete(file) }}
-                      >🗑</button>}
-                    />
-                  )
-                })}
-              </AlbumGrid>
-            </AlbumGroupSection>
-          ))}
+          {groups.map(group => renderGroup(group))}
         </div>
       )}
       <ConfirmDialog

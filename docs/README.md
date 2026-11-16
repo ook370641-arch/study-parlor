@@ -72,7 +72,7 @@
 
 ### 10. 文章阅读 / 导读 / 助手 / 旁注
 
-**现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+「导读 / 对照 / 浏览器」右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/browser.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与书籍阅读。内置浏览器使用单个 `WebContentsView`，支持 URL/Bing 搜索、页内查找、跨状态页面保持、最后 URL 与持久 Cookie 重启恢复；启动不自动加载网页。博客/书籍对照页顶部提供「笔记」快捷入口：当前文章/章节已有对应笔记则直接在对照槽打开，没有则自动新建后打开。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。划词工具在博客/书籍间共用，支持备注与五色持久高亮；备注外点/Esc 自动保存、始终可删除，高亮可换色/删除；笔记与高亮标记间切换不会被旧卡片的延迟关闭误伤。
+**现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+「导读 / 对照 / 浏览器」右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/browser.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与书籍阅读。博客阅读器只在展示层把本地图片内嵌为 Base64，导读与旁注使用原始 Markdown 正文，不携带图片数据。内置浏览器使用单个 `WebContentsView`，支持 URL/Bing 搜索、页内查找、跨状态页面保持、最后 URL 与持久 Cookie 重启恢复；启动不自动加载网页。博客/书籍对照页顶部提供「笔记」快捷入口：当前文章/章节已有对应笔记则直接在对照槽打开，没有则自动新建后打开。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。划词工具在博客/书籍间共用，支持备注与五色持久高亮；备注外点/Esc 自动保存、始终可删除，高亮可换色/删除；笔记与高亮标记间切换不会被旧卡片的延迟关闭误伤。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（共享划词高亮、备注自动保存/删除与定位修复；同名 plan 为实施记录）
 - current：`specs/2026-11-02-notes-annotations-and-covers-design.md`（标注真实点击回归、亮黄色、书籍章节聚合与 SVG 封面）
 **历史链**：07-11 article-assistant → 07-11 article-assistant-guide-improvements → 07-11 briefing-assistant → 07-19 annotation-iteration → 07-22 briefing-ai-chat-enhancement → 08-02 agent-article-pipeline → 09-29 reading-position-companion-and-hr → 11-16 right-rail-browser
@@ -84,7 +84,7 @@
 
 ### 12. 写作功能
 
-**现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。文章与仓库主区支持按实际目录分区的专辑墙，保留嵌套相对路径、根文件「未分组」、组内排序与折叠；卡片显示字数、删除入口和三候选 AI 封面，编辑器可保存后返回墙。字数使用独立 `wallMtimeMs` 缓存，写作封面保存在对应 root 的 `.covers/`，不影响 AI 摘要与笔记封面。
+**现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。文章与仓库主区支持按实际目录分区的专辑墙；文章墙展平嵌套路径，仓库墙保留父子层级，子组缩进嵌套且默认收起，父组计数包含后代文章。根文件归入「未分组」，组内排序与折叠沿用；卡片显示字数、删除入口和三候选 AI 封面，编辑器可保存后返回墙。字数使用独立 `wallMtimeMs` 缓存，写作封面保存在对应 root 的 `.covers/`，不影响 AI 摘要与笔记封面。
 - current：`specs/2026-11-14-writing-album-wall-design.md` + `plans/2026-11-14-writing-album-wall.md`（分区分组墙、共享展示骨架、字数缓存、写作 SVG 封面与删除链路）
 - current：`specs/2026-08-11-writing-paste-and-formatting-design.md`（**编辑器行为设计基准**，改编辑器前必读，rules feature-development §13）
 **历史链**：07-19 writing-feature → 07-26 job-writing-assistant（求职半边已随三来源移除，写作助手 UI 统一半边仍在）→ 08-08 writing-ux-fixes → 08-09 writing-table-ui → 08-09 writing-tree-inline → 08-09 writing-list-behavior → 08-10 writing-assistant-agent-loop → 08-11 writing-paste-and-formatting（=current）→ 08-12 writing-repository-ux → 08-12 non-md-preview → 08-12 writing-format-fixes → 08-17 writing-daily-backup → 08-20 writing-companion-pane → 08-20 writing-html-preview → 08-23 writing-codeblock → 08-24 writing-html-delete-mode → 09-16 writing-html-file-display → 09-16 blog-companion-writing-picker → 11-14 writing-album-wall

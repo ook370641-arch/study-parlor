@@ -77,6 +77,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
   const terms = useMemo(() => guideChunks.flatMap((c) => c.terms), [guideChunks])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
   const [body, setBody] = useState<string>('')
+  const [sourceBody, setSourceBody] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<{ code: string; message: string } | null>(null)
   const [creatingNote, setCreatingNote] = useState(false)
@@ -109,6 +110,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
       .then(async ({ frontmatter: fm, body: rawBody }) => {
         if (cancelled) return
         setFrontmatter(fm)
+        setSourceBody(rawBody)
         setBody(await inlineLocalImages(rawBody, filePath))
       })
       .catch((err) => {
@@ -144,10 +146,10 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
 
   // Report body/title to store so the parent blog panel can mount ArticleAssistantPanel
   useEffect(() => {
-    if (!loading && frontmatter && body) {
-      setAnthropicReaderContent({ filePath, body, title: frontmatter.title ?? null })
+    if (!loading && frontmatter && sourceBody) {
+      setAnthropicReaderContent({ filePath, body: sourceBody, title: frontmatter.title ?? null })
     }
-  }, [filePath, loading, frontmatter, body, setAnthropicReaderContent])
+  }, [filePath, loading, frontmatter, sourceBody, setAnthropicReaderContent])
 
   const handleChunkEnter = useCallback((i: number) => setAssistantActiveChunk(i), [setAssistantActiveChunk])
   const handleChunkLeave = useCallback(() => setAssistantActiveChunk(null), [setAssistantActiveChunk])
