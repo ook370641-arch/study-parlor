@@ -24,7 +24,8 @@ test.describe('@p1 writing album wall', () => {
     const wall = window.getByTestId('writing-wall-writing')
     await expect(wall).toBeVisible()
     await expect(window.getByTestId('writing-wall-writing-group-header-writing/随笔')).toContainText('1')
-    await expect(window.getByTestId('writing-wall-writing-group-header-writing/技术笔记/子组')).toContainText('技术笔记 / 子组')
+    await expect(window.getByTestId('writing-wall-writing-group-header-writing/技术笔记')).toContainText('技术笔记')
+    await expect(window.getByTestId('writing-wall-writing-group-header-writing/技术笔记/子组')).toContainText('子组')
     await expect(window.getByTestId('writing-wall-writing-group-header-writing')).toContainText('未分组')
 
     const rootCard = window.getByTestId('writing-wall-card-writing/根文章.md')

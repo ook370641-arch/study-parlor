@@ -34,7 +34,7 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
   const [pendingDelete, setPendingDelete] = useState<WritingTreeNode | null>(null)
   const [deleting, setDeleting] = useState(false)
   const sort = sortByRoot[root]
-  const groups = useMemo(() => buildWritingWallGroups(tree?.[root] ?? [], sort, writingOrder, root === 'repository'), [tree, root, sort, writingOrder])
+  const groups = useMemo(() => buildWritingWallGroups(tree?.[root] ?? [], sort, writingOrder), [tree, root, sort, writingOrder])
   const uiSize = WRITING_UI_STYLES[writingUISize]
   const coverMinWidth = Math.round(150 * Number.parseInt(uiSize, 10) / 12)
   const isAcademic = theme !== 'newspaper'

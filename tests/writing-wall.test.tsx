@@ -31,22 +31,17 @@ beforeEach(() => {
 })
 
 describe('buildWritingWallGroups', () => {
-  it('文件只进入实际目录，嵌套组显示路径，根文件进未分组', () => {
-    expect(buildWritingWallGroups(nestedTree, 'default', {}).map(group => group.label)).toEqual(['研究 / 访谈', '未分组'])
-    expect(buildWritingWallGroups(nestedTree, 'default', {})[0]?.files).toHaveLength(2)
-  })
-
-  it('最近修改和字数只在组内排序', () => {
-    expect(buildWritingWallGroups(nestedTree, 'modified', {})[0].files.map(file => file.name)).toEqual(['长.md', '短.md'])
-    expect(buildWritingWallGroups(nestedTree, 'words', {})[0].files.map(file => file.name)).toEqual(['长.md', '短.md'])
-  })
-
-  it('仓库模式保留父子层级，文章仍归属于实际目录', () => {
-    const groups = buildWritingWallGroups(nestedTree, 'default', {}, true)
+  it('保留父子层级，文件只进入实际目录，根文件进未分组', () => {
+    const groups = buildWritingWallGroups(nestedTree, 'default', {})
     expect(groups.map(group => group.label)).toEqual(['研究', '未分组'])
     expect(groups[0].files).toHaveLength(0)
     expect(groups[0].children.map(group => group.label)).toEqual(['访谈'])
-    expect(groups[0].children[0].files.map(file => file.name)).toEqual(['短.md', '长.md'])
+    expect(groups[0].children[0].files).toHaveLength(2)
+  })
+
+  it('最近修改和字数只在组内排序', () => {
+    expect(buildWritingWallGroups(nestedTree, 'modified', {})[0].children[0].files.map(file => file.name)).toEqual(['长.md', '短.md'])
+    expect(buildWritingWallGroups(nestedTree, 'words', {})[0].children[0].files.map(file => file.name)).toEqual(['长.md', '短.md'])
   })
 })
 
@@ -65,6 +60,9 @@ describe('WritingWall', () => {
   it('支持打开、分组折叠、组内排序和 hover 字数', () => {
     render(<WritingWall root="writing" />)
     expect(screen.getByTestId('writing-wall-writing')).toHaveAttribute('data-album-wall', 'writing')
+    expect(screen.getAllByTestId(/^writing-wall-card-/)).toHaveLength(1)
+    expect(screen.getByTestId('writing-wall-writing-group-header-writing/研究')).toHaveTextContent('研究2')
+    fireEvent.click(screen.getByRole('button', { name: '展开访谈' }))
     expect(screen.getAllByTestId(/^writing-wall-card-/)).toHaveLength(3)
     expect(screen.getByTestId('writing-wall-word-count-writing/研究/访谈/长.md')).toHaveTextContent('120 字')
     expect(screen.getByTestId('writing-wall-word-count-writing/研究/访谈/长.md').parentElement).toHaveClass('opacity-0', 'group-hover:opacity-100')
@@ -73,10 +71,10 @@ describe('WritingWall', () => {
     fireEvent.click(screen.getByTestId('writing-wall-card-writing/研究/访谈/短.md'))
     expect(useStore.getState().selectWritingFile).toHaveBeenCalledWith('writing/研究/访谈/短.md')
 
-    fireEvent.click(screen.getByRole('button', { name: '收起研究 / 访谈' }))
+    fireEvent.click(screen.getByRole('button', { name: '收起访谈' }))
     expect(screen.queryByTestId('writing-wall-card-writing/研究/访谈/短.md')).not.toBeInTheDocument()
     expect(screen.getByTestId('writing-wall-card-writing/根.md')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: '展开研究 / 访谈' }))
+    fireEvent.click(screen.getByRole('button', { name: '展开访谈' }))
 
     fireEvent.change(screen.getByTestId('writing-wall-sort-writing'), { target: { value: 'words' } })
     expect(screen.getByTestId('writing-wall-grid-writing/研究/访谈')).toHaveAttribute('data-order', 'writing/研究/访谈/长.md,writing/研究/访谈/短.md')

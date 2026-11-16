@@ -84,7 +84,7 @@
 
 ### 12. 写作功能
 
-**现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。文章与仓库主区支持按实际目录分区的专辑墙；文章墙展平嵌套路径，仓库墙保留父子层级，子组缩进嵌套且默认收起，父组计数包含后代文章。根文件归入「未分组」，组内排序与折叠沿用；卡片显示字数、删除入口和三候选 AI 封面，编辑器可保存后返回墙。字数使用独立 `wallMtimeMs` 缓存，写作封面保存在对应 root 的 `.covers/`，不影响 AI 摘要与笔记封面。
+**现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。文章与仓库主区支持按实际目录分区的专辑墙，均保留父子层级，子组缩进嵌套且默认收起，父组计数包含后代文章。根文件归入「未分组」，组内排序与折叠沿用；卡片显示字数、删除入口和三候选 AI 封面，编辑器可保存后返回墙。字数使用独立 `wallMtimeMs` 缓存，写作封面保存在对应 root 的 `.covers/`，不影响 AI 摘要与笔记封面。
 - current：`specs/2026-11-14-writing-album-wall-design.md` + `plans/2026-11-14-writing-album-wall.md`（分区分组墙、共享展示骨架、字数缓存、写作 SVG 封面与删除链路）
 - current：`specs/2026-08-11-writing-paste-and-formatting-design.md`（**编辑器行为设计基准**，改编辑器前必读，rules feature-development §13）
 **历史链**：07-19 writing-feature → 07-26 job-writing-assistant（求职半边已随三来源移除，写作助手 UI 统一半边仍在）→ 08-08 writing-ux-fixes → 08-09 writing-table-ui → 08-09 writing-tree-inline → 08-09 writing-list-behavior → 08-10 writing-assistant-agent-loop → 08-11 writing-paste-and-formatting（=current）→ 08-12 writing-repository-ux → 08-12 non-md-preview → 08-12 writing-format-fixes → 08-17 writing-daily-backup → 08-20 writing-companion-pane → 08-20 writing-html-preview → 08-23 writing-codeblock → 08-24 writing-html-delete-mode → 09-16 writing-html-file-display → 09-16 blog-companion-writing-picker → 11-14 writing-album-wall
