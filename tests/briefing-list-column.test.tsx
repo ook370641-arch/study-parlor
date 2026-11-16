@@ -27,6 +27,16 @@ describe('BriefingListColumn', () => {
     expect(screen.getByText('卡片内容')).toBeInTheDocument()
   })
 
+  it('reserves scrollbar space when requested', () => {
+    render(
+      <BriefingListColumn collapsed={false} theme="academic" title="博客" stableScrollbar>
+        <div data-testid="inside">卡片内容</div>
+      </BriefingListColumn>
+    )
+
+    expect(screen.getByTestId('inside').parentElement).toHaveStyle({ scrollbarGutter: 'stable' })
+  })
+
   it('does not render the title text while collapsed', () => {
     renderColumn(true)
     expect(screen.queryByText('书架')).not.toBeInTheDocument()

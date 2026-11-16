@@ -5,7 +5,7 @@ import { ipc } from '@/lib/ipc'
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import { findBatchForUrl } from '@/lib/blog-rec-lookup'
 import { coverImageUrl } from '@/lib/anthropic-articles'
-import { BookIcon, BookmarkIcon, UnimportIcon } from './blog-icons'
+import { BlogDeleteButton, BookIcon, BookmarkIcon } from './blog-icons'
 import type { AnthropicArticleMeta, BriefingTheme } from '@shared/index'
 
 interface Props {
@@ -190,7 +190,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             aria-pressed={inCollection}
             title={inCollection ? '取消收藏' : '收藏'}
             onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleCollection() }}
-            className={`absolute top-2 right-7 z-10 leading-none transition-colors ${
+            className={`absolute top-2 right-16 z-10 leading-none transition-colors ${
               inCollection
                 ? 'text-ember'
                 : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
@@ -207,7 +207,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             aria-pressed={isRead}
             title={isRead ? '已读（点击取消）' : '标为已读'}
             onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleRead() }}
-            className={`absolute top-2 right-2 z-10 leading-none transition-colors ${
+            className={`absolute top-2 right-9 z-10 leading-none transition-colors ${
               isRead
                 ? 'text-ember'
                 : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
@@ -218,17 +218,8 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
         )}
 
         {showUnimport && onRequestDelete && article.isSaved && article.filePath && !article.local && (
-          <span
-            data-testid="anthropic-row-unimport"
-            role="button"
-            title="取消导入（删除文章）"
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRequestDelete(article) }}
-            className={`absolute top-2 right-12 z-10 leading-none transition-colors ${
-              isAcademic ? 'text-parchment/30 hover:text-red-400' : 'text-[#6b5d52]/40 hover:text-red-600'
-            }`}
-          >
-            <UnimportIcon />
-          </span>
+          <BlogDeleteButton theme={theme} testId="anthropic-row-unimport" title="取消导入（删除文章）"
+            onClick={() => onRequestDelete(article)} className="absolute right-2 top-2 z-10" />
         )}
 
       <div className="flex items-start gap-3">

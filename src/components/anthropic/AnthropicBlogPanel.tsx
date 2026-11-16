@@ -286,6 +286,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
         onToggle={() => setListCollapsed((c) => !c)}
         theme={theme}
         width={80}
+        stableScrollbar
         title={pickerOpen ? '选对照文' : 'Anthropic 博客'}
       >
         {pickerOpen ? (
@@ -457,6 +458,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
                       key={article.url}
                       article={article}
                       theme={theme}
+                      showUnimport
                       onOpenArticle={article => { void openOrImportArticle(article) }}
                       onRequestDelete={(a) => setPendingDelete({ kind: 'mine', article: a })}
                       inCollection={inCol}
