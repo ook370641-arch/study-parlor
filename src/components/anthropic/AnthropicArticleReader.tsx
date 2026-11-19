@@ -73,6 +73,7 @@ function resolveSection(fm: Frontmatter) {
 
 export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMemoryKey }: Props) {
   const isAcademic = theme !== 'newspaper'
+  const immersive = useStore((s) => s.immersiveMode)
   const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? EMPTY_GUIDE_CHUNKS)
   const terms = useMemo(() => guideChunks.flatMap((c) => c.terms), [guideChunks])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
@@ -242,7 +243,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
           type="button"
           data-testid="blog-back-to-wall"
           onClick={() => { closeAnthropicReader(); void closeArticleCompanion() }}
-          className={`absolute left-4 top-4 z-20 text-[11px] ${isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'}`}
+          className={`absolute left-4 top-4 z-20 text-[11px] ${isAcademic ? 'text-ember hover:text-ember/80' : 'text-[#8a3a3a] hover:text-[#6a2a2a]'} ${immersive ? 'opacity-0 hover:opacity-100 transition-opacity duration-200' : ''}`}
         >
           ← 博客墙
         </button>
@@ -257,7 +258,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
         />
         <div className="flex-1 flex flex-col overflow-y-auto min-w-0" ref={scrollContainerRef} onScroll={onReaderScroll} data-testid="anthropic-reader-scroll">
           <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
-          <div className="relative w-[95%] max-w-[1600px] min-w-[520px] mx-auto px-6 py-10 pb-24 briefing-article-body arrive-item">
+          <div className={`relative w-[95%] ${immersive ? 'max-w-[820px]' : 'max-w-[1600px]'} min-w-[520px] mx-auto px-6 py-10 pb-24 briefing-article-body arrive-item`}>
             {loading && (
               <div className="space-y-4">
                 <div className={`h-8 w-3/4 rounded animate-pulse ${themeClasses.skeleton}`} />
@@ -306,7 +307,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
                       <span>作者：{frontmatter.authors.join(', ')}</span>
                     )}
                   </div>
-                  <div className="mt-4 flex items-center gap-2">
+                  <div className={`mt-4 flex items-center gap-2 ${immersive ? 'opacity-0 hover:opacity-100 transition-opacity duration-200' : ''}`}>
                     <TransferToWritingButton
                       name={frontmatter.title ?? 'article'}
                       content={body}

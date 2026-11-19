@@ -25,6 +25,7 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
   const fontSize = useStore((s) => s.briefingFontSize)
   const increaseFontSize = useStore((s) => s.increaseBriefingFontSize)
   const decreaseFontSize = useStore((s) => s.decreaseBriefingFontSize)
+  const immersive = useStore((s) => s.immersiveMode)
   const creatingNoteRef = useRef(false)
   const bodyRef = useRef<HTMLElement | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
@@ -54,6 +55,7 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
           onIncrease={() => void increaseFontSize()}
           swapTestId="book-swap-painting-button"
           fontTestIdPrefix="book"
+          immersiveDisabled
         />
         <span className={`text-sm ${isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]'}`}>选择一个章节开始阅读</span>
       </div>
@@ -103,7 +105,7 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
         >
           {/* 正文栏统一宽度：画作、标题、语录、工具行、正文、旁注共用一条阅读轴，
               否则画作会占满整个面板、正文却挤在左半边。 */}
-          <div className="relative px-8 py-6 w-full">
+          <div className={`relative px-8 py-6 w-full ${immersive ? 'max-w-[820px] mx-auto' : ''}`}>
             {/* 画作 + 语录与文章/笔记阅读区同款：画作受左下角「并置画框」开关控制 */}
             {isAcademic && <PaintingPlate />}
             <h1 className={`font-serif text-xl mb-1 ${isAcademic ? 'text-parchment' : 'text-[#2a1f1a]'}`}>{chapter.meta.title}</h1>
@@ -115,7 +117,7 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
               <Quote surface="briefing" />
             </div>
             {/* 只有存在旁注时这里才有内容（AnnotationListButton 空列表返回 null） */}
-            <div className="mb-5 flex flex-wrap items-center gap-2 empty:mb-0">
+            <div className={`mb-5 flex flex-wrap items-center gap-2 empty:mb-0 ${immersive ? 'opacity-0 hover:opacity-100 transition-opacity duration-200' : ''}`}>
               <AnnotationListButton
                 articlePath={chapter.path}
                 theme={theme}

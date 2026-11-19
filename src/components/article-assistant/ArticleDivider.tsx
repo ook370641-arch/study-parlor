@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useStore } from '@/store'
 
 interface Props {
   collapsed: boolean
@@ -11,6 +12,7 @@ interface Props {
 
 export function ArticleDivider({ collapsed, onToggleCollapse, onResize, onResizeStart, onResizeEnd, theme = 'academic' }: Props) {
   const isAcademic = theme !== 'newspaper'
+  const immersive = useStore((s) => s.immersiveMode)
   const dragging = useRef<{ startX: number; containerWidth: number; sidebarWidth: number } | null>(null)
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -48,7 +50,7 @@ export function ArticleDivider({ collapsed, onToggleCollapse, onResize, onResize
   return (
     <div
       data-testid="article-assistant-divider"
-      className={`relative shrink-0 w-1.5 cursor-col-resize flex items-center justify-center transition-colors ${
+      className={`relative shrink-0 ${immersive ? 'w-4 opacity-0 hover:opacity-100 transition-opacity duration-200' : 'w-1.5'} cursor-col-resize flex items-center justify-center ${immersive ? '' : 'transition-colors'} ${
         isAcademic ? 'bg-parchment/10 hover:bg-parchment/20' : 'bg-[#1a1a1a]/10 hover:bg-[#1a1a1a]/20'
       }`}
       onPointerDown={handlePointerDown}

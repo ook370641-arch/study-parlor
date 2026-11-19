@@ -18,6 +18,7 @@ export function BookPanel({ theme }: { theme: BriefingTheme }) {
   const book = useStore((s) => s.booksList.find((b) => b.dir === s.activeBookDir))
   const notesList = useStore((s) => s.notesList)
   const loadNotes = useStore((s) => s.loadNotes)
+  const immersive = useStore((s) => s.immersiveMode)
   const [listCollapsed, setListCollapsed] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ dir: string; title: string } | null>(null)
   const [openNote, setOpenNote] = useState<DemoNote['id'] | null>(null)
@@ -67,6 +68,7 @@ export function BookPanel({ theme }: { theme: BriefingTheme }) {
 
   return (
     <div data-testid="book-panel" className="relative flex-1 flex min-w-0 overflow-hidden z-[5]">
+      {!immersive && (
       <div data-testid="book-list-column-wrapper" className="contents">
         <BriefingListColumn
           collapsed={listCollapsed}
@@ -103,6 +105,7 @@ export function BookPanel({ theme }: { theme: BriefingTheme }) {
           )}
         </BriefingListColumn>
       </div>
+      )}
 
       <div className="flex-1 min-w-0 flex flex-col">
         <BookReader theme={theme} />

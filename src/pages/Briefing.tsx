@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore } from '@/store'
 import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
@@ -33,8 +33,29 @@ export function Briefing() {
   const writingTab = useStore((s) => s.writingListTab)
   const writingWallVisible = useStore((s) => s.writingWallVisible)
   const writingFilePath = useStore((s) => s.writingFile?.path)
+  const immersive = useStore((s) => s.immersiveMode)
+  const exitImmersiveMode = useStore((s) => s.exitImmersiveMode)
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // 切换来源 / 文章 / 章节 / 写作文件时退出沉浸（沉浸状态不跨阅读对象保留）
+  const readingKey = useStore((s) => s.briefingSource === 'book'
+    ? `book:${s.activeChapter?.path ?? ''}`
+    : s.briefingSource === 'writing'
+      ? `writing:${s.writingFile?.path ?? ''}`
+      : `blog:${s.anthropicReaderFilePath ?? ''}`)
+  useEffect(() => {
+    if (useStore.getState().immersiveMode) useStore.getState().exitImmersiveMode()
+  }, [readingKey])
+
+  useEffect(() => {
+    if (!immersive) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') exitImmersiveMode()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [immersive, exitImmersiveMode])
 
   const isAcademic = theme !== 'newspaper'
   const bodyStyle = isAcademic
@@ -71,18 +92,20 @@ export function Briefing() {
         />
       )}
 
-      <BriefingSourceSidebar
-        theme={theme}
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((c) => !c)}
-      />
+      {!immersive && (
+        <BriefingSourceSidebar
+          theme={theme}
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((c) => !c)}
+        />
+      )}
 
       <div
         data-testid="briefing-content-shell"
         className="flex-1 flex flex-col min-w-0"
       >
         <div className="flex-1 flex min-h-0">
-          {source === 'writing' && (
+          {source === 'writing' && !immersive && (
             <BriefingListColumn
               collapsed={dateColumnCollapsed}
               onToggle={() => setDateColumnCollapsed((c) => !c)}

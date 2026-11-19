@@ -30,6 +30,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
   const guideCollapsed = useStore((s) => s.articleAssistantGuideCollapsed)
   const setArticleAssistantGuideWidth = useStore((s) => s.setArticleAssistantGuideWidth)
   const setArticleAssistantGuideCollapsed = useStore((s) => s.setArticleAssistantGuideCollapsed)
+  const immersive = useStore((s) => s.immersiveMode)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPath = useRef<string | null>(null)
   const [resizing, setResizing] = useState(false)
@@ -103,7 +104,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
       <button
         data-testid="article-assistant-tab"
         onClick={toggleAssistantOpen}
-        className="absolute top-24 z-40 w-6 h-28 bg-ink/80 border border-parchment/20 border-r-0 rounded-l flex items-center justify-center hover:bg-ink/90 transition-colors"
+        className={`absolute top-24 z-40 w-6 h-28 bg-ink/80 border border-parchment/20 border-r-0 rounded-l flex items-center justify-center hover:bg-ink/90 ${immersive ? 'opacity-0 hover:opacity-100 transition-opacity duration-200' : 'transition-colors'}`}
         style={{ right: sidebarWidth }}
         title={isOpen ? '关闭旁注' : '打开旁注'}
       >

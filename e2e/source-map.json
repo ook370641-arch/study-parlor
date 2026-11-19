@@ -285,6 +285,24 @@
       "specs": [
         "books*.spec.ts"
       ]
+    },
+    "immersive-mode": {
+      "sources": [
+        "src/pages/Briefing.tsx",
+        "src/components/briefing/BriefingReaderControls.tsx",
+        "src/components/books/BookPanel.tsx",
+        "src/components/books/BookReader.tsx",
+        "src/components/anthropic/AnthropicBlogPanel.tsx",
+        "src/components/anthropic/AnthropicArticleReader.tsx",
+        "src/components/article-assistant/ArticleAssistantPanel.tsx",
+        "src/components/article-assistant/ArticleDivider.tsx",
+        "src/components/NotepadFab.tsx",
+        "src/store/index.ts",
+        "tests/immersive-mode.test.ts"
+      ],
+      "specs": [
+        "immersive-mode.spec.ts"
+      ]
     }
   }
 }

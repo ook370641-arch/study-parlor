@@ -104,6 +104,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
 
   const [query, setQuery] = useState('')
   const [listCollapsed, setListCollapsed] = useState(false)
+  const immersive = useStore((s) => s.immersiveMode)
   const [newArticleCount, setNewArticleCount] = useState(0)
   const [pendingArticles, setPendingArticles] = useState<AnthropicArticleMeta[]>([])
   const [pendingLastFetchedAt, setPendingLastFetchedAt] = useState<string | null>(null)
@@ -280,6 +281,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
       className={`relative flex-1 flex min-w-0 overflow-hidden z-[5] ${themeClasses.panelBg}`}
     >
       <style>{KEYFRAME_STYLES}</style>
+      {!immersive && (
       <BriefingListColumn
         collapsed={listCollapsed}
         renderWhenCollapsed
@@ -483,6 +485,7 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           </div>
         )}
       </BriefingListColumn>
+      )}
 
       <div className="flex-1 min-w-0 flex flex-col">
         {constitutionReportOpen ? (
