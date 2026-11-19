@@ -51,7 +51,7 @@
 ### 6. 夜航简报 — 框架与双来源
 
 **现状**：三来源 = 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'writing' | 'anthropic' | 'book'`）。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9）。核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn`，阅读端正文字号/换画控制由 `BriefingReaderControls` 统一，书籍具体实现见域 14。
-- planned：`specs/2026-11-17-learning-source-restructure-design.md`（学习来源、分组主题树、学习专辑墙与学习中双列；已定稿未实施）
+- planned：`specs/2026-11-17-learning-source-restructure-design.md`（学习来源、分组主题树、学习专辑墙与学习中双列；已定稿未实施）；实施计划：`plans/2026-11-17-learning-source-restructure.md`（含旧功能保全矩阵映射与定向回归门禁）
 **历史链**：06-21 night-briefing → 06-22 night-briefing → 06-27 briefing-entry-and-loading → 06-27 briefing-ui-upgrade → 07-06 night-briefing-optimization → 07-14 briefing-polish → 07-15 renderer-buffer-and-startup-timing → 07-21 briefing-debug-fixes → 07-23 briefing-ui → 07-23 briefing-loop-closure → 07-25 pre-launch-briefing-fixes → 07-26 briefing-polish-batch → 08-01 briefing-background-generation
 
 ### 7. 简报来源 — Anthropic 博客（含精选集与推荐流）
