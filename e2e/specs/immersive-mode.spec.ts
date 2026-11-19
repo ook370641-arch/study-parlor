@@ -21,6 +21,14 @@ test.describe('沉浸阅读模式', () => {
     await window.getByTestId('chapter-row-0').click()
     await expect(window.getByTestId('book-chapter-body')).toContainText('沉浸正文甲')
 
+    // 行宽保持进入前像素宽度，仅整体居中
+    const afterBox = await bodyColumn.boundingBox()
+    expect(Math.round(afterBox!.width)).toBe(Math.round(beforeBox!.width))
+
+    // 记录进入前正文行宽（article 的父容器即阅读轴）
+    const bodyColumn = window.getByTestId('book-chapter-body').locator('..')
+    const beforeBox = await bodyColumn.boundingBox()
+
     // 进入沉浸：左两列卸载，工具栏/旁注 tab/记事板入口转为 hover 显示
     await window.getByTestId('book-immersive-toggle').click()
     await expect(window.getByTestId('briefing-list-column')).toHaveCount(0)

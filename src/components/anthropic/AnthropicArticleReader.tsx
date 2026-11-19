@@ -12,6 +12,7 @@ import { AnnotationListButton } from '@/components/article-assistant/AnnotationL
 import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import { EMPTY_GUIDE_CHUNKS } from '@/lib/article-chunks'
 import { useScrollMemory } from '@/lib/use-scroll-memory'
+import { useImmersiveWidth } from '@/lib/use-immersive-width'
 import { BookIcon, BookmarkIcon } from './blog-icons'
 import type { AnthropicSectionKey, Frontmatter, BriefingTheme } from '@shared/index'
 
@@ -73,7 +74,7 @@ function resolveSection(fm: Frontmatter) {
 
 export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMemoryKey }: Props) {
   const isAcademic = theme !== 'newspaper'
-  const immersive = useStore((s) => s.immersiveMode)
+  const { immersive, containerRef, immersiveStyle } = useImmersiveWidth<HTMLDivElement>()
   const guideChunks = useStore((s) => s.assistantSession?.guide?.chunks ?? EMPTY_GUIDE_CHUNKS)
   const terms = useMemo(() => guideChunks.flatMap((c) => c.terms), [guideChunks])
   const [frontmatter, setFrontmatter] = useState<Frontmatter | null>(null)
@@ -258,7 +259,7 @@ export function AnthropicArticleReader({ filePath, theme = 'academic', scrollMem
         />
         <div className="flex-1 flex flex-col overflow-y-auto min-w-0" ref={scrollContainerRef} onScroll={onReaderScroll} data-testid="anthropic-reader-scroll">
           <style dangerouslySetInnerHTML={{ __html: articleStyles }} />
-          <div className={`relative w-[95%] ${immersive ? 'max-w-[820px]' : 'max-w-[1600px]'} min-w-[520px] mx-auto px-6 py-10 pb-24 briefing-article-body arrive-item`}>
+          <div ref={containerRef} style={immersiveStyle} className={`relative ${immersive ? '' : 'w-[95%] max-w-[1600px] min-w-[520px]'} mx-auto px-6 py-10 pb-24 briefing-article-body arrive-item`}>
             {loading && (
               <div className="space-y-4">
                 <div className={`h-8 w-3/4 rounded animate-pulse ${themeClasses.skeleton}`} />

@@ -50,7 +50,7 @@
 
 ### 6. 夜航简报 — 框架与双来源
 
-**现状**：三来源 = 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'writing' | 'anthropic' | 'book'`）。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9）。核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn`，阅读端正文字号/换画控制由 `BriefingReaderControls` 统一，书籍具体实现见域 14。阅读工具栏含沉浸模式开关（换画/沉浸/字号四按钮通用组件，2026-11-20 上线）：进入后左两列卸载、右栏（导读/旁注聊天/写作助手）自动收起并在退出时恢复，工具栏、旁注 tab、导读分隔条、记事板入口改为原位置 hover 显示，正文统一 820px 居中阅读轴，画作与语录保留；Esc 或切换来源/文章/章节/写作文件即退出，状态不持久化（store `immersiveMode` + `immersiveRestore`）。
+**现状**：三来源 = 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'writing' | 'anthropic' | 'book'`）。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9）。核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn`，阅读端正文字号/换画控制由 `BriefingReaderControls` 统一，书籍具体实现见域 14。阅读工具栏含沉浸模式开关（换画/沉浸/字号四按钮通用组件，2026-11-20 上线）：进入后左两列卸载、右栏（导读/旁注聊天/写作助手）自动收起并在退出时恢复，工具栏、旁注 tab、导读分隔条、记事板入口改为原位置 hover 显示，正文保持进入前像素行宽并居中（`use-immersive-width.ts` 用 ResizeObserver 记录，窗口过窄时上限 95%），画作与语录保留；Esc 或切换来源/文章/章节/写作文件即退出，状态不持久化（store `immersiveMode` + `immersiveRestore`）。
 **历史链**：06-21 night-briefing → 06-22 night-briefing → 06-27 briefing-entry-and-loading → 06-27 briefing-ui-upgrade → 07-06 night-briefing-optimization → 07-14 briefing-polish → 07-15 renderer-buffer-and-startup-timing → 07-21 briefing-debug-fixes → 07-23 briefing-ui → 07-23 briefing-loop-closure → 07-25 pre-launch-briefing-fixes → 07-26 briefing-polish-batch → 08-01 briefing-background-generation
 
 ### 7. 简报来源 — Anthropic 博客（含精选集与推荐流）
