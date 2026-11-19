@@ -126,6 +126,11 @@ type AppStore = {
   studyFontSize: BriefingFontSize
   paintingPlateEnabled: boolean
   togglePaintingPlate: () => Promise<void>
+  // 沉浸阅读模式：运行时状态，不持久化；进入时收起右栏，退出时恢复
+  immersiveMode: boolean
+  immersiveRestore: { guideCollapsed: boolean; chatOpen: boolean; writingAssistantOpen: boolean } | null
+  toggleImmersiveMode: () => void
+  exitImmersiveMode: () => void
   // Anthropic 博客
   briefingSource: BriefingSourceId
   anthropicBlogCache: AnthropicBlogCache
@@ -658,6 +663,8 @@ export const useStore = create<AppStore>((set, get) => ({
   briefingFontSize: 'base',
   studyFontSize: 'lg',
   paintingPlateEnabled: false,
+  immersiveMode: false,
+  immersiveRestore: null,
   briefingSource: 'writing',
   booksList: [],
   booksLoading: false,
@@ -2080,6 +2087,39 @@ export const useStore = create<AppStore>((set, get) => ({
     const s = get().assistantSession
     if (!s) return
     set({ assistantSession: { ...s, isOpen: !s.isOpen } })
+  },
+
+  toggleImmersiveMode: () => {
+    if (get().immersiveMode) {
+      get().exitImmersiveMode()
+      return
+    }
+    const s = get()
+    set({
+      immersiveMode: true,
+      immersiveRestore: {
+        guideCollapsed: s.articleAssistantGuideCollapsed,
+        chatOpen: s.assistantSession?.isOpen ?? false,
+        writingAssistantOpen: s.writingAssistantOpen,
+      },
+    })
+    if (!s.articleAssistantGuideCollapsed) s.setArticleAssistantGuideCollapsed(true)
+    if (s.assistantSession?.isOpen) s.toggleAssistantOpen()
+    if (s.writingAssistantOpen) s.setWritingAssistantOpen(false)
+  },
+
+  exitImmersiveMode: () => {
+    const restore = get().immersiveRestore
+    set({ immersiveMode: false, immersiveRestore: null })
+    if (!restore) return
+    if (get().articleAssistantGuideCollapsed !== restore.guideCollapsed) {
+      get().setArticleAssistantGuideCollapsed(restore.guideCollapsed)
+    }
+    const chatOpen = get().assistantSession?.isOpen ?? false
+    if (chatOpen !== restore.chatOpen) get().toggleAssistantOpen()
+    if (get().writingAssistantOpen !== restore.writingAssistantOpen) {
+      get().setWritingAssistantOpen(restore.writingAssistantOpen)
+    }
   },
 
   toggleAssistantSearch: () => {

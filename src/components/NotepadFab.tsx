@@ -7,6 +7,7 @@ import { useStore } from '@/store'
 export function NotepadFab() {
   const [open, setOpen] = useState(false)
   const chatOpen = useStore((s) => s.assistantSession?.isOpen ?? false)
+  const immersive = useStore((s) => s.immersiveMode)
   const placement = chatOpen ? 'left' : 'right'
 
   return (
@@ -19,7 +20,7 @@ export function NotepadFab() {
         className={`fixed bottom-5 ${placement === 'left' ? 'left-5' : 'right-5'} z-30 w-10 h-10 rounded-full
                    border border-parchment/30 bg-[rgba(15,10,8,0.85)] backdrop-blur-md shadow-lg
                    flex items-center justify-center text-parchment/80
-                   hover:border-ember/60 hover:text-ember transition-colors`}
+                   hover:border-ember/60 hover:text-ember ${immersive ? 'opacity-0 hover:opacity-100 transition-opacity duration-200' : 'transition-colors'}`}
       >
         <svg
           viewBox="0 0 24 24"
