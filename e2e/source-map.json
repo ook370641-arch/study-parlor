@@ -158,6 +158,8 @@
         "src/components/NotepadFab.tsx",
         "electron/lib/notepad-claims.ts",
         "electron/lib/notepad-claims-shared.cjs",
+        "electron/lib/notepad-data.ts",
+        "electron/ipc/state.ts",
         "scripts/notepad-claim.cjs",
         "src/lib/notepad.ts",
         "src/pages/Home.tsx",

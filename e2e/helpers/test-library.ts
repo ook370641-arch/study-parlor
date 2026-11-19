@@ -536,10 +536,22 @@ export function seedStateJson(
   partialState: Record<string, unknown>
 ): void {
   const statePath = path.join(configDir, 'state.json')
+  const { notepadItems, notepadLog, ...state } = { ...BASE_STATE, ...partialState }
   fs.writeFileSync(
     statePath,
-    JSON.stringify({ ...BASE_STATE, ...partialState }, null, 2)
+    JSON.stringify(state, null, 2)
   )
+  if ('notepadItems' in partialState || 'notepadLog' in partialState) {
+    const notepadPath = path.join(configDir, 'notepad.json')
+    const current = fs.existsSync(notepadPath)
+      ? JSON.parse(fs.readFileSync(notepadPath, 'utf8'))
+      : { notepadItems: [], notepadLog: [] }
+    fs.writeFileSync(notepadPath, JSON.stringify({
+      ...current,
+      ...('notepadItems' in partialState ? { notepadItems } : {}),
+      ...('notepadLog' in partialState ? { notepadLog } : {}),
+    }, null, 2))
+  }
 }
 
 export function seedTerminology(

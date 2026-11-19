@@ -1,0 +1,680 @@
+{
+  "notepadItems": [
+    {
+      "id": "nmwkq1uy3cwnd",
+      "title": "点亮灯火整个放进夜航简报里",
+      "text": "点亮灯火整个放进夜航简报里，作为一个新来源放到最上面。原因：1、两个页面UI样式不一样，设置、换图按钮不一致，需要一致化 2、两个入口距离太大，导致点亮灯火自己根本不用。预计：1、UI样式沿用夜航简报 （主要是设置、返回、样式切换这几个）2、计划要考虑得比较多，每一个界面都要纳入考虑",
+      "category": "feature",
+      "createdAt": "2026-11-17T13:22:05.164Z"
+    },
+    {
+      "id": "nmwnrktib2btq",
+      "title": "设置页进入之后来源列不消失（因…",
+      "text": "设置页进入之后来源列不消失（因此不用做返回夜话按钮），这里主要是设计稿多出几个方案看下",
+      "category": "improvement",
+      "createdAt": "2026-11-19T16:28:07.907Z"
+    },
+    {
+      "id": "nmwns2khma5nu",
+      "title": "1、迭代记事板无法输入框挂载图…",
+      "text": "1、迭代记事板无法输入框挂载图片（需前端加挂载效果+允许加图片）",
+      "category": "bug",
+      "createdAt": "2026-11-19T16:41:56.027Z"
+    },
+    {
+      "id": "nmwns3na7rzr2",
+      "title": "浏览器里无法输入手机号（点击输…",
+      "text": "浏览器里无法输入手机号（点击输入框，然后立马退出输入状态，不知道为啥）",
+      "category": "bug",
+      "createdAt": "2026-11-19T16:42:46.303Z"
+    }
+  ],
+  "notepadLog": [
+    {
+      "id": "nmvv74b2za67v",
+      "title": "说明只读与入口开关",
+      "text": "书记来源点开之后会直接进入编辑模式（文字周边会有边框），按理说打开之后默认不进入编辑模式，顺便在设置里放一个入口可以管理这些信息说明是否隐藏（先看看有哪些类似的信息说明标识）",
+      "category": "improvement",
+      "createdAt": "2026-10-30T16:37:52.283Z",
+      "resolvedAt": "2026-10-30T17:12:36.158Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv72noqw3vw",
+      "title": "推荐备注与批次记录",
+      "text": "这个重新推荐是一个什么逻辑，建议点击后出一个弹窗，弹窗里可以增加备注，然后弹窗里说明当前的这个推荐逻辑",
+      "category": "improvement",
+      "createdAt": "2026-10-30T16:36:35.306Z",
+      "resolvedAt": "2026-10-30T17:05:43.646Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv6zcueqhqh",
+      "title": "博客导读串文竞态",
+      "text": "博客与导读不对应，例如Designing AI-resistant technical evaluations，看看为什么，你可以先清空现有导读，看看导读触发逻辑",
+      "category": "bug",
+      "createdAt": "2026-10-30T16:34:01.286Z",
+      "resolvedAt": "2026-10-30T17:01:38.14Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv751g3ni6w",
+      "title": "书籍正文宽栏与字号",
+      "text": "这个书籍的文字展示非常窄，应该和博客、写作对齐，字体大小按钮也应该有（这个字体大小+刷新应该不同来源统一）",
+      "category": "improvement",
+      "createdAt": "2026-10-30T16:38:26.451Z",
+      "resolvedAt": "2026-10-30T16:51:47.558Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvfe8tui78kk",
+      "category": "feature",
+      "createdAt": "2026-10-08T12:00:00Z",
+      "resolvedAt": "2026-10-08T12:00:00Z",
+      "source": "user",
+      "text": "目前在封面上线一个裁剪功能，方便我随时裁剪画作，计划是一个新按钮，按钮点击之后出现一个缩略图，原文plus裁剪区域，可以鼠标移动来控制缩略图，然后封面画作发生对应移动，实现效果高度参考目前已有裁剪工具",
+      "title": "封面画作裁剪功能"
+    },
+    {
+      "id": "nmvfe8tuids1e",
+      "category": "feature",
+      "createdAt": "2026-10-12T12:00:00Z",
+      "resolvedAt": "2026-10-12T12:00:00Z",
+      "source": "user",
+      "text": "新一个健身记事板功能，可以作为第三个来源（三个来源打算删除），记录我的身体数据、健身计划、每一个动作当前的重量组数安排，方便长期监控",
+      "title": "健身跟踪（第三来源）"
+    },
+    {
+      "id": "nmvfe8tuikyoz",
+      "category": "bug",
+      "createdAt": "2026-10-19T15:13:01.721Z",
+      "resolvedAt": "2026-10-19T15:13:01.721Z",
+      "source": "user",
+      "text": "有一个bug就是旁注功能似乎入参有问题，ai显示批注文字不在全文里（用户选中文本在文章全文里找不到，内容似乎来自另一篇相关文章）",
+      "title": "旁注引用串文章"
+    },
+    {
+      "id": "nmvfe8tuicncm",
+      "category": "bug",
+      "createdAt": "2026-10-19T15:13:01.721Z",
+      "resolvedAt": "2026-10-19T15:13:01.721Z",
+      "source": "user",
+      "text": "博客和博客内图像不符合：How we built Claude Code auto mode: a safer way to skip permissions",
+      "title": "博客配图与文章不符"
+    },
+    {
+      "id": "nmvfe8tui2y7m",
+      "category": "bug",
+      "createdAt": "2026-10-19T15:13:01.721Z",
+      "resolvedAt": "2026-10-19T15:13:01.721Z",
+      "source": "agent",
+      "text": "这个记事板收起逻辑有问题：理论上点击这个记事板以外任何位置都默认收起",
+      "title": "记事板外点不收起"
+    },
+    {
+      "id": "nmvfe8tuieaif",
+      "category": "feature",
+      "createdAt": "2026-10-19T15:13:01.721Z",
+      "resolvedAt": "2026-10-19T15:13:01.721Z",
+      "source": "agent",
+      "text": "把记事本封装成skill，此外这个记事本应该允许左下角拖拽放大，有字体调节按钮，此外记事板另外放置一个记录页面，记录已经解决的需求/bug，skill里应该在解决之后将需求/bug从记事板转移到记录页面里。方便自动化管理字段、统计长期的解决状况。记事板可以自动以有序列表的方式强制输入，结构化字段方便agent接需求、转内容到记录页面等",
+      "title": "记事板升级与 skill 化"
+    },
+    {
+      "id": "nmvfe8tuijzes",
+      "category": "improvement",
+      "createdAt": "2026-10-12T12:00:00Z",
+      "text": "长期来看需要删减已有功能：写作、前沿都是伪功能，几乎从不使用，拾贝也是。看看这些内容能否被hermes集成进去",
+      "resolvedAt": "2026-10-12T12:00:00Z",
+      "source": "user",
+      "title": "删减伪功能与集成评估"
+    },
+    {
+      "id": "nmvfe8tuiaygp",
+      "category": "feature",
+      "createdAt": "2026-10-19T15:13:01.721Z",
+      "text": "目前打算在写作里更新一个笔记功能，作为第三个分区。笔记应该包含：文章名、网页、时间、用户评分、一句话摘要、核心亮点，核心亮点一句话摘要可以用户填写，尽量有一个书架的效果，有一个特别美观的UI，A社博客可以有特定标识",
+      "title": "写作笔记分区（书架）",
+      "resolvedAt": "2026-10-20T14:48:02.023Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvic8vlc9p97",
+      "title": "迭代记事板恒定放置到界面右下角…",
+      "text": "迭代记事板恒定放置到界面右下角（展开逻辑会变），同时支持在待完成之后手动调整排序（这个比较简单，悬停到条目右侧出现一个拖动按钮，拖动调整顺序）",
+      "category": "improvement",
+      "createdAt": "2026-10-21T16:40:23.28Z",
+      "resolvedAt": "2026-10-21T16:52:50.546Z",
+      "source": "user"
+    },
+    {
+      "id": "nmvicqm9s6t12",
+      "title": "文章列收起即空",
+      "text": "文章列（第二列）在写作来源统一清空，收起即空，现在的显示很奇怪，博客的收起展示效果不变",
+      "category": "improvement",
+      "createdAt": "2026-10-21T16:54:11.008Z",
+      "resolvedAt": "2026-10-22T15:13:09.225Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvictkpeya6x",
+      "title": "对照挑选器笔记前置",
+      "text": "选对照文的时候，笔记、仓库、文章都是可以折叠收起的，且笔记需要前置。如果是A社博客自动引导当前博客对应笔记，如果无对应笔记，笔记右侧显示新建按钮，新建对应博客笔记即可。",
+      "category": "improvement",
+      "createdAt": "2026-10-21T16:56:28.946Z",
+      "resolvedAt": "2026-10-22T15:13:09.225Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvicynap7y7s",
+      "title": "博客列表截断与拖拽",
+      "text": "在博客页已读、收藏收起的时候，下方博客序列突然截断，最下方一部分直接空置，很奇怪。 其次这个已读和收藏的列表支持拖拽来延长、当前这个效果短短的，很难受，想想有什么优化方案，把三个不妨放在同一列是不是有点怪？",
+      "category": "bug",
+      "createdAt": "2026-10-21T17:00:25.585Z",
+      "resolvedAt": "2026-10-22T15:13:09.225Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvid4694e9lt",
+      "title": "简报工具栏双横线移除",
+      "text": "夜航简报里加减字号位置应该在刷新画作右侧（侧边栏展开后图标移动逻辑不变），其次在工具栏下侧的双横线应该不要，会把加减字号图标切断，不美观",
+      "category": "improvement",
+      "createdAt": "2026-10-21T17:04:43.432Z",
+      "resolvedAt": "2026-10-22T15:13:09.225Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvjnup2ur91t",
+      "title": "笔记页补画作语录",
+      "text": "目前笔记里没有文章、仓库的画作和语录展示，这里直接抄就行了",
+      "category": "improvement",
+      "createdAt": "2026-10-22T14:53:03.222Z",
+      "resolvedAt": "2026-10-22T15:13:09.225Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvjorh6h97ea",
+      "title": "对照模式收起即退出",
+      "text": "现在这个对照模式退不出来了，按理说对照侧边栏收起，就不应该再处于对照模式，这是回归问题",
+      "category": "bug",
+      "createdAt": "2026-10-22T15:18:32.633Z",
+      "resolvedAt": "2026-10-22T15:32:25.345Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvjoske2a5oz",
+      "title": "字号按钮移到换画右侧",
+      "text": "当前加减字号仍在刷新画作左侧，你没成功吗？",
+      "category": "improvement",
+      "createdAt": "2026-10-22T15:19:23.45Z",
+      "resolvedAt": "2026-10-22T15:32:25.345Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvjotie6bw9e",
+      "title": "字号按钮实底对齐换画",
+      "text": "加减字号和刷新样式不一致，前端看加减字号会被背景内容透出，而刷新不会受背景画作影响，加减按照刷新按钮效果对齐",
+      "category": "improvement",
+      "createdAt": "2026-10-22T15:20:07.518Z",
+      "resolvedAt": "2026-10-22T15:32:25.345Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvjouro3l6z3",
+      "title": "记事板行内编辑",
+      "text": "迭代记事板多一个编辑功能，按钮你设计，能改内容，也能改类型，简单的是点击后直接内容打回输入框，但是更合适的是可以在当前界面里改，你来设计",
+      "category": "improvement",
+      "createdAt": "2026-10-22T15:21:06.196Z",
+      "resolvedAt": "2026-10-22T15:32:25.345Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvicz00rkv7i",
+      "text": "能不能仿照笔记给博客也做一个专辑墙？",
+      "category": "feature",
+      "createdAt": "2026-10-21T17:00:42.075Z",
+      "title": "博客专辑墙",
+      "resolvedAt": "2026-10-26T14:43:20.221Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvjoq4val9hu",
+      "text": "博客对照文 自动新建笔记（这个功能极度合理），用户基于当前阅读博客一键生成对应笔记",
+      "category": "feature",
+      "createdAt": "2026-10-22T15:17:30.022Z",
+      "title": "博客一键建笔记",
+      "resolvedAt": "2026-10-26T14:43:20.221Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvmjmr5sgrn9",
+      "text": "专辑墙应该统一固定一下交互模式，博客和笔记如果没有缓存页面，那就是直接专辑墙页面，博客和笔记内容主页面左上角有返回专辑墙按钮，点击后进入专辑墙且遗忘文章选中态",
+      "category": "feature",
+      "createdAt": "2026-10-24T15:18:12.736Z",
+      "title": "专辑墙统一返回",
+      "resolvedAt": "2026-10-26T14:43:20.221Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvmjpym9gm0u",
+      "text": "专辑墙（博客、笔记）第一行都应该有排序和筛选功能，例如笔记默认应该按不同笔记类型进行排序展示",
+      "category": "improvement",
+      "createdAt": "2026-10-24T15:20:42.369Z",
+      "title": "专辑墙排序筛选",
+      "resolvedAt": "2026-10-26T14:43:20.221Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv96twc4yjg",
+      "title": "博客更新故障修复",
+      "text": "博客上次更新后顶部一堆更新失败，还有五百多篇新文章，目前最高优问题：上次更新后把博客搞坏了",
+      "category": "bug",
+      "createdAt": "2026-10-30T17:35:49.212Z",
+      "resolvedAt": "2026-10-31T07:38:35.167Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv8op4gtywk",
+      "title": "书籍阅读位置记忆",
+      "text": "我希望这个书籍也能记忆阅读位置（和博客一致）。实现方案照搬即可",
+      "category": "improvement",
+      "createdAt": "2026-10-30T17:21:43.216Z",
+      "resolvedAt": "2026-10-31T07:38:35.167Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv8pdue8ars",
+      "title": "书籍段落间距",
+      "text": "书记不同段落应该有一个段落间距，或者每段前面有个缩进，避免段落间缺乏区分标识",
+      "category": "improvement",
+      "createdAt": "2026-10-30T17:22:15.254Z",
+      "resolvedAt": "2026-10-31T07:38:35.167Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv8v9uyjddr",
+      "title": "旁注记事板消失",
+      "text": "在旁注状态下迭代记事板会突然消失",
+      "category": "bug",
+      "createdAt": "2026-10-30T17:26:50.026Z",
+      "resolvedAt": "2026-10-31T07:38:35.167Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv8wsj5csnt",
+      "title": "划词高亮功能",
+      "text": "在拖拽文字块的时候应该不止有笔记，还应该有高亮功能，方便标记重要文字。这个是通用组件，应该博客、书籍共用一个。高亮的交互应该不要每次都让用户选颜色，但是颜色也确实可以切换。这个效果可以研究下，应该是一个高亮按钮右侧粘连一个下拉框（下拉框可以切换颜色，当前颜色持久化）",
+      "category": "feature",
+      "createdAt": "2026-10-30T17:28:00.881Z",
+      "resolvedAt": "2026-10-31T07:38:35.167Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv91vacu3ia",
+      "title": "备注卡锚定段落",
+      "text": "这个笔记功能的笔记输入框应该粘连在这段文字的固定位置，而不是在滚轮滑动的时候保持同一，奇怪",
+      "category": "bug",
+      "createdAt": "2026-10-30T17:31:57.732Z",
+      "resolvedAt": "2026-10-31T07:38:35.167Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv9376hoz5p",
+      "title": "备注删除与自动保存",
+      "text": "笔记没有删除入口、没有自动保存（点击区域外自动收起+保存）",
+      "category": "bug",
+      "createdAt": "2026-10-30T17:32:59.801Z",
+      "resolvedAt": "2026-10-31T07:38:35.167Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvv95fd4g1d9",
+      "title": "书卡垃圾桶删除",
+      "text": "书记列的删除应该是一个小的垃圾桶按钮，点击后应该有确认弹窗",
+      "category": "improvement",
+      "createdAt": "2026-10-30T17:34:43.72Z",
+      "resolvedAt": "2026-10-31T07:38:35.167Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvy0d8xs246o",
+      "title": "标注点击与亮黄色",
+      "text": "这个文本栏（笔记+高亮），点击了没有反应，bug了，且高亮颜色应该包含亮黄色等合适、明显的颜色",
+      "category": "bug",
+      "createdAt": "2026-11-01T15:52:10.624Z",
+      "resolvedAt": "2026-11-02T16:08:55.458Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvy0l2bqa5r1",
+      "title": "书籍章节聚合",
+      "text": "笔记里如果是书籍笔记应该支持多个章节共同归属同一本书，建议笔记里书籍本身应该包含下拉列表（里面放不同章节），专辑墙和对照、笔记列应该同步该设计",
+      "category": "feature",
+      "createdAt": "2026-11-01T15:58:15.302Z",
+      "resolvedAt": "2026-11-02T16:08:55.458Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvy0nx4hp7ew",
+      "title": "正文符号封面生成",
+      "text": "当前一些笔记缺乏封面，帮我设计一个方案来自动生成封面（建议专辑墙里点击可生成，如果无封面），你来用不同提示词试着生成几版，寻找一个合适的封面生成方法",
+      "category": "feature",
+      "createdAt": "2026-11-01T16:00:28.529Z",
+      "resolvedAt": "2026-11-02T16:08:55.458Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvzikl3wyto4",
+      "title": "书籍支持文档序列导入",
+      "text": "非功能优化，我只想把deepseek superagent的docs文件序列作为书籍不同章节导入书籍",
+      "category": "improvement",
+      "createdAt": "2026-11-02T17:09:32.252Z",
+      "resolvedAt": "2026-11-04T16:10:10.952Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvziq4vhnvj9",
+      "title": "封面生成保留后台进度",
+      "text": "生成封面之后点×，然后就没声了，这个时候生成封面应该变成生成中动画，知会用户正在运行中，封面生成后变成待挑选（如果尚未被用户挑选）",
+      "category": "bug",
+      "createdAt": "2026-11-02T17:13:51.149Z",
+      "resolvedAt": "2026-11-04T16:10:10.952Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmvzin2cdo40v",
+      "title": "新功能",
+      "text": "新功能：AI自主生成笔记，便捷入口应该在对照里，只有笔记可以生成笔记，入参是：文章/章节全文、导读（如有）、已有笔记。 生成后生成新文件，笔记标签页可以看原始笔记+AI笔记。笔记可自主选择是否网络搜索（AI自己选择），原因：AI笔记质量较高，配合导读补充信息，已有笔记提供重点，以此生成精炼有效的笔记，且博客和书籍可以自动补充对应原文入参",
+      "category": "feature",
+      "createdAt": "2026-11-02T17:11:27.901Z",
+      "resolvedAt": "2026-11-08T14:30:55.981Z",
+      "source": "user"
+    },
+    {
+      "id": "nmw7xl3plwdai",
+      "text": "笔记当前文字窄窄的，和文章、仓库都不一样，而且笔记里的条目字和画幅都特别小，这个文章列和文章里一样，应该受到字体调控",
+      "category": "bug",
+      "createdAt": "2026-11-08T14:32:00.009Z",
+      "title": "笔记正文宽度与字号",
+      "resolvedAt": "2026-11-08T15:22:40.806Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmw7xm9u2frmw",
+      "text": "文章列点击笔记的时候应该记忆上次状态，是笔记就跳转对应笔记界面，没有记忆进专辑墙。交互有bug（非对照状态）",
+      "category": "bug",
+      "createdAt": "2026-11-08T14:32:54.602Z",
+      "title": "笔记 tab 恢复状态",
+      "resolvedAt": "2026-11-08T15:22:40.806Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmw7xmp933ymp",
+      "text": "在笔记里调字体，专辑墙里的字体、文章列字体都不变",
+      "category": "bug",
+      "createdAt": "2026-11-08T14:33:14.583Z",
+      "title": "笔记列表字体联动",
+      "resolvedAt": "2026-11-08T15:22:40.806Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmw7y1aap3yjj",
+      "title": "章节列作为书籍列书籍的可展开折…",
+      "text": "章节列作为书籍列书籍的可展开折叠列表，样式你来负责",
+      "category": "feature",
+      "createdAt": "2026-11-08T14:44:35.041Z",
+      "resolvedAt": "2026-11-08T15:25:07.374Z",
+      "source": "user"
+    },
+    {
+      "id": "nmw7y0r9ou22l",
+      "title": "笔记允许并行生成",
+      "text": "笔记允许并行生成。此外笔记生成过程中制作类似导读生成的动画，同时提供入口查看原笔迹",
+      "category": "improvement",
+      "createdAt": "2026-11-08T14:44:10.38Z",
+      "resolvedAt": "2026-11-08T15:58:08.260Z",
+      "source": "user"
+    },
+    {
+      "id": "nmw7zi8jsyu6v",
+      "title": "封面静默生成动画",
+      "text": "点击生成封面之后不要给我弹窗，动画+静默运行即可，这个动画应该再整个封面的空画幅上，而不是左上角的小动画、不够明显",
+      "category": "feature",
+      "createdAt": "2026-11-08T15:25:45.544Z",
+      "resolvedAt": "2026-11-09T16:07:15.229Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmw7zkjpzhu9l",
+      "title": "书籍独立展开章节",
+      "text": "书籍点击这个展开收藏按钮不改变选定书籍，不同章节的展示可以更加结构化，参考文章的效果，样式需要升级。而且当前最近阅读的章节左边可以有个小提示，提醒用户这本书最近打开的是哪个章节",
+      "category": "feature",
+      "createdAt": "2026-11-08T15:27:33.335Z",
+      "resolvedAt": "2026-11-09T16:07:15.229Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmw80ns2mys7d",
+      "title": "对照页内嵌生成动画",
+      "text": "笔记生成动画在对照页里，对照页里的查看原笔迹入口点击之后才是弹窗，你刚才做错了！",
+      "category": "bug",
+      "createdAt": "2026-11-08T15:58:03.743Z",
+      "resolvedAt": "2026-11-09T16:07:15.229Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwaudcr3b3kb",
+      "title": "AI 笔记生成未落盘",
+      "text": "对照里面的生成笔记按钮怎么突然没了？",
+      "category": "bug",
+      "createdAt": "2026-11-10T15:25:18.159Z",
+      "resolvedAt": "2026-11-10T16:26:00.215Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwaudmkd9eeh",
+      "title": "章节 AI 笔记标识",
+      "text": "生成过笔记的章节给一个特殊标识看下怎么设计",
+      "category": "improvement",
+      "createdAt": "2026-11-10T15:25:30.877Z",
+      "resolvedAt": "2026-11-10T16:26:00.215Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwauegaes74x",
+      "title": "切换书籍保留章节展开",
+      "text": "切换书籍的时候不默认收起章节",
+      "category": "bug",
+      "createdAt": "2026-11-10T15:26:09.398Z",
+      "resolvedAt": "2026-11-10T16:26:00.215Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwav1fn9hd8r",
+      "title": "设置中心整合与卷宗注入",
+      "text": "烛光随行整个功能删掉，然后换成左下角这个地方换成设置按钮（UI样式统一） 卷宗内置到设置里，卷宗应该进应用里的AI生成所有位置的提示词里；扩展应该作为设置内标签页，和卷宗一样，设计下对应的整个设置页面。需要盘点下功能，不要漏，这个设置界面应该在全屏状态下具备一定宽度。需要出设计稿",
+      "category": "feature",
+      "createdAt": "2026-11-10T15:44:01.653Z",
+      "resolvedAt": "2026-11-12T16:06:17.278Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwav48ouhbvs",
+      "title": "记事板认领与今日高亮",
+      "text": "每当AI开始对迭代记事板进行承接处理，应该在待完成里打个标。有的时候我害怕agent不同会话把需求做重，AgentSMD文件也写下，方便未来agent空上下文自动认领。然后已完成里当天完成的需求高亮，方便我做对应测试",
+      "category": "improvement",
+      "createdAt": "2026-11-10T15:46:12.606Z",
+      "resolvedAt": "2026-11-12T16:06:17.278Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwdr3sn2lprj",
+      "title": "迭代记事板已完成允许在右侧评论",
+      "text": "迭代记事板已完成允许在右侧评论。 Agentsmd文件里说明，这个评论是我对功能的反馈。给AIagent对话下：看下评论，就是让AI解决问题，AI工作完成后可以在里面追加字段，既显示在已完成里，也方便未来的agent不重复工作",
+      "category": "improvement",
+      "createdAt": "2026-11-12T16:17:11.870Z",
+      "resolvedAt": "2026-11-12T16:52:17.829Z",
+      "source": "user",
+      "comments": [
+        {
+          "id": "nmwdtk1166czh",
+          "text": "a",
+          "createdAt": "2026-11-12T17:25:52.773Z"
+        }
+      ]
+    },
+    {
+      "id": "nmwdrbjjuc4tf",
+      "title": "博客专辑墙点了进不去文章",
+      "text": "博客专辑墙点了进不去文章",
+      "category": "bug",
+      "createdAt": "2026-11-12T16:23:13.338Z",
+      "resolvedAt": "2026-11-12T16:52:22.114Z",
+      "source": "user"
+    },
+    {
+      "id": "nmwgg9o0me5b4",
+      "title": "仓库和文章也需要专辑墙",
+      "text": "仓库和文章也需要专辑墙，逻辑照搬就好。卡片需要有删除功能",
+      "category": "feature",
+      "createdAt": "2026-11-14T13:37:08.566Z",
+      "resolvedAt": "2026-11-14T13:37:24.152Z",
+      "source": "user"
+    },
+    {
+      "id": "nmwggaza988k7",
+      "title": "记事板档案管理",
+      "text": "已完成的迭代需要有删除功能，刚才不小心对一个未完成的功能打勾了（就是专辑墙扩建）",
+      "category": "improvement",
+      "createdAt": "2026-11-14T13:38:09.825Z",
+      "resolvedAt": "2026-11-15T16:34:38.665Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwggc00p4agy",
+      "title": "文章仓库专辑墙",
+      "text": "仓库和文章也需要专辑墙，卡片需要可以删除。组件能否照搬、统一化（写作、博客都有了专辑墙目前）。写作里三个来源需要hover显示字数。文章和仓库里有分组，需要给不同视觉方案看看这个分组怎么实现最好",
+      "category": "improvement",
+      "createdAt": "2026-11-14T13:38:57.433Z",
+      "resolvedAt": "2026-11-15T16:34:38.666Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwdrg3y0agra",
+      "title": "博客专辑墙的筛选逻辑应该优化",
+      "text": "博客专辑墙的筛选逻辑应该优化，预计是用户可以在里面单独打开已读、收藏。可以手动拖拽排序。 区别“我的”（已读、收藏）和全部文章与不同来源文章两种模式，将所有博客列的已读收藏逻辑引入专辑墙（博客列保持单列不要已读、收藏、来源混杂到一起，这意味着博客页的筛选逻辑也要对应优化）。 我的目的是让用户可以直接在右侧大屏查看已读、收藏内容，且第二列博客列不要太拥挤",
+      "category": "feature",
+      "createdAt": "2026-11-12T16:26:46.392Z",
+      "resolvedAt": "2026-11-15T16:59:05.629Z",
+      "source": "user"
+    },
+    {
+      "id": "nmwgo3hdcqmgk",
+      "title": "旁注选段优先级",
+      "text": "旁注里提示词强调以用户当前选中内容优先，现在旁注容易受到历史旁注的影响，需要强化系统提示词。尤其是我连续答疑的时候，可能AI还以为我的userquery是在对上一句的句子做提问。要区分用户这个时候是否勾选句子，勾选则针对新句子提问",
+      "category": "bug",
+      "createdAt": "2026-11-14T17:16:16.944Z",
+      "resolvedAt": "2026-11-16T13:52:27.979Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwi2qws9crnc",
+      "title": "专辑墙排序与HTML封面",
+      "text": "专辑墙文章、仓库的默认顺序按钮应该在专辑墙右侧，现在被换画按钮挡住了。文章、仓库的html应该也有生成封面按钮（但是封面的注入prompt应该仅包含html里的文字等有效信息不包括大量html格式语义等）。",
+      "category": "bug",
+      "createdAt": "2026-11-15T16:54:10.809Z",
+      "resolvedAt": "2026-11-16T13:52:27.979Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwi2vi75dpe1",
+      "title": "博客列表滚动与筛选",
+      "text": "博客列目前有bug，看起来是第二列里再次套了东西，我的里面的文章非常小，很怪，而且这个滑动条、底部展示极限线都很怪。全部列应该学习“我的”里面的表现形式。其次全部来源、不同来源应该作为二级标签页，和我的/全部区隔，并暗示其展示逻辑而不是两个挨在一起（第二列和专辑墙都要改）",
+      "category": "bug",
+      "createdAt": "2026-11-15T16:57:45.185Z",
+      "resolvedAt": "2026-11-16T13:52:27.979Z",
+      "source": "agent",
+      "comments": [
+        {
+          "id": "nmwjbtnl2ubzh",
+          "text": "好了点，但是所有的卡片、分组名还是小，对比下我的和全部里的卡片就非常直观。 这个二级标签的视觉效果仍然很奇怪，能否第一个做成标签页第二个做成下拉框\n",
+          "createdAt": "2026-11-16T13:56:03.872Z",
+          "resolvedAt": "2026-11-16T14:09:14.995Z",
+          "resolution": "统一“我的”卡片与分组标题尺寸；“我的/全部”改为标签页，来源筛选改为下拉框。55 条定向测试、生产构建及文档检查通过，运行界面已确认。提交 26611f3，合并 17aff48。"
+        }
+      ]
+    },
+    {
+      "id": "nmwi2wdg3iaxn",
+      "title": "旧博客链接封面恢复",
+      "text": "目前很多engineering的在我的里面没有封面，不合理，全部来源里应该是能找到封面的，为什么进入已读/收藏就没封面了",
+      "category": "bug",
+      "createdAt": "2026-11-15T16:58:25.683Z",
+      "resolvedAt": "2026-11-16T13:52:27.979Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwi3l290om7r",
+      "title": "旁注切章后台生成",
+      "text": "旁注里对话，生成过程中换章节不应该阻塞生成",
+      "category": "bug",
+      "createdAt": "2026-11-15T17:17:37.572Z",
+      "resolvedAt": "2026-11-16T13:52:27.979Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwgo9ln79l8z",
+      "title": "旁注图片不再传入模型",
+      "text": "旁注提问非常耗费token，看看为什么。提示词太长了",
+      "category": "improvement",
+      "createdAt": "2026-11-14T17:21:02.419Z",
+      "resolvedAt": "2026-11-16T13:54:40.879Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwi2rvtyhc2f",
+      "title": "仓库分组嵌套展示",
+      "text": "文章仓库的分组只显示一级分组+未分组（分组以外内容），二三级分组想个方案看怎么展示，现在这样太乱了",
+      "category": "feature",
+      "createdAt": "2026-11-15T16:54:56.230Z",
+      "resolvedAt": "2026-11-16T13:54:40.879Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwkpzo1ie6s9",
+      "title": "博客卡片布局与拖拽",
+      "text": "删除按钮和我的页面里右上角其他按钮大小样式都不一致。右上角这三个按钮应该hover显示，日期应该和标签一行（字体可以比正文小点）；第二列顶部，只放我的/全部 全部来源下拉框，不写来源这两个固定字段，且二者放到同一行",
+      "category": "bug",
+      "createdAt": "2026-11-17T13:20:22.902Z",
+      "resolvedAt": "2026-11-17T14:03:43.444Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwnra29qoyj7",
+      "title": "阅读沉浸模式",
+      "text": "想做一个沉浸模式，按钮在换画与字体大小中间，点击之后进入沉浸阅读模式，预计不会出现的：换画的四个按钮栏变成hover显示，左边两列、旁注和侧边栏展开按钮都变成hover显示。模式目的：让用户可以体验到纯粹阅读，不要被画面组件干扰，同一按钮点击退出",
+      "category": "feature",
+      "createdAt": "2026-11-19T16:19:46.046Z",
+      "resolvedAt": "2026-11-19T16:37:38.816Z",
+      "source": "agent",
+      "comments": [
+        {
+          "id": "nmwnrxob7suyi",
+          "text": "沉浸模式之后全屏状态下行宽度变窄（应该不变）",
+          "createdAt": "2026-11-19T16:38:12.817Z",
+          "resolvedAt": "2026-11-19T16:42:30.919Z",
+          "resolution": "已修复：沉浸保持进入前像素行宽（use-immersive-width + ResizeObserver），替换统一 820px 方案；43 项单测通过、build 通过，E2E 新增行宽一致断言。提交 14f1ad5，合并 b47765a。"
+        }
+      ]
+    },
+    {
+      "id": "nmwnrlu0aqfwu",
+      "title": "记事板独立存储",
+      "text": "迭代记事板文件应该独立出来，同时不进gitignore，方便我跨端拉代码可以继续做需求，新文件写进AGENTSmd文件（AGENTS也应该在git追踪里）",
+      "category": "improvement",
+      "createdAt": "2026-11-19T16:28:55.210Z",
+      "resolvedAt": "2026-11-19T16:52:13.237Z",
+      "source": "agent"
+    }
+  ]
+}

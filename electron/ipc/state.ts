@@ -2,7 +2,7 @@
 import { ipcMain } from 'electron'
 import path from 'node:path'
 import { safeReadJson, safeWriteJson } from '../lib/safe-json'
-import { getStateDir } from '../env'
+import { getConfigDir, getStateDir } from '../env'
 import type { AppConfig } from '../env'
 import {
   loadProfile,
@@ -12,6 +12,7 @@ import {
   migrateLibraryData,
 } from '../lib/library-data'
 import { mergeNotepadClaims, pruneNotepadClaims, readNotepadClaims } from '../lib/notepad-claims'
+import { loadNotepadData, migrateNotepadData, saveNotepadData } from '../lib/notepad-data'
 import type { StateJson, Profile, AnthropicBlogCache, NotepadItem } from '@shared/index'
 
 function getStateFile(): string {
@@ -82,6 +83,8 @@ const LIBRARY_KEYS = new Set([
   'anthropicBlogLastSeenAt',
 ])
 
+const NOTEPAD_KEYS = new Set(['notepadItems', 'notepadLog'])
+
 let libraryPath: string | null = null
 
 /**
@@ -124,6 +127,16 @@ function withLibraryData(base: StateJson): StateJson {
   }
 }
 
+function withNotepadData(base: StateJson): StateJson {
+  try {
+    migrateNotepadData(getConfigDir(), getStateDir())
+    return { ...base, ...loadNotepadData(getConfigDir()) }
+  } catch (err) {
+    console.error('[state] notepad migration failed:', err)
+    return base
+  }
+}
+
 export function registerStateIpc(cfg?: AppConfig) {
   libraryPath = cfg?.libraryPath ?? null
 
@@ -137,7 +150,7 @@ export function registerStateIpc(cfg?: AppConfig) {
   }
 
   ipcMain.handle('state:get', async (): Promise<StateJson> => {
-    const state = withLibraryData(readStateJson())
+    const state = withNotepadData(withLibraryData(readStateJson()))
     return {
       ...state,
       notepadItems: mergeNotepadClaims(state.notepadItems ?? [], readNotepadClaims(getStateDir())),
@@ -156,11 +169,18 @@ export function registerStateIpc(cfg?: AppConfig) {
 }
 
 export function getCurrentState(): StateJson {
-  return withLibraryData(readStateJson())
+  return withNotepadData(withLibraryData(readStateJson()))
 }
 
 export function patchState(patch: Partial<StateJson>): void {
   const lib = getLibraryPath()
+  let notepadMigrationOk = true
+  try {
+    migrateNotepadData(getConfigDir(), getStateDir())
+  } catch (err) {
+    console.error('[state] pre-patch notepad migration failed:', err)
+    notepadMigrationOk = false
+  }
   // 写前先兜底迁移（幂等，正常秒退）：堵住"未导入先删除"窗口——
   // 库内文件缺失 + 外部在运行中写入 state.json 五字段 + 首个动作是 patch 而非 read 时，
   // 种子值必须先落库，否则下方 delete LIBRARY_KEYS 会把未迁移的数据直接抹掉。
@@ -175,9 +195,11 @@ export function patchState(patch: Partial<StateJson>): void {
   }
   const statePatch: Record<string, unknown> = {}
   const libraryPatch: Record<string, unknown> = {}
+  const notepadPatch: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(patch)) {
     // 库未配置（向导前）时五 key 退回 state.json，保持旧行为
-    if (lib && LIBRARY_KEYS.has(k)) libraryPatch[k] = v
+    if (notepadMigrationOk && NOTEPAD_KEYS.has(k)) notepadPatch[k] = v
+    else if (lib && LIBRARY_KEYS.has(k)) libraryPatch[k] = v
     else statePatch[k] = v
   }
 
@@ -234,10 +256,22 @@ export function patchState(patch: Partial<StateJson>): void {
     if (lib && migrationOk) {
       for (const k of LIBRARY_KEYS) delete merged[k]
     }
+    if (notepadMigrationOk) {
+      for (const k of NOTEPAD_KEYS) delete merged[k]
+    }
 
     safeWriteJson(getStateFile(), merged)
     if ('notepadItems' in statePatch) {
       pruneNotepadClaims(getStateDir(), merged.notepadItems as NotepadItem[])
+    }
+  }
+
+  if (Object.keys(notepadPatch).length > 0) {
+    const current = loadNotepadData(getConfigDir())
+    const merged = { ...current, ...notepadPatch }
+    saveNotepadData(getConfigDir(), merged)
+    if ('notepadItems' in notepadPatch) {
+      pruneNotepadClaims(getStateDir(), merged.notepadItems)
     }
   }
 
