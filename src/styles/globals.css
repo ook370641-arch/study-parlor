@@ -293,3 +293,12 @@ html, body, #root { height: 100%; }
 .book-chapter-reader .md-body p + p {
   margin-top: 1em;
 }
+
+.settings-ui-font .text-xs { font-size: calc(12px * var(--settings-ui-scale)); }
+.settings-ui-font .text-sm { font-size: calc(14px * var(--settings-ui-scale)); }
+.settings-ui-font .text-base { font-size: calc(16px * var(--settings-ui-scale)); }
+.settings-ui-font .text-lg { font-size: calc(18px * var(--settings-ui-scale)); }
+.settings-ui-font .text-xl { font-size: calc(20px * var(--settings-ui-scale)); }
+.settings-ui-font .text-2xl { font-size: calc(24px * var(--settings-ui-scale)); }
+.settings-ui-font .text-\[10px\] { font-size: calc(10px * var(--settings-ui-scale)); }
+.settings-ui-font .text-\[11px\] { font-size: calc(11px * var(--settings-ui-scale)); }

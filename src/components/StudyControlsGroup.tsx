@@ -4,15 +4,15 @@ import { SwapPaintingButton } from './SwapPaintingButton'
 interface Props {
   surface: 'home' | 'study'
   className?: string
-  briefingFontControls?: boolean
+  uiFontControls?: boolean
 }
 
-export function StudyControlsGroup({ surface, className = '', briefingFontControls = false }: Props) {
+export function StudyControlsGroup({ surface, className = '', uiFontControls = false }: Props) {
   const theme = useStore((s) => s.briefingTheme)
   const setTheme = useStore((s) => s.setBriefingTheme)
-  const briefingFontSize = useStore((s) => s.briefingFontSize)
-  const decreaseBriefingFontSize = useStore((s) => s.decreaseBriefingFontSize)
-  const increaseBriefingFontSize = useStore((s) => s.increaseBriefingFontSize)
+  const writingUIFontSize = useStore((s) => s.writingUIFontSize)
+  const decreaseWritingUIFontSize = useStore((s) => s.decreaseWritingUIFontSize)
+  const increaseWritingUIFontSize = useStore((s) => s.increaseWritingUIFontSize)
   const isAcademic = theme !== 'newspaper'
 
   const toggleTheme = () => {
@@ -32,25 +32,25 @@ export function StudyControlsGroup({ surface, className = '', briefingFontContro
           data-testid="study-controls-swap-painting"
         />
       )}
-      {briefingFontControls ? (
+      {uiFontControls ? (
         <>
           <button
             type="button"
             data-testid="study-controls-font-size-decrease"
-            disabled={briefingFontSize === 'sm'}
-            onClick={() => void decreaseBriefingFontSize()}
+            disabled={writingUIFontSize === 'sm'}
+            onClick={() => void decreaseWritingUIFontSize()}
             className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition-colors disabled:opacity-20 disabled:cursor-not-allowed ${btnCls}`}
-            title="减小阅读字号"
+            title="减小界面字号"
           >
             −
           </button>
           <button
             type="button"
             data-testid="study-controls-font-size-increase"
-            disabled={briefingFontSize === '7xl'}
-            onClick={() => void increaseBriefingFontSize()}
+            disabled={writingUIFontSize === '7xl'}
+            onClick={() => void increaseWritingUIFontSize()}
             className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition-colors disabled:opacity-20 disabled:cursor-not-allowed ${btnCls}`}
-            title="增大阅读字号"
+            title="增大界面字号"
           >
             +
           </button>

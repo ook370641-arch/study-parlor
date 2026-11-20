@@ -50,7 +50,7 @@ describe('Profile theme', () => {
     expect(screen.getByTestId('settings-profile-global-note')).toHaveTextContent('卷宗将供应用内所有 AI 生成参考。')
   })
 
-  it('renders briefing font controls instead of theme toggle', () => {
+  it('renders interface font controls instead of theme toggle', () => {
     renderProfile()
     expect(screen.queryByTestId('study-controls-theme-toggle')).not.toBeInTheDocument()
     expect(screen.getByTestId('study-controls-font-size-decrease')).toBeInTheDocument()
