@@ -101,9 +101,8 @@ export function registerLlmIpc(cfg: AppConfig, getMainWindow: () => BrowserWindo
       // E2E deterministic mock: skip real LLM call. See rule e2e.md §1.
       if (isE2EMock()) {
         return {
-          title: 'E2E 测试灵感',
+          topic: 'E2E 测试灵感',
           hook: '一段引人入胜的学习开场白',
-          body: '这是 E2E 测试生成的灵感内容，用于验证分组灵感功能。',
         }
       }
       return await generateGroupInspiration(cfg, args)

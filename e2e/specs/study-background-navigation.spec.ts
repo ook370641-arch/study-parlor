@@ -46,7 +46,7 @@ test.describe('@p1 study background navigation', () => {
     const study = await startStubbedStudy(window, '保存失败学习')
     await window.evaluate(() => {
       ;(window as any).useStore.getState().appendChunk('不能丢失的回答')
-      ;(window as any).api.saveSession = async () => { throw new Error('磁盘写入失败') }
+      ;(window as any).useStore.getState().saveCurrentSession = async () => { throw new Error('磁盘写入失败') }
     })
     await expect(study.messageList).toContainText('不能丢失的回答')
 
