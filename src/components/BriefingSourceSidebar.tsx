@@ -130,7 +130,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
         {navItems.map((item) => {
           const Icon = item.icon
           // picker 打开时来源未切换（仍是博客栏目），active 样式移到「写作」上提示挑选模式
-          const isActive = picker ? item.id === 'writing' : source === item.id
+          const isActive = currentPage !== 'settings' && (picker ? item.id === 'writing' : source === item.id)
           return (
             <button
               key={item.id}

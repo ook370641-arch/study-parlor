@@ -83,6 +83,15 @@ describe('Settings · AI 服务', () => {
     expect(useStore.getState().briefingSource).toBe('book')
   })
 
+  it('设置页的来源栏不显示任何来源选中态', async () => {
+    useStore.setState({ currentPage: 'settings', briefingSource: 'anthropic' })
+    render(<Settings />)
+
+    expect(await screen.findByTestId('briefing-source-writing')).not.toHaveClass('border-l-[3px]')
+    expect(screen.getByTestId('briefing-source-anthropic')).not.toHaveClass('border-l-[3px]')
+    expect(screen.getByTestId('briefing-source-book')).not.toHaveClass('border-l-[3px]')
+  })
+
   it('设置页不再提供返回夜话按钮', async () => {
     render(<Settings />)
     expect(await screen.findByTestId('briefing-source-sidebar')).toBeInTheDocument()
