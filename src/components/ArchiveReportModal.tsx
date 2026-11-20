@@ -10,7 +10,7 @@ export function ArchiveReportModal({ result, onClose }: Props) {
   const isReview = result.mode === 'review'
   const fileName = isReview ? '复习报告.md' : '学习报告.md'
   // Reconstruct full content with synthetic frontmatter so MarkdownRenderer
-  // can render the ReportHeader and strip it consistently with SessionViewer.
+  // can render the ReportHeader and strip it consistently with SessionFileContent.
   const fullContent = `---\ntitle: "${result.title}"\ntype: ${result.mode}\n---\n\n${result.content}`
 
   return (

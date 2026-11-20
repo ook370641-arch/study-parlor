@@ -19,6 +19,9 @@ export class HomePage {
   }
 
   async waitForLoaded() {
+    if (!await this.librarySection.isVisible().catch(() => false)) {
+      await this.page.locator('[data-testid="briefing-source-study"]').click()
+    }
     await this.greeting.waitFor({ state: 'visible' })
     await this.librarySection.waitFor({ state: 'visible' })
   }

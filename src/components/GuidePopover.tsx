@@ -19,7 +19,7 @@ const GUIDE_ITEMS = [
     text: '每个分组可包含多个主题，点击 + 号可新建分组',
   },
   {
-    text: '左侧新主题推荐会根据你的分组智能推荐，点击策略标签（v1/v2/v3）可切换推荐模式',
+    text: '学习墙的新主题推荐会根据你的分组智能推荐，点击策略标签（v1/v2/v3）可切换推荐模式',
     extra: (
       <div className="mt-2">
         <img
@@ -32,7 +32,7 @@ const GUIDE_ITEMS = [
     ),
   },
   {
-    text: '长按主题卡片并拖动，可将其移入其他分组',
+    text: '按住学习墙主题卡片并拖动，可将其移入其他分组',
     extra: (
       <div className="mt-2">
         <p className="text-[11px] text-parchment/40 mb-1">拖拽到目标分组附近即可</p>

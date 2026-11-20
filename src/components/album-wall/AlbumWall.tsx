@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 
 export function AlbumWall({ domain, testId, toolbar, children, className = '', style }: {
-  domain: 'blog' | 'notes' | 'writing' | 'repository'
+  domain: 'blog' | 'notes' | 'writing' | 'repository' | 'study'
   testId: string
   toolbar?: ReactNode
   children: ReactNode

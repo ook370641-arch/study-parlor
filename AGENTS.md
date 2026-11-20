@@ -188,6 +188,14 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 - `generateContinueSuggestions` — 根据主题历史生成续谈推荐
 - `generateGroupInspiration` — 根据分组内主题生成分组灵感
 
+### 学习来源（2026-11-21）
+
+- 夜航简报现有四来源：学习 / 写作 / Anthropic 博客 / 书籍；学习位于首位。`briefingSource` 持久化，封面「夜航简报」恢复上次来源，无合法历史回退写作；「点亮灯火」保留原位但仅 `aria-disabled`，不再进入旧首页。
+- 学习来源使用 `StudySourcePanel`（可收起分组／主题／session 树）+ `StudyWall`（推荐与全量主题专辑墙）+ `StudyTopicBoard`（历史 session 与报告／对话／图表／寓言／复习页签）。旧 `Home`、`StudyLibrary`、`SessionViewer`、`GroupRibbon` 已移除，主题不再分页。
+- 新建、重命名、解散分组，主题继续、复习、重命名、归档，后台归档占位与报告，图表／寓言生成和卫星拖拽均沿用原 IPC 与文件格式；归档主题不进入树或墙，仍在设置中恢复。
+- 正式学习页同样常驻来源列和学习第二列，二者独立收起。切来源、打开其他主题与返回前先保存快照，失败留在当前会话；后台 SSE、外部资料与摘要按 `abortId` 守卫，恢复同一 live session 时不重复 kickoff。
+- 外部资料保留资产卡，完整摘要改为学习工作区「对话／外部资料」页内页签，不再使用独立 `ExternalSummaryPanel`。
+
 ### 写作功能 (`electron/lib/writing-tree.ts`, `electron/lib/writing-catalog.ts`, `electron/lib/writing-assistant/`)
 
 夜航简报来源之一（写作；当前三来源 = 写作 / Anthropic 博客 / 书籍，书籍见下节）。Typora 式 WYSIWYG Markdown 编辑 + 分组目录树管理 + AI 写作助手。
@@ -265,7 +273,7 @@ STUDY_LIBRARY_PATH=...            # 学习库根目录
 
 - 暗色主题，调色板：深褐 `#2a1f1a` / 米色 `#e8d5b7` / 暖橙 `#d97757`
 - Tailwind 自定义颜色在 `tailwind.config.ts` 中定义（`parchment`, `ember`, `wine`, `ink`, `slate` 等）
-- 页面路由：`cover` → `home` → (`study` | `settings`)，简报也可进入 `settings`；`preStudy` 是模态层
+- 页面路由：`cover` → `briefing` → (`study` | `settings`)；`preStudy` 是模态层，旧 `home` 路由已移除
 
 ## 启动问题排查
 

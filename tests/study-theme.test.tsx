@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({
   ipc: {
@@ -68,7 +68,6 @@ beforeEach(() => {
       briefing: { id: 'b', url: '/test.jpg', painter: 'Mark Rothko' as const, title: 'Briefing' },
     },
     externalMaterials: null,
-    isExternalSummaryOpen: false,
     terminology: {},
   })
 })
@@ -96,5 +95,19 @@ describe('Study page theme switching', () => {
     render(<Study />)
     expect(screen.getByTestId('user-message')).toBeInTheDocument()
     expect(screen.getByTestId('assistant-message')).toBeInTheDocument()
+  })
+
+  it('opens external materials in a workspace tab without losing the asset card', () => {
+    useStore.setState({
+      externalMaterials: { summary: '关联[1]', sources: [{ title: '来源', url: 'https://example.com' }], loading: false, error: null },
+      studyWorkspaceTab: 'conversation',
+    })
+    render(<Study />)
+    fireEvent.click(screen.getByTestId('external-summary-open'))
+    expect(useStore.getState().studyWorkspaceTab).toBe('external-summary')
+    expect(screen.getByTestId('external-summary-workspace')).toBeInTheDocument()
+    expect(screen.getByTestId('external-materials-card')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('study-workspace-tab-conversation'))
+    expect(screen.getByTestId('message-list')).toHaveTextContent('先验指不依赖于经验的知识')
   })
 })

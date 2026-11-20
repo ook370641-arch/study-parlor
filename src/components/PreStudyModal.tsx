@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
+import { withSessionReplaced } from '@/lib/study-navigation'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import type { ContinueTopicSuggestion, Difficulty } from '@shared/index'
@@ -272,7 +273,7 @@ export function PreStudyModal() {
       : undefined
 
     await patchLastUsed({ difficulty, temperature })
-    startSession({
+    await withSessionReplaced(() => startSession({
       mode: args.mode,
       topic: finalTopic,
       dirName: finalDirName,
@@ -284,7 +285,7 @@ export function PreStudyModal() {
       enableExternalMaterials: args.mode === 'progress' ? enableExternalMaterials : undefined,
       localMaterials: args.mode === 'progress' && localMaterials.length > 0 ? localMaterials : undefined,
       groupId: selectedGroupId
-    })
+    }))
   }
 
   const addLocalMaterial = async () => {

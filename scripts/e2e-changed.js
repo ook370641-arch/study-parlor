@@ -136,7 +136,7 @@ for (const [groupName, group] of Object.entries(groups)) {
 
 // ── 变更文件本身是 E2E spec？直接加入执行列表 ──
 const changedSpecs = changedFiles
-  .filter(f => f.startsWith('e2e/specs/') && f.endsWith('.spec.ts'))
+  .filter(f => f.startsWith('e2e/specs/') && f.endsWith('.spec.ts') && fs.existsSync(path.join(repoRoot, f)))
   .map(f => path.basename(f))
 changedSpecs.forEach(s => {
   matchedSpecs.add(s)

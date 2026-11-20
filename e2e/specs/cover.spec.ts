@@ -7,9 +7,11 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 test.describe('@p0 cover', () => {
-  test('first-time user enters name and lands on home', async ({ window, testLibraryPath }) => {
+  test('first-time user enters name and lands on briefing', async ({ window, testLibraryPath }) => {
     const cover = new CoverPage(window)
     await cover.enterApp('夜话旅人')
+
+    await expect(window.locator('[data-testid="briefing-page"]')).toBeVisible()
 
     const home = new HomePage(window)
     await home.waitForLoaded()
@@ -22,7 +24,7 @@ test.describe('@p0 cover', () => {
 })
 
 test.describe('@p1 cover', () => {
-  test('returning user sees light button', async ({ window, testConfigDir }) => {
+  test('returning user sees disabled light button and enters through briefing', async ({ window, testConfigDir }) => {
     seedStateJson(testConfigDir, {
       profile: { name: '归来者', profile_text: '', preferred_topics: [] },
     })
@@ -31,7 +33,13 @@ test.describe('@p1 cover', () => {
 
     const cover = new CoverPage(window)
     await cover.lightButton.waitFor({ state: 'visible' })
+    await expect(cover.lightButton).toHaveAttribute('aria-disabled', 'true')
     await cover.lightButton.click()
+    await cover.lightButton.focus()
+    await window.keyboard.press('Enter')
+    await window.keyboard.press('Space')
+    await expect(window.locator('[data-testid="briefing-page"]')).toHaveCount(0)
+    await cover.goToBriefing()
 
     const home = new HomePage(window)
     await home.waitForLoaded()
@@ -58,6 +66,25 @@ test.describe('@p1 cover', () => {
 
     await expect(window.locator('[data-testid="briefing-page"]')).toBeVisible({ timeout: 10000 })
   })
+
+  for (const { source, testId } of [
+    { source: 'writing', testId: 'writing-wall-writing' },
+    { source: 'anthropic', testId: 'anthropic-blog-panel' },
+    { source: 'book', testId: 'book-panel' },
+    { source: 'study', testId: 'study-wall' },
+  ] as const) {
+    test(`briefing restores ${source} source`, async ({ window, testConfigDir }) => {
+      seedStateJson(testConfigDir, {
+        profile: { name: '来源恢复', profile_text: '', preferred_topics: [] },
+        briefingSource: source,
+      })
+      await window.reload()
+
+      const cover = new CoverPage(window)
+      await cover.goToBriefing()
+      await expect(window.getByTestId(testId)).toBeVisible()
+    })
+  }
 
   test('cover quote shows text and meta', async ({ window }) => {
     const cover = new CoverPage(window)

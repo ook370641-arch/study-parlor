@@ -22,7 +22,7 @@ export function Toast() {
   if (!toast) return null
 
   return (
-    <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2
+    <div data-testid="toast" className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2
                     panel text-parchment shadow-lg z-50 font-sans text-sm
                     ${isExiting ? 'toast-exit' : 'toast-enter'}`}>
       {toast.message}

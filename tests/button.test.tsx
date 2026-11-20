@@ -35,7 +35,9 @@ describe('Button stationary pointer target', () => {
 
   it('cover buttons do not reintroduce translated hover/active overrides', () => {
     render(<Cover />)
-    expectStationaryHitArea(screen.getByTestId('cover-light-button'))
+    const lightButton = screen.getByTestId('cover-light-button')
+    expectStationaryHitArea(lightButton)
+    expect(lightButton).toHaveAttribute('aria-disabled', 'true')
     expectStationaryHitArea(screen.getByTestId('cover-briefing-button'))
   })
 

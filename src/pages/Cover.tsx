@@ -24,7 +24,7 @@ export function Cover() {
     const n = name.trim()
     if (!n) return
     await patchProfile({ name: n })
-    goto('home')
+    goto('briefing')
   }
 
   return (
@@ -46,7 +46,7 @@ export function Cover() {
         {profile.name ? (
           <>
             <div className="text-2xl">迷路了吗，{profile.name}</div>
-            <Button data-testid="cover-light-button" onClick={() => goto('home')}>点亮灯火</Button>
+            <Button data-testid="cover-light-button" aria-disabled="true">点亮灯火</Button>
             <Button
               data-testid="cover-briefing-button"
               onClick={() => goto('briefing')}

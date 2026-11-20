@@ -86,20 +86,8 @@ export async function finalizeAndReturnHome() {
 
       s.showToast(`《${title}》已归档`)
 
-      // 异步生成图表（不 await，不阻塞归档）
-      try {
-        ipc.llmGenerateDiagram({
-          dirName,
-          sessionNumber,
-          reportBody: body
-        }).catch((e) => {
-          console.warn('[finalize] diagram generation failed:', e)
-        })
-      } catch (e) {
-        console.warn('[finalize] diagram generation init failed:', e)
-      }
-
       await useStore.getState().rescanLibrary()
+      void useStore.getState().generateStudyDiagram(dirName, sessionNumber)
       const currentPending = useStore.getState().pendingReports
       useStore.setState({
         pendingReports: {

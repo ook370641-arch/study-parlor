@@ -21,8 +21,7 @@ export class LibraryPage {
     await createButton.waitFor({ state: 'visible' })
     await createButton.click()
 
-    // The create input appears in place of the create button; it has no data-testid, so locate by placeholder.
-    const createInput = this.page.locator('input[placeholder="分组名"]')
+    const createInput = this.page.locator('[data-testid="create-group-input"]')
     await createInput.waitFor({ state: 'visible' })
     await createInput.fill(name)
     await createInput.press('Enter')
@@ -39,7 +38,7 @@ export class LibraryPage {
   async renameGroup(groupId: string, newName: string) {
     const tab = this.page.locator(SELECTORS.library.groupTab(groupId))
     await tab.waitFor({ state: 'visible' })
-    await tab.click({ button: 'right' })
+    await tab.locator('xpath=..').getByRole('button', { name: /更多操作/ }).click()
 
     const renameMenuItem = this.page.locator('text=重命名')
     await renameMenuItem.waitFor({ state: 'visible' })
@@ -54,7 +53,8 @@ export class LibraryPage {
   async deleteGroup(groupId: string) {
     const tab = this.page.locator(SELECTORS.library.groupTab(groupId))
     await tab.waitFor({ state: 'visible' })
-    const deleteBtn = tab.locator(SELECTORS.library.groupDeleteButton)
+    await tab.locator('xpath=..').getByRole('button', { name: /更多操作/ }).click()
+    const deleteBtn = this.page.locator(SELECTORS.library.groupDeleteButton)
     await deleteBtn.waitFor({ state: 'visible' })
     await deleteBtn.click()
   }
@@ -73,40 +73,44 @@ export class LibraryPage {
 
   async openSessionFile(topicIndex: number = 0, sessionIndex: number = 0) {
     await this.expandTopic(topicIndex)
-    await this.page.locator(SELECTORS.library.sessionFileButton).nth(sessionIndex).click()
+    await this.page.locator('[data-testid="study-topic-board"] [data-testid^="study-session-row-"]').nth(sessionIndex).click()
+    await this.page.locator('[data-testid="study-topic-tab-report"]').click()
   }
 
   async openFable(topicIndex: number = 0, sessionIndex: number = 0) {
     await this.expandTopic(topicIndex)
-    const button = this.page.locator(SELECTORS.library.fableButton).nth(sessionIndex)
+    await this.page.locator('[data-testid="study-topic-board"] [data-testid^="study-session-row-"]').nth(sessionIndex).click()
+    const button = this.page.locator(SELECTORS.library.fableButton)
     await button.waitFor({ state: 'visible' })
     await button.click()
   }
 
   async generateFable(topicIndex: number = 0, sessionIndex: number = 0) {
-    await this.expandTopic(topicIndex)
-    const button = this.page.locator(SELECTORS.library.generateFableButton).nth(sessionIndex)
+    await this.openFable(topicIndex, sessionIndex)
+    const button = this.page.locator(SELECTORS.library.generateFableButton)
     await button.waitFor({ state: 'visible' })
     await button.click()
   }
 
   async openDiagram(topicIndex: number = 0, sessionIndex: number = 0) {
     await this.expandTopic(topicIndex)
-    const button = this.page.locator(SELECTORS.library.diagramButton).nth(sessionIndex)
+    await this.page.locator('[data-testid="study-topic-board"] [data-testid^="study-session-row-"]').nth(sessionIndex).click()
+    const button = this.page.locator(SELECTORS.library.diagramButton)
     await button.waitFor({ state: 'visible' })
     await button.click()
   }
 
   async generateDiagram(topicIndex: number = 0, sessionIndex: number = 0) {
-    await this.expandTopic(topicIndex)
-    const button = this.page.locator(SELECTORS.library.generateDiagramButton).nth(sessionIndex)
+    await this.openDiagram(topicIndex, sessionIndex)
+    const button = this.page.locator(SELECTORS.library.generateDiagramButton)
     await button.waitFor({ state: 'visible' })
     await button.click()
   }
 
   async deleteSession(topicIndex: number = 0, sessionIndex: number = 0) {
     await this.expandTopic(topicIndex)
-    const button = this.page.locator(SELECTORS.library.deleteSessionButton).nth(sessionIndex)
+    await this.page.locator('[data-testid="study-topic-board"] [data-testid^="study-session-row-"]').nth(sessionIndex).click()
+    const button = this.page.locator(SELECTORS.library.deleteSessionButton)
     await button.waitFor({ state: 'visible' })
     await button.click()
   }
@@ -119,15 +123,17 @@ export class LibraryPage {
 
   /** 归档某个主题（点击行内 📦）。归档后主题从列表消失，可在设置恢复。 */
   async archiveTopic(dirName: string) {
-    const card = this.page.locator(SELECTORS.home.topicCard).filter({ hasText: dirName })
+    const card = this.page.locator(`[data-topic-dir="${dirName}"]`)
     await card.waitFor({ state: 'visible' })
+    await card.getByRole('button', { name: '主题更多操作' }).click()
     await card.locator(SELECTORS.home.topicArchiveAction).click()
   }
 
   /** 重命名某个主题（点击行内 ✎ → 行内输入 → Enter）。 */
   async renameTopic(dirName: string, newName: string) {
-    const card = this.page.locator(SELECTORS.home.topicCard).filter({ hasText: dirName })
+    const card = this.page.locator(`[data-topic-dir="${dirName}"]`)
     await card.waitFor({ state: 'visible' })
+    await card.getByRole('button', { name: '主题更多操作' }).click()
     await card.locator(SELECTORS.home.topicRenameAction).click()
     const input = this.page.locator(SELECTORS.home.topicRenameInput)
     await input.waitFor({ state: 'visible' })
@@ -153,15 +159,4 @@ export class LibraryPage {
     return title.textContent()
   }
 
-  async goToPage(index: number) {
-    await this.page.locator(SELECTORS.library.paginationDot(index)).click()
-  }
-
-  async nextPage() {
-    await this.page.locator(SELECTORS.library.paginationNext).click()
-  }
-
-  async prevPage() {
-    await this.page.locator(SELECTORS.library.paginationPrev).click()
-  }
 }

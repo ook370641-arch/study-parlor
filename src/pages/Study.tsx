@@ -16,7 +16,10 @@ import { SurfaceBackground } from '@/components/SurfaceBackground'
 import { StudyControlsGroup } from '@/components/StudyControlsGroup'
 import { useTerminology } from '@/lib/terminology'
 import { ExternalMaterialsCard } from '@/components/ExternalMaterialsCard'
-import { ExternalSummaryPanel } from '@/components/ExternalSummaryPanel'
+import { ExternalSummaryWorkspace } from '@/components/study/ExternalSummaryWorkspace'
+import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
+import { StudySourcePanel } from '@/components/study/StudySourcePanel'
+import { withStudySaved } from '@/lib/study-navigation'
 import { Quote } from '@/components/Quote'
 import { STUDY_FONT_STYLES, normalizeStudyFontSize } from '@/lib/study-font-size'
 
@@ -48,14 +51,11 @@ export function Study() {
     if (isExiting) return
     const s = useStore.getState()
     if (!s.session) return
+    if (!(await withStudySaved(() => {}))) return
     setIsExiting(true)
-    try {
-      await s.saveCurrentSession()
-    } catch (err) {
-      console.error('[onBack] save before exit failed:', err)
-    }
     setTimeout(() => {
-      s.goto('home')
+      useStore.getState().openStudyWall()
+      void s.goto('briefing')
     }, 700)
   }
 
@@ -75,15 +75,19 @@ export function Study() {
     }
   }, [session?.history, session?.streaming])
 
-  const [streamError, setStreamError] = useState<{ code: string; message: string } | null>(null)
+  const streamError = useStore(s => s.studyStreamError)
+  const setStreamError = useStore(s => s.setStudyStreamError)
   const [archiving, setArchiving] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const pendingReports = useStore(s => s.pendingReports)
   // 仅查找当前 session 对应主题的待处理报告，防止旧归档弹窗遮住新学习
   const currentDirName = session?.dirName ?? sanitizeDirName(session?.topic ?? '')
   const currentPendingReport = currentDirName ? pendingReports[currentDirName] : null
-  const isExternalSummaryOpen = useStore(s => s.isExternalSummaryOpen)
-  const closeExternalSummary = useStore(s => s.closeExternalSummary)
+  const studyWorkspaceTab = useStore(s => s.studyWorkspaceTab)
+  const setStudyWorkspaceTab = useStore(s => s.setStudyWorkspaceTab)
+  const externalMaterials = useStore(s => s.externalMaterials)
+  const briefingSidebarCollapsed = useStore(s => s.briefingSidebarCollapsed)
+  const toggleBriefingSidebar = useStore(s => s.toggleBriefingSidebar)
   const studyFontSize = useStore(s => s.studyFontSize)
   const increaseStudyFontSize = useStore(s => s.increaseStudyFontSize)
   const decreaseStudyFontSize = useStore(s => s.decreaseStudyFontSize)
@@ -96,8 +100,9 @@ export function Study() {
       if (e.key !== 'Escape') return
       // 信息说明弹层优先：它自己处理 Esc，避免一次按键连摘要面板一起关掉
       if (document.querySelector('[data-testid^="demo-note-popover-"]')) return
-      if (useStore.getState().isExternalSummaryOpen) {
-        closeExternalSummary()
+      if (document.querySelector('[data-testid="archive-report-modal"]') || useStore.getState().modal) return
+      if (useStore.getState().studyWorkspaceTab === 'external-summary') {
+        useStore.getState().setStudyWorkspaceTab('conversation')
         return
       }
       onBackRef.current()
@@ -117,8 +122,6 @@ export function Study() {
   if (!session) return null
 
   const studyFontStyle = STUDY_FONT_STYLES[normalizeStudyFontSize(studyFontSize)]
-
-  const pageShift = isExternalSummaryOpen ? 'max-w-[calc(100vw-760px)] transition-all duration-300 ease-out' : 'transition-all duration-300 ease-out'
 
   const onSend = (text: string) => sendOrInterrupt(text).catch(err =>
     useStore.getState().showToast('发送失败:' + err.message))
@@ -162,6 +165,7 @@ export function Study() {
       const s = useStore.getState()
       // 仅当 session 未变更时才重置，防止覆盖新 session
       if (s.session?.abortId === sidAtExit) {
+        s.openStudyWall()
         s.resetSession()
       }
     }, 700)
@@ -174,6 +178,7 @@ export function Study() {
     setIsExiting(true)
     setTimeout(() => {
       if (dirName) useStore.getState().dismissPendingReport(dirName)
+      if (dirName) useStore.getState().openStudyTopic(dirName)
       // 仅当 session 未变更时才重置，防止误销毁新 session
       const s = useStore.getState()
       if (s.session?.abortId === sidAtExit) {
@@ -202,9 +207,10 @@ export function Study() {
         />
       )}
 
-      <ExternalSummaryPanel />
-
-      <div data-testid="study-page" className={`relative h-full flex flex-col ${isExiting ? 'study-exit' : ''} ${isAcademic ? '' : 'bg-white'}`}>
+      <div data-testid="study-shell" className={`relative h-full flex overflow-hidden ${isAcademic ? 'gap-2 p-2' : 'bg-white'}`}>
+      <BriefingSourceSidebar theme={theme} collapsed={briefingSidebarCollapsed} onToggle={toggleBriefingSidebar} />
+      <StudySourcePanel />
+      <div data-testid="study-page" className={`relative z-[5] min-w-[420px] flex-1 min-h-0 flex flex-col ${isExiting ? 'study-exit' : ''} ${isAcademic ? '' : 'bg-white'}`}>
       <SurfaceBackground surface="study" />
       {isExiting && (
         <div className="fixed inset-0 z-40 pointer-events-none">
@@ -263,8 +269,12 @@ export function Study() {
         </div>
       </header>
 
-      <div className={`flex-1 min-h-0 flex flex-col overflow-hidden ${pageShift}`}>
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden transition-all duration-300 ease-out">
       <ExternalMaterialsCard />
+      <div role="tablist" aria-label="学习工作区" className="relative z-[5] mx-auto flex w-full max-w-4xl gap-1 px-8 lg:max-w-6xl">
+        <button role="tab" data-testid="study-workspace-tab-conversation" aria-selected={studyWorkspaceTab === 'conversation'} onClick={() => setStudyWorkspaceTab('conversation')} className={`rounded px-3 py-1 text-xs ${studyWorkspaceTab === 'conversation' ? 'bg-ember/15 text-ember' : 'opacity-50'}`}>对话</button>
+        {externalMaterials && <button role="tab" data-testid="study-workspace-tab-external-summary" aria-selected={studyWorkspaceTab === 'external-summary'} onClick={() => setStudyWorkspaceTab('external-summary')} className={`rounded px-3 py-1 text-xs ${studyWorkspaceTab === 'external-summary' ? 'bg-ember/15 text-ember' : 'opacity-50'}`}>外部资料</button>}
+      </div>
 
       {streamError && (
         <div data-testid="stream-error-banner" className={isAcademic
@@ -286,6 +296,7 @@ export function Study() {
         </div>
       )}
 
+      {studyWorkspaceTab === 'external-summary' && externalMaterials ? <ExternalSummaryWorkspace /> : <>
       <div data-testid="message-list" ref={scrollRef} className="relative z-[5] flex-1 overflow-y-auto px-8 py-4 max-w-4xl lg:max-w-6xl w-full mx-auto" style={{ fontSize: studyFontStyle }}>
         <div className="mb-6">
           <Quote surface="study" />
@@ -330,7 +341,9 @@ export function Study() {
           <ChatInput onSend={onSend} theme={theme} />
         </div>
       </div>
+      </>}
       </div>
+    </div>
     </div>
     </>
   )

@@ -2,6 +2,7 @@ import { useStore } from '@/store'
 import type { BriefingTheme } from '@shared/index'
 import { BriefingThemeToggle } from './briefing/BriefingThemeToggle'
 import { companionPickerTarget } from '@/lib/companion-picker'
+import { withStudySaved } from '@/lib/study-navigation'
 
 interface Props {
   collapsed: boolean
@@ -37,7 +38,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
 
   // 对照挑选器语境下的来源点击拦截（spec 2026-09-16）：
   // 对照 tab 下点「写作」= 左栏换写作树挑选器（不跳转）；再点「写作」或当前栏目 = 回文章列表。
-  const handleNavClick = (id: string) => {
+  const handleNavClick = async (id: string) => {
     const s = useStore.getState()
     if (id === 'writing') {
       if (s.writingCompanionPicker) { s.closeWritingCompanionPicker(); return }
@@ -57,8 +58,11 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
       s.closeWritingCompanionPicker()
       return
     }
-    setSource(id as typeof source)
-    onSourceSelect?.()
+    await withStudySaved(async () => {
+      await setSource(id as typeof source)
+      if (useStore.getState().currentPage === 'study') await goto('briefing')
+      onSourceSelect?.()
+    })
   }
   const plate = useStore((s) => s.paintingPlateEnabled)
   const painting = useStore((s) => s.currentPaintings.briefing)
@@ -90,6 +94,12 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
   const base = `w-full text-left py-2 transition-colors flex items-center gap-3 ${collapsed ? 'justify-center px-2' : 'px-3'} ${collapsed ? '' : 'rounded'}`
 
   const navItems = [
+    {
+      id: 'study',
+      label: '学习',
+      icon: () => <span aria-hidden="true">✦</span>,
+      testId: 'briefing-source-study',
+    },
     {
       id: 'writing',
       label: '写作',
@@ -135,7 +145,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
             <button
               key={item.id}
               data-testid={item.testId}
-              onClick={() => handleNavClick(item.id)}
+              onClick={() => void handleNavClick(item.id)}
               className={`${base} ${isActive ? `${themeClasses.active} ${
                 isAcademic
                   ? 'border-[#d97757] rounded-none border-l-[3px]'
@@ -155,7 +165,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
       >
         <button type="button" data-testid="briefing-settings-button" aria-label="设置"
           disabled={currentPage === 'settings'}
-          onClick={() => void goto('settings')}
+          onClick={() => void withStudySaved(() => goto('settings'))}
           className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${isAcademic ? 'border-parchment/25 text-parchment/50 hover:text-parchment' : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50'}`}
           title="设置">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.94 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.57 15 1.7 1.7 0 0 0 3 14H3v-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.57 1.7 1.7 0 0 0 10 3V3h4v.08A1.7 1.7 0 0 0 15.06 4.6a1.7 1.7 0 0 0 1.88-.34L17 4.2 19.83 7l-.06.06A1.7 1.7 0 0 0 19.43 9 1.7 1.7 0 0 0 21 10h.08v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
@@ -185,7 +195,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
           type="button"
           data-testid="briefing-back-to-cover"
           aria-label="返回封面"
-          onClick={() => goto('cover')}
+          onClick={() => void withStudySaved(() => goto('cover'))}
           className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
             isAcademic ? 'border-parchment/25 text-parchment/50 hover:text-parchment hover:border-parchment/40' : 'border-[#2a1f1a]/25 text-[#2a1f1a]/50 hover:text-[#2a1f1a]'
           }`}

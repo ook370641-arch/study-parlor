@@ -5,7 +5,7 @@ import { ExternalSummaryContent } from './ExternalSummaryContent'
 export function ExternalMaterialsCard() {
   const session = useStore(s => s.session)
   const materials = useStore(s => s.externalMaterials)
-  const openExternalSummary = useStore(s => s.openExternalSummary)
+  const setStudyWorkspaceTab = useStore(s => s.setStudyWorkspaceTab)
   const [expanded, setExpanded] = useState(false)
   const theme = useStore((s) => s.briefingTheme)
   const isAcademic = theme !== 'newspaper'
@@ -52,9 +52,9 @@ export function ExternalMaterialsCard() {
             <button
               type="button"
               data-testid="external-summary-open"
-              onClick={openExternalSummary}
+              onClick={() => setStudyWorkspaceTab('external-summary')}
               className={`px-4 py-3 text-xs hover:underline ${isAcademic ? 'text-ember' : 'text-[#1a1a1a]'}`}
-              aria-label="打开外部资料摘要面板"
+              aria-label="打开外部资料摘要页签"
             >
               摘要 →
             </button>

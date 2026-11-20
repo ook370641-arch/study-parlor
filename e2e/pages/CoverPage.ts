@@ -27,7 +27,8 @@ export class CoverPage {
   async enterIfNeeded(name: string = 'E2E 测试员') {
     await this.nameInput.or(this.lightButton).waitFor({ state: 'visible' })
     if (await this.lightButton.isVisible().catch(() => false)) {
-      await this.lightButton.click()
+      await expect(this.lightButton).toHaveAttribute('aria-disabled', 'true')
+      await this.goToBriefing()
     } else {
       await this.enterApp(name)
     }

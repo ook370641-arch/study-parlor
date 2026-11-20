@@ -543,7 +543,16 @@ export type WritingCatalog = { version: 2; entries: Record<string, WritingCatalo
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
-export type BriefingSourceId = 'writing' | 'anthropic' | 'book'
+export type BriefingSourceId = 'study' | 'writing' | 'anthropic' | 'book'
+export type StudyTopicTab = 'report' | 'transcript' | 'diagram' | 'fable' | 'review'
+export type StudyWorkspaceTab = 'conversation' | 'external-summary'
+export type PendingArchive = {
+  dirName: string
+  topic: string
+  sessionNumber: number
+  mode: Mode
+  date: string
+}
 
 /** 书籍目录项（book.json.toc 的元素；chapterFile 相对书籍目录） */
 export interface BookTocItem {
