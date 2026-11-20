@@ -4,11 +4,15 @@ import { SwapPaintingButton } from './SwapPaintingButton'
 interface Props {
   surface: 'home' | 'study'
   className?: string
+  briefingFontControls?: boolean
 }
 
-export function StudyControlsGroup({ surface, className = '' }: Props) {
+export function StudyControlsGroup({ surface, className = '', briefingFontControls = false }: Props) {
   const theme = useStore((s) => s.briefingTheme)
   const setTheme = useStore((s) => s.setBriefingTheme)
+  const briefingFontSize = useStore((s) => s.briefingFontSize)
+  const decreaseBriefingFontSize = useStore((s) => s.decreaseBriefingFontSize)
+  const increaseBriefingFontSize = useStore((s) => s.increaseBriefingFontSize)
   const isAcademic = theme !== 'newspaper'
 
   const toggleTheme = () => {
@@ -28,26 +32,51 @@ export function StudyControlsGroup({ surface, className = '' }: Props) {
           data-testid="study-controls-swap-painting"
         />
       )}
-      <button
-        type="button"
-        data-testid="study-controls-theme-toggle"
-        onClick={toggleTheme}
-        className={`w-7 h-7 rounded-full border flex items-center justify-center transition-colors ${btnCls}`}
-        title={isAcademic ? '切换报纸版式' : '切换学术版式'}
-      >
-        {isAcademic ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="9" y1="21" x2="9" y2="9" />
-          </svg>
-        ) : (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-          </svg>
-        )}
-      </button>
+      {briefingFontControls ? (
+        <>
+          <button
+            type="button"
+            data-testid="study-controls-font-size-decrease"
+            disabled={briefingFontSize === 'sm'}
+            onClick={() => void decreaseBriefingFontSize()}
+            className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition-colors disabled:opacity-20 disabled:cursor-not-allowed ${btnCls}`}
+            title="减小阅读字号"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            data-testid="study-controls-font-size-increase"
+            disabled={briefingFontSize === '7xl'}
+            onClick={() => void increaseBriefingFontSize()}
+            className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition-colors disabled:opacity-20 disabled:cursor-not-allowed ${btnCls}`}
+            title="增大阅读字号"
+          >
+            +
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          data-testid="study-controls-theme-toggle"
+          onClick={toggleTheme}
+          className={`w-7 h-7 rounded-full border flex items-center justify-center transition-colors ${btnCls}`}
+          title={isAcademic ? '切换报纸版式' : '切换学术版式'}
+        >
+          {isAcademic ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="9" y1="21" x2="9" y2="9" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </svg>
+          )}
+        </button>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({ ipc: { patchState: vi.fn(), getState: vi.fn() } }))
 
@@ -10,6 +10,7 @@ beforeEach(() => {
   cleanup()
   useStore.setState({
     briefingTheme: 'academic',
+    briefingFontSize: 'base',
     currentPaintings: {
       home: { id: 'test', url: '/test.jpg', painter: 'Mark Rothko' as const, title: 'Test' },
       study: { id: 'test', url: '/test.jpg', painter: 'Mark Rothko' as const, title: 'Test' },
@@ -53,5 +54,26 @@ describe('StudyControlsGroup', () => {
     useStore.setState({ briefingTheme: 'newspaper' })
     rerender(<StudyControlsGroup surface="home" />)
     expect(screen.getByTestId('study-controls-theme-toggle')).toHaveAttribute('title', '切换学术版式')
+  })
+
+  it('replaces theme toggle with briefing font controls when requested', async () => {
+    render(<StudyControlsGroup surface="home" briefingFontControls />)
+
+    expect(screen.queryByTestId('study-controls-theme-toggle')).not.toBeInTheDocument()
+    expect(screen.getByTestId('study-controls-swap-painting')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('study-controls-font-size-increase'))
+    await waitFor(() => expect(useStore.getState().briefingFontSize).toBe('lg'))
+    fireEvent.click(screen.getByTestId('study-controls-font-size-decrease'))
+    await waitFor(() => expect(useStore.getState().briefingFontSize).toBe('base'))
+  })
+
+  it('disables briefing font controls at size limits', () => {
+    useStore.setState({ briefingFontSize: 'sm' })
+    const { rerender } = render(<StudyControlsGroup surface="home" briefingFontControls />)
+    expect(screen.getByTestId('study-controls-font-size-decrease')).toBeDisabled()
+
+    useStore.setState({ briefingFontSize: '7xl' })
+    rerender(<StudyControlsGroup surface="home" briefingFontControls />)
+    expect(screen.getByTestId('study-controls-font-size-increase')).toBeDisabled()
   })
 })
