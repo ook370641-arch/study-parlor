@@ -138,13 +138,15 @@ test.describe('@p1 home', () => {
     await home.goToSettings()
     await expect(window.locator(SELECTORS.settings.page)).toBeVisible()
 
-    await window.locator(SELECTORS.settings.backButton).click()
+    await window.locator('[data-testid="briefing-back-to-cover"]').click()
+    await cover.enterIfNeeded()
     await home.waitForLoaded()
 
     await home.goToProfile()
     await expect(window.locator(SELECTORS.profile.page)).toBeVisible()
 
-    await window.locator(SELECTORS.profile.exitButton).click()
+    await window.locator('[data-testid="briefing-back-to-cover"]').click()
+    await cover.enterIfNeeded()
     await home.waitForLoaded()
 
     await home.goToExtension()

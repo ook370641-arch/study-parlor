@@ -12,7 +12,7 @@ test.describe('@p1 lighting layer', () => {
 
     await window.locator('[data-testid="briefing-settings-button"]').click()
     await expect(window.locator(SELECTORS.settings.page)).toBeVisible()
-    await window.locator(SELECTORS.settings.backButton).click()
+    await window.locator('[data-testid="briefing-source-anthropic"]').click()
     await expect(window.locator(SELECTORS.briefing.page)).toBeVisible()
   })
 

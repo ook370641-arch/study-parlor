@@ -111,7 +111,6 @@ describe('BriefingSourceSidebar', () => {
     expect(within(cluster).queryByTestId('briefing-candlelight-toggle')).not.toBeInTheDocument()
     fireEvent.click(within(cluster).getByTestId('briefing-settings-button'))
     expect(useStore.getState().currentPage).toBe('settings')
-    expect(useStore.getState().settingsReturnTo).toBe('briefing')
   })
 
   it('报纸主题也保留设置入口', () => {

@@ -25,6 +25,16 @@ function claimConcurrently(dir: string, agent: string, barrier: string) {
 }
 
 describe('notepad-claim CLI', () => {
+  it('优先从独立 notepad.json 认领，不回退到 state.json 旧值', () => {
+    const dir = fixture()
+    fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify({ notepadItems: [] }))
+    fs.writeFileSync(path.join(dir, 'notepad.json'), JSON.stringify({
+      notepadItems: [{ id: 'n4', text: '设置中心', category: 'feature', createdAt: 'now' }],
+      notepadLog: [],
+    }))
+    expect(run(dir, ['claim', 'n4', 'codex/a'])).toContain('codex/a')
+  })
+
   it('同 Agent 幂等，异 Agent 冲突，force 才接管', () => {
     const dir = fixture()
     expect(run(dir, ['claim', 'n4', 'codex/a'])).toContain('codex/a')

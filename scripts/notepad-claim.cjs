@@ -5,12 +5,16 @@ const { readClaimsFile, writeClaimsFile, withClaimsLock } = require('../electron
 
 const stateDir = process.env.E2E_CONFIG_DIR || path.join(os.homedir(), '.studyparlor')
 const claimsFile = path.join(stateDir, 'notepad-claims.json')
+const notepadFile = process.env.E2E_CONFIG_DIR
+  ? path.join(stateDir, 'notepad.json')
+  : path.join(__dirname, '..', 'notepad.json')
 const [command, id, agent, ...flags] = process.argv.slice(2)
 if (!['claim', 'release'].includes(command) || !id || !agent) throw new Error('用法: claim|release <id> <agent> [--force]')
 
 withClaimsLock(claimsFile, () => {
   if (command === 'claim') {
-    const state = JSON.parse(fs.readFileSync(path.join(stateDir, 'state.json'), 'utf8'))
+    const dataFile = fs.existsSync(notepadFile) ? notepadFile : path.join(stateDir, 'state.json')
+    const state = JSON.parse(fs.readFileSync(dataFile, 'utf8'))
     if (!state.notepadItems?.some(item => item.id === id)) throw new Error(`待办不存在: ${id}`)
 
     const claims = readClaimsFile(claimsFile)

@@ -114,9 +114,9 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 ### 设置中心
 
-- `src/pages/Settings.tsx` 是三栏外壳：左栏「常规 / 卷宗 / 扩展」，中栏为上下文子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载内容。
+- `src/pages/Settings.tsx` 是三栏外壳：左栏复用 `BriefingSourceSidebar` 保留「写作 / 博客 / 书籍」来源，中栏复用 `BriefingListColumn`（标题「设置」）合并展示「常规 / 卷宗 / 扩展」及其子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载内容；点击来源返回对应简报页。
 - 常规子页固定为「AI 与搜索 / 界面与画作 / 学习库与归档」；扩展含「我的语言 / 自选配图 / 本地 Agent 打通」，原扩展学习库说明并入「学习库与归档」。
-- 主页只保留设置入口；简报原烛光位置改为设置入口，通过 `settingsReturnTo` 返回来源页。旧 `profile` / `extension` 独立路由已移除。
+- 主页只保留设置入口；简报原烛光位置改为设置入口。设置页不再提供「返回夜话」按钮，通过来源栏返回简报、通过封面按钮返回封面。旧 `profile` / `extension` 独立路由已移除。
 - 烛光随行及其光层、开关和专属样式已移除；移除墓碑见 `docs/superpowers/plans/2026-11-11-settings-center.md` 与共享 spec。
 
 ### 会话生命周期 (`src/lib/`)
@@ -130,6 +130,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 - **运行时状态**: Zustand 单 store (`src/store/index.ts`)
 - **持久化状态**: `~/.studyparlor/state.json` (profile / lastUsed / groupInspirations / topicContinueSuggestions / session_count 等)
+- **迭代记事板**: 开发时读写项目根目录 `notepad.json`（Git 追踪，跨端同步）；打包版读写 `~/.studyparlor/notepad.json`。`notepadItems` / `notepadLog` 首次读取时从 `state.json` 自动迁入，认领仍存 `~/.studyparlor/notepad-claims.json`。
 - **环境配置 (`.env`)**:
   - `npm run dev` 时读取项目根目录的 `.env`
   - 打包安装后读取 `~/.studyparlor/.env`
@@ -142,11 +143,11 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 封面右上角铅笔按钮打开的记事板面板，用户随手记录对应用的迭代需求。**2026-10-19 起条目化**：每条需求三分类（bug / 新功能 / 功能优化），面板 ✓ 完成后自动归档到档案页。
 
-**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读 `~/.studyparlor/state.json` 的 `notepadItems` 字段，同时读取 `~/.studyparlor/notepad-claims.json` 并在汇报中标出已认领条目及认领者。这些文件在工作区外，沙箱读取可能需要提权。
+**当用户说"看看我最近的迭代需求"（或类似表述）时**：直接读项目根目录 `notepad.json` 的 `notepadItems` 字段，同时读取 `~/.studyparlor/notepad-claims.json` 并在汇报中标出已认领条目及认领者。认领文件在工作区外，沙箱读取可能需要提权。
 
 **当用户说"看下评论"、"追下 issue"（或类似表述）时**：`issue` 专指已完成条目下的评论。只读取 `notepadLog[].comments[]` 中没有 `resolvedAt` 的条目，不要查看或处理 `notepadItems` 里的新需求 / 功能迭代 / bug；已有 `resolvedAt` / `resolution` 的是历史处理记录，不要重复接单。评论挂在已完成条目下，不重新移回待办。
 
-**关键字段（state.json）**：
+**关键字段（notepad.json）**：
 
 - `notepadItems: [{ id, title?, text, category, createdAt }]` — 待办条目；`category` 为 `'bug' | 'feature' | 'improvement'`；`title` 短标题创建时自动生成兜底
 - `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent', comments? }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结；`comments: [{ id, text, createdAt, resolvedAt?, resolution? }]` 是用户对已完成条目的反馈，点「评论」按钮才展开右侧输入框，输入即自动保存，无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无删除按钮
@@ -162,7 +163,7 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 
 已被其他 Agent 认领时默认跳过；只有用户明确要求接管时才在 `claim` 末尾加 `--force`。同一 Agent 重复认领幂等，不设置自动过期。
 
-**归档约定**：agent 完成某条需求后，必须自行把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`），不得要求用户手动点 ✓。**app 运行中不要直接改 state.json**（内存旧值会覆盖），须通过运行应用的 `state:patch` 通道完成同构更新并同步渲染进程 store；开发实例可通过既有 CDP 9222 连接调用。面板/`state:patch` 归档会自动清理认领。应用关闭后可写回 `state.json`，再执行上述 `release` 并确认认领已清理。无法归档属于交付阻塞，不得把手动打勾交给用户。详见 `.agents/skills/notepad-triage/SKILL.md`。
+**归档约定**：agent 完成某条需求后，必须自行把该条目从 `notepadItems` 移入 `notepadLog`（写 `resolvedAt` + `source: 'agent'`），不得要求用户手动点 ✓。**app 运行中不要直接改 state.json / notepad.json**（内存旧值会覆盖），须通过运行应用的 `state:patch` 通道完成同构更新并同步渲染进程 store；开发实例可通过既有 CDP 9222 连接调用。面板/`state:patch` 归档会自动清理认领。应用关闭后可写回 `notepad.json`，再执行上述 `release` 并确认认领已清理。无法归档属于交付阻塞，不得把手动打勾交给用户。详见 `.agents/skills/notepad-triage/SKILL.md`。
 
 **评论处理记录**：agent 实际完成并验证评论要求的修改后，为对应 comment 写 `resolvedAt` 和简短 `resolution`（做了什么、验证结果、提交号），供面板展示和后续 agent 查阅。写回同样禁止直接修改运行中的 app 状态；先请用户关闭 app，再继续写回。
 

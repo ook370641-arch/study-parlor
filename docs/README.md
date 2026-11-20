@@ -111,13 +111,13 @@
 
 ### 15. 迭代记事板
 
-**现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；待办可显示 Agent 认领者，认领独立存于 `notepad-claims.json`，面板重开或窗口聚焦时刷新；已完成时间线按本地日期只高亮今日条目并显示「今日完成 · 待测试」；已完成条目可恢复待办或确认后永久删除，恢复保留评论；可点「评论」按钮展开右侧输入框，输入即自动保存、无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无评论删除按钮；评论含待处理/已处理状态与 Agent 处理摘要；旁注打开时入口/面板左移并保持可交互；接单、评论处理与归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
+**现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；待办与档案存于开发根目录 `notepad.json`（Git 追踪，打包版位于 `~/.studyparlor/notepad.json`），首次读取自动从 `state.json` 迁移；待办可显示 Agent 认领者，认领独立存于 `notepad-claims.json`，面板重开或窗口聚焦时刷新；已完成时间线按本地日期只高亮今日条目并显示「今日完成 · 待测试」；已完成条目可恢复待办或确认后永久删除，恢复保留评论；可点「评论」按钮展开右侧输入框，输入即自动保存、无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无评论删除按钮；评论含待处理/已处理状态与 Agent 处理摘要；旁注打开时入口/面板左移并保持可交互；接单、评论处理与归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（含记事板与旁注共存交互；同名 plan 为实施记录）
 **历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）→ 11-11 settings-center-and-notepad-claims（记事板认领与今日高亮部分）→ 11-11 notepad-agent-claims → 11-14 notepad-log-management
 
 ### 16. 设置 / 向导 / LLM 配置
 
-**现状**：首次配置向导（`SetupWizard`）+ C 三栏设置中心 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。左栏为「常规 / 卷宗 / 扩展」，常规中栏拆为「AI 与搜索 / 界面与画作 / 学习库与归档」，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载。卷宗由 `profile-prompt.ts` 在 `kimi.ts` 的 `buildChatBody` 全局注入流式与非流式请求。配置按厂商命名；Model 下拉框可探活 `/models`，并按配置持久化最近成功获取的模型列表。Demo 信息说明默认只读、点击「编辑」才可修改；六个信息入口的显隐持久化到 `demoNotesHidden`。烛光随行已移除，简报原位置改为设置入口。
+**现状**：首次配置向导（`SetupWizard`）+ B 三栏设置中心 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。左栏保留简报来源，中栏标题为「设置」，合并展示「常规 / 卷宗 / 扩展」与全部子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载。卷宗由 `profile-prompt.ts` 在 `kimi.ts` 的 `buildChatBody` 全局注入流式与非流式请求。配置按厂商命名；Model 下拉框可探活 `/models`，并按配置持久化最近成功获取的模型列表。Demo 信息说明默认只读、点击「编辑」才可修改；六个信息入口的显隐持久化到 `demoNotesHidden`。烛光随行已移除，简报原位置改为设置入口。
 **历史链**：06-05 setup-wizard → 06-14 settings → 06-14 settings-page → 09-19 llm-config-switch → 11-11 settings-center（plan）→ 11-11 settings-center-and-notepad-claims（设置中心、全局卷宗注入与烛光移除墓碑）
 
 ### 17. DIY 术语
