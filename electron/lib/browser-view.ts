@@ -27,8 +27,18 @@ function createBrowserController(window: BrowserWindow): BrowserController {
   let findText = ''
   let findIndex = 0
   let findRequest = 0
+  let restoreBrowserFocus = false
 
   const alive = () => !window.isDestroyed() && !!view && !view.webContents.isDestroyed()
+
+  window.on('blur', () => {
+    restoreBrowserFocus = attached && alive() && view!.webContents.isFocused()
+  })
+  window.on('focus', () => {
+    const shouldRestore = restoreBrowserFocus && attached && alive()
+    restoreBrowserFocus = false
+    if (shouldRestore) view!.webContents.focus()
+  })
 
   const send = (channel: string, payload: unknown) => {
     if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
