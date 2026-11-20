@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 const mockIpc = vi.hoisted(() => ({ readMd: vi.fn() }))
@@ -52,6 +52,10 @@ describe('BlogCollectionSection', () => {
     } as never)
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('已保存卡片保留收藏、已读和取消导入按钮', () => {
     const current = props()
     current.groups.saved = [savedArticle]
@@ -68,6 +72,50 @@ describe('BlogCollectionSection', () => {
     fireEvent.click(deleteButton)
     expect(current.onRequestDelete).toHaveBeenCalledWith({ kind: 'mine', article: savedArticle })
     expect(current.onOpenArticle).not.toHaveBeenCalled()
+  })
+
+  it('已保存卡片三个操作按钮同尺寸并仅在悬停时显示', () => {
+    const current = props()
+    current.groups.saved = [savedArticle]
+    render(<BlogCollectionSection {...current} />)
+
+    const actions = screen.getByTestId('anthropic-row-actions')
+    expect(actions).toHaveClass('flex', 'items-center', 'ml-auto', 'gap-1', 'opacity-0', 'group-hover:opacity-100')
+    expect(actions.parentElement).toBe(screen.getByTestId('anthropic-section-tag').parentElement)
+    for (const button of [
+      screen.getByTestId('blog-fav-toggle'),
+      screen.getByTestId('blog-read-mark'),
+      screen.getByTestId('anthropic-row-unimport'),
+    ]) {
+      expect(button).toHaveClass('h-7', 'w-7')
+      expect(button.parentElement).toBe(actions)
+      expect(button).not.toHaveClass('-top-3')
+    }
+    expect(screen.getByTestId('anthropic-article-title').parentElement).not.toHaveClass('pr-20')
+  })
+
+  it('已保存、已读与收藏卡片都不展示日期', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-17T00:00:00.000Z'))
+    const current = props()
+    current.groups.saved = [{ ...savedArticle, publishedAt: '2025-01-01' }]
+    current.groups.read = [{ ...readArticle, publishedAt: '2025-01-01' }]
+    current.groups.favorite = [{ ...favoriteArticle, publishedAt: '2025-01-01' }]
+    render(<BlogCollectionSection {...current} />)
+
+    expect(screen.queryByText(/1月1日|2025年/)).not.toBeInTheDocument()
+  })
+
+  it('已读与收藏卡片也给近半年文章添加 NEW 标签', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-17T00:00:00.000Z'))
+    const current = props()
+    current.groups.read = [{ ...readArticle, publishedAt: '2026-11-01' }]
+    current.groups.favorite = [{ ...favoriteArticle, publishedAt: '2026-11-01' }]
+    render(<BlogCollectionSection {...current} />)
+
+    expect(screen.getAllByTestId('blog-recent-tag')).toHaveLength(2)
+    expect(screen.queryByText(/11月1日/)).not.toBeInTheDocument()
   })
 
   it('已读与收藏继续使用不同删除请求', () => {
@@ -108,6 +156,30 @@ describe('BlogCollectionSection', () => {
     expect(current.onOpenArticle).toHaveBeenCalledWith(savedArticle)
   })
 
+  it('拖拽时显示源卡片与放置目标，落地后清理反馈并排序', () => {
+    const current = props()
+    const secondArticle = { ...savedArticle, url: 'saved-2', title: 'Second', filePath: 'second.md' }
+    current.groups.saved = [savedArticle, secondArticle]
+    render(<BlogCollectionSection {...current} />)
+
+    const dataTransfer = {
+      types: ['application/x-blog-article'],
+      effectAllowed: 'move',
+      setData: vi.fn(),
+      getData: vi.fn(() => JSON.stringify({ group: 'saved', sourceUrl: 'saved' })),
+    }
+    const source = screen.getByTestId('blog-saved-card-saved')
+    const target = screen.getByTestId('blog-saved-card-saved-2')
+    fireEvent.dragStart(screen.getByTestId('blog-list-article-handle-saved'), { dataTransfer })
+    expect(source).toHaveClass('opacity-40')
+    fireEvent.dragOver(target, { dataTransfer })
+    expect(target).toHaveClass('ring-1', 'ring-ember')
+    fireEvent.drop(target, { dataTransfer })
+    expect(current.onReorder).toHaveBeenCalledWith({ kind: 'article', group: 'saved', sourceUrl: 'saved', targetUrl: 'saved-2', placement: 'before' })
+    expect(source).not.toHaveClass('opacity-40')
+    expect(target).not.toHaveClass('ring-1', 'ring-ember')
+  })
+
   it('按共享顺序渲染分组，收藏折叠时推荐工具一起隐藏', () => {
     const current = props()
     current.order = { ...current.order, groups: ['favorite', 'saved', 'read'] }
@@ -135,6 +207,16 @@ describe('BlogCollectionSection', () => {
     }
     expect(screen.getByTestId('list-group-header-read')).toHaveClass('text-lg')
     expect(screen.getByTestId('list-group-header-favorite')).toHaveClass('text-lg')
+    expect(screen.getByTestId('blog-read-source-read')).toHaveTextContent('Engineering')
+    expect(screen.getByTestId('blog-collection-source-favorite')).toHaveTextContent('Engineering')
+    expect(screen.getByTestId('blog-read-actions-read').parentElement).toBe(screen.getByTestId('blog-read-source-read').parentElement)
+    expect(screen.getByTestId('blog-collection-actions-favorite').parentElement).toBe(screen.getByTestId('blog-collection-source-favorite').parentElement)
+    expect(screen.getByTestId('blog-read-actions-read')).toHaveClass('ml-auto')
+    expect(screen.getByTestId('blog-collection-actions-favorite')).toHaveClass('ml-auto')
+    for (const title of [screen.getByTestId('blog-read-open-read'), screen.getByTestId('blog-collection-open-favorite')]) {
+      expect(title).toHaveClass('block', 'w-full')
+      expect(title.firstElementChild).toHaveClass('line-clamp-2', 'group-hover:line-clamp-none')
+    }
   })
 
   it('推荐理由、导读和缺口继续展开', () => {
@@ -142,11 +224,27 @@ describe('BlogCollectionSection', () => {
     current.groups.favorite = [favoriteArticle]
     render(<BlogCollectionSection {...current} />)
 
+    expect(screen.queryByText('推荐日期：', { exact: false })).not.toBeInTheDocument()
+    const reason = screen.getByTestId('blog-collection-reason-favorite')
+    const source = screen.getByTestId('blog-collection-source-favorite')
+    expect(reason.parentElement).toBe(source.parentElement)
+    expect(reason.nextElementSibling).toBe(source)
+    expect(screen.getByTestId('blog-collection-actions-favorite').parentElement).toBe(source.parentElement)
     fireEvent.click(screen.getByTestId('blog-collection-reason-favorite'))
+    expect(screen.getByText('推荐日期：').parentElement).toHaveTextContent('推荐日期：2026年1月1日')
     expect(screen.getByText('为什么推荐：', { exact: false })).toBeInTheDocument()
     expect(screen.getByText('推荐理由')).toBeInTheDocument()
     expect(screen.getByText('导读')).toBeInTheDocument()
     expect(screen.getByText('缺口')).toBeInTheDocument()
+  })
+
+  it('收藏展开时推荐工具与分组标题同行', () => {
+    render(<BlogCollectionSection {...props()} />)
+
+    const header = screen.getByTestId('list-group-header-favorite')
+    const tools = screen.getByTestId('blog-recommendation-tools')
+    expect(header.contains(tools)).toBe(true)
+    expect(tools.parentElement).toHaveClass('ml-auto')
   })
 
   it('已读文件缺失时沿用原清理逻辑', async () => {

@@ -39,11 +39,12 @@ export function BlogMineGroupSection({
       onToggle={onToggle}
       headerClassName="text-lg"
       draggable
+      longPressDrag
+      headerAction={recommendationTools}
       onGroupDragStart={onGroupDragStart}
       onGroupDragOver={onGroupDragOver}
       onGroupDrop={onGroupDrop}
     >
-      {recommendationTools}
       {children}
     </AlbumGroupSection>
   )

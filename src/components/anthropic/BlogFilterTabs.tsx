@@ -36,13 +36,12 @@ export function BlogFilterTabs({ area, value, onChange, theme = 'academic' }: Pr
   }
 
   return (
-    <div className="space-y-1.5" data-testid={`${area}-blog-filter-tabs`}>
+    <div className="flex items-center gap-2" data-testid={`${area}-blog-filter-tabs`}>
       <div role="tablist" aria-label="博客视图" className={`inline-flex items-center gap-0.5 rounded-md border p-0.5 ${isAcademic ? 'border-parchment/15' : 'border-[#6b5d52]/20'}`} data-testid={`${area}-view-filter-row`}>
         {viewButton('mine', '我的')}
         {viewButton('all', '全部')}
       </div>
       <div className="flex items-center gap-2" data-testid={`${area}-source-filter-row`}>
-        <label htmlFor={`${area}-source-select`} className={`text-xs ${muted}`}>来源</label>
         <select
           id={`${area}-source-select`}
           data-testid={`${area}-source-select`}

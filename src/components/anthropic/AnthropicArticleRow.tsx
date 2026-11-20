@@ -20,13 +20,14 @@ interface Props {
   onOpenArticle?: (article: AnthropicArticleMeta) => void
 }
 
-function formatDate(iso: string | null | undefined) {
-  if (!iso) return '未知日期'
-  try {
-    return new Date(iso).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
-  } catch {
-    return iso
-  }
+function isRecent(iso: string | null | undefined) {
+  if (!iso) return false
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return false
+  const now = new Date()
+  const cutoff = new Date(now)
+  cutoff.setMonth(cutoff.getMonth() - 6)
+  return date >= cutoff && date <= now
 }
 
 // Extracted outside component to avoid re-creating on every render
@@ -121,7 +122,6 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
   const bgClass = isAcademic ? 'bg-ink/30' : 'bg-white'
   const hoverBorder = isAcademic ? 'hover:border-ember/50' : 'hover:border-[#1a1a1a]/50'
   const titleColor = isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'
-  const mutedText = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
   const placeholderBg = isAcademic ? 'bg-parchment/10' : 'bg-[#e8e4de]'
   const placeholderText = isAcademic ? 'text-parchment/40' : 'text-[#6b5d52]/60'
   const titleHover = isAcademic ? 'group-hover:text-ember' : 'group-hover:text-[#1a1a1a]'
@@ -134,6 +134,7 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
     : ANTHROPIC_SOURCES.find((s) => s.key === sectionKey)
       ?? LEGACY_SECTION_META[sectionKey]
       ?? null
+  const recent = isRecent(article.publishedAt)
 
   // Left border by state
   let borderClass: string
@@ -183,68 +184,32 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
         />
       )}
 
-        {onToggleCollection && (
-          <span
-            data-testid="blog-fav-toggle"
-            role="button"
-            aria-pressed={inCollection}
-            title={inCollection ? '取消收藏' : '收藏'}
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleCollection() }}
-            className={`absolute top-2 right-16 z-10 leading-none transition-colors ${
-              inCollection
-                ? 'text-ember'
-                : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
-            }`}
-          >
-            <BookmarkIcon active={inCollection} />
-          </span>
-        )}
-
-        {onToggleRead && (
-          <span
-            data-testid="blog-read-mark"
-            role="button"
-            aria-pressed={isRead}
-            title={isRead ? '已读（点击取消）' : '标为已读'}
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleRead() }}
-            className={`absolute top-2 right-9 z-10 leading-none transition-colors ${
-              isRead
-                ? 'text-ember'
-                : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
-            }`}
-          >
-            <BookIcon active={isRead} />
-          </span>
-        )}
-
-        {showUnimport && onRequestDelete && article.isSaved && article.filePath && !article.local && (
-          <BlogDeleteButton theme={theme} testId="anthropic-row-unimport" title="取消导入（删除文章）"
-            onClick={() => onRequestDelete(article)} className="absolute right-2 top-2 z-10" />
-        )}
-
       <div className="flex items-start gap-3">
-        {article.imageUrl ? (
-          <img
-            src={coverImageUrl(article.imageUrl)}
-            alt=""
-            className={`shrink-0 w-14 h-14 object-cover rounded ${placeholderBg}`}
-            loading="lazy"
-            decoding="async"
-          />
-        ) : article.local === 'constitution' ? (
-          <div className={`shrink-0 w-14 h-14 rounded flex items-center justify-center text-2xl font-serif ${placeholderBg} ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`}>
-            §
-          </div>
-        ) : (
-          <div className={`shrink-0 w-14 h-14 rounded flex items-center justify-center text-xs ${placeholderBg} ${placeholderText}`}>
-            无配图
-          </div>
-        )}
+        <div className="relative h-14 w-14 shrink-0">
+          {article.imageUrl ? (
+            <img
+              src={coverImageUrl(article.imageUrl)}
+              alt=""
+              className={`h-14 w-14 object-cover rounded ${placeholderBg}`}
+              loading="lazy"
+              decoding="async"
+            />
+          ) : article.local === 'constitution' ? (
+            <div className={`h-14 w-14 rounded flex items-center justify-center text-2xl font-serif ${placeholderBg} ${isAcademic ? 'text-ember' : 'text-[#6b5d52]'}`}>
+              §
+            </div>
+          ) : (
+            <div className={`h-14 w-14 rounded flex items-center justify-center text-xs ${placeholderBg} ${placeholderText}`}>
+              无配图
+            </div>
+          )}
+          {recent && <span data-testid="blog-recent-tag" className="absolute -right-1 -top-1 rounded bg-ember px-1 py-0.5 text-[8px] font-semibold leading-none text-white shadow-sm">NEW</span>}
+        </div>
 
         <div className="flex-1 min-w-0">
           <h3
             data-testid="anthropic-article-title"
-            className={`font-serif transition-colors line-clamp-1 ${
+            className={`font-serif transition-colors line-clamp-2 ${
               importing ? '' : 'group-hover:line-clamp-none'
             } ${titleColor} ${titleHover}`}
             style={{ fontSize: 'var(--briefing-list-title-size)' }}
@@ -252,44 +217,79 @@ export const AnthropicArticleRow = memo(function AnthropicArticleRow({ article, 
             {article.title}
             {importing && <ImportSpinner />}
           </h3>
-          <p className={`mt-1 ${mutedText}`} style={{ fontSize: 'var(--briefing-list-meta-size)' }}>
-            {importing
-              ? '导入中…'
-              : article.local === 'constitution'
-                ? '内置报告'
-                : formatDate(article.publishedAt)}
-          </p>
-          {section && (
-            <span
-              data-testid="anthropic-section-tag"
-              className="inline-block mt-1.5 px-2 py-0.5 rounded-full border text-[10px]"
-              style={{ borderColor: `${section.color}66`, color: section.color }}
-            >
-              {section.label}
-            </span>
-          )}
-          {recBatch != null && (
-            <span
-              data-testid="blog-rec-badge"
-              role="button"
-              title={`来自第 ${recBatch} 批推荐，点击查看推荐页`}
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); openRecommendView(recBatch) }}
-              className="inline-block mt-1.5 ml-1.5 px-2 py-0.5 rounded-full border border-ember/40 text-ember cursor-pointer"
-              style={{ fontSize: 'var(--briefing-list-meta-size)' }}
-            >
-              ◆{recBatch}
-            </span>
-          )}
-          {article.local === 'constitution' && (
-            <span
-              data-testid="anthropic-constitution-pill"
-              className={`inline-block mt-1.5 px-2 py-0.5 rounded-full border text-[10px] ${
-                isAcademic ? 'border-ember/40 text-ember' : 'border-[#6b5d52]/40 text-[#6b5d52]'
-              }`}
-            >
-              交互报告
-            </span>
-          )}
+          <div className="mt-1 flex items-center gap-1 whitespace-nowrap">
+            {section && (
+              <span
+                data-testid="anthropic-section-tag"
+                className="inline-block shrink-0 px-1 py-0.5 rounded-full border text-[9px]"
+                style={{ borderColor: `${section.color}66`, color: section.color }}
+              >
+                {section.label}
+              </span>
+            )}
+            {recBatch != null && (
+              <span
+                data-testid="blog-rec-badge"
+                role="button"
+                title={`来自第 ${recBatch} 批推荐，点击查看推荐页`}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); openRecommendView(recBatch) }}
+                className="inline-block px-2 py-0.5 rounded-full border border-ember/40 text-ember cursor-pointer"
+                style={{ fontSize: 'var(--briefing-list-meta-size)' }}
+              >
+                ◆{recBatch}
+              </span>
+            )}
+            {article.local === 'constitution' && (
+              <span
+                data-testid="anthropic-constitution-pill"
+                className={`inline-block px-2 py-0.5 rounded-full border text-[10px] ${
+                  isAcademic ? 'border-ember/40 text-ember' : 'border-[#6b5d52]/40 text-[#6b5d52]'
+                }`}
+              >
+                交互报告
+              </span>
+            )}
+            {(onToggleCollection || onToggleRead || (showUnimport && onRequestDelete)) && (
+              <span data-testid="anthropic-row-actions" className="ml-auto flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                {onToggleCollection && (
+                  <span
+                    data-testid="blog-fav-toggle"
+                    role="button"
+                    aria-pressed={inCollection}
+                    title={inCollection ? '取消收藏' : '收藏'}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleCollection() }}
+                    className={`inline-flex h-7 w-7 items-center justify-center leading-none ${
+                      inCollection
+                        ? 'text-ember'
+                        : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
+                    }`}
+                  >
+                    <BookmarkIcon active={inCollection} />
+                  </span>
+                )}
+                {onToggleRead && (
+                  <span
+                    data-testid="blog-read-mark"
+                    role="button"
+                    aria-pressed={isRead}
+                    title={isRead ? '已读（点击取消）' : '标为已读'}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleRead() }}
+                    className={`inline-flex h-7 w-7 items-center justify-center leading-none ${
+                      isRead
+                        ? 'text-ember'
+                        : isAcademic ? 'text-parchment/30 hover:text-ember' : 'text-[#6b5d52]/40 hover:text-ember'
+                    }`}
+                  >
+                    <BookIcon active={isRead} />
+                  </span>
+                )}
+                {showUnimport && onRequestDelete && article.isSaved && article.filePath && !article.local && (
+                  <BlogDeleteButton theme={theme} testId="anthropic-row-unimport" title="取消导入（删除文章）"
+                    onClick={() => onRequestDelete(article)} />
+                )}
+              </span>
+            )}
+          </div>
         </div>
       </div>
       {/* Hidden element for E2E selectors — indicates saved state without text badge */}

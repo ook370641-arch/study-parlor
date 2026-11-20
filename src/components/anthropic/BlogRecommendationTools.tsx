@@ -29,7 +29,7 @@ export function BlogRecommendationTools({ theme = 'academic' }: { theme?: Briefi
 
   return (
     <>
-      <div data-testid="blog-recommendation-tools" className="flex items-center justify-end gap-2 py-1">
+      <div data-testid="blog-recommendation-tools" className="flex items-center gap-2">
         {recommendRunning && <span className={muted}>{STAGE_TEXT[recommendStage ?? 'context']}</span>}
         {collection.history.length > 0 && (
           <button

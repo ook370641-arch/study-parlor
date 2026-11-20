@@ -124,7 +124,7 @@ describe('BlogWall', () => {
     expect(screen.queryByTestId('blog-wall-sort-select')).not.toBeInTheDocument()
   })
 
-  it('推荐工具位于收藏标题下方，收藏折叠时一起隐藏且不影响其他组', () => {
+  it('推荐工具位于收藏标题行，收藏折叠时一起隐藏且不影响其他组', () => {
     const current = wallProps()
     current.filter = { view: 'mine', source: 'all' }
     current.collapsedGroups = { ...current.collapsedGroups, favorite: true }
@@ -136,13 +136,14 @@ describe('BlogWall', () => {
     expect(current.onToggleGroup).toHaveBeenCalledWith('favorite')
   })
 
-  it('收藏展开时推荐工具在卡片上方', () => {
+  it('收藏展开时推荐工具与标题同行', () => {
     const current = wallProps()
     current.filter = { view: 'mine', source: 'all' }
     const { container } = render(<BlogWall {...current} />)
     const section = container.querySelector('[data-group-section="favorite"]') as HTMLElement
     const tools = within(section).getByTestId('blog-recommendation-tools')
     const card = within(section).getByTestId('blog-wall-card-favorite')
+    expect(within(section).getByTestId('wall-group-header-favorite').contains(tools)).toBe(true)
     expect(tools.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 

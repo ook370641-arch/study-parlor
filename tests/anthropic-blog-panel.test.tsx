@@ -213,14 +213,21 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.queryByTestId('blog-saved-resize')).not.toBeInTheDocument()
   })
 
-  it('我的/全部使用标签页，来源使用下拉框', () => {
+  it('博客第二列恢复最初的 320px', () => {
     render(<AnthropicBlogPanel theme="academic" />)
 
+    expect(screen.getByTestId('briefing-list-column')).toHaveClass('w-80')
+    expect(screen.getByTestId('briefing-list-column')).not.toHaveClass('w-64')
+  })
+
+  it('我的/全部与来源下拉框同排，不显示固定来源标签', () => {
+    render(<AnthropicBlogPanel theme="academic" />)
+
+    expect(screen.getByTestId('list-blog-filter-tabs')).toHaveClass('flex', 'items-center')
     expect(screen.getByTestId('list-view-mine').closest('[data-testid="list-view-filter-row"]')).not.toBeNull()
     expect(screen.getByTestId('list-view-filter-row')).toHaveAttribute('role', 'tablist')
     expect(screen.getByTestId('list-source-select')).toHaveValue('all')
-    expect(screen.getByTestId('list-source-filter-row')).toHaveTextContent('来源')
-    expect(screen.getByTestId('list-view-filter-row')).not.toBe(screen.getByTestId('list-source-filter-row'))
+    expect(screen.queryByText('来源', { exact: true })).not.toBeInTheDocument()
   })
 
   it('shows new articles prompt after auto-detect finds new articles', async () => {
@@ -489,7 +496,7 @@ describe('AnthropicBlogPanel', () => {
     expect(screen.getAllByText('无配图')).toHaveLength(2)
   })
 
-  it('publishedAt 月初 ISO（2026-07-01）时 formatDate 正常显示', () => {
+  it('publishedAt 存在时也不在第二列展示日期', () => {
     useStore.setState({
       anthropicBlogCache: {
         lastFetchedAt: null,
@@ -504,7 +511,7 @@ describe('AnthropicBlogPanel', () => {
     render(<AnthropicBlogPanel theme="academic" />)
     fireEvent.click(screen.getByTestId('list-view-all'))
     expect(screen.queryByText('未知日期')).not.toBeInTheDocument()
-    expect(screen.getByText(/2026年/)).toBeInTheDocument()
+    expect(screen.queryByText(/7月1日|2026年/)).not.toBeInTheDocument()
   })
 
   it('AnthropicArticleRow 色签对五源 + institute 遗留值都取到 label/color', () => {

@@ -96,13 +96,13 @@ export function BlogDeleteButton({ theme, testId, title, onClick, className = ''
       title={title}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className={`inline-flex h-7 w-7 shrink-0 cursor-pointer select-none items-center justify-center rounded-md border transition-colors ${
+      className={`inline-flex h-7 w-7 shrink-0 cursor-pointer select-none items-center justify-center rounded transition-colors ${
         isAcademic
-          ? 'border-red-400/30 bg-red-400/10 text-red-300 hover:border-red-300/60 hover:bg-red-400/20 hover:text-red-200'
-          : 'border-red-700/25 bg-red-700/5 text-red-700/70 hover:border-red-700/50 hover:bg-red-700/15 hover:text-red-700'
+          ? 'text-parchment/30 hover:text-red-400'
+          : 'text-[#6b5d52]/40 hover:text-red-600'
       } ${className}`}
     >
-      <TrashIcon size={15} />
+      <TrashIcon size={14} />
     </span>
   )
 }

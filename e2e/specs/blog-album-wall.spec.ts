@@ -63,7 +63,7 @@ test.describe('博客专辑墙与对应笔记', () => {
     await expect(window.locator(SELECTORS.briefing.anthropicArticleReader)).toHaveCount(0)
   })
 
-  test('我的三组独立筛选、折叠、手柄排序与重启持久化', async ({ window, testLibraryPath, testConfigDir }) => {
+  test('我的三组独立筛选、折叠、长按排序与重启持久化', async ({ window, testLibraryPath, testConfigDir }) => {
     const { aUrl, bUrl } = seedArticles(testLibraryPath, testConfigDir)
     await gotoBlog(window)
 
@@ -83,10 +83,15 @@ test.describe('博客专辑墙与对应笔记', () => {
     await expect(wallFavorite.locator('[data-testid="blog-recommendation-tools"]')).toHaveCount(0)
     await expect(window.locator('[data-testid="blog-collection-section"] [data-testid="blog-recommendation-tools"]')).toBeVisible()
 
-    await window.locator('[data-testid="wall-group-handle-read"]').dragTo(
-      window.locator('[data-testid="wall-group-header-saved"]'),
-      { targetPosition: { x: 20, y: 5 } }
-    )
+    const groupSource = window.locator('[data-testid="wall-group-header-read"]')
+    const groupTarget = window.locator('[data-testid="wall-group-header-saved"]')
+    const groupSourceBox = await groupSource.boundingBox()
+    const groupTargetBox = await groupTarget.boundingBox()
+    await window.mouse.move((groupSourceBox?.x ?? 0) + 60, (groupSourceBox?.y ?? 0) + 10)
+    await window.mouse.down()
+    await window.waitForTimeout(450)
+    await window.mouse.move((groupTargetBox?.x ?? 0) + 20, (groupTargetBox?.y ?? 0) + 5, { steps: 10 })
+    await window.mouse.up()
     const collectionPath = path.join(testLibraryPath, 'Anthropic博客', '.collection.json')
     await expect.poll(() => JSON.parse(fs.readFileSync(collectionPath, 'utf8')).order.groups).toEqual(['read', 'saved', 'favorite'])
 

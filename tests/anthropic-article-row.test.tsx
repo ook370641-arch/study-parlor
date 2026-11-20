@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({
@@ -30,6 +30,10 @@ describe('AnthropicArticleRow', () => {
       cancelAnthropicImport: vi.fn(),
       openAnthropicReader: vi.fn(),
     } as any)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('does not render the old click-import/read hint', () => {
@@ -101,19 +105,19 @@ describe('AnthropicArticleRow', () => {
     expect(screen.queryByText('A great article about AI')).not.toBeInTheDocument()
   })
 
-  it('keeps line-clamp-1 on mouseEnter (unclamp is CSS group-hover, not React state)', () => {
+  it('keeps line-clamp-2 on mouseEnter (unclamp is CSS group-hover, not React state)', () => {
     render(<AnthropicArticleRow article={article()} theme="academic" />)
     const title = screen.getByTestId('anthropic-article-title')
-    expect(title).toHaveClass('line-clamp-1')
+    expect(title).toHaveClass('line-clamp-2')
     fireEvent.mouseEnter(screen.getByTestId('anthropic-article-row'))
-    expect(title).toHaveClass('line-clamp-1')
+    expect(title).toHaveClass('line-clamp-2')
     expect(title).toHaveClass('group-hover:line-clamp-none')
   })
 
-  it('clamps title to one line and unclamps via CSS group-hover (no React hover state)', () => {
+  it('clamps title to two lines and unclamps via CSS group-hover (no React hover state)', () => {
     render(<AnthropicArticleRow article={article()} theme="academic" />)
     const title = screen.getByTestId('anthropic-article-title')
-    expect(title).toHaveClass('line-clamp-1')
+    expect(title).toHaveClass('line-clamp-2')
     expect(title).toHaveClass('group-hover:line-clamp-none')
   })
 
@@ -143,6 +147,39 @@ describe('AnthropicArticleRow', () => {
     render(<AnthropicArticleRow article={{ ...article(), section: 'institute' }} theme="academic" />)
     const tag = screen.getByTestId('anthropic-section-tag')
     expect(tag.textContent).toBe('Institute')
+  })
+
+  it('keeps the section tag on a single metadata row without a publication date', () => {
+    render(<AnthropicArticleRow article={article({ section: 'engineering' })} theme="academic" />)
+    const tag = screen.getByTestId('anthropic-section-tag')
+    expect(tag.parentElement).toHaveClass('flex', 'items-center', 'whitespace-nowrap')
+    expect(screen.queryByText(/7月1日|2026年/)).not.toBeInTheDocument()
+  })
+
+  it('marks a recent article as new without displaying its publication date', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-17T00:00:00.000Z'))
+    render(<AnthropicArticleRow article={article({ section: 'engineering' })} theme="academic" />)
+    expect(screen.queryByText(/7月1日|2026年/)).not.toBeInTheDocument()
+    expect(screen.getByTestId('blog-recent-tag')).toHaveTextContent('NEW')
+  })
+
+  it('does not display dates for older articles and compacts the section tag', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-17T00:00:00.000Z'))
+    render(<AnthropicArticleRow article={article({ publishedAt: '2025-07-01T00:00:00.000Z', section: 'engineering' })} theme="academic" />)
+    expect(screen.queryByText(/7月1日|2025年/)).not.toBeInTheDocument()
+    expect(screen.queryByTestId('blog-recent-tag')).not.toBeInTheDocument()
+    expect(screen.getByTestId('anthropic-section-tag')).toHaveClass('px-1', 'text-[9px]')
+  })
+
+  it('only marks articles published within the last six months as new', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-17T00:00:00.000Z'))
+    const { rerender } = render(<AnthropicArticleRow article={article({ publishedAt: '2026-05-17T00:00:00.000Z' })} theme="academic" />)
+    expect(screen.getByTestId('blog-recent-tag')).toBeInTheDocument()
+    rerender(<AnthropicArticleRow article={article({ publishedAt: '2026-05-16T00:00:00.000Z' })} theme="academic" />)
+    expect(screen.queryByTestId('blog-recent-tag')).not.toBeInTheDocument()
   })
 
   it('no section tag for constitution entry', () => {

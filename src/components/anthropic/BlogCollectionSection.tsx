@@ -3,6 +3,7 @@ import type { DragEvent, ReactNode } from 'react'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 import { BRIEFING_LIST_STYLES } from '@/lib/briefing-font-size'
+import { ANTHROPIC_SOURCES, LEGACY_SECTION_META, sectionOf } from '@/lib/anthropic-sections'
 import type { AnthropicArticleMeta, BlogCollectionEntry, BlogMineGroup, BlogOrder, BlogReadEntry, BlogReorderRequest, BriefingTheme } from '@shared/index'
 import { AnthropicArticleRow } from './AnthropicArticleRow'
 import { BlogMineGroupSection } from './BlogMineGroupSection'
@@ -36,15 +37,33 @@ const GROUP_MIME = 'application/x-blog-group'
 function formatDate(iso: string | null | undefined) {
   if (!iso) return '未知日期'
   try {
-    return new Date(iso).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+    const date = new Date(iso)
+    if (Number.isNaN(date.getTime())) return iso
+    return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
   } catch {
     return iso
   }
 }
 
-function CardThumb({ imageUrl, isAcademic }: { imageUrl?: string | null; isAcademic: boolean }) {
-  if (imageUrl) return <img src={imageUrl} alt="" className="h-14 w-14 shrink-0 rounded object-cover" loading="lazy" decoding="async" />
-  return <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded text-xs ${isAcademic ? 'bg-parchment/10 text-parchment/40' : 'bg-[#e8e4de] text-[#6b5d52]/60'}`}>无配图</div>
+function isRecent(iso: string | null | undefined) {
+  if (!iso) return false
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return false
+  const now = new Date()
+  const cutoff = new Date(now)
+  cutoff.setMonth(cutoff.getMonth() - 6)
+  return date >= cutoff && date <= now
+}
+
+function CardThumb({ imageUrl, isAcademic, recent }: { imageUrl?: string | null; isAcademic: boolean; recent: boolean }) {
+  return (
+    <div className="relative h-14 w-14 shrink-0">
+      {imageUrl
+        ? <img src={imageUrl} alt="" className="h-14 w-14 rounded object-cover" loading="lazy" decoding="async" />
+        : <div className={`flex h-14 w-14 items-center justify-center rounded text-xs ${isAcademic ? 'bg-parchment/10 text-parchment/40' : 'bg-[#e8e4de] text-[#6b5d52]/60'}`}>无配图</div>}
+      {recent && <span data-testid="blog-recent-tag" className="absolute -right-1 -top-1 rounded bg-ember px-1 py-0.5 text-[8px] font-semibold leading-none text-white shadow-sm">NEW</span>}
+    </div>
+  )
 }
 
 export function BlogCollectionSection({
@@ -60,6 +79,8 @@ export function BlogCollectionSection({
   const removeBlogRead = useStore(state => state.removeBlogRead)
   const showToast = useStore(state => state.showToast)
   const [expandedReason, setExpandedReason] = useState<string | null>(null)
+  const [draggingArticleUrl, setDraggingArticleUrl] = useState<string | null>(null)
+  const [dragOverArticleUrl, setDragOverArticleUrl] = useState<string | null>(null)
   const listStyles = BRIEFING_LIST_STYLES[fontSize]
   const muted = isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'
 
@@ -95,8 +116,17 @@ export function BlogCollectionSection({
     onReorder({ kind: 'group', source, target, placement: event.clientY > rect.top + rect.height / 2 ? 'after' : 'before' })
   }
 
+  const clearArticleDrag = () => {
+    setDraggingArticleUrl(null)
+    setDragOverArticleUrl(null)
+  }
+
   const renderCard = (group: BlogMineGroup, article: AnthropicArticleMeta) => {
     let card: ReactNode
+    const sectionKey = sectionOf(article)
+    const section = article.local === 'constitution'
+      ? null
+      : ANTHROPIC_SOURCES.find(item => item.key === sectionKey) ?? LEGACY_SECTION_META[sectionKey] ?? null
     if (group === 'saved') {
       card = <AnthropicArticleRow article={article} theme={theme} showUnimport inCollection={false}
         onToggleCollection={() => void toggleBlogCollection({ sourceUrl: article.url, filePath: article.filePath!, title: article.title })}
@@ -105,15 +135,16 @@ export function BlogCollectionSection({
     } else if (group === 'read') {
       const entry = collection.read.find(item => item.sourceUrl === article.url)
       if (!entry) return null
-      card = <ReadCard entry={entry} isAcademic={isAcademic} titleSize={listStyles.title} metaSize={listStyles.meta}
-        imageUrl={article.imageUrl} dateIso={article.publishedAt ?? entry.readAt}
+      card = <ReadCard entry={entry} isAcademic={isAcademic} titleSize={listStyles.title}
+        imageUrl={article.imageUrl} dateIso={article.publishedAt ?? entry.readAt} section={section}
         onOpen={() => void openMarkedFile(article, () => removeBlogRead(article.url), '该文件已被删除，已从已读移除')}
         onRemove={() => onRequestDelete({ kind: 'read', sourceUrl: article.url, filePath: entry.filePath, title: entry.title })} />
     } else {
       const entry = collection.entries.find(item => item.sourceUrl === article.url)
       if (!entry) return null
       card = <CollectionCard entry={entry} isAcademic={isAcademic} titleSize={listStyles.title} metaSize={listStyles.meta}
-        imageUrl={article.imageUrl} dateText={formatDate(article.publishedAt ?? entry.addedAt)}
+        imageUrl={article.imageUrl} recommendedAt={formatDate(entry.addedAt)} section={section}
+        recent={isRecent(article.publishedAt ?? entry.addedAt)}
         isRead={collection.read.some(item => item.sourceUrl === article.url)} expanded={expandedReason === article.url}
         onToggleReason={() => setExpandedReason(current => current === article.url ? null : article.url)}
         onOpen={() => void openMarkedFile(article, () => removeBlogCollection(article.url), '该文件已被删除，已从收藏夹移除')}
@@ -121,16 +152,24 @@ export function BlogCollectionSection({
         onToggleRead={() => void toggleBlogRead({ sourceUrl: article.url, filePath: entry.filePath, title: entry.title })} />
     }
     return (
-      <div key={article.url} data-testid={`blog-${group}-card-${article.url}`} className="group/article relative"
-        onDragOver={event => { if (event.dataTransfer.types.includes(ARTICLE_MIME)) event.preventDefault() }}
-        onDrop={event => dropArticle(event, group, article.url)}>
-        <span data-testid={`blog-list-article-handle-${article.url}`} draggable onClick={event => event.stopPropagation()}
+      <div key={article.url} data-testid={`blog-${group}-card-${article.url}`}
+        className={`group/article relative ${draggingArticleUrl === article.url ? 'opacity-40' : ''} ${dragOverArticleUrl === article.url ? 'rounded ring-1 ring-ember' : ''}`}
+        onDragOver={event => {
+          if (!event.dataTransfer.types.includes(ARTICLE_MIME)) return
+          event.preventDefault()
+          event.dataTransfer.dropEffect = 'move'
+          setDragOverArticleUrl(article.url)
+        }}
+        onDrop={event => { clearArticleDrag(); dropArticle(event, group, article.url) }}>
+        <span data-testid={`blog-list-article-handle-${article.url}`} title="拖拽排序" draggable onClick={event => event.stopPropagation()}
           onDragStart={event => {
             event.stopPropagation()
             event.dataTransfer.setData(ARTICLE_MIME, JSON.stringify({ group, sourceUrl: article.url }))
             event.dataTransfer.effectAllowed = 'move'
+            setDraggingArticleUrl(article.url)
           }}
-          className="absolute left-0 top-1 z-20 flex h-6 w-4 cursor-grab items-center justify-center rounded opacity-0 transition-opacity group-hover/article:opacity-100">⠿</span>
+          onDragEnd={clearArticleDrag}
+          className="absolute left-0 top-1 z-20 flex h-6 w-4 cursor-grab items-center justify-center rounded opacity-0 transition-opacity active:cursor-grabbing group-hover/article:opacity-100">⠿</span>
         {card}
       </div>
     )
@@ -159,38 +198,48 @@ export function BlogCollectionSection({
   )
 }
 
-function ReadCard({ entry, isAcademic, titleSize, metaSize, imageUrl, dateIso, onOpen, onRemove }: {
+function ReadCard({ entry, isAcademic, titleSize, imageUrl, dateIso, section, onOpen, onRemove }: {
   entry: BlogReadEntry
   isAcademic: boolean
   titleSize: string
-  metaSize: string
   imageUrl?: string | null
   dateIso: string
+  section: { label: string; color: string } | null
   onOpen: () => void
   onRemove: () => void
 }) {
   return (
-    <div className={`relative flex items-start gap-3 rounded border border-l-[3px] border-l-ember p-4 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
-      <CardThumb imageUrl={imageUrl} isAcademic={isAcademic} />
-      <div className="min-w-0 flex-1 pr-10">
-        <button type="button" data-testid={`blog-read-open-${entry.sourceUrl}`} onClick={onOpen}
-          className={`block w-full truncate text-left ${isAcademic ? 'text-parchment hover:text-ember' : 'text-[#1a1a1a] hover:text-ember'}`}
-          style={{ fontSize: titleSize }}>{entry.title}</button>
-        <p className={isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'} style={{ fontSize: metaSize }}>{formatDate(dateIso)}</p>
+    <div className={`group relative rounded border border-l-[3px] border-l-ember p-4 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
+      <div className="flex items-start gap-3">
+        <CardThumb imageUrl={imageUrl} isAcademic={isAcademic} recent={isRecent(dateIso)} />
+        <div className="min-w-0 flex-1">
+          <button type="button" data-testid={`blog-read-open-${entry.sourceUrl}`} onClick={onOpen}
+            className={`block w-full text-left ${isAcademic ? 'text-parchment hover:text-ember' : 'text-[#1a1a1a] hover:text-ember'}`}
+            style={{ fontSize: titleSize }}><span className="line-clamp-2 group-hover:line-clamp-none">{entry.title}</span></button>
+          <div className="mt-1 flex items-center gap-1">
+            {section && <span data-testid={`blog-read-source-${entry.sourceUrl}`}
+              className="inline-block shrink-0 rounded-full border px-1 py-0.5 text-[9px]"
+              style={{ borderColor: `${section.color}66`, color: section.color }}>{section.label}</span>}
+            <span data-testid={`blog-read-actions-${entry.sourceUrl}`} className="ml-auto flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+              <BlogDeleteButton theme={isAcademic ? 'academic' : 'newspaper'} testId={`blog-read-remove-${entry.sourceUrl}`}
+                title="移出已读并删除文章" onClick={onRemove} />
+            </span>
+          </div>
+        </div>
       </div>
-      <BlogDeleteButton theme={isAcademic ? 'academic' : 'newspaper'} testId={`blog-read-remove-${entry.sourceUrl}`}
-        title="移出已读并删除文章" onClick={onRemove} className="absolute right-1.5 top-1.5" />
     </div>
   )
 }
 
-function CollectionCard({ entry, isAcademic, titleSize, metaSize, imageUrl, dateText, isRead, expanded, onToggleReason, onOpen, onRemove, onToggleRead }: {
+function CollectionCard({ entry, isAcademic, titleSize, metaSize, imageUrl, recommendedAt, recent, section, isRead, expanded, onToggleReason, onOpen, onRemove, onToggleRead }: {
   entry: BlogCollectionEntry
   isAcademic: boolean
   titleSize: string
   metaSize: string
   imageUrl?: string | null
-  dateText: string
+  recommendedAt: string
+  recent: boolean
+  section: { label: string; color: string } | null
   isRead: boolean
   expanded: boolean
   onToggleReason: () => void
@@ -199,30 +248,35 @@ function CollectionCard({ entry, isAcademic, titleSize, metaSize, imageUrl, date
   onToggleRead: () => void
 }) {
   return (
-    <div className={`relative rounded border border-l-[3px] border-l-ember p-4 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
+    <div className={`group relative rounded border border-l-[3px] border-l-ember p-4 ${isAcademic ? 'bg-ink/30 border-parchment/10' : 'bg-white border-[#1a1a1a]/10'}`}>
       <div className="flex items-start gap-3">
-        {entry.origin === 'recommend' && (
-          <button type="button" data-testid={`blog-collection-reason-${entry.sourceUrl}`} onClick={onToggleReason} className="mt-0.5 shrink-0" style={{ fontSize: titleSize }} title="推荐理由">&#128161;</button>
-        )}
-        <CardThumb imageUrl={imageUrl} isAcademic={isAcademic} />
-        <div className="min-w-0 flex-1 pr-16">
+        <CardThumb imageUrl={imageUrl} isAcademic={isAcademic} recent={recent} />
+        <div className="min-w-0 flex-1">
           <button type="button" data-testid={`blog-collection-open-${entry.sourceUrl}`} onClick={onOpen}
-            className={`block w-full truncate text-left ${isAcademic ? 'text-parchment hover:text-ember' : 'text-[#1a1a1a] hover:text-ember'}`}
-            style={{ fontSize: titleSize }}>{entry.title}</button>
-          <p className={isAcademic ? 'text-parchment/50' : 'text-[#6b5d52]'} style={{ fontSize: metaSize }}>
-            {dateText}{entry.origin === 'recommend' ? ' · 推荐' : ''}
-          </p>
+            className={`block w-full text-left ${isAcademic ? 'text-parchment hover:text-ember' : 'text-[#1a1a1a] hover:text-ember'}`}
+            style={{ fontSize: titleSize }}><span className="line-clamp-2 group-hover:line-clamp-none">{entry.title}</span></button>
+          <div className="mt-1 flex items-center gap-1">
+            {entry.origin === 'recommend' && <button type="button" data-testid={`blog-collection-reason-${entry.sourceUrl}`} onClick={onToggleReason}
+              className="inline-flex shrink-0 items-center justify-center rounded-full border border-ember/40 px-1 py-0.5 text-[10px] leading-none text-ember hover:bg-ember/10"
+              title="推荐理由">&#128161;</button>}
+            {section && <span data-testid={`blog-collection-source-${entry.sourceUrl}`}
+              className="inline-block shrink-0 rounded-full border px-1 py-0.5 text-[9px]"
+              style={{ borderColor: `${section.color}66`, color: section.color }}>{section.label}</span>}
+            <span data-testid={`blog-collection-actions-${entry.sourceUrl}`} className="ml-auto flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+              <span data-testid={`blog-collection-read-${entry.sourceUrl}`} role="button" aria-pressed={isRead}
+                title={isRead ? '已读（点击取消）' : '标为已读'} onClick={onToggleRead}
+                className={`flex h-7 w-7 items-center justify-center ${isRead ? 'text-ember' : `${isAcademic ? 'text-parchment/30' : 'text-[#6b5d52]/40'} hover:text-ember`}`}>
+                <BookIcon active={isRead} size={13} />
+              </span>
+              <BlogDeleteButton theme={isAcademic ? 'academic' : 'newspaper'} testId={`blog-collection-remove-${entry.sourceUrl}`}
+                title="移出收藏并删除文章" onClick={onRemove} />
+            </span>
+          </div>
         </div>
-        <BlogDeleteButton theme={isAcademic ? 'academic' : 'newspaper'} testId={`blog-collection-remove-${entry.sourceUrl}`}
-          title="移出收藏并删除文章" onClick={onRemove} className="absolute right-1.5 top-1.5" />
-        <span data-testid={`blog-collection-read-${entry.sourceUrl}`} role="button" aria-pressed={isRead}
-          title={isRead ? '已读（点击取消）' : '标为已读'} onClick={onToggleRead}
-          className={`absolute right-9 top-1.5 flex h-7 w-7 items-center justify-center ${isRead ? 'text-ember' : `${isAcademic ? 'text-parchment/30' : 'text-[#6b5d52]/40'} hover:text-ember`}`}>
-          <BookIcon active={isRead} size={13} />
-        </span>
       </div>
       {expanded && entry.origin === 'recommend' && (
         <div className={`mt-1.5 leading-relaxed ${isAcademic ? 'text-parchment/60' : 'text-[#6b5d52]'}`} style={{ fontSize: metaSize }}>
+          <p><span className="text-ember">推荐日期：</span>{recommendedAt}</p>
           {entry.guide && <p><span className="text-ember">导读：</span>{entry.guide}</p>}
           <p><span className="text-ember">为什么推荐：</span>{entry.reason}</p>
           {entry.gap && <p className="mt-0.5"><span className="text-ember">补上缺口：</span>{entry.gap}</p>}

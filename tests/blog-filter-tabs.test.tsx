@@ -31,13 +31,16 @@ describe('BlogFilterTabs', () => {
     expect(screen.getByTestId('wall-view-all')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('我的视图仍显示来源下拉框，主视图使用标签页', () => {
+  it('我的/全部与来源下拉框同排，不显示固定来源标签', () => {
     render(<BlogFilterTabs area="list" value={DEFAULT_BLOG_FILTER} onChange={() => {}} />)
 
+    const filters = screen.getByTestId('list-blog-filter-tabs')
+    expect(filters).toHaveClass('flex', 'items-center')
     expect(screen.getByTestId('list-view-mine')).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByTestId('list-view-filter-row')).toHaveAttribute('role', 'tablist')
     expect(screen.getByTestId('list-source-select')).toHaveValue('all')
     expect(screen.getByTestId('list-source-all')).toBeInTheDocument()
     expect(screen.getByTestId('list-source-research')).toBeInTheDocument()
+    expect(screen.queryByText('来源', { exact: true })).not.toBeInTheDocument()
   })
 })
