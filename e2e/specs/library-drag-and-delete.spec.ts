@@ -18,7 +18,7 @@ test.describe('@p2 library drag and delete', () => {
     await expect(topicCard).toBeVisible({ timeout: 10000 })
     await topicCard.click()
     // Session entries should appear after expanding
-    const sessionEntries = window.locator('[data-testid="session-file-button"]')
+    const sessionEntries = window.locator('[data-testid="study-topic-board"] [data-testid^="study-session-row-"]')
     const count = await sessionEntries.count()
     expect(count).toBeGreaterThanOrEqual(3)
   })

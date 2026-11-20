@@ -143,17 +143,6 @@ export class StudyPage {
     await this.externalSummaryPanel.waitFor({ state: 'hidden' })
   }
 
-  async closeExternalSummaryByBackdrop() {
-    // Click near the left edge of the study page (outside the panel) to trigger an outside click.
-    await this.pageElement.click({ position: { x: 10, y: 10 } })
-    await this.externalSummaryPanel.waitFor({ state: 'hidden' })
-  }
-
-  async closeExternalSummaryByEsc() {
-    await this.page.keyboard.press('Escape')
-    await this.externalSummaryPanel.waitFor({ state: 'hidden' })
-  }
-
   async isExternalSummaryVisible(): Promise<boolean> {
     return this.externalSummaryPanel.isVisible()
   }

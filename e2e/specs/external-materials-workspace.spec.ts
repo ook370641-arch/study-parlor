@@ -5,14 +5,14 @@ import { PreStudyPage } from '../pages/PreStudyPage'
 import { StudyPage } from '../pages/StudyPage'
 import { seedStateJson } from '../helpers/test-library'
 
-test.describe('@p1 external materials summary panel', () => {
+test.describe('@p1 external materials workspace', () => {
   test.beforeEach(async ({ testConfigDir }) => {
     seedStateJson(testConfigDir, {
       profile: { name: '摘要面板测试', profile_text: '', preferred_topics: [] },
     })
   })
 
-  test('panel is closed by default and toggle is visible', async ({ window }) => {
+  test('workspace is hidden by default and tab is visible', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded('摘要面板测试')
 
@@ -44,7 +44,7 @@ test.describe('@p1 external materials summary panel', () => {
     await expect(study.externalSummaryPanel).toBeHidden()
   })
 
-  test('opens and closes summary panel', async ({ window }) => {
+  test('opens summary workspace and returns to conversation', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded('摘要面板测试')
 
@@ -65,18 +65,18 @@ test.describe('@p1 external materials summary panel', () => {
     )
 
     await study.openExternalSummary()
-    await expect(study.externalSummaryPanel).toContainText('外部资料摘要')
+    await expect(window.locator('[data-testid="study-workspace-tab-external-summary"]')).toHaveAttribute('aria-selected', 'true')
     await expect(study.externalSummaryPanel).toContainText('常见误解')
 
     await study.closeExternalSummary()
     await expect(study.externalSummaryPanel).toBeHidden()
 
     await study.openExternalSummary()
-    await study.closeExternalSummaryByEsc()
+    await study.closeExternalSummary()
     await expect(study.externalSummaryPanel).toBeHidden()
   })
 
-  test('closes summary panel by clicking backdrop', async ({ window }) => {
+  test('returning to conversation preserves external materials', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded('摘要面板测试')
 
@@ -99,11 +99,12 @@ test.describe('@p1 external materials summary panel', () => {
     await study.openExternalSummary()
     await expect(study.externalSummaryPanel).toContainText('应用场景')
 
-    await study.closeExternalSummaryByBackdrop()
+    await study.closeExternalSummary()
     await expect(study.externalSummaryPanel).toBeHidden()
+    await expect(study.externalMaterialsCard).toBeVisible()
   })
 
-  test('说明入口在面板标题栏：展开工作流，点弹层不会关掉摘要面板', async ({ window }) => {
+  test('说明入口在工作区内：展开工作流，点弹层不会关掉摘要页签', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded('摘要面板测试')
 
@@ -134,13 +135,14 @@ test.describe('@p1 external materials summary panel', () => {
     await expect(note).toContainText('生成宽域查询')
     await expect(note).toContainText('两轮')
 
-    // 点弹层内部不应触发摘要面板的「点外部关闭」
+    // 点弹层内部不应切换摘要工作区。
     await note.click({ position: { x: 20, y: 20 } })
     await expect(study.externalSummaryPanel).toBeVisible()
     await expect(note).toBeVisible()
 
     await window.keyboard.press('Escape')
     await expect(note).toHaveCount(0)
+    await expect(study.externalSummaryPanel).toBeVisible()
   })
 
   test('source citations are clickable and scroll to source list', async ({ window }) => {
@@ -177,7 +179,7 @@ test.describe('@p1 external materials summary panel', () => {
     await study.closeExternalSummary()
   })
 
-  test('panel does not cover chat bubbles when open', async ({ window }) => {
+  test('summary workspace replaces chat and conversation restores the same message', async ({ window }) => {
     const cover = new CoverPage(window)
     await cover.enterIfNeeded('摘要面板测试')
 
@@ -214,15 +216,14 @@ test.describe('@p1 external materials summary panel', () => {
       }
     })
 
-    await study.openExternalSummary()
-
-    // Assert the actual assistant message bubble (not the full-width wrapper) stays left of the panel.
     const bubble = window.locator('[data-testid="assistant-message"] >> div').last()
     await bubble.waitFor({ state: 'visible' })
-    const bubbleBox = await bubble.boundingBox()
-    const panelBox = await study.externalSummaryPanel.boundingBox()
-    expect(bubbleBox).not.toBeNull()
-    expect(panelBox).not.toBeNull()
-    expect(bubbleBox!.x + bubbleBox!.width).toBeLessThanOrEqual(panelBox!.x + 2)
+    await study.openExternalSummary()
+    await expect(bubble).toBeHidden()
+    await expect(study.externalSummaryPanel).toBeVisible()
+
+    await study.closeExternalSummary()
+    await expect(bubble).toBeVisible()
+    await expect(bubble).toContainText('这是一条比较长的测试回复')
   })
 })

@@ -51,7 +51,7 @@ export function Settings() {
               <h2 className="text-2xl font-serif font-semibold">设置 · 仪器调校</h2>
               <button
                 data-testid="settings-back-button"
-                onClick={() => goto(settingsReturnTo ?? 'home')}
+                onClick={() => goto(settingsReturnTo ?? 'briefing')}
                 className={`${isAcademic ? 'text-parchment/70 hover:text-parchment' : 'text-[#555] hover:text-[#1a1a1a]'} text-sm bg-transparent border-none cursor-pointer font-sans`}
               >
                 返回夜话

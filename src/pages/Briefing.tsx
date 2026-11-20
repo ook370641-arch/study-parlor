@@ -21,6 +21,9 @@ import {
   BRIEFING_QUOTE_SIZES,
 } from '@/lib/briefing-font-size'
 import { writingRootOf } from '@/lib/writing-tree-utils'
+import { StudySourcePanel } from '@/components/study/StudySourcePanel'
+import { StudyWall } from '@/components/study/StudyWall'
+import { StudyTopicBoard } from '@/components/study/StudyTopicBoard'
 
 export function Briefing() {
   const theme = useStore((s) => s.briefingTheme)
@@ -34,7 +37,9 @@ export function Briefing() {
   const writingWallVisible = useStore((s) => s.writingWallVisible)
   const writingFilePath = useStore((s) => s.writingFile?.path)
   const [dateColumnCollapsed, setDateColumnCollapsed] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const sidebarCollapsed = useStore((s) => s.briefingSidebarCollapsed)
+  const toggleSidebar = useStore((s) => s.toggleBriefingSidebar)
+  const studySelectedDirName = useStore((s) => s.studySelectedDirName)
 
   const isAcademic = theme !== 'newspaper'
   const bodyStyle = isAcademic
@@ -74,7 +79,7 @@ export function Briefing() {
       <BriefingSourceSidebar
         theme={theme}
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((c) => !c)}
+        onToggle={toggleSidebar}
       />
 
       <div
@@ -82,6 +87,7 @@ export function Briefing() {
         className="flex-1 flex flex-col min-w-0"
       >
         <div className="flex-1 flex min-h-0">
+          {source === 'study' && <StudySourcePanel />}
           {source === 'writing' && (
             <BriefingListColumn
               collapsed={dateColumnCollapsed}
@@ -95,7 +101,11 @@ export function Briefing() {
           )}
 
           <div className="flex-1 flex flex-col min-w-0">
-            {source === 'writing' ? (
+            {source === 'study' ? (
+              <main data-testid="study-source-workspace" className="relative z-[5] flex-1 min-h-0 min-w-0">
+                {studySelectedDirName ? <StudyTopicBoard /> : <StudyWall />}
+              </main>
+            ) : source === 'writing' ? (
               <main className="relative z-[5] flex-1 min-h-0">
                 <BriefingReaderControls
                   theme={theme}
@@ -120,9 +130,9 @@ export function Briefing() {
               </main>
             ) : source === 'book' ? (
               <BookPanel theme={theme} />
-            ) : (
+            ) : source === 'anthropic' ? (
               <AnthropicBlogPanel theme={theme} />
-            )}
+            ) : null}
           </div>
         </div>
       </div>

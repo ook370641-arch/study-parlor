@@ -688,7 +688,7 @@ export function DemoNotePopover({ noteId, anchorRef, onClose, theme = 'academic'
   )
 }
 
-/** 通用 `i` 触发器：与分组栏（GroupRibbon）同款的 italic 小圆钮，保持全应用一致 */
+/** 通用 `i` 触发器：italic 小圆钮，保持全应用一致 */
 export function DemoInfoButton({
   noteId,
   testId,

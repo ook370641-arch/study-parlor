@@ -7,9 +7,9 @@
       "sources": [
         "src/lib/demo-notes.ts",
         "src/components/demo/**",
-        "src/components/ExternalSummaryPanel.tsx",
+        "src/components/study/ExternalSummaryWorkspace.tsx",
         "src/components/ExternalMaterialsCard.tsx",
-        "src/pages/Home.tsx",
+        "src/components/study/StudyWall.tsx",
         "src/pages/Study.tsx"
       ],
       "specs": [
@@ -111,7 +111,16 @@
         "electron/lib/llm-tasks.ts",
         "electron/lib/extract-json.ts",
         "src/lib/finalize.ts",
-        "src/lib/session-runtime.ts"
+        "src/lib/session-runtime.ts",
+        "src/components/study/**",
+        "src/lib/study-*.ts",
+        "src/lib/briefing-source.ts",
+        "src/pages/Briefing.tsx",
+        "src/components/BriefingSourceSidebar.tsx",
+        "src/components/StrategyToggle.tsx",
+        "src/components/WildCardRecCard.tsx",
+        "src/components/GroupRecCard.tsx",
+        "src/components/Quote.tsx"
       ],
       "specs": [
         "new-topic-progress.spec.ts",
@@ -124,7 +133,13 @@
         "study.spec.ts",
         "diagram-generation.spec.ts",
         "fable-generation.spec.ts",
-        "group-guide.spec.ts"
+        "group-guide.spec.ts",
+        "study-source.spec.ts",
+        "study-source-layout.spec.ts",
+        "study-background-navigation.spec.ts",
+        "study-wall-all-topics.spec.ts",
+        "wild-card.spec.ts",
+        "library-*.spec.ts"
       ]
     },
     "anthropic-blog": {
@@ -151,7 +166,7 @@
         "blog-collection.spec.ts"
       ]
     },
-    "cover-home": {
+    "cover-study-source": {
       "sources": [
         "src/pages/Cover.tsx",
         "src/components/NotepadPanel.tsx",
@@ -160,7 +175,6 @@
         "electron/lib/notepad-claims-shared.cjs",
         "scripts/notepad-claim.cjs",
         "src/lib/notepad.ts",
-        "src/pages/Home.tsx",
         "src/components/settings/ProfileSettings.tsx",
         "src/components/settings/ExtensionSettings.tsx",
         "electron/lib/library-data.ts",
@@ -172,7 +186,6 @@
       ],
       "specs": [
         "cover.spec.ts",
-        "home.spec.ts",
         "profile.spec.ts",
         "smoke.spec.ts",
         "wild-card.spec.ts",
@@ -196,7 +209,10 @@
     "library": {
       "sources": [
         "src/components/library/**",
-        "src/components/StudyLibrary.tsx",
+        "src/components/study/StudyTopicBoard.tsx",
+        "src/components/study/StudyTopicCard.tsx",
+        "src/components/study/useStudyTopicActions.ts",
+        "src/components/study/useStudyGravityDrag.ts",
         "electron/ipc/files.ts",
         "electron/lib/writing-tree.ts",
         "electron/lib/writing-catalog.ts"

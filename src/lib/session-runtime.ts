@@ -33,6 +33,8 @@ export function attachSessionListeners() {
 export async function kickoffSession() {
   const s = useStore.getState()
   if (!s.session) return
+  const sessionId = s.session.abortId
+  const isOwner = () => useStore.getState().session?.abortId === sessionId
 
   let history = s.session.history
   let reviewFileBody: string | undefined
@@ -48,6 +50,7 @@ export async function kickoffSession() {
     if (s.session.dirName) {
       try {
         const { frontmatter } = await ipc.readAnchorFile(s.session.dirName)
+        if (!isOwner()) return
         progressSummary = frontmatter.progress_summary
       } catch (err) {
         console.warn('[kickoff] failed to read anchor:', err)
@@ -58,6 +61,7 @@ export async function kickoffSession() {
     if (s.session.enableExternalMaterials && !s.externalMaterials?.summary && !s.externalMaterials?.loading) {
       try {
         await useStore.getState().prepareExternalMaterials(s.session.topic)
+        if (!isOwner()) return
       } catch (err) {
         // prepareExternalMaterials 内部已 toast 并记录 error，继续降级对话
         console.warn('[kickoff] external materials failed:', err)
@@ -65,15 +69,17 @@ export async function kickoffSession() {
     }
   } else if (s.session.mode === 'review') {
     // 复习现取最新一次 session 的 学习报告.md(via readAnchorFile),
-    // 不再依赖 file_path —— StudyLibrary 复习入口本就没传 file_path,
+    // 不再依赖 file_path —— 学习来源的复习入口本就没传 file_path,
     // 之前的 `if (!file_path) throw` 会让 kickoff 直接挂掉。
     if (!s.session.dirName) throw new Error('review session needs dirName')
     const { body } = await ipc.readAnchorFile(s.session.dirName)
+    if (!isOwner()) return
     reviewFileBody = body
 
     // 复用同一次 progress 归档的外部资料
     try {
       const materials = await ipc.readExternalMaterials(s.session.dirName)
+      if (!isOwner()) return
       if (materials?.summary) {
         useStore.getState().setExternalMaterials(materials)
       }
@@ -81,12 +87,13 @@ export async function kickoffSession() {
       console.warn('[kickoff] failed to load historical external materials:', err)
     }
 
-    useStore.setState(state => state.session
+    useStore.setState(state => state.session?.abortId === sessionId
       ? { session: { ...state.session, streaming: true, reviewFileBody: body } }
       : state)
   }
 
   try {
+    if (!isOwner()) return
     const state = useStore.getState()
     await ipc.llmStart({
       sessionId: s.session.abortId,
@@ -102,7 +109,8 @@ export async function kickoffSession() {
       localMaterials: s.session.localMaterials
     })
   } catch (err: any) {
-    useStore.setState(state => state.session
+    if (!isOwner()) return
+    useStore.setState(state => state.session?.abortId === sessionId
       ? { session: { ...state.session, streaming: false } }
       : state)
     useStore.getState().showToast('启动失败:' + (err?.message ?? err))
@@ -117,6 +125,8 @@ export async function sendOrInterrupt(text: string) {
   try {
     const s = useStore.getState()
     if (!s.session) return
+    const sessionId = s.session.abortId
+    const isOwner = () => useStore.getState().session?.abortId === sessionId
 
     // 复习模式补水:从"未完成会话"恢复时 reviewFileBody 是 undefined
     // (UnsavedSession 不持久化正文;kickoff 又只在 history.length===0 时触发)
@@ -124,7 +134,8 @@ export async function sendOrInterrupt(text: string) {
     if (s.session.mode === 'review' && !s.session.reviewFileBody && s.session.dirName) {
       try {
         const { body } = await ipc.readAnchorFile(s.session.dirName)
-        useStore.setState(state => state.session
+        if (!isOwner()) return
+        useStore.setState(state => state.session?.abortId === sessionId
           ? { session: { ...state.session, reviewFileBody: body } }
           : state)
       } catch (err: any) {
@@ -135,15 +146,17 @@ export async function sendOrInterrupt(text: string) {
 
     if (s.session.streaming) {
       await s.abortAndReplaceUser(text)
+      if (!isOwner()) return
     } else {
       s.pushUserMessage(text)
     }
 
     // 自动保存 session
     await s.saveCurrentSession()
+    if (!isOwner()) return
 
     // 触发新一轮
-    useStore.setState(st => st.session
+    useStore.setState(st => st.session?.abortId === sessionId
       ? { session: { ...st.session, streaming: true } }
       : st)
     const state = useStore.getState()
@@ -165,7 +178,8 @@ export async function sendOrInterrupt(text: string) {
         localMaterials: state.session!.localMaterials
       })
     } catch (err: any) {
-      useStore.setState(st => st.session
+      if (!isOwner()) return
+      useStore.setState(st => st.session?.abortId === sessionId
         ? { session: { ...st.session, streaming: false } }
         : st)
       useStore.getState().showToast('请求失败:' + (err?.message ?? err))

@@ -17,7 +17,7 @@ async function waitForSessionsCleared(sessionsDir: string, timeoutMs: number = 5
   throw new Error(`Timed out waiting for ${sessionsDir} to be cleared`)
 }
 
-test.describe('@p1 home', () => {
+test.describe('@p1 study source', () => {
   test('recover unsaved session', async ({ window, testConfigDir, testLibraryPath }) => {
     seedUnsavedSession(testConfigDir, {
       id: 'test-unsaved-1',

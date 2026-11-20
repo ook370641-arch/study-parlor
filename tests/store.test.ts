@@ -343,7 +343,7 @@ describe('store core operations', () => {
           { role: 'user', content: '今夜想学:Live' },
           { role: 'assistant', content: '完整回答' }
         ] } : st.session,
-        currentPage: 'home'
+        currentPage: 'briefing'
       }))
       useStore.getState().setExternalMaterials({ summary: '资料摘要', sources: [] })
 
@@ -377,7 +377,7 @@ describe('store core operations', () => {
 
       expect(ipc.llmAbort).toHaveBeenCalledWith(liveId)
       expect(useStore.getState().session).toBeNull()
-      expect(useStore.getState().currentPage).toBe('home')
+      expect(useStore.getState().currentPage).toBe('briefing')
     })
 
     it('does nothing when id does not match live session', () => {

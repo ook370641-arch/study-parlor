@@ -36,7 +36,7 @@ vi.mock('@/lib/paintings', () => ({
 }))
 
 import { ipc } from '@/lib/ipc'
-import { attachSessionListeners } from '@/lib/session-runtime'
+import { attachSessionListeners, kickoffSession } from '@/lib/session-runtime'
 import { useStore } from '@/store'
 
 // Access callbacks through the module's internal export
@@ -152,5 +152,22 @@ describe('attachSessionListeners', () => {
     cbs.error[0]('wrong-id', { code: 'ERR', message: 'fail' })
     expect(useStore.getState().session!.streaming).toBe(true)
     expect(useStore.getState().toast).toBeNull()
+  })
+
+  it('does not write a delayed review read into a replacement session', async () => {
+    let resolveRead!: (value: { body: string; frontmatter: Record<string, never> }) => void
+    vi.mocked(ipc.readAnchorFile).mockImplementation(() => new Promise(resolve => { resolveRead = resolve }))
+    vi.mocked(ipc.llmStart).mockClear()
+    useStore.setState({
+      session: { mode: 'review', topic: '旧主题', dirName: 'old', difficulty: 'mid', temperature: 0.7, history: [], streaming: false, abortId: 'old-id', archivePending: false },
+    })
+    const pending = kickoffSession()
+    useStore.getState().startSession({ mode: 'progress', topic: '新主题', difficulty: 'mid', temperature: 0.7 })
+    const currentId = useStore.getState().session!.abortId
+    resolveRead({ body: '旧报告', frontmatter: {} })
+    await pending
+    expect(useStore.getState().session?.abortId).toBe(currentId)
+    expect(useStore.getState().session?.reviewFileBody).toBeUndefined()
+    expect(ipc.llmStart).not.toHaveBeenCalled()
   })
 })

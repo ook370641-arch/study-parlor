@@ -31,6 +31,9 @@ import type { Painting } from '@shared/index'
 import { deriveTitle, migrateCoverNotepad, newNotepadId, stripNotepadClaims } from '@/lib/notepad'
 import { inferBookChapter, noteChapter } from '@/lib/notes-list'
 import { restoreArticlePanelMode } from '@/lib/article-panel-mode'
+import { normalizeBriefingSource } from '@/lib/briefing-source'
+import type { StudyTopicTab, StudyWorkspaceTab } from '@shared/index'
+import { buildFableUserPrompt, stripFrontmatter, studyArtifactKey } from '@/lib/study-artifacts'
 
 export type AssistantSession = {
   contextId: string
@@ -55,7 +58,7 @@ export type AssistantSession = {
   activeChunkIndex: number | null
 }
 
-type Page = 'cover' | 'home' | 'study' | 'settings' | 'briefing'
+type Page = 'cover' | 'study' | 'settings' | 'briefing'
 
 type Session = {
   mode: Mode
@@ -128,6 +131,31 @@ type AppStore = {
   togglePaintingPlate: () => Promise<void>
   // Anthropic 博客
   briefingSource: BriefingSourceId
+  briefingSidebarCollapsed: boolean
+  studyListCollapsed: boolean
+  studySelectedDirName: string | null
+  studySelectedSessionNumber: number | null
+  studyTopicTab: StudyTopicTab
+  studyWorkspaceTab: StudyWorkspaceTab
+  studySearchQuery: string
+  studyExpandedGroups: Record<string, boolean>
+  studyExpandedTopics: Record<string, boolean>
+  toggleBriefingSidebar: () => void
+  toggleStudyList: () => void
+  setStudySearchQuery: (query: string) => void
+  toggleStudyGroup: (groupId: string) => void
+  toggleStudyTopic: (dirName: string) => void
+  openStudyWall: () => void
+  openStudyTopic: (dirName: string, sessionNumber?: number) => void
+  setStudyTopicTab: (tab: StudyTopicTab) => void
+  setStudyWorkspaceTab: (tab: StudyWorkspaceTab) => void
+  studyStreamError: { code: string; message: string } | null
+  setStudyStreamError: (error: { code: string; message: string } | null) => void
+  studyDiagramTasks: Record<string, true>
+  studyFableTasks: Record<string, true>
+  studyArtifactVersions: Record<string, number>
+  generateStudyDiagram: (dirName: string, sessionNumber: number) => Promise<void>
+  generateStudyFable: (args: { dirName: string; sessionNumber: number; selectedTags: string[]; description: string }) => Promise<void>
   anthropicBlogCache: AnthropicBlogCache
   anthropicReaderFilePath: string | null
   anthropicReaderBody: string | null
@@ -245,9 +273,6 @@ type AppStore = {
   /** 恢复某个说明条目的全部默认文案 */
   resetDemoNoteOverrides: (noteId: string) => void
 
-  // 外部资料摘要面板
-  isExternalSummaryOpen: boolean
-
   // 外部资料
   externalMaterials: {
     summary: string | null
@@ -313,9 +338,6 @@ type AppStore = {
   clearExternalMaterials: () => void
 
   // 外部资料摘要面板操作
-  openExternalSummary: () => void
-  closeExternalSummary: () => void
-  toggleExternalSummary: () => void
 
   // 分组操作
   loadGroups: () => Promise<void>
@@ -638,7 +660,6 @@ export const useStore = create<AppStore>((set, get) => ({
   fableStyleTags: ['科幻', '童话', '历史', '日常生活', '悬疑', '诗意散文'],
   lastFableTags: [],
   externalMaterials: null,
-  isExternalSummaryOpen: false,
   modal: null,
   preStudyArgs: null,
   toast: null,
@@ -659,6 +680,19 @@ export const useStore = create<AppStore>((set, get) => ({
   studyFontSize: 'lg',
   paintingPlateEnabled: false,
   briefingSource: 'writing',
+  briefingSidebarCollapsed: false,
+  studyListCollapsed: false,
+  studySelectedDirName: null,
+  studySelectedSessionNumber: null,
+  studyTopicTab: 'report',
+  studyWorkspaceTab: 'conversation',
+  studySearchQuery: '',
+  studyExpandedGroups: {},
+  studyExpandedTopics: {},
+  studyDiagramTasks: {},
+  studyFableTasks: {},
+  studyArtifactVersions: {},
+  studyStreamError: null,
   booksList: [],
   booksLoading: false,
   booksImporting: false,
@@ -743,7 +777,7 @@ export const useStore = create<AppStore>((set, get) => ({
       briefingTheme: state.briefingTheme ?? 'academic',
       briefingFontSize: state.briefingFontSize ?? 'base',
       studyFontSize: normalizeStudyFontSize(state.studyFontSize),
-      briefingSource: state.briefingSource === 'anthropic' || state.briefingSource === 'writing' || state.briefingSource === 'book' ? state.briefingSource : 'writing',
+      briefingSource: normalizeBriefingSource(state.briefingSource),
       anthropicBlogCache: state.anthropicBlogCache
         ? { ...state.anthropicBlogCache, loading: false, error: null, sectionStatus: state.anthropicBlogCache.sectionStatus ?? {}, articleMetaCache: state.anthropicBlogCache.articleMetaCache ?? {} }
         : { lastFetchedAt: null, articles: [], loading: false, error: null, sectionStatus: {}, articleMetaCache: {} },
@@ -1029,7 +1063,7 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ demoNoteOverrides: next } as Partial<StateJson>)
   },
 
-  // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。
+  // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省简报）。
   goto: async (p) => {
     // HTML 删除模式有未写回删除时先 flush（离开页面=自动写回）；失败中止导航
     const htmlFlush = get().htmlDeleteFlush
@@ -1063,12 +1097,14 @@ export const useStore = create<AppStore>((set, get) => ({
         groupId: a.groupId
       },
       externalMaterials: null,
-      isExternalSummaryOpen: false,
+      studyWorkspaceTab: 'conversation',
+      studyStreamError: null,
+      briefingSource: 'study',
       modal: null,
       preStudyArgs: null,
       currentPage: 'study'
     })
-    ipc.patchState({ ui: { session_count: nextCount } } as Partial<StateJson>)
+    ipc.patchState({ ui: { session_count: nextCount }, briefingSource: 'study' } as Partial<StateJson>)
   },
 
   appendChunk: (text) => set(s => {
@@ -1252,6 +1288,83 @@ export const useStore = create<AppStore>((set, get) => ({
     await ipc.patchState({ briefingSource: source } as Partial<StateJson>)
     if (source === 'writing') void ipc.writingRefreshCatalog() // 摘要唯一生成时机(spec C)
     if (source === 'book') void get().loadBooks()
+  },
+
+  toggleBriefingSidebar: () => set(state => ({ briefingSidebarCollapsed: !state.briefingSidebarCollapsed })),
+  toggleStudyList: () => set(state => ({ studyListCollapsed: !state.studyListCollapsed })),
+  setStudySearchQuery: studySearchQuery => set({ studySearchQuery }),
+  toggleStudyGroup: groupId => set(state => ({
+    studyExpandedGroups: { ...state.studyExpandedGroups, [groupId]: !(state.studyExpandedGroups[groupId] ?? true) },
+  })),
+  toggleStudyTopic: dirName => set(state => ({
+    studyExpandedTopics: { ...state.studyExpandedTopics, [dirName]: !(state.studyExpandedTopics[dirName] ?? false) },
+  })),
+  openStudyWall: () => set({ studySelectedDirName: null, studySelectedSessionNumber: null, studyTopicTab: 'report' }),
+  openStudyTopic: (dirName, sessionNumber) => set({
+    studySelectedDirName: dirName,
+    studySelectedSessionNumber: sessionNumber ?? null,
+    studyTopicTab: 'report',
+  }),
+  setStudyTopicTab: studyTopicTab => set({ studyTopicTab }),
+  setStudyWorkspaceTab: studyWorkspaceTab => set({ studyWorkspaceTab }),
+  setStudyStreamError: studyStreamError => set({ studyStreamError }),
+
+  generateStudyDiagram: async (dirName, sessionNumber) => {
+    const key = studyArtifactKey(dirName, sessionNumber)
+    if (get().studyDiagramTasks[key]) return
+    const session = get().library.find(topic => topic.dirName === dirName)?.sessions.find(item => item.sessionNumber === sessionNumber)
+    if (!session?.reportFile) {
+      get().showToast('谈话记录不存在，无法生成图表')
+      return
+    }
+    set(state => ({ studyDiagramTasks: { ...state.studyDiagramTasks, [key]: true } }))
+    try {
+      const report = await ipc.readSessionFile({ dirName, sessionNumber, fileName: session.reportFile })
+      await ipc.llmGenerateDiagram({ dirName, sessionNumber, reportBody: report.content })
+      await get().rescanLibrary()
+      set(state => ({ studyArtifactVersions: { ...state.studyArtifactVersions, [key]: (state.studyArtifactVersions[key] ?? 0) + 1 } }))
+    } catch (error) {
+      console.error('[study] diagram generation failed:', error)
+      get().showToast('图表生成失败')
+    } finally {
+      set(state => {
+        const next = { ...state.studyDiagramTasks }
+        delete next[key]
+        return { studyDiagramTasks: next }
+      })
+    }
+  },
+
+  generateStudyFable: async ({ dirName, sessionNumber, selectedTags, description }) => {
+    const key = studyArtifactKey(dirName, sessionNumber)
+    if (get().studyFableTasks[key]) return
+    get().setLastFableTags(selectedTags)
+    const session = get().library.find(topic => topic.dirName === dirName)?.sessions.find(item => item.sessionNumber === sessionNumber)
+    if (!session?.reportFile) {
+      get().showToast('谈话记录不存在，无法唤醒寓言')
+      return
+    }
+    set(state => ({ studyFableTasks: { ...state.studyFableTasks, [key]: true } }))
+    try {
+      const { content } = await ipc.readSessionFile({ dirName, sessionNumber, fileName: session.reportFile })
+      const fable = await ipc.llmGenerateFableFromReport({
+        reportBody: stripFrontmatter(content),
+        topic: session.title || dirName,
+        userPrompt: buildFableUserPrompt(selectedTags, description),
+      })
+      await ipc.writeFable({ dirName, sessionNumber, title: fable.title, body: fable.body })
+      await get().rescanLibrary()
+      set(state => ({ studyArtifactVersions: { ...state.studyArtifactVersions, [key]: (state.studyArtifactVersions[key] ?? 0) + 1 } }))
+      get().showToast(`寓言「${fable.title}」已唤醒`)
+    } catch (error) {
+      get().showToast(`寓言书写失败：${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      set(state => {
+        const next = { ...state.studyFableTasks }
+        delete next[key]
+        return { studyFableTasks: next }
+      })
+    }
   },
 
   // ── 书籍来源 ──────────────────────────────────────────────
@@ -1739,16 +1852,20 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ recommendRunning: false, recommendStage: null })
   },
 
-  resetSession: () => set({ session: null, currentPage: 'home', externalMaterials: null, isExternalSummaryOpen: false }),
+  resetSession: () => set({ session: null, currentPage: 'briefing', briefingSource: 'study', externalMaterials: null, studyWorkspaceTab: 'conversation', studyStreamError: null }),
   showToast: (message) => set({ toast: { message, ts: Date.now() } }),
 
   prepareExternalMaterials: async (topic) => {
     if (get().externalMaterials?.loading) return
+    const ownerId = get().session?.abortId
+    const isOwner = () => get().session?.abortId === ownerId
     set({ externalMaterials: { summary: null, sources: [], loading: true, error: null } })
     try {
       const result = await ipc.searchPrepare({ topic })
+      if (!isOwner()) return
       set({ externalMaterials: { summary: result.summary, sources: result.sources, loading: false, error: null } })
     } catch (err: any) {
+      if (!isOwner()) return
       const code: SearchErrorCode = err?.code ?? 'NETWORK_ERROR'
       const messages: Record<SearchErrorCode, string> = {
         MISSING_API_KEY: '请先在设置中配置 Tavily API Key',
@@ -1769,11 +1886,7 @@ export const useStore = create<AppStore>((set, get) => ({
     externalMaterials: { summary: null, sources: [], loading: false, error }
   }),
 
-  clearExternalMaterials: () => set({ externalMaterials: null }),
-
-  openExternalSummary: () => set({ isExternalSummaryOpen: true }),
-  closeExternalSummary: () => set({ isExternalSummaryOpen: false }),
-  toggleExternalSummary: () => set(s => ({ isExternalSummaryOpen: !s.isExternalSummaryOpen })),
+  clearExternalMaterials: () => set({ externalMaterials: null, studyWorkspaceTab: 'conversation' }),
 
   patchProfile: async (p) => {
     const next = { ...get().profile, ...p }
@@ -1821,9 +1934,12 @@ export const useStore = create<AppStore>((set, get) => ({
     // 存活守卫:onBack 不再中断会话,若它还在内存里(后台跑完或正在跑),
     // 只切回学习页——不能用磁盘上的旧快照覆盖 live 的 history/materials
     if (get().session?.abortId === unsaved.id) {
-      set({ currentPage: 'study' })
+      set({ currentPage: 'study', briefingSource: 'study', studyStreamError: null })
+      void ipc.patchState({ briefingSource: 'study' } as Partial<StateJson>)
       return
     }
+    const previous = get().session
+    if (previous?.streaming) void ipc.llmAbort(previous.abortId)
     set({
       session: {
         mode: unsaved.mode,
@@ -1844,8 +1960,12 @@ export const useStore = create<AppStore>((set, get) => ({
       externalMaterials: unsaved.externalMaterials
         ? { summary: unsaved.externalMaterials.summary, sources: unsaved.externalMaterials.sources, loading: false, error: null }
         : null,
-      currentPage: 'study'
+      currentPage: 'study',
+      briefingSource: 'study',
+      studyWorkspaceTab: 'conversation',
+      studyStreamError: null,
     })
+    void ipc.patchState({ briefingSource: 'study' } as Partial<StateJson>)
   },
 
   removeUnsavedSession: (id) => {
@@ -1936,6 +2056,7 @@ export const useStore = create<AppStore>((set, get) => ({
     }
     await get().loadGroups()
     await get().rescanLibrary()
+    if (get().studySelectedDirName === dirName) set({ studySelectedDirName: newName })
   },
 
   rescanLibrary: async () => {

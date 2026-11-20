@@ -51,14 +51,14 @@ function ErrorFallback({ error, onReset }: { error: Error; onReset: () => void }
           重试
         </button>
         <button
-          data-testid="app-error-home"
+          data-testid="app-error-briefing"
           className="px-4 py-2 rounded border border-parchment/30 text-sm text-parchment/80 hover:border-parchment/60"
           onClick={() => {
             onReset()
-            goto('home')
+            goto('briefing')
           }}
         >
-          返回首页
+          返回简报
         </button>
       </div>
     </div>

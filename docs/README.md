@@ -30,7 +30,7 @@
 
 ### 2. 学习库管理
 
-**现状**：学习库扫描/分组/分页在用（AGENTS.md「文件系统」）；目录重构与记忆迁移已落地。
+**现状**：学习库扫描、分组树与全量主题专辑墙在用；旧首页和九条分页已移除，目录重构与记忆迁移已落地。主题归档后不进树或墙，仍从设置恢复。
 **历史链**：05-10 study-library-grouping → 05-30 study-library-pagination → 08-11 study-library-directory-restructure → 08-16 library-memory-migration
 
 ### 3. 推荐与灵感
@@ -50,8 +50,8 @@
 
 ### 6. 夜航简报 — 框架与双来源
 
-**现状**：三来源 = 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'writing' | 'anthropic' | 'book'`）。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9）。核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn`，阅读端正文字号/换画控制由 `BriefingReaderControls` 统一，书籍具体实现见域 14。
-- planned：`specs/2026-11-17-learning-source-restructure-design.md`（学习来源、分组主题树、学习专辑墙与学习中双列；已定稿未实施）；实施计划：`plans/2026-11-17-learning-source-restructure.md`（含旧功能保全矩阵映射与定向回归门禁）
+**现状**：四来源 = 学习 + 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'study' | 'writing' | 'anthropic' | 'book'`）。学习来源由分组主题树、推荐与全量主题墙、主题产物页签和正式学习双列组成；核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn` + `src/components/study/`。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9），书籍具体实现见域 14。
+- planned：`specs/2026-11-17-learning-source-restructure-design.md`（实现与定向单元回归已落地，完整 E2E 尚未运行，保留 planned 作验收门禁）；实施计划：`plans/2026-11-17-learning-source-restructure.md`（含旧功能保全矩阵映射与定向回归门禁）
 **历史链**：06-21 night-briefing → 06-22 night-briefing → 06-27 briefing-entry-and-loading → 06-27 briefing-ui-upgrade → 07-06 night-briefing-optimization → 07-14 briefing-polish → 07-15 renderer-buffer-and-startup-timing → 07-21 briefing-debug-fixes → 07-23 briefing-ui → 07-23 briefing-loop-closure → 07-25 pre-launch-briefing-fixes → 07-26 briefing-polish-batch → 08-01 briefing-background-generation
 
 ### 7. 简报来源 — Anthropic 博客（含精选集与推荐流）
@@ -80,7 +80,7 @@
 
 ### 11. 网络搜索与外部资料
 
-**现状**：Tavily 网络搜索在用（`electron/lib/search.ts` + `ipc/search.ts` + `credentials.ts`），供简报/写作助手调用；外部资料摘要面板（`ExternalSummaryPanel`）在用。新的小径（PreStudyModal）可上传本地资料（.md/.txt ≤512KB，`files:pickLocalMaterial`），随 prompt `【本地资料】` 段注入对话（`prompts.ts` localMaterials），归档时写 `本地资料.md`（`files:writeLocalMaterials`）。
+**现状**：Tavily 网络搜索在用（`electron/lib/search.ts` + `ipc/search.ts` + `credentials.ts`），供简报/写作助手调用；正式学习保留外部资料资产卡，完整摘要由「对话／外部资料」工作区页签承载。新的小径（PreStudyModal）可上传本地资料（.md/.txt ≤512KB，`files:pickLocalMaterial`），随 prompt `【本地资料】` 段注入对话（`prompts.ts` localMaterials），归档时写 `本地资料.md`（`files:writeLocalMaterials`）。
 **历史链**：06-21 web-search → 07-06 external-materials-summary-panel → 07-28 two-round-search → 10-29 local-materials-upload
 
 ### 12. 写作功能

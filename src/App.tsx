@@ -18,7 +18,6 @@ import { initAnthropicRuntime } from '@/lib/anthropic-runtime'
 // transform pipeline is 3–5× slower than on macOS/Linux.
 // Pages use named exports; React.lazy needs a default export.
 const Cover    = lazy(() => import('@/pages/Cover').then(m => ({ default: m.Cover })))
-const Home     = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })))
 const Study    = lazy(() => import('@/pages/Study').then(m => ({ default: m.Study })))
 const Settings = lazy(() => import('@/pages/Settings').then(m => ({ default: m.Settings })))
 const Briefing = lazy(() => import('@/pages/Briefing').then(m => ({ default: m.Briefing })))
@@ -96,7 +95,6 @@ export function App() {
   useEffect(() => {
     if (isBooting) return
     const prefetch = () => {
-      import('@/pages/Home')
       import('@/pages/Study')
       import('@/pages/Briefing')
     }
@@ -237,7 +235,6 @@ export function App() {
         <ErrorBoundary>
           <Suspense fallback={null}>
             {page === 'cover' && <Cover />}
-            {page === 'home' && <Home />}
             {page === 'study' && <Study />}
             {page === 'settings' && <Settings />}
             {page === 'briefing' && <Briefing />}
