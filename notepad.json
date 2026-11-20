@@ -8,13 +8,6 @@
       "createdAt": "2026-11-17T13:22:05.164Z"
     },
     {
-      "id": "nmwnrktib2btq",
-      "title": "设置页进入之后来源列不消失（因…",
-      "text": "设置页进入之后来源列不消失（因此不用做返回夜话按钮），这里主要是设计稿多出几个方案看下",
-      "category": "improvement",
-      "createdAt": "2026-11-19T16:28:07.907Z"
-    },
-    {
       "id": "nmwns2khma5nu",
       "title": "1、迭代记事板无法输入框挂载图…",
       "text": "1、迭代记事板无法输入框挂载图片（需前端加挂载效果+允许加图片）",
@@ -674,6 +667,15 @@
       "category": "improvement",
       "createdAt": "2026-11-19T16:28:55.210Z",
       "resolvedAt": "2026-11-19T16:52:13.237Z",
+      "source": "agent"
+    },
+    {
+      "id": "nmwnrktib2btq",
+      "title": "设置页保留来源导航",
+      "text": "设置页进入之后来源列不消失（因此不用做返回夜话按钮），这里主要是设计稿多出几个方案看下",
+      "category": "improvement",
+      "createdAt": "2026-11-19T16:28:07.907Z",
+      "resolvedAt": "2026-11-20T05:29:28.526Z",
       "source": "agent"
     }
   ]

@@ -49,14 +49,20 @@ describe('Settings · AI 服务', () => {
     useStore.setState({ demoNotesHidden: [] } as any)
   })
 
-  it('按 C 三栏拆分常规、卷宗和扩展', async () => {
+  it('按 B 布局保留来源栏，并在设置栏合并全部导航', async () => {
     useStore.setState({ archivedTopics: ['old-topic'] })
     render(<Settings />)
     await waitFor(() => screen.getByDisplayValue('sk-kimi-test'))
-    expect(screen.getByTestId('settings-layout')).toHaveClass('grid')
+    expect(screen.getByTestId('briefing-source-sidebar')).toBeInTheDocument()
+    expect(screen.getByTestId('settings-layout')).toHaveClass('flex')
+    expect(screen.getByTestId('settings-layout')).not.toHaveClass('grid')
+    expect(screen.getByTestId('briefing-list-column')).toHaveTextContent('设置')
     expect(screen.getByTestId('settings-primary-general')).toBeInTheDocument()
     expect(screen.getByTestId('settings-primary-profile')).toBeInTheDocument()
     expect(screen.getByTestId('settings-primary-extension')).toBeInTheDocument()
+    expect(screen.getByTestId('settings-extension-terminology')).toBeInTheDocument()
+    expect(screen.getByTestId('settings-extension-paintings')).toBeInTheDocument()
+    expect(screen.getByTestId('settings-extension-agent')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('settings-general-appearance'))
     expect(screen.getByTestId('settings-painting-delete-toggle')).toBeInTheDocument()
@@ -65,6 +71,22 @@ describe('Settings · AI 服务', () => {
     fireEvent.click(screen.getByTestId('settings-general-library'))
     expect(screen.getByTestId('settings-library-path-input')).toBeInTheDocument()
     expect(screen.getByTestId('settings-archived-topics')).toBeInTheDocument()
+  })
+
+  it('从设置页点击来源后返回对应简报内容', async () => {
+    useStore.setState({ currentPage: 'settings', briefingSource: 'anthropic' })
+    render(<Settings />)
+
+    fireEvent.click(await screen.findByTestId('briefing-source-book'))
+
+    await waitFor(() => expect(useStore.getState().currentPage).toBe('briefing'))
+    expect(useStore.getState().briefingSource).toBe('book')
+  })
+
+  it('设置页不再提供返回夜话按钮', async () => {
+    render(<Settings />)
+    expect(await screen.findByTestId('briefing-source-sidebar')).toBeInTheDocument()
+    expect(screen.queryByTestId('settings-back-button')).not.toBeInTheDocument()
   })
 
   it('单配置：维持现状——无切换器，字段回填，有新增入口', async () => {

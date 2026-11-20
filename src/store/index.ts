@@ -276,7 +276,6 @@ type AppStore = {
   setNotepadFontSize: (size: NotepadFontSize) => void
   setNotepadPanelSize: (size: { w: number; h: number }) => void
   goto: (p: Page) => Promise<void>
-  settingsReturnTo: Page | null
   openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
   closePreStudy: () => void
   startSession: (a: {
@@ -625,7 +624,6 @@ export const useStore = create<AppStore>((set, get) => ({
   archivedTopics: [],
   session: null,
   currentPage: 'cover',
-  settingsReturnTo: null,
   pendingReports: {},
   groupInspirations: {},
   inspirationStrategy: 'v2',
@@ -1029,15 +1027,11 @@ export const useStore = create<AppStore>((set, get) => ({
     ipc.patchState({ demoNoteOverrides: next } as Partial<StateJson>)
   },
 
-  // 进入 settings 时记录来源页，Settings 返回按钮优先回来源页（缺省 home）。
   goto: async (p) => {
     // HTML 删除模式有未写回删除时先 flush（离开页面=自动写回）；失败中止导航
     const htmlFlush = get().htmlDeleteFlush
     if (htmlFlush && !(await htmlFlush())) return
-    set((s) => ({
-      currentPage: p,
-      settingsReturnTo: p === 'settings' ? s.currentPage : s.settingsReturnTo,
-    }))
+    set({ currentPage: p })
   },
   openPreStudy: (a) => set({ modal: 'preStudy', preStudyArgs: a }),
   closePreStudy: () => set({ modal: null, preStudyArgs: null }),

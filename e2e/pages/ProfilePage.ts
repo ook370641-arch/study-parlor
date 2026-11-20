@@ -10,7 +10,6 @@ export class ProfilePage {
   readonly editButton: Locator
   readonly saveButton: Locator
   readonly cancelButton: Locator
-  readonly exitButton: Locator
 
   constructor(private page: Page) {
     this.nameDisplay = page.locator(SELECTORS.profile.nameDisplay)
@@ -21,7 +20,6 @@ export class ProfilePage {
     this.editButton = page.locator(SELECTORS.profile.editButton)
     this.saveButton = page.locator(SELECTORS.profile.saveButton)
     this.cancelButton = page.locator(SELECTORS.profile.cancelButton)
-    this.exitButton = page.locator(SELECTORS.settings.backButton)
   }
 
   async goto() {
@@ -70,7 +68,4 @@ export class ProfilePage {
     await this.nameDisplay.waitFor({ state: 'visible' })
   }
 
-  async exit() {
-    await this.exitButton.click()
-  }
 }

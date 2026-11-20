@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test'
 import { SELECTORS } from '../helpers/selectors'
+import { CoverPage } from './CoverPage'
 
 export class SettingsPage {
   readonly apiKeyInput: Locator
@@ -7,7 +8,6 @@ export class SettingsPage {
   readonly modelInput: Locator
   readonly libraryPathInput: Locator
   readonly verifyButton: Locator
-  readonly backButton: Locator
 
   constructor(private page: Page) {
     this.apiKeyInput = page.locator(SELECTORS.settings.apiKeyInput)
@@ -15,7 +15,6 @@ export class SettingsPage {
     this.modelInput = page.locator(SELECTORS.settings.modelInput)
     this.libraryPathInput = page.locator(SELECTORS.settings.libraryPathInput)
     this.verifyButton = page.locator(SELECTORS.settings.verifyButton)
-    this.backButton = page.locator(SELECTORS.settings.backButton)
   }
 
   async waitForLoaded() {
@@ -92,7 +91,8 @@ export class SettingsPage {
   }
 
   async goBack() {
-    await this.backButton.click()
+    await this.page.locator('[data-testid="briefing-back-to-cover"]').click()
+    await new CoverPage(this.page).enterIfNeeded()
   }
 
   async getErrorText(): Promise<string | null> {

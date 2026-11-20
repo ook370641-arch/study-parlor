@@ -114,9 +114,9 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 ### 设置中心
 
-- `src/pages/Settings.tsx` 是三栏外壳：左栏「常规 / 卷宗 / 扩展」，中栏为上下文子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载内容。
+- `src/pages/Settings.tsx` 是三栏外壳：左栏复用 `BriefingSourceSidebar` 保留「写作 / 博客 / 书籍」来源，中栏复用 `BriefingListColumn`（标题「设置」）合并展示「常规 / 卷宗 / 扩展」及其子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载内容；点击来源返回对应简报页。
 - 常规子页固定为「AI 与搜索 / 界面与画作 / 学习库与归档」；扩展含「我的语言 / 自选配图 / 本地 Agent 打通」，原扩展学习库说明并入「学习库与归档」。
-- 主页只保留设置入口；简报原烛光位置改为设置入口，通过 `settingsReturnTo` 返回来源页。旧 `profile` / `extension` 独立路由已移除。
+- 主页只保留设置入口；简报原烛光位置改为设置入口。设置页不再提供「返回夜话」按钮，通过来源栏返回简报、通过封面按钮返回封面。旧 `profile` / `extension` 独立路由已移除。
 - 烛光随行及其光层、开关和专属样式已移除；移除墓碑见 `docs/superpowers/plans/2026-11-11-settings-center.md` 与共享 spec。
 
 ### 会话生命周期 (`src/lib/`)

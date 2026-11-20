@@ -164,7 +164,6 @@ export const SELECTORS = {
     topicsInput: '[data-testid="profile-topics-input"]',
     difficultyButton: (d: string) => `[data-testid="profile-difficulty-${d}"]`,
     temperatureButton: (t: string) => `[data-testid="profile-temperature-${t}"]`,
-    exitButton: '[data-testid="settings-back-button"]',
   },
   settings: {
     page: '[data-testid="settings-page"]',
@@ -192,7 +191,6 @@ export const SELECTORS = {
     llmDraftSave: '[data-testid="settings-llm-draft-save"]',
     llmDraftCancel: '[data-testid="settings-llm-draft-cancel"]',
     llmCurrentSummary: '[data-testid="settings-llm-current-summary"]',
-    backButton: '[data-testid="settings-back-button"]',
     errorDisplay: '[data-testid="settings-error-display"]',
     archivedTopics: '[data-testid="settings-archived-topics"]',
     restoreTopicButton: '[data-testid="settings-restore-topic-button"]',
