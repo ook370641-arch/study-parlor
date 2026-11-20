@@ -50,9 +50,11 @@ describe('Profile theme', () => {
     expect(screen.getByTestId('settings-profile-global-note')).toHaveTextContent('卷宗将供应用内所有 AI 生成参考。')
   })
 
-  it('renders theme toggle button', () => {
+  it('renders briefing font controls instead of theme toggle', () => {
     renderProfile()
-    expect(screen.getByTestId('study-controls-theme-toggle')).toBeInTheDocument()
+    expect(screen.queryByTestId('study-controls-theme-toggle')).not.toBeInTheDocument()
+    expect(screen.getByTestId('study-controls-font-size-decrease')).toBeInTheDocument()
+    expect(screen.getByTestId('study-controls-font-size-increase')).toBeInTheDocument()
   })
 
   it('renders surface background in academic mode', () => {

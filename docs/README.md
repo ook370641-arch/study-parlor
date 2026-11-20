@@ -117,7 +117,7 @@
 
 ### 16. 设置 / 向导 / LLM 配置
 
-**现状**：首次配置向导（`SetupWizard`）+ B 三栏设置中心 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。左栏保留简报来源，中栏标题为「设置」，合并展示「常规 / 卷宗 / 扩展」与全部子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载。卷宗由 `profile-prompt.ts` 在 `kimi.ts` 的 `buildChatBody` 全局注入流式与非流式请求。配置按厂商命名；Model 下拉框可探活 `/models`，并按配置持久化最近成功获取的模型列表。Demo 信息说明默认只读、点击「编辑」才可修改；六个信息入口的显隐持久化到 `demoNotesHidden`。烛光随行已移除，简报原位置改为设置入口。
+**现状**：首次配置向导（`SetupWizard`）+ B 三栏设置中心 + 多 LLM 配置切换（`electron/lib/llm-configs.ts`）在用。左栏保留简报来源，中栏标题为「设置」，合并展示「常规 / 卷宗 / 扩展」与全部子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载。设置页右上角保留换画，版式切换替换为简报阅读字号的 `− / +`。卷宗由 `profile-prompt.ts` 在 `kimi.ts` 的 `buildChatBody` 全局注入流式与非流式请求。配置按厂商命名；Model 下拉框可探活 `/models`，并按配置持久化最近成功获取的模型列表。Demo 信息说明默认只读、点击「编辑」才可修改；六个信息入口的显隐持久化到 `demoNotesHidden`。烛光随行已移除，简报原位置改为设置入口。
 **历史链**：06-05 setup-wizard → 06-14 settings → 06-14 settings-page → 09-19 llm-config-switch → 11-11 settings-center（plan）→ 11-11 settings-center-and-notepad-claims（设置中心、全局卷宗注入与烛光移除墓碑）
 
 ### 17. DIY 术语

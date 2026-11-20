@@ -111,7 +111,7 @@ export function Settings() {
         <main className={`flex-1 min-w-0 min-h-0 flex flex-col ${isAcademic ? 'bg-ink/72 border-parchment/15' : 'bg-white border-[#1a1a1a]/10'} backdrop-blur-md border rounded-xl overflow-hidden`}>
           <div className={`flex justify-between items-center px-6 pt-5 pb-3 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'} shrink-0`}>
             <h2 className="text-2xl font-serif font-semibold">设置 · 仪器调校</h2>
-            <StudyControlsGroup surface="home" />
+            <StudyControlsGroup surface="home" briefingFontControls />
           </div>
 
           {error && (
