@@ -46,7 +46,7 @@ describe('Settings · AI 服务', () => {
     vi.mocked(ipc.setSearchApiKey).mockResolvedValue(undefined)
     vi.mocked(ipc.configSetLibraryPath).mockResolvedValue({ ok: true })
     mockConfigs([KIMI], 'cfg-kimi')
-    useStore.setState({ demoNotesHidden: [] } as any)
+    useStore.setState({ demoNotesHidden: [], writingUIFontSize: 'base', briefingFontSize: 'base' } as any)
   })
 
   it('按 B 布局保留来源栏，并在设置栏合并全部导航', async () => {
@@ -90,6 +90,19 @@ describe('Settings · AI 服务', () => {
     expect(await screen.findByTestId('briefing-source-writing')).not.toHaveClass('border-l-[3px]')
     expect(screen.getByTestId('briefing-source-anthropic')).not.toHaveClass('border-l-[3px]')
     expect(screen.getByTestId('briefing-source-book')).not.toHaveClass('border-l-[3px]')
+  })
+
+  it('字号按钮实际调整设置页界面字号', async () => {
+    render(<Settings />)
+    const page = await screen.findByTestId('settings-page')
+
+    expect(page).toHaveClass('settings-ui-font')
+    expect(page).toHaveStyle({ fontSize: '12px' })
+    fireEvent.click(screen.getByTestId('study-controls-font-size-increase'))
+
+    await waitFor(() => expect(page).toHaveStyle({ fontSize: '13px' }))
+    expect(useStore.getState().writingUIFontSize).toBe('lg')
+    expect(useStore.getState().briefingFontSize).toBe('base')
   })
 
   it('设置页不再提供返回夜话按钮', async () => {

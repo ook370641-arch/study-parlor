@@ -7,6 +7,7 @@ import { ProfileSettings } from '@/components/settings/ProfileSettings'
 import { ExtensionSettings } from '@/components/settings/ExtensionSettings'
 import { BriefingSourceSidebar } from '@/components/BriefingSourceSidebar'
 import { BriefingListColumn } from '@/components/BriefingListColumn'
+import { WRITING_UI_STYLES } from '@/lib/briefing-font-size'
 
 type Primary = 'general' | 'profile' | 'extension'
 type GeneralSection = 'ai' | 'appearance' | 'library'
@@ -34,7 +35,9 @@ export function Settings() {
   const goto = useStore(s => s.goto)
   const showToast = useStore(s => s.showToast)
   const theme = useStore((s) => s.briefingTheme)
+  const writingUIFontSize = useStore((s) => s.writingUIFontSize)
   const isAcademic = theme !== 'newspaper'
+  const uiSize = WRITING_UI_STYLES[writingUIFontSize]
   const [primary, setPrimary] = useState<Primary>('general')
   const [generalSection, setGeneralSection] = useState<GeneralSection>('ai')
   const [extensionSection, setExtensionSection] = useState<ExtensionSection>('terminology')
@@ -42,7 +45,11 @@ export function Settings() {
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <div data-testid="settings-page" className={`relative h-full flex overflow-hidden ${isAcademic ? 'gap-2 p-2' : 'bg-[#f5f2ed]'}`}>
+    <div
+      data-testid="settings-page"
+      className={`settings-ui-font relative h-full flex overflow-hidden ${isAcademic ? 'gap-2 p-2' : 'bg-[#f5f2ed]'}`}
+      style={{ fontSize: uiSize, '--settings-ui-scale': Number.parseInt(uiSize, 10) / 12 } as React.CSSProperties}
+    >
       <SurfaceBackground surface="home" />
       <BriefingSourceSidebar
         theme={theme}
@@ -111,7 +118,7 @@ export function Settings() {
         <main className={`flex-1 min-w-0 min-h-0 flex flex-col ${isAcademic ? 'bg-ink/72 border-parchment/15' : 'bg-white border-[#1a1a1a]/10'} backdrop-blur-md border rounded-xl overflow-hidden`}>
           <div className={`flex justify-between items-center px-6 pt-5 pb-3 border-b ${isAcademic ? 'border-slate/25' : 'border-[#1a1a1a]/10'} shrink-0`}>
             <h2 className="text-2xl font-serif font-semibold">设置 · 仪器调校</h2>
-            <StudyControlsGroup surface="home" briefingFontControls />
+            <StudyControlsGroup surface="home" uiFontControls />
           </div>
 
           {error && (
