@@ -75,6 +75,7 @@
 ### 10. 文章阅读 / 导读 / 助手 / 旁注
 
 **现状**：导读 v2 管线（`guide-v2.ts` / `guide-v2-pipeline.ts`）+「导读 / 对照 / 浏览器」右栏 + AI 助手 + 旁注在用（`ipc/article-assistant.ts`、`ipc/browser.ts`、`ipc/annotations.ts`、`article-assistant-prompt.ts`），服务博客与书籍阅读。博客阅读器只在展示层把本地图片内嵌为 Base64，导读与旁注使用原始 Markdown 正文，不携带图片数据。内置浏览器使用单个 `WebContentsView`，支持 URL/Bing 搜索、页内查找、跨状态页面保持、最后 URL 与持久 Cookie 重启恢复；启动不自动加载网页。博客/书籍对照页顶部提供「笔记」快捷入口：当前文章/章节已有对应笔记则直接在对照槽打开，没有则自动新建后打开。博客异步正文回填按 `filePath` 校验，忽略快速切换文章后的过期结果，避免导读与正文串文。划词工具在博客/书籍间共用，支持备注与五色持久高亮；备注外点/Esc 自动保存、始终可删除，高亮可换色/删除；笔记与高亮标记间切换不会被旧卡片的延迟关闭误伤。
+- **导读触发与取消（2026-11-21）**：仅无缓存文章/章节且右栏当前在「导读」页签时自动生成，切回该页签可补生成；生成动画可取消并中断规划、搜索与写作，不保存半成品。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（共享划词高亮、备注自动保存/删除与定位修复；同名 plan 为实施记录）
 - current：`specs/2026-11-02-notes-annotations-and-covers-design.md`（标注真实点击回归、亮黄色、书籍章节聚合与 SVG 封面）
 **历史链**：07-11 article-assistant → 07-11 article-assistant-guide-improvements → 07-11 briefing-assistant → 07-19 annotation-iteration → 07-22 briefing-ai-chat-enhancement → 08-02 agent-article-pipeline → 09-29 reading-position-companion-and-hr → 11-16 right-rail-browser
@@ -102,7 +103,7 @@
 
 **现状**：简报第三来源「书籍」支持 PDF 与同一目录的 Markdown 文档序列导入，写入 `<学习库>/books/`；PDF 按目录拆分章节，Markdown 按文件名自然排序且每个文件一章，章节标题取首个 H1（无则取文件名），无页码时只显示章号（2026-11-05）。章节阅读、章节导读、全书导读、对照、旁注，以及关联书籍创建笔记均复用同一章节契约。实现入口为 `electron/lib/books.ts` + `electron/ipc/books.ts` + `src/components/books/`。书籍列支持各书独立展开结构化章节目录，展开不切换当前书，切换书籍保留各目录已有的展开/折叠状态；最近阅读章节以带光晕的圆点标记，已生成 AI 笔记的章节以 `✦` 标记，不再占用独立章节列（2026-11-10）。每本书分别记忆最近章节，点击书卡自动恢复并滚动定位，无记录时不默认打开第一章。章节正文取消独立 `760px` 限宽，并复用三来源统一的字号/换画控制；记忆章内滚动位置，正文有段间距，书卡删除为垃圾桶图标 + 确认弹窗。
 - **体验打磨（2026-10-27 已落地）**：折叠列即卸载内容（`BriefingListColumn.renderWhenCollapsed` 为博客 rail 保留逃生口）、导读 SVG 三阶段罗盘（`GuideCompass`）、书籍对照「＋ 新建笔记」、截断文本 hover 全展示（`Tooltip`）。
-- **解析器 v3（2026-10-28）**：`itemsToRows → rowsToBlocks → blocksToMarkdown`（行距 / 字号 / 缩进判段 + `##`/`###` 标题层级 + 页眉页脚过滤）；目录页新增「页码 标题」布局；重解析按章节对齐保留旧导读，目录未变时保留全书导读；`BOOK_PARSER_VERSION = 3`。已知边界：表格仍拍平、双栏段落顺序可能不等于阅读顺序。
+- **解析器 v4（2026-11-21）**：`itemsToRows → rowsToBlocks → blocksToMarkdown`（行距 / 字号 / 缩进判段 + `##`/`###` 标题层级 + 页眉页脚过滤）；左边距与栏宽只由正文字号附近的行估计，避免较小字号脚注把正文逐行拆段；目录页新增「页码 标题」布局；重解析按章节对齐保留旧导读，目录未变时保留全书导读；`BOOK_PARSER_VERSION = 4`。已知边界：表格仍拍平、双栏段落顺序可能不等于阅读顺序。
 - **新用户内置书（2026-11-16）**：仓库 `resources/default-books/` 保存《DeepSeek SuperAgent》与《Intercom on Jobs-to-be-Done》的独立分发快照，仅含原件、`book.json` 与解析章节，不含全书导读、章节导读、AI 对话或个人标注。仅在首次配置向导完成时复制到所选学习库；同名目录跳过且失败可重试，后续换库、应用升级或用户删书均不补发。打包通过 `extraResources` 携带，现有学习库不会被清理或改写。
 - **章节笔记聚合（2026-11-02）**：新笔记写入 `NoteMeta.chapter`，旧笔记按标题兼容推导；同书在笔记墙、笔记列与对照挑选器按书聚合，章节下拉可定位每章正文笔记与旁注原始文件。
 - current：`specs/2026-10-27-books-reading-polish-design.md`（设计 + 实现记录；§6 记了三处实现期修正）
@@ -114,6 +115,7 @@
 ### 15. 迭代记事板
 
 **现状**：条目化双 tab 面板在用（AGENTS.md「迭代记事板」）；待办与档案存于开发根目录 `notepad.json`（Git 追踪，打包版位于 `~/.studyparlor/notepad.json`），首次读取自动从 `state.json` 迁移；待办可显示 Agent 认领者，认领独立存于 `notepad-claims.json`，面板重开或窗口聚焦时刷新；已完成时间线按本地日期只高亮今日条目并显示「今日完成 · 待测试」；已完成条目可恢复待办或确认后永久删除，恢复保留评论；可点「评论」按钮展开右侧输入框，输入即自动保存、无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无评论删除按钮；评论含待处理/已处理状态与 Agent 处理摘要；旁注打开时入口/面板左移并保持可交互；接单、评论处理与归档流程见 `.agents/skills/notepad-triage/SKILL.md`。
+- **图片附件（2026-11-21）**：待办输入框可选择或粘贴图片，显示可移除的待提交缩略图；图片以 data URL 随条目持久化，在待办、展开档案及恢复待办后保留。
 - current：`specs/2026-10-31-reading-annotation-polish-design.md`（含记事板与旁注共存交互；同名 plan 为实施记录）
 **历史链**：10-19 notepad-upgrade-design（条目化改造，已实施）→ 11-11 settings-center-and-notepad-claims（记事板认领与今日高亮部分）→ 11-11 notepad-agent-claims → 11-14 notepad-log-management
 

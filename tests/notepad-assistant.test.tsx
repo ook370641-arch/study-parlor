@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { NotepadLogEntry } from '@shared/index'
+import type { NotepadItem, NotepadLogEntry } from '@shared/index'
 
 const store = vi.hoisted(() => ({
   notepadItems: [],
@@ -28,6 +28,7 @@ import { NotepadPanel } from '@/components/NotepadPanel'
 
 afterEach(() => {
   cleanup()
+  store.notepadItems = []
   store.notepadLog = []
   vi.clearAllMocks()
   vi.useRealTimers()
@@ -291,5 +292,50 @@ describe('NotepadPanel 已完成时间线', () => {
     fireEvent.click(screen.getByTestId('notepad-delete-log-done-manage'))
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'))
     expect(store.deleteNotepadLogEntry).toHaveBeenCalledWith('done-manage')
+  })
+})
+
+describe('NotepadPanel 图片附件', () => {
+  it('选择图片后显示待提交缩略图，并随新条目提交', async () => {
+    renderPanel()
+    const file = new File(['image'], 'note.png', { type: 'image/png' })
+
+    fireEvent.change(screen.getByTestId('notepad-image-input'), { target: { files: [file] } })
+    const image = await screen.findByTestId('notepad-draft-image-0')
+    expect(image.getAttribute('src')).toMatch(/^data:image\/png;base64,/)
+
+    fireEvent.change(screen.getByTestId('notepad-input'), { target: { value: '看图定位问题' } })
+    fireEvent.keyDown(screen.getByTestId('notepad-input'), { key: 'Enter' })
+    expect(store.addNotepadItem).toHaveBeenCalledWith('看图定位问题', 'feature', [expect.stringMatching(/^data:image\/png;base64,/)])
+  })
+
+  it('粘贴图片挂载到输入框，缩略图可移除', async () => {
+    renderPanel()
+    const file = new File(['image'], 'paste.png', { type: 'image/png' })
+
+    fireEvent.paste(screen.getByTestId('notepad-input'), {
+      clipboardData: { items: [{ type: 'image/png', getAsFile: () => file }], getData: () => '' },
+    })
+    await screen.findByTestId('notepad-draft-image-0')
+    fireEvent.click(screen.getByTestId('notepad-draft-image-remove-0'))
+    expect(screen.queryByTestId('notepad-draft-image-0')).not.toBeInTheDocument()
+  })
+
+  it('待办与展开的档案都展示已保存图片', () => {
+    const image = 'data:image/png;base64,SAVED_IMAGE'
+    const item: NotepadItem = {
+      id: 'with-image', text: '带图待办', category: 'bug', createdAt: '2026-11-21T00:00:00Z', images: [image],
+    }
+    store.notepadItems = [item]
+    renderPanel()
+    expect(screen.getByTestId('notepad-item-image-with-image-0')).toHaveAttribute('src', image)
+    cleanup()
+
+    store.notepadItems = []
+    store.notepadLog = [{ ...item, resolvedAt: '2026-11-21T01:00:00Z', source: 'agent' }]
+    renderPanel()
+    fireEvent.click(screen.getByTestId('notepad-tab-done'))
+    fireEvent.click(screen.getByText('带图待办'))
+    expect(screen.getByTestId('notepad-log-image-with-image-0')).toHaveAttribute('src', image)
   })
 })

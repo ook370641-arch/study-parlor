@@ -257,3 +257,27 @@ describe('saveNotepadComment', () => {
     })
   })
 })
+
+describe('记事板图片附件持久化', () => {
+  it('新增条目保存图片字段', () => {
+    const images = ['data:image/png;base64,NEW_IMAGE']
+    useStore.setState({ notepadItems: [] } as any)
+
+    useStore.getState().addNotepadItem('带图需求', 'bug', images)
+
+    expect(useStore.getState().notepadItems[0].images).toEqual(images)
+    expect(vi.mocked(ipc.patchState).mock.calls.at(-1)?.[0].notepadItems?.[0].images).toEqual(images)
+  })
+
+  it('档案恢复待办时保留图片', () => {
+    const entry: NotepadLogEntry = {
+      id: 'done-image', text: '带图档案', category: 'bug', createdAt: '2026-11-20T00:00:00Z',
+      resolvedAt: '2026-11-21T00:00:00Z', source: 'agent', images: ['data:image/png;base64,RESTORE_IMAGE'],
+    }
+    useStore.setState({ notepadItems: [], notepadLog: [entry] } as any)
+
+    useStore.getState().restoreNotepadItem(entry.id)
+
+    expect(useStore.getState().notepadItems[0].images).toEqual(entry.images)
+  })
+})

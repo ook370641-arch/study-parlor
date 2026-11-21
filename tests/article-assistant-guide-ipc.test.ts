@@ -146,6 +146,21 @@ describe('generateGuide routing', () => {
     expect(result).toEqual(blogGuide)
   })
 
+  it('generateGuide 与 abort 共用 sessionId，取消映射为 GUIDE_ABORT', async () => {
+    const { runBlogGuideV2 } = await import('../electron/lib/guide-v2-pipeline')
+    vi.mocked(runBlogGuideV2).mockImplementationOnce((_cfg, _args, _progress, signal) => new Promise((_, reject) => {
+      signal?.addEventListener('abort', () => reject(Object.assign(new Error('cancelled'), { name: 'AbortError' })), { once: true })
+    }))
+    const pending = handlers['articleAssistant:generateGuide'](fakeEvent as never, {
+      sessionId: 'guide-cancel', articleContent: '## H\nx', articleType: 'anthropic-article',
+    } as never)
+    await Promise.resolve()
+
+    await handlers['articleAssistant:abort'](null as never, { sessionId: 'guide-cancel' } as never)
+
+    await expect(pending).rejects.toMatchObject({ code: 'GUIDE_ABORT' })
+  })
+
   it('E2E_GUIDE_BAD_JSON=1 时 anthropic-article mock 在 writing 进度后抛 GUIDE_JSON_ERROR', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'guide-bad-json-'))
     process.env.E2E_CONFIG_DIR = tmp

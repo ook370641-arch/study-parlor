@@ -46,7 +46,6 @@ describe('reparseBook 成功路径', () => {
 
     expect(result.dir).toBe(dir)
     expect(result.parserVersion).toBe(BOOK_PARSER_VERSION)
-    expect(BOOK_PARSER_VERSION).toBe(3)
     expect(result.title).toBe(before.title)
     expect(result.importedAt).toBe(before.importedAt)
     expect(result.sourceFile).toBe(before.sourceFile)
@@ -64,7 +63,7 @@ describe('reparseBook 成功路径', () => {
     expect(fs.readdirSync(path.join(dir, 'chapters')).some((n) => n.endsWith('.guide.md'))).toBe(false)
     const after = readBookJson(dir)!
     expect(after.bookGuide).toBeUndefined()
-    expect(after.parserVersion).toBe(3)
+    expect(after.parserVersion).toBe(BOOK_PARSER_VERSION)
 
     // 无残留临时目录 / 备份目录
     const entries = fs.readdirSync(dir)
@@ -86,7 +85,7 @@ describe('reparseBook 成功路径', () => {
 
     const result = await reparseBook(lib, dir)
 
-    expect(result.parserVersion).toBe(3)
+    expect(result.parserVersion).toBe(BOOK_PARSER_VERSION)
     expect(fs.readFileSync(path.join(dir, guideFile), 'utf8')).toBe('existing guide')
     expect(result.bookGuide?.content).toBe('全书导读')
   })

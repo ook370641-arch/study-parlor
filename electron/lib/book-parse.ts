@@ -444,7 +444,9 @@ export function rowsToBlocks(rows: TextRow[], opts: { pageHeight?: number } = {}
   })
   if (kept.length === 0) return []
 
-  const bodyRows = kept.filter((r) => r.h < bodyH * 1.15)
+  // 只用正文字号附近的行估计栏宽和左边距；更小的脚注可能更靠左、更长，
+  // 若混入会把所有正文行误判成首行缩进，进而逐行拆段。
+  const bodyRows = kept.filter((r) => r.h >= bodyH * 0.9 && r.h < bodyH * 1.15)
   const widths = bodyRows.map((r) => r.x1 - r.x0).filter((w) => w > 0)
   const maxWidth = widths.length > 0 ? Math.max(...widths) : 0
   // 正文左边距：只取满行（≥ 半页宽）的起点，避免被居中的标题带偏

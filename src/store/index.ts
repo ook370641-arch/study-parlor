@@ -294,7 +294,7 @@ type AppStore = {
   setPaintingDeleteEnabled: (enabled: boolean) => Promise<void>
   setPaintingFocus: (surface: 'cover' | 'home' | 'study' | 'briefing', focus: string) => void
   setCoverNotepad: (text: string) => void
-  addNotepadItem: (text: string, category: NotepadCategory) => void
+  addNotepadItem: (text: string, category: NotepadCategory, images?: string[]) => void
   resolveNotepadItem: (id: string) => void
   restoreNotepadItem: (id: string) => void
   deleteNotepadItem: (id: string) => void
@@ -409,6 +409,7 @@ type AppStore = {
   setAssistantGuideProgress: (p: GuideProgress | null) => void
   persistAssistantState: () => Promise<void>
   generateAssistantGuide: () => Promise<void>
+  cancelAssistantGuide: () => void
 
   // 写作板
   writingTree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null
@@ -608,7 +609,7 @@ function debounceSaveGuideWidth(patch: Partial<StateJson>) {
 
 // 进行中的导读生成（key = contextId）。切换文章/日期不中断后台生成：
 // 完成后无条件落盘，切回时恢复 loading 显示而不重复发起。
-const inFlightGuides = new Map<string, Promise<void>>()
+const inFlightGuides = new Map<string, string>()
 
 let assistantWidthSaveTimer: ReturnType<typeof setTimeout> | null = null
 function debounceSaveAssistantWidth(patch: Partial<StateJson>) {
@@ -934,10 +935,13 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  addNotepadItem: (text, category) => {
+  addNotepadItem: (text, category, images) => {
     const t = text.trim()
     if (!t) return
-    const items = [...get().notepadItems, { id: newNotepadId(), title: deriveTitle(t), text: t, category, createdAt: new Date().toISOString() }]
+    const items = [...get().notepadItems, {
+      id: newNotepadId(), title: deriveTitle(t), text: t, category, createdAt: new Date().toISOString(),
+      ...(images?.length ? { images } : {}),
+    }]
     notepadLocalVersion++
     set({ notepadItems: items })
     ipc.patchState({ notepadItems: stripNotepadClaims(items) } as Partial<StateJson>)
@@ -963,6 +967,7 @@ export const useStore = create<AppStore>((set, get) => ({
       text: entry.text,
       category: entry.category,
       createdAt: entry.createdAt,
+      images: entry.images,
       comments: entry.comments,
     }
     const items = [restored, ...get().notepadItems]
@@ -2177,7 +2182,8 @@ export const useStore = create<AppStore>((set, get) => ({
       },
     })
     get().loadAssistantGuide().then(() => {
-      if (args.autoGenerateGuide) {
+      const source = args.contextType === 'book-chapter' ? 'book' : 'anthropic'
+      if (args.autoGenerateGuide && get().articlePanelMode[source] === 'guide') {
         const cur = get().assistantSession
         if (cur && cur.contextId === args.contextId && !cur.guide && !cur.guideLoading) {
           get().generateAssistantGuide()
@@ -2508,11 +2514,13 @@ export const useStore = create<AppStore>((set, get) => ({
     }
     if (s.guideLoading) return
     const { contextId, contextType } = s
+    const abortId = crypto.randomUUID()
     const entriesTotal = countArticleHeadings(s.articleContent)
     set({ assistantSession: { ...s, guideLoading: true, guideError: null, guideProgress: { stage: 'planning' } } })
     const run = (async () => {
       try {
         const guide = await ipc.articleAssistantGenerateGuide({
+          sessionId: abortId,
           articleContent: s.articleContent,
           articleType: s.contextType,
           articleTitle: s.articleTitle,
@@ -2542,8 +2550,15 @@ export const useStore = create<AppStore>((set, get) => ({
         inFlightGuides.delete(contextId)
       }
     })()
-    inFlightGuides.set(contextId, run)
+    inFlightGuides.set(contextId, abortId)
     await run
+  },
+  cancelAssistantGuide: () => {
+    const s = get().assistantSession
+    if (!s) return
+    const abortId = inFlightGuides.get(s.contextId)
+    if (abortId) void ipc.articleAssistantAbort({ sessionId: abortId })
+    set({ assistantSession: { ...s, guideLoading: false, guideError: null, guideProgress: null } })
   },
 
   // 写作板设置持久化
@@ -3181,6 +3196,18 @@ export const useStore = create<AppStore>((set, get) => ({
         void get().selectArticleCompanion('book', chapterPath, mapped)
       } else if (chapterPath && !mapped && get().articleCompanion && get().articleCompanion!.key !== chapterPath) {
         set({ articleCompanion: null })
+      }
+    }
+    if (mode === 'guide') {
+      const s = get().assistantSession
+      const matches = source === 'book' ? s?.contextType === 'book-chapter' : s?.contextType === 'anthropic-article'
+      if (s && matches && !s.guide && !inFlightGuides.has(s.contextId)) {
+        void get().loadAssistantGuide().then(() => {
+          const cur = get().assistantSession
+          if (cur?.contextId === s.contextId && !cur.guide && !cur.guideLoading) {
+            void get().generateAssistantGuide()
+          }
+        })
       }
     }
   },

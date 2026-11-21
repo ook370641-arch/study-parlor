@@ -233,6 +233,7 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
   ipcMain.handle(
     'articleAssistant:generateGuide',
     async (event, args: {
+      sessionId?: string
       articleContent: string
       articleType: 'anthropic-article' | 'book-chapter'
       articleTitle?: string
@@ -301,6 +302,12 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
         return mockGuide
       }
 
+      const ctl = new AbortController()
+      if (args.sessionId) assistantSessions.set(args.sessionId, ctl)
+      const cleanup = () => {
+        if (args.sessionId) assistantSessions.delete(args.sessionId)
+      }
+
       // 书籍章节走同一条 v2 管线，prompt 换成书籍变体，并在正文头部注入书籍上下文
       if (args.articleType === 'book-chapter') {
         const bookPromptPath = path.join(promptsDir(), 'book-guide-v2.md')
@@ -320,12 +327,18 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
               articleTitle: args.articleTitle,
               entriesTotal: args.entriesTotal,
             },
-            (p) => send('articleAssistant:guideProgress', p)
+            (p) => send('articleAssistant:guideProgress', p),
+            ctl.signal
           )
         } catch (err) {
           const code = (err as Error & { code?: string }).code
           if (code === 'GUIDE_JSON_ERROR' || code === 'GUIDE_ABORT') throw err
+          if (ctl.signal.aborted || (err as Error).name === 'AbortError') {
+            throw typedError('GUIDE_ABORT', 'Guide generation cancelled')
+          }
           throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
+        } finally {
+          cleanup()
         }
       }
 
@@ -341,12 +354,18 @@ export function registerArticleAssistantIpc(cfg: AppConfig) {
             articleTitle: args.articleTitle,
             entriesTotal: args.entriesTotal,
           },
-          (p) => send('articleAssistant:guideProgress', p)
+          (p) => send('articleAssistant:guideProgress', p),
+          ctl.signal
         )
       } catch (err) {
         const code = (err as Error & { code?: string }).code
         if (code === 'GUIDE_JSON_ERROR' || code === 'GUIDE_ABORT') throw err
+        if (ctl.signal.aborted || (err as Error).name === 'AbortError') {
+          throw typedError('GUIDE_ABORT', 'Guide generation cancelled')
+        }
         throw typedError('GUIDE_LLM_ERROR', err instanceof Error ? err.message : String(err))
+      } finally {
+        cleanup()
       }
     }
   )

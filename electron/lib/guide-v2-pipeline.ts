@@ -27,6 +27,13 @@ function typed(code: 'GUIDE_JSON_ERROR', message: string): Error & { code: strin
   return err
 }
 
+function throwIfAborted(signal: AbortSignal): void {
+  if (!signal.aborted) return
+  const err = new Error('Guide generation cancelled') as Error & { code: string }
+  err.code = 'GUIDE_ABORT'
+  throw err
+}
+
 /** 可观测性：规划/搜索/坏输出落盘到 ~/.studyparlor/debug/，best-effort */
 function debugDump(name: string, data: unknown): void {
   try {
@@ -57,7 +64,8 @@ async function runGuideV2(
   cfg: AppConfig,
   args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
   hooks: GuideV2Hooks,
-  onProgress: (p: GuideProgress) => void
+  onProgress: (p: GuideProgress) => void,
+  signal = new AbortController().signal
 ): Promise<ArticleAssistantGuide> {
   const entryCount = Math.max(countArticleHeadings(args.articleContent), 1)
 
@@ -70,12 +78,15 @@ async function runGuideV2(
         messages: [{ role: 'user', content: hooks.buildPlanPrompt(args.articleContent, args.articleTitle) }],
         temperature: 0.3,
         thinking: { type: 'disabled' },
+        signal,
       })
       queries = parseGuidePlan(raw, entryCount)
-    } catch {
+    } catch (err) {
+      if (signal.aborted) throwIfAborted(signal)
       // 下一轮重试；两次都失败则 queries 保持 []，降级为无搜索
     }
   }
+  throwIfAborted(signal)
   debugDump('plan', { entryCount, queries })
 
   // 阶段 2：并行搜索（无 key / 单查询失败仅置空对应资料夹）
@@ -92,7 +103,7 @@ async function runGuideV2(
     queries.map(async (q, i) => {
       try {
         if (!apiKey) return null
-        const rs = await searchWeb({ query: q.query, apiKey, maxResults: 3 })
+        const rs = await searchWeb({ query: q.query, apiKey, maxResults: 3, signal })
         hitsSeen[i] = rs.length
         return rs.map((r) => ({ title: r.title, url: r.url, snippet: r.content.slice(0, 300) }))
       } catch {
@@ -104,6 +115,7 @@ async function runGuideV2(
       }
     })
   )
+  throwIfAborted(signal)
   const materials = assignMaterials(queries, results)
   debugDump('search', { queries, found: results.map((r) => r?.length ?? 0) })
 
@@ -126,7 +138,7 @@ async function runGuideV2(
         },
       ],
       temperature: 0.7,
-      signal: new AbortController().signal,
+      signal,
       thinking: { type: 'enabled', reasoning_effort: 'max' },
     },
     (text) => {
@@ -162,13 +174,14 @@ async function runGuideV2(
 export function runBlogGuideV2(
   cfg: AppConfig,
   args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
-  onProgress: (p: GuideProgress) => void
+  onProgress: (p: GuideProgress) => void,
+  signal?: AbortSignal
 ): Promise<ArticleAssistantGuide> {
   return runGuideV2(cfg, args, {
     buildPlanPrompt: buildBlogGuidePlanPrompt,
     buildUserPrompt: buildBlogGuideV2UserPrompt,
     validate: isValidGuideBlogV2,
-  }, onProgress)
+  }, onProgress, signal)
 }
 
 /**
@@ -178,11 +191,12 @@ export function runBlogGuideV2(
 export function runGuideV2ForBook(
   cfg: AppConfig,
   args: { system: string; articleContent: string; articleTitle?: string; entriesTotal?: number },
-  onProgress: (p: GuideProgress) => void
+  onProgress: (p: GuideProgress) => void,
+  signal?: AbortSignal
 ): Promise<ArticleAssistantGuide> {
   return runGuideV2(cfg, args, {
     buildPlanPrompt: buildBookGuidePlanPrompt,
     buildUserPrompt: buildBookGuideV2UserPrompt,
     validate: isValidGuideBlogV2,
-  }, onProgress)
+  }, onProgress, signal)
 }

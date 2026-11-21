@@ -31,9 +31,10 @@ export const BOOKS_DIR = 'books'
  * 解析器版本，写入 book.json。
  * 1 = 旧版行拼接（正文档落挤在一起）；2 = items → 视觉行 → 段落重建；
  * 3 = 再加行距/字号/缩进判段与标题层级（`##` / `###`）。
+ * 4 = 左边距/栏宽估计只使用正文字号附近的行，避免脚注导致逐行拆段。
  * 缺省视为 1，前端据此提示「可重新解析」。
  */
-export const BOOK_PARSER_VERSION = 3
+export const BOOK_PARSER_VERSION = 4
 
 export interface BookTocItem {
   title: string

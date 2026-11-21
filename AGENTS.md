@@ -150,7 +150,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 
 **关键字段（notepad.json）**：
 
-- `notepadItems: [{ id, title?, text, category, createdAt }]` — 待办条目；`category` 为 `'bug' | 'feature' | 'improvement'`；`title` 短标题创建时自动生成兜底
+- `notepadItems: [{ id, title?, text, category, createdAt, images? }]` — 待办条目；`category` 为 `'bug' | 'feature' | 'improvement'`；`title` 短标题创建时自动生成兜底；`images` 为随条目持久化的图片 data URL，输入框可选择/粘贴图片并显示可移除缩略图
 - `notepadLog: [{ id, title?, text, category, createdAt, resolvedAt, source: 'user' | 'agent', comments? }]` — 迭代档案（已解决），面板「已完成」时间线数据源；`title` 短标题 ≤15 字，skill 归档时由 agent 总结；`comments: [{ id, text, createdAt, resolvedAt?, resolution? }]` 是用户对已完成条目的反馈，点「评论」按钮才展开右侧输入框，输入即自动保存，无保存/取消按钮，点评论区域外自动收起；已有评论（含已处理）可双击继续编辑，清空全部文字即自动删除，无删除按钮
 - `notepadFontSize: 'sm' | 'base' | 'lg'`、`notepadPanelSize: { w, h } | null` — 面板字号与自定义尺寸
 - `coverNotepad`（纯字符串）已废弃，仅作一次性迁移源（非空且 notepadItems 为空时按行迁入后清空）
@@ -216,10 +216,10 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 - **新用户内置书（2026-11-16）**：`resources/default-books/` 保存两本书的净化快照（原件 + `book.json` + 解析章节，不含任何导读/对话/标注）。仅在首次 `setup:writeConfig` 时由 `electron/lib/default-books.ts` 复制；同名目录跳过，失败留在向导供重试。后续换库、升级与删书不补发，现有学习库不受影响；打包经 `electron-builder.yml` 的 `extraResources` 携带。
 
 - **主进程**: `electron/lib/book-parse.ts`（目录页解析/页码偏移/章节切分 + 版面重建纯逻辑）+ `electron/lib/books.ts`（库 IO）+ `electron/lib/book-guide.ts`（章节导读）+ `electron/ipc/books.ts`（`books:list / import / chapters / readChapter / bookGuide / delete` 六通道）
-- **正文重建（parserVersion 3）**: `itemsToRows` 保留每行的 `y/h/x0/x1` → `rowsToBlocks` 按行距（1.4× 常规行距）/字号（1.45×、1.2× 正文）/首行缩进判段与标题层级 → `blocksToMarkdown` 输出 `##`/`###`；页眉页脚按页顶页底 6% 区域过滤。目录页支持「标题 页码」「页码 标题」「标题块 + 页码块」三种布局。表格仍会被拍平，双栏段落顺序可能不等于阅读顺序。
-- **重解析**: `books:reparse` 原子替换 `chapters/`；旧章节导读按「章节文件同名 → 标题同名」保留，目录未变时保留全书导读。`parserVersion < 3` 的旧书在书架显示「重新解析」。
+- **正文重建（parserVersion 4）**: `itemsToRows` 保留每行的 `y/h/x0/x1` → `rowsToBlocks` 按行距（1.4× 常规行距）/字号（1.45×、1.2× 正文）/首行缩进判段与标题层级 → `blocksToMarkdown` 输出 `##`/`###`；左边距与栏宽只由正文字号附近的行估计，避免较小字号脚注带偏正文。页眉页脚按页顶页底 6% 区域过滤。目录页支持「标题 页码」「页码 标题」「标题块 + 页码块」三种布局。表格仍会被拍平，双栏段落顺序可能不等于阅读顺序。
+- **重解析**: `books:reparse` 原子替换 `chapters/`；旧章节导读按「章节文件同名 → 标题同名」保留，目录未变时保留全书导读。`parserVersion < 4` 的旧书在书架显示「重新解析」。
 - **渲染**: `src/components/books/`（BookPanel / BookListColumn（各书独立展开章节且切换保留状态，展开不选书，圆点标记最近阅读，`✦` 标记已生成 AI 笔记） / BookReader）；store 字段 `booksList` / `activeBookDir` / `activeBookToc` / `activeChapter`；`booksLastChapters` 按书恢复最近章节并滚动定位，`booksLastChapter` 保留全局最近阅读，`bookScrollMemory` 复用博客滚动记忆，划词备注/五色高亮与博客共用 `ArticleAnnotations`
-- **导读**: 全书导读只传目录不传正文（prompt `electron/prompts/book-overview.md`，装配在 `llm-tasks.ts` 的 `buildBookOverviewPrompt`，缓存进 `book.json`）；章节导读 prompt `electron/prompts/book-guide-v2.md`
+- **导读**: 全书导读只传目录不传正文（prompt `electron/prompts/book-overview.md`，装配在 `llm-tasks.ts` 的 `buildBookOverviewPrompt`，缓存进 `book.json`）；章节导读 prompt `electron/prompts/book-guide-v2.md`，仅打开无缓存章节且右栏当前在「导读」页签时自动生成，切回该页签可补生成；生成动画提供取消，中断规划/搜索/写作且不保存半成品
 - **类型**: `BriefingSourceId` 含 `'book'`；`NoteSource` 含 `'book'`，`NoteMeta.book` / `chapter` 记书名与章节（笔记按书聚合）
 - **记录**: `docs/superpowers/specs/2026-10-27-books-source-design.md` + 同名 plan（historical）；章节聚合与封面现状见 `docs/superpowers/specs/2026-11-02-notes-annotations-and-covers-design.md`（current）
 

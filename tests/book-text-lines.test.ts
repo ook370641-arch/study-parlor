@@ -227,6 +227,18 @@ describe('rowsToBlocks（行距 / 字号 / 缩进判段）', () => {
     expect(blocks.map((b) => b.text)).toEqual(['First paragraph line second line of it', 'Indented new paragraph'])
   })
 
+  it('页脚小字不把正文左边距带偏，正文折行仍合并', () => {
+    const blocks = rowsToBlocks([
+      row('At parties, people no longer give me a blank stare', 700, { x0: 120, width: 400, h: 10 }),
+      row('when I tell them I work in open source software.', 688, { x0: 120, width: 400, h: 10 }),
+      row('The terms "open source software" and "free software" are synonymous.', 600, { x0: 75, width: 450, h: 8 }),
+    ])
+
+    expect(blocks[0].text).toBe(
+      'At parties, people no longer give me a blank stare when I tell them I work in open source software.'
+    )
+  })
+
   it('页码与页眉页脚被丢弃', () => {
     const blocks = rowsToBlocks(
       [

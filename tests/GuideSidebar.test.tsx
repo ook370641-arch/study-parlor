@@ -15,6 +15,8 @@ function mockStore(session: AssistantSession | null) {
     guideScrollToChunkIndex: null,
     setGuideScrollToChunk: vi.fn(),
     generateAssistantGuide: vi.fn(),
+    cancelAssistantGuide: vi.fn(),
+    demoNotesHidden: [],
     briefingTheme: 'academic',
   }
   ;(storeModule.useStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
@@ -105,6 +107,19 @@ describe('GuideSidebar', () => {
     render(<GuideSidebar />)
     const el = screen.getByTestId('guide-progress')
     expect(el).toHaveTextContent('循迹访书… 1 / 2 处')
+  })
+
+  it('生成中提供取消按钮并中断当前导读', () => {
+    const s = sessionWithGuide()
+    s.guide = null
+    s.guideLoading = true
+    s.guideProgress = { stage: 'planning' }
+    const state = mockStore(s)
+    render(<GuideSidebar />)
+
+    screen.getByTestId('guide-cancel').click()
+
+    expect(state.cancelAssistantGuide).toHaveBeenCalledTimes(1)
   })
 
   it('shows writing progress with entry counter and char count', () => {

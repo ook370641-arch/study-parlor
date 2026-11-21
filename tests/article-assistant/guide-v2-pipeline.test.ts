@@ -73,4 +73,17 @@ describe('runBlogGuideV2 编排', () => {
     })
     await expect(runBlogGuideV2(CFG, ARGS, () => {})).rejects.toMatchObject({ code: 'GUIDE_JSON_ERROR' })
   })
+
+  it('规划阶段取消立即终止，不重试也不进入撰写', async () => {
+    const controller = new AbortController()
+    vi.mocked(chatNonStream).mockImplementation(async (_cfg, args) => {
+      expect(args.signal).toBe(controller.signal)
+      controller.abort()
+      throw new DOMException('cancelled', 'AbortError')
+    })
+
+    await expect(runBlogGuideV2(CFG, ARGS, () => {}, controller.signal)).rejects.toMatchObject({ code: 'GUIDE_ABORT' })
+    expect(chatNonStream).toHaveBeenCalledTimes(1)
+    expect(chatStream).not.toHaveBeenCalled()
+  })
 })

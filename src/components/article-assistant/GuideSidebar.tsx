@@ -24,6 +24,7 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
   const guideScrollToChunkIndex = useStore((s) => s.guideScrollToChunkIndex)
   const setGuideScrollToChunk = useStore((s) => s.setGuideScrollToChunk)
   const generateAssistantGuide = useStore((s) => s.generateAssistantGuide)
+  const cancelAssistantGuide = useStore((s) => s.cancelAssistantGuide)
   const isAcademic = theme !== 'newspaper'
   const scrollRef = useRef<HTMLDivElement>(null)
   const [openNote, setOpenNote] = useState<DemoNote['id'] | null>(null)
@@ -82,6 +83,12 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
             <div className={`mt-1 text-[10px] tracking-[0.2em] ${isAcademic ? 'text-parchment/25' : 'text-[#6b5d52]/50'}`}>
               READING · REMEMBERING
             </div>
+            <button
+              type="button"
+              data-testid="guide-cancel"
+              onClick={cancelAssistantGuide}
+              className={`mx-auto mt-3 block rounded border px-3 py-1 text-[11px] tracking-normal transition-colors ${isAcademic ? 'border-parchment/20 text-parchment/55 hover:border-ember/60 hover:text-ember' : 'border-[#1a1a1a]/15 text-[#6b5d52] hover:border-ember/60 hover:text-ember'}`}
+            >取消</button>
           </div>
         </div>
         )})()}

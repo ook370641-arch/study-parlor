@@ -614,6 +614,8 @@ export interface NotepadItem {
   text: string
   category: NotepadCategory
   createdAt: string
+  /** 图片附件（data URL），随条目进入档案并在恢复时保留 */
+  images?: string[]
   claim?: NotepadClaim
   comments?: NotepadComment[]
 }
@@ -918,6 +920,8 @@ export type IpcApi = {
 
   // Article assistant
   articleAssistantGenerateGuide: (args: {
+    /** 导读请求标识；复用 articleAssistantAbort 中断 */
+    sessionId?: string
     articleContent: string
     articleType: 'anthropic-article' | 'book-chapter'
     articleTitle?: string

@@ -31,7 +31,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 describe('store article assistant', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    useStore.setState({ assistantSession: null, articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false, assistantSearchEnabled: false, assistantSocraticMode: true, assistantThinkingEffort: 'off' })
+    useStore.setState({ assistantSession: null, articlePanelMode: { anthropic: 'guide', book: 'guide' }, articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false, assistantSearchEnabled: false, assistantSocraticMode: true, assistantThinkingEffort: 'off' })
     vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantReadSession).mockResolvedValue(null)
     vi.mocked(ipc.articleAssistantGenerateGuide).mockResolvedValue(guideFixture as any)
@@ -71,6 +71,7 @@ describe('store article assistant', () => {
       await flush()
 
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledWith({
+        sessionId: expect.any(String),
         articleContent: 'article body',
         articleType: 'anthropic-article',
         articleTitle: 'B',
@@ -304,6 +305,41 @@ describe('store article assistant', () => {
       expect(cur?.contextId).toBe('/lib/bg2-a.md')
       expect(cur?.guide).toEqual(guideFixture)
       expect(cur?.guideLoading).toBe(false)
+    })
+  })
+
+  describe('导读页签触发与取消', () => {
+    it('对照页签打开无导读章节不生成，切回导读才生成', async () => {
+      useStore.setState({ articlePanelMode: { anthropic: 'guide', book: 'companion' } })
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/book/chapter.md', contextType: 'book-chapter', articleContent: 'body', autoGenerateGuide: true,
+      })
+      await flush(); await flush()
+      expect(ipc.articleAssistantGenerateGuide).not.toHaveBeenCalled()
+
+      useStore.getState().setArticlePanelMode('book', 'guide')
+      await flush(); await flush(); await flush()
+
+      expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledTimes(1)
+    })
+
+    it('取消使用本次导读的 abortId，且不写入半成品', async () => {
+      let rejectGuide!: (error: Error) => void
+      vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise((_, reject) => { rejectGuide = reject }) as Promise<any>)
+      useStore.getState().openAssistantSession({
+        contextId: '/lib/book/cancel.md', contextType: 'book-chapter', articleContent: 'body', autoGenerateGuide: true,
+      })
+      await flush(); await flush()
+      const args = vi.mocked(ipc.articleAssistantGenerateGuide).mock.calls[0][0] as { sessionId: string }
+
+      useStore.getState().cancelAssistantGuide()
+
+      expect(ipc.articleAssistantAbort).toHaveBeenCalledWith({ sessionId: args.sessionId })
+      expect(useStore.getState().assistantSession?.guideLoading).toBe(false)
+      expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
+      rejectGuide(Object.assign(new Error('cancelled'), { code: 'GUIDE_ABORT' }))
+      await flush(); await flush()
+      expect(ipc.articleAssistantWriteGuide).not.toHaveBeenCalled()
     })
   })
 

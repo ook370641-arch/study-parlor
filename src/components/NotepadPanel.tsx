@@ -60,6 +60,7 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
   const commentAreaRef = useRef<HTMLDivElement | null>(null)
   const [tab, setTab] = useState<'pending' | 'done'>('pending')
   const [draft, setDraft] = useState('')
+  const [draftImages, setDraftImages] = useState<string[]>([])
   const [draftCategory, setDraftCategory] = useState<NotepadCategory>('feature')
   const [completingId, setCompletingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -118,12 +119,36 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
   const submit = () => {
     const t = draft.trim()
     if (!t) return
-    addNotepadItem(t, draftCategory)
+    addNotepadItem(t, draftCategory, draftImages)
     setDraft('')
+    setDraftImages([])
+  }
+
+  const addImages = (files: File[]) => {
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          const image = reader.result
+          setDraftImages(current => [...current, image])
+        }
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   // 粘贴多行 → 自动拆成多条（归入当前选择的分类）
   const onPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const images = Array.from(e.clipboardData.items)
+      .filter(item => item.type.startsWith('image/'))
+      .map(item => item.getAsFile())
+      .filter((file): file is File => !!file)
+    if (images.length > 0) {
+      e.preventDefault()
+      addImages(images)
+      return
+    }
     const text = e.clipboardData.getData('text')
     if (!text.includes('\n')) return
     e.preventDefault()
@@ -323,6 +348,19 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                                           ${completingId === item.id ? 'line-through' : ''}`}>
                           {item.text}
                         </span>
+                        {!!item.images?.length && (
+                          <span className="mt-1.5 flex flex-wrap gap-1.5">
+                            {item.images.map((image, index) => (
+                              <img
+                                key={index}
+                                data-testid={`notepad-item-image-${item.id}-${index}`}
+                                src={image}
+                                alt={`待办图片 ${index + 1}`}
+                                className="h-16 w-16 rounded border border-parchment/15 object-cover"
+                              />
+                            ))}
+                          </span>
+                        )}
                         {item.claim && (
                           <span
                             data-testid={`notepad-claim-${item.id}`}
@@ -436,7 +474,50 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                 placeholder="记一笔…（回车添加）"
                 className="flex-1 bg-transparent outline-none text-sm text-parchment placeholder:text-parchment/35"
               />
+              <input
+                data-testid="notepad-image-input"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={e => {
+                  addImages(Array.from(e.target.files ?? []))
+                  e.target.value = ''
+                }}
+              />
+              <button
+                type="button"
+                data-testid="notepad-image-add"
+                title="添加图片"
+                onClick={e => (e.currentTarget.previousElementSibling as HTMLInputElement | null)?.click()}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-parchment/20 text-parchment/55 hover:border-ember/60 hover:text-ember"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21.4 11.6-8.9 8.9a6 6 0 0 1-8.5-8.5l9.6-9.6a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 0 1-2.8-2.8l8.9-8.9" />
+                </svg>
+              </button>
             </div>
+            {!!draftImages.length && (
+              <div className="mt-2 flex flex-wrap gap-2 pl-5">
+                {draftImages.map((image, index) => (
+                  <span key={index} className="relative">
+                    <img
+                      data-testid={`notepad-draft-image-${index}`}
+                      src={image}
+                      alt={`待添加图片 ${index + 1}`}
+                      className="h-14 w-14 rounded border border-parchment/20 object-cover"
+                    />
+                    <button
+                      type="button"
+                      data-testid={`notepad-draft-image-remove-${index}`}
+                      title="移除图片"
+                      onClick={() => setDraftImages(current => current.filter((_, i) => i !== index))}
+                      className="absolute -right-1.5 -top-1.5 h-4 w-4 rounded-full bg-ink text-[10px] leading-none text-parchment/80 border border-parchment/30 hover:text-ember"
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -573,6 +654,19 @@ export function NotepadPanel({ open, onClose, placement = 'right' }: {
                           <div className="mt-1.5 flex items-start gap-3 border-t border-parchment/15 pt-1.5 text-parchment/65 leading-relaxed text-[0.9em]">
                             <div className="min-w-0 flex-1">
                               {entry.text}
+                              {!!entry.images?.length && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {entry.images.map((image, index) => (
+                                    <img
+                                      key={index}
+                                      data-testid={`notepad-log-image-${entry.id}-${index}`}
+                                      src={image}
+                                      alt={`档案图片 ${index + 1}`}
+                                      className="h-20 w-20 rounded border border-parchment/15 object-cover"
+                                    />
+                                  ))}
+                                </div>
+                              )}
                               <div className="text-[10px] text-parchment/40 mt-1">
                                 记入 {fmtDate(entry.createdAt)} · 解决于 {fmtDate(entry.resolvedAt)}
                               </div>
