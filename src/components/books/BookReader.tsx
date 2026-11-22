@@ -153,7 +153,6 @@ export function BookReader({ theme }: { theme: BriefingTheme }) {
         articleTitle={chapter.meta.title}
         articleContent={chapter.content}
         bookContext={bookContext ?? undefined}
-        autoGenerateGuide
         theme={theme}
         source="book"
       />

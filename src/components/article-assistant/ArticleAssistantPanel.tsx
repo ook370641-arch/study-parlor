@@ -12,13 +12,12 @@ interface Props {
   articleTitle?: string
   articleContent: string
   showGuide?: boolean
-  autoGenerateGuide?: boolean
   theme?: BriefingTheme
   source?: 'anthropic' | 'book'
   bookContext?: BookGuideContext
 }
 
-export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, showGuide = true, autoGenerateGuide, theme = 'academic', source, bookContext }: Props) {
+export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, articleContent, showGuide = true, theme = 'academic', source, bookContext }: Props) {
   const contextId = useStore((s) => s.assistantSession?.contextId ?? null)
   const isOpen = useStore((s) => s.assistantSession?.isOpen ?? false)
   const hasPendingSelection = useStore((s) => !!s.assistantSession?.pendingSelection)
@@ -44,7 +43,7 @@ export function ArticleAssistantPanel({ articleType, parentPath, articleTitle, a
       if (prev && useStore.getState().assistantSession) {
         persistAssistantState()
       }
-      openAssistantSession({ contextId: parentPath, contextType: articleType, articleTitle, articleContent, bookContext, autoGenerateGuide })
+      openAssistantSession({ contextId: parentPath, contextType: articleType, articleTitle, articleContent, bookContext })
     }
     return () => {
       // Persist but do NOT close/clear the session, so switching back restores it from memory + disk.

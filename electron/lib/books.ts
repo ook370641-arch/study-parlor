@@ -15,6 +15,7 @@ import matter from 'gray-matter'
 import * as electron from 'electron'
 import {
   parseTocPage,
+  parseNumberedChapterToc,
   calibrateOffset,
   sliceChapters,
   chapterSlug,
@@ -32,9 +33,10 @@ export const BOOKS_DIR = 'books'
  * 1 = 旧版行拼接（正文档落挤在一起）；2 = items → 视觉行 → 段落重建；
  * 3 = 再加行距/字号/缩进判段与标题层级（`##` / `###`）。
  * 4 = 左边距/栏宽估计只使用正文字号附近的行，避免脚注导致逐行拆段。
+ * 5 = 支持跨页/无页码编号章节目录，并归一化标题校准页码偏移。
  * 缺省视为 1，前端据此提示「可重新解析」。
  */
-export const BOOK_PARSER_VERSION = 4
+export const BOOK_PARSER_VERSION = 5
 
 export interface BookTocItem {
   title: string
@@ -270,12 +272,13 @@ function writeChaptersFromPages(
   fs.mkdirSync(path.join(dir, 'chapters'), { recursive: true })
 
   const structPages = rawPages ?? pages
-  const { entries: tocEntries } = parseChapterTocPages(structPages)
-  const hasToc = !!tocEntries && tocEntries.length > 0
-  const offset = hasToc ? calibrateOffset(tocEntries, structPages) : 0
-  const slices: ChapterSlice[] = hasToc
+  const numbered = parseNumberedChapterToc(structPages)
+  const { entries: tocEntries } = numbered ? { entries: null } : parseChapterTocPages(structPages)
+  const hasToc = !!numbered || (!!tocEntries && tocEntries.length > 0)
+  const offset = numbered?.offset ?? (hasToc ? calibrateOffset(tocEntries, structPages) : 0)
+  const slices: ChapterSlice[] = numbered?.slices ?? (hasToc
     ? sliceChapters(tocEntries, offset, pages.length)
-    : [{ title, startPage: 1, endPage: pages.length }]
+    : [{ title, startPage: 1, endPage: pages.length }])
 
   const toc: BookTocItem[] = slices.map((s, i) => {
     const chapterFile = `chapters/${padIndex(i)}-${chapterSlug(s.title)}.md`

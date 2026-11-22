@@ -104,6 +104,20 @@ export function GuideSidebar({ theme = 'academic' }: Props) {
           </button>
         </div>
       )}
+      {!guide && !guideLoading && !guideError && (
+        <div data-testid="guide-empty" className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 text-center">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className={`mb-4 h-8 w-8 ${isAcademic ? 'text-parchment/30' : 'text-[#6b5d52]/50'}`}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16ZM20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z" />
+          </svg>
+          <p className={`text-sm ${isAcademic ? 'text-parchment/55' : 'text-[#6b5d52]'}`}>这一章还没有导读</p>
+          <button
+            type="button"
+            data-testid="guide-generate"
+            onClick={() => generateAssistantGuide()}
+            className="mt-4 rounded border border-ember/50 px-4 py-1.5 text-xs text-ember transition-colors hover:bg-ember/10"
+          >生成导读</button>
+        </div>
+      )}
       {guide && (
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
           <div style={{ fontSize: GUIDE_BODY_SIZE }} className={`rounded p-3 leading-relaxed ${isAcademic ? 'bg-ink/60 border border-parchment/10 text-parchment/90' : 'bg-white border border-[#1a1a1a]/10 text-[#1a1a1a]'}`}>

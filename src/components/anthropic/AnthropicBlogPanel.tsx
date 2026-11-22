@@ -545,7 +545,6 @@ export function AnthropicBlogPanel({ theme = 'academic' }: Props) {
           parentPath={readerFilePath}
           articleTitle={readerTitle ?? undefined}
           articleContent={readerBody}
-          autoGenerateGuide
           theme={theme}
           source="anthropic"
         />

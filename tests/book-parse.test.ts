@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseTocPage, calibrateOffset, sliceChapters, chapterSlug } from '../electron/lib/book-parse'
+import { parseTocPage, calibrateOffset, sliceChapters, chapterSlug, parseNumberedChapterToc } from '../electron/lib/book-parse'
 
 // JTBD 第 3 物理页的真实抽取文本（标题块 + 尾随页码块，pdfjs 双栏读取顺序）
 const JTBD_TOC_PAGE = `2
@@ -94,5 +94,64 @@ describe('chapterSlug', () => {
   it('转小写、空白转连字符、去非法字符、保留中文', () => {
     expect(chapterSlug('Focus on the job')).toBe('focus-on-the-job')
     expect(chapterSlug('第一章: 总则/细则')).toBe('第一章-总则细则')
+  })
+})
+
+describe('parseNumberedChapterToc', () => {
+  it('无页码目录跨页时按章节标题定位正文', () => {
+    const result = parseNumberedChapterToc([
+      'Getting Real',
+      'Table of Contents\nChapter 1: First\nChapter 2: Second',
+      'Chapter 3: Third',
+      '1: First\nbody one',
+      '2: Second\nbody two',
+      '3: Third\nbody three',
+    ])
+
+    expect(result).toEqual({
+      offset: 0,
+      slices: [
+        { title: 'Chapter 1: First', startPage: 4, endPage: 4 },
+        { title: 'Chapter 2: Second', startPage: 5, endPage: 5 },
+        { title: 'Chapter 3: Third', startPage: 6, endPage: 6 },
+      ],
+    })
+  })
+
+  it('跨页点线目录只取顶层章节并校准印刷页偏移', () => {
+    const result = parseNumberedChapterToc([
+      'front matter',
+      'Contents\n1 Bayes\'s Theorem 1\n1.1 Conditional probability . . . 1\n2 Computational Statistics 2',
+      'Contents ii\n2.1 Distributions . . . 2\n3 Estimation . . . . . 3',
+      '1 Bayes\'s Theorem\nbody one',
+      '2 Computational Statistics\nbody two',
+      '3 Estimation\nbody three',
+    ])
+
+    expect(result).toEqual({
+      offset: 3,
+      slices: [
+        { title: '1 Bayes\'s Theorem', startPage: 4, endPage: 4 },
+        { title: '2 Computational Statistics', startPage: 5, endPage: 5 },
+        { title: '3 Estimation', startPage: 6, endPage: 6 },
+      ],
+    })
+  })
+
+  it('Chapter 加破折号的目录使用归一化标题校准', () => {
+    const result = parseNumberedChapterToc([
+      'front matter',
+      'Contents\nChapter 1 – Introduction 1\nOrigins 1\nChapter 2 – Next Steps 2',
+      'Chapter 1 – Introduction\nbody one',
+      'Chapter 2 – Next Steps\nbody two',
+    ])
+
+    expect(result).toEqual({
+      offset: 2,
+      slices: [
+        { title: 'Chapter 1 – Introduction', startPage: 3, endPage: 3 },
+        { title: 'Chapter 2 – Next Steps', startPage: 4, endPage: 4 },
+      ],
+    })
   })
 })

@@ -21,7 +21,15 @@ export interface ChapterSlice {
 }
 
 const TOC_HEADER = /^(table of contents|contents|目录)$/i
+const TOC_PAGE_HEADER = /^(?:(?:[ivxlcdm]+|\d+)\s+)?(?:table of contents|contents|目录)(?:\s+(?:[ivxlcdm]+|\d+))?$/i
 const NUMBER_LINE = /^\d{1,4}$/
+
+function normalizeTocHeading(text: string): string {
+  return text
+    .replace(/^chapter\s+/i, '')
+    .toLowerCase()
+    .replace(/[\s\-–—_.,，。:：;；!?！？"'“”‘’()（）[\]【】]/g, '')
+}
 
 /**
  * 解析单页文本为目录。不是目录页（无表头或无法配对）返回 null。
@@ -80,11 +88,78 @@ export function calibrateOffset(toc: TocEntry[], pages: string[]): number {
     // 目录页本身也含有首章标题，先跳过，否则偏移会被算成 0
     if (parseTocPage(pages[i])) continue
     // 只看页首，避免正文里偶然提到章名造成误判
-    if (pages[i].slice(0, 200).includes(first.title)) {
+    if (normalizeTocHeading(pages[i].slice(0, 500)).includes(normalizeTocHeading(first.title))) {
       return i + 1 - first.printedPage
     }
   }
   return 0
+}
+
+interface NumberedTocEntry {
+  title: string
+  printedPage: number | null
+}
+
+function parseNumberedTocLine(line: string): NumberedTocEntry | null {
+  const trailingPage = line.match(/\s+(\d{1,4})$/)
+  const printedPage = trailingPage ? Number(trailingPage[1]) : null
+  const withoutPage = trailingPage ? line.slice(0, trailingPage.index).trim() : line.trim()
+  if (!/^Chapter\s+\d+\s*[:\-–—]\s*.+/i.test(withoutPage) && !/^\d+\s+.+/.test(withoutPage)) {
+    return null
+  }
+  const title = withoutPage.replace(/\s+(?:\.\s*){2,}.*$/, '').trim()
+  return title ? { title, printedPage } : null
+}
+
+/** 跨页编号章节目录 → 物理页切片；只取顶层 `Chapter N` / `N 标题`。 */
+export function parseNumberedChapterToc(
+  pages: string[]
+): { slices: ChapterSlice[]; offset: number } | null {
+  const entries: NumberedTocEntry[] = []
+  const seen = new Set<string>()
+  let inToc = false
+  let tocEnd = -1
+
+  for (const [pageIndex, page] of pages.slice(0, 50).entries()) {
+    const lines = page.split('\n').map(line => line.trim()).filter(Boolean)
+    const hasHeader = lines.some(line => TOC_PAGE_HEADER.test(line))
+    const pageEntries = lines.map(parseNumberedTocLine).filter((entry): entry is NumberedTocEntry => !!entry)
+    if (!inToc && !hasHeader) continue
+    if (inToc && !hasHeader && pageEntries.length === 0) break
+    inToc = true
+    if (pageEntries.length > 0) tocEnd = pageIndex
+    for (const entry of pageEntries) {
+      const key = entry.title.match(/^Chapter\s+(\d+)/i)?.[1] ?? entry.title.match(/^(\d+)/)?.[1]
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      entries.push(entry)
+    }
+  }
+  if (entries.length < 2) return null
+
+  const withPages = entries.filter(entry => entry.printedPage !== null)
+  const offset = withPages.length > 0
+    ? calibrateOffset(withPages.map(entry => ({ title: entry.title, printedPage: entry.printedPage! })), pages)
+    : 0
+
+  const slices: ChapterSlice[] = []
+  let searchFrom = tocEnd + 1
+  for (const [index, entry] of entries.entries()) {
+    let startPage = entry.printedPage === null ? 0 : entry.printedPage + offset
+    if (!startPage) {
+      for (let i = searchFrom; i < pages.length; i++) {
+        if (normalizeTocHeading(pages[i].slice(0, 600)).includes(normalizeTocHeading(entry.title))) {
+          startPage = i + 1
+          searchFrom = i
+          break
+        }
+      }
+    }
+    if (!startPage || startPage > pages.length || (index > 0 && startPage < slices[index - 1].startPage)) return null
+    if (index > 0) slices[index - 1].endPage = startPage - 1
+    slices.push({ title: entry.title, startPage, endPage: pages.length })
+  }
+  return { slices, offset }
 }
 
 /** 按目录与偏移切章节（物理页 1-based 闭区间），末章切到 totalPages。 */

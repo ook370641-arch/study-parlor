@@ -55,7 +55,7 @@ describe('store article assistant', () => {
       })
     })
 
-    it('auto-generates and persists when cache is empty and autoGenerateGuide is set', async () => {
+    it('手动生成并持久化无缓存文章的导读', async () => {
       vi.mocked(ipc.articleAssistantReadGuide).mockResolvedValue(null)
 
       useStore.getState().openAssistantSession({
@@ -63,12 +63,9 @@ describe('store article assistant', () => {
         contextType: 'anthropic-article',
         articleContent: 'article body',
         articleTitle: 'B',
-        autoGenerateGuide: true
       })
-      // Flush the loadGuide -> .then -> generate -> write microtask chain.
       await flush()
-      await flush()
-      await flush()
+      await useStore.getState().generateAssistantGuide()
 
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledWith({
         sessionId: expect.any(String),
@@ -97,7 +94,6 @@ describe('store article assistant', () => {
         contextId: '/lib/c.md',
         contextType: 'anthropic-article',
         articleContent: 'body',
-        autoGenerateGuide: true
       })
       await flush()
       await flush()
@@ -114,7 +110,6 @@ describe('store article assistant', () => {
         contextType: 'anthropic-article',
         articleContent,
         articleTitle: 'D',
-        autoGenerateGuide: true,
       })
 
     it('regenerates when cache has no guideVersion (v1)', async () => {
@@ -124,7 +119,8 @@ describe('store article assistant', () => {
         generatedAt: '2026-08-01',
       })
       openArticle()
-      await flush(); await flush(); await flush()
+      await flush()
+      await useStore.getState().generateAssistantGuide()
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalled()
     })
 
@@ -143,7 +139,8 @@ describe('store article assistant', () => {
 
     it('counts H2/H3 headings as entriesTotal', async () => {
       openArticle('## 一\nx\n### 二\ny\n## 三\nz')
-      await flush(); await flush(); await flush()
+      await flush()
+      await useStore.getState().generateAssistantGuide()
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledWith(
         expect.objectContaining({ entriesTotal: 3 })
       )
@@ -156,7 +153,8 @@ describe('store article assistant', () => {
         new Promise((r) => { resolveGuide = r }) as Promise<any>
       )
       openArticle()
-      await flush(); await flush()
+      await flush()
+      void useStore.getState().generateAssistantGuide()
       expect(useStore.getState().assistantSession?.guideProgress).toEqual({ stage: 'planning' })
 
       useStore.getState().setAssistantGuideProgress({ stage: 'searching', done: 1, total: 2 })
@@ -171,7 +169,8 @@ describe('store article assistant', () => {
     it('clears guideProgress on failure', async () => {
       vi.mocked(ipc.articleAssistantGenerateGuide).mockRejectedValue(Object.assign(new Error('x'), { code: 'GUIDE_LLM_ERROR' }))
       openArticle()
-      await flush(); await flush(); await flush()
+      await flush()
+      await useStore.getState().generateAssistantGuide()
       expect(useStore.getState().assistantSession?.guideError).toBe('GUIDE_LLM_ERROR')
       expect(useStore.getState().assistantSession?.guideProgress).toBeNull()
     })
@@ -184,9 +183,9 @@ describe('store article assistant', () => {
         contextId: '/lib/blog.md',
         contextType: 'anthropic-article',
         articleContent: '## 一\nx\n## 二\ny',
-        autoGenerateGuide: true,
       })
-      await flush(); await flush(); await flush()
+      await flush()
+      await useStore.getState().generateAssistantGuide()
       const s = useStore.getState().assistantSession
       expect(s?.guideLoading).toBe(false)
       expect(s?.guideError).toBe('GUIDE_JSON_ERROR')
@@ -201,9 +200,9 @@ describe('store article assistant', () => {
         contextId: '/lib/retry.md',
         contextType: 'anthropic-article',
         articleContent: '## 一\nx',
-        autoGenerateGuide: true,
       })
-      await flush(); await flush(); await flush()
+      await flush()
+      await useStore.getState().generateAssistantGuide()
       expect(useStore.getState().assistantSession?.guideError).toBe('GUIDE_JSON_ERROR')
 
       // 用户点击重试 → 再次触发 generateAssistantGuide → 成功落地导读
@@ -221,9 +220,9 @@ describe('store article assistant', () => {
         contextId: '/lib/f.md',
         contextType: 'anthropic-article',
         articleContent: 'body',
-        autoGenerateGuide: true,
       })
-      await flush(); await flush()
+      await flush()
+      void useStore.getState().generateAssistantGuide()
       expect(useStore.getState().assistantSession?.guideLoading).toBe(true)
       expect(useStore.getState().assistantSession?.guideProgress).toEqual({ stage: 'planning' })
     })
@@ -241,9 +240,9 @@ describe('store article assistant', () => {
         contextType: 'anthropic-article',
         articleContent: 'body a',
         articleTitle: 'A',
-        autoGenerateGuide: true,
       })
-      await flush(); await flush()
+      await flush()
+      void useStore.getState().generateAssistantGuide()
       expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledTimes(1)
 
       // 生成未完成时切到另一篇文章
@@ -279,12 +278,12 @@ describe('store article assistant', () => {
         contextType: 'anthropic-article',
         articleContent: 'body a',
         articleTitle: 'A',
-        autoGenerateGuide: true,
       })
       openA()
-      await flush(); await flush()
+      await flush()
+      void useStore.getState().generateAssistantGuide()
 
-      // 切走再切回（面板 remount 会再次带 autoGenerateGuide）
+      // 切走再切回，不重复发起生成
       useStore.getState().openAssistantSession({
         contextId: '/lib/bg2-b.md',
         contextType: 'anthropic-article',
@@ -309,27 +308,29 @@ describe('store article assistant', () => {
   })
 
   describe('导读页签触发与取消', () => {
-    it('对照页签打开无导读章节不生成，切回导读才生成', async () => {
-      useStore.setState({ articlePanelMode: { anthropic: 'guide', book: 'companion' } })
+    it('打开无导读章节及切换页签都不自动生成', async () => {
+      useStore.setState({ articlePanelMode: { anthropic: 'guide', book: 'guide' } })
       useStore.getState().openAssistantSession({
-        contextId: '/lib/book/chapter.md', contextType: 'book-chapter', articleContent: 'body', autoGenerateGuide: true,
+        contextId: '/lib/book/chapter.md', contextType: 'book-chapter', articleContent: 'body',
       })
       await flush(); await flush()
       expect(ipc.articleAssistantGenerateGuide).not.toHaveBeenCalled()
 
+      useStore.getState().setArticlePanelMode('book', 'companion')
       useStore.getState().setArticlePanelMode('book', 'guide')
       await flush(); await flush(); await flush()
 
-      expect(ipc.articleAssistantGenerateGuide).toHaveBeenCalledTimes(1)
+      expect(ipc.articleAssistantGenerateGuide).not.toHaveBeenCalled()
     })
 
     it('取消使用本次导读的 abortId，且不写入半成品', async () => {
       let rejectGuide!: (error: Error) => void
       vi.mocked(ipc.articleAssistantGenerateGuide).mockReturnValue(new Promise((_, reject) => { rejectGuide = reject }) as Promise<any>)
       useStore.getState().openAssistantSession({
-        contextId: '/lib/book/cancel.md', contextType: 'book-chapter', articleContent: 'body', autoGenerateGuide: true,
+        contextId: '/lib/book/cancel.md', contextType: 'book-chapter', articleContent: 'body',
       })
-      await flush(); await flush()
+      await flush()
+      void useStore.getState().generateAssistantGuide()
       const args = vi.mocked(ipc.articleAssistantGenerateGuide).mock.calls[0][0] as { sessionId: string }
 
       useStore.getState().cancelAssistantGuide()

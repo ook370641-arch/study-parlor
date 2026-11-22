@@ -383,7 +383,7 @@ type AppStore = {
   assistantThinkingEffort: AssistantThinkingEffort
   toggleAssistantSocratic: () => void
   cycleAssistantThinkingEffort: () => void
-  openAssistantSession: (args: { contextId: string; contextType: 'anthropic-article' | 'book-chapter'; articleTitle?: string; articleContent: string; bookContext?: BookGuideContext; autoGenerateGuide?: boolean }) => void
+  openAssistantSession: (args: { contextId: string; contextType: 'anthropic-article' | 'book-chapter'; articleTitle?: string; articleContent: string; bookContext?: BookGuideContext }) => void
   closeAssistantSession: () => void
   toggleAssistantOpen: () => void
   toggleAssistantSearch: () => void
@@ -2181,15 +2181,7 @@ export const useStore = create<AppStore>((set, get) => ({
         activeChunkIndex: null,
       },
     })
-    get().loadAssistantGuide().then(() => {
-      const source = args.contextType === 'book-chapter' ? 'book' : 'anthropic'
-      if (args.autoGenerateGuide && get().articlePanelMode[source] === 'guide') {
-        const cur = get().assistantSession
-        if (cur && cur.contextId === args.contextId && !cur.guide && !cur.guideLoading) {
-          get().generateAssistantGuide()
-        }
-      }
-    })
+    void get().loadAssistantGuide()
     historyLoadPromise = cached ? null : get().loadAssistantSession()
   },
 
@@ -3196,18 +3188,6 @@ export const useStore = create<AppStore>((set, get) => ({
         void get().selectArticleCompanion('book', chapterPath, mapped)
       } else if (chapterPath && !mapped && get().articleCompanion && get().articleCompanion!.key !== chapterPath) {
         set({ articleCompanion: null })
-      }
-    }
-    if (mode === 'guide') {
-      const s = get().assistantSession
-      const matches = source === 'book' ? s?.contextType === 'book-chapter' : s?.contextType === 'anthropic-article'
-      if (s && matches && !s.guide && !inFlightGuides.has(s.contextId)) {
-        void get().loadAssistantGuide().then(() => {
-          const cur = get().assistantSession
-          if (cur?.contextId === s.contextId && !cur.guide && !cur.guideLoading) {
-            void get().generateAssistantGuide()
-          }
-        })
       }
     }
   },

@@ -122,6 +122,18 @@ describe('GuideSidebar', () => {
     expect(state.cancelAssistantGuide).toHaveBeenCalledTimes(1)
   })
 
+  it('无导读时展示手动生成入口，点击后才生成', () => {
+    const s = sessionWithGuide()
+    s.guide = null
+    s.guideLoading = false
+    const state = mockStore(s)
+    render(<GuideSidebar />)
+
+    screen.getByTestId('guide-generate').click()
+
+    expect(state.generateAssistantGuide).toHaveBeenCalledTimes(1)
+  })
+
   it('shows writing progress with entry counter and char count', () => {
     const s = sessionWithGuide()
     s.guide = null
