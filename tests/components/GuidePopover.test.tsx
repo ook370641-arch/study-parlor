@@ -41,8 +41,8 @@ describe('GuidePopover', () => {
     expect(screen.getByText(/分组用来管理主题/)).toBeTruthy()
     expect(screen.getByText(/新创建的主题学习默认保存/)).toBeTruthy()
     expect(screen.getByText(/每个分组可包含多个主题/)).toBeTruthy()
-    expect(screen.getByText(/左侧新主题推荐/)).toBeTruthy()
-    expect(screen.getByText('长按主题卡片并拖动，可将其移入其他分组')).toBeTruthy()
+    expect(screen.getByText(/学习墙的推荐会显示在对应分组开头/)).toBeTruthy()
+    expect(screen.getByText('按住学习墙主题行并拖动，可将其移入其他分组')).toBeTruthy()
   })
 
   it('renders numbered items', () => {
@@ -158,14 +158,15 @@ describe('GuidePopover', () => {
 
   it('positions panel below anchor', () => {
     const onClose = vi.fn()
-    const { container } = render(
+    render(
       <GuidePopover
         open={true}
         anchorRef={anchorRef}
         onClose={onClose}
       />
     )
-    const panel = container.firstChild as HTMLElement
+    const panel = screen.getByTestId('group-guide-popover')
+    expect(panel.parentElement).toBe(document.body)
     // The component uses Tailwind 'fixed' class, not inline style
     expect(panel.classList.contains('fixed')).toBe(true)
     // left/top are set via inline styles in updatePosition

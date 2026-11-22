@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Group, TopicMeta } from '@shared/index'
 import {
+  buildStudyWallGroups,
   filterStudyTopics,
   latestSession,
   mergePendingArchives,
@@ -61,5 +62,40 @@ describe('study wall models', () => {
   it('hides only recommendations already present in the library', () => {
     expect(recommendationExistsInLibrary(' 记忆 ', [topic])).toBe(true)
     expect(recommendationExistsInLibrary('陌生主题', [topic])).toBe(false)
+  })
+
+  it('places recommendations in their target groups without counting them as topics', () => {
+    const result = buildStudyWallGroups(
+      groups,
+      [{ ...topic, groupId: 'g2' }],
+      null,
+      '',
+      { topic: '随机', hook: '随机钩子' },
+      { g2: { topic: '分组推荐', hook: '分组钩子' } },
+    )
+
+    expect(result.map(group => ({ id: group.group.id, recommendations: group.recommendations, count: group.topics.length }))).toEqual([
+      { id: 'default', recommendations: ['wildcard'], count: 0 },
+      { id: 'g2', recommendations: ['group'], count: 1 },
+      { id: 'g3', recommendations: [], count: 0 },
+    ])
+  })
+
+  it('targets wildcard and group recommendations to the active group', () => {
+    const result = buildStudyWallGroups(groups, [{ ...topic, groupId: 'g3' }], 'g3', '', null, {})
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ group: { id: 'g3' }, recommendations: ['wildcard', 'group'] })
+  })
+
+  it('keeps recommendations out when their topic already exists', () => {
+    const result = buildStudyWallGroups(
+      groups,
+      [{ ...topic, title: '随机', groupId: 'default' }],
+      null,
+      '',
+      { topic: '随机', hook: '随机钩子' },
+      {},
+    )
+    expect(result[0].recommendations).not.toContain('wildcard')
   })
 })

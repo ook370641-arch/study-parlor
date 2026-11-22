@@ -38,6 +38,7 @@ const DEFAULT: StateJson = {
   writingFontSize: 'base',
   writingTone: 'parchment',
   writingListTab: 'articles',
+  writingWallViewMode: { writing: 'card', repository: 'card' },
   notesSortBy: 'source',
   notesCategory: 'all',
   writingAssistantWidth: 320,

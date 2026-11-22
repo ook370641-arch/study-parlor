@@ -20,6 +20,24 @@ export const STUDY_FONT_STYLES: Record<StudyFontSize, string> = {
   '3xl': '24px',
 }
 
+export const STUDY_UI_STYLES: Record<StudyFontSize, string> = {
+  sm: '11px',
+  base: '12px',
+  lg: '13px',
+  xl: '14px',
+  '2xl': '15px',
+  '3xl': '16px',
+}
+
+export const STUDY_QUOTE_SIZES: Record<StudyFontSize, string> = {
+  sm: '18px',
+  base: '20px',
+  lg: '22px',
+  xl: '24px',
+  '2xl': '26px',
+  '3xl': '28px',
+}
+
 export function nextStudyFontSize(current: StudyFontSize): StudyFontSize {
   const idx = STUDY_FONT_SIZES.indexOf(current)
   return STUDY_FONT_SIZES[Math.min(idx + 1, STUDY_FONT_SIZES.length - 1)]

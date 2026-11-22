@@ -35,8 +35,8 @@ export class HomePage {
   }
 
   async expandTopic(index: number = 0) {
-    const card = this.page.locator(SELECTORS.home.topicCard).nth(index)
-    await card.click()
+    const toggle = this.page.locator(SELECTORS.home.topicToggle).nth(index)
+    await toggle.click()
   }
 
   async continueTopic(index: number = 0) {
@@ -46,6 +46,7 @@ export class HomePage {
 
   async reviewSession(index: number = 0) {
     const button = this.page.locator(SELECTORS.home.sessionReviewButton).nth(index)
+    if (!await button.isVisible().catch(() => false)) await this.expandTopic(index)
     await button.click()
   }
 

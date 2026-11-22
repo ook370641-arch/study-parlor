@@ -13,10 +13,11 @@ interface Props {
   /** 标题行右侧、折叠按钮左侧的附加控件（如 demo 的 `i` 说明入口）。折叠态不渲染，避免 56px 窄栏塞两个按钮。 */
   headerExtra?: ReactNode
   stableScrollbar?: boolean
+  uiFontSize?: string
   children: React.ReactNode
 }
 
-export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, title, renderWhenCollapsed = false, headerExtra, stableScrollbar = false, children }: Props) {
+export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, title, renderWhenCollapsed = false, headerExtra, stableScrollbar = false, uiFontSize, children }: Props) {
   const isAcademic = theme !== 'newspaper'
 
   const themeClasses = isAcademic
@@ -40,10 +41,11 @@ export function BriefingListColumn({ collapsed, onToggle, theme, width = 64, tit
   return (
     <aside
       data-testid="briefing-list-column"
+      style={{ fontSize: uiFontSize }}
       className={`h-full flex flex-col transition-[width] duration-200 ease-out ${collapsed ? 'w-14 overflow-hidden' : widthClass} ${themeClasses.bg} ${themeClasses.border} z-[5]`}
     >
       <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-4 ${themeClasses.headerBorder}`}>
-        {!collapsed && <span className={`text-sm font-serif ${themeClasses.headerText}`}>{title}</span>}
+        {!collapsed && <span className={`${uiFontSize ? 'text-[0.9em]' : 'text-sm'} font-serif ${themeClasses.headerText}`}>{title}</span>}
         {!collapsed && (headerExtra || onToggle) && (
           <div className="flex items-center gap-1 shrink-0">
             {headerExtra}

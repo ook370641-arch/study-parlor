@@ -4,15 +4,18 @@ import { SwapPaintingButton } from './SwapPaintingButton'
 interface Props {
   surface: 'home' | 'study'
   className?: string
-  uiFontControls?: boolean
+  fontMode?: 'theme' | 'writing' | 'study'
 }
 
-export function StudyControlsGroup({ surface, className = '', uiFontControls = false }: Props) {
+export function StudyControlsGroup({ surface, className = '', fontMode = 'theme' }: Props) {
   const theme = useStore((s) => s.briefingTheme)
   const setTheme = useStore((s) => s.setBriefingTheme)
   const writingUIFontSize = useStore((s) => s.writingUIFontSize)
   const decreaseWritingUIFontSize = useStore((s) => s.decreaseWritingUIFontSize)
   const increaseWritingUIFontSize = useStore((s) => s.increaseWritingUIFontSize)
+  const studyFontSize = useStore((s) => s.studyFontSize)
+  const decreaseStudyFontSize = useStore((s) => s.decreaseStudyFontSize)
+  const increaseStudyFontSize = useStore((s) => s.increaseStudyFontSize)
   const isAcademic = theme !== 'newspaper'
 
   const toggleTheme = () => {
@@ -32,13 +35,13 @@ export function StudyControlsGroup({ surface, className = '', uiFontControls = f
           data-testid="study-controls-swap-painting"
         />
       )}
-      {uiFontControls ? (
+      {fontMode !== 'theme' ? (
         <>
           <button
             type="button"
             data-testid="study-controls-font-size-decrease"
-            disabled={writingUIFontSize === 'sm'}
-            onClick={() => void decreaseWritingUIFontSize()}
+            disabled={fontMode === 'study' ? studyFontSize === 'sm' : writingUIFontSize === 'sm'}
+            onClick={() => void (fontMode === 'study' ? decreaseStudyFontSize() : decreaseWritingUIFontSize())}
             className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition-colors disabled:opacity-20 disabled:cursor-not-allowed ${btnCls}`}
             title="减小界面字号"
           >
@@ -47,8 +50,8 @@ export function StudyControlsGroup({ surface, className = '', uiFontControls = f
           <button
             type="button"
             data-testid="study-controls-font-size-increase"
-            disabled={writingUIFontSize === '7xl'}
-            onClick={() => void increaseWritingUIFontSize()}
+            disabled={fontMode === 'study' ? studyFontSize === '3xl' : writingUIFontSize === '7xl'}
+            onClick={() => void (fontMode === 'study' ? increaseStudyFontSize() : increaseWritingUIFontSize())}
             className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition-colors disabled:opacity-20 disabled:cursor-not-allowed ${btnCls}`}
             title="增大界面字号"
           >

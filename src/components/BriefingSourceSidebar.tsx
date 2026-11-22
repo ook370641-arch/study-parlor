@@ -91,7 +91,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
         railBorder: 'border-t border-[#c9c3b8]',
       }
 
-  const base = `w-full text-left py-2 transition-colors flex items-center gap-3 ${collapsed ? 'justify-center px-2' : 'px-3'} ${collapsed ? '' : 'rounded'}`
+  const base = `w-full border-l-[3px] border-transparent text-left py-2 transition-colors flex items-center gap-3 ${collapsed ? 'justify-center px-2' : 'px-3'} ${collapsed ? '' : 'rounded'}`
 
   const navItems = [
     {
@@ -153,7 +153,7 @@ export function BriefingSourceSidebar({ collapsed, onToggle, theme, onSourceSele
               }` : themeClasses.inactive}`}
               title={item.label}
             >
-              <Icon />
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center leading-none"><Icon /></span>
               {!collapsed && <span>{item.label}</span>}
             </button>
           )

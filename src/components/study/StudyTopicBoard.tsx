@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { SessionMeta, StudyTopicTab } from '@shared/index'
 import { ArchiveReportModal } from '@/components/ArchiveReportModal'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -6,6 +6,7 @@ import { FableStyleDialog } from '@/components/FableStyleDialog'
 import { ReviewFlash } from '@/components/ReviewFlash'
 import { latestSession, mergePendingArchives, pendingSessionNumbers } from '@/lib/study-wall'
 import { studyArtifactKey } from '@/lib/study-artifacts'
+import { STUDY_FONT_STYLES, normalizeStudyFontSize } from '@/lib/study-font-size'
 import { useStore } from '@/store'
 import { SessionFileContent } from './SessionFileContent'
 import { useStudyTopicActions } from './useStudyTopicActions'
@@ -71,14 +72,16 @@ function LoadedStudyTopicBoard({ topic, selectedSession, tab, deleteOpen, setDel
   const versions = useStore(state => state.studyArtifactVersions)
   const fableStyleTags = useStore(state => state.fableStyleTags)
   const lastFableTags = useStore(state => state.lastFableTags)
+  const studyFontSize = useStore(state => state.studyFontSize)
   const fileName = fileForTab(tab, selectedSession)
   const key = studyArtifactKey(topic.dirName, selectedSession.sessionNumber)
   const isPending = pendingSessionNumbers(pendingArchives, topic.dirName).has(selectedSession.sessionNumber)
   const generating = tab === 'diagram' ? diagramTasks[key] : tab === 'fable' ? fableTasks[key] : false
   const attachments = [selectedSession.hasReport && '学习报告.md', selectedSession.hasTranscript && '对话记录.md', selectedSession.hasReview && '复习记录.md', selectedSession.hasFable && (selectedSession.fableCount > 1 ? `寓言(×${selectedSession.fableCount}).md` : '寓言.md'), selectedSession.hasDiagram && '学习图表.svg'].filter(Boolean)
+  const bodySize = STUDY_FONT_STYLES[normalizeStudyFontSize(studyFontSize)]
 
   return (
-    <div data-testid="study-topic-board" className={`flex h-full min-h-0 flex-col ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>
+    <div data-testid="study-topic-board" style={{ fontSize: bodySize, '--briefing-body-size': bodySize } as CSSProperties} className={`flex h-full min-h-0 flex-col ${isAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}>
       <header className="shrink-0 border-b border-parchment/10 px-6 py-4">
         <div className="flex items-center gap-3">
           <button data-testid="session-viewer-close" onClick={() => useStore.getState().openStudyWall()} className="text-sm opacity-50 hover:opacity-100">← 学习墙</button>

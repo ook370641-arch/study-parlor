@@ -127,7 +127,7 @@ export function PreStudyModal() {
   const [localMaterials, setLocalMaterials] = useState<LocalMaterial[]>([])
   const [pickingFile, setPickingFile] = useState(false)
   const [internalPickerOpen, setInternalPickerOpen] = useState(false)
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(activeGroupId ?? 'default')
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(args?.groupId ?? activeGroupId ?? 'default')
 
   const topicRef = useRef<HTMLInputElement>(null)
   const diffRef = useRef<HTMLDivElement>(null)

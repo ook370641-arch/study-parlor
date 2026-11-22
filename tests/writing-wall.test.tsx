@@ -6,7 +6,7 @@ import { WritingWall } from '@/components/writing/WritingWall'
 import { useStore } from '@/store'
 import { ipc } from '@/lib/ipc'
 
-vi.mock('@/lib/ipc', () => ({ ipc: { writingDelete: vi.fn(), writingGenerateCovers: vi.fn(), writingSaveCover: vi.fn() } }))
+vi.mock('@/lib/ipc', () => ({ ipc: { writingDelete: vi.fn(), writingGenerateCovers: vi.fn(), writingSaveCover: vi.fn(), patchState: vi.fn() } }))
 
 const nestedTree: WritingTreeNode[] = [{
   kind: 'dir', name: '研究', path: 'writing/研究', children: [{
@@ -24,6 +24,7 @@ beforeEach(() => {
     writingTree: { writing: nestedTree, repository: [] },
     writingOrder: {},
     writingUIFontSize: 'base',
+    writingWallViewMode: { writing: 'card', repository: 'card' },
     selectWritingFile: vi.fn(),
     loadWritingTree: vi.fn(),
     showToast: vi.fn(),
@@ -46,6 +47,23 @@ describe('buildWritingWallGroups', () => {
 })
 
 describe('WritingWall', () => {
+  it('列表与卡片独立切换，列表不显示封面生成', () => {
+    render(<WritingWall root="writing" />)
+    expect(screen.getByTestId('writing-wall-card-writing/根.md')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('writing-wall-view-list-writing'))
+    expect(screen.getByTestId('writing-wall-row-writing/根.md')).toBeInTheDocument()
+    expect(screen.queryByTestId('writing-wall-card-writing/根.md')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('writing-cover-generate')).not.toBeInTheDocument()
+    expect(useStore.getState().writingWallViewMode).toEqual({ writing: 'list', repository: 'card' })
+    expect(ipc.patchState).toHaveBeenCalledWith({ writingWallViewMode: { writing: 'list', repository: 'card' } })
+
+    fireEvent.click(screen.getByTestId('writing-wall-open-writing/根.md'))
+    expect(useStore.getState().selectWritingFile).toHaveBeenCalledWith('writing/根.md')
+    fireEvent.click(screen.getByTestId('writing-wall-view-card-writing'))
+    expect(screen.getByTestId('writing-cover-generate')).toBeInTheDocument()
+  })
+
   it('仓库子组嵌套且默认收起，展开后显示文章', () => {
     const repositoryTree = [{ ...nestedTree[0], path: 'repository/研究', children: [{ ...nestedTree[0].children![0], path: 'repository/研究/访谈', children: nestedTree[0].children![0].children!.map(file => ({ ...file, path: file.path.replace('writing/', 'repository/') })) }] }]
     useStore.setState({ writingTree: { writing: [], repository: repositoryTree } } as any)

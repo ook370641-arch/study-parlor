@@ -29,6 +29,7 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
   const loadWritingTree = useStore(state => state.loadWritingTree)
   const showToast = useStore(state => state.showToast)
   const writingUISize = useStore(state => state.writingUIFontSize)
+  const viewMode = useStore(state => state.writingWallViewMode[root] ?? 'card')
   const [sortByRoot, setSortByRoot] = useState<Record<WritingRoot, WritingWallSort>>({ writing: 'default', repository: 'default' })
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [pendingDelete, setPendingDelete] = useState<WritingTreeNode | null>(null)
@@ -69,7 +70,31 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
         collapsed={isCollapsed}
         onToggle={() => setCollapsed(current => ({ ...current, [group.key]: !(current[group.key] ?? defaultCollapsed) }))}
       >
-        {group.files.length > 0 && (
+        {group.files.length > 0 && (viewMode === 'list' ? (
+          <div data-testid={`writing-wall-list-${group.key}`} className={`border-t ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}>
+            {group.files.map(file => {
+              const title = displayWritingName(file)
+              const extension = file.name.includes('.') ? file.name.split('.').pop()?.toUpperCase() : ''
+              return (
+                <div key={file.path} data-testid={`writing-wall-row-${file.path}`} className={`flex min-h-[4.5em] items-center gap-3 border-b px-2 py-2 ${isAcademic ? 'border-parchment/10 hover:bg-parchment/[0.025]' : 'border-[#1a1a1a]/10 hover:bg-[#1a1a1a]/[0.025]'}`}>
+                  <button type="button" data-testid={`writing-wall-open-${file.path}`} onClick={() => { void selectWritingFile(file.path) }} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                    <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-parchment/10 text-[0.75em] text-white/65" style={{ background: `linear-gradient(135deg, ${coverColor(file.path)}99, ${coverColor(file.path)}22 58%, #1a120d)` }}>
+                      {extension === 'MD' ? label : extension}
+                      {file.coverUrl && <img src={file.coverUrl} alt={`${file.name} 封面`} className="absolute inset-0 h-full w-full object-cover" />}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block truncate font-serif text-[1em] ${isAcademic ? 'text-parchment/90' : 'text-[#1a1a1a]'}`}>{title}</span>
+                      <span className="mt-1 block truncate text-[0.75em] opacity-35">{file.path}</span>
+                    </span>
+                  </button>
+                  <span data-testid={`writing-wall-word-count-${file.path}`} className="w-20 shrink-0 text-right text-[0.75em] opacity-45">{typeof file.wordCount === 'number' ? `${file.wordCount.toLocaleString('zh-CN')} 字` : extension}</span>
+                  <span className="hidden w-20 shrink-0 text-right text-[0.75em] opacity-35 md:block">{file.mtimeMs ? new Date(file.mtimeMs).toLocaleDateString('zh-CN') : '—'}</span>
+                  <button type="button" data-testid={`writing-wall-delete-${file.path}`} title="删除文章" aria-label={`删除${title}`} onClick={() => setPendingDelete(file)} className="w-8 shrink-0 text-[0.9em] text-red-400/45 hover:text-red-400">🗑</button>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
           <AlbumGrid minWidth={coverMinWidth} testId={`writing-wall-grid-${group.key}`} order={group.files.map(file => file.path).join(',')}>
             {group.files.map(file => {
               const title = displayWritingName(file)
@@ -119,7 +144,7 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
               )
             })}
           </AlbumGrid>
-        )}
+        ))}
         {group.children.length > 0 && (
           <div className={`ml-3 mt-2 space-y-3 border-l pl-4 ${isAcademic ? 'border-parchment/10' : 'border-[#1a1a1a]/10'}`}>
             {group.children.map(child => renderGroup(child, depth + 1))}
@@ -151,6 +176,10 @@ export function WritingWall({ root, theme = 'academic' }: { root: WritingRoot; t
             <option value="modified">最近修改</option>
             <option value="words">按字数</option>
           </select>
+          <div className={`flex rounded border p-0.5 ${isAcademic ? 'border-parchment/20' : 'border-[#1a1a1a]/15'}`}>
+            <button type="button" data-testid={`writing-wall-view-list-${root}`} aria-label="列表视图" aria-pressed={viewMode === 'list'} title="列表视图" onClick={() => useStore.getState().setWritingWallViewMode(root, 'list')} className={`flex h-6 w-7 items-center justify-center rounded-sm ${viewMode === 'list' ? 'bg-ember/15 text-ember' : 'opacity-45 hover:opacity-90'}`}>☷</button>
+            <button type="button" data-testid={`writing-wall-view-card-${root}`} aria-label="卡片视图" aria-pressed={viewMode === 'card'} title="卡片视图" onClick={() => useStore.getState().setWritingWallViewMode(root, 'card')} className={`flex h-6 w-7 items-center justify-center rounded-sm ${viewMode === 'card' ? 'bg-ember/15 text-ember' : 'opacity-45 hover:opacity-90'}`}>▦</button>
+          </div>
         </div>
       }
     >

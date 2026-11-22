@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '@/store'
-import { withSessionReplaced, withStudySaved } from '@/lib/study-navigation'
+import { openStudyTopicFromTree, withSessionReplaced, withStudySaved } from '@/lib/study-navigation'
 
 describe('study navigation guards', () => {
   beforeEach(() => {
@@ -34,5 +34,20 @@ describe('study navigation guards', () => {
     await expect(withSessionReplaced(replace)).resolves.toBe(true)
     expect(saveCurrentSession).toHaveBeenCalledOnce()
     expect(replace).toHaveBeenCalledOnce()
+  })
+
+  it('opens the requested session artifact tab', async () => {
+    const openStudyTopic = vi.fn()
+    const setStudyTopicTab = vi.fn()
+    useStore.setState({
+      currentPage: 'briefing',
+      openStudyTopic,
+      setStudyTopicTab,
+      setBriefingSource: vi.fn().mockResolvedValue(undefined),
+    })
+
+    await expect(openStudyTopicFromTree('memory', 2, 'diagram')).resolves.toBe(true)
+    expect(openStudyTopic).toHaveBeenCalledWith('memory', 2)
+    expect(setStudyTopicTab).toHaveBeenCalledWith('diagram')
   })
 })

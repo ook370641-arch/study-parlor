@@ -117,7 +117,7 @@ npm run test:e2e                               # 全量（仅用户明确要求�
 - `src/pages/Settings.tsx` 是三栏外壳：左栏复用 `BriefingSourceSidebar` 保留「写作 / 博客 / 书籍」来源，中栏复用 `BriefingListColumn`（标题「设置」）合并展示「常规 / 卷宗 / 扩展」及其子导航，右栏由 `GeneralSettings` / `ProfileSettings` / `ExtensionSettings` 承载内容；点击来源返回对应简报页。
 - 常规子页固定为「AI 与搜索 / 界面与画作 / 学习库与归档」；扩展含「我的语言 / 自选配图 / 本地 Agent 打通」，原扩展学习库说明并入「学习库与归档」。
 - 主页只保留设置入口；简报原烛光位置改为设置入口。设置页不再提供「返回夜话」按钮，通过来源栏返回简报、通过封面按钮返回封面。旧 `profile` / `extension` 独立路由已移除。
-- 设置页右上角保留换画，版式切换替换为界面字号的 `− / +`，与写作页共用 `writingUIFontSize` 并直接缩放设置页文字；Home 与 Study 的 `StudyControlsGroup` 仍使用版式切换。
+- 设置页右上角保留换画，版式切换替换为界面字号的 `− / +`，与写作页共用 `writingUIFontSize` 并直接缩放设置页文字；学习墙改用 `studyFontSize` 控制学习第二列与正文，正式 Study 页仍保留版式切换。
 - 烛光随行及其光层、开关和专属样式已移除；移除墓碑见 `docs/superpowers/plans/2026-11-11-settings-center.md` 与共享 spec。
 
 ### 会话生命周期 (`src/lib/`)
@@ -191,7 +191,7 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 ### 学习来源（2026-11-21）
 
 - 夜航简报现有四来源：学习 / 写作 / Anthropic 博客 / 书籍；学习位于首位。`briefingSource` 持久化，封面「夜航简报」恢复上次来源，无合法历史回退写作；「点亮灯火」保留原位但仅 `aria-disabled`，不再进入旧首页。
-- 学习来源使用 `StudySourcePanel`（可收起分组／主题／session 树）+ `StudyWall`（推荐与全量主题专辑墙）+ `StudyTopicBoard`（历史 session 与报告／对话／图表／寓言／复习页签）。旧 `Home`、`StudyLibrary`、`SessionViewer`、`GroupRibbon` 已移除，主题不再分页。
+- 学习来源使用 `StudySourcePanel`（可收起分组／主题／session 树）+ `StudyWall`（分组内推荐与主题／session 列表墙）+ `StudyTopicBoard`（历史 session 与报告／对话／图表／寓言／复习页签）。主题行只提供打开、续谈、重命名、归档；session 行最右固定「报告｜图表｜寓言｜复习／复检记录｜注销」五列，不展示对话或待复习／已复习状态。旧 `Home`、`StudyLibrary`、`SessionViewer`、`GroupRibbon` 已移除，主题不再分页。
 - 新建、重命名、解散分组，主题继续、复习、重命名、归档，后台归档占位与报告，图表／寓言生成和卫星拖拽均沿用原 IPC 与文件格式；归档主题不进入树或墙，仍在设置中恢复。
 - 正式学习页同样常驻来源列和学习第二列，二者独立收起。切来源、打开其他主题与返回前先保存快照，失败留在当前会话；后台 SSE、外部资料与摘要按 `abortId` 守卫，恢复同一 live session 时不重复 kickoff。
 - 外部资料保留资产卡，完整摘要改为学习工作区「对话／外部资料」页内页签，不再使用独立 `ExternalSummaryPanel`。
@@ -207,7 +207,8 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 - **主进程模块**: `electron/lib/writing-tree.ts` (CRUD)、`electron/lib/writing-catalog.ts` (摘要)、`electron/lib/writing-assistant/` (工具协议/循环)
 - **IPC**: `electron/ipc/writing.ts` (文件树)、`electron/ipc/writing-assistant.ts` (AI 对话)
 - **渲染组件**: `src/components/writing/` (编辑器/树/工具栏)、`src/components/writing-assistant/` (助手面板)
-- **持久化**: `state.json` 字段 `writingFontSize`/`writingTone`/`assistantSearchEnabled`/`assistantThinkingEffort` 等
+- **专辑墙视图**: 文章／仓库支持卡片与列表，`writingWallViewMode` 按 root 持久化；列表不生成封面，卡片保留三候选封面链路与全部现有操作。
+- **持久化**: `state.json` 字段 `writingFontSize`/`writingTone`/`writingWallViewMode`/`assistantSearchEnabled`/`assistantThinkingEffort` 等
 - **设计基准**: 编辑器行为改动前先读 `docs/superpowers/specs/2026-08-11-writing-paste-and-formatting-design.md`
 
 ### 书籍来源（简报第三来源，2026-10-27 上线）

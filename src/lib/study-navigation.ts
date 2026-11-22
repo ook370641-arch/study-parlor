@@ -1,4 +1,5 @@
 import { useStore } from '@/store'
+import type { StudyTopicTab } from '@shared/index'
 
 async function saveStudySnapshot(): Promise<boolean> {
   const state = useStore.getState()
@@ -24,10 +25,11 @@ export async function withSessionReplaced(replace: () => void | Promise<void>): 
   return true
 }
 
-export async function openStudyTopicFromTree(dirName: string, sessionNumber?: number): Promise<boolean> {
+export async function openStudyTopicFromTree(dirName: string, sessionNumber?: number, tab?: StudyTopicTab): Promise<boolean> {
   return withStudySaved(async () => {
     const state = useStore.getState()
     state.openStudyTopic(dirName, sessionNumber)
+    if (tab) state.setStudyTopicTab(tab)
     await state.setBriefingSource('study')
     if (useStore.getState().currentPage !== 'briefing') await useStore.getState().goto('briefing')
   })

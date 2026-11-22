@@ -1,6 +1,7 @@
 ---
-status: planned
-note: 2026-11-21 实现与定向单元回归已落地；完整 E2E 尚未运行，保留 planned 作验收门禁。
+status: superseded
+superseded-by: docs/superpowers/specs/2026-11-22-study-and-writing-wall-list-design.md
+note: 取代范围为学习墙、推荐布局与字号入口；学习生命周期与功能保全矩阵保留作历史设计记录。
 ---
 
 # 学习来源、分组树与学习专辑墙重组设计（2026-11-17）

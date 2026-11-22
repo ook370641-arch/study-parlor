@@ -11,6 +11,7 @@ beforeEach(() => {
   useStore.setState({
     briefingTheme: 'academic',
     briefingFontSize: 'base',
+    studyFontSize: 'lg',
     writingUIFontSize: 'base',
     currentPaintings: {
       home: { id: 'test', url: '/test.jpg', painter: 'Mark Rothko' as const, title: 'Test' },
@@ -58,7 +59,7 @@ describe('StudyControlsGroup', () => {
   })
 
   it('replaces theme toggle with interface font controls when requested', async () => {
-    render(<StudyControlsGroup surface="home" uiFontControls />)
+    render(<StudyControlsGroup surface="home" fontMode="writing" />)
 
     expect(screen.queryByTestId('study-controls-theme-toggle')).not.toBeInTheDocument()
     expect(screen.getByTestId('study-controls-swap-painting')).toBeInTheDocument()
@@ -71,11 +72,20 @@ describe('StudyControlsGroup', () => {
 
   it('disables interface font controls at size limits', () => {
     useStore.setState({ writingUIFontSize: 'sm' })
-    const { rerender } = render(<StudyControlsGroup surface="home" uiFontControls />)
+    const { rerender } = render(<StudyControlsGroup surface="home" fontMode="writing" />)
     expect(screen.getByTestId('study-controls-font-size-decrease')).toBeDisabled()
 
     useStore.setState({ writingUIFontSize: '7xl' })
-    rerender(<StudyControlsGroup surface="home" uiFontControls />)
+    rerender(<StudyControlsGroup surface="home" fontMode="writing" />)
     expect(screen.getByTestId('study-controls-font-size-increase')).toBeDisabled()
+  })
+
+  it('uses study font size without changing writing typography', async () => {
+    render(<StudyControlsGroup surface="home" fontMode="study" />)
+    fireEvent.click(screen.getByTestId('study-controls-font-size-increase'))
+    await waitFor(() => expect(useStore.getState().studyFontSize).toBe('xl'))
+    expect(useStore.getState().writingUIFontSize).toBe('base')
+    fireEvent.click(screen.getByTestId('study-controls-font-size-decrease'))
+    await waitFor(() => expect(useStore.getState().studyFontSize).toBe('lg'))
   })
 })

@@ -50,11 +50,10 @@
 
 ### 6. 夜航简报 — 框架与双来源
 
-**现状**：四来源 = 学习 + 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'study' | 'writing' | 'anthropic' | 'book'`）。学习来源由分组主题树、推荐与全量主题墙、主题产物页签和正式学习双列组成；核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn` + `src/components/study/`。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9），书籍具体实现见域 14。
+**现状**：四来源 = 学习 + 写作 + Anthropic 博客 + 书籍（`BriefingSourceId = 'study' | 'writing' | 'anthropic' | 'book'`）。学习来源由分组主题树、分组内推荐、主题／session 列表墙、主题产物页签和正式学习双列组成；核心组件 `Briefing.tsx` + `BriefingSourceSidebar` + `BriefingListColumn` + `src/components/study/`。求职/前沿/拾贝 2026-10-12 移除（域 8），健身来源 2026-10-22 移除（域 9），书籍具体实现见域 14。
 阅读端正文字号/换画控制由 `BriefingReaderControls` 统一。阅读工具栏含沉浸模式开关（换画/沉浸/字号四按钮通用组件，2026-11-20 上线）：进入后左两列卸载、右栏（导读/旁注聊天/写作助手）自动收起并在退出时恢复，工具栏、旁注 tab、导读分隔条、记事板入口改为原位置 hover 显示，正文保持进入前像素行宽并居中（`use-immersive-width.ts` 用 ResizeObserver 记录，窗口过窄时上限 95%），画作与语录保留；Esc 或切换来源/文章/章节/写作文件即退出，状态不持久化（store `immersiveMode` + `immersiveRestore`）。
-- current：`specs/2026-11-17-learning-source-restructure-design.md`；实施计划：`plans/2026-11-17-learning-source-restructure.md`（含旧功能保全矩阵映射与定向回归门禁）
-- planned：`specs/2026-11-22-study-and-writing-wall-list-design.md`（学习主题列表与 session 展开、分组内推荐、学习字号作用域；文章／仓库列表视图见域 12）
-**历史链**：06-21 night-briefing → 06-22 night-briefing → 06-27 briefing-entry-and-loading → 06-27 briefing-ui-upgrade → 07-06 night-briefing-optimization → 07-14 briefing-polish → 07-15 renderer-buffer-and-startup-timing → 07-21 briefing-debug-fixes → 07-23 briefing-ui → 07-23 briefing-loop-closure → 07-25 pre-launch-briefing-fixes → 07-26 briefing-polish-batch → 08-01 briefing-background-generation
+- current：`specs/2026-11-22-study-and-writing-wall-list-design.md` + `plans/2026-11-22-study-and-writing-wall-list.md`（主题／session 粒度、固定五列操作、分组内推荐、学习字号作用域；文章／仓库列表视图见域 12）
+**历史链**：06-21 night-briefing → 06-22 night-briefing → 06-27 briefing-entry-and-loading → 06-27 briefing-ui-upgrade → 07-06 night-briefing-optimization → 07-14 briefing-polish → 07-15 renderer-buffer-and-startup-timing → 07-21 briefing-debug-fixes → 07-23 briefing-ui → 07-23 briefing-loop-closure → 07-25 pre-launch-briefing-fixes → 07-26 briefing-polish-batch → 08-01 briefing-background-generation → 11-17 learning-source-restructure → 11-22 study-and-writing-wall-list
 
 ### 7. 简报来源 — Anthropic 博客（含精选集与推荐流）
 
@@ -88,9 +87,9 @@
 
 ### 12. 写作功能
 
-**现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。文章与仓库主区支持按实际目录分区的专辑墙，均保留父子层级，子组缩进嵌套且默认收起，父组计数包含后代文章。根文件归入「未分组」，组内排序与折叠沿用；卡片显示字数、删除入口和三候选 AI 封面，编辑器可保存后返回墙。字数使用独立 `wallMtimeMs` 缓存，写作封面保存在对应 root 的 `.covers/`，不影响 AI 摘要与笔记封面。
+**现状**：Typora 式 WYSIWYG 编辑 + 目录树 + AI 写作助手全链在用（AGENTS.md「写作功能」）。文章与仓库主区支持按实际目录分区的专辑墙，均保留父子层级，子组缩进嵌套且默认收起，父组计数包含后代文章。根文件归入「未分组」，组内排序与折叠沿用；卡片显示字数、删除入口和三候选 AI 封面，列表显示小封面、字数／类型、修改时间与删除但不生成封面，视图按 root 持久化。编辑器可保存后返回墙。字数使用独立 `wallMtimeMs` 缓存，写作封面保存在对应 root 的 `.covers/`，不影响 AI 摘要与笔记封面。
 - current：`specs/2026-11-14-writing-album-wall-design.md` + `plans/2026-11-14-writing-album-wall.md`（分区分组墙、共享展示骨架、字数缓存、写作 SVG 封面与删除链路）
-- planned：`specs/2026-11-22-study-and-writing-wall-list-design.md`（文章／仓库卡片与列表切换、文件行和按 root 持久化）
+- current：`specs/2026-11-22-study-and-writing-wall-list-design.md`（文章／仓库卡片与列表切换、文件行和按 root 持久化；学习部分见域 6）
 - current：`specs/2026-08-11-writing-paste-and-formatting-design.md`（**编辑器行为设计基准**，改编辑器前必读，rules feature-development §13）
 **历史链**：07-19 writing-feature → 07-26 job-writing-assistant（求职半边已随三来源移除，写作助手 UI 统一半边仍在）→ 08-08 writing-ux-fixes → 08-09 writing-table-ui → 08-09 writing-tree-inline → 08-09 writing-list-behavior → 08-10 writing-assistant-agent-loop → 08-11 writing-paste-and-formatting（=current）→ 08-12 writing-repository-ux → 08-12 non-md-preview → 08-12 writing-format-fixes → 08-17 writing-daily-backup → 08-20 writing-companion-pane → 08-20 writing-html-preview → 08-23 writing-codeblock → 08-24 writing-html-delete-mode → 09-16 writing-html-file-display → 09-16 blog-companion-writing-picker → 11-14 writing-album-wall
 

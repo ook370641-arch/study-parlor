@@ -46,17 +46,21 @@ test.describe('@p1 study source layout', () => {
     expect(box?.width).toBeGreaterThanOrEqual(420)
   })
 
-  test('keeps themes, notepad and toast available above the study wall', async ({ window }) => {
+  test('keeps font controls, notepad and toast available above the study wall', async ({ window }) => {
     await window.setViewportSize({ width: 1280, height: 720 })
     const cover = new CoverPage(window)
     await cover.enterIfNeeded()
     const home = new HomePage(window)
     await home.waitForLoaded()
 
-    await window.getByTestId('study-controls-theme-toggle').click()
-    await expect(window.getByTestId('study-wall')).toHaveClass(/bg-\[#f5f2ed\]/)
-    await window.getByTestId('study-controls-theme-toggle').click()
-    await expect(window.getByTestId('study-wall')).not.toHaveClass(/bg-\[#f5f2ed\]/)
+    await expect(window.getByTestId('study-controls-theme-toggle')).toHaveCount(0)
+    const sourceFontSize = await window.getByTestId('briefing-source-study').evaluate(node => getComputedStyle(node).fontSize)
+    const listFontSize = await window.getByTestId('briefing-list-column').evaluate(node => getComputedStyle(node).fontSize)
+    await window.getByTestId('study-controls-font-size-increase').click()
+    await expect.poll(() => window.evaluate(() => (window as any).useStore.getState().studyFontSize)).toBe('xl')
+    expect(await window.getByTestId('briefing-source-study').evaluate(node => getComputedStyle(node).fontSize)).toBe(sourceFontSize)
+    expect(await window.getByTestId('briefing-list-column').evaluate(node => getComputedStyle(node).fontSize)).not.toBe(listFontSize)
+    await window.getByTestId('study-controls-font-size-decrease').click()
 
     await window.getByTestId('notepad-fab-button').click()
     await expect(window.getByTestId('notepad-panel')).toBeVisible()

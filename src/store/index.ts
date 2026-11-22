@@ -103,7 +103,7 @@ type AppStore = {
   session: Session | null
   currentPage: Page
   modal: 'preStudy' | null
-  preStudyArgs: { mode: Mode; topic: string; dirName?: string; file_path?: string } | null
+  preStudyArgs: { mode: Mode; topic: string; dirName?: string; file_path?: string; groupId?: string } | null
   toast: { message: string; ts: number } | null
   pendingReports: Record<string, ArchiveResult>
   groupInspirations: Record<string, NewTopic>
@@ -306,7 +306,7 @@ type AppStore = {
   setNotepadFontSize: (size: NotepadFontSize) => void
   setNotepadPanelSize: (size: { w: number; h: number }) => void
   goto: (p: Page) => Promise<void>
-  openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string }) => void
+  openPreStudy: (a: { mode: Mode; topic: string; dirName?: string; file_path?: string; groupId?: string }) => void
   closePreStudy: () => void
   startSession: (a: {
     mode: Mode; topic: string; dirName?: string; file_path?: string
@@ -414,6 +414,7 @@ type AppStore = {
   // 写作板
   writingTree: { writing: WritingTreeNode[]; repository: WritingTreeNode[] } | null
   writingWallVisible: Record<WritingRoot, boolean>
+  writingWallViewMode: Record<WritingRoot, 'card' | 'list'>
   writingFile: { path: string; body: string; kind: WritingPreviewKind; truncated?: boolean; previewError?: string; dirty: boolean; saving: 'idle' | 'saving' | 'saved' | 'error' } | null
   writingError: string | null
   writingFontSize: BriefingFontSize
@@ -493,6 +494,7 @@ type AppStore = {
   closeCompanion: () => Promise<void>
   saveAllDirtyWriting: () => Promise<void>
   setWritingListTab: (tab: 'articles' | 'repository' | 'notes') => void
+  setWritingWallViewMode: (root: WritingRoot, mode: 'card' | 'list') => void
   loadNotes: () => Promise<void>
   createNoteManual: (a: { title: string; url: string }) => Promise<void>
   findOrCreateArticleNote: (a: {
@@ -732,6 +734,7 @@ export const useStore = create<AppStore>((set, get) => ({
   guideScrollToChunkIndex: null,
   writingTree: null,
   writingWallVisible: { writing: false, repository: false },
+  writingWallViewMode: { writing: 'card', repository: 'card' },
   writingFile: null,
   writingError: null,
   writingFontSize: 'base',
@@ -797,6 +800,10 @@ export const useStore = create<AppStore>((set, get) => ({
       writingFontSize: state.writingFontSize ?? 'base',
       writingTone: state.writingTone ?? 'parchment',
       writingListTab: state.writingListTab ?? 'articles',
+      writingWallViewMode: {
+        writing: state.writingWallViewMode?.writing === 'list' ? 'list' : 'card',
+        repository: state.writingWallViewMode?.repository === 'list' ? 'list' : 'card',
+      },
       notesSortBy: state.notesSortBy ?? 'source',
       notesCategory: state.notesCategory ?? 'all',
       writingAssistantWidth: Math.max(200, Math.min(state.writingAssistantWidth ?? 320, 560)),
@@ -2558,6 +2565,11 @@ export const useStore = create<AppStore>((set, get) => ({
   setWritingListTab: (tab) => {
     set({ writingListTab: tab })
     ipc.patchState({ writingListTab: tab } as Partial<StateJson>)
+  },
+  setWritingWallViewMode: (root, mode) => {
+    const writingWallViewMode = { ...get().writingWallViewMode, [root]: mode }
+    set({ writingWallViewMode })
+    ipc.patchState({ writingWallViewMode } as Partial<StateJson>)
   },
   // 笔记书架
   loadNotes: async () => { set({ notesList: await ipc.notesList() }) },

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { pickRandomQuote, type Quote as QuoteType } from '@/lib/quotes'
 import { useStore } from '@/store'
+import { STUDY_QUOTE_SIZES, normalizeStudyFontSize } from '@/lib/study-font-size'
 
 type Props = {
   surface: 'cover' | 'home' | 'study' | 'briefing' | 'writing'
@@ -11,6 +12,7 @@ export function Quote({ surface }: Props) {
     pickRandomQuote({ excludeId: null })
   )
   const theme = useStore((s) => s.briefingTheme)
+  const studyFontSize = useStore((s) => s.studyFontSize)
   const isAcademic = theme !== 'newspaper'
 
   const refresh = useCallback(() => {
@@ -59,6 +61,7 @@ export function Quote({ surface }: Props) {
 
   // Cover 始终学术风格，home/study 跟随主题
   const useAcademic = isCover || isAcademic
+  const usesStudySize = surface === 'home' || surface === 'study'
 
   return (
     <div
@@ -70,8 +73,8 @@ export function Quote({ surface }: Props) {
     >
       <div
         data-testid="quote-text"
-        className={`font-serif text-[26px] leading-relaxed ${useAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}
-        style={useAcademic ? { textShadow: '0 1px 8px rgba(0,0,0,0.75)' } : {}}
+        className={`font-serif ${usesStudySize ? '' : 'text-[26px]'} leading-relaxed ${useAcademic ? 'text-parchment' : 'text-[#1a1a1a]'}`}
+        style={{ ...(usesStudySize ? { fontSize: STUDY_QUOTE_SIZES[normalizeStudyFontSize(studyFontSize)] } : {}), ...(useAcademic ? { textShadow: '0 1px 8px rgba(0,0,0,0.75)' } : {}) }}
       >
         {"“"}{quote.text}{"”"}
       </div>

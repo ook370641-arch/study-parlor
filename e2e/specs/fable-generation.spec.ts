@@ -28,5 +28,7 @@ test.describe('@p1 fable generation', () => {
     await home.waitForLoaded()
     const topicCard = window.locator('[data-testid="topic-card"]').filter({ hasText: 'has-fable' })
     await expect(topicCard).toBeVisible({ timeout: 10000 })
+    await topicCard.getByTestId('study-wall-topic-toggle-has-fable').click()
+    await expect(topicCard.locator('[data-testid^="session-fable-button-"]')).toBeVisible()
   })
 })

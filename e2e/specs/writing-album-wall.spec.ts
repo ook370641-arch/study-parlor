@@ -29,6 +29,11 @@ test.describe('@p1 writing album wall', () => {
     await expect(window.getByTestId('writing-wall-writing-group-header-writing')).toContainText('未分组')
 
     const rootCard = window.getByTestId('writing-wall-card-writing/根文章.md')
+    await window.getByTestId('writing-wall-view-list-writing').click()
+    await expect(window.getByTestId('writing-wall-row-writing/根文章.md')).toBeVisible()
+    await expect(window.getByTestId('writing-cover-generate')).toHaveCount(0)
+    await window.getByTestId('writing-wall-view-card-writing').click()
+    await expect(rootCard).toBeVisible()
     await rootCard.hover()
     await expect(window.getByTestId('writing-wall-word-count-writing/根文章.md')).toHaveText('3 字')
     await rootCard.click()

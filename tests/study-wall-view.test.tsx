@@ -1,11 +1,11 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '@/store'
 import { StudyWall } from '@/components/study/StudyWall'
 
 vi.mock('@/components/Quote', () => ({ Quote: () => <div data-testid="quote" /> }))
 vi.mock('@/components/StudyControlsGroup', () => ({ StudyControlsGroup: () => <div /> }))
-vi.mock('@/components/WildCardRecCard', () => ({ WildCardRecCard: () => <div data-testid="wild-card" /> }))
+vi.mock('@/components/WildCardRecCard', () => ({ WildCardRecCard: ({ onClickTopic }: { onClickTopic: (topic: string) => void }) => <button data-testid="wild-card" onClick={() => onClickTopic('随机主题')} /> }))
 vi.mock('@/components/GroupRecCard', () => ({ GroupRecCard: () => <div data-testid="group-rec" /> }))
 vi.mock('@/components/StrategyToggle', () => ({ StrategyToggle: () => <div /> }))
 vi.mock('@/components/demo/DemoNotePopover', () => ({ DemoInfoButton: () => <button />, DemoNotePopover: () => null }))
@@ -28,6 +28,10 @@ describe('StudyWall', () => {
     expect(screen.getAllByTestId('topic-card')).toHaveLength(12)
     expect(screen.getByTestId('wild-card')).toBeInTheDocument()
     expect(screen.queryByTestId('pagination-next')).not.toBeInTheDocument()
+    expect(screen.queryByText('新主题推荐')).not.toBeInTheDocument()
+    const group = screen.getByTestId('study-group-list-default')
+    expect(within(group).getAllByTestId('topic-card')).toHaveLength(12)
+    expect(within(screen.getByTestId('study-group-content-default')).getByTestId('wild-card')).toBeInTheDocument()
   })
 
   it('keeps a new-study action in an empty library', () => {
@@ -49,5 +53,13 @@ describe('StudyWall', () => {
     fireEvent.click(screen.getByTestId('wall-burn-unsaved-button'))
     expect(burnLiveSession).toHaveBeenCalledWith('live-1')
     expect(removeUnsavedSession).toHaveBeenCalledWith('live-1')
+  })
+
+  it('passes the recommendation target group into new-study preparation', () => {
+    const openPreStudy = vi.fn()
+    useStore.setState({ openPreStudy })
+    render(<StudyWall />)
+    fireEvent.click(screen.getByTestId('wild-card'))
+    expect(openPreStudy).toHaveBeenCalledWith({ mode: 'progress', topic: '随机主题', groupId: 'default' })
   })
 })

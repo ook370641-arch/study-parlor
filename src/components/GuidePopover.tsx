@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import dragDemoImg from '@/assets/group-guide-drag-demo.png'
 import strategyDemoImg from '@/assets/group-guide-strategy-demo.png'
 
@@ -19,7 +20,7 @@ const GUIDE_ITEMS = [
     text: '每个分组可包含多个主题，点击 + 号可新建分组',
   },
   {
-    text: '学习墙的新主题推荐会根据你的分组智能推荐，点击策略标签（v1/v2/v3）可切换推荐模式',
+    text: '学习墙的推荐会显示在对应分组开头，点击右上角策略标签（v1/v2/v3）可切换推荐模式',
     extra: (
       <div className="mt-2">
         <img
@@ -32,7 +33,7 @@ const GUIDE_ITEMS = [
     ),
   },
   {
-    text: '按住学习墙主题卡片并拖动，可将其移入其他分组',
+    text: '按住学习墙主题行并拖动，可将其移入其他分组',
     extra: (
       <div className="mt-2">
         <p className="text-[11px] text-parchment/40 mb-1">拖拽到目标分组附近即可</p>
@@ -66,6 +67,9 @@ export function GuidePopover({ open, anchorRef, onClose }: GuidePopoverProps) {
     if (left < margin) left = margin
     if (left + panelWidth > window.innerWidth - margin) {
       left = window.innerWidth - panelWidth - margin
+    }
+    if (top + panelRef.current!.offsetHeight > window.innerHeight - margin) {
+      top = Math.max(margin, rect.top - panelRef.current!.offsetHeight - margin)
     }
 
     panel.style.left = `${left}px`
@@ -111,7 +115,7 @@ export function GuidePopover({ open, anchorRef, onClose }: GuidePopoverProps) {
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
       ref={panelRef}
       data-testid="group-guide-popover"
@@ -139,6 +143,7 @@ export function GuidePopover({ open, anchorRef, onClose }: GuidePopoverProps) {
           </div>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

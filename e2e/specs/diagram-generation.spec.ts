@@ -28,5 +28,7 @@ test.describe('@p1 diagram generation', () => {
     await home.waitForLoaded()
     const topicCard = window.locator('[data-testid="topic-card"]').filter({ hasText: 'has-diagram' })
     await expect(topicCard).toBeVisible({ timeout: 10000 })
+    await topicCard.getByTestId('study-wall-topic-toggle-has-diagram').click()
+    await expect(topicCard.locator('[data-testid^="session-diagram-button-"]')).toBeVisible()
   })
 })

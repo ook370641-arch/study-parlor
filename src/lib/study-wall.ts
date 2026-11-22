@@ -1,4 +1,4 @@
-import type { Group, PendingArchive, SessionMeta, TopicMeta } from '@shared/index'
+import type { Group, NewTopic, PendingArchive, SessionMeta, TopicMeta } from '@shared/index'
 
 export function latestSession(topic: TopicMeta): SessionMeta | undefined {
   return [...topic.sessions].sort((a, b) => b.sessionNumber - a.sessionNumber)[0]
@@ -63,4 +63,32 @@ export function recommendationExistsInLibrary(recommendationTopic: string, libra
   const normalized = recommendationTopic.trim().toLocaleLowerCase()
   return library.some(topic =>
     topic.title.trim().toLocaleLowerCase() === normalized || topic.dirName.toLocaleLowerCase() === normalized)
+}
+
+export type StudyWallRecommendationKind = 'wildcard' | 'group'
+
+export function buildStudyWallGroups(
+  groups: Group[],
+  library: TopicMeta[],
+  activeGroupId: string | null,
+  query: string,
+  wildcard: NewTopic | null,
+  groupInspirations: Record<string, NewTopic>,
+): { group: Group; topics: TopicMeta[]; recommendations: StudyWallRecommendationKind[] }[] {
+  const visibleGroups = activeGroupId ? groups.filter(group => group.id === activeGroupId) : groups
+  const recommendationGroups = selectRecommendationGroups(groups, library, activeGroupId)
+  const wildcardGroupId = activeGroupId ?? 'default'
+
+  return visibleGroups.map(group => {
+    const groupRecommendation = groupInspirations[group.id]
+    const recommendations: StudyWallRecommendationKind[] = []
+    if (group.id === wildcardGroupId && (!wildcard || !recommendationExistsInLibrary(wildcard.topic, library))) {
+      recommendations.push('wildcard')
+    }
+    if (recommendationGroups.some(item => item.id === group.id)
+      && (!groupRecommendation || !recommendationExistsInLibrary(groupRecommendation.topic, library))) {
+      recommendations.push('group')
+    }
+    return { group, topics: filterStudyTopics(library, group.id, query), recommendations }
+  })
 }

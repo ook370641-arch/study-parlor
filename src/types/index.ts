@@ -664,6 +664,7 @@ export type StateJson = {
   writingFontSize?: BriefingFontSize
   writingTone?: WritingTone
   writingListTab?: 'articles' | 'repository' | 'notes'
+  writingWallViewMode?: Record<WritingRoot, 'card' | 'list'>
   notesSortBy?: NoteSortBy
   notesCategory?: 'all' | NoteSource
   writingAssistantWidth?: number

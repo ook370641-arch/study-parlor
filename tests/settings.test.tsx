@@ -87,9 +87,10 @@ describe('Settings · AI 服务', () => {
     useStore.setState({ currentPage: 'settings', briefingSource: 'anthropic' })
     render(<Settings />)
 
-    expect(await screen.findByTestId('briefing-source-writing')).not.toHaveClass('border-l-[3px]')
-    expect(screen.getByTestId('briefing-source-anthropic')).not.toHaveClass('border-l-[3px]')
-    expect(screen.getByTestId('briefing-source-book')).not.toHaveClass('border-l-[3px]')
+    expect(await screen.findByTestId('briefing-source-writing')).toHaveClass('border-transparent')
+    expect(screen.getByTestId('briefing-source-anthropic')).toHaveClass('border-transparent')
+    expect(screen.getByTestId('briefing-source-book')).toHaveClass('border-transparent')
+    expect(screen.getByTestId('briefing-source-anthropic')).not.toHaveClass('border-[#d97757]')
   })
 
   it('字号按钮实际调整设置页界面字号', async () => {
