@@ -104,6 +104,7 @@
       "sources": [
         "src/pages/Study.tsx",
         "src/components/PreStudyModal.tsx",
+        "src/components/InternalMaterialPickerModal.tsx",
         "electron/ipc/llm.ts",
         "electron/lib/kimi.ts",
         "electron/lib/profile-prompt.ts",

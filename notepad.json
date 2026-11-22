@@ -720,6 +720,15 @@
       "createdAt": "2026-11-22T05:24:30.285Z",
       "resolvedAt": "2026-11-22T06:31:52.627Z",
       "source": "agent"
+    },
+    {
+      "id": "nmwropyjwr1fl",
+      "title": "学习内部资料选择",
+      "text": "学习时可通过二级弹窗，直接从资料、仓库、笔记中选择内容，作为内部资料读取并注入本次学习上下文。",
+      "category": "feature",
+      "createdAt": "2026-11-22T10:19:13.580Z",
+      "resolvedAt": "2026-11-22T10:19:13.580Z",
+      "source": "agent"
     }
   ]
 }

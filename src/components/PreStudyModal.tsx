@@ -15,6 +15,7 @@ const ICONS = {
 import { getDifficultyLabel } from '@/lib/difficulty-label'
 import { filterAndSortTopics } from '@/lib/filter-topics'
 import { ipc } from '@/lib/ipc'
+import { InternalMaterialPickerModal } from '@/components/InternalMaterialPickerModal'
 import type { LocalMaterial } from '@shared/index'
 
 type SuggestionCardProps = {
@@ -125,6 +126,7 @@ export function PreStudyModal() {
   const [searchConfigured, setSearchConfigured] = useState(false)
   const [localMaterials, setLocalMaterials] = useState<LocalMaterial[]>([])
   const [pickingFile, setPickingFile] = useState(false)
+  const [internalPickerOpen, setInternalPickerOpen] = useState(false)
   const [selectedGroupId, setSelectedGroupId] = useState<string>(activeGroupId ?? 'default')
 
   const topicRef = useRef<HTMLInputElement>(null)
@@ -155,6 +157,7 @@ export function PreStudyModal() {
     setSearchConfigured(false)
     setLocalMaterials([])
     setPickingFile(false)
+    setInternalPickerOpen(false)
 
     if (args.mode === 'progress') {
       ipc.searchCheckConfig()
@@ -226,10 +229,14 @@ export function PreStudyModal() {
 
   // ESC close
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closePreStudy() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (internalPickerOpen) setInternalPickerOpen(false)
+      else closePreStudy()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [closePreStudy])
+  }, [closePreStudy, internalPickerOpen])
 
   if (!args) return null
 
@@ -529,7 +536,7 @@ export function PreStudyModal() {
           <div className="field-label mb-2">本地资料</div>
           <div className={`rounded-lg border p-3 ${isAcademic ? 'border-slate/20' : 'border-[#1a1a1a]/10'}`}>
             <div className={`text-xs leading-relaxed mb-2 ${isAcademic ? 'text-parchment/50' : 'text-[#777]'}`}>
-              上传本地资料（.md / .txt，单个 ≤512KB），内容会注入对话上下文，作为引导学习的背景材料。
+              从资料、仓库、笔记选择，或上传本地文件（.md / .txt，单个 ≤512KB）；内容会注入对话上下文。
             </div>
             {localMaterials.length > 0 && (
               <div className="space-y-1.5 mb-2">
@@ -547,14 +554,23 @@ export function PreStudyModal() {
                 ))}
               </div>
             )}
-            <button
-              data-testid="local-material-add"
-              onClick={addLocalMaterial}
-              disabled={pickingFile}
-              className={`text-xs px-3 py-1.5 rounded border transition-colors ${isAcademic ? 'border-slate/30 text-parchment/70 hover:border-ember/50 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]'} ${pickingFile ? 'opacity-50 cursor-wait' : ''}`}
-            >
-              {pickingFile ? '读取中…' : '+ 添加文件'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                data-testid="internal-material-add"
+                onClick={() => setInternalPickerOpen(true)}
+                className={`text-xs px-3 py-1.5 rounded border transition-colors ${isAcademic ? 'border-ember/30 text-ember hover:border-ember/60' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]'}`}
+              >
+                + 从学习库选择
+              </button>
+              <button
+                data-testid="local-material-add"
+                onClick={addLocalMaterial}
+                disabled={pickingFile}
+                className={`text-xs px-3 py-1.5 rounded border transition-colors ${isAcademic ? 'border-slate/30 text-parchment/70 hover:border-ember/50 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#555] hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]'} ${pickingFile ? 'opacity-50 cursor-wait' : ''}`}
+              >
+                {pickingFile ? '读取中…' : '+ 添加文件'}
+              </button>
+            </div>
           </div>
         </div>
         )}
@@ -601,6 +617,13 @@ export function PreStudyModal() {
           <Button data-testid="start-button" onClick={onConfirm}>{t.startButton}</Button>
         </div>
       </div>
+      {internalPickerOpen && (
+        <InternalMaterialPickerModal
+          theme={theme}
+          onSelect={material => setLocalMaterials(prev => [...prev, material])}
+          onClose={() => setInternalPickerOpen(false)}
+        />
+      )}
     </div>
   )
 }

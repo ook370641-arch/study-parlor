@@ -20,7 +20,7 @@ export type CompanionTarget = { key: string; label: string; noteExists: boolean 
 
 const isUrlish = (key: string) => /^https?:\/\//i.test(key)
 
-export function CompanionWritingPicker({ theme = 'academic', onPickFile, currentArticle, currentTarget, onCreateNote, emptyHint }: {
+export function CompanionWritingPicker({ theme = 'academic', onPickFile, currentArticle, currentTarget, onCreateNote, emptyHint, writingLabel = '文章' }: {
   theme?: BriefingTheme
   onPickFile: (path: string) => void
   /** @deprecated 旧的博客入参；内部转换成 currentTarget，博客侧可暂不改调用 */
@@ -31,6 +31,8 @@ export function CompanionWritingPicker({ theme = 'academic', onPickFile, current
   onCreateNote?: () => Promise<string | null>
   /** 无目标时顶部的提示文案（如书籍未选章节） */
   emptyHint?: string
+  /** 默认「文章」；学习资料选择场景使用「资料」 */
+  writingLabel?: string
 }) {
   const loadWritingTree = useStore(s => s.loadWritingTree)
   const writingUISize = useStore(s => s.writingUIFontSize)
@@ -201,7 +203,7 @@ export function CompanionWritingPicker({ theme = 'academic', onPickFile, current
             onPickFile={onPickFile}
           />
         )}
-        {sectionHeader('writing', '文章')}
+        {sectionHeader('writing', writingLabel)}
         {open.writing && (
           <WritingTree
             root="writing"

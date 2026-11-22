@@ -195,6 +195,7 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 - 新建、重命名、解散分组，主题继续、复习、重命名、归档，后台归档占位与报告，图表／寓言生成和卫星拖拽均沿用原 IPC 与文件格式；归档主题不进入树或墙，仍在设置中恢复。
 - 正式学习页同样常驻来源列和学习第二列，二者独立收起。切来源、打开其他主题与返回前先保存快照，失败留在当前会话；后台 SSE、外部资料与摘要按 `abortId` 守卫，恢复同一 live session 时不重复 kickoff。
 - 外部资料保留资产卡，完整摘要改为学习工作区「对话／外部资料」页内页签，不再使用独立 `ExternalSummaryPanel`。
+- 新的小径本地资料除上传文件外，可经二级弹窗直接选择写作资料／仓库／笔记；复用只读挑选器与 `LocalMaterial` 注入、归档链路，单份 ≤512KB。
 
 ### 写作功能 (`electron/lib/writing-tree.ts`, `electron/lib/writing-catalog.ts`, `electron/lib/writing-assistant/`)
 
