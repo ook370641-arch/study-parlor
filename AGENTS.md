@@ -233,6 +233,7 @@ node scripts/notepad-claim.cjs release <item-id> <current-branch>
 ### 笔记封面与阅读标注（2026-11-02）
 
 - **章节聚合**: `src/lib/notes-list.ts` 派生书组，专辑墙、笔记列与对照挑选器共用 `BookChapterSelect`；不合并或改写用户原始笔记，旧标题只在视图层补章节。
+- **整书笔记工作区（2026-11-22）**: `NoteMeta.bookScope: 'whole'` 标识独立整书笔记；书籍笔记页顶部切换整书／章节主笔记，右侧 `BookNoteWorkspace` 复用 `ArticleDivider`，独立选章和切换笔记／导读。整书可重复 AI 整理，入参仅章节主笔记、全书导读、目录和末尾已有全书原笔迹；排除旁注、章节导读／原文与上一版 AI 正文，普通章节笔记仍为一次性生成。
 - **封面生成**: `electron/prompts/note-cover.md` 让模型根据正文自由创造三枚内容专属符号；`electron/lib/note-covers.ts` 严格校验七类图元并本地装配 SVG，禁止任意 SVG、脚本、外部资源、transform/style。候选仅在内存预览，选中后写 `notes/covers/` 并原子更新 `NoteMeta.cover`；读取只接受该目录内 SVG。
 - **封面显示**: `NoteEntry.coverUrl` 使用安全 data URL，优先级为生成封面 → Anthropic 原图 → 来源渐变；书组复用任一章节已有生成封面。无图卡片提供生成入口，已有生成封面可在笔记信息区重新生成；点击生成后整个封面画幅显示动画并静默运行，不自动弹窗，入口依次显示「生成中」「待挑选」，完成后由用户点击打开未选候选。
 - **阅读标注**: `ArticleAnnotations` 支持备注与 ember / gold / yellow / green / blue 五色高亮；切换标记时旧卡片延迟关闭只作用于原 anchor。

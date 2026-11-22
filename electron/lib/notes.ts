@@ -57,6 +57,7 @@ export function parseNoteFile(relPath: string, raw: string): NoteEntry {
     const readAt = iso(fm.read_at)
     if (readAt) meta.read_at = readAt
     if (typeof fm.book === 'string' && fm.book) meta.book = fm.book
+    if (fm.bookScope === 'whole') meta.bookScope = 'whole'
     if (typeof fm.chapter === 'string' && fm.chapter) meta.chapter = fm.chapter
     if (typeof fm.cover === 'string' && fm.cover) meta.cover = fm.cover
     const aiGeneratedAt = iso(fm.ai_generated_at)
@@ -76,6 +77,14 @@ export function composeAiNoteBody(aiBody: string, originalContent: string): stri
   return `${aiBody}\n\n---\n\n## 原笔迹\n\n${originalContent}`
 }
 
+const WHOLE_BOOK_ORIGINAL_MARKER = '\n\n---\n\n## 原笔迹\n\n'
+
+function wholeBookOriginal(content: string): string {
+  const markerIndex = content.indexOf(WHOLE_BOOK_ORIGINAL_MARKER)
+  const original = markerIndex < 0 ? content : content.slice(markerIndex + WHOLE_BOOK_ORIGINAL_MARKER.length)
+  return original.trim() ? original : ''
+}
+
 export function applyAiNote(
   lib: string,
   rel: string,
@@ -84,7 +93,8 @@ export function applyAiNote(
   const absolutePath = assertInsideRoots(lib, rel)
   const raw = fs.readFileSync(absolutePath, 'utf8')
   const parsed = matter(raw)
-  if (iso(parsed.data.ai_generated_at)) {
+  const wholeBook = parsed.data.bookScope === 'whole'
+  if (!wholeBook && iso(parsed.data.ai_generated_at)) {
     const error = new Error('ALREADY_GENERATED') as Error & { code: string }
     error.code = 'ALREADY_GENERATED'
     throw error
@@ -94,7 +104,8 @@ export function applyAiNote(
     error.code = 'NOTE_CHANGED'
     throw error
   }
-  const body = composeAiNoteBody(args.aiBody, parsed.content)
+  const original = wholeBook ? wholeBookOriginal(parsed.content) : parsed.content
+  const body = wholeBook ? `${args.aiBody}${WHOLE_BOOK_ORIGINAL_MARKER}${original}` : composeAiNoteBody(args.aiBody, original)
   const temporaryPath = `${absolutePath}.${process.pid}.${Date.now()}.tmp`
   try {
     fs.writeFileSync(temporaryPath, matter.stringify(body, { ...parsed.data, ai_generated_at: args.aiGeneratedAt }), 'utf8')
@@ -141,7 +152,7 @@ export function scanNotes(lib: string): NoteEntry[] {
 
 export function createNoteFile(
   lib: string,
-  a: { title: string; url: string; source?: NoteSource; book?: string; chapter?: string; body?: string }
+  a: { title: string; url: string; source?: NoteSource; book?: string; bookScope?: 'whole'; chapter?: string; body?: string }
 ): { path: string } {
   const dir = notesDirAbs(lib)
   const name = uniqueNoteName(dir, sanitizeNoteFilename(a.title))
@@ -154,6 +165,7 @@ export function createNoteFile(
     highlight: '',
     collected_at: new Date().toISOString(),
     ...(a.book ? { book: a.book } : {}),
+    ...(a.bookScope ? { bookScope: a.bookScope } : {}),
     ...(a.chapter ? { chapter: a.chapter } : {}),
   }
   fs.writeFileSync(path.join(dir, name), serializeNote(meta, a.body ?? ''), 'utf8')

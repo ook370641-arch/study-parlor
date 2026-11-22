@@ -77,4 +77,10 @@ describe('groupNotesForDisplay', () => {
     expect(groupNotesForDisplay([legacy, ...list], 'time', 'web')).toHaveLength(2)
     expect(groupNotesForDisplay([legacy, ...list], 'time', 'book')[0].kind).toBe('book')
   })
+
+  it('整书笔记即使自定义标题也保持稳定章节标签', () => {
+    const whole = bookNote('notes/whole.md', '我的全书总笔记', '书A', '2026-09-01')
+    whole.meta.bookScope = 'whole'
+    expect(noteChapter(whole)).toBe('整书笔记')
+  })
 })

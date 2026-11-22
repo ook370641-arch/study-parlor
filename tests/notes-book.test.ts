@@ -56,7 +56,7 @@ describe('findOrCreateArticleNote 书籍去重键', () => {
     store = []
     vi.clearAllMocks()
     mockIpc.notesList.mockImplementation(async () => [...store])
-    mockIpc.notesCreate.mockImplementation(async (a: { title: string; url: string; source?: string; book?: string; chapter?: string }) => {
+    mockIpc.notesCreate.mockImplementation(async (a: { title: string; url: string; source?: string; book?: string; chapter?: string; bookScope?: 'whole' }) => {
       const rel = `notes/${a.title.replace(/[\\/:*?"<>|]/g, '')}.md`
       store.push({
         path: rel,
@@ -70,6 +70,7 @@ describe('findOrCreateArticleNote 书籍去重键', () => {
           collected_at: '2026-10-27',
           ...(a.book ? { book: a.book } : {}),
           ...(a.chapter ? { chapter: a.chapter } : {}),
+          ...(a.bookScope ? { bookScope: a.bookScope } : {}),
         },
       })
       return { path: rel }
@@ -105,6 +106,18 @@ describe('findOrCreateArticleNote 书籍去重键', () => {
     const result = await (useStore.getState().findOrCreateArticleNote as any)({ title: 'JTBD · Foreword', url: '', source: 'book', book, chapter: 'Foreword' })
 
     expect(result.created).toBe(true)
+    expect(mockIpc.notesCreate).toHaveBeenCalledTimes(2)
+  })
+
+  it('整书笔记幂等创建，且不会命中同名章节笔记', async () => {
+    const book = 'JTBD'
+    await (useStore.getState().findOrCreateArticleNote as any)({ title: 'JTBD · 整书笔记', url: '', source: 'book', book, chapter: '整书笔记' })
+    const args = { title: 'JTBD · 整书笔记', url: '', source: 'book' as const, book, bookScope: 'whole' as const }
+    const first = await (useStore.getState().findOrCreateArticleNote as any)(args)
+    const second = await (useStore.getState().findOrCreateArticleNote as any)(args)
+
+    expect(first.created).toBe(true)
+    expect(second).toEqual({ path: first.path, created: false })
     expect(mockIpc.notesCreate).toHaveBeenCalledTimes(2)
   })
 

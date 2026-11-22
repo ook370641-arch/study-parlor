@@ -39,13 +39,14 @@ function bookContextBlock(input: AiNoteInput): string | null {
 
 function materialBlock(input: AiNoteInput): string {
   const bookContext = bookContextBlock(input)
+  const wholeBook = input.sourceIdentity.type === 'whole-book'
   return [
     `标题：${input.title}`,
     `来源：${JSON.stringify(input.sourceIdentity)}`,
     ...(bookContext ? [bookContext] : []),
-    `## 导读\n${input.guideText ?? '（无可用导读）'}`,
-    `## 用户原笔迹\n${input.originalNote || '（空）'}`,
-    `## 来源正文\n${input.sourceText}`,
+    `## ${wholeBook ? '全书导读' : '导读'}\n${input.guideText ?? '（无可用导读）'}`,
+    `## ${wholeBook ? '已有全书笔记' : '用户原笔迹'}\n${input.originalNote || '（空）'}`,
+    `## ${wholeBook ? '章节主笔记' : '来源正文'}\n${input.sourceText}`,
   ].join('\n\n')
 }
 

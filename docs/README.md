@@ -95,6 +95,8 @@
 ### 13. 笔记系统（书架/专辑墙）
 
 **现状**：在用——书架（分组/星标/排序/导入）+ 专辑墙 + 阅读室（`ipc/notes.ts`、`src/components/notes/`），笔记来源四类归类。同书章节在墙、列表与对照挑选器聚合为一个书组，下拉始终指向原始笔记路径；无原图笔记可由 Kimi 根据正文创造三版独立 SVG 符号，生成时整个封面画幅显示动画且不自动弹窗，完成后通过「待挑选」入口打开候选，选中后才写入 `notes/covers/`，封面优先级为生成封面 → Anthropic 原图 → 来源渐变。笔记墙增加 hover 字数，并与博客、文章/仓库共用 `AlbumWall` 展示骨架和 `CoverGenerator` 候选交互；评分、书籍章节聚合及各领域存储仍独立。博客／章节笔记支持一次性 AI 两轮检索蒸馏：写作后增加独立措辞优化，先交代问题、答案与核心矛盾，再用日常语言解释概念；书籍章节会接收完整目录标题与当前章节标记，在材料足够时用一句话点明本章在全书中的作用，不注入其他章节正文；主笔记与精确匹配的对照页共用 Sparkles 入口，多篇笔记可按路径并行生成，主笔记顶部显示阶段，对照页正文区复用导读罗盘展示进度，点击「查看原笔迹」才打开弹窗；生成完成后自动把 AI 正文与原笔迹附录原子写回同一文件，写入失败保留候选供重试或取消（2026-11-10）。
+- **整书笔记工作区（2026-11-22）**：书籍笔记页顶部切换整书与已有章节主笔记；右侧复用可拖宽／折叠侧栏，独立选章并切换笔记／导读，不改变中间编辑路径。整书笔记以 `bookScope: 'whole'` 标识，可重复 AI 整理；入参仅含章节主笔记、短全书导读、目录和已有全书原笔迹，排除旁注、章节导读／原文与上一版 AI 正文，原笔迹始终保留在文件末尾。
+- current：`specs/2026-11-22-whole-book-note-workspace-design.md` + `plans/2026-11-22-whole-book-note-workspace.md`（整书身份、材料边界、统一工作区与独立章节资料栏）
 - current：`specs/2026-11-05-ai-note-generation-design.md` + `plans/2026-11-05-ai-note-generation.md`（两轮检索与资料策展、单文件原笔迹附录、双入口与永久防重；含验证记录）
 - current：`specs/2026-11-02-notes-annotations-and-covers-design.md`（同书章节聚合与正文驱动的三版 SVG 封面生成；含九符号实验与验证记录）
 **历史链**：10-20 notes-bookshelf → 10-20 notes-bookshelf-requirements → 10-22 notes-album-wall → 10-26 blog-notes-album-wall-and-note-creation（博客↔笔记联动）→ 11-02 notes-annotations-and-covers → 11-05 ai-note-generation（current）→ 11-08 ai-note-readability（阅读体验实施计划）

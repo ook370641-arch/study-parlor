@@ -19,7 +19,7 @@ describe('sanitizeNoteFilename', () => {
 
 describe('serializeNote / parseNoteFile 往返', () => {
   it('字段全量往返', () => {
-    const meta = { title: 'T', url: 'https://a.b/c', source: 'anthropic' as const, rating: 4, summary: 's', highlight: 'h', collected_at: '2026-10-20T00:00:00.000Z', read_at: '2026-10-18T00:00:00.000Z', cover: 'notes/covers/t.svg', ai_generated_at: '2026-11-05T00:00:00.000Z' }
+    const meta = { title: 'T', url: 'https://a.b/c', source: 'book' as const, book: '书', bookScope: 'whole' as const, rating: 4, summary: 's', highlight: 'h', collected_at: '2026-10-20T00:00:00.000Z', read_at: '2026-10-18T00:00:00.000Z', cover: 'notes/covers/t.svg', ai_generated_at: '2026-11-05T00:00:00.000Z' }
     const raw = serializeNote(meta, '正文内容')
     const entry = parseNoteFile('notes/t.md', raw)
     expect(entry.meta).toEqual(meta)
@@ -70,6 +70,32 @@ describe('AI 笔记写回', () => {
 
     expect(() => applyAiNote(lib, created.path, { aiBody: 'AI', baseRawHash, aiGeneratedAt: '2026-11-05T00:00:00.000Z' })).toThrow('NOTE_CHANGED')
     expect(fs.readFileSync(absolutePath, 'utf8')).toBe(`${raw}\n新编辑`)
+  })
+
+  it('整书笔记可再次生成，旧 AI 正文不会进入原笔迹', () => {
+    const created = createNoteFile(lib, { title: '书 · 整书笔记', url: '', source: 'book', book: '书', bookScope: 'whole', body: '已有全书笔记' })
+    const absolutePath = path.join(lib, created.path)
+    const firstRaw = fs.readFileSync(absolutePath, 'utf8')
+    applyAiNote(lib, created.path, { aiBody: '第一版 AI', baseRawHash: hashNoteRaw(firstRaw), aiGeneratedAt: '2026-11-05T00:00:00.000Z' })
+
+    const secondRaw = fs.readFileSync(absolutePath, 'utf8')
+    const result = applyAiNote(lib, created.path, { aiBody: '第二版 AI', baseRawHash: hashNoteRaw(secondRaw), aiGeneratedAt: '2026-11-06T00:00:00.000Z' })
+
+    expect(result.body).toBe('第二版 AI\n\n---\n\n## 原笔迹\n\n已有全书笔记\n')
+    expect(result.body).not.toContain('第一版 AI')
+    expect(matter(fs.readFileSync(absolutePath, 'utf8')).data.ai_generated_at).toBe('2026-11-06T00:00:00.000Z')
+  })
+
+  it('整书原笔迹为空时，再次生成也不会吞入旧 AI 正文', () => {
+    const created = createNoteFile(lib, { title: '书 · 整书笔记', url: '', source: 'book', book: '书', bookScope: 'whole' })
+    const absolutePath = path.join(lib, created.path)
+    const firstRaw = fs.readFileSync(absolutePath, 'utf8')
+    const first = applyAiNote(lib, created.path, { aiBody: '第一版 AI', baseRawHash: hashNoteRaw(firstRaw), aiGeneratedAt: '2026-11-05T00:00:00.000Z' })
+    expect(first.body).toBe('第一版 AI\n\n---\n\n## 原笔迹\n\n')
+
+    const secondRaw = fs.readFileSync(absolutePath, 'utf8')
+    const second = applyAiNote(lib, created.path, { aiBody: '第二版 AI', baseRawHash: hashNoteRaw(secondRaw), aiGeneratedAt: '2026-11-06T00:00:00.000Z' })
+    expect(second.body).toBe('第二版 AI\n\n---\n\n## 原笔迹\n\n')
   })
 })
 

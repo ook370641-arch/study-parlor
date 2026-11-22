@@ -75,4 +75,10 @@ describe('AiNoteGenerator', () => {
     const { queryByTestId } = render(<AiNoteGenerator entry={generated} />)
     expect(queryByTestId('note-ai-generate')).toBeNull()
   })
+
+  it('已生成整书笔记显示重新整理入口', () => {
+    const whole = { ...entry, meta: { ...entry.meta, source: 'book' as const, book: '书', bookScope: 'whole' as const, ai_generated_at: '2026-11-05T00:00:00.000Z' } }
+    const { getByTestId } = render(<AiNoteGenerator entry={whole} />)
+    expect(getByTestId('note-ai-generate')).toHaveAttribute('aria-label', '重新整理笔记')
+  })
 })

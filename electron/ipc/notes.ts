@@ -46,7 +46,7 @@ export function createNotesAiHandlers(config: AppConfig, dependencies: NotesAiDe
       try {
         emit('reading')
         const snapshot = readAiNoteSnapshot(config.libraryPath, notePath)
-        if (snapshot.entry.meta.ai_generated_at) throw ipcError('ALREADY_GENERATED')
+        if (snapshot.entry.meta.ai_generated_at && snapshot.entry.meta.bookScope !== 'whole') throw ipcError('ALREADY_GENERATED')
         const input = assembleAiNoteInput(config.libraryPath, snapshot)
         const aiBody = await generateBody(config, input, emit)
         candidates.set(generationId, { path: notePath, baseRawHash: snapshot.rawHash, aiBody })
@@ -83,7 +83,7 @@ export function createNotesAiHandlers(config: AppConfig, dependencies: NotesAiDe
 export function registerNotesIpc(cfg: AppConfig) {
   const aiHandlers = createNotesAiHandlers(cfg)
   ipcMain.handle('notes:list', () => scanNotes(cfg.libraryPath))
-  ipcMain.handle('notes:create', (_e, a: { title: string; url: string; source?: NoteSource; book?: string; chapter?: string; body?: string }) => createNoteFile(cfg.libraryPath, a))
+  ipcMain.handle('notes:create', (_e, a: { title: string; url: string; source?: NoteSource; book?: string; bookScope?: 'whole'; chapter?: string; body?: string }) => createNoteFile(cfg.libraryPath, a))
   ipcMain.handle('notes:updateMeta', (_e, a: { path: string; patch: Partial<NoteMeta> }) => updateNoteMeta(cfg.libraryPath, a.path, a.patch))
   ipcMain.handle('notes:delete', (_e, a: { path: string }) => deleteNoteFile(cfg.libraryPath, a.path))
   ipcMain.handle('notes:importRead', () => importReadNotes(cfg.libraryPath))

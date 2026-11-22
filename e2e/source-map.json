@@ -266,6 +266,7 @@
         "src/store/index.ts",
         "src/lib/note-cover.ts",
         "src/lib/notes-list.ts",
+        "src/lib/whole-book-note.ts",
         "src/components/notes/**",
         "src/components/writing/WritingListColumn.tsx"
       ],

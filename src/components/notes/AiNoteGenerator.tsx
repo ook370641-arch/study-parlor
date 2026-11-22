@@ -32,6 +32,7 @@ export function AiNoteGenerator({ entry, theme = 'academic' }: { entry: NoteEntr
   if (!canGenerateAiNote(entry)) return null
 
   const candidate = generation?.candidate ?? null
+  const actionLabel = entry.meta.bookScope === 'whole' && entry.meta.ai_generated_at ? '重新整理笔记' : '生成笔记'
   const buttonTone = theme === 'newspaper' ? 'text-[#6b5d52] hover:bg-[#1a1a1a]/10 hover:text-[#8a3a3a]' : 'text-parchment/45 hover:bg-parchment/10 hover:text-ember'
   const stageTone = theme === 'newspaper' ? 'text-[#6b5d52]' : 'text-parchment/40'
   return (
@@ -40,8 +41,8 @@ export function AiNoteGenerator({ entry, theme = 'academic' }: { entry: NoteEntr
         <button
           type="button"
           data-testid="note-ai-generate"
-          title={generation && !candidate ? '正在生成笔记' : '生成笔记'}
-          aria-label={generation && !candidate ? '正在生成笔记' : '生成笔记'}
+          title={generation && !candidate ? '正在生成笔记' : actionLabel}
+          aria-label={generation && !candidate ? '正在生成笔记' : actionLabel}
           disabled={!!generation}
           onClick={() => {
             if (!generation) {

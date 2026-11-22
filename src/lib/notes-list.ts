@@ -23,6 +23,7 @@ export function inferBookChapter(title: string, book?: string): string {
 }
 
 export function noteChapter(entry: NoteEntry): string {
+  if (entry.meta.bookScope === 'whole') return '整书笔记'
   return entry.meta.chapter?.trim() || inferBookChapter(entry.meta.title, entry.meta.book)
 }
 

@@ -5,6 +5,7 @@ import path from 'node:path'
 import matter from 'gray-matter'
 import type { AppConfig } from '../electron/env'
 import { createNoteFile, updateNoteMeta } from '../electron/lib/notes'
+import { writeBookJson } from '../electron/lib/books'
 import { createNotesAiHandlers } from '../electron/ipc/notes'
 
 let libraryPath: string
@@ -115,5 +116,27 @@ describe('AI 笔记 IPC 会话', () => {
 
     await expect(handlers.generate(makeEvent(), { path: notePath })).rejects.toThrow('ALREADY_GENERATED')
     expect(dependencies.generateBody).not.toHaveBeenCalled()
+  })
+
+  it('整书笔记可再次生成，写回只保留原笔迹', async () => {
+    writeBookJson(path.join(libraryPath, 'books', 'book-dir'), {
+      title: '书', importedAt: '2026-11-05T00:00:00.000Z', sourceFile: 'source.pdf', hasToc: true,
+      toc: [{ title: '第一章', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 }],
+    })
+    createNoteFile(libraryPath, { title: '书 · 第一章', url: '', source: 'book', book: '书', chapter: '第一章', body: '章节笔记' })
+    const wholePath = createNoteFile(libraryPath, { title: '书 · 整书笔记', url: '', source: 'book', book: '书', bookScope: 'whole', body: '已有全书笔记' }).path
+    const dependencies = makeDependencies()
+    const handlers = createNotesAiHandlers(config, dependencies)
+    const event = makeEvent()
+
+    const first = await handlers.generate(event, { path: wholePath })
+    await handlers.apply({ generationId: first.generationId })
+    dependencies.generateBody.mockResolvedValueOnce('第二版 AI')
+    const second = await handlers.generate(event, { path: wholePath })
+    const applied = await handlers.apply({ generationId: second.generationId })
+
+    expect(dependencies.generateBody).toHaveBeenCalledTimes(2)
+    expect(applied.body).toBe('第二版 AI\n\n---\n\n## 原笔迹\n\n已有全书笔记\n')
+    expect(applied.body).not.toContain('AI 正文')
   })
 })

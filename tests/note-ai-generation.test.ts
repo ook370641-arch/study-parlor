@@ -116,6 +116,25 @@ describe('AI 笔记两轮生成管线', () => {
     }
   })
 
+  it('整书材料使用全书导读、已有全书笔记和章节主笔记标签', async () => {
+    mockSuccessfulPipeline()
+    const wholeInput: AiNoteInput = {
+      ...input,
+      sourceIdentity: { type: 'whole-book', book: '书' },
+      guideText: '短全书导读',
+      originalNote: '已有全书笔记',
+      sourceText: '第一章笔记',
+    }
+
+    await generateAiNoteBody(config, wholeInput, () => {})
+
+    const writePrompt = vi.mocked(chatNonStream).mock.calls[3][1].messages[0].content
+    expect(writePrompt).toContain('## 全书导读\n短全书导读')
+    expect(writePrompt).toContain('## 已有全书笔记\n已有全书笔记')
+    expect(writePrompt).toContain('## 章节主笔记\n第一章笔记')
+    expect(writePrompt).not.toContain('## 用户原笔迹')
+  })
+
   it('第二轮无独特增益时只策展首轮关系，不向写作堆入第二轮摘要', async () => {
     const coordinates = defaultCoordinates.map(item => ({ ...item, sourceIds: ['W1-1'] }))
     mockSuccessfulPipeline({ coordinates })

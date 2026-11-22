@@ -5,6 +5,8 @@ import { NoteMetaHeader } from './NoteMetaHeader'
 import { PaintingPlate } from '@/components/briefing/PaintingPlate'
 import { Quote } from '@/components/Quote'
 import { WRITING_BODY_FROM_UI, WRITING_UI_QUOTE_SIZES } from '@/lib/briefing-font-size'
+import { BookNoteWorkspace } from './BookNoteWorkspace'
+import { WholeBookNoteEditor } from './WholeBookNoteEditor'
 
 export function NoteBoard() {
   const file = useStore(s => s.writingFile)
@@ -15,6 +17,7 @@ export function NoteBoard() {
   const updateWritingBody = useStore(s => s.updateWritingBody)
   const saveWritingFile = useStore(s => s.saveWritingFile)
   const closeNoteToWall = useStore(s => s.closeNoteToWall)
+  const booksList = useStore(s => s.booksList)
 
   const entry = notesList?.find(e => e.path === file?.path)
 
@@ -35,8 +38,9 @@ export function NoteBoard() {
 
   const body = WRITING_BODY_FROM_UI[writingUISize]
   const color = briefingTheme === 'newspaper' ? '#1a1a1a' : '#e8d5b7'
+  const bookGuide = entry.meta.bookScope === 'whole' ? booksList.find(book => book.title === entry.meta.book)?.bookGuide : undefined
 
-  return (
+  const board = (
     <div
       data-testid="note-board"
       className="flex flex-col h-full"
@@ -77,6 +81,14 @@ export function NoteBoard() {
           <div data-testid="note-ai-applying" role="status" className="flex min-h-40 items-center justify-center text-sm opacity-60">
             正在写入 AI 笔记…
           </div>
+        ) : entry.meta.bookScope === 'whole' ? (
+          <WholeBookNoteEditor
+            key={`${file.path}:${entry.meta.ai_generated_at ?? 'original'}`}
+            filePath={file.path}
+            body={file.body}
+            bookGuide={bookGuide}
+            onChange={updateWritingBody}
+          />
         ) : (
           <WritingEditor
             key={`${file.path}:${entry.meta.ai_generated_at ?? 'original'}`}
@@ -89,4 +101,8 @@ export function NoteBoard() {
       </div>
     </div>
   )
+  if (entry.meta.source === 'book' && entry.meta.book) {
+    return <BookNoteWorkspace entry={entry}>{board}</BookNoteWorkspace>
+  }
+  return board
 }

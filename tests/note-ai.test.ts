@@ -20,6 +20,11 @@ describe('AI 笔记主入口资格', () => {
     expect(canGenerateAiNote({ ...entry, meta: { ...entry.meta, source: 'unknown' } })).toBe(false)
     expect(canGenerateAiNote({ ...entry, meta: { ...entry.meta, ai_generated_at: '2026-11-05T00:00:00.000Z' } })).toBe(false)
   })
+
+  it('整书笔记生成后仍可重新整理', () => {
+    const whole = { ...entry, meta: { ...entry.meta, source: 'book' as const, book: '书', bookScope: 'whole' as const, ai_generated_at: '2026-11-05T00:00:00.000Z' } }
+    expect(canGenerateAiNote(whole)).toBe(true)
+  })
 })
 
 describe('AI 笔记对照入口资格', () => {

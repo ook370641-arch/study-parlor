@@ -500,6 +500,7 @@ type AppStore = {
     url: string
     source?: 'anthropic' | 'book'
     book?: string
+    bookScope?: 'whole'
     chapter?: string
     body?: string
   }) => Promise<{ path: string; created: boolean }>
@@ -2572,7 +2573,9 @@ export const useStore = create<AppStore>((set, get) => ({
     // 书籍按「同一本书 + 同一章节标题」定位，博客仍按 url 精确匹配。
     const existing = a.source === 'book'
       ? list.find(n => n.meta.source === 'book' && n.meta.book === a.book
-        && noteChapter(n) === (a.chapter ?? inferBookChapter(a.title, a.book))
+        && (a.bookScope === 'whole'
+          ? n.meta.bookScope === 'whole'
+          : n.meta.bookScope !== 'whole' && noteChapter(n) === (a.chapter ?? inferBookChapter(a.title, a.book)))
         && !/ · 标注(?: \d+)?$/.test(n.meta.title))
       : list.find(n => n.meta.url === a.url)
     if (existing) return { path: existing.path, created: false }

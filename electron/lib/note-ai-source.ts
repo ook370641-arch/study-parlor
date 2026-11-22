@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
 import type { BookGuideContext, NoteEntry } from '@shared/index'
-import { hashNoteRaw, parseNoteFile } from './notes'
+import { hashNoteRaw, parseNoteFile, scanNotes } from './notes'
 import { loadCollection } from './blog-collection'
 import { scanBooks } from './books'
 import { assertInsideRoots } from './writing-tree'
@@ -10,6 +10,7 @@ import { assertInsideRoots } from './writing-tree'
 export type AiNoteSourceIdentity =
   | { type: 'blog'; url: string }
   | { type: 'book'; book: string; chapter: string }
+  | { type: 'whole-book'; book: string }
 
 export type AiNoteInput = {
   notePath: string
@@ -139,6 +140,40 @@ function findBookSource(libraryPath: string, entry: NoteEntry): { sourcePath: st
   }
 }
 
+const WHOLE_BOOK_ORIGINAL_MARKER = '\n\n---\n\n## 原笔迹\n\n'
+
+function existingWholeBookNote(content: string): string {
+  const markerIndex = content.indexOf(WHOLE_BOOK_ORIGINAL_MARKER)
+  return markerIndex < 0 ? content : content.slice(markerIndex + WHOLE_BOOK_ORIGINAL_MARKER.length)
+}
+
+function assembleWholeBookInput(libraryPath: string, snapshot: AiNoteSnapshot): AiNoteInput {
+  const { entry } = snapshot
+  const bookTitle = entry.meta.book?.trim()
+  const book = scanBooks(libraryPath).find(item => item.title === bookTitle)
+  if (!book) throw sourceError('SOURCE_NOT_FOUND')
+  const chapterOrder = new Map(book.toc.map((item, index) => [item.title, index]))
+  const chapterNotes = scanNotes(libraryPath)
+    .filter(note => note.path !== entry.path && note.meta.source === 'book' && note.meta.book === bookTitle
+      && note.meta.bookScope !== 'whole' && !/ · 标注(?: \d+)?$/.test(note.meta.title))
+    .sort((a, b) => (chapterOrder.get(inferChapter(a)) ?? Number.MAX_SAFE_INTEGER) - (chapterOrder.get(inferChapter(b)) ?? Number.MAX_SAFE_INTEGER)
+      || a.meta.collected_at.localeCompare(b.meta.collected_at))
+  const noteSections = chapterNotes.map(note => {
+    const raw = fs.readFileSync(resolveLibraryFile(libraryPath, note.path), 'utf8')
+    const content = cleanEmbeddedImages(matter(raw).content).trim()
+    return `## ${inferChapter(note)}\n${content}`
+  })
+  const toc = ['全书目录', ...book.toc.map((item, index) => `${index + 1}. ${item.title}`)].join('\n')
+  return {
+    notePath: entry.path,
+    title: entry.meta.title,
+    sourceText: [toc, ...noteSections].join('\n\n'),
+    guideText: book.bookGuide?.content ?? null,
+    originalNote: cleanEmbeddedImages(existingWholeBookNote(snapshot.originalContent)),
+    sourceIdentity: { type: 'whole-book', book: book.title },
+  }
+}
+
 export function readAiNoteSnapshot(libraryPath: string, relativePath: string): AiNoteSnapshot {
   const normalizedPath = relativePath.replace(/\\/g, '/')
   if (path.posix.dirname(normalizedPath) !== 'notes' || !normalizedPath.endsWith('.md') || /\.(assistant|annotations|guide)\.md$/.test(normalizedPath)) {
@@ -160,6 +195,7 @@ export function readAiNoteSnapshot(libraryPath: string, relativePath: string): A
 export function assembleAiNoteInput(libraryPath: string, snapshot: AiNoteSnapshot): AiNoteInput {
   const { entry } = snapshot
   if (entry.meta.source !== 'anthropic' && entry.meta.source !== 'web' && entry.meta.source !== 'book') throw sourceError('SOURCE_INVALID')
+  if (entry.meta.bookScope === 'whole') return assembleWholeBookInput(libraryPath, snapshot)
   const identity: AiNoteSourceIdentity = entry.meta.source === 'book'
     ? { type: 'book', book: entry.meta.book ?? '', chapter: inferChapter(entry) }
     : { type: 'blog', url: normalizeSourceUrl(entry.meta.url) }

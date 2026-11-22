@@ -76,6 +76,34 @@ describe('AI 笔记来源装配', () => {
     expect(input.bookContext).toEqual({ bookTitle: '书', tocTitles: ['序言', '第一章', '第二章'] })
   })
 
+  it('整书笔记只装配目录、全书导读、章节主笔记和已有全书笔记', () => {
+    writeBookJson(path.join(libraryPath, 'books', 'book-dir'), {
+      title: '书', importedAt: '2026-11-05T00:00:00.000Z', sourceFile: 'source.pdf', hasToc: true,
+      bookGuide: { content: '短全书导读', generatedAt: '2026-11-05T00:00:00.000Z' },
+      toc: [
+        { title: '第一章', chapterFile: 'chapters/01.md', pageStart: 1, pageEnd: 2 },
+        { title: '第二章', chapterFile: 'chapters/02.md', pageStart: 3, pageEnd: 4 },
+      ],
+    })
+    writeLibraryFile('books/book-dir/chapters/01.md', '---\ntitle: 第一章\n---\n第一章原文不入参')
+    writeLibraryFile('books/book-dir/chapters/01.guide.md', '---\ntype: article-assistant\n---\n第一章导读不入参')
+    createNoteFile(libraryPath, { title: '书 · 第一章', url: '', source: 'book', book: '书', chapter: '第一章', body: '第一章笔记' })
+    createNoteFile(libraryPath, { title: '书 · 第二章', url: '', source: 'book', book: '书', chapter: '第二章', body: '第二章 AI\n\n---\n\n## 原笔迹\n\n第二章原笔迹' })
+    createNoteFile(libraryPath, { title: '书 · 第一章 · 标注', url: '', source: 'book', book: '书', chapter: '第一章', body: '旁注不入参' })
+    const whole = createNoteFile(libraryPath, { title: '书 · 整书笔记', url: '', source: 'book', book: '书', bookScope: 'whole', body: '旧 AI 正文\n\n---\n\n## 原笔迹\n\n已有全书笔记' })
+
+    const input = assembleAiNoteInput(libraryPath, readAiNoteSnapshot(libraryPath, whole.path))
+
+    expect(input.sourceIdentity).toEqual({ type: 'whole-book', book: '书' })
+    expect(input.guideText).toBe('短全书导读')
+    expect(input.originalNote).toBe('已有全书笔记\n')
+    expect(input.sourceText).toBe('全书目录\n1. 第一章\n2. 第二章\n\n## 第一章\n第一章笔记\n\n## 第二章\n第二章 AI\n\n---\n\n## 原笔迹\n\n第二章原笔迹')
+    expect(input.sourceText).not.toContain('原文不入参')
+    expect(input.sourceText).not.toContain('导读不入参')
+    expect(input.sourceText).not.toContain('旁注不入参')
+    expect(input.originalNote).not.toContain('旧 AI 正文')
+  })
+
   it('来源无法定位或正文为空时给出稳定错误', () => {
     const missing = createNoteFile(libraryPath, { title: 'Missing', url: 'https://example.com/missing', source: 'web' })
     expect(() => assembleAiNoteInput(libraryPath, readAiNoteSnapshot(libraryPath, missing.path))).toThrow('SOURCE_NOT_FOUND')
