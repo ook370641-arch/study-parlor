@@ -46,6 +46,7 @@ beforeEach(() => {
   }))
   useStore.setState({
     booksList: [book], notesList: [whole, chapterOne, chapterTwo], briefingTheme: 'academic', immersiveMode: false,
+    writingUIFontSize: 'base',
     writingFile: { path: whole.path, body: '整书正文', kind: 'md', dirty: false, saving: 'idle' },
     articleAssistantGuideWidth: 320, articleAssistantGuideCollapsed: false,
     setArticleAssistantGuideWidth: vi.fn(), setArticleAssistantGuideCollapsed: vi.fn(),
@@ -111,5 +112,47 @@ describe('书籍笔记统一工作区', () => {
     expect(screen.getByTestId('whole-book-note-editor')).toBeVisible()
     expect(screen.getByLabelText('已有全书笔记')).toHaveValue('已有全书笔记')
     expect(screen.getByText('短全书导读内容')).toBeVisible()
+  })
+
+  it('右侧导读和章节笔记跟随笔记页字号，并使用同一正文排版', async () => {
+    useStore.setState({ writingUIFontSize: 'xl' })
+    const screen = render(<BookNoteWorkspace entry={whole}><div /></BookNoteWorkspace>)
+
+    const noteContent = await screen.findByTestId('book-material-note-content')
+    expect(screen.getByTestId('book-note-workspace').style.getPropertyValue('--briefing-body-size')).toBe('23px')
+    expect(noteContent.style.fontSize).toBe('var(--writing-body-size)')
+    expect(noteContent).toHaveClass('briefing-body-academic')
+
+    fireEvent.click(screen.getByTestId('book-material-tab-guide'))
+    const guide = await screen.findByTestId('book-material-guide-content')
+    expect((guide.firstElementChild as HTMLElement).style.fontSize).toBe('calc(var(--briefing-body-size, 19px) - 2px)')
+  })
+
+  it('顶部显示目录章节序号，并提供独立的左右横滑按钮', async () => {
+    const screen = render(<BookNoteWorkspace entry={whole}><div /></BookNoteWorkspace>)
+
+    expect(await screen.findByText('第 1 章')).toBeVisible()
+    expect(screen.getByText('第 2 章')).toBeVisible()
+    expect(screen.queryByText('CHAPTER NOTE')).toBeNull()
+
+    const nav = screen.getByRole('navigation', { name: '书籍笔记章节' })
+    const scrollBy = vi.fn()
+    Object.assign(nav, { scrollBy })
+    fireEvent.click(screen.getByRole('button', { name: '向左滑动章节' }))
+    fireEvent.click(screen.getByRole('button', { name: '向右滑动章节' }))
+    expect(scrollBy).toHaveBeenNthCalledWith(1, { left: -240, behavior: 'smooth' })
+    expect(scrollBy).toHaveBeenNthCalledWith(2, { left: 240, behavior: 'smooth' })
+  })
+
+  it('整书笔记信息默认收为信息按钮，点击后展开并可再收起', async () => {
+    const screen = render(<NoteBoard />)
+
+    expect(screen.queryByTestId('note-meta-title')).toBeNull()
+    expect(screen.getByTestId('note-ai-generate')).toBeVisible()
+    fireEvent.click(screen.getByTestId('note-meta-info-toggle'))
+    expect(screen.getByTestId('note-meta-title')).toBeVisible()
+    expect(screen.getByTestId('note-meta-url')).toBeVisible()
+    fireEvent.click(screen.getByTestId('note-meta-info-toggle'))
+    expect(screen.queryByTestId('note-meta-title')).toBeNull()
   })
 })

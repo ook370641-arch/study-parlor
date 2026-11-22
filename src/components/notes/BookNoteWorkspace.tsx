@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArticleDivider } from '@/components/article-assistant/ArticleDivider'
 import { MarkdownRenderer } from '@/components/md/MarkdownRenderer'
+import { WRITING_BODY_FROM_UI } from '@/lib/briefing-font-size'
 import { ipc } from '@/lib/ipc'
 import { noteChapter } from '@/lib/notes-list'
 import { useStore } from '@/store'
 import type { ArticleAssistantGuide, BookTocItem, NoteEntry } from '@shared/index'
 
 const ANNOTATION_TITLE = / · 标注(?: \d+)?$/
+const GUIDE_BODY_SIZE = 'calc(var(--briefing-body-size, 19px) - 2px)'
+const GUIDE_TERM_SIZE = 'calc(var(--briefing-body-size, 19px) - 4px)'
 
 function chapterPath(bookDir: string, item: BookTocItem): string {
   return `${bookDir}/${item.chapterFile}`
@@ -15,16 +18,16 @@ function chapterPath(bookDir: string, item: BookTocItem): string {
 function GuidePreview({ guide }: { guide: ArticleAssistantGuide }) {
   return (
     <div className="space-y-3" data-testid="book-material-guide-content">
-      <section className="rounded border border-parchment/10 bg-black/10 p-3">
+      <section style={{ fontSize: GUIDE_BODY_SIZE }} className="rounded border border-parchment/10 bg-black/10 p-3">
         <strong className="mr-2 text-ember">背景</strong>
         <span className="leading-relaxed text-parchment/75">{guide.background}</span>
       </section>
       {guide.chunks.map((chunk, index) => (
-        <section key={`${chunk.heading}-${index}`} className="rounded border border-parchment/10 bg-black/10 p-3">
+        <section key={`${chunk.heading}-${index}`} style={{ fontSize: GUIDE_BODY_SIZE }} className="rounded border border-parchment/10 bg-black/10 p-3">
           <div className="mb-1 font-medium text-ember">§{index + 1} {chunk.heading}</div>
           <div className="leading-relaxed text-parchment/75">{chunk.context ?? chunk.summary}</div>
           {chunk.terms.length > 0 && (
-            <div className="mt-2 space-y-1 border-t border-parchment/10 pt-2 text-[11px] text-parchment/55">
+            <div style={{ fontSize: GUIDE_TERM_SIZE }} className="mt-2 space-y-1 border-t border-parchment/10 pt-2 text-parchment/55">
               {chunk.terms.map((term, termIndex) => <div key={`${term.term}-${termIndex}`}><span className="text-ember">{term.term}</span> · {term.translation}</div>)}
             </div>
           )}
@@ -39,6 +42,7 @@ export function BookNoteWorkspace({ entry, children }: { entry: NoteEntry; child
   const notesList = useStore(s => s.notesList)
   const writingFile = useStore(s => s.writingFile)
   const theme = useStore(s => s.briefingTheme)
+  const writingUISize = useStore(s => s.writingUIFontSize)
   const width = useStore(s => s.articleAssistantGuideWidth)
   const collapsed = useStore(s => s.articleAssistantGuideCollapsed)
   const setWidth = useStore(s => s.setArticleAssistantGuideWidth)
@@ -53,6 +57,7 @@ export function BookNoteWorkspace({ entry, children }: { entry: NoteEntry; child
   const [mode, setMode] = useState<'note' | 'guide'>('note')
   const [noteBody, setNoteBody] = useState<string | null>(null)
   const [guide, setGuide] = useState<ArticleAssistantGuide | null>(null)
+  const topNavRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (!book && booksList.length === 0) void loadBooks()
@@ -133,22 +138,40 @@ export function BookNoteWorkspace({ entry, children }: { entry: NoteEntry; child
   }
 
   const isAcademic = theme !== 'newspaper'
+  const bodyStyle = WRITING_BODY_FROM_UI[writingUISize]
   const tabClass = (active: boolean) => `px-3 py-1 text-[11px] rounded transition-colors ${active ? 'bg-ember/15 text-ember' : isAcademic ? 'text-parchment/45 hover:text-parchment' : 'text-[#6b5d52] hover:text-[#1a1a1a]'}`
   return (
-    <div data-testid="book-note-workspace" className="flex h-full min-h-0 flex-col">
-      <nav className={`flex h-[68px] shrink-0 items-stretch overflow-x-auto border-b ${isAcademic ? 'border-parchment/10 bg-[#211915]' : 'border-[#1a1a1a]/10 bg-white/40'}`} aria-label="书籍笔记章节">
-        <button data-testid="book-note-top-whole" onClick={() => { void openWhole() }} aria-current={entry.meta.bookScope === 'whole' ? 'page' : undefined}
-          className={`min-w-32 border-r px-4 text-left text-xs ${entry.meta.bookScope === 'whole' ? 'bg-ember/10 text-ember shadow-[inset_0_-2px_#d97757]' : 'border-parchment/10 text-parchment/55'}`}>
-          <span className="mb-1 block text-[8px] tracking-widest opacity-55">WHOLE BOOK</span>✦ 整书笔记
-        </button>
-        {topNotes.map(note => (
-          <button key={note.path} data-testid={`book-note-top-${note.path}`} onClick={() => { void selectWritingFile(note.path) }} aria-current={entry.path === note.path ? 'page' : undefined}
-            className={`min-w-32 max-w-44 border-r px-4 text-left text-xs ${entry.path === note.path ? 'bg-ember/10 text-ember shadow-[inset_0_-2px_#d97757]' : 'border-parchment/10 text-parchment/55'}`}>
-            <span className="mb-1 block text-[8px] tracking-widest opacity-55">CHAPTER NOTE</span>
-            <span className="block truncate">{noteChapter(note)}</span>
+    <div data-testid="book-note-workspace" className="flex h-full min-h-0 flex-col" style={{
+      '--briefing-body-size': bodyStyle.size,
+      '--writing-body-size': bodyStyle.size,
+      '--writing-body-weight': String(bodyStyle.weight),
+      '--writing-tone-color': isAcademic ? '#e8d5b7' : '#1a1a1a',
+    } as React.CSSProperties}>
+      <div className={`relative h-[68px] shrink-0 border-b ${isAcademic ? 'border-parchment/10 bg-[#211915]' : 'border-[#1a1a1a]/10 bg-white/40'}`}>
+        <nav ref={topNavRef} className="flex h-full items-stretch overflow-x-auto pr-20" aria-label="书籍笔记章节">
+          <button data-testid="book-note-top-whole" onClick={() => { void openWhole() }} aria-current={entry.meta.bookScope === 'whole' ? 'page' : undefined}
+            className={`min-w-32 border-r px-4 text-left text-xs ${entry.meta.bookScope === 'whole' ? 'bg-ember/10 text-ember shadow-[inset_0_-2px_#d97757]' : 'border-parchment/10 text-parchment/55'}`}>
+            <span className="mb-1 block text-[8px] tracking-widest opacity-55">WHOLE BOOK</span>✦ 整书笔记
           </button>
-        ))}
-      </nav>
+          {topNotes.map(note => {
+            const chapterIndex = toc.findIndex(item => item.title === noteChapter(note))
+            const active = entry.path === note.path
+            return (
+              <button key={note.path} data-testid={`book-note-top-${note.path}`} onClick={() => { void selectWritingFile(note.path) }} aria-current={active ? 'page' : undefined}
+                className={`min-w-32 max-w-44 border-r px-4 text-left text-xs ${active ? 'bg-ember/10 text-ember shadow-[inset_0_-2px_#d97757]' : 'border-parchment/10 text-parchment/55'}`}>
+                <span className="mb-1 block text-[10px] font-medium text-ember/80">{chapterIndex >= 0 ? `第 ${chapterIndex + 1} 章` : '章节笔记'}</span>
+                <span className={`block truncate ${active ? 'text-sm font-medium text-ember' : ''}`}>{noteChapter(note)}</span>
+              </button>
+            )
+          })}
+        </nav>
+        <div className={`absolute inset-y-0 right-0 flex items-center gap-1 border-l px-2 ${isAcademic ? 'border-parchment/10 bg-[#211915]' : 'border-[#1a1a1a]/10 bg-[#f5efe5]'}`}>
+          <button type="button" aria-label="向左滑动章节" onClick={() => topNavRef.current?.scrollBy({ left: -240, behavior: 'smooth' })}
+            className={`h-8 w-7 rounded border text-sm ${isAcademic ? 'border-parchment/15 text-parchment/60 hover:bg-parchment/10 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#6b5d52] hover:bg-[#1a1a1a]/5'}`}>←</button>
+          <button type="button" aria-label="向右滑动章节" onClick={() => topNavRef.current?.scrollBy({ left: 240, behavior: 'smooth' })}
+            className={`h-8 w-7 rounded border text-sm ${isAcademic ? 'border-parchment/15 text-parchment/60 hover:bg-parchment/10 hover:text-parchment' : 'border-[#1a1a1a]/15 text-[#6b5d52] hover:bg-[#1a1a1a]/5'}`}>→</button>
+        </div>
+      </div>
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1">{children}</div>
         <ArticleDivider collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} theme={theme}
@@ -172,8 +195,10 @@ export function BookNoteWorkspace({ entry, children }: { entry: NoteEntry; child
               {mode === 'note' && (!selectedNote ? (
                 <div className="py-12 text-center text-parchment/40">这一章还没有主笔记</div>
               ) : noteBody === null ? <div className="py-12 text-center text-parchment/40">读取中…</div> : (
-                <div data-testid="book-material-note-content" className="rounded border border-parchment/10 bg-black/10 p-3 text-[12px] leading-6">
-                  <MarkdownRenderer content={noteBody} fileName={selectedNote.path} hideHeader />
+                <div data-testid="book-material-note-content"
+                  className={`prose max-w-none briefing-article-body rounded border border-parchment/10 bg-black/10 p-3 ${isAcademic ? 'prose-invert' : ''} briefing-body-${theme}`}
+                  style={{ fontSize: 'var(--writing-body-size)', fontWeight: 'var(--writing-body-weight)', color: 'var(--writing-tone-color)' }}>
+                  <MarkdownRenderer content={noteBody} fileName={selectedNote.path} hideHeader briefingStyle={isAcademic ? 'academic' : 'newspaper'} />
                 </div>
               ))}
               {mode === 'guide' && (guide ? <GuidePreview guide={guide} /> : <div className="py-12 text-center text-parchment/40">这一章还没有导读</div>)}

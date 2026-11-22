@@ -52,24 +52,25 @@ verified: 2026-11-22
 
 ### 4.1 顶部笔记导航
 
-任意书籍笔记页显示顶部导航：整书笔记位于首位，其后按书籍目录顺序显示已有章节主笔记。点击整书笔记时按需查找或创建，再打开；点击章节只打开已有笔记，不自动创建空章节笔记。
+任意书籍笔记页显示顶部导航：整书笔记位于首位，其后按书籍目录顺序显示已有章节主笔记，以高亮的「第 N 章」替代英文类型标签。最右侧提供独立的左右横滑按钮，只滚动顶部导航，不复用正文右上角工具栏样式。点击整书笔记时按需查找或创建，再打开；点击章节只打开已有笔记，不自动创建空章节笔记。
 
 ### 4.2 中间整书笔记
 
-显示现有 `NoteMetaHeader`、短全书导读、AI 正文编辑区和末尾原笔迹输入区。两区写入同一文件，沿用 1.5 秒自动保存与 AI 写入期间保护。
+整书标题、评分、评注等元信息默认收为一个信息按钮，点击才展开，AI 整理入口保持可见；普通笔记仍直接显示元信息。正文保留短全书导读、AI 正文编辑区和末尾原笔迹输入区。两区写入同一文件，沿用 1.5 秒自动保存与 AI 写入期间保护。
 
 ### 4.3 右侧章节资料栏
 
 - 章节选择器、上一章／下一章只影响右侧资料。
 - 「笔记」页签读取所选章节主笔记并以只读 Markdown 展示；若没有主笔记，显示空态。
 - 「导读」页签读取该章 `.guide.md`；没有导读时显示空态，不自动生成。
+- 笔记与导读共用笔记页 `writingUIFontSize` 字号变量；章节笔记采用与正文一致的主题 Markdown 排版，不再固定为 12px。
 - 页签和章节选择均不改变中间 `writingFile`。
 - 复用 `ArticleDivider` 与现有 `articleAssistantGuideWidth` / `articleAssistantGuideCollapsed`，保持拖拽、折叠和字号外观一致。
 
 ## 5. 实现边界
 
 - `electron/lib/notes.ts`：整书元数据、原笔迹拆分／组合、可重复 AI 应用。
-- `electron/lib/note-ai-source.ts`：整书材料装配；`note-ai-generation.ts` 只调整材料标签，复用生成管线。
+- `electron/lib/note-ai-source.ts`：整书材料装配；`note-ai-generation.ts` 只调整材料标签，与章节笔记复用两轮网络搜索、策展、写作和润色管线，并附加已有全书原笔迹。
 - `electron/ipc/notes.ts`、`src/types/index.ts`：创建参数和整书重复生成守卫。
 - `src/components/notes/BookNoteWorkspace.tsx`：顶部导航和右侧资料栏。
 - `src/components/notes/WholeBookNoteEditor.tsx`：全书导读、AI 正文与原笔迹输入。
@@ -85,4 +86,5 @@ verified: 2026-11-22
 - 首次与再次 AI 整理均保留唯一原笔迹；磁盘并发修改仍触发 `NOTE_CHANGED`。
 - 中间编辑整书笔记时，右侧可独立切换不同章节笔记／导读，不改变中间路径。
 - 右侧可拖宽、折叠；顶部可切换整书和章节笔记。
+- 右侧笔记／导读随笔记页字号变化；顶部显示目录章节序号且可按钮横滑；整书元信息可收起／展开。
 - 定向 Vitest、`npx electron-vite build`、`npm run docs:check` 通过；Electron E2E 仅按用户另行授权运行。

@@ -41,6 +41,7 @@ describe('NoteBoard 阅读室', () => {
   })
   it('链接/亮点输入收在 ⓘ 弹层，默认不可见，点 toggle 可见', () => {
     const { getByTestId, queryByTestId } = render(<NoteBoard />)
+    expect(getByTestId('note-meta-title')).toBeVisible()
     expect(queryByTestId('note-meta-url')).toBeNull()
     fireEvent.click(getByTestId('note-meta-info-toggle'))
     expect(getByTestId('note-meta-url')).toBeTruthy()
